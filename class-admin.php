@@ -545,10 +545,32 @@ if ( ! class_exists( 'burst_admin' ) ) {
 			}
 
 			if ( 'pageviews' === $query->get( 'orderby' ) ) {
-				$query->set( 'orderby', 'meta_value_num title ' );
+				$query->set( 'orderby', 'meta_value_num title' );
 				$query->set( 'meta_key', 'burst_total_pageviews_count' );
+                // Ensure posts with meta_value = 0 or no meta_value are included
+                add_filter( 'get_meta_sql', array($this, 'filter_get_meta_sql') );
 			}
 		}
+
+        /**
+         * because WordPress by default excludes 0 value post meta's, we need to change the inner join to a left join
+         * to include posts with 0 pageviews.
+         * Might be included in core later
+         * https://core.trac.wordpress.org/ticket/19653
+         *
+         * @param array $clauses
+         * @return array
+         */
+        public function filter_get_meta_sql( array $clauses ) : array  {
+            remove_filter( 'get_meta_sql', 'filter_get_meta_sql_19653' );
+
+            // Change the inner join to a left join,
+            // and change the where so it is applied to the join, not the results of the query.
+            $clauses['join']  = str_replace( 'INNER JOIN', 'LEFT JOIN', $clauses['join'] ) . $clauses['where'];
+            $clauses['where'] = '';
+
+            return $clauses;
+        }
 
 		/**
 		 * Check if the current day falls within the required date range (November 25, 00:00 to December 2, 23:59) based on GMT.
