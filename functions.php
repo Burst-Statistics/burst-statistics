@@ -377,11 +377,21 @@ if ( ! function_exists( 'burst_get_date_ranges' ) ) {
 
 if ( ! function_exists( 'burst_sanitize_filters' ) ) {
 	/**
-	 * @param $filters
+	 * @param mixed $filters JSON string, stdClass, or array
 	 *
-	 * @return array
+	 * @return array Sanitized array of filters
 	 */
 	function burst_sanitize_filters( $filters ) {
+		// Ensure $filters is an array
+		if ( ! is_array( $filters ) ) {
+			if ( $filters instanceof stdClass ) {
+				$filters = (array) $filters; // Convert stdClass to array if needed
+			} else {
+				$filters = []; // Default to an empty array for invalid input
+			}
+		}
+
+		// Filter out false or empty values
 		$filters = array_filter(
 			$filters,
 			static function ( $item ) {
@@ -389,6 +399,7 @@ if ( ! function_exists( 'burst_sanitize_filters' ) ) {
 			}
 		);
 
+		// Sanitize keys and values
 		$out = [];
 		foreach ( $filters as $key => $value ) {
 			$out[ esc_sql( $key ) ] = esc_sql( $value );
@@ -397,6 +408,7 @@ if ( ! function_exists( 'burst_sanitize_filters' ) ) {
 		return $out;
 	}
 }
+
 
 if ( ! function_exists( 'burst_sanitize_relative_url' ) ) {
 	/**

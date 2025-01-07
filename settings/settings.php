@@ -135,6 +135,26 @@ function burst_rest_api_fallback() {
 		}
 	}
 
+    // get all of the rest of the $_GET parameters so we can forward them in the REST request
+    $get_params = $_GET;
+    // remove the rest_action parameter
+    unset($get_params['rest_action']);
+
+    // convert get metrics to array if it is a string
+    if ( isset( $get_params['metrics'] ) && is_string( $get_params['metrics'] ) ) {
+        $get_params['metrics'] = explode(',', $get_params['metrics']);
+    }
+
+	// Handle filters - check if it's a string and needs slashes removed
+	if ( isset( $get_params['filters'] ) ) {
+		if (is_string($get_params['filters'])) {
+			// Remove slashes but keep as JSON string for later decoding
+			$get_params['filters'] = stripslashes($get_params['filters']);
+		}
+	}
+
+    
+
 	$requestData = json_decode( file_get_contents( 'php://input' ), true );
 	if ( $requestData ) {
 		$action = $requestData['path'] ?? false;
@@ -146,11 +166,12 @@ function burst_rest_api_fallback() {
 		}
 	}
 
+
 	$request = new WP_REST_Request();
-	$args    = array( 'type', 'nonce', 'date_start', 'date_end', 'args', 'search' );
+	$args    = array( 'type', 'nonce', 'date_start', 'date_end', 'args', 'search', 'filters', 'metrics', 'group_by'  );
 	foreach ( $args as $arg ) {
-		if ( isset( $_GET[ $arg ] ) ) {
-			$request->set_param( $arg, stripcslashes( $_GET[ $arg ] ) );
+		if ( isset( $get_params[ $arg ] ) ) {
+			$request->set_param( $arg,  $get_params[ $arg ] );
 		}
 	}
 
@@ -507,7 +528,7 @@ function burst_settings_rest_route() {
 		'burst/v1',
 		'data/(?P<type>[a-z\_\-]+)',
 		[
-			'methods'             => 'POST',
+			'methods'             => 'GET',
 			'callback'            => 'burst_get_data',
 			'permission_callback' => function () {
 				return burst_user_can_view();
@@ -709,21 +730,18 @@ function burst_get_data( WP_REST_Request $request ) {
 		'date_end'   => BURST()->statistics->convert_date_to_unix( $request->get_param( 'date_end' ) . ' 23:59:59' ),
 		// add 23:59:59 to date
 	];
+    
 
-	if ( isset( $request->get_params()['args'] ) ) {
-		$request_args = json_decode( $request->get_param( 'args' ), true );
-	} else {
-		$request_args = array();
-	}
-	// merge get_json_params with request_args
-	$post_args = $request->get_json_params();
-	if ( $post_args ) {
-		$request_args = array_merge( $request_args, $post_args );
-	}
+    // possible args
+    $available_args = ['filters', 'metrics', 'group_by'];
+    // check for args from $request->get_param( 'filters') etc. and add to $args
+    foreach ($available_args as $arg) {
+        if ($request->get_param($arg)) {
+            $args[$arg] = $request->get_param($arg);
+        }
+    }
 
-	$args['metrics']  = $request_args['metrics'] ?? array();
-	$args['filters']  = burst_sanitize_filters( $request_args['filters'] ?? array() );
-	$args['group_by'] = $request_args['group_by'] ?? array();
+	$args['filters']  = burst_sanitize_filters( json_decode($args['filters']) ?? array() );
 
 	switch ( $type ) {
 		case 'live-visitors':
