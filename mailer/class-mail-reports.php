@@ -224,23 +224,22 @@ if ( ! class_exists( 'burst_mail_reports' ) ) {
 
 			update_option( 'burst_last_report_sent', time(), false );
 			$blocks = array(
-				array(
+				[
 					'title'    => __( 'Compare', 'burst-statistics' ),
 					'subtitle' => $frequency === 'weekly' ? __( 'vs. previous week', 'burst-statistics' ) : __( 'vs. previous month', 'burst-statistics' ),
 					'table'    => $this->format_array_as_table( $compare ),
-					'url'      => burst_admin_url( '?page=burst#statistics' ),
-				),
-				array(
-					'title' => __( 'Most visited pages', 'burst-statistics' ),
+					'url'      => burst_admin_url( 'burst#statistics' ),
+				],
+				[
+					'title' => __( "Most visited pages", "burst-statistics" ),
 					'table' => $this->format_array_as_table( $urls ),
-					'url'   => burst_admin_url( '?page=burst#statistics' ),
-				),
-				array(
-					'title' => __( 'Top referrers', 'burst-statistics' ),
+					'url'   => burst_admin_url( 'burst#statistics' ),
+				],
+				[
+					'title' => __( "Top referrers", "burst-statistics" ),
 					'table' => $this->format_array_as_table( $referrers ),
-					'url'   => burst_admin_url( '?page=burst#statistics' ),
-				),
-
+					'url'   => burst_admin_url( 'burst#statistics' ),
+				],
 			);
 			$blocks = apply_filters( 'burst_mail_reports_blocks', $blocks, $args['date_start'], $args['date_end'] );
 

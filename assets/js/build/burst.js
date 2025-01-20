@@ -1,6 +1,7 @@
 // TimeMe.js should be loaded and running to track time as soon as it is loaded.
 let burst_track_hit_running = false;
 let burst_initial_track_hit = false;
+let burst_update_hit_count = 0;
 let burst_cookieless_option = burst.options.enable_cookieless_tracking; // User
                                                                         // cookieless
                                                                         // option
@@ -293,6 +294,11 @@ async function burst_update_hit( update_uid = false ) {
   if ( ! burst_initial_track_hit ) {
     return;
   }
+
+  if ( burst_update_hit_count > 5 ) {
+    return;
+  }
+  burst_update_hit_count++;
 
   let event = new CustomEvent( 'burst_before_update_hit', {detail: burst});
   document.dispatchEvent( event );

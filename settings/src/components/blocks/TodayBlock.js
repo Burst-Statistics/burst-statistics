@@ -6,9 +6,9 @@ import getTodayData from '../../api/getTodayData';
 
 import Icon from '../../utils/Icon';
 import {endOfDay, format, startOfDay} from 'date-fns';
-import {useState} from '@wordpress/element';
 import GridItem from '../common/GridItem';
 import {getDateWithOffset} from '../../utils/formatting';
+import {memo, useState, useEffect} from '@wordpress/element';
 import {safeDecodeURI} from '../../utils/lib';
 
 function selectVisitorIcon( value ) {
@@ -27,6 +27,7 @@ const TodayBlock = () => {
   const currentDateWithOffset = getDateWithOffset();
   const startDate = format( startOfDay( currentDateWithOffset ), 'yyyy-MM-dd' );
   const endDate = format( endOfDay( currentDateWithOffset ), 'yyyy-MM-dd' );
+  const [refetchCount, setRefetchCount] = useState(0);
 
   const placeholderData = {
     live: {
@@ -55,6 +56,13 @@ const TodayBlock = () => {
       value: '-'
     }
   };
+
+  useEffect(() => {
+    if ( refetchCount > 700 ) {
+        console.log("Burst: refetching paused after 700 requests, to prevent rate limiting on the server. Refresh page to start again.");
+        setInterval( 0 );
+    }
+  }, [refetchCount]);
   const queries = useQueries({
         queries: [
           {
@@ -64,7 +72,10 @@ const TodayBlock = () => {
             placeholderData: '-',
             onError: ( error ) => {
               setInterval( 0 );
-            }
+            },
+            onSuccess: () => {
+              setRefetchCount(prevCount => prevCount + 1);
+            },
           },
           {
             queryKey: [ 'today' ],
@@ -151,4 +162,4 @@ const TodayBlock = () => {
       </GridItem>
   );
 };
-export default TodayBlock;
+export default memo (TodayBlock);

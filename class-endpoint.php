@@ -39,6 +39,7 @@ if ( ! class_exists( 'burst_endpoint' ) ) {
 			$time_between_tests = $status === 'error' ? 10 * MINUTE_IN_SECONDS : DAY_IN_SECONDS;
             $time_between_tests = apply_filters( 'burst_time_between_tests', $time_between_tests );
 			$should_test_again = $last_test < $now - $time_between_tests;
+
 			if ( $should_test_again || $last_test === false ) {
                 $last_test = time();
                 update_option( 'burst_ran_test', $last_test );

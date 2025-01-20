@@ -1090,6 +1090,28 @@ if ( ! function_exists( 'burst_is_real_ip' ) ) {
 }
 
 /**
+ * Check if the remote file exists
+ * Used by geo ip in case a user has located the maxmind database outside WordPress.
+ *
+ * @param string $url
+ * @return bool
+ */
+function burst_remote_file_exists( string $url ) {
+    $ch = curl_init();
+    curl_setopt( $ch, CURLOPT_URL, $url );
+    // don't download content
+    curl_setopt( $ch, CURLOPT_NOBODY, 1 );
+    curl_setopt( $ch, CURLOPT_FAILONERROR, 1 );
+    curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1 );
+
+    $result = curl_exec( $ch );
+    curl_close( $ch );
+
+    return $result !== false;
+}
+
+
+/**
  * Checks if a given IP address is within a specified IP range.
  *
  * This function supports both IPv4 and IPv6 addresses, and can handle ranges in

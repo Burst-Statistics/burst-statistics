@@ -1,5 +1,5 @@
-import {__, setLocaleData} from '@wordpress/i18n';
-import {useState, useEffect, useRef} from '@wordpress/element';
+import {__} from '@wordpress/i18n';
+import {useState, useEffect} from '@wordpress/element';
 import Tooltip from '../common/Tooltip';
 import ClickToFilter from './ClickToFilter';
 import Icon from '../../utils/Icon';
@@ -38,6 +38,8 @@ function selectGoalIcon( value ) {
 
 const GoalsBlock = () => {
   const [ interval, setInterval ] = useState( 5000 );
+  const [refetchCount, setRefetchCount] = useState(0);
+
   const goalId = useDashboardGoalsStore( ( state ) => state.goalId );
   const setGoalId = useDashboardGoalsStore( ( state ) => state.setGoalId );
 
@@ -105,7 +107,13 @@ const GoalsBlock = () => {
     dateEnd: 0,
     status: 'inactive'
   };
-
+  useEffect(() => {
+    //stop after an hour of refetching
+    if ( refetchCount > 700 ) {
+      console.log("Burst: refetching paused after 700 requests, to prevent rate limiting on the server. Refresh page to start again.");
+      setInterval( 0 );
+    }
+  }, [refetchCount]);
   const queries = useQueries({
         queries: [
           {
@@ -124,7 +132,10 @@ const GoalsBlock = () => {
             placeholderData: placeholderData,
             onError: ( error ) => {
               setInterval( 0 );
-            }
+            },
+            onSuccess: () => {
+              setRefetchCount(prevCount => prevCount + 1);
+            },
           }
         ]
       }

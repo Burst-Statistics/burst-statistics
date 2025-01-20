@@ -156,12 +156,17 @@ if ( ! function_exists( 'burst_user_can_manage' ) ) {
 if ( ! function_exists( 'burst_admin_url' ) ) {
 	/**
 	 * Get admin url, adjusted for multisite
-	 *
+	 * @param string $page
 	 * @return string|null
 	 */
-	function burst_admin_url() {
-		return is_multisite() && is_network_admin() ? network_admin_url( 'admin.php' ) : admin_url( 'admin.php' );
-	}
+    function burst_admin_url(string $page = ''): string
+    {
+        $url = is_multisite() && is_network_admin() ? network_admin_url( 'admin.php' ) : admin_url( 'admin.php' );
+        if ( !empty($page) ) {
+            $url = add_query_arg( 'page', $page, $url );
+        }
+        return $url;
+    }
 }
 
 /**
@@ -497,22 +502,6 @@ if ( ! function_exists( 'burst_get_tracking_options' ) ) {
 			'goals'                 => burst_get_active_goals(),
 			'goals_script_url'      => burst_get_goals_script_url(),
 		];
-	}
-}
-
-if ( ! function_exists( 'burst_remote_file_exists' ) ) {
-	function burst_remote_file_exists( $url ) {
-		$ch = curl_init();
-		curl_setopt( $ch, CURLOPT_URL, $url );
-		// don't download content
-		curl_setopt( $ch, CURLOPT_NOBODY, 1 );
-		curl_setopt( $ch, CURLOPT_FAILONERROR, 1 );
-		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1 );
-
-		$result = curl_exec( $ch );
-		curl_close( $ch );
-
-		return $result !== false;
 	}
 }
 

@@ -1198,7 +1198,8 @@ if ( ! class_exists( 'burst_statistics' ) ) {
 		 * @return string
 		 */
 		public function get_sql_select_for_metric( string $metric ) {
-			$exclude_bounces = apply_filters( 'burst_exclude_bounces', 1 );
+			// default set to true will be changed/or removed in the future, for a more dynamic approach
+			$exclude_bounces = apply_filters( 'burst_exclude_bounces', burst_get_option( 'exclude_bounces', 1 ) );
 
 			global $wpdb;
 			// if metric starts with  'count(' and ends with ')', then it's a custom metric

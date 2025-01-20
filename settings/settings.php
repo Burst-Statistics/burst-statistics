@@ -95,7 +95,7 @@ function burst_localized_settings( $js_data ) {
 			'menu'                    => burst_menu(),
 			'site_url'                => get_rest_url(),
 			'admin_ajax_url'          => add_query_arg( array( 'action' => 'burst_rest_api_fallback' ), admin_url( 'admin-ajax.php' ) ),
-			'dashboard_url'           => add_query_arg( [ 'page' => 'burst' ], burst_admin_url() ),
+			'dashboard_url'           => burst_admin_url( 'burst' ),
 			'plugin_url'              => burst_url,
 			'network_link'            => network_site_url( 'plugins.php' ),
 			'is_pro'                  => burst_is_pro(),
@@ -763,7 +763,7 @@ function burst_get_data( WP_REST_Request $request ) {
 			$data = BURST()->statistics->get_referrers_data( $args );
 			break;
 		default:
-			$data = apply_filters( 'burst_get_data', $type, $args, $request );
+            $data = apply_filters( 'burst_get_data', [], $type, $args, $request );
 	}
 	if ( ob_get_length() ) {
 		ob_clean();
@@ -952,7 +952,7 @@ function burst_update_option( $name, $value ) {
 	$value            = burst_sanitize_field( $value, $type, $name );
 	$value            = apply_filters( 'burst_fieldvalue', $value, sanitize_text_field( $name ), $type );
 	$options[ $name ] = $value;
-	update_option( 'burst_options_settings', $options );
+	update_option( 'burst_options_settings', $options, true ); // autoload as this is important for front end as well
 	do_action( 'burst_after_save_field', $name, $value, $prev_value, $type );
 }
 

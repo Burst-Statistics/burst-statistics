@@ -16,6 +16,12 @@ $burst_integrations_list = apply_filters( 'burst_integrations', array(
 		'label'                => 'Complianz GDPR/CCPA',
 	),
 
+    'duplicate-post' => array(
+        'constant_or_function' => 'DUPLICATE_POST_CURRENT_VERSION',
+        'label'                => 'Yoast Duplicate Post',
+        'admin_only'           => true,
+    ),
+
 	// Pagebuilders
 	// @todo add goals
 	'elementor' => array(
@@ -385,7 +391,10 @@ function burst_integrations() {
 	foreach ( $burst_integrations_list as $plugin => $details ) {
 		if ( burst_integration_plugin_is_active( $plugin ) ) {
 			$file = apply_filters( 'burst_integration_path', burst_path . "integrations/plugins/$plugin.php", $plugin );
-			if ( file_exists( $file ) ) {
+            $is_admin_only = $details['admin_only'] ?? false;
+            $admin_logged_in = burst_admin_logged_in();
+            $can_load = ( $is_admin_only && $admin_logged_in ) || !$is_admin_only;
+			if ( $can_load && file_exists( $file ) ) {
 				require_once( $file );
 			}
 		}

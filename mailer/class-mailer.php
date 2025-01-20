@@ -58,7 +58,7 @@ if ( ! class_exists( 'burst_mailer' ) ) {
 				[
 					__( 'Find out more', 'burst-statistics' ),
 					sprintf( __( 'Dive deeper into your analytics and uncover new opportunities for %s.', 'burst-statistics' ), $this->pretty_domain ),
-					burst_admin_url( '?page=burst#statistics' ),
+					burst_admin_url( 'burst#statistics' ),
 					__( 'Explore your insights', 'burst-statistics' ),
 				],
 				$read_more_template
