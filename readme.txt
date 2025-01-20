@@ -6,7 +6,7 @@ Requires at least: 5.8
 License: GPL2
 Requires PHP: 7.2
 Tested up to: 6.7
-Stable tag: 1.7.3
+Stable tag: 1.7.4
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 
@@ -90,6 +90,16 @@ Performance is almost not affected. We have built Burst to be very performant fo
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 1.7.4 =
+* Feature: Only download translation languages that your website actually needs to save precious storage and bandwidth.
+* Improvement: Limit live update requests to enhance system performance.
+* Improvement: Added an option to exclude bounces, allowing users to adjust settings more easily.
+* Improvement: Optimized the downloading of the GEO IP database for up-to-date location information.
+* Fix: This addresses the issue with sorting by 0 in WordPress.
+* Fix: Prevent duplication of burst post meta when Yoast Duplicate Post is used. props @dariuserdt
+* Fix: Corrects the behavior of the burst_admin_url() function when it receives a path, ensuring it is properly handled.
+* Fix: Prevent burst tracking from causing server spikes when Complianz clears cookies without consent for stats.
+
 = 1.7.3 =
 * November 18, 2024
 * New: Blueprint.js demo data
