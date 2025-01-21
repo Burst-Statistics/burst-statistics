@@ -91,10 +91,8 @@ We value your feedback. You can [submit a support request on the WordPress forum
 
 == Change log ==
 = 1.7.4 =
-* Feature: Only download translation languages that your website actually needs to save precious storage and bandwidth.
 * Improvement: Limit live update requests to enhance system performance.
 * Improvement: Added an option to exclude bounces, allowing users to adjust settings more easily.
-* Improvement: Optimized the downloading of the GEO IP database for up-to-date location information.
 * Fix: This addresses the issue with sorting by 0 in WordPress.
 * Fix: Prevent duplication of burst post meta when Yoast Duplicate Post is used. props @dariuserdt
 * Fix: Corrects the behavior of the burst_admin_url() function when it receives a path, ensuring it is properly handled.
