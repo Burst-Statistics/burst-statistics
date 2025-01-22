@@ -12,7 +12,7 @@ Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. G
 
 == Description ==
 = Unlock the Power of Privacy-Friendly Analytics with Burst Statistics! =
-Self-hosted, privacy-friendly WordPress stats with Burst Statistics! Our dashboards offer clear and concise insights, allowing you to make informed decisions without feeling overwhelmed by abundant data. Choose Burst Statistics for seamless and reliable analytics trusted by over 200,000 users.
+Self-hosted, privacy-friendly WordPress stats with Burst Statistics! Our dashboards offer clear and concise insights, allowing you to make informed decisions without feeling overwhelmed by abundant data. Choose Burst Statistics for seamless and reliable analytics trusted by over 300,000 users.
 
 **This plugin is free and does not require an account.**
 
@@ -32,7 +32,7 @@ Self-hosted, privacy-friendly WordPress stats with Burst Statistics! Our dashboa
 = From the creators of Really Simple SSL & Complianz =
 Burst Statistics was created by experienced developers who created [Really Simple SSL](https://wordpress.org/plugins/really-simple-ssl/) & [Complianz](https://wordpress.org/plugins/complianz-gdpr/), with over 6,000,000 active installs combined. With a proven track record of providing top-notch, user-friendly solutions, you can trust that Burst Statistics meets the same high standards.
 
-Our community speaks for itself: with over 2,000,000 downloads and 200,000 active users, Burst Statistics is a trusted choice for your analytics needs.
+Our community speaks for itself: with over 3,000,000 downloads and 300,000 active users, Burst Statistics is a trusted choice for your analytics needs.
 
 = Make Burst Statistics better! =
 Our team is always working on improving our plugin, and your input as a user can significantly help us in this process. You don’t require any coding or software development knowledge to contribute; simply sharing your ideas or any issues you encounter would help to improve the plugin significantly. Please feel free to contact us via [a support request on the WordPress forums; we welcome any feedback you may have.](https://wordpress.org/support/plugin/burst-statistics/)
