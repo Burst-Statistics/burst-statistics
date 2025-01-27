@@ -87,6 +87,7 @@ if ( ! class_exists( "burst_notices" ) ) {
 			//if we're on the settings page, we need to clear the admin notices transient, because this list never gets requested on the settings page, and won'd get cleared otherwise
 			if ( $this->is_burst_page() ) {
 				delete_transient('burst_admin_notices');
+                delete_transient( 'burst_plusone_count' );
 			}
 			if ( $cache_admin_notices) {
 				$cached_notices = get_transient('burst_admin_notices');
