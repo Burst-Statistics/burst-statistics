@@ -114,17 +114,22 @@ if ( ! class_exists( 'burst_db_upgrade' ) ) {
 		 * return void
 		 */
 		public function upgrade() {
-
+            burst_error_log("Running upgrade function...");
 			if ( defined( 'BURST_NO_UPGRADE' ) && BURST_NO_UPGRADE ) {
-				return;
+                burst_error_log("BURST_NO_UPGRADE constant defined.");
+
+                return;
 			}
 
 			if ( ! burst_admin_logged_in() ) {
-				return;
+                burst_error_log("Admin not logged in.");
+
+                return;
 			}
 
 			$upgrade_running = get_transient( 'burst_upgrade_running' );
 			if ( $upgrade_running ) {
+                burst_error_log("Upgrade is already running.");
 				return;
 			}
 			set_transient( 'burst_upgrade_running', true, 60 );
@@ -149,7 +154,9 @@ if ( ! class_exists( 'burst_db_upgrade' ) ) {
 				}
 			}
 
-			// only one upgrade at a time
+            burst_error_log("Running upgrade item: $upgrade.");
+
+            // only one upgrade at a time
 			if ( 'bounces' === $do_upgrade ) {
 				$this->upgrade_bounces();
 			}
