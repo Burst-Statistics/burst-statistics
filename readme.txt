@@ -90,6 +90,14 @@ Performance is almost not affected. We have built Burst to be very performant fo
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 1.7.5 =
+* Fix: Resolved an issue where plain permalinks were not working correctly.
+* Fix: Goals were not saving the start date properly, this has been corrected.
+* Fix: Fixed the goals ID/class toggle issue for better consistency.
+* Improvement: Added a new filter for customizing datatable output.
+* Improvement: Enhanced `get_website_url()` for improved reliability.
+* Security: Applied `unslash()` to `verify_nonce` to enhance security measures.
+
 = 1.7.4 =
 * Improvement: Limit live update requests to enhance system performance.
 * Improvement: Added an option to exclude bounces, allowing users to adjust settings more easily.
