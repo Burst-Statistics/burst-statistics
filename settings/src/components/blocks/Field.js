@@ -363,7 +363,7 @@ const Field = ( props ) => {
           <RadioButtons
               disabled={disabled}
               field={props.field}
-              goal_id={props.goal_id}
+              goal={props.goal}
               label={field.label}
               help={field.comment}
               value={fieldValue}

@@ -434,7 +434,7 @@ if ( ! class_exists( 'rsp_upgrade_to_pro' ) ) {
 				'success' => false,
 			);
 
-			if ( ! isset( $_GET['token'] ) || ! wp_verify_nonce( $_GET['token'], 'upgrade_to_pro_nonce' ) ) {
+			if ( ! isset( $_GET['token'] ) || ! burst_verify_nonce( $_GET['token'], 'upgrade_to_pro_nonce' ) ) {
 				$error = true;
 			}
 
@@ -506,7 +506,7 @@ if ( ! class_exists( 'rsp_upgrade_to_pro' ) ) {
 				$error = true;
 			}
 
-			if ( ! $error && isset( $_GET['token'] ) && wp_verify_nonce( $_GET['token'], 'upgrade_to_pro_nonce' ) && isset( $_GET['license'] ) && isset( $_GET['item_id'] ) ) {
+			if ( ! $error && isset( $_GET['token'] ) && burst_verify_nonce( $_GET['token'], 'upgrade_to_pro_nonce' ) && isset( $_GET['license'] ) && isset( $_GET['item_id'] ) ) {
 				$license  = sanitize_title( $_GET['license'] );
 				$item_id  = (int) $_GET['item_id'];
 				$response = $this->validate( $license, $item_id );
@@ -640,7 +640,7 @@ if ( ! class_exists( 'rsp_upgrade_to_pro' ) ) {
 				return false;
 			}
 
-			if ( isset( $_GET['token'] ) && wp_verify_nonce( $_GET['token'], 'upgrade_to_pro_nonce' ) && isset( $_GET['license'] ) && isset( $_GET['item_id'] ) ) {
+			if ( isset( $_GET['token'] ) && burst_verify_nonce( $_GET['token'], 'upgrade_to_pro_nonce' ) && isset( $_GET['license'] ) && isset( $_GET['item_id'] ) ) {
 				$api = $this->api_request();
 				if ( $api && isset( $api->download_link ) ) {
 					$response = array(
@@ -684,7 +684,7 @@ if ( ! class_exists( 'rsp_upgrade_to_pro' ) ) {
 				);
 			}
 
-			if ( isset( $_GET['token'] ) && wp_verify_nonce( $_GET['token'], 'upgrade_to_pro_nonce' ) && isset( $_GET['download_link'] ) ) {
+			if ( isset( $_GET['token'] ) && burst_verify_nonce( $_GET['token'], 'upgrade_to_pro_nonce' ) && isset( $_GET['download_link'] ) ) {
 
 				$download_link = esc_url_raw( $_GET['download_link'] );
 				require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
@@ -732,7 +732,7 @@ if ( ! class_exists( 'rsp_upgrade_to_pro' ) ) {
 				return;
 			}
 
-			if ( isset( $_GET['token'] ) && wp_verify_nonce( $_GET['token'], 'upgrade_to_pro_nonce' ) && isset( $_GET['plugin'] ) ) {
+			if ( isset( $_GET['token'] ) && burst_verify_nonce( $_GET['token'], 'upgrade_to_pro_nonce' ) && isset( $_GET['plugin'] ) ) {
 				$networkwide = is_multisite();
 				$result      = activate_plugin( $this->slug, '', $networkwide );
 				if ( ! is_wp_error( $result ) ) {

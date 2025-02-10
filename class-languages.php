@@ -65,7 +65,10 @@ if ( ! class_exists( 'burst_languages' ) ) {
             }
 
             if ( isset($_GET['page']) && $_GET['page'] === 'burst'){
-                define( 'BURST_INSTALL_TABLES_RUNNING', true );
+                if ( !defined('BURST_INSTALL_TABLES_RUNNING') ) {
+                    define( 'BURST_INSTALL_TABLES_RUNNING', true );
+                }
+
                 $this->dont_update_language_paths = true;
                 $locale = get_user_locale();
                 $language_files = $this->get_language_paths($locale);

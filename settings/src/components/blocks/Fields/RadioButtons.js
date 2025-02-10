@@ -3,12 +3,11 @@ import Tooltip from '../../common/Tooltip';
 import {useFields} from '../../../store/useFieldsStore';
 import {useEffect, useState} from '@wordpress/element';
 import {__} from '@wordpress/i18n';
-import {useGoalsStore} from '../../../store/useGoalsStore';
 
 const RadioButtons = ({
   disabled,
   field: {id, options},
-  goal_id,
+  goal,
   label,
   value,
   onChangeHandler,
@@ -23,6 +22,10 @@ const RadioButtons = ({
         }
     }, [ fieldsLoaded, getFieldValue( 'enable_cookieless_tracking' ) ]);
 
+    console.log("goal", goal)
+    if ( !goal ) {
+        return null;
+    }
     return (
       <div className={`burst-radio-buttons ${className}`}>
         <p className="burst-label">{label}</p>
@@ -31,20 +34,20 @@ const RadioButtons = ({
             const {type, icon, label, description} = options[key];
             return (
                 <Tooltip title={description} arrow key={key} enterDelay={1000}>
-                  <div key={`${goal_id}-${id}-${type}`}
+                  <div key={`${goal.id}-${id}-${type}`}
                        className='burst-radio-buttons__list__item'>
                     <input
                         type="radio"
                         checked={type === value}
-                        name={`${goal_id}-${id}`}
-                        id={`${goal_id}-${id}-${type}`}
+                        name={`${goal.id}-${id}`}
+                        id={`${goal.id}-${id}-${type}`}
                         value={type}
                         disabled={disabled || ( cookieless && 'hook' === type ) }
                         onChange={e => {
                           onChangeHandler( e.target.value );
                         }}
                     />
-                    <label htmlFor={`${goal_id}-${id}-${type}`} className={ cookieless && 'hook' === type ? 'burst-disabled-radio' : ''}>
+                    <label htmlFor={`${goal.id}-${id}-${type}`} className={ cookieless && 'hook' === type ? 'burst-disabled-radio' : ''}>
                       <Icon name={icon} size={18}/>
                       <h5>{label}</h5>
                       {description && 1 < description.length && (

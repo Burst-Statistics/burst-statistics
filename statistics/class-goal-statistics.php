@@ -70,8 +70,8 @@ if ( ! class_exists( "burst_goal_statistics" ) ) {
 
 			// Initialize data array
 			$data = array();
-
-			$data['today'] = array( 'value' => 0, 'tooltip' => '' );
+            //this data is always empty, but is needed clientside to prevent errors (crashes when not available).
+            $data['today'] = array( 'value' => 0, 'tooltip' => '' );
 			$data['total'] = array( 'value' => 0, 'tooltip' => '' );
 			$data['topPerformer'] = array(
 				'title'   => '-',
@@ -173,11 +173,11 @@ if ( ! class_exists( "burst_goal_statistics" ) ) {
 				foreach ( $device_result as $device ) {
 					foreach ( $pageviews_per_device_result as $pageviews_per_device ) {
 						if ( $device->device_id === $pageviews_per_device->device_id ) {
-							$device = $use_lookup_tables ? BURST()->frontend->get_lookup_table_id( $device->device_id, 'device' ) : $device->device_id;
+							$device_id = $use_lookup_tables ? BURST()->frontend->get_lookup_table_id( $device->device_id, 'device' ) : $device->device_id;
 							$percentage = round( ( $device->value / $pageviews_per_device->value ) * 100, 2 );
 							if ( $percentage > $highest_percentage ) {
 								$highest_percentage = $percentage;
-								$data['bestDevice']['title'] = $this->get_device_name($device);
+								$data['bestDevice']['title'] = $this->get_device_name($device_id);
 								$data['bestDevice']['icon'] = $device;
 								$data['bestDevice']['value'] = $percentage;
 							}

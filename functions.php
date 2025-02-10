@@ -19,6 +19,21 @@ if ( ! function_exists( 'burst_admin_logged_in' ) ) {
 	}
 }
 
+if ( ! function_exists( 'burst_verify_nonce' ) ) {
+    /**
+     * Add some additional sanitizing
+     * https://developer.wordpress.org/news/2023/08/understand-and-use-wordpress-nonces-properly/#verifying-the-nonce
+     *
+     * @param string $nonce
+     * @param string $action
+     * @return bool|int
+     */
+	function burst_verify_nonce( string $nonce, string $action ): bool|int
+    {
+        return wp_verify_nonce( sanitize_text_field( wp_unslash( $nonce ) ), $action );
+	}
+}
+
 if ( ! function_exists( 'burst_is_pro' ) ) {
 	function burst_is_pro() {
 		return defined( 'burst_pro' );
@@ -382,11 +397,21 @@ if ( ! function_exists( 'burst_get_date_ranges' ) ) {
 
 if ( ! function_exists( 'burst_sanitize_filters' ) ) {
 	/**
-	 * @param $filters
+	 * @param mixed $filters JSON string, stdClass, or array
 	 *
-	 * @return array
+	 * @return array Sanitized array of filters
 	 */
 	function burst_sanitize_filters( $filters ) {
+		// Ensure $filters is an array
+		if ( ! is_array( $filters ) ) {
+			if ( $filters instanceof stdClass ) {
+				$filters = (array) $filters; // Convert stdClass to array if needed
+			} else {
+				$filters = []; // Default to an empty array for invalid input
+			}
+		}
+
+		// Filter out false or empty values
 		$filters = array_filter(
 			$filters,
 			static function ( $item ) {
@@ -394,6 +419,7 @@ if ( ! function_exists( 'burst_sanitize_filters' ) ) {
 			}
 		);
 
+		// Sanitize keys and values
 		$out = [];
 		foreach ( $filters as $key => $value ) {
 			$out[ esc_sql( $key ) ] = esc_sql( $value );
@@ -402,6 +428,7 @@ if ( ! function_exists( 'burst_sanitize_filters' ) ) {
 		return $out;
 	}
 }
+
 
 if ( ! function_exists( 'burst_sanitize_relative_url' ) ) {
 	/**
@@ -602,18 +629,18 @@ if ( ! function_exists( 'burst_get_value' ) ) {
 
 if ( ! function_exists('burst_get_website_url') ) {
 	/**
-	 * @param $url
-	 * @param $params
+	 * @param string $url
+	 * @param array $params
 	 *               Example usage:
 	 *               burst_content=page-analytics -> specifies that the user is interacting with the page analytics feature.
 	 *               burst_source=download-button -> indicates that the click originated from the download button.
 	 *
 	 * @return string
 	 */
-	function burst_get_website_url( $url = '/', $params = []) {
-		$base_url = 'https://burst-statistics.com/';
+	function burst_get_website_url(string $url = '/', array $params = []): string
+    {
 		$version = defined('burst_pro') ? 'pro' : 'free';
-		$version_nr = defined('burst_version') ? burst_version : 'undefined';
+		$version_nr = defined('burst_version') ? burst_version : '0';
 
 		// strip debug time from version nr
 		$version_nr = explode('#', $version_nr);
@@ -623,8 +650,9 @@ if ( ! function_exists('burst_get_website_url') ) {
 		];
 
 		$params = wp_parse_args($params, $default_params);
-		$params = http_build_query($params);
+        //remove slash prepending the $url
+        $url = ltrim($url, '/');
 
-		return trailingslashit($base_url) . trailingslashit($url) . '?' . $params;
+		return add_query_arg($params, "https://burst-statistics.com/" . trailingslashit($url) );
 	}
 }

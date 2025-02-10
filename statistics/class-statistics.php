@@ -705,9 +705,9 @@ if ( ! class_exists( 'burst_statistics' ) ) {
 
 			$sql  = $this->get_sql_table( $start, $end, $metrics, $filters, $group_by, $order_by, $limit );
 			$data = $wpdb->get_results( $sql, ARRAY_A );
+            $data = apply_filters('burst_datatable_data', $data, $start, $end, $metrics, $filters, $group_by, $order_by, $limit );
 
-
-			return [
+            return [
 				'columns' => $columns,
 				'data'    => $data,
 				'metrics' => $metrics,

@@ -796,7 +796,7 @@ if ( ! class_exists( 'burst_admin' ) ) {
 			}
 
 			// check nonce
-			if ( ! isset( $_GET['token'] ) || ( ! wp_verify_nonce( $_GET['token'], 'burst_deactivate_plugin' ) ) ) {
+			if ( ! isset( $_GET['token'] ) || ( ! burst_verify_nonce( $_GET['token'], 'burst_deactivate_plugin' ) ) ) {
 				return;
 			}
 

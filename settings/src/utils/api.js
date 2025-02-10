@@ -44,8 +44,9 @@ const generateError = (error, path = false) => {
   }
   message += ": " + error;
 
-  // wrap the message in a div react component and give it an onclick to copy the text to the clipboard
-  // this way the user can easily copy the error message and send it to us
+  // wrap the message in a div react component and give it an onclick to copy
+  // the text to the clipboard this way the user can easily copy the error
+  // message and send it to us
   const messageDiv = (
     <div
       title={__("Click to copy", "burst-statistics")}
@@ -73,6 +74,8 @@ const makeRequest = async (path, method = "GET", data = {}) => {
     data.nonce = burst_settings.burst_nonce;
     args.data = data;
   }
+
+
   return apiFetch(args)
     .then((response) => {
       if (!response.request_success) {
@@ -157,7 +160,8 @@ const stripControls = (key, value) => {
 };
 
 /**
- * if the site is loaded over https, but the site url is not https, force to use https anyway, because otherwise we get mixed content issues.
+ * if the site is loaded over https, but the site url is not https, force to
+ * use https anyway, because otherwise we get mixed content issues.
  * @returns {*}
  */
 const siteUrl = (type) => {
@@ -209,15 +213,79 @@ export const doAction = (action, data = {}) =>
   }).then((response) => {
     return response.hasOwnProperty("data") ? response.data : [];
   });
-export const getData = async (type, startDate, endDate, range, args) => {
-  return await makeRequest(
-    `burst/v1/data/${type}${
-      glue() + getNonce()
-    }&date_start=${startDate}&date_end=${endDate}&date_range=${range}`,
-    "POST",
-    args,
-  );
+
+/**
+ * Serialize value for URL parameters, handling arrays and objects
+ * @param {*} value - Value to serialize
+ * @returns {string} Serialized value
+ */
+const serializeValue = (value) => {
+  if (Array.isArray(value)) {
+    // For arrays, add [] to the key and keep values separate
+    return value;
+  }
+  if (typeof value === "object" && value !== null) {
+    return JSON.stringify(value);
+  }
+  return value;
 };
+
+/**
+ * Build query string from object of parameters
+ * @param {Object} params
+ * @returns {string}
+ */
+const buildQueryString = (params) => {
+  return Object.keys(params)
+    .filter((key) => params[key] !== undefined && params[key] !== null)
+    .map((key) => {
+      const value = serializeValue(params[key]);
+      if (Array.isArray(value)) {
+        // Handle arrays by using the PHP array syntax: metrics[]=value1&metrics[]=value2
+        return value
+          .map((v) => `${encodeURIComponent(key)}[]=${encodeURIComponent(v)}`)
+          .join("&");
+      }
+      return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+    })
+    .join("&");
+};
+
+/**
+ * Get data from the REST API
+ * @param {string} type - The data type to fetch
+ * @param {string} startDate - Start date for the query
+ * @param {string} endDate - End date for the query
+ * @param {string} range - Date range
+ * @param {Object} args - Additional query parameters
+ * @returns {Promise}
+ */
+export const getData = async (type, startDate, endDate, range, args = {}) => {
+  // Extract filters and metrics from args if they exist
+  const { filters, metrics, group_by } = args;
+
+  // Combine all query parameters
+  const queryParams = {
+    date_start: startDate,
+    date_end: endDate,
+    date_range: range,
+    nonce: burst_settings.burst_nonce,
+    goal_id: args.goal_id,
+    token: Math.random()
+      .toString(36)
+      .replace(/[^a-z]+/g, "")
+      .substr(0, 5),
+    ...(filters && { filters }), // type is object
+    ...(metrics && { metrics }), // type is array
+    ...(group_by && { group_by }), // type is array
+  };
+
+  const queryString = buildQueryString(queryParams);
+  const path = `burst/v1/data/${type}${glue()}${queryString}`;
+
+  return await makeRequest(path, "GET");
+};
+
 export const getMenu = () =>
   makeRequest("burst/v1/menu/" + glue() + getNonce());
 export const getPosts = (search) =>
@@ -228,12 +296,15 @@ export const getPosts = (search) =>
   );
 
 /**
- * Retrieves a value from local storage with a 'burst_' prefix and parses it as JSON.
- * If the key is not found, returns the provided default value.
+ * Retrieves a value from local storage with a 'burst_' prefix and parses it as
+ * JSON. If the key is not found, returns the provided default value.
  *
- * @param {string} key - The key to retrieve from local storage, without the 'burst_' prefix.
- * @param {*} defaultValue - The value to return if the key is not found in local storage.
- * @returns {*} - The parsed JSON value from local storage or the default value.
+ * @param {string} key - The key to retrieve from local storage, without the
+ *     'burst_' prefix.
+ * @param {*} defaultValue - The value to return if the key is not found in
+ *     local storage.
+ * @returns {*} - The parsed JSON value from local storage or the default
+ *     value.
  */
 export const getLocalStorage = (key, defaultValue) => {
   if ("undefined" !== typeof Storage) {
@@ -246,10 +317,13 @@ export const getLocalStorage = (key, defaultValue) => {
 };
 
 /**
- * Stringifies a value as JSON and stores it in local storage with a 'burst_' prefix.
+ * Stringifies a value as JSON and stores it in local storage with a 'burst_'
+ * prefix.
  *
- * @param {string} key - The key to store in local storage, without the 'burst_' prefix.
- * @param {*} value - The value to stringify as JSON and store in local storage.
+ * @param {string} key - The key to store in local storage, without the
+ *     'burst_' prefix.
+ * @param {*} value - The value to stringify as JSON and store in local
+ *     storage.
  */
 export const setLocalStorage = (key, value) => {
   if ("undefined" !== typeof Storage) {

@@ -95,8 +95,18 @@ if ( ! class_exists( 'burst_goal' ) ) {
 			$url               = $this->page_or_website === 'website' ? '*' : $this->specific_page;
 			$this->url         = $url !== '*' ? burst_sanitize_relative_url( $url ) : '*';
 			$this->server_side = $available_goal_types[ $this->sanitize_type( $this->type ) ]['server_side'] ?? 0;
-			$this->date_start  = $this->status === 'active' ? time() : '';
-			$this->date_end    = $this->status === 'active' ? 0 : time();
+			//update start time only if the goal status has changed to active, or if it's a new goal
+            $db_goal = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}burst_goals WHERE ID = %s", $this->id ) );
+            if ( $db_goal) {
+                if (  $db_goal->status !== $this->status && $this->status === 'active' ) {
+                    $this->date_start = time();
+                    $this->date_end = 0;
+                }
+            } else {
+                $this->date_start = time();
+                $this->date_end = 0;
+            }
+
 			$args              = [
 				'title'             => sanitize_text_field( $this->title ),
 				'type'              => $this->sanitize_type( $this->type ),

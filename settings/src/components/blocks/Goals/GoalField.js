@@ -87,7 +87,7 @@ const GoalField = ({
           <RadioButtons
               disabled={disabled}
               field={field}
-              goal_id={goal.id}
+              goal={goal}
               label={field.label}
               help={field.comment}
               value={goal[field.id]}

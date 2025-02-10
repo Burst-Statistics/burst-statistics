@@ -348,7 +348,7 @@ if ( ! class_exists( "burst_notices" ) ) {
 				return 0;
 			}
 
-			$cache = $this->is_burst_page() ? false : true;
+			$cache = !$this->is_burst_page();
 			$count = get_transient( 'burst_plusone_count' );
 			if ( !$cache || ($count === false) ) {
 				$count = 0;
@@ -362,7 +362,8 @@ if ( ! class_exists( "burst_notices" ) ) {
 						$count++;
 					}
 				}
-				if ( $count==0) {
+
+				if ( $count==0 ) {
 					$count = 'empty';
 				}
 				set_transient( 'burst_plusone_count', $count, DAY_IN_SECONDS );
