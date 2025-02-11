@@ -1035,7 +1035,8 @@ if ( ! class_exists( 'burst_statistics' ) ) {
 					'browser'      => 'statistics.browser'.$id,
 					'platform'     => 'statistics.platform'.$id,
 					'country_code' => 'sessions.country_code', // Assuming 'country_code' filter is in the 'sessions' table.
-				]
+                    'goal_id'      => 'goals.goal_id', //allow filtering by goal_id
+                ]
 			);
 
 			if (  $this->use_lookup_tables() ) {
