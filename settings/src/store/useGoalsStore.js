@@ -52,7 +52,8 @@ export const useGoalsStore = create( ( set, get ) => {
         return false;
     }
 
-    let index = goals.findIndex( goal => goal.id === id );
+    //not absolute comparison, to allow comparing strings and integers.
+    let index = goals.findIndex( goal => goal.id == id );
     if ( -1 !== index ) {
       return goals[index];
     }

@@ -741,7 +741,7 @@ function burst_get_data( WP_REST_Request $request ) {
         }
     }
 
-	$args['filters']  = burst_sanitize_filters( json_decode($args['filters']) ?? array() );
+	$args['filters']  = isset($args['filters']) ? burst_sanitize_filters( json_decode($args['filters'])) : array();
 
 	switch ( $type ) {
 		case 'live-visitors':

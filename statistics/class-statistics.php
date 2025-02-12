@@ -1074,7 +1074,7 @@ if ( ! class_exists( 'burst_statistics' ) ) {
 			// Construct the WHERE clause.
 			$where = implode( ' AND ', $whereClauses );
 
-			return ! empty( $where ) ? "AND $where" : '';
+			return ! empty( $where ) ? "AND $where " : '';
 		}
 
 		/**

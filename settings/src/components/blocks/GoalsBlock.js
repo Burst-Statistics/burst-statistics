@@ -196,7 +196,7 @@ const GoalsBlock = () => {
               </div>
           )}
           <div className="burst-goals-select">
-            <ClickToFilter filter="goal_id" filterValue={data.goalId}
+            <ClickToFilter filter="goal_id" filterValue={goalId}
                            label={data.today.tooltip +
                                __( 'Goal and today', 'burst-statistics' )}
                            startDate={today}>
@@ -207,7 +207,7 @@ const GoalsBlock = () => {
                     'burst-statistics' )}</span>
               </div>
             </ClickToFilter>
-            <ClickToFilter filter="goal_id" filterValue={data.goalId}
+            <ClickToFilter filter="goal_id" filterValue={goalId}
                            label={data.today.tooltip +
                                __( 'Goal and the start date',
                                    'burst-statistics' )}
