@@ -26,9 +26,9 @@ if ( ! function_exists( 'burst_verify_nonce' ) ) {
      *
      * @param string $nonce
      * @param string $action
-     * @return bool|int
+     * @return bool
      */
-	function burst_verify_nonce( string $nonce, string $action ): bool|int
+	function burst_verify_nonce( string $nonce, string $action ): bool
     {
         return wp_verify_nonce( sanitize_text_field( wp_unslash( $nonce ) ), $action );
 	}
