@@ -29,8 +29,12 @@ Self-hosted, privacy-friendly WordPress stats with Burst Statistics! Our dashboa
 >“On-premise Analytics is a great, if not the best, alternative to Google Analytics in the GDPR era. On top of that, since it’s native to WordPress, it’s so easy to configure Goals, etc. That’s awesome.”
 >- [Daan from Daan.dev (@daanvandenbergh)](https://wordpress.org/support/topic/great-product-with-great-potential/)
 
-= From the creators of Really Simple SSL & Complianz =
-Burst Statistics was created by experienced developers who created [Really Simple SSL](https://wordpress.org/plugins/really-simple-ssl/) & [Complianz](https://wordpress.org/plugins/complianz-gdpr/), with over 6,000,000 active installs combined. With a proven track record of providing top-notch, user-friendly solutions, you can trust that Burst Statistics meets the same high standards.
+= From the creators of UpdraftPlus, WP Optimize and All In One Security =
+Burst Statistics was created by experienced developers who also created:
+* [UpdraftPlus: WP Backup & Migration Plugin](https://wordpress.org/plugins/updraftplus/)
+* [All-In-One Security (AIOS) – Security and Firewall](https://wordpress.org/plugins/all-in-one-wp-security-and-firewall/)
+* [WP-Optimize – Cache, Compress images, Minify & Clean database to boost page speed & performance](https://wordpress.org/plugins/wp-optimize/)
+With a proven track record of providing top-notch, user-friendly solutions, you can trust that Burst Statistics meets the same high standards.
 
 Our community speaks for itself: with over 3,000,000 downloads and 300,000 active users, Burst Statistics is a trusted choice for your analytics needs.
 
@@ -250,7 +254,6 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Improvement: Some minor styling changes.
 * Improvement: Added notice about country insights.
 * Fix: Dropdown in data archiving showing empty.
-* Fix: Missing slug for Really Simple SSL with suggested plugins block
 * Improvement: Skip a missing post in the posts array for the goals overview.
 * Fix: Goals could crash when no hits were recorded yet. This has been resolved.
 
