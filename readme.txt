@@ -94,6 +94,10 @@ Performance is almost not affected. We have built Burst to be very performant fo
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 1.7.6 =
+* Fix: translations not loading correctly
+* Fix: when using the reset button, a fatal error occurred
+
 = 1.7.5 =
 * Fix: Resolved an issue where plain permalinks were not working correctly.
 * Fix: Goals were not saving the start date properly, this has been corrected.
