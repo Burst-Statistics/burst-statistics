@@ -43,12 +43,12 @@
     --rsp-black: #333;
     --rsp-white: #fff;
     --rsp-yellow: #f4bf3e;
-    --rsp-blue: #009fff;
+    --rsp-blue: #7C22FF;
     --rsp-dark-blue: #1E73BE;
     --rsp-green: #2e8a37;
     --rsp-red: #D7263D;
     --rsp-pink: #E35899;
-    --rsp-orange: #f39c12;
+    --rsp-orange: #db6939;
     --rsp-wp-blue: #007cba;
     --rsp-yellow-faded: #fdf4df;
     --rsp-blue-faded: #ecf8fe;
@@ -1642,12 +1642,16 @@ a.burst-button--pro:hover, button.burst-button--pro:hover, input.burst-button--p
     --rsp-other-plugins-color: var(--rsp-green);
 }
 
-.burst .burst-other-plugins-container .burst-other-plugins-element.burst-complianz-gdpr {
-    --rsp-other-plugins-color: var(--rsp-blue);
+.burst .burst-other-plugins-container .burst-other-plugins-element.burst-updraftplus {
+    --rsp-other-plugins-color: var(--rsp-orange);
 }
 
-.burst .burst-other-plugins-container .burst-other-plugins-element.burst-complianz-terms-conditions {
-    --rsp-other-plugins-color: var(--rsp-black);
+.burst .burst-other-plugins-container .burst-other-plugins-element.burst-wp-optimize {
+    --rsp-other-plugins-color: var(--rsp-orange);
+}
+
+.burst .burst-other-plugins-container .burst-other-plugins-element.burst-all-in-one-wp-security-and-firewall {
+    --rsp-other-plugins-color: var(--rsp-orange);
 }
 
 .burst .burst-other-plugins-container .burst-other-plugins-element a {

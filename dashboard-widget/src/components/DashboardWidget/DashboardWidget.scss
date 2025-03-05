@@ -30,6 +30,13 @@
       background: var(--rsp-white);
 
 
+      .burst-icon{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+
       &.active {
         box-shadow: inset 0 0 3px 2px var(--rsp-green-faded);
         border: 2px solid var(--rsp-green);

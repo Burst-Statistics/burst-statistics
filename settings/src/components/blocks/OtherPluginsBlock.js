@@ -3,6 +3,7 @@ import { __ } from '@wordpress/i18n';
 import * as burst_api from '../../utils/api';
 import useOtherPlugins from '../../store/useOtherPluginsStore';
 import GridItem from '../common/GridItem';
+import Icon from "../../utils/Icon";
 const OtherPluginsBlock = () => {
   const [ dataUpdated, setDataUpdated ] = useState( '' );
   const dataLoaded = useOtherPlugins( ( state ) => state.dataLoaded );
@@ -76,55 +77,59 @@ e.preventDefault();
     };
     return statuses[pluginAction];
   };
+    const otherPluginElement = (plugin, i) => {
 
-  const otherPluginElement = ( plugin, i ) => {
+        return (
+            <div key={i} className={'burst-other-plugins-element burst-' + plugin.slug}>
+                <a href={plugin.wordpress_url} target="_blank" title={plugin.title} rel="noreferrer">
+                    <div className="burst-bullet"></div>
+                    <div className="burst-other-plugins-content">{plugin.title}</div>
+                </a>
+                <div className="burst-other-plugin-status">
+                    {'upgrade-to-pro' === plugin.pluginAction && <><a target="_blank" href={plugin.upgrade_url}
+                                                                      rel="noreferrer">{__('Upgrade', 'burst-statistics')}</a></>}
+                    {'upgrade-to-pro' !== plugin.pluginAction && 'installed' !== plugin.pluginAction && <>
+                        <a href="settings/src/components/pages/Dashboard/OtherPlugins#"
+                           onClick={(e) => PluginActions(plugin.slug, plugin.pluginAction, e)}>{plugin.pluginActionNice}</a></>}
+                    {'installed' === plugin.pluginAction && <>{__('Installed', 'burst-statistics')}</>}
+                </div>
+            </div>
+        );
+    };
+    if (!dataLoaded) {
+        const n = 3;
+        return (
+            <GridItem
+                className={'burst-column-2 no-border no-background'}
+                title={__('Other plugins', 'burst-statistics')}
+                controls= {<><Icon name="logo" size={30} /></>}
+            >
+                <div className="burst-other-plugins-container">
+                    {[...Array(n)].map((e, i) =>
+                        <div key={i} className={'burst-other-plugins-element'}>
+                            <a>
+                                <div className="burst-bullet"></div>
+                                <div className="burst-other-plugins-content">{__('Loading..', 'burst-statistics')}</div>
+                            </a>
+                            <div className="burst-other-plugin-status">{__('Activate', 'burst-statistics')}</div>
+                        </div>
+                    )}
+                </div>
+            </GridItem>
+        );
+    }
 
-    return (
-        <div key={i} className={'burst-other-plugins-element burst-' + plugin.slug}>
-          <a href={plugin.wordpress_url} target="_blank" title={plugin.title} rel="noreferrer">
-            <div className="burst-bullet"></div>
-            <div className="burst-other-plugins-content">{plugin.title}</div>
-          </a>
-          <div className="burst-other-plugin-status">
-            {'upgrade-to-pro' === plugin.pluginAction && <><a target="_blank" href={plugin.upgrade_url} rel="noreferrer">{__( 'Upgrade', 'burst-statistics' )}</a></>}
-            {'upgrade-to-pro' !== plugin.pluginAction && 'installed' !== plugin.pluginAction && <>
-              <a href="settings/src/components/pages/Dashboard/OtherPlugins#" onClick={ ( e ) => PluginActions( plugin.slug, plugin.pluginAction, e ) } >{plugin.pluginActionNice}</a></>}
-            {'installed' === plugin.pluginAction && <>{__( 'Installed', 'burst-statistics' )}</>}
-          </div>
-        </div>
-    );
-  };
-  if ( ! dataLoaded ) {
-    const n = 3;
     return (
         <GridItem
             className={'burst-column-2 no-border no-background'}
-            title={__( 'Other plugins', 'burst-statistics' )}
+            title={__('Other plugins', 'burst-statistics')}
+            controls= {<><Icon name="logo" size={30} /></>}
         >
-        <div className="burst-other-plugins-container">
-          {[ ...Array( n ) ].map( ( e, i ) =>
-          <div key={i} className={'burst-other-plugins-element'}>
-              <a>
-                <div className="burst-bullet"></div>
-                <div className="burst-other-plugins-content">{__( 'Loading..', 'burst-statistics' )}</div>
-              </a>
-              <div className="burst-other-plugin-status">{__( 'Activate', 'burst-statistics' )}</div>
+            <div className="burst-other-plugins-container">
+                {pluginData.map((plugin, i) => otherPluginElement(plugin, i))}
             </div>
-          )}
-        </div>
         </GridItem>
-      );
-  }
-  return (
-      <GridItem
-          className={'burst-column-2 no-border no-background'}
-          title={__( 'Other plugins', 'burst-statistics' )}
-      >
-        <div className="burst-other-plugins-container">
-          { pluginData.map( ( plugin, i ) => otherPluginElement( plugin, i ) ) }
-        </div>
-      </GridItem>
-  );
+    );
 };
 
 export default OtherPluginsBlock;

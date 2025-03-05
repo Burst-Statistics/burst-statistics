@@ -17,48 +17,48 @@ require_once burst_path . 'settings/media/media-override.php';
  *
  * @return array
  */
-function burst_get_chunk_translations( $dir ) {
-	// get all files from the settings/build folder
-	$buildDirPath = burst_path . $dir;
-	$filenames    = scandir( $buildDirPath );
+function burst_get_chunk_translations( $dir ): array
+{
+    $text_domain = 'burst-statistics';
+    $languages_dir = defined('burst_pro') ? burst_path . 'languages' : WP_CONTENT_DIR . '/languages/plugins';
+    $json_translations = [];
 
-	// filter the filenames to get the JavaScript and asset filenames
-	$jsFilename        = '';
-	$assetFilename     = '';
-	$json_translations = [];
-	foreach ( $filenames as $filename ) {
-		if ( strpos( $filename, 'index.' ) === 0 ) {
-			if ( substr( $filename, -3 ) === '.js' ) {
-				$jsFilename = $filename;
-			} elseif ( substr( $filename, -10 ) === '.asset.php' ) {
-				$assetFilename = $filename;
-			}
-		}
+    if ( !is_dir($languages_dir) ) {
+        return [];
+    }
 
-		if ( strpos( $filename, '.js' ) === false ) {
-			continue;
-		}
+    $locale = determine_locale();
+    $languages = [];
 
-		// remove extension from $filename
-		$chunk_handle = str_replace( '.js', '', $filename );
-		// temporarily register the script, so we can get a translations object.
-		wp_register_script( $chunk_handle, plugins_url( 'build/' . $filename, __FILE__ ), [], true );
-		$path       = defined( 'burst_pro' ) ? burst_path . 'languages' : false;
-		$localeData = load_script_textdomain( $chunk_handle, 'burst-statistics', $path );
-		if ( ! empty( $localeData ) ) {
-			$json_translations[] = $localeData;
-		}
-		wp_deregister_script( $chunk_handle );
-	}
+    // Get all JSON files matching text domain & locale
+    foreach (glob("$languages_dir/{$text_domain}-{$locale}-*.json") as $language_file) {
+        $languages[] = basename($language_file);
+    }
 
-	$asset_file = require $buildDirPath . '/' . $assetFilename;
-	if ( empty( $jsFilename ) ) {
+    $path       = defined( 'burst_pro' ) ? burst_path . 'languages' : WP_CONTENT_DIR . '/languages/plugins';
+    foreach ($languages as $src) {
+        $hash = str_replace([$text_domain . '-', $locale . '-', '.json'], '', $src);
+        wp_register_script($hash, plugins_url($src, __FILE__), [], true);
+        $localeData = load_script_textdomain($hash, $text_domain, $path);
+        wp_deregister_script($hash);
+
+        if ( !empty($localeData) ) {
+            $json_translations[] = $localeData;
+        }
+    }
+    $js_files = glob(burst_path . $dir."/index*.js");
+    $asset_files = glob(burst_path . $dir."/index*.asset.php");
+    $js_filename = !empty($js_files) ? basename($js_files[0]) : '';
+    $asset_filename = !empty($asset_files) ? basename($asset_files[0]) : '';
+	$asset_file = require burst_path . $dir . '/' . $asset_filename;
+
+	if ( empty( $js_filename ) ) {
 		return [];
 	}
 
 	return [
 		'json_translations' => $json_translations,
-		'js_file'           => $jsFilename,
+		'js_file'           => $js_filename,
 		'dependencies'      => $asset_file['dependencies'],
 		'version'           => $asset_file['version'],
 	];
@@ -658,27 +658,27 @@ function burst_other_plugins_data( $slug = false ) {
 	}
 	$plugins = [
 		[
-			'slug'          => 'really-simple-ssl',
-			'constant_free' => 'rsssl_version',
-			'constant_pro'  => 'rsssl_pro',
-			'wordpress_url' => 'https://wordpress.org/plugins/really-simple-ssl/',
-			'upgrade_url'   => 'https://really-simple-ssl.com/pro?src=plugin-burst-other-plugins',
-			'title'         => 'Really Simple Security - ' . __( 'Simple and performant security', 'burst-statistics' ),
+			'slug'          => 'all-in-one-wp-security-and-firewall',
+			'constant_free' => 'AIO_WP_SECURITY_VERSION',
+			'constant_pro'  => false,
+			'wordpress_url' => 'https://wordpress.org/plugins/all-in-one-wp-security-and-firewall/',
+			'upgrade_url'   => 'https://aiosplugin.com/product/all-in-one-wp-security-and-firewall-premium/?src=plugin-burst-other-plugins',
+			'title'         => 'All-In-One Security – Simply secure your site',
 		],
 		[
-			'slug'          => 'complianz-gdpr',
-			'constant_free' => 'cmplz_plugin',
-			'constant_pro'  => 'cmplz_premium',
-			'wordpress_url' => 'https://wordpress.org/plugins/complianz-gdpr/',
-			'upgrade_url'   => 'https://complianz.io/pricing?src=plugin-burst-other-plugins',
-			'title'         => __( 'Complianz Privacy Suite - Cookie Consent Management as it should be', 'burst-statistics' ),
+			'slug'          => 'updraftplus',
+			'constant_free' => 'UPDRAFTPLUS_DIR',
+			'constant_pro'  => false,
+			'wordpress_url' => 'https://wordpress.org/plugins/updraftplus/',
+            'upgrade_url'   => 'https://updraftplus.com/shop/updraftplus-premium/?src=plugin-burst-other-plugins',
+			'title'         => 'UpdraftPlus - Back-up & migrate your site with ease',
 		],
 		[
-			'slug'          => 'complianz-terms-conditions',
-			'constant_free' => 'cmplz_tc_version',
-			'wordpress_url' => 'https://wordpress.org/plugins/complianz-terms-conditions/',
-			'upgrade_url'   => 'https://complianz.io?src=plugin-burst-other-plugins',
-			'title'         => 'Complianz - ' . __( 'Terms and Conditions', 'burst-statistics' ),
+			'slug'          => 'wp-optimize',
+			'constant_free' => 'WPO_VERSION',
+			'wordpress_url' => 'https://wordpress.org/plugins/wp-optimize/',
+			'upgrade_url'   => 'https://getwpo.com/buy/?src=plugin-burst-other-plugins',
+			'title'         => 'WP-Optimize – Easily boost your page speed',
 		],
 	];
 

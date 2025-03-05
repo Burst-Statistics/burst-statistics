@@ -9,8 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @author Easy Digital Downloads
  * @version 1.7
  */
-if ( ! class_exists( 'rsp_upgrade_to_pro' ) ) {
-	class rsp_upgrade_to_pro {
+if ( ! class_exists( 'burst_upgrade_to_pro' ) ) {
+	class burst_upgrade_to_pro {
 		private $version              = 1;
 		private $api_url              = '';
 		private $license              = '';
@@ -41,17 +41,6 @@ if ( ! class_exists( 'rsp_upgrade_to_pro' ) ) {
 			if ( isset( $_GET['plugin'] ) ) {
 				$plugin = sanitize_title( $_GET['plugin'] );
 				switch ( $plugin ) {
-					case 'rsssl_pro':
-						$rsssl_admin_url       = is_multisite() ? network_admin_url( 'settings.php' ) : admin_url( 'options-general.php' );
-						$this->slug            = is_multisite() ? 'really-simple-ssl-pro-multisite/really-simple-ssl-pro-multisite.php' : 'really-simple-ssl-pro/really-simple-ssl-pro.php';
-						$this->plugin_name     = 'Really Simple Security Pro';
-						$this->plugin_constant = 'rsssl_pro';
-						$this->prefix          = 'rsssl_';
-						$this->api_url         = 'https://really-simple-ssl.com';
-						$this->dashboard_url   = add_query_arg( array( 'page' => 'really-simple-security' ), $rsssl_admin_url );
-						$this->account_url     = 'https://really-simple-ssl.com/account';
-						$this->instructions    = 'https://really-simple-ssl.com/knowledge-base/install-really-simple-ssl-pro';
-						break;
 					case 'burst_pro':
 						$this->slug            = 'burst-pro/burst-pro.php';
 						$this->plugin_name     = 'Burst';
@@ -61,18 +50,6 @@ if ( ! class_exists( 'rsp_upgrade_to_pro' ) ) {
 						$this->dashboard_url   = add_query_arg( array( 'page' => 'burst' ), admin_url( 'admin.php' ) );
 						$this->account_url     = 'https://burst-statistics.com/account';
 						$this->instructions    = 'https://burst-statistics.com/how-to-install-burst-pro';
-
-						break;
-					case 'cmplz_pro':
-					default:
-						$this->slug            = is_multisite() ? 'complianz-gdpr-premium-multisite/complianz-gpdr-premium.php' : 'complianz-gdpr-premium/complianz-gpdr-premium.php';
-						$this->plugin_name     = 'Complianz';
-						$this->plugin_constant = 'cmplz_premium';
-						$this->prefix          = 'cmplz_';
-						$this->api_url         = 'https://complianz.io';
-						$this->dashboard_url   = add_query_arg( array( 'page' => 'complianz' ), admin_url( 'admin.php' ) );
-						$this->account_url     = 'https://complianz.io/account';
-						$this->instructions    = 'https://complianz.io/how-to-install-complianz-gdpr-premium-plugin';
 						break;
 				}
 			}
@@ -120,70 +97,18 @@ if ( ! class_exists( 'rsp_upgrade_to_pro' ) ) {
 		}
 
 		private function get_suggested_plugin( $attr ) {
-			$plugin_to_be_installed = $current_plugin = false;
-			if ( isset( $_GET['plugin'] ) && $_GET['plugin'] === 'cmplz_pro' ) {
-				$plugin_to_be_installed = 'complianz-gdpr';
-			} elseif ( isset( $_GET['plugin'] ) && $_GET['plugin'] === 'rsssl_pro' ) {
-				$plugin_to_be_installed = 'really-simple-ssl';
-			} elseif ( isset( $_GET['plugin'] ) && $_GET['plugin'] === 'burst_pro' ) {
-				$plugin_to_be_installed = 'burst';
-			}
-
-			$path = __FILE__;
-			if ( strpos( $path, 'really-simple-ssl' ) !== false ) {
-				$current_plugin = 'really-simple-ssl';
-			} elseif ( strpos( $path, 'complianz' ) !== false ) {
-				$current_plugin = 'complianz-gdpr';
-			} elseif ( strpos( $path, 'burst' ) !== false ) {
-				$current_plugin = 'burst';
-			}
 			$dir_url = plugin_dir_url( __FILE__ ) . 'img/';
-
-			$suggestion = $fallback_suggestion = array(
-				'icon_url'          => $dir_url . 'burst.png',
-				'constant'          => 'burst_version',
-				'title'             => 'Burst – Privacy Friendly Statistics',
-				'description_short' => __( 'Self-hosted and privacy-friendly analytics tool.', 'burst-statistics' ),
+			$suggestion = array(
+				'icon_url'          => $dir_url . 'all-in-one-security.png',
+				'constant'          => 'AIO_WP_SECURITY_VERSION',
+				'title'             => 'All-In-One Security (AIOS) – Security and Firewall',
+				'description_short' => __( 'Easy to use security for WordPress', 'burst-statistics' ),
 				'disabled'          => '',
 				'button_text'       => __( 'Install', 'burst-statistics' ),
-				'slug'              => 'burst-statistics',
-				'description'       => __( "Get detailed insights into visitors' behaviour with Burst Statistics, the privacy-friendly analytics dashboard.", 'burst-statistics' ),
-				'install_url'       => 'burst%20statistics%20hesseldejong%20%20burst-statistics.com&tab=search&type=term',
+				'slug'              => 'wp-security',
+				'description'       => __( "All the tools you need to secure your website.", 'burst-statistics' ),
+				'install_url'       => 'all-in-one%2520security%2520firewall%2520aios%2520security%2520updraftplus&tab=search&type=term',
 			);
-
-			if ( $plugin_to_be_installed === 'really-simple-ssl' || $plugin_to_be_installed === 'burst' ) {
-				$suggestion = array(
-					'icon_url'          => $dir_url . 'complianz-gdpr.png',
-					'constant'          => 'cmplz_version',
-					'title'             => 'Complianz GDPR/CCPA',
-					'description_short' => __( 'GDPR/CCPA Privacy Suite', 'burst-statistics' ),
-					'disabled'          => '',
-					'button_text'       => __( 'Install', 'burst-statistics' ),
-					'slug'              => 'complianz-gdpr',
-					'description'       => __( 'Configure your Cookie Notice, Cookie Consent and Cookie Policy with our Wizard and Cookie Scan. Supports GDPR, DSGVO, TTDSG, LGPD, POPIA, RGPD, CCPA and PIPEDA.', 'burst-statistics' ),
-					'install_url'       => 'complianz+gdpr+POPIA&tab=search&type=term',
-				);
-				if ( $current_plugin === 'complianz-gdpr' ) {
-					$suggestion = $fallback_suggestion;
-				}
-			}
-
-			if ( $plugin_to_be_installed === 'complianz-gdpr' ) {
-				$suggestion = array(
-					'icon_url'          => $dir_url . 'really-simple-ssl.png',
-					'constant'          => 'rsssl_version',
-					'title'             => 'Really Simple Security',
-					'description_short' => __( 'Easily secure your website', 'burst-statistics' ),
-					'disabled'          => '',
-					'button_text'       => __( 'Install', 'burst-statistics' ),
-					'slug'              => 'really-simple-ssl',
-					'description'       => __( 'Easily improve site security with WordPress Hardening, Two-Factor Authentication (2FA), Login Protection, Vulnerability Detection and SSL certificate generation.', 'burst-statistics' ),
-					'install_url'       => 'ssl%20really%20simple%20plugins%20complianz+HSTS&tab=search&type=term',
-				);
-				if ( $current_plugin === 'really-simple-ssl' ) {
-					$suggestion = $fallback_suggestion;
-				}
-			}
 
 			$admin_url                 = is_multisite() ? network_admin_url( 'plugin-install.php?s=' ) : admin_url( 'plugin-install.php?s=' );
 			$suggestion['install_url'] = $admin_url . $suggestion['install_url'];
@@ -232,7 +157,6 @@ if ( ! class_exists( 'rsp_upgrade_to_pro' ) ) {
 						'steps'          => $this->steps,
 						'admin_url'      => admin_url( 'admin-ajax.php' ),
 						'token'          => wp_create_nonce( 'upgrade_to_pro_nonce' ),
-						'cmplz_nonce'    => wp_create_nonce( 'complianz_save' ),
 						'finished_title' => __( 'Installation finished', 'burst-statistics' ),
 					]
 				);
@@ -751,5 +675,5 @@ if ( ! class_exists( 'rsp_upgrade_to_pro' ) ) {
 			}
 		}
 	}
-	$rsp_upgrade_to_pro = new rsp_upgrade_to_pro();
+    $burst_upgrade_to_pro = new burst_upgrade_to_pro();
 }

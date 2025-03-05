@@ -838,20 +838,18 @@ if ( ! class_exists( 'burst_admin' ) ) {
 		 *
 		 * @return array
 		 */
-		public function maybe_delete_all_data( array $output, string $action, $data ) {
+		public function maybe_delete_all_data( array $output, string $action, $data ): array
+        {
 			if ( ! burst_user_can_manage() ) {
 				return $output;
 			}
+            
 			if ( $action === 'reset' ) {
 				// delete everything
 				$this->delete_all_burst_data();
 
-				// reset to defaults
-				burst_set_defaults( false );
-
 				// immediately run setup defaults, so db tables get made
 				$this->setup_defaults();
-
                 $this->run_table_init_hook();
 
                 $output = [

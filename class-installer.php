@@ -64,10 +64,9 @@ if ( ! class_exists( 'burst_installer' ) ) {
 		 */
 		public function get_activation_slug() {
 			$slugs = array(
-				'burst-statistics'           => 'burst-statistics/burst.php',
-				'complianz-gdpr'             => 'complianz-gdpr/complianz-gpdr.php',
-				'really-simple-ssl'          => 'really-simple-ssl/rlrsssl-really-simple-ssl.php',
-				'complianz-terms-conditions' => 'complianz-terms-conditions/complianz-terms-conditions.php',
+				'wp-optimize'           => 'wp-optimize/wp-optimize.php',
+				'updraftplus'             => 'updraftplus/updraftplus.php',
+				'all-in-one-wp-security-and-firewall'          => 'all-in-one-wp-security-and-firewall/wp-security.php',
 			);
 			return $slugs[ $this->slug ];
 		}
