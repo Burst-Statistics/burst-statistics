@@ -22,24 +22,20 @@ function burst_get_chunk_translations( $dir ): array
     $text_domain = 'burst-statistics';
     $languages_dir = defined('burst_pro') ? burst_path . 'languages' : WP_CONTENT_DIR . '/languages/plugins';
     $json_translations = [];
-
-    if ( !is_dir($languages_dir) ) {
-        return [];
-    }
-
     $locale = determine_locale();
     $languages = [];
 
-    // Get all JSON files matching text domain & locale
-    foreach (glob("$languages_dir/{$text_domain}-{$locale}-*.json") as $language_file) {
-        $languages[] = basename($language_file);
+    if ( is_dir($languages_dir) ) {
+        // Get all JSON files matching text domain & locale
+        foreach (glob("$languages_dir/{$text_domain}-{$locale}-*.json") as $language_file) {
+            $languages[] = basename($language_file);
+        }
     }
 
-    $path       = defined( 'burst_pro' ) ? burst_path . 'languages' : WP_CONTENT_DIR . '/languages/plugins';
     foreach ($languages as $src) {
         $hash = str_replace([$text_domain . '-', $locale . '-', '.json'], '', $src);
         wp_register_script($hash, plugins_url($src, __FILE__), [], true);
-        $localeData = load_script_textdomain($hash, $text_domain, $path);
+        $localeData = load_script_textdomain($hash, $text_domain, $languages_dir);
         wp_deregister_script($hash);
 
         if ( !empty($localeData) ) {
