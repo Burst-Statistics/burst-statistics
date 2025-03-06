@@ -22,7 +22,6 @@ const RadioButtons = ({
         }
     }, [ fieldsLoaded, getFieldValue( 'enable_cookieless_tracking' ) ]);
 
-    console.log("goal", goal)
     if ( !goal ) {
         return null;
     }
