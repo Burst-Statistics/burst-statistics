@@ -180,7 +180,7 @@ if ( ! class_exists( 'burst_goal' ) ) {
 			}
 
 			$id    = sanitize_title( $id );
-			$goals = BURST()->goals->get_predefined_goals();
+			$goals = BURST()->goals->get_predefined_goals(true);
 			// filter out our goal by id
 			$filtered_goals = array_filter(
 				$goals,

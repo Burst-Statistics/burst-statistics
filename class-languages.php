@@ -221,13 +221,13 @@ if ( ! class_exists( 'burst_languages' ) ) {
                 "de_DE_formal" => [ "de_CH" ],
                 "en_GB"        => [ "en_NZ", "en_AU" ],
                 "es_ES"        => [ "es_EC", "es_MX", "es_CO", "es_VE", "es_CL", "es_CR", "es_GT", "es_HN", "es_PE", "es_PR", "es_UY", "es_AR", "es_DO" ],
+                "pt_PT"        => [ "pt_BR", "pt_AO", "pt_MZ", "pt_CV", "pt_GW", "pt_ST", "pt_TL" ],
             ];
             //e.g:
             //$active_locale = nl_BE;
             //$mapped_language = nl_NL;
             //check if the $active_locale occurs in the $language_mappings array. If so, get the key.
-            $mapped_language = array_search( $active_locale, $language_mappings, true );
-            return $mapped_language;
+            return array_search( $active_locale, $language_mappings, true );
         }
 
         /**

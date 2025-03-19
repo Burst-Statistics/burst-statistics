@@ -58,12 +58,14 @@ const Settings = ( props ) => {
   let btnSaveText = __( 'Save', 'burst-statistics' );
 
   //convert progress notices to an array useful for the help blocks
+  const tasks = Object.values(progress.tasks);
+
   let notices = [];
-  for ( const notice of progress.notices ) {
+  for ( const notice of tasks ) {
     let noticeIsLinkedToField = false;
 
     //notices that are linked to a field. Only in case of warnings.
-    if ( notice.show_with_options && 'warning' === notice.output.icon ) {
+    if ( notice.show_with_options && 'warning' === notice.icon ) {
       let noticeFields = selectedFields.filter( field => notice.show_with_options.includes( field.id ) );
       noticeIsLinkedToField = 0 < noticeFields.length;
     }
@@ -71,11 +73,11 @@ const Settings = ( props ) => {
     //notices that are linked to a menu id.
     if ( noticeIsLinkedToField || notice.menu_id === selectedSubMenuItem ) {
       let help = {};
-      help.title = notice.output.title ? notice.output.title : false;
-      help.label = notice.output.label;
+      help.title = notice.title ? notice.title : false;
+      help.label = notice.label;
       help.id = notice.id;
-      help.text = notice.output.msg;
-      help.url = notice.output.url;
+      help.text = notice.msg;
+      help.url = notice.url;
       help.linked_field = notice.show_with_option;
       notices.push( help );
     }

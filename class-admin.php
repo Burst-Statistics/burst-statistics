@@ -37,18 +37,68 @@ if ( ! class_exists( 'burst_admin' ) ) {
 
 			add_action( 'admin_bar_menu', array( $this, 'add_to_admin_bar_menu' ), 35 );
 			add_action( 'admin_bar_menu', array( $this, 'add_top_bar_menu' ), 400 );
+      add_action( 'burst_activation', [ $this, 'run_table_init_hook' ], 10, 1 );
+      add_action( 'burst_activation', array( $this, 'setup_defaults' ), 20, 1 );
 
-            add_action( 'burst_activation', array( $this, 'setup_defaults' ) );
-            add_action( 'burst_activation', [ $this, 'run_table_init_hook' ], 10, 1 );
-			add_action( 'after_reset_stats', [ $this, 'run_table_init_hook' ], 10, 1 );
 			add_action( 'upgrader_process_complete', [ $this, 'run_table_init_hook' ], 10, 1 );
 			add_action( 'wp_initialize_site', [ $this, 'run_table_init_hook' ], 10, 1 );
 			add_action( 'burst_upgrade', [ $this, 'run_table_init_hook' ], 10, 1 );
+            add_action( 'burst_daily', array( $this, 'validate_tasks' ) );
+            add_action( 'burst_validate_tasks', array( $this, 'validate_tasks' ) );
 
             if ( defined('BURST_BLUEPRINT') ) {
                 add_action( 'init', [ $this, 'install_demo_data' ] );
             }
+
+            add_action('burst_daily', [ $this, 'update_page_visit_counts' ] );
+            add_action('burst_upgrade_post_meta', [ $this, 'update_page_visit_counts' ] );
 		}
+
+        public function update_page_visit_counts(): void
+        {
+            $offset = (int) get_option('burst_post_meta_offset', 0);
+            $chunk = 100;
+            $today = BURST()->statistics->convert_unix_to_date( strtotime( 'today' ) );
+            // deduct days offset in days
+            $yesterday = BURST()->statistics->convert_unix_to_date( strtotime( $today . ' - 1 days' ) );
+
+            // get start of $yesterday in unix
+            $date_start = BURST()->statistics->convert_date_to_unix( $yesterday . ' 00:00:00' );
+            // get end of $yesterday in unix
+            $date_end = BURST()->statistics->convert_date_to_unix( $yesterday . ' 23:59:59' );
+
+            $sql = BURST()->statistics->get_sql_table($date_start, $date_end, ['page_url', 'pageviews'], [], 'page_url', 'pageviews DESC' );
+            //add offset
+            $sql .= " LIMIT $chunk OFFSET $offset";
+
+            global $wpdb;
+            $rows = $wpdb->get_results( $sql, ARRAY_A );
+
+            if ( count ( $rows ) === 0 ) {
+                delete_option('burst_post_meta_offset');
+                wp_clear_scheduled_hook("burst_upgrade_post_meta");
+            } else {
+                update_option('burst_post_meta_offset', $offset, false);
+                wp_schedule_single_event(time() + MINUTE_IN_SECONDS , 'burst_upgrade_post_meta' );
+                foreach ( $rows  as $row ) {
+                    $post_id = url_to_postid($row['page_url']);
+                    if ( !$post_id ) {
+                        continue;
+                    }
+                    $pageviews = BURST()->statistics->get_post_views($post_id, 0, time() );
+                    update_post_meta($post_id, 'burst_total_pageviews_count', $pageviews );
+                }
+            }
+        }
+
+        /**
+         * Once a day, check if any tasks need to be added again
+         *
+         * @return void
+         */
+        public function validate_tasks(){
+            BURST()->tasks->validate_tasks();
+        }
 
 		public static function this() {
 			return self::$_this;
@@ -75,17 +125,29 @@ if ( ! class_exists( 'burst_admin' ) ) {
 	        return $referrers[array_rand($referrers)];
         }
 
+        /**
+         * Check if table exists
+         *
+         * @param string $table
+         * @return bool
+         */
+        private function table_exists(string $table ): bool
+        {
+            global $wpdb;
+            return (bool) $wpdb->query( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . sanitize_title($table) ) );
+        }
+
 		/**
          * Install demo data in Burst if blueprint.json is active
          *
 		 * @return void
 		 */
-        public function install_demo_data(){
-            //check if database installed
-            if ( !get_option( 'burst_stats_db_version' ) ) {
+        public function install_demo_data(): void
+        {
+            if ( !$this->table_exists('burst_statistics') ) {
                 return;
             }
-            
+
             if ( !get_option( 'burst_demo_data_installed' ) ){
                 global $wpdb;
 
@@ -281,7 +343,7 @@ if ( ! class_exists( 'burst_admin' ) ) {
 			if ( get_option( 'burst_run_activation' ) ) {
                 do_action('burst_activation');
                 delete_option( 'burst_run_activation' );
-
+                BURST()->tasks->add_initial_tasks();
             }
 		}
 
@@ -410,11 +472,10 @@ if ( ! class_exists( 'burst_admin' ) ) {
 					burst_update_option( 'email_reports_mailinglist', $defaults );
 				}
 
-				if ( get_option( 'burst_goals_db_version' ) === false ) {
-					// if there is no goals db version, then we can assume there are no goals database.
-					// rerun so this code is not executed
-					return;
-				}
+                if ( !$this->table_exists('burst_goals') ) {
+                    return;
+                }
+
 				// set default goal
 				// if there is no default goal, then insert one
 				$goals = BURST()->goals->get_goals();
@@ -913,11 +974,14 @@ if ( ! class_exists( 'burst_admin' ) ) {
 			$options = apply_filters(
 				'burst_table_db_options',
 				[
+                    'burst_parameters_db_version',
+                    'burst_campaigns_db_version',
 					'burst_stats_db_version',
 					'burst_sessions_db_version',
 					'burst_goals_db_version',
 					'burst_goal_stats_db_version',
 					'burst_archive_db_version',
+                    'burst_tasks'
 				],
 			);
 
@@ -970,6 +1034,7 @@ if ( ! class_exists( 'burst_admin' ) ) {
 				'burst_tour_shown_once',
 				'burst_options_settings',
 				'burst-current-version',
+                'burst_tasks'
 			];
 			// delete options
 			foreach ( $options as $option_name ) {

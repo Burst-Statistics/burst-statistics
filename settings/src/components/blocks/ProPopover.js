@@ -43,7 +43,7 @@ const ProPopover = ({
             </div>
             <div className={'burst-pro-popover__footer'}>
               <a href={primaryButtonUrl} target="_blank" className={'burst-button burst-button--pro'} rel="noreferrer">{__( 'Upgrade to Pro', 'burst-statistics' )}</a>
-              <a href={secondaryButtonUrl} target="_blank" className={'burst-button burst-button--secondary'} rel="noreferrer">{__( 'Learn More', 'burst-statistics' )}</a>
+              <a href={secondaryButtonUrl} target="_blank" className={'burst-button burst-button--secondary'} rel="noreferrer">{__( 'Learn more', 'burst-statistics' )}</a>
             </div>
           </Popover.Content>
         </Popover.Portal>

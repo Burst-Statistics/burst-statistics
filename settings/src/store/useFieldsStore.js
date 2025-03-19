@@ -135,7 +135,7 @@ help.title = title;
   },
   fetchFieldsData: async( selectedSubMenuItem ) => {
     const { fields, progress }   = await fetchFields();
-
+      const progressArray = Object.values(progress);
     //process pro field
     if ( burst_settings.is_pro ) {
       for ( const field of fields ) {
@@ -150,11 +150,11 @@ field.label = field.pro.label;
 field.comment = field.pro.comment;
 }
           if ( field.pro.tooltip ) {
-field.tooltip = field.pro.tooltip;
+            field.tooltip = field.pro.tooltip;
 }
           if ( field.pro.react_conditions ) {
-field.react_conditions = field.pro.react_conditions;
-}
+            field.react_conditions = field.pro.react_conditions;
+            }
         }
       }
     }

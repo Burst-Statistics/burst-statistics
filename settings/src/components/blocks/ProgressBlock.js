@@ -55,6 +55,7 @@ const ProgressBlock = ({ highLightField }) => {
     }
 
 
+
     return displayNotices.map( ( notice ) =>
         <TaskElement
             key={notice.id}

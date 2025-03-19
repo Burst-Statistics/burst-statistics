@@ -153,6 +153,39 @@ function burst_check_upgrade() {
 		wp_schedule_single_event( time() + 300, 'burst_upgrade_iteration' );
 	}
 
+    //clean up old options
+    if ( $prev_version
+        && version_compare( $prev_version, '1.8.0', '<' ) ) {
+        $clean_up_tasks = [
+            'ajax_fallback',
+            'tracking-error',
+            'bf_notice2024',
+            'cm_notice2024',
+            'new_parameters',
+            'new_email_reporting',
+            'leave-feedback',
+            'upgrade_progress',
+            'burst_geo_ip_import_error',
+            'license',
+            'cron',
+        ];
+        foreach ($clean_up_tasks as $id ) {
+            delete_option( "burst_".$id."_dismissed" );
+        }
+        $db_version_options = [
+            'burst_parameters_db_version',
+            'burst_campaigns_db_version',
+            'burst_stats_db_version',
+            'burst_sessions_db_version',
+            'burst_goals_db_version',
+            'burst_goal_stats_db_version',
+            'burst_archive_db_version',
+        ];
+        foreach ($db_version_options as $option ) {
+            delete_option( $option );
+        }
+    }
+
 	do_action( 'burst_upgrade', $prev_version );
 	update_option( 'burst-current-version', $new_version, false );
 }

@@ -66,8 +66,7 @@ if ( ! function_exists( 'burst_track_hit' ) ) {
 		// validate & sanitize all data
 		$sanitized_data = burst_prepare_tracking_data( $data );
 		$sanitized_data = apply_filters( 'before_burst_track_hit', $sanitized_data );
-
-		if ( $sanitized_data['referrer'] === 'spammer' ) {
+        if ( $sanitized_data['referrer'] === 'spammer' ) {
 			burst_error_log( 'Referrer spam prevented.' );
 			return 'referrer is spam';
 		}
@@ -172,6 +171,13 @@ if ( ! function_exists( 'burst_track_hit' ) ) {
 				}
 			}
 		}
+
+        // update total pageviews count
+        $page_id = url_to_postid( $sanitized_data['page_url'] );
+        if ( $page_id ) {
+            $count = (int) get_post_meta($page_id, 'burst_total_pageviews_count', true);
+            update_post_meta($page_id, 'burst_total_pageviews_count', $count + 1 );
+        }
 
 		return 'success';
 	}
@@ -856,7 +862,6 @@ if ( ! function_exists( 'burst_update_statistic' ) ) {
 	function burst_update_statistic( $data ) {
 		global $wpdb;
 		$data = burst_remove_empty_values( $data );
-
 		// Ensure 'ID' is present for update
 		if ( ! isset( $data['ID'] ) ) {
 			burst_error_log( 'Missing ID for statistic update. Data: ' . print_r( $data, true ) );
@@ -956,6 +961,10 @@ if ( ! function_exists( 'burst_remove_empty_values' ) ) {
 			if ( $value === null || $value === '' ) {
 				unset( $data[ $key ] );
 			}
+
+            if ( strpos($key, '_id') !== false && $value === 0 ) {
+                unset($data[$key]);
+            }
 		}
 		unset( $data['host'] );
 		return $data;

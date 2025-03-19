@@ -96,7 +96,7 @@ $burst_integrations_list = apply_filters( 'burst_integrations', array(
 	'easy-digital-downloads-recurring' => array(
 		'constant_or_function' => 'EDD_RECURRING_VERSION',
 		'label'                => 'Easy Digital Downloads - Recurring Payments',
-		'goals' =>
+		'goals' => [
 		[
 			'id' => 'edd_subscription_post_create',
 			'type' => 'hook',
@@ -113,7 +113,7 @@ $burst_integrations_list = apply_filters( 'burst_integrations', array(
 			'url' => '*',
 			'hook' => 'edd_subscription_cancelled',
 		],
-
+        ],
 	),
 	'wp-simple-pay' => [],
 	'charitable' => [],
@@ -226,12 +226,17 @@ $burst_integrations_list = apply_filters( 'burst_integrations', array(
 )
 );
 
-add_action('admin_init', 'burst_load_integrations_translations');
+//we can't use admin_init, as it doesn't run in a rest_api request
+//these translations are purely used for the react UX, so need to load on rest requests.
+add_action('init', 'burst_load_integrations_translations');
 /**
  * To prevent warnings, the translations only can be loaded after the plugins_loaded hook.
  * @return void
  */
 function burst_load_integrations_translations(){
+    if ( !burst_is_logged_in_rest() ) {
+        return;
+    }
     global $burst_integrations_list;
     $translations = [
         'elementor' => array(
@@ -281,11 +286,11 @@ function burst_load_integrations_translations(){
                     'title'=> "Easy Digital Downloads - " . __('Subscription Created', 'burst-statistics'),
                     'description' => __('Runs after creating a subscription', 'burst-statistics'),
                 ],
-            [
-                'id' => 'edd_subscription_cancelled',
-                'title'=> "Easy Digital Downloads - " . __('Subscription Cancelled', 'burst-statistics'),
-                'description' => __('Runs after cancelling a subscription', 'burst-statistics'),
-            ],
+                [
+                    'id' => 'edd_subscription_cancelled',
+                    'title'=> "Easy Digital Downloads - " . __('Subscription Cancelled', 'burst-statistics'),
+                    'description' => __('Runs after cancelling a subscription', 'burst-statistics'),
+                ],
 
         ),
         // Contact from plugins
@@ -372,9 +377,8 @@ function burst_integration_plugin_is_active( $plugin ): bool {
 	$theme = wp_get_theme();
 	$details = $burst_integrations_list[ $plugin ];
 	if ( ! isset( $details['constant_or_function'] ) ) {
-		return false;
+        return false;
 	}
-
 	return defined( $details['constant_or_function'] )
 	         || function_exists( $details['constant_or_function'] )
 	         || class_exists( $details['constant_or_function'] )

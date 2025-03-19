@@ -94,6 +94,8 @@ create_rc_zip() {
     "--exclude=languages/*.po~" #loco translate backup files
     "--exclude=/node_modules/"
     "--exclude=/settings/node_modules/"
+    "--exclude=/src/Admin/App/node_modules/"
+    "--exclude=/src/Admin/Dashboard_Widget/node_modules/"
     "--exclude=/dashboard-widget/node_modules/"
     "--exclude=/mailer/maizzle/node_modules/"
   )

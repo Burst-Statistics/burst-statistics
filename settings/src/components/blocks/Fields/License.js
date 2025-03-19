@@ -51,6 +51,9 @@ const License = ( props ) => {
 
 			doAction( 'activate_license', data ).then( ( response ) => {
                 setLicenseStatus( response.licenseStatus );
+                const tasks = response.notices;
+                //convert tasks to array
+
                 setNotices( response.notices );
             });
         }

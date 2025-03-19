@@ -26,24 +26,24 @@ if ( ! class_exists( 'burst_goals' ) ) {
 
 		/**
 		 * Get predefined goals from the integrations list
-		 *
+		 * @param bool $skip_active_check // skip checking if the plugin is active.
 		 * @return array
 		 */
-		public function get_predefined_goals(): array {
+		public function get_predefined_goals( $skip_active_check = false ): array {
 			global $burst_integrations_list;
+
 			$predefined_goals = [];
 			foreach ( $burst_integrations_list as $plugin => $details ) {
 				if ( ! isset( $details['goals'] ) ) {
 					continue;
 				}
 
-				if ( ! burst_integration_plugin_is_active( $plugin, true ) ) {
-					continue;
+				if ( !$skip_active_check && ! burst_integration_plugin_is_active( $plugin, true ) ) {
+                    continue;
 				}
 
 				$predefined_goals = array_merge( $details['goals'], $predefined_goals );
 			}
-
 			return $predefined_goals;
 		}
 
@@ -124,31 +124,30 @@ if ( ! class_exists( 'burst_goals' ) ) {
 
 add_action( 'burst_install_tables', 'burst_install_goals_table', 10 );
 function burst_install_goals_table() {
-	if ( get_option( 'burst_goals_db_version' ) !== burst_version ) {
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-		global $wpdb;
-		$charset_collate = $wpdb->get_charset_collate();
-		$table_name      = $wpdb->prefix . 'burst_goals';
-		$sql             = "CREATE TABLE $table_name (
-			`ID` int NOT NULL AUTO_INCREMENT,
-            `title` varchar(255) NOT NULL,
-            `type` varchar(30) NOT NULL,
-            `status` varchar(30) NOT NULL,
-            `server_side` tinyint NOT NULL,
-            `url` varchar(255) NOT NULL,
-            `conversion_metric` varchar(255) NOT NULL,
-            `date_created` int NOT NULL,
-            `date_start` int NOT NULL,
-            `date_end` int NOT NULL,
-            `attribute` varchar(255) NOT NULL,
-            `attribute_value` varchar(255) NOT NULL,
-            `hook` varchar(255) NOT NULL,
-              PRIMARY KEY  (ID)
-            ) $charset_collate;";
-		dbDelta( $sql );
+    global $wpdb;
+    $charset_collate = $wpdb->get_charset_collate();
+    $table_name = $wpdb->prefix . 'burst_goals';
+    $sql = "CREATE TABLE $table_name (
+        `ID` int NOT NULL AUTO_INCREMENT,
+        `title` varchar(255) NOT NULL,
+        `type` varchar(30) NOT NULL,
+        `status` varchar(30) NOT NULL,
+        `server_side` tinyint NOT NULL,
+        `url` varchar(255) NOT NULL,
+        `conversion_metric` varchar(255) NOT NULL,
+        `date_created` int NOT NULL,
+        `date_start` int NOT NULL,
+        `date_end` int NOT NULL,
+        `attribute` varchar(255) NOT NULL,
+        `attribute_value` varchar(255) NOT NULL,
+        `hook` varchar(255) NOT NULL,
+        PRIMARY KEY (ID)
+    ) $charset_collate;";
 
-		// insert default goal
-		update_option( 'burst_goals_db_version', burst_version, false );
-	}
+    $result = dbDelta($sql);
+    if ( !empty($wpdb->last_error) ) {
+        burst_error_log("Error creating goals table: " . $wpdb->last_error);
+    }
 }

@@ -10,6 +10,44 @@ if ( ! function_exists( 'burst_is_logged_in_rest' ) ) {
 	}
 }
 
+if ( !function_exists( 'burst_add_index') ) {
+    function burst_add_index( string $table_name, array $indexes ): void
+    {
+        global $wpdb;
+        if ( !burst_user_can_manage() ) {
+            return;
+        }
+
+        $indexes = array_map( 'sanitize_key', $indexes );
+        $table_name = esc_sql(sanitize_key($table_name));
+        $index = esc_sql(implode(', ', $indexes));
+        $index_name = esc_sql(implode('_', $indexes).'_index');
+        $sql = $wpdb->prepare("SHOW INDEX FROM $table_name WHERE Key_name = %s", $index_name );
+        $result = $wpdb->get_results($sql);
+        $index_exists = !empty($result);
+        if ( !$index_exists ) {
+            $sql = "ALTER TABLE $table_name ADD INDEX $index_name ($index)";
+            $wpdb->query($sql);
+            if ( $wpdb->last_error ) {
+                burst_error_log("Error creating index $index_name in $table_name: " . $wpdb->last_error);
+                // If the error is about key length, try with reduced length
+                if ( str_contains($wpdb->last_error, 'Specified key was too long') ) {
+                    // Remove the original index
+                    $drop_sql = "ALTER TABLE $table_name DROP INDEX $index_name";
+                    $wpdb->query($drop_sql);
+
+                    // Try with reduced length
+                    $reduced_sql = "ALTER TABLE $table_name ADD INDEX $index_name ($index(100))";
+                    $wpdb->query($reduced_sql);
+                    if ($wpdb->last_error) {
+                        burst_error_log("Error creating reduced length sessions index: " . $wpdb->last_error);
+                    }
+                }
+            }
+        }
+    }
+}
+
 if ( ! function_exists( 'burst_admin_logged_in' ) ) {
 	function burst_admin_logged_in() {
 		return ( is_admin() && is_user_logged_in() && burst_user_can_view() )

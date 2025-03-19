@@ -6,10 +6,8 @@ if ( ! class_exists( 'burst_summary' ) ) {
 		function __construct() {
 			add_action( 'burst_every_hour', array( $this, 'update_summary_table_today' ) );
 			add_action( 'burst_weekly', array( $this, 'update_is_high_traffic' ) );
-			add_action( 'burst_daily', array( $this, 'update_post_meta' ) );
-			add_action( 'burst_upgrade_post_meta', array( $this, 'update_post_meta' ) );
 			add_filter( 'burst_do_action', array( $this, 'refresh_data' ), 10, 3 );
-			add_filter( 'burst_notices', array( $this, 'add_cron_warning'));
+			add_filter( 'burst_tasks', array( $this, 'add_cron_warning'));
 
 			if ( defined( 'BURST_RESTART_SUMMARY_UPGRADE' ) && BURST_RESTART_SUMMARY_UPGRADE ) {
 				$this->restart_update_summary_table_alltime();
@@ -23,30 +21,25 @@ if ( ! class_exists( 'burst_summary' ) ) {
 		 * @return array
 		 */
 		public function add_cron_warning( $warnings ){
-			//if this option is still here, don't add the warning just yet.
-			if ( $this->cron_active() ) {
-				return $warnings;
-			}
-
 			if ( !$this->is_high_traffic() ) {
 				return $warnings;
 			}
 
-			$warnings['cron']  = array(
-				'callback' => '_true_',
-				'status' => 'all',
-				'output' => array(
-					'true' => array(
-						'msg' => __( 'Because your cron has not been triggered more than 24 hours, Burst has stopped using the summary tables, which allow the dashboard to load faster.', 'burst-statistics' ),
-						'icon' => 'warning',
-						'url'          => burst_get_website_url('/instructions/cron-error/', [
-							'burst_source' => 'notices',
-							'burst_content ' => 'cron-error'
-						]),
-						'dismissible' => true,
-					),
-				),
-			);
+
+			$warnings[]  = [
+                'id' => 'cron',
+				'condition' => [
+                    'type' => 'serverside',
+                    'function' => '!BURST()->summary->cron_active',
+                ],
+                'msg' => __( 'Because your cron has not been triggered more than 24 hours, Burst has stopped using the summary tables, which allow the dashboard to load faster.', 'burst-statistics' ),
+                'icon' => 'warning',
+                'url'          => burst_get_website_url('/instructions/cron-error/', [
+                    'burst_source' => 'notices',
+                    'burst_content ' => 'cron-error'
+                ]),
+                'dismissible' => true,
+			];
 
 
 			return $warnings;
@@ -195,7 +188,11 @@ if ( ! class_exists( 'burst_summary' ) ) {
 			$last_cron_hit = get_option( 'burst_last_cron_hit', 0 );
 			$diff = $now - $last_cron_hit;
 
-			return $diff <= DAY_IN_SECONDS;
+			$cron_active = $diff <= DAY_IN_SECONDS;
+            if ( $cron_active ) {
+                BURST()->tasks->dismiss_task('cron');
+            }
+            return $cron_active;
 		}
 
 		/**
@@ -439,50 +436,6 @@ if ( ! class_exists( 'burst_summary' ) ) {
 
 			delete_transient( 'burst_updating_summary_table' );
 			return true;
-		}
-
-		/**
-		 * Update the summary table for one day.
-		 *
-		 * */
-		public function update_post_meta( ) {
-			if ( defined( 'BURST_HEADLESS' ) || burst_get_option( 'headless' ) ) {
-				return;
-			}
-
-			$days_offset = 1;
-			$chunk = 50;
-			global $wpdb;
-			$today = BURST()->statistics->convert_unix_to_date( strtotime( 'today' ) );
-			// deduct days offset in days
-			if ( $days_offset > 0 ) {
-				$today = BURST()->statistics->convert_unix_to_date( strtotime( $today . ' -' . $days_offset . ' days' ) );
-			}
-			$offset = (int) get_option('burst_post_meta_offset', 0);
-			//if this is the update for yesterday, we also update the postmeta values for each post that has changed.
-
-			//get all posts that have received visits yesterday from the summary table
-			$sql  = "select * from {$wpdb->prefix}burst_summary where date = %s and page_url != 'burst_day_total' LIMIT $chunk OFFSET %d";
-			$pages = $wpdb->get_results( $wpdb->prepare( $sql, $today, $offset ) );
-			$pages = is_array($pages) ? $pages : [];
-			$offset += $chunk;
-			if ( count ( $pages ) === 0 ) {
-				delete_option('burst_post_meta_offset');
-				wp_clear_scheduled_hook("burst_upgrade_post_meta");
-			} else {
-				update_option('burst_post_meta_offset', $offset, false);
-				wp_schedule_single_event(time() + MINUTE_IN_SECONDS , 'burst_upgrade_post_meta' );
-				foreach ( $pages  as $page ) {
-					$url = home_url() . $page->page_url;
-					$post_id = url_to_postid($url);
-					if ( $post_id === 0 ) {
-						continue;
-					}
-					$count = (int) get_post_meta($post_id, 'burst_total_pageviews_count', true);
-					$count += (int) $page->pageviews;
-					update_post_meta($post_id, 'burst_total_pageviews_count', $count);
-				}
-			}
 		}
 	}
 }

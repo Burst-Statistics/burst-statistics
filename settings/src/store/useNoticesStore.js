@@ -14,11 +14,11 @@ const useNotices = create( ( set, get ) => ({
     set( state => ({ filter }) );
   },
   filterNotices: () => {
-  let filteredNotices = [];
+    let filteredNotices = [];
 
     // loop trough notices and remove the ones that are not open
     get().notices.map( ( notice, i ) => {
-      if ( 'completed' !== notice.output.icon ) {
+      if ( 'completed' !== notice.icon ) {
         filteredNotices.push( notice );
       }
     });
@@ -26,9 +26,11 @@ const useNotices = create( ( set, get ) => ({
   },
   getNotices: async() => {
     try {
-      const { notices } = await burst_api.doAction( 'notices' );
+      const { tasks } = await burst_api.doAction( 'tasks' );
+      //convert notices object to array
+      const noticesArray = Object.values(tasks);
       set( state => ({
-        notices: notices,
+        notices: noticesArray,
         loading: false
       }) );
       get().filterNotices();
@@ -42,7 +44,7 @@ const useNotices = create( ( set, get ) => ({
       return notice.id !== noticeId;
     });
     set( state => ({ notices: notices }) );
-
+    get().filterNotices();
     await burst_api.doAction( 'dismiss_task', {id: noticeId}).then( ( response ) => {
 
       // error handling

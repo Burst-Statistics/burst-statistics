@@ -20,7 +20,7 @@ if ( ! class_exists( 'burst_db_upgrade' ) ) {
 			add_action( 'burst_daily', array( $this, 'upgrade' ) );
 			add_action( 'admin_init', array( $this, 'maybe_fire_upgrade' ) );
 			add_action( "burst_upgrade_iteration", array( $this, "upgrade" ) );
-			add_filter( 'burst_notices', array( $this, 'add_progress_notice' ) );
+			add_filter( 'burst_tasks', array( $this, 'add_progress_notice' ) );
 		}
 
 		/**
@@ -45,34 +45,43 @@ if ( ! class_exists( 'burst_db_upgrade' ) ) {
 			$progress = $this->get_progress();
 			if ( $progress < 100 ) {
 				$progress                     = round( $progress, 2 );
-				$warnings['upgrade_progress'] = array(
-					'callback' => '_true_',
+				$warnings[] = [
+                    'id' => 'upgrade_progress',
+                    'condition'  => [
+                        'type' => 'serverside',
+                        'function' => '!BURST()->db_upgrade->progress_complete'
+                    ],
 					'status'   => 'all',
-					'output'   => array(
-						'true' => array(
-							'msg'         => burst_sprintf(
-							                 // translators: %s: progress of the upgrade.
-								                 __( 'An upgrade is running in the background, and is currently at %s.', 'burst-statistics' ),
-								                 $progress . '%'
-							                 ) . ' ' .
-							                 __( 'For large databases this process may take a while. Your data will be tracked as usual.', 'burst-statistics' ),
-							'icon'        => 'open',
-							'dismissible' => false,
-						),
-					),
-				);
+                    'msg'         => burst_sprintf(
+                                     // translators: %s: progress of the upgrade.
+                                         __( 'An upgrade is running in the background, and is currently at %s.', 'burst-statistics' ),
+                                         $progress . '%'
+                                     ) . ' ' .
+                                     __( 'For large databases this process may take a while. Your data will be tracked as usual.', 'burst-statistics' ),
+                    'icon'        => 'open',
+                    'dismissible' => false,
+				];
 			}
 
 			return $warnings;
 		}
 
+        /**
+         * If there is any upgrade running
+         *
+         * @return bool
+         */
+        public function progress_complete(): bool
+        {
+            return $this->get_progress() >= 100;
+        }
 		/**
 		 * Get progress of the upgrade process
 		 *
 		 * @return float|int
 		 */
 		public function get_progress() {
-			$total_upgrades     = $this->get_db_upgrades('1.7.1');
+			$total_upgrades     = $this->get_db_upgrades(burst_version );
 			$remaining_upgrades = $total_upgrades;
 			// check if all upgrades are done.
 			$count_remaining_upgrades = 0;
@@ -91,7 +100,7 @@ if ( ! class_exists( 'burst_db_upgrade' ) ) {
 			$intermediate         = reset( $intermediates );
 			$count_total_upgrades = count( $total_upgrades );
 			// upgrade percentage for one upgrade is 100 / total upgrades.
-			$upgrade_percentage_one_upgrade = 100 / $count_total_upgrades;
+			$upgrade_percentage_one_upgrade = $count_total_upgrades === 0 ? 100 : 100 / $count_total_upgrades;
 			if ( $intermediate ) {
 				$intermediate_percentage = $intermediate * $upgrade_percentage_one_upgrade;
 			}
@@ -148,6 +157,9 @@ if ( ! class_exists( 'burst_db_upgrade' ) ) {
 					}
 				}
 			}
+
+            //ensure that the tasks get updated with the continuing upgrade process
+            BURST()->tasks->schedule_task_validation();
 
 			// only one upgrade at a time
 			if ( 'bounces' === $do_upgrade ) {
