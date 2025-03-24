@@ -732,7 +732,7 @@ function burst_get_data( WP_REST_Request $request ) {
     
 
     // possible args
-    $available_args = ['filters', 'metrics', 'group_by'];
+    $available_args = ['filters', 'metrics', 'group_by', 'goal_id'];
     // check for args from $request->get_param( 'filters') etc. and add to $args
     foreach ($available_args as $arg) {
         if ($request->get_param($arg)) {
@@ -750,11 +750,11 @@ function burst_get_data( WP_REST_Request $request ) {
 			$data = BURST()->statistics->get_today_data( $args );
 			break;
 		case 'goals':
-			$args['goal_id'] = $request_args['goal_id'] ?? 0;
+            $args['goal_id'] = $args['goal_id'] ?? 0;
 			$data            = BURST()->goal_statistics->get_goals_data( $args );
 			break;
 		case 'live-goals':
-			$args['goal_id'] = $request_args['goal_id'] ?? 0;
+			$args['goal_id'] = $args['goal_id'] ?? 0;
 			$data            = BURST()->goal_statistics->get_live_goals_data( $args );
 			break;
 		case 'insights':
@@ -1104,9 +1104,11 @@ function burst_rest_api_goals_set( $request, $ajax_data = false ) {
 	if ( ! burst_user_can_manage() ) {
 		return new WP_Error( 'rest_forbidden', 'You do not have permission to perform this action.', array( 'status' => 403 ) );
 	}
+
 	$data  = $ajax_data ?: $request->get_json_params();
 	$nonce = $data['nonce'];
 	$goals = $data['goals'];
+
 	// get the nonce
 	if ( ! burst_verify_nonce( $nonce, 'burst_nonce' ) ) {
 		return new WP_Error( 'rest_invalid_nonce', 'The provided nonce is not valid.', array( 'status' => 400 ) );

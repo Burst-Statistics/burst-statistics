@@ -10,6 +10,33 @@ if ( ! function_exists( 'burst_is_logged_in_rest' ) ) {
 	}
 }
 
+if ( !function_exists( 'burst_maybe_update_total_pageviews_count')) {
+    function burst_maybe_update_total_pageviews_count()
+    {
+        //we don't do this on high traffic sites.
+        if ( get_option( 'burst_is_high_traffic_site') ) {
+            return;
+        }
+        
+        $page_views_to_update = get_option('burst_pageviews_to_update', array());
+        if (empty($page_views_to_update)) {
+            return;
+        }
+
+        //clean up first.
+        update_option('burst_pageviews_to_update', []);
+        foreach ($page_views_to_update as $page_url => $added_count) {
+            $page_id = url_to_postid($page_url);
+            unset($page_views_to_update[$page_url]);
+            if ($page_id) {
+                $count = (int)get_post_meta($page_id, 'burst_total_pageviews_count', true);
+                update_post_meta($page_id, 'burst_total_pageviews_count', $count + $added_count);
+            }
+        }
+    }
+    add_action('burst_every_hour', 'burst_maybe_update_total_pageviews_count');
+}
+
 if ( !function_exists( 'burst_add_index') ) {
     function burst_add_index( string $table_name, array $indexes ): void
     {

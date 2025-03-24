@@ -172,11 +172,17 @@ if ( ! function_exists( 'burst_track_hit' ) ) {
 			}
 		}
 
-        // update total pageviews count
-        $page_id = url_to_postid( $sanitized_data['page_url'] );
-        if ( $page_id ) {
-            $count = (int) get_post_meta($page_id, 'burst_total_pageviews_count', true);
-            update_post_meta($page_id, 'burst_total_pageviews_count', $count + 1 );
+        // update total pageviews count, but not on high traffic, as it is too performance heavy on the server.
+        if ( !get_option( 'burst_is_high_traffic_site') ) {
+            $page_url = isset($sanitized_data['page_url']) ? esc_url_raw($sanitized_data['host'] . $sanitized_data['page_url']) : '';
+            $page_views_to_update = get_option('burst_pageviews_to_update', array());
+            if (!in_array($page_url, $page_views_to_update)) {
+                $page_views_to_update[$page_url] = 1;
+            } else {
+                $page_views_to_update[$page_url]++;
+            }
+
+            update_option('burst_pageviews_to_update', $page_views_to_update);
         }
 
 		return 'success';

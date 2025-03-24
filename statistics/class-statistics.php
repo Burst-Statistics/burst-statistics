@@ -1374,7 +1374,7 @@ if ( ! class_exists( 'burst_statistics' ) ) {
 			$page_url = str_replace( home_url(), '', $page_url );
 			$sql = $this->get_sql_table($date_start, $date_end, ['pageviews'], ['page_url' => $page_url] );
 			global $wpdb;
-			$data = $wpdb->get_row( $sql, ARRAY_A );
+			$data = $wpdb->get_row( $sql );
 			if ( $data && isset($data->pageviews)) {
 				return (int) $data->pageviews;
 			}
