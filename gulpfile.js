@@ -54,9 +54,16 @@ function jsTask( cb ) {
 }
 exports.js = jsTask;
 
+function watchTask( cb ) {
+  gulp.watch( './assets/css/**/*.scss', { ignoreInitial: false }, scssTask );
+  gulp.watch( './assets/js/src/*.js', { ignoreInitial: false }, jsTask );
+  cb();
+}
+exports.watch = watchTask;
+
 function defaultTask( cb ) {
   gulp.watch( './assets/css/**/*.scss', { ignoreInitial: false }, scssTask );
-  gulp.watch( './assets/js/**/*.js', { ignoreInitial: false }, jsTask );
+  gulp.watch( './assets/js/src/*.js', { ignoreInitial: false }, jsTask );
   spawn( 'npm', [ 'start' ], { cwd: 'settings', stdio: 'inherit' });
   cb();
 }

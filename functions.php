@@ -574,29 +574,6 @@ if ( ! function_exists( 'burst_get_beacon_url' ) ) {
 	}
 }
 
-if ( ! function_exists( 'burst_get_tracking_options' ) ) {
-	/**
-	 * Get tracking options for the localize_script and custom burst.js functions
-	 *
-	 * @return array
-	 */
-	function burst_get_tracking_options(): array {
-		return [
-			'cookie_retention_days' => 30,
-			'beacon_url'            => burst_get_beacon_url(),
-			'options'               => [
-				'beacon_enabled'             => (int) burst_tracking_status_beacon(),
-				'enable_cookieless_tracking' => (int) burst_get_option( 'enable_cookieless_tracking' ),
-				'enable_turbo_mode'          => (int) burst_get_option( 'enable_turbo_mode' ),
-				'do_not_track'               => (int) burst_get_option( 'enable_do_not_track' ),
-				'track_url_change'           => (int) burst_get_option( 'track_url_change' ),
-			],
-			'goals'                 => burst_get_active_goals(),
-			'goals_script_url'      => burst_get_goals_script_url(),
-		];
-	}
-}
-
 if ( ! function_exists( 'burst_upload_dir' ) ) {
 	/**
 	 * Get the upload dir

@@ -727,19 +727,9 @@ if ( ! class_exists( 'burst_db_upgrade' ) ) {
 
 			// check if all columns have been dropped.
 			if ( $success ) {
-				$completed = true;
-				foreach ( $drop_columns as $drop_column ) {
-					if ( in_array( $drop_column, $columns, true ) ) {
-						$completed = false;
-					}
-				}
-				if ( $completed ) {
-					delete_option( 'burst_db_upgrade_upgrade_lookup_tables_drop_columns' );
-				}
+                delete_option( 'burst_db_upgrade_upgrade_lookup_tables_drop_columns' );
 			}
 		}
-
-
 		private function upgrade_drop_page_id_column() {
 			if ( ! burst_admin_logged_in() ) {
 				return;

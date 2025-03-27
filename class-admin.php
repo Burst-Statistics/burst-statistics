@@ -361,7 +361,7 @@ if ( ! class_exists( 'burst_admin' ) ) {
 			$cookieless_text = $cookieless == '1' ? '-cookieless' : '';
 			$localize_args = apply_filters(
 				'burst_tracking_options',
-				burst_get_tracking_options()
+				BURST()->frontend->get_tracking_options()
 			);
 
 			$js = '';

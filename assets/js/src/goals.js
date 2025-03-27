@@ -7,16 +7,16 @@ const burst_goals_setup = () => {
 
   // loop through goals and remove any that don't match the current path or
   // don't have a path
-  for ( let i = 0; i < burst.goals.length; i++ ) {
-    let goal = burst.goals[i];
+  for ( let i = 0; i < burst.goals.active.length; i++ ) {
+    let goal = burst.goals.active[i];
     if ( goal.url && ( goal.url !== window.location.pathname && '*' !== goal.url ) ) {
-      burst.goals.splice( i, 1 );
+      burst.goals.active.splice( i, 1 );
     }
   }
 
   // loop through all goals and setup event listeners
-  for ( let i = 0; i < burst.goals.length; i++ ) {
-    let goal = burst.goals[i];
+  for ( let i = 0; i < burst.goals.active.length; i++ ) {
+    let goal = burst.goals.active[i];
     switch ( goal.type ) {
       case 'views':
         burst_setup_viewport_tracker( goal );
@@ -35,12 +35,17 @@ const burst_goals_setup = () => {
  * Check if any goals are in the viewport.
  */
 const handle_viewport_goals = () => {
-  viewportGoals.forEach( ( goalData, index ) => {
-    if ( burst_is_element_in_viewport( goalData.element ) ) {
-      burst_goal_triggered( goalData.goal );
+
+  // Create a copy of the array to avoid modification during iteration
+  [...viewportGoals].forEach((goalData, index) => {
+    if (burst_is_element_in_viewport(goalData.element)) {
+      burst_goal_triggered(goalData.goal);
 
       // Remove the goal from the viewportGoals array
-      viewportGoals.splice( index, 1 );
+      const actualIndex = viewportGoals.findIndex(g => g.goal.ID === goalData.goal.ID);
+      if (actualIndex !== -1) {
+        viewportGoals.splice(actualIndex, 1);
+      }
     }
   });
 };
@@ -49,24 +54,21 @@ const handle_viewport_goals = () => {
  * Setup a viewport tracker for a goal.
  * @param goal
  */
-const burst_setup_viewport_tracker = ( goal ) => {
-  if ( 0 === goal.attribute_value.length ) {
+const burst_setup_viewport_tracker = (goal) => {
+  if (0 === goal.attribute_value.length) {
     return;
   }
 
   let selector = 'id' === goal.attribute ? '#' : '.';
-  let elements = document.querySelectorAll( selector + goal.attribute_value );
+  let elements = document.querySelectorAll(selector + goal.attribute_value);
 
-  for ( let i = 0; i < elements.length; i++ ) {
+  for (let i = 0; i < elements.length; i++) {
     let element = elements[i];
 
     // Check if already in viewport
-    if ( burst_is_element_in_viewport( element ) ) {
-      burst_goal_triggered( goal );
-
-      // remove from list of elements to monitor
+    if (burst_is_element_in_viewport(element)) {
+      burst_goal_triggered(goal);
     } else {
-
       // Add to our list of elements to monitor
       viewportGoals.push({element, goal});
     }
@@ -157,12 +159,15 @@ const burst_recursive_trigger_check = ( target, goal ) => {
  * @param goal
  */
 const burst_goal_triggered = ( goal ) => {
-
   // if burst_completed_goals does not contain goal.id, add it
-  if ( -1 === burst_completed_goals.indexOf( goal.ID ) ) {
-    burst_completed_goals.push( goal.ID );
-    viewportGoals = viewportGoals.filter( goalData => goalData.goal.ID !== goal.ID );
+  const goalId = parseInt(goal.ID, 10);
+  if ( -1 === burst.goals.completed.indexOf( goalId ) ) {
+    burst.goals.completed.push( goalId );
+    viewportGoals = viewportGoals.filter( goalData => parseInt(goalData.goal.ID, 10) !== goalId );
   }
+
+  // send update to server
+  burst_update_hit( false, true);
 };
 
 /**

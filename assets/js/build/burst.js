@@ -1,17 +1,43 @@
 // TimeMe.js should be loaded and running to track time as soon as it is loaded.
-let burst_track_hit_running = false;
-let burst_initial_track_hit = false;
-let burst_update_hit_count = 0;
-let burst_cookieless_option = burst.options.enable_cookieless_tracking; // User
-                                                                        // cookieless
-                                                                        // option
-// add option to window so a consent plugin can change this value
-window.burst_enable_cookieless_tracking = burst.options.enable_cookieless_tracking; // Consent plugin cookieless option
-let burst_page_url = window.location.href;
-let burst_completed_goals = [];
-let burst_goals_script_url = burst.goals_script_url ?
-    burst.goals_script_url :
-    './burst-goals.js';
+/**
+ * @typedef {Object} BurstOptions
+ * @property {boolean} enable_cookieless_tracking
+ * @property {boolean} beacon_enabled
+ * @property {boolean} do_not_track
+ * @property {boolean} enable_turbo_mode
+ * @property {boolean} track_url_change
+ * @property {string} pageUrl
+ * @property {boolean} cookieless
+ */
+
+/**
+ * @typedef {Object} BurstState
+ * @property {Object} tracking
+ * @property {boolean} tracking.isInitialHit
+ * @property {number} tracking.lastUpdateTimestamp
+ * @property {BurstOptions} options
+ * @property {Object} goals
+ * @property {number[]} goals.completed
+ * @property {string} goals.scriptUrl
+ * @property {Array} goals.active
+ * @property {Object} cache
+ * @property {string|null} cache.uid
+ * @property {string|null} cache.fingerprint
+ * @property {boolean|null} cache.isUserAgent
+ * @property {boolean|null} cache.isDoNotTrack
+ * @property {boolean|null} cache.useCookies
+ */
+
+// Cast goal IDs to integers in the burst object
+if (burst.goals && burst.goals.active) {
+  burst.goals.active = burst.goals.active.map(goal => ({
+    ...goal,
+    ID: parseInt(goal.ID, 10)
+  }));
+}
+if (burst.goals && burst.goals.completed) {
+  burst.goals.completed = burst.goals.completed.map(id => parseInt(id, 10));
+}
 
 // Set up a promise for when the page is activated,
 // which is needed for prerendered pages.
@@ -28,15 +54,15 @@ const pageIsRendered = new Promise( ( resolve ) => {
  * @returns {Promise<void>}
  */
 const burst_import_goals = async() => {
-  const goals = await import( burst_goals_script_url );
+  const goals = await import( burst.goals.scriptUrl );
   goals.default();
 };
 
 // If has goals and a goal has this page_url, import
-if ( 0 < burst.goals.length ) {
-  for ( let i = 0; i < burst.goals.length; i++ ) {
-    if ( '' !== burst.goals[i].page_url || burst.goals[i].page_url ===
-        burst_page_url ) {
+if ( burst.goals.active && burst.goals.active.length > 0 ) {
+  for ( let i = 0; i < burst.goals.active.length; i++ ) {
+    if ( '' !== burst.goals.active[i].page_url || burst.goals.active[i].page_url ===
+        burst.options.pageUrl ) {
       burst_import_goals();
       break;
     }
@@ -80,7 +106,7 @@ let burst_set_cookie = ( name, value ) => {
   let domain = '';
   let secure = ';secure';
   let date = new Date();
-  let days = burst.cookie_retention_days;
+  let days = burst.options.cookie_retention_days;
   date.setTime( date.getTime() + ( days * 24 * 60 * 60 * 1000 ) );
   let expires = ';expires=' + date.toGMTString();
 
@@ -101,13 +127,15 @@ let burst_set_cookie = ( name, value ) => {
  * @returns {boolean}
  */
 let burst_use_cookies = () => {
-  if ( ! navigator.cookieEnabled ) {
-    return false;
-  } // cookies blocked by browser
-  if ( burst_cookieless_option && window.burst_enable_cookieless_tracking ) {
-    return false;
-  } // cookieless is enabled by user or consent plugin
-  return true; // cookies are enabled
+  // Return cached value if available
+  if (burst.cache.useCookies !== null) {
+    return burst.cache.useCookies;
+  }
+
+  const result = navigator.cookieEnabled && !burst.options.cookieless;
+  // Cache the result
+  burst.cache.useCookies = result;
+  return result;
 };
 
 /**
@@ -115,7 +143,7 @@ let burst_use_cookies = () => {
  * @returns {boolean}
  */
 function burst_enable_cookies() {
-  window.burst_enable_cookieless_tracking = 0;
+  burst.options.cookieless = false;
   if ( burst_use_cookies() ) {
     burst_uid().then( obj => {
       burst_set_cookie( 'burst_uid', obj.uid ); // set uid cookie
@@ -128,15 +156,24 @@ function burst_enable_cookies() {
  * @returns {Promise}
  */
 const burst_uid = () => {
-  return new Promise( ( resolve ) => {
-    burst_get_cookie( 'burst_uid' ).then( cookie_uid => {
-      resolve( cookie_uid );
-    }).catch( () => {
+  return new Promise((resolve) => {
+    // Return cached value if available
+    if (burst.cache.uid !== null) {
+      resolve(burst.cache.uid);
+      return;
+    }
 
+    burst_get_cookie('burst_uid').then(cookie_uid => {
+      // Cache the result
+      burst.cache.uid = cookie_uid;
+      resolve(cookie_uid);
+    }).catch(() => {
       // if no cookie, generate a uid and set it
       let uid = burst_generate_uid();
-      burst_set_cookie( 'burst_uid', uid );
-      resolve( uid );
+      burst_set_cookie('burst_uid', uid);
+      // Cache the result
+      burst.cache.uid = uid;
+      resolve(uid);
     });
   });
 };
@@ -158,7 +195,13 @@ let burst_generate_uid = () => {
  * @returns {Promise}
  */
 const burst_fingerprint = () => {
-  return new Promise( ( resolve, reject ) => {
+  return new Promise((resolve, reject) => {
+    // Return cached value if available
+    if (burst.cache.fingerprint !== null) {
+      resolve(burst.cache.fingerprint);
+      return;
+    }
+
     let browserTests = [
       'availableScreenResolution',
       'canvas',
@@ -182,12 +225,13 @@ const burst_fingerprint = () => {
       'webGl'
     ];
 
-    imprint.test( browserTests ).then( function( fingerprint ) {
-      resolve( fingerprint );
-    }).catch( ( error ) => {
-      reject( error );
+    imprint.test(browserTests).then(function(fingerprint) {
+      // Cache the result
+      burst.cache.fingerprint = fingerprint;
+      resolve(fingerprint);
+    }).catch((error) => {
+      reject(error);
     });
-
   });
 };
 
@@ -216,22 +260,40 @@ let burst_get_time_on_page = () => {
  * @returns {boolean}
  */
 let burst_is_user_agent = () => {
-  const botPattern = '(googlebot\/|bot|Googlebot-Mobile|Googlebot-Image|Google favicon|Mediapartners-Google|bingbot|slurp|java|wget|curl|Commons-HttpClient|Python-urllib|libwww|httpunit|nutch|phpcrawl|msnbot|jyxobot|FAST-WebCrawler|FAST Enterprise Crawler|biglotron|teoma|convera|seekbot|gigablast|exabot|ngbot|ia_archiver|GingerCrawler|webmon |httrack|webcrawler|grub.org|UsineNouvelleCrawler|antibot|netresearchserver|speedy|fluffy|bibnum.bnf|findlink|msrbot|panscient|yacybot|AISearchBot|IOI|ips-agent|tagoobot|MJ12bot|dotbot|woriobot|yanga|buzzbot|mlbot|yandexbot|purebot|Linguee Bot|Voyager|CyberPatrol|voilabot|baiduspider|citeseerxbot|spbot|twengabot|postrank|turnitinbot|scribdbot|page2rss|sitebot|linkdex|Adidxbot|blekkobot|ezooms|dotbot|Mail.RU_Bot|discobot|heritrix|findthatfile|europarchive.org|NerdByNature.Bot|sistrix crawler|ahrefsbot|Aboundex|domaincrawler|wbsearchbot|summify|ccbot|edisterbot|seznambot|ec2linkfinder|gslfbot|aihitbot|intelium_bot|facebookexternalhit|yeti|RetrevoPageAnalyzer|lb-spider|sogou|lssbot|careerbot|wotbox|wocbot|ichiro|DuckDuckBot|lssrocketcrawler|drupact|webcompanycrawler|acoonbot|openindexspider|gnam gnam spider|web-archive-net.com.bot|backlinkcrawler|coccoc|integromedb|content crawler spider|toplistbot|seokicks-robot|it2media-domain-crawler|ip-web-crawler.com|siteexplorer.info|elisabot|proximic|changedetection|blexbot|arabot|WeSEE:Search|niki-bot|CrystalSemanticsBot|rogerbot|360Spider|psbot|InterfaxScanBot|Lipperhey SEO Service|CC Metadata Scaper|g00g1e.net|GrapeshotCrawler|urlappendbot|brainobot|fr-crawler|binlar|SimpleCrawler|Livelapbot|Twitterbot|cXensebot|smtbot|bnf.fr_bot|A6-Indexer|ADmantX|Facebot|Twitterbot|OrangeBot|memorybot|AdvBot|MegaIndex|SemanticScholarBot|ltx71|nerdybot|xovibot|BUbiNG|Qwantify|archive.org_bot|Applebot|TweetmemeBot|crawler4j|findxbot|SemrushBot|yoozBot|lipperhey|y!j-asr|Domain Re-Animator Bot|AddThis)';
-  let re = new RegExp( botPattern, 'i' );
-  let userAgent = navigator.userAgent;
+  // Return cached value if available
+  if (burst.cache.isUserAgent !== null) {
+    return burst.cache.isUserAgent;
+  }
 
-  return re.test( userAgent );
+  const botPattern = '(googlebot\/|bot|Googlebot-Mobile|Googlebot-Image|Google favicon|Mediapartners-Google|bingbot|slurp|java|wget|curl|Commons-HttpClient|Python-urllib|libwww|httpunit|nutch|phpcrawl|msnbot|jyxobot|FAST-WebCrawler|FAST Enterprise Crawler|biglotron|teoma|convera|seekbot|gigablast|exabot|ngbot|ia_archiver|GingerCrawler|webmon |httrack|webcrawler|grub.org|UsineNouvelleCrawler|antibot|netresearchserver|speedy|fluffy|bibnum.bnf|findlink|msrbot|panscient|yacybot|AISearchBot|IOI|ips-agent|tagoobot|MJ12bot|dotbot|woriobot|yanga|buzzbot|mlbot|yandexbot|purebot|Linguee Bot|Voyager|CyberPatrol|voilabot|baiduspider|citeseerxbot|spbot|twengabot|postrank|turnitinbot|scribdbot|page2rss|sitebot|linkdex|Adidxbot|blekkobot|ezooms|dotbot|Mail.RU_Bot|discobot|heritrix|findthatfile|europarchive.org|NerdByNature.Bot|sistrix crawler|ahrefsbot|Aboundex|domaincrawler|wbsearchbot|summify|ccbot|edisterbot|seznambot|ec2linkfinder|gslfbot|aihitbot|intelium_bot|facebookexternalhit|yeti|RetrevoPageAnalyzer|lb-spider|sogou|lssbot|careerbot|wotbox|wocbot|ichiro|DuckDuckBot|lssrocketcrawler|drupact|webcompanycrawler|acoonbot|openindexspider|gnam gnam spider|web-archive-net.com.bot|backlinkcrawler|coccoc|integromedb|content crawler spider|toplistbot|seokicks-robot|it2media-domain-crawler|ip-web-crawler.com|siteexplorer.info|elisabot|proximic|changedetection|blexbot|arabot|WeSEE:Search|niki-bot|CrystalSemanticsBot|rogerbot|360Spider|psbot|InterfaxScanBot|Lipperhey SEO Service|CC Metadata Scaper|g00g1e.net|GrapeshotCrawler|urlappendbot|brainobot|fr-crawler|binlar|SimpleCrawler|Livelapbot|Twitterbot|cXensebot|smtbot|bnf.fr_bot|A6-Indexer|ADmantX|Facebot|Twitterbot|OrangeBot|memorybot|AdvBot|MegaIndex|SemanticScholarBot|ltx71|nerdybot|xovibot|BUbiNG|Qwantify|archive.org_bot|Applebot|TweetmemeBot|crawler4j|findxbot|SemrushBot|yoozBot|lipperhey|y!j-asr|Domain Re-Animator Bot|AddThis)';
+  const re = new RegExp(botPattern, 'i');
+  const result = re.test(navigator.userAgent);
+  // Cache the result
+  burst.cache.isUserAgent = result;
+  return result;
 };
 
 let burst_is_do_not_track = () => {
-  if ( burst.options.do_not_track ) {
-
-    // check for doNotTrack and globalPrivacyControl headers
-    return '1' === navigator.doNotTrack || 'yes' === navigator.doNotTrack ||
-        '1' === navigator.msDoNotTrack || '1' === window.doNotTrack || 1 ===
-        navigator.globalPrivacyControl;
+  // Return cached value if available
+  if (burst.cache.isDoNotTrack !== null) {
+    return burst.cache.isDoNotTrack;
   }
-  return false;
+
+  if (!burst.options.do_not_track) {
+    burst.cache.isDoNotTrack = false;
+    return false;
+  }
+
+  // check for doNotTrack and globalPrivacyControl headers
+  const result = '1' === navigator.doNotTrack || 
+                 'yes' === navigator.doNotTrack ||
+                 '1' === navigator.msDoNotTrack || 
+                 '1' === window.doNotTrack || 
+                 1 === navigator.globalPrivacyControl;
+  
+  // Cache the result
+  burst.cache.isDoNotTrack = result;
+  return result;
 };
 
 /**
@@ -240,39 +302,48 @@ let burst_is_do_not_track = () => {
  * @returns {Promise<unknown>}
  */
 let burst_api_request = obj => {
-
-  // generate a new token every request
-  return new Promise( ( resolve, reject ) => {
-
-    // if browser supports sendBeacon use it
-    if ( burst.options.beacon_enabled ) {
-      const headers = {
-        type: 'application/json'
-      };
-      const blob = new Blob([ JSON.stringify( obj.data ) ], headers );
-      window.navigator.sendBeacon( burst.beacon_url, blob );
-      resolve( 'ok' );
+  return new Promise((resolve, reject) => {
+    if (burst.options.beacon_enabled) {
+      const headers = { type: 'application/json' };
+      const blob = new Blob([JSON.stringify(obj.data)], headers);
+      const success = window.navigator.sendBeacon(burst.beacon_url, blob);
+      if (!success) {
+        reject(new Error('Beacon request failed'));
+      } else {
+        resolve({ status: 200, data: 'ok' });
+      }
     } else {
-      let burst_token = 'token=' +
-          Math.random().toString( 36 ).replace( /[^a-z]+/g, '' ).substring( 0, 7 );
-
-      // if browser supports fetch keepalive, it will use it. Otherwise, it
-      // will use a normal XMLHttpRequest
+      const burst_token = 'token=' + Math.random().toString(36).replace(/[^a-z]+/g, '').substring(0, 7);
       wp.apiFetch({
         path: '/burst/v1/track/?' + burst_token,
         keepalive: true,
         method: 'POST',
         data: obj.data
-      }).then(
-          ( res ) => {
-            if ( 202 === res.status ) {
-              res.json().then(
-                  ( data ) => console.warn( data )
-              );
-            }
-          },
-          ( error ) => console.log( error )
-      );
+      })
+      .then(res => {
+        if (!res) {
+          throw new Error('No response received from server');
+        }
+        
+        // Handle both REST API and admin-ajax responses
+        const status = res.status || 200;
+        const data = res.data || res;
+        
+        if (status === 202 || status === 200) {
+          return { status, data };
+        }
+        
+        throw new Error(`Unexpected status: ${status}`);
+      })
+      .then(response => {
+        console.log('Burst API request completed successfully:', response);
+        resolve(response);
+      })
+      .catch(error => {
+        console.error('Burst API request failed:', error);
+        // Don't reject the promise, just log the error and resolve with a default response
+        resolve({ status: 200, data: 'ok' });
+      });
     }
   });
 };
@@ -283,7 +354,7 @@ let burst_api_request = obj => {
  * Also used for updating the UID (from fingerprint to a cookie)
  */
 
-async function burst_update_hit( update_uid = false ) {
+async function burst_update_hit( update_uid = false, force = false ) {
   await pageIsRendered;
   if ( burst_is_user_agent() ) {
     return;
@@ -291,14 +362,20 @@ async function burst_update_hit( update_uid = false ) {
   if ( burst_is_do_not_track() ) {
     return;
   }
-  if ( ! burst_initial_track_hit ) {
+  if ( burst.tracking.isInitialHit ) {
+    burst_track_hit();
     return;
   }
 
-  if ( burst_update_hit_count > 5 ) {
+  // Prevent updates if less than 300ms has passed since last update
+  if (!force && Date.now() - burst.tracking.lastUpdateTimestamp < 300) {
     return;
   }
-  burst_update_hit_count++;
+
+  if ( !force ) {
+    return;
+  }
+ 
 
   let event = new CustomEvent( 'burst_before_update_hit', {detail: burst});
   document.dispatchEvent( event );
@@ -308,7 +385,7 @@ async function burst_update_hit( update_uid = false ) {
     'uid': false,
     'url': location.href,
     'time_on_page': await burst_get_time_on_page(),
-    'completed_goals': burst_completed_goals
+    'completed_goals': burst.goals.completed
   };
 
   if ( update_uid ) {
@@ -327,9 +404,9 @@ async function burst_update_hit( update_uid = false ) {
     await burst_api_request({
       data: JSON.stringify( data )
     }).catch( error => {
-
-    }); // @todo handle error and send notice to the user. If multiple errors
-        // send to backend
+      // @todo handle error and send notice to the user. If multiple errors send to backend
+    });
+    burst.tracking.lastUpdateTimestamp = Date.now(); // Update the timestamp after successful request
   }
 }
 
@@ -340,11 +417,10 @@ async function burst_update_hit( update_uid = false ) {
 async function burst_track_hit() {
   await pageIsRendered;
 
-  if ( burst_initial_track_hit ) { // if the initial track hit has already been fired, we just update the hit
+  if ( ! burst.tracking.isInitialHit ) { // if the initial track hit has already been fired, we just update the hit
     burst_update_hit();
     return;
   }
-  burst_initial_track_hit = true;
 
   if ( burst_is_user_agent() ) {
     return;
@@ -352,11 +428,15 @@ async function burst_track_hit() {
   if ( burst_is_do_not_track() ) {
     return;
   }
-  if ( burst_track_hit_running ) {
+
+  burst.tracking.isInitialHit = false;
+
+  // Prevent updates if less than 300ms has passed since last update
+  const now = Date.now();
+  if (now - burst.tracking.lastUpdateTimestamp < 300) {
     return;
   }
 
-  burst_track_hit_running = true;
   let event = new CustomEvent( 'burst_before_track_hit', {detail: burst});
   document.dispatchEvent( event );
 
@@ -370,7 +450,7 @@ async function burst_track_hit() {
     'device_resolution': window.screen.width * window.devicePixelRatio + 'x' +
         window.screen.height * window.devicePixelRatio,
     'time_on_page': await burst_get_time_on_page(),
-    'completed_goals': burst_completed_goals
+    'completed_goals': burst.goals.completed
   };
 
   if ( burst_use_cookies() ) {
@@ -386,11 +466,11 @@ async function burst_track_hit() {
     method: 'POST',
     data: JSON.stringify( data )
   };
-  burst_api_request( request_params ).catch( error => {
-    burst_track_hit_running = false;
+  await burst_api_request( request_params ).catch( error => {
+    // Error handling if needed
   });
 
-  burst_track_hit_running = false;
+  burst.tracking.lastUpdateTimestamp = now;
 }
 
 /**
@@ -418,17 +498,15 @@ function burst_init_events() {
     burst_track_hit();
   }
 
-  // Update hit on visibility change (Navigating away from the page)
-  // Supported by most browsers
-  document.addEventListener( 'visibilitychange', function() {
-    if (
-        'hidden' === document.visibilityState ||
-        'unloaded' === document.visibilityState
 
-    ) {
+  // Don't debounce, because when navigating away we need to track this hit immediately
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden' || document.visibilityState === 'unloaded') {
       burst_update_hit();
     }
-  });
+  };
+
+  document.addEventListener( 'visibilitychange', handleVisibilityChange );
 
   // This is a fallback for Safari
   document.addEventListener( 'pagehide', burst_update_hit );
@@ -445,7 +523,7 @@ function burst_init_events() {
     if ( ! burst.options.track_url_change ) {
       return;
     }
-    burst_initial_track_hit = false;
+    burst.tracking.isInitialHit = true;
     burst_track_hit();
   };
 

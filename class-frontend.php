@@ -78,13 +78,14 @@ if ( ! class_exists( 'burst_frontend' ) ) {
 						$in_footer
 					);
 				} else {
+					$tracking_options = $this->get_tracking_options();
 					$minified        = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
-					$cookieless      = burst_get_option( 'enable_cookieless_tracking' );
+					$cookieless      = $tracking_options['options']['cookieless'];
 					$cookieless_text = $cookieless == '1' ? '-cookieless' : '';
 
 					$localize_args = apply_filters(
 						'burst_tracking_options',
-						burst_get_tracking_options()
+						$tracking_options						
 					);
 					wp_enqueue_script(
 						'burst',
@@ -101,6 +102,44 @@ if ( ! class_exists( 'burst_frontend' ) ) {
 				}
 			}
 		}
+
+		/**
+		 * Get tracking options for the localize_script and custom burst.js functions
+		 *
+		 * @return array
+		 */
+		public function get_tracking_options(): array {
+			return [
+				'tracking' => [
+					'isInitialHit' => true,
+					'lastUpdateTimestamp' => 0
+				],
+				'options' => [
+					'cookieless' => (int) burst_get_option('enable_cookieless_tracking'),
+					'pageUrl' => get_permalink(),
+					'beacon_enabled' => (int) burst_tracking_status_beacon(),
+					'do_not_track' => (int) burst_get_option('enable_do_not_track'),
+					'enable_turbo_mode' => (int) burst_get_option('enable_turbo_mode'),
+					'track_url_change' => (int) burst_get_option('track_url_change'),
+					'cookie_retention_days' => apply_filters('burst_cookie_retention_days', 30)
+				],
+				'goals' => [
+					'completed' => [],
+					'scriptUrl' => burst_get_goals_script_url(),
+					'active' => burst_get_active_goals()
+				],
+				'cache' => [
+					'uid' => null,
+					'fingerprint' => null,
+					'isUserAgent' => null,
+					'isDoNotTrack' => null,
+					'useCookies' => null
+				],
+				'beacon_url' => burst_get_beacon_url()
+			];
+		}
+
+		
 
 		public function defer_burst_tracking_script( $tag, $handle, $src ) {
 			// time me load asap but async to avoid blocking the page load

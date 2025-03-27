@@ -76,6 +76,8 @@ if ( ! function_exists( 'burst_track_hit' ) ) {
 			return 'failed to determine hit type';
 		}
 
+		burst_error_log( 'hit type: ' . $result['hit_type'] . ' and time hh:mm:ss: ' . date( 'h:m:s' ). ' for url: ' . $sanitized_data['page_url'] . ' and parameters: ' . $sanitized_data['parameters'] );
+
 		$hit_type     = $result['hit_type']; // create or update
 		$previous_hit = $result['last_row']; // last row. create can also have a last row from the previous hit.
 
@@ -160,6 +162,7 @@ if ( ! function_exists( 'burst_track_hit' ) ) {
 		}
 		if ( $statistic_id > 0 ) {
 			$completed_goals = burst_get_completed_goals( $data['completed_goals'], $sanitized_data['page_url'] );
+			burst_error_log( 'completed goals: ' . print_r( $completed_goals, true ) );
 			// if $sanitized_data['completed_goals'] is not an empty array, update burst_goals table
 			if ( ! empty( $completed_goals ) ) {
 				foreach ( $completed_goals as $goal_id ) {
@@ -220,6 +223,8 @@ if ( ! function_exists( 'burst_beacon_track_hit' ) ) {
 		burst_track_hit( $data );
 		http_response_code( 200 );
 
+		burst_error_log( 'hit tracked beacon' );
+
 		return 'success';
 	}
 }
@@ -233,6 +238,7 @@ if ( ! function_exists( 'burst_rest_track_hit' ) ) {
 	 * @return WP_REST_Response
 	 */
 	function burst_rest_track_hit( WP_REST_Request $request ): WP_REST_Response {
+		ob_start();
 		if ( burst_is_ip_blocked() ) {
 			$status_code = WP_DEBUG ? 202 : 200;
 
@@ -243,7 +249,11 @@ if ( ! function_exists( 'burst_rest_track_hit' ) ) {
 			return new WP_REST_Response( array( 'success' => 'test' ), 200 );
 		}
 		burst_track_hit( $data );
+		
+		burst_error_log( 'hit tracked rest api' );
 
+		$output = ob_get_clean();
+		
 		return new WP_REST_Response( array( 'success' => 'hit_tracked' ), 200 );
 	}
 }

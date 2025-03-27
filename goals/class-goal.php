@@ -64,7 +64,7 @@ if ( ! class_exists( 'burst_goal' ) ) {
 			$this->attribute_value   = empty( $goal->attribute_value ) ? '' : $goal->attribute_value;
 			$this->hook              = empty( $goal->hook ) ? '' : $goal->hook;
 			$this->date_start        = $goal->date_start;
-			$this->date_end          = $goal->date_end > 0 ? $goal->date_end : strtotime( 'tomorrow midnight' ) - 1;
+			$this->date_end          = 0;//$goal->date_end > 0 ? $goal->date_end : strtotime( 'tomorrow midnight' ) - 1;
 			$this->date_created      = $goal->date_created;
 
 			// split url property into two separate properties, depending on * value
