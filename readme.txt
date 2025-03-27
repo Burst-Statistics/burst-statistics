@@ -94,6 +94,10 @@ Performance is almost not affected. We have built Burst to be very performant fo
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 1.8.0.1 =
+* Fix: Goals block details not showing correct data.
+* Fix: Click goals not always tracking correctly.
+
 = 1.8.0 =
 * Improvement: add a fallback to allow for servers with a very small bytes limit on indexes.
 * Improvement: restructured the way tasks are stored.
