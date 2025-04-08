@@ -1090,6 +1090,11 @@ var FontDetector = function() {
  * @property {boolean|null} cache.useCookies
  */
 
+burst.tracking = burst.tracking || {
+  isInitialHit: true,
+  lastUpdateTimestamp: 0
+};
+
 // Cast goal IDs to integers in the burst object
 if (burst.goals && burst.goals.active) {
   burst.goals.active = burst.goals.active.map(goal => ({
@@ -1431,10 +1436,6 @@ async function burst_update_hit( update_uid = false, force = false ) {
 
   // Prevent updates if less than 300ms has passed since last update
   if (!force && Date.now() - burst.tracking.lastUpdateTimestamp < 300) {
-    return;
-  }
-
-  if ( !force ) {
     return;
   }
  
