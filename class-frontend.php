@@ -112,7 +112,8 @@ if ( ! class_exists( 'burst_frontend' ) ) {
 			return [
 				'tracking' => [
 					'isInitialHit' => true,
-					'lastUpdateTimestamp' => 0
+					'lastUpdateTimestamp' => 0,
+					'beacon_url' => burst_get_beacon_url()
 				],
 				'options' => [
 					'cookieless' => (int) burst_get_option('enable_cookieless_tracking'),
@@ -135,7 +136,6 @@ if ( ! class_exists( 'burst_frontend' ) ) {
 					'isDoNotTrack' => null,
 					'useCookies' => null
 				],
-				'beacon_url' => burst_get_beacon_url()
 			];
 		}
 
