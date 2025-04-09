@@ -1127,7 +1127,7 @@ const pageIsRendered = new Promise(resolve => {
 });
 
 // Import goals if applicable
-if (burst.goals?.active?.some(goal => goal.page_url === '' || goal.page_url === burst.options.pageUrl)) {
+if (burst.goals?.active?.some(goal => !goal.page_url || goal.page_url === '' || goal.page_url === burst.options.pageUrl)) {
   import(burst.goals.scriptUrl).then(goals => goals.default());
 }
 
@@ -1290,10 +1290,6 @@ async function burst_update_hit(update_uid = false, force = false) {
     burst_track_hit();
     return;
   }
-
-  // If we don't force the update, we only update the hit if 300ms have passed since the last update
-  console.log('Date.now() - burst.tracking.lastUpdateTimestamp', Date.now() - burst.tracking.lastUpdateTimestamp);
-  console.log('force', force);
 
   if (!force && Date.now() - burst.tracking.lastUpdateTimestamp < 300) return;
 
