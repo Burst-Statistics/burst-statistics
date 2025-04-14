@@ -90,6 +90,9 @@ Burst Statistics can be used without setting cookies or storing data in browsers
 = Does Burst Statistics affect performance? =
 Performance is almost not affected. We have built Burst to be very performant for your users because we know how important it is for your website. Read more about [Turbo Mode](https://burst-statistics.com/definition/turbo-mode/)
 
+= Is it possible to install Burst Statistics with composer? =
+Absolutely! Both free and premium plugin can be managed with composer. Read the [documentation](https://burst-statistics.com/installing-burst-statistics-with-composer/) for more information.
+
 = Can I give feedback about the plugin? =
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
