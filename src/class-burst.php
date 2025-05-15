@@ -78,7 +78,9 @@ if ( class_exists( 'Burst' ) ) {
 			}
 			if ( $this->has_admin_access() ) {
 				$this->admin = new Admin();
-				$this->pro   = new Pro();
+				if ( defined('BURST_PRO_FILE') ) {
+                    $this->pro   = new Pro();
+                }
 			}
 			$this->frontend = new Frontend();
 		}

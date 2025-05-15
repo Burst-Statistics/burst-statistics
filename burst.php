@@ -45,7 +45,6 @@ if ( ! function_exists( '\Burst\burst_loader' ) ) {
     $burst = new Burst();
 
     require_once __DIR__ . '/src/functions.php';
-    require_once __DIR__ . '/src/Pro/Tracking/tracking.php';
     require_once __DIR__ . '/src/class-compatibility.php';
 
     /**
