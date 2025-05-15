@@ -36,7 +36,6 @@ if ( defined( 'BURST_PRO_FILE' ) ) {
     return;
 }
 
-define( 'BURST_PRO_FILE', __FILE__ );
 define( 'BURST_FREE_FILE', __FILE__ );
 
 require_once __DIR__ . '/src/autoload.php';
