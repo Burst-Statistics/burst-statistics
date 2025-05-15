@@ -1,0 +1,23 @@
+<?php
+/**
+ * {{theme_name}} Theme functions and definitions.
+ *
+ * @link https://developer.wordpress.org/themes/basics/theme-functions/
+ *
+ * @package {{slug}}
+ */
+
+add_action( 'wp_enqueue_scripts', '{{prefix_safe}}_parent_theme_enqueue_styles' );
+
+/**
+ * Enqueue scripts and styles.
+ */
+function {{prefix_safe}}_parent_theme_enqueue_styles() {
+	wp_enqueue_style( '{{parent_theme}}-style', get_template_directory_uri() . '/style.css', array(), '0.1.0' );
+	wp_enqueue_style(
+		'{{slug}}-style',
+		get_stylesheet_directory_uri() . '/style.css',
+		array( '{{parent_theme}}-style' ),
+		'0.1.0'
+	);
+}

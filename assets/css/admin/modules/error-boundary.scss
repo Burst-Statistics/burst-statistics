@@ -1,0 +1,45 @@
+.burst .burst-error-boundary {
+  padding: 20px;
+  border: 2px solid var(--rsp-border-color);
+  border-radius: 8px;
+  background-color: var(--rsp-grey-200);
+  max-width: 70ch;
+  margin: auto;
+  margin-top: var(--rsp-spacing-l);
+
+  h3 {
+    margin-bottom: 20px;
+  }
+
+  &__copy-error {
+    background-color: #ffffff;
+    padding: 15px;
+    border: 1px solid var(--rsp-border-color);
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+
+  &__error-code,
+  &__error-stack {
+    color: var(--rsp-text-color-light);
+    font-family: monospace;
+    margin-bottom: 10px;
+  }
+
+  ol {
+    margin-top: var(--rsp-spacing-xs);
+    list-style-position: inside;
+    padding-left: 0;
+    margin-bottom: var(--rsp-spacing-xs);
+  }
+
+  ol li {
+    margin-bottom: var(--rsp-spacing-s);
+    padding-left: 1.5em;
+    text-indent: -1.5em;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+}

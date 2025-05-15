@@ -1,0 +1,46 @@
+.burst-header-container .burst-header {
+  display: flex;
+  justify-content: space-between;
+  height: 70px;
+  box-sizing: border-box;
+  background-color: #fff;
+
+  img {
+	margin: auto 0;
+    height: 26px;
+  }
+  .burst-header-menu {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 20px;
+    box-sizing: border-box;
+    .burst-header-menu-item {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      padding: 0 20px;
+      box-sizing: border-box;
+      &:first-child {
+        margin-left: 0;
+      }
+      &:last-child {
+        margin-right: 0;
+      }
+      &.burst-header-menu-item-active {
+        background-color: #f5f5f5;
+      }
+    }
+  }
+  .burst-header-actions {
+	display: flex;
+	align-items: center;
+	margin-left: auto;
+	gap: var(--rsp-spacing-s);
+
+	select {
+	  max-width: 60ch;
+	}
+  }
+
+}

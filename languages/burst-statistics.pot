@@ -1,0 +1,2835 @@
+# Copyright (C) 2023 Really Simple Plugins
+# This file is distributed under the same license as the Burst Pro plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Burst Pro 1.5.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/burst-pro\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2023-09-25T11:32:17+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.7.1\n"
+"X-Domain: burst-statistics\n"
+
+#. Plugin Name of the plugin
+msgid "Burst Pro"
+msgstr ""
+
+#. Plugin URI of the plugin
+msgid "https://www.wordpress.org/plugins/burst-statistics"
+msgstr ""
+
+#. Description of the plugin
+msgid "Get detailed insights into visitors’ behavior with Burst Pro, the privacy-friendly analytics dashboard from Really Simple Plugins."
+msgstr ""
+
+#. Author of the plugin
+msgid "Really Simple Plugins"
+msgstr ""
+
+#. Author URI of the plugin
+msgid "https://burst-statistics.com"
+msgstr ""
+
+#: class-admin.php:68
+msgid "This website uses Burst Statistics, a Privacy-Friendly Statistics Tool to analyze visitor behavior. For this functionality we (this website) collect anonymized data, stored locally without sharing it with other parties. For more information, please read the %s Privacy Statement %s from Burst."
+msgstr ""
+
+#: class-admin.php:119
+msgid "Default goal"
+msgstr ""
+
+#: class-admin.php:144
+#: settings/config/config.php:20
+msgid "Settings"
+msgstr ""
+
+#: class-admin.php:151
+#: settings/build/index.3eca955a9686b608abd1.js:1
+#: settings/src/components/common/Header.js:43
+msgid "Support"
+msgstr ""
+
+#: class-admin.php:239
+#: pro/statistics/class-statistics.php:45
+#: settings/templates/wordpress/dashboard-widget.php:42
+#: settings/templates/wordpress/dashboard-widget.php:52
+#: statistics/class-goal-statistics.php:77
+#: statistics/class-statistics.php:144
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:11
+#: settings/src/api/getCompareData.js:19
+#: settings/src/api/getCompareData.js:28
+#: settings/src/api/getCompareData.js:58
+#: settings/src/components/blocks/CompareBlock.js:21
+#: settings/src/components/blocks/InsightsHeader.js:14
+msgid "Pageviews"
+msgstr ""
+
+#: class-admin.php:414
+msgid "To deactivate the plugin correctly, please select if you want to:"
+msgstr ""
+
+#: class-admin.php:417
+#: class-admin.php:431
+msgid "Deactivate"
+msgstr ""
+
+#: class-admin.php:419
+msgid "Deactivate, and remove all statistics, experiments and settings."
+msgstr ""
+
+#: class-admin.php:420
+msgid "The data will be gone forever."
+msgstr ""
+
+#: class-admin.php:430
+#: upgrade/upgrade-to-pro.php:371
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/DeleteGoalModal.js:23
+msgid "Cancel"
+msgstr ""
+
+#: class-admin.php:432
+msgid "Deactivate and delete all data"
+msgstr ""
+
+#: class-frontend.php:33
+#: settings/config/config.php:14
+#: settings/settings.php:215
+#: settings/templates/wordpress/dashboard-widget.php:62
+msgid "Statistics"
+msgstr ""
+
+#: class-notices.php:68
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressBlock.js:26
+msgid "Completed"
+msgstr ""
+
+#: class-notices.php:69
+msgid "New!"
+msgstr ""
+
+#: class-notices.php:70
+#: pro/class-licensing.php:650
+msgid "Warning"
+msgstr ""
+
+#: class-notices.php:71
+msgid "Error"
+msgstr ""
+
+#: class-notices.php:72
+#: pro/class-licensing.php:651
+msgid "Open"
+msgstr ""
+
+#: class-notices.php:73
+#: pro/class-licensing.php:653
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ProPill.js:6
+msgid "Pro"
+msgstr ""
+
+#: class-notices.php:123
+msgid "Due to your server or website configuration it is not possible to track statistics."
+msgstr ""
+
+#: class-notices.php:137
+msgid "Black Friday sale! Get 40% Off Burst Pro."
+msgstr ""
+
+#: class-notices.php:149
+msgid "New! Automatically remove outdated data to optimize your database size."
+msgstr ""
+
+#: class-notices.php:164
+msgid "New! Keep track of what country your visitors come from."
+msgstr ""
+
+#: class-notices.php:178
+msgid "If you have any suggestions to improve our plugin, feel free to %sopen a support thread%s."
+msgstr ""
+
+#: class-review.php:96
+msgid "Hi, you have been using Burst for more than a month now, awesome!"
+msgstr ""
+
+#: class-review.php:98
+msgid "If you have any questions or feedback, leave us a %smessage%s."
+msgstr ""
+
+#: class-review.php:101
+msgid "If you have a moment, please consider leaving a review on WordPress.org to spread the word. We greatly appreciate it!"
+msgstr ""
+
+#: class-review.php:106
+msgid "Leave a review"
+msgstr ""
+
+#: class-review.php:111
+msgid "Maybe later"
+msgstr ""
+
+#: class-review.php:115
+msgid "Don't show again"
+msgstr ""
+
+#: functions.php:187
+msgid "For more information on this subject, please read this %sarticle%s"
+msgstr ""
+
+#: goals/class-goals.php:13
+#: settings/config/config.php:425
+msgid "Clicks"
+msgstr ""
+
+#: goals/class-goals.php:14
+msgid "A click is a single click on an element."
+msgstr ""
+
+#: goals/class-goals.php:19
+#: settings/config/config.php:431
+msgid "Views"
+msgstr ""
+
+#: goals/class-goals.php:20
+msgid "A view is a view of an element on your website"
+msgstr ""
+
+#: goals/class-goals.php:25
+#: settings/config/config.php:437
+msgid "Visits"
+msgstr ""
+
+#: goals/class-goals.php:26
+msgid "A visit is a visit to your a page"
+msgstr ""
+
+#: goals/class-goals.php:174
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/GoalSetup.js:37
+msgid "New goal"
+msgstr ""
+
+#: goals/class-goals.php:218
+msgid "Only one active goal is allowed at a time. Please deactivate the existing goal before creating a new one."
+msgstr ""
+
+#: pro/class-geo-ip-db.php:163
+msgid "Required directory does not exist:"
+msgstr ""
+
+#: pro/class-licensing.php:58
+msgid "Activate your license for automatic updates."
+msgstr ""
+
+#: pro/class-licensing.php:159
+msgid "Please %senter your license key%s to activate your license."
+msgstr ""
+
+#: pro/class-licensing.php:171
+msgid "Your license is activated and valid."
+msgstr ""
+
+#: pro/class-licensing.php:179
+msgid "You have activated the Multisite plugin on a non-Multisite environment. Please download the regular Burst Statistics Pro plugin %svia your account%s and install it instead"
+msgstr ""
+
+#: pro/class-licensing.php:181
+msgid "Please check your %slicense status%s."
+msgstr ""
+
+#: pro/class-licensing.php:212
+#: pro/class-licensing.php:233
+msgid "License"
+msgstr ""
+
+#: pro/class-licensing.php:213
+msgid "Manage your license here."
+msgstr ""
+
+#: pro/class-licensing.php:507
+msgid "unlimited"
+msgstr ""
+
+#: pro/class-licensing.php:512
+msgid "Not available"
+msgstr ""
+
+#: pro/class-licensing.php:514
+msgid "You have a lifetime license."
+msgstr ""
+
+#: pro/class-licensing.php:514
+msgid "Valid until %s."
+msgstr ""
+
+#: pro/class-licensing.php:518
+msgid "Upgrade your license for more site activations"
+msgstr ""
+
+#: pro/class-licensing.php:520
+msgid "You can renew your license on your account."
+msgstr ""
+
+#: pro/class-licensing.php:524
+msgid "Unlimited activations available."
+msgstr ""
+
+#: pro/class-licensing.php:527
+#: pro/class-licensing.php:635
+msgid "%s/%s activations available."
+msgstr ""
+
+#: pro/class-licensing.php:543
+msgid "Valid license for %s."
+msgstr ""
+
+#: pro/class-licensing.php:569
+msgid "Multisite detected. Please upgrade to multisite."
+msgstr ""
+
+#: pro/class-licensing.php:578
+msgid "The license information could not be retrieved at this moment. Please try again at a later time."
+msgstr ""
+
+#: pro/class-licensing.php:586
+msgid "Please enter your license key. Available in your account."
+msgstr ""
+
+#: pro/class-licensing.php:596
+msgid "Please activate your license key."
+msgstr ""
+
+#: pro/class-licensing.php:603
+msgid "Your license has been revoked. Please contact support."
+msgstr ""
+
+#: pro/class-licensing.php:611
+msgid "Your license could not be found in our system. Please contact support."
+msgstr ""
+
+#: pro/class-licensing.php:619
+msgid "This license is not valid. Find out why on your account."
+msgstr ""
+
+#: pro/class-licensing.php:627
+msgid "This license is not valid for this product. Find out why on your account."
+msgstr ""
+
+#: pro/class-licensing.php:643
+msgid "Your license key has expired. Please renew your license key on your account."
+msgstr ""
+
+#: pro/class-licensing.php:652
+msgid "Success"
+msgstr ""
+
+#: pro/class-licensing.php:695
+msgid "Your Burst Statistics Pro license hasn't been activated."
+msgstr ""
+
+#: pro/class-licensing.php:696
+msgid "Your Burst Statistics Pro license is not valid."
+msgstr ""
+
+#: pro/statistics/class-statistics.php:40
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/store/useFiltersStore.js:45
+msgid "Country"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:96
+#: pro/statistics/class-statistics.php:99
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/GoalStatus.js:23
+msgid "Unknown"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:104
+msgid "Afghanistan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:105
+msgid "Aland Islands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:106
+msgid "Albania"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:107
+msgid "Algeria"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:108
+msgid "American Samoa"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:109
+msgid "Andorra"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:110
+msgid "Angola"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:111
+msgid "Anguilla"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:112
+msgid "Antarctica"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:113
+msgid "Antigua and Barbuda"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:114
+msgid "Argentina"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:115
+msgid "Armenia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:116
+msgid "Aruba"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:117
+msgid "Australia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:118
+msgid "Austria"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:119
+msgid "Azerbaijan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:120
+msgid "Bahamas"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:121
+msgid "Bahrain"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:122
+msgid "Bangladesh"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:123
+msgid "Barbados"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:124
+msgid "Belarus"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:125
+msgid "Belgium"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:126
+msgid "Belize"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:127
+msgid "Benin"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:128
+msgid "Bermuda"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:129
+msgid "Bhutan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:130
+msgid "Bolivia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:131
+msgid "Bonaire, Sint Eustatius and Saba"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:132
+msgid "Bosnia and Herzegovina"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:133
+msgid "Botswana"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:134
+msgid "Bouvet Island"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:135
+msgid "Brazil"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:136
+msgid "British Indian Ocean Territory"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:137
+msgid "Brunei Darussalam"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:138
+msgid "Bulgaria"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:139
+msgid "Burkina Faso"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:140
+msgid "Burundi"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:141
+msgid "Cambodia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:142
+msgid "Cameroon"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:143
+msgid "Canada"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:144
+msgid "Cape Verde"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:145
+msgid "Cayman Islands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:146
+msgid "Central African Republic"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:147
+msgid "Chad"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:148
+msgid "Chile"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:149
+msgid "China"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:150
+msgid "Christmas Island"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:151
+msgid "Cocos (Keeling) Islands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:152
+msgid "Colombia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:153
+msgid "Comoros"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:154
+msgid "Congo"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:155
+msgid "Congo, Democratic Republic of the Congo"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:156
+msgid "Cook Islands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:157
+msgid "Costa Rica"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:158
+msgid "Cote D'Ivoire"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:159
+msgid "Croatia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:160
+msgid "Cuba"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:161
+msgid "Curacao"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:162
+msgid "Cyprus"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:163
+msgid "Czech Republic"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:164
+msgid "Denmark"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:165
+msgid "Djibouti"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:166
+msgid "Dominica"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:167
+msgid "Dominican Republic"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:168
+msgid "Ecuador"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:169
+msgid "Egypt"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:170
+msgid "El Salvador"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:171
+msgid "Equatorial Guinea"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:172
+msgid "Eritrea"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:173
+msgid "Estonia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:174
+msgid "Ethiopia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:175
+msgid "Falkland Islands (Malvinas)"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:176
+msgid "Faroe Islands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:177
+msgid "Fiji"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:178
+msgid "Finland"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:179
+msgid "France"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:180
+msgid "French Guiana"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:181
+msgid "French Polynesia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:182
+msgid "French Southern Territories"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:183
+msgid "Gabon"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:184
+msgid "Gambia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:185
+msgid "Georgia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:186
+msgid "Germany"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:187
+msgid "Ghana"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:188
+msgid "Gibraltar"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:189
+msgid "Greece"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:190
+msgid "Greenland"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:191
+msgid "Grenada"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:192
+msgid "Guadeloupe"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:193
+msgid "Guam"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:194
+msgid "Guatemala"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:195
+msgid "Guernsey"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:196
+msgid "Guinea"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:197
+msgid "Guinea-Bissau"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:198
+msgid "Guyana"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:199
+msgid "Haiti"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:200
+msgid "Heard Island and McDonald Islands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:201
+msgid "Holy See (Vatican City State)"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:202
+msgid "Honduras"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:203
+msgid "Hong Kong"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:204
+msgid "Hungary"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:205
+msgid "Iceland"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:206
+msgid "India"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:207
+msgid "Indonesia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:208
+msgid "Iran, Islamic Republic of"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:209
+msgid "Iraq"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:210
+msgid "Ireland"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:211
+msgid "Isle of Man"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:212
+msgid "Israel"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:213
+msgid "Italy"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:214
+msgid "Jamaica"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:215
+msgid "Japan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:216
+msgid "Jersey"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:217
+msgid "Jordan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:218
+msgid "Kazakhstan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:219
+msgid "Kenya"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:220
+msgid "Kiribati"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:221
+msgid "Korea, Democratic People's Republic of"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:222
+msgid "Korea, Republic of"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:223
+msgid "Kosovo"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:224
+msgid "Kuwait"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:225
+msgid "Kyrgyzstan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:226
+msgid "Lao People's Democratic Republic"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:227
+msgid "Latvia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:228
+msgid "Lebanon"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:229
+msgid "Lesotho"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:230
+msgid "Liberia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:231
+msgid "Libyan Arab Jamahiriya"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:232
+msgid "Liechtenstein"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:233
+msgid "Lithuania"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:234
+msgid "Luxembourg"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:235
+msgid "Macao"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:236
+msgid "Macedonia, the Former Yugoslav Republic of"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:237
+msgid "Madagascar"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:238
+msgid "Malawi"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:239
+msgid "Malaysia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:240
+msgid "Maldives"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:241
+msgid "Mali"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:242
+msgid "Malta"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:243
+msgid "Marshall Islands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:244
+msgid "Martinique"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:245
+msgid "Mauritania"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:246
+msgid "Mauritius"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:247
+msgid "Mayotte"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:248
+msgid "Mexico"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:249
+msgid "Micronesia, Federated States of"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:250
+msgid "Moldova, Republic of"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:251
+msgid "Monaco"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:252
+msgid "Mongolia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:253
+msgid "Montenegro"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:254
+msgid "Montserrat"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:255
+msgid "Morocco"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:256
+msgid "Mozambique"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:257
+msgid "Myanmar"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:258
+msgid "Namibia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:259
+msgid "Nauru"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:260
+msgid "Nepal"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:261
+msgid "Netherlands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:262
+msgid "Netherlands Antilles"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:263
+msgid "New Caledonia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:264
+msgid "New Zealand"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:265
+msgid "Nicaragua"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:266
+msgid "Niger"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:267
+msgid "Nigeria"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:268
+msgid "Niue"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:269
+msgid "Norfolk Island"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:270
+msgid "Northern Mariana Islands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:271
+msgid "Norway"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:272
+msgid "Oman"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:273
+msgid "Pakistan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:274
+msgid "Palau"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:275
+msgid "Palestinian Territory, Occupied"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:276
+msgid "Panama"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:277
+msgid "Papua New Guinea"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:278
+msgid "Paraguay"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:279
+msgid "Peru"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:280
+msgid "Philippines"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:281
+msgid "Pitcairn"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:282
+msgid "Poland"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:283
+msgid "Portugal"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:284
+msgid "Puerto Rico"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:285
+msgid "Qatar"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:286
+msgid "Reunion"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:287
+msgid "Romania"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:288
+msgid "Russian Federation"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:289
+msgid "Rwanda"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:290
+msgid "Saint Barthelemy"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:291
+msgid "Saint Helena"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:292
+msgid "Saint Kitts and Nevis"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:293
+msgid "Saint Lucia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:294
+msgid "Saint Martin"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:295
+msgid "Saint Pierre and Miquelon"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:296
+msgid "Saint Vincent and the Grenadines"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:297
+msgid "Samoa"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:298
+msgid "San Marino"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:299
+msgid "Sao Tome and Principe"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:300
+msgid "Saudi Arabia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:301
+msgid "Senegal"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:302
+msgid "Serbia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:303
+msgid "Serbia and Montenegro"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:304
+msgid "Seychelles"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:305
+msgid "Sierra Leone"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:306
+msgid "Singapore"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:307
+msgid "St Martin"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:308
+msgid "Slovakia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:309
+msgid "Slovenia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:310
+msgid "Solomon Islands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:311
+msgid "Somalia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:312
+msgid "South Africa"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:313
+msgid "South Georgia and the South Sandwich Islands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:314
+msgid "South Sudan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:315
+msgid "Spain"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:316
+msgid "Sri Lanka"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:317
+msgid "Sudan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:318
+msgid "Suriname"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:319
+msgid "Svalbard and Jan Mayen"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:320
+msgid "Swaziland"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:321
+msgid "Sweden"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:322
+msgid "Switzerland"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:323
+msgid "Syrian Arab Republic"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:324
+msgid "Taiwan, Province of China"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:325
+msgid "Tajikistan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:326
+msgid "Tanzania, United Republic of"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:327
+msgid "Thailand"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:328
+msgid "Timor-Leste"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:329
+msgid "Togo"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:330
+msgid "Tokelau"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:331
+msgid "Tonga"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:332
+msgid "Trinidad and Tobago"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:333
+msgid "Tunisia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:334
+msgid "Turkey"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:335
+msgid "Turkmenistan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:336
+msgid "Turks and Caicos Islands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:337
+msgid "Tuvalu"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:338
+msgid "Uganda"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:339
+msgid "Ukraine"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:340
+msgid "United Arab Emirates"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:341
+msgid "United Kingdom"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:342
+msgid "United States"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:343
+msgid "United States Minor Outlying Islands"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:344
+msgid "Uruguay"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:345
+msgid "Uzbekistan"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:346
+msgid "Vanuatu"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:347
+msgid "Venezuela"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:348
+msgid "Viet Nam"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:349
+msgid "Virgin Islands, British"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:350
+msgid "Virgin Islands, U.s."
+msgstr ""
+
+#: pro/statistics/class-statistics.php:351
+msgid "Wallis and Futuna"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:352
+msgid "Western Sahara"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:353
+msgid "Yemen"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:354
+msgid "Zambia"
+msgstr ""
+
+#: pro/statistics/class-statistics.php:355
+msgid "Zimbabwe"
+msgstr ""
+
+#: settings/config/config.php:8
+#: settings/templates/wordpress/dashboard-widget.php:61
+msgid "Dashboard"
+msgstr ""
+
+#: settings/config/config.php:26
+#: settings/config/config.php:31
+msgid "General"
+msgstr ""
+
+#: settings/config/config.php:38
+#: settings/config/config.php:43
+#: settings/config/config.php:173
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/GoalsBlock.js:131
+#: settings/src/components/blocks/GoalsBlock.js:148
+msgid "Goals"
+msgstr ""
+
+#: settings/config/config.php:50
+msgid "Data"
+msgstr ""
+
+#: settings/config/config.php:55
+msgid "Archiving"
+msgstr ""
+
+#: settings/config/config.php:59
+msgid "Archived Data"
+msgstr ""
+
+#: settings/config/config.php:62
+msgid "Manage your archived data with %sBurst Pro%s"
+msgstr ""
+
+#: settings/config/config.php:69
+msgid "Advanced"
+msgstr ""
+
+#: settings/config/config.php:74
+msgid "Tracking"
+msgstr ""
+
+#: settings/config/config.php:123
+msgid "Enable Turbo mode"
+msgstr ""
+
+#: settings/config/config.php:126
+msgid "What is Turbo mode?"
+msgstr ""
+
+#: settings/config/config.php:127
+msgid "Turbo mode improves pagespeed. When enabled, the script is no longer loaded in the header asynchronously, but is loaded in the footer and deferred. You could lose data from visitors who leave before the page has fully loaded."
+msgstr ""
+
+#: settings/config/config.php:138
+msgid "Enable Cookieless tracking"
+msgstr ""
+
+#: settings/config/config.php:141
+msgid "What is Cookieless tracking?"
+msgstr ""
+
+#: settings/config/config.php:142
+msgid "With cookieless tracking enabled, Burst will not use cookies to determine the number of unique visitors. It will use contextual data, like the browser version and device, also called 'fingerprinting'. The latter could be less reliable for some users."
+msgstr ""
+
+#: settings/config/config.php:153
+msgid "Honor 'Do Not Track' requests"
+msgstr ""
+
+#: settings/config/config.php:163
+msgid "Restart"
+msgstr ""
+
+#: settings/config/config.php:164
+msgid "Restart plugin tour"
+msgstr ""
+
+#: settings/config/config.php:176
+msgid "How to set goals?"
+msgstr ""
+
+#: settings/config/config.php:177
+msgid "To set goals for a website, you need to identify the purpose of the site and the key actions you want visitors to take. Set measurable and achievable goals for each action and track your progress."
+msgstr ""
+
+#: settings/config/config.php:187
+msgid "Exclude user roles from being tracked"
+msgstr ""
+
+#: settings/config/config.php:190
+msgid "Excluding visitors"
+msgstr ""
+
+#: settings/config/config.php:191
+msgid "You can exclude visitors by user role and IP address. This will affect new data only."
+msgstr ""
+
+#: settings/config/config.php:202
+msgid "Exclude IP address from tracking, separate with a line break"
+msgstr ""
+
+#: settings/config/config.php:212
+msgid "Don't manage"
+msgstr ""
+
+#: settings/config/config.php:213
+msgid "Automatically Archive"
+msgstr ""
+
+#: settings/config/config.php:214
+msgid "Automatically Delete"
+msgstr ""
+
+#: settings/config/config.php:222
+msgid "Why should I manage old data?"
+msgstr ""
+
+#: settings/config/config.php:223
+msgid "Managing old data can optimize storage and improve site performance. Choose to archive or delete based on your needs."
+msgstr ""
+
+#: settings/config/config.php:228
+msgid "Choose how to manage old statistics"
+msgstr ""
+
+#: settings/config/config.php:231
+msgctxt "e.g. Burst currently uses 10 MB of your database."
+msgid "Burst currently uses %s of your database."
+msgstr ""
+
+#: settings/config/config.php:240
+msgid "Retain data for how many months?"
+msgstr ""
+
+#: settings/config/config.php:256
+msgid "Please confirm the deletion, without the possibility to restore."
+msgstr ""
+
+#: settings/config/config.php:422
+msgid "What type of goal do you want to set?"
+msgstr ""
+
+#: settings/config/config.php:426
+msgid "Track clicks on element"
+msgstr ""
+
+#: settings/config/config.php:432
+msgid "Track views of element"
+msgstr ""
+
+#: settings/config/config.php:438
+msgid "Track visits to page"
+msgstr ""
+
+#: settings/config/config.php:449
+msgid "Do you want to track a specific page or the entire website?"
+msgstr ""
+
+#: settings/config/config.php:452
+#: statistics/class-statistics.php:588
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/store/useFiltersStore.js:21
+msgid "Page"
+msgstr ""
+
+#: settings/config/config.php:453
+msgid "Track page specific"
+msgstr ""
+
+#: settings/config/config.php:458
+msgid "Website"
+msgstr ""
+
+#: settings/config/config.php:459
+msgid "Track on whole site"
+msgstr ""
+
+#: settings/config/config.php:476
+msgid "Which specific page do you want to track?"
+msgstr ""
+
+#: settings/config/config.php:490
+msgid "What element do you want to track?"
+msgstr ""
+
+#: settings/settings.php:469
+msgid "Self-hosted, Privacy-friendly analytics tool."
+msgstr ""
+
+#: settings/settings.php:477
+msgid "Complianz Privacy Suite - Cookie Consent Management as it should be"
+msgstr ""
+
+#: settings/settings.php:484
+msgid "Terms and Conditions"
+msgstr ""
+
+#: settings/templates/wordpress/dashboard-widget.php:21
+#: statistics/class-statistics.php:143
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/InsightsHeader.js:13
+msgid "Unique visitors"
+msgstr ""
+
+#: settings/templates/wordpress/dashboard-widget.php:30
+msgid "Avg. time per session"
+msgstr ""
+
+#: settings/templates/wordpress/dashboard-widget.php:39
+msgid "Top referrer"
+msgstr ""
+
+#: settings/templates/wordpress/dashboard-widget.php:49
+msgid "Most visited page"
+msgstr ""
+
+#: statistics/class-goal-statistics.php:74
+msgid "Most goals reached on this page"
+msgstr ""
+
+#: statistics/class-goal-statistics.php:82
+msgid "Conversion rate"
+msgstr ""
+
+#: statistics/class-goal-statistics.php:87
+msgid "Not enough data"
+msgstr ""
+
+#: statistics/class-goal-statistics.php:89
+msgid "Best performing device"
+msgstr ""
+
+#: statistics/class-statistics.php:145
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:12
+#: settings/src/api/getCompareData.js:20
+#: settings/src/api/getCompareData.js:34
+#: settings/src/api/getCompareData.js:63
+#: settings/src/components/blocks/CompareBlock.js:22
+#: settings/src/components/blocks/InsightsHeader.js:16
+msgid "Sessions"
+msgstr ""
+
+#: statistics/class-statistics.php:146
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/InsightsHeader.js:15
+msgid "Bounces"
+msgstr ""
+
+#: statistics/class-statistics.php:147
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:18
+#: settings/src/api/getCompareData.js:53
+#: settings/src/api/getPagesData.js:28
+#: settings/src/components/blocks/InsightsHeader.js:21
+msgid "Conversions"
+msgstr ""
+
+#: statistics/class-statistics.php:238
+#: statistics/class-statistics.php:699
+#: statistics/class-statistics.php:944
+#: statistics/class-statistics.php:1019
+msgid "Direct"
+msgstr ""
+
+#: statistics/class-statistics.php:245
+msgid "The amount of people using your website right now. The data updates every 5 seconds."
+msgstr ""
+
+#: statistics/class-statistics.php:249
+msgid "This is the total amount of unique visitors for today."
+msgstr ""
+
+#: statistics/class-statistics.php:254
+msgid "This is your most viewed page for today."
+msgstr ""
+
+#: statistics/class-statistics.php:259
+msgid "This website referred the most visitors."
+msgstr ""
+
+#: statistics/class-statistics.php:262
+msgid "Total pageviews"
+msgstr ""
+
+#: statistics/class-statistics.php:267
+msgid "Average time on page"
+msgstr ""
+
+#: statistics/class-statistics.php:676
+msgid "Referrer"
+msgstr ""
+
+#: statistics/class-statistics.php:681
+msgid "Count"
+msgstr ""
+
+#: statistics/class-statistics.php:946
+#: statistics/class-statistics.php:968
+msgid "No referrers"
+msgstr ""
+
+#: statistics/class-statistics.php:955
+msgid "Homepage"
+msgstr ""
+
+#: statistics/class-statistics.php:957
+#: statistics/class-statistics.php:970
+msgid "No pageviews"
+msgstr ""
+
+#: statistics/class-statistics.php:1231
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getDevicesData.js:10
+#: settings/src/components/blocks/DevicesBlock.js:20
+msgid "Desktop"
+msgstr ""
+
+#: statistics/class-statistics.php:1234
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getDevicesData.js:12
+#: settings/src/components/blocks/DevicesBlock.js:22
+msgid "Mobile"
+msgstr ""
+
+#: statistics/class-statistics.php:1237
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getDevicesData.js:11
+#: settings/src/components/blocks/DevicesBlock.js:21
+msgid "Tablet"
+msgstr ""
+
+#: statistics/class-statistics.php:1241
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getDevicesData.js:13
+#: settings/src/components/blocks/DevicesBlock.js:23
+msgid "Other"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:82
+msgid "Checking if plugin folder exists..."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:83
+msgid "Able to create destination folder"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:84
+msgid "Destination folder already exists"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:89
+msgid "Validating license..."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:90
+msgid "License valid"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:91
+msgid "License invalid"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:96
+msgid "Retrieving package information..."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:97
+msgid "Package information retrieved"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:98
+msgid "Failed to gather package information"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:103
+msgid "Installing plugin..."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:104
+msgid "Plugin installed"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:105
+msgid "Failed to install plugin"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:110
+msgid "Activating plugin..."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:111
+msgid "Plugin activated"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:112
+msgid "Failed to activate plugin"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:145
+msgid "Self-hosted and privacy-friendly analytics tool."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:147
+#: upgrade/upgrade-to-pro.php:160
+#: upgrade/upgrade-to-pro.php:177
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/OtherPluginsBlock.js:69
+msgid "Install"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:149
+msgid "Get detailed insights into visitors' behaviour with Burst Statistics, the privacy-friendly analytics dashboard from Really Simple Plugins."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:158
+msgid "GDPR/CCPA Privacy Suite"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:162
+msgid "Configure your Cookie Notice, Cookie Consent and Cookie Policy with our Wizard and Cookie Scan. Supports GDPR, DSGVO, TTDSG, LGPD, POPIA, RGPD, CCPA and PIPEDA."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:175
+msgid "One click SSL optimization"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:179
+msgid "Really Simple SSL automatically detects your settings and configures your website to run over HTTPS. To keep it lightweight, we kept the options to a minimum. Your website will move to SSL with one click."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:191
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/OtherPluginsBlock.js:90
+msgid "Installed"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:234
+msgid "Installation finished"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:332
+msgid "Recommended by Really Simple Plugins"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:357
+msgid "Installing"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:368
+msgid "Visit Dashboard"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:373
+#: upgrade/upgrade-to-pro.php:374
+msgid "An Error Occurred:"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:373
+msgid "Install %sManually%s."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:374
+msgid "Check your %slicense%s."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:450
+msgid "Could not rename folder!"
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:550
+#: upgrade/upgrade-to-pro.php:582
+msgid "An error occurred, please try again."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:558
+msgid "Your license key expired on %s."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:564
+msgid "Your license key has been disabled."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:567
+msgid "Missing license."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:570
+msgid "Invalid license."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:573
+msgid "Your license is not active for this URL."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:576
+msgid "This appears to be an invalid license key for this plugin."
+msgstr ""
+
+#: upgrade/upgrade-to-pro.php:579
+msgid "Your license key has reached its activation limit."
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/Help.js:23
+#: settings/src/components/blocks/TaskElement.js:13
+msgid "More info"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/TaskElement.js:14
+msgid "Fix"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Menu/MenuItem.js:54
+msgid "New"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/IpBlock.js:63
+#: settings/src/components/blocks/IpBlock.js:64
+msgid "Add current IP address"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/ClassId.js:17
+msgid "Class"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/ClassId.js:18
+msgid "Add a class to the element"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/ClassId.js:23
+msgid "ID"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/ClassId.js:24
+msgid "Add an id to the element"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/ClassId.js:38
+msgid "The character '%s' can not be used."
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/ClassId.js:40
+msgid "You don't need to prefix the input with a '%s' character."
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/EditableText.js:58
+msgid "Click to edit"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/DeleteGoalModal.js:9
+msgid "Delete Goal"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/DeleteGoalModal.js:11
+msgid "Are you sure you want to delete this goal?"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/DeleteGoalModal.js:11
+msgid "This action cannot be undone."
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/DeleteGoalModal.js:13
+msgid "Goal name"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/DeleteGoalModal.js:15
+msgid "Status"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/DeleteGoalModal.js:18
+msgid "Date created"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/DeleteGoalModal.js:26
+msgid "Delete goal"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/GoalSetup.js:57
+msgid "Click to de-activate"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/GoalSetup.js:58
+msgid "Click to activate"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/Goals/GoalSetup.js:86
+#: settings/src/components/blocks/GoalStatus.js:19
+msgid "Active"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/Goals/GoalSetup.js:86
+#: settings/src/components/blocks/GoalStatus.js:21
+msgid "Inactive"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/GoalsSettings.js:29
+msgid "Goals are a great way to track your progress and keep you motivated."
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Goals/GoalsSettings.js:52
+msgid "Add goal"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/build/index.3eca955a9686b608abd1.js:1
+#: settings/src/components/blocks/Goals/GoalsSettings.js:67
+#: settings/src/components/blocks/ProPopover.js:45
+#: settings/src/components/common/Header.js:47
+msgid "Upgrade to Pro"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/store/useArchivesStore.js:24
+msgid "Deleting..."
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/store/useArchivesStore.js:25
+msgid "Archives deleted successfully!"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/store/useArchivesStore.js:26
+msgid "Failed to delete archive"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/store/useArchivesStore.js:62
+msgid "Starting restore..."
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/store/useArchivesStore.js:63
+msgid "Restore successfully started!"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/store/useArchivesStore.js:64
+msgid "Failed to start restore process."
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:23
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:306
+msgid "Archive"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:27
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:312
+msgid "Size"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:51
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:348
+msgid "Search"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:358
+msgid "%s items selected"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:361
+msgid "1 item selected"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:367
+msgid "Download"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:115
+msgid "Because restoring files can conflict with the archiving functionality, archiving has been disabled."
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:116
+msgid "Archiving disabled"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:374
+msgid "Restore"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:379
+msgid "Delete"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:387
+msgid "Restore in progress, %s complete"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/AcquisitionBlock.js:86
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:406
+#: settings/src/components/blocks/PagesBlock.js:56
+msgid "of"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/AcquisitionBlock.js:89
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:409
+#: settings/src/components/blocks/PagesBlock.js:59
+msgid "All"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/RestoreArchivesControl.js:411
+msgid "No archives"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/Fields/Pro.js:15
+#: settings/src/components/blocks/OtherPluginsBlock.js:87
+#: settings/src/components/blocks/SettingsGroup.js:78
+msgid "Upgrade"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Fields/LabelWrapper.js:17
+msgid "required"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/SettingsGroup.js:51
+msgid "Learn more about %sPro%s"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/SettingsGroup.js:63
+msgid "Instructions"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/SettingsGroup.js:80
+msgid "Check license"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Settings.js:64
+msgid "Save"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Settings.js:40
+msgid "Saving settings..."
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Settings.js:41
+msgid "Settings saved"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/Settings.js:42
+#: settings/src/store/useGoalsStore.js:34
+#: settings/src/store/useGoalsStore.js:59
+msgid "Something went wrong"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Settings.js:121
+msgid "Notifications"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Settings.js:124
+msgid "Expand all"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/src/components/blocks/Settings.js:125
+msgid "Collapse all"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/store/useGoalsStore.js:14
+msgid "Failed to load goals"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/store/useGoalsStore.js:21
+msgid "Adding goal..."
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/store/useGoalsStore.js:22
+msgid "Goal added successfully!"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/store/useGoalsStore.js:23
+msgid "Failed to add goal"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/store/useGoalsStore.js:41
+msgid "Deleting goal..."
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/store/useGoalsStore.js:42
+msgid "Goal deleted successfully!"
+msgstr ""
+
+#: settings/build/72.8b703d82113134f16535.js:1
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/store/useGoalsStore.js:43
+msgid "Failed to delete goal"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ClickToFilter.js:33
+msgid "Click to filter by:"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ClickToFilter.js:34
+msgid "Click to filter"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ClickToFilter.js:79
+msgid "Filtering by goal & goal specific page"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ClickToFilter.js:83
+msgid "Filtering by goal"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressHeader.js:23
+msgid "All tasks"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressHeader.js:29
+msgid "Remaining tasks"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressFooter.js:17
+msgid "Just now"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressFooter.js:27
+msgid "Last checked:"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressFooter.js:29
+msgid "Loading tracking status..."
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressFooter.js:30
+msgid "Error checking tracking status"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressFooter.js:31
+msgid "Tracking with REST API"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressFooter.js:32
+msgid "Tracking with an endpoint"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressFooter.js:33
+#: settings/src/components/blocks/ProgressFooter.js:40
+msgid "Tracking is disabled"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressFooter.js:37
+msgid "Tracking does not seem to work. Check manually or contact support."
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressFooter.js:38
+msgid "Tracking is working. You are using the REST API to collect statistics."
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressFooter.js:39
+msgid "Tracking is working. You are using the Burst endpoint to collect statistics. This type of tracking is accurate and lightweight."
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressFooter.js:74
+msgid "View my statistics"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressBlock.js:15
+msgid "Loading..."
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressBlock.js:18
+msgid "Loading notices..."
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressBlock.js:29
+msgid "No remaining tasks to show"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/ProgressBlock.js:71
+msgid "Progress"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/TodayBlock.js:37
+#: settings/src/components/blocks/TodayBlock.js:112
+msgid "Live"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/api/getGoalsData.js:40
+#: settings/src/components/blocks/GoalsBlock.js:58
+#: settings/src/components/blocks/GoalsBlock.js:170
+#: settings/src/components/blocks/TodayBlock.js:41
+#: settings/src/components/blocks/TodayBlock.js:121
+msgid "Total"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getGoalsData.js:36
+#: settings/src/components/blocks/DateRange.js:23
+#: settings/src/components/blocks/GoalsBlock.js:54
+#: settings/src/components/blocks/GoalsBlock.js:161
+#: settings/src/components/blocks/TodayBlock.js:103
+msgid "Today"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/GoalStatus.js:31
+msgid "Started"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/GoalStatus.js:31
+msgid "Created"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/GoalsHeader.js:34
+msgid "Unknown title"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/api/getGoalsData.js:25
+msgid "Calculated by:"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/api/getGoalsData.js:27
+msgid "Total amount of goals reached "
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/api/getGoalsData.js:28
+msgid "Total amount of pageviews"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/GoalsBlock.js:136
+msgid "View setup"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/GoalsBlock.js:149
+msgid "Keep track of customizable goals and get valuable insights. Add your first goal!"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/GoalsBlock.js:150
+msgid "Learn how to set your first goal"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/GoalsBlock.js:151
+msgid "Create my first goal"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/GoalsBlock.js:157
+msgid "Goal and today"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/GoalsBlock.js:165
+msgid "Goal and the start date"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/TipsTricksBlock.js:35
+msgid "Tips & Tricks"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/TipsTricksBlock.js:39
+msgid "View all"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/OtherPluginsBlock.js:70
+#: settings/src/components/blocks/OtherPluginsBlock.js:109
+msgid "Activate"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/OtherPluginsBlock.js:71
+msgid "Activating..."
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/OtherPluginsBlock.js:72
+#: settings/src/components/blocks/OtherPluginsBlock.js:73
+msgid "Downloading..."
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/OtherPluginsBlock.js:100
+#: settings/src/components/blocks/OtherPluginsBlock.js:119
+msgid "Other plugins"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/src/components/blocks/OtherPluginsBlock.js:107
+msgid "Loading.."
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/store/useFiltersStore.js:25
+msgid "Goal"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/store/useFiltersStore.js:29
+msgid "Referrer URL"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/store/useFiltersStore.js:33
+msgid "Device"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/store/useFiltersStore.js:37
+msgid "Browser"
+msgstr ""
+
+#: settings/build/118.e2fc1b4202f6d97481e8.js:1
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/store/useFiltersStore.js:41
+msgid "Operating System"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/InsightsHeader.js:68
+msgid "Select metrics"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/InsightsHeader.js:84
+msgid "Apply"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/InsightsBlock.js:79
+msgid "Insights"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/CompareFooter.js:11
+msgid "vs. previous day"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/CompareFooter.js:11
+msgid "vs. previous %s days"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:13
+#: settings/src/api/getCompareData.js:21
+#: settings/src/api/getCompareData.js:40
+#: settings/src/api/getCompareData.js:68
+#: settings/src/components/blocks/CompareBlock.js:23
+msgid "Visitors"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:14
+#: settings/src/api/getCompareData.js:46
+#: settings/src/components/blocks/CompareBlock.js:24
+msgid "Bounce Rate"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:29
+msgid "pageviews per session"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:35
+msgid "per session"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:41
+msgid "are new visitors"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:47
+msgid "visitors bounced"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:54
+msgid "of pageviews converted"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:59
+msgid "pageviews per conversion"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:64
+msgid "sessions per conversion"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/api/getCompareData.js:69
+msgid "visitors per conversion"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/CompareBlock.js:51
+msgid "Compare"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/DevicesBlock.js:47
+msgid "Devices"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/EmptyDataTable.js:6
+msgid "No data available in table"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/PagesBlock.js:43
+msgid "Per page"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ProPopover.js:35
+msgid "Unlock Country Insights with Pro"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ProPopover.js:36
+msgid "Get detailed information on your users"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ProPopover.js:39
+msgid "Pro features include:"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ProPopover.js:40
+msgid "See Countries:"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ProPopover.js:40
+msgid "Know where your visitors are from."
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ProPopover.js:41
+msgid "Track More Goals:"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ProPopover.js:41
+msgid "Follow different things at the same time."
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ProPopover.js:42
+msgid "Filter by Country:"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ProPopover.js:42
+msgid "Only see data from specific places."
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/ProPopover.js:46
+msgid "Learn More"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/AcquisitionBlock.js:27
+#: settings/src/components/blocks/Fields/AcquisitionSwitch.js:15
+msgid "Referrers"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/AcquisitionBlock.js:28
+#: settings/src/components/blocks/Fields/AcquisitionSwitch.js:21
+msgid "Countries"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/AcquisitionBlock.js:72
+msgid "Acquisition"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/DateRange.js:30
+msgid "Yesterday"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/DateRange.js:37
+msgid "Last 7 days"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/DateRange.js:44
+msgid "Last 30 days"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/DateRange.js:51
+msgid "Last 90 days"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/DateRange.js:58
+msgid "Last month"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/DateRange.js:65
+msgid "Week to date"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/DateRange.js:72
+msgid "Month to date"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/DateRange.js:79
+msgid "Year to date"
+msgstr ""
+
+#: settings/build/613.8449dbcf93be476941ca.js:1
+#: settings/src/components/blocks/DateRange.js:86
+msgid "Last year"
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:8
+msgid "Welcome to Burst Statistics"
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:9
+msgid "The plugin is now active."
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:9
+msgid "Follow a quick tour and make sure everything works."
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:15
+#: settings/src/components/common/Tour.js:163
+msgid "Exit tour"
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:19
+msgid "Start tour"
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:28
+msgid "Your dashboard"
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:29
+msgid "This is your Dashboard. This will give you an overview of notices, real time data, and settings."
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:34
+#: settings/src/components/common/Tour.js:58
+#: settings/src/components/common/Tour.js:82
+#: settings/src/components/common/Tour.js:106
+#: settings/src/components/common/Tour.js:130
+#: settings/src/components/common/Tour.js:154
+msgid "Previous"
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:42
+#: settings/src/components/common/Tour.js:66
+#: settings/src/components/common/Tour.js:90
+#: settings/src/components/common/Tour.js:114
+#: settings/src/components/common/Tour.js:138
+msgid "Next"
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:52
+msgid "Real time data"
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:53
+msgid "This block will show you real time visitors."
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:53
+msgid "To make sure Burst Statistics is setup properly, try visiting this website on another device or open a private window."
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:76
+msgid "Your website statistics"
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:77
+msgid "This page is probably quite empty at the moment. The data from your website will show up here in a few days. So be sure to come back soon."
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:100
+msgid "Changing the date range"
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:101
+msgid "Over here you can change the date range for the data being shown. Click on two different days or click twice on a single day to show the data for that period."
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:124
+msgid "Your configuration"
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:125
+msgid "You can customize Burst to your liking. Change settings to meet your needs."
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:148
+msgid "Support & feedback"
+msgstr ""
+
+#: settings/build/898.c76b09c36262a8ec6906.js:1
+#: settings/src/components/common/Tour.js:149
+msgid "Feel free to post your questions or feedback on the WordPress forums. We are happy to help!"
+msgstr ""
+
+#: settings/build/index.3eca955a9686b608abd1.js:1
+#: settings/src/utils/api.js:21
+msgid "Server error"
+msgstr ""
+
+#: settings/build/index.3eca955a9686b608abd1.js:1
+#: settings/src/utils/api.js:28
+msgid "Server error in"
+msgstr ""
+
+#: settings/build/index.3eca955a9686b608abd1.js:1
+#: settings/src/utils/api.js:33
+msgid "Click to copy"
+msgstr ""
+
+#: settings/build/index.3eca955a9686b608abd1.js:1
+#: settings/src/utils/api.js:35
+msgid "Error copied to clipboard"
+msgstr ""
+
+#: settings/src/components/blocks/IpBlock.js:28
+msgid "Your IP address is:"
+msgstr ""
+
+#: settings/src/components/blocks/IpBlock.js:28
+msgid "Which is already in the list."
+msgstr ""

@@ -1,0 +1,85 @@
+.burst-wizard-menu{
+  height: fit-content;
+  .burst-grid-item-content{
+    padding: 0;
+    padding-bottom: var(--rsp-spacing-l);
+  }
+}
+.burst-wizard-menu-items {
+  .burst-menu-item{
+    a{
+      display: flex;
+      align-items: center;
+      gap: var(--rsp-spacing-xs);
+      text-decoration: none;
+      color: var(--rsp-text-color);
+      font-size: var(--rsp-fs-400);
+      padding-block: var(--rsp-spacing-xs);
+      @include burst-inline-block-padding;
+      transition: all 0.2s ease-in-out;
+      border-left: 4px solid transparent;
+    }
+    &.burst-active{
+      > a{
+        //text-decoration: underline;
+        color: var(--rsp-green);
+        font-weight: 600;
+        border-left: 4px solid var(--rsp-green);
+        //background-color: #f2e6c966;
+      }
+    }
+    &.burst-featured{
+      a{
+        //padding-block: var(--rsp-spacing-m);
+        //background: var(--rsp-dark-blue-faded);
+        font-weight: 600;
+        flex-wrap: wrap;
+        .burst-menu-item-featured-pill{
+          background: var(--rsp-green);
+          color: var(--rsp-text-color-white);
+          padding: 2px 9px;
+          border-radius: var(--rsp-border-radius);
+          font-size: var(--rsp-fs-100);
+        }
+      }
+    }
+
+
+    &.burst-pro{
+      a{
+        background: var(--rsp-dark-blue-faded);
+        flex-wrap: wrap;
+        .burst-menu-item-featured-pill{
+          background: var(--rsp-dark-blue);
+          color: var(--rsp-text-color-white);
+          padding: 2px 9px;
+          border-radius: var(--rsp-border-radius);
+          font-size: var(--rsp-fs-100);
+        }
+      }
+    }
+  }
+
+  .burst-pro-menu-item {
+    background: var(--rsp-dark-blue-faded);
+    div {
+      display: flex;
+      align-items: center;
+      gap: var(--rsp-spacing-xs);
+      text-decoration: none;
+      color: var(--rsp-text-color);
+      font-size: var(--rsp-fs-400);
+      padding-block: var(--rsp-spacing-xs);
+      @include burst-inline-block-padding;
+      transition: all 0.2s ease-in-out;
+      border-left: 4px solid transparent;
+    }
+  }
+
+  .burst-submenu-item{
+    a{
+      padding-left: calc(var(--rsp-spacing-l) + var(--rsp-spacing-m));
+      font-size: var(--rsp-fs-300);
+    }
+  }
+}

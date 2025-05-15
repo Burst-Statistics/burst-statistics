@@ -1,0 +1,27 @@
+.burst-logo-container {
+  display:flex;
+  .burst-logo-preview {
+    margin-top: 10px;
+    border: 1px var(--rsp-black) dashed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &.burst-clickable {
+      cursor: pointer;
+      height: calc(40px + 2 * var(--rsp-spacing-xs));
+      max-width: 100%;
+      border-radius: var(--rsp-border-radius-xs);
+      padding: var(--rsp-spacing-xs);
+      img{
+        max-width: 100%;
+        max-height: 100%;
+
+      }
+    }
+    &.disabled {
+        pointer-events: none;
+        opacity: 0.5;
+    }
+  }
+}

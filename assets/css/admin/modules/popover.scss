@@ -1,0 +1,88 @@
+.burst-popover{
+  background: var(--rsp-grey-100);
+  z-index: 99;
+  border: 1px solid var(--rsp-grey-400);
+  padding: var(--rsp-spacing-xs) var(--rsp-spacing-s);
+  border-radius: var(--rsp-border-radius-xs);
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--rsp-spacing-s);
+
+  box-shadow: hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px;
+  animation-duration: 600ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+
+  &[data-state='open']{
+    animation-name: slideDownAndFade;
+  }
+
+  @keyframes slideDownAndFade {
+    from {
+      opacity: 0;
+      transform: translateY(-2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  &--date-range{
+    padding: 0;
+    overflow: hidden;
+  }
+
+  &__arrow{
+    --rsp-arrow-size: 8px;
+    position: absolute;
+    top: calc( -1 * var(--rsp-arrow-size));
+    right: calc(var(--rsp-arrow-size) * 2 - 3px);
+    width: 0;
+    height: 0;
+    border-left: var(--rsp-arrow-size) solid transparent;
+    border-right: var(--rsp-arrow-size) solid transparent;
+    border-bottom: var(--rsp-arrow-size) solid var(--rsp-grey-400);
+
+    &:after {
+      content: '';
+      position: absolute;
+      bottom: calc(-1 * var(--rsp-arrow-size));
+      left: calc( -1 * var(--rsp-arrow-size) + 1px);
+      width: 0;
+      height: 0;
+      border-left: calc( var(--rsp-arrow-size) - 1px) solid transparent;
+      border-right: calc( var(--rsp-arrow-size) - 1px) solid transparent;
+      border-bottom: calc( var(--rsp-arrow-size) - 1px) solid var(--rsp-grey-100);
+    }
+  }
+  &__header{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 3px;
+  }
+  h5{
+    grid-column: 1 / 2;
+    order: -1;
+  }
+  h6{
+    grid-column: span 2;
+  }
+  p.burst-popover__small-text{
+    font-size: var(--rsp-fs-200);
+    color: var(--rsp-text-color-light);
+    font-weight: 500;
+
+  }
+  &__content{
+    display: flex;
+    flex-direction: column;
+    gap: var(--rsp-spacing-xxs);
+  }
+  &__footer{
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--rsp-spacing-xs);
+  }
+}

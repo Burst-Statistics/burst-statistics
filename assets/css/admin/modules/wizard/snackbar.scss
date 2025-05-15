@@ -1,0 +1,16 @@
+.burst{
+  .components-snackbar-list.edit-site-notices{
+    width: max-content;
+    position: fixed;
+    bottom: var(--rsp-spacing-m);
+    right: var(--rsp-spacing-l);
+    & > div{
+      margin-left: auto;
+    }
+    .components-snackbar{
+      @include burst-block;
+      color: var(--rsp-text-color);
+      font-weight:700;
+    }
+  }
+}

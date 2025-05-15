@@ -1,0 +1,17 @@
+.burst {
+
+  --rsp-brand-primary-lightest: #ecf4ed;
+  --rsp-brand-primary-lighter: #d2e4d3;
+  --rsp-brand-primary-light: #b7d4b8;
+  --rsp-brand-primary: var(--rsp-green);
+  --rsp-brand-primary-dark: #1e7e1e;
+  --rsp-brand-primary-darker: #1a6c1a;
+  --rsp-brand-primary-darkest: #155515;
+
+  // Plugin specific variables down here please
+
+  --rsp-brand-secondary: var(--rsp-yellow);
+  --rsp-brand-primary-faded: var(--rsp-brand-primary-lightest);
+
+
+}

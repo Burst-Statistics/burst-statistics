@@ -1,0 +1,17 @@
+.burst {
+  .burst-flag-wrapper{
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--rsp-spacing-xxs);
+  }
+  .burst-flag {
+    svg {
+      height: var(--rsp-fs-300);
+      width: auto;
+    }
+    div {
+      display: flex;
+    }
+  }
+}
