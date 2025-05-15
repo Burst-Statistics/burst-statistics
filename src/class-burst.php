@@ -46,7 +46,7 @@ if ( class_exists( 'Burst' ) ) {
 			define( 'BURST_URL', plugin_dir_url( BURST_FILE ) );
 			define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 			define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
-			define( 'BURST_PLUGIN_NAME', defined('BURST_PRO') ? 'Burst Pro' : 'Burst Statistics' );
+			define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
 
 			$burst_plugin = explode( '/', BURST_PLUGIN );
 			array_pop( $burst_plugin );
@@ -78,9 +78,9 @@ if ( class_exists( 'Burst' ) ) {
 			}
 			if ( $this->has_admin_access() ) {
 				$this->admin = new Admin();
-				if ( defined('BURST_PRO_FILE') ) {
-                    $this->pro   = new Pro();
-                }
+				if ( defined( 'BURST_PRO_FILE' ) ) {
+					$this->pro = new Pro();
+				}
 			}
 			$this->frontend = new Frontend();
 		}
