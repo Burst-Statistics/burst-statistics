@@ -9,7 +9,7 @@
  * @license MIT https://github.com/donatj/PhpUserAgent/blob/master/LICENSE.md
  */
 
-namespace burst\UserAgent {
+namespace Burst\UserAgent {
 
 	const PLATFORM        = 'platform';
 	const BROWSER         = 'browser';

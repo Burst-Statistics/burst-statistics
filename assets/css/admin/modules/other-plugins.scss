@@ -31,15 +31,11 @@
 		&.burst-burst-statistics {
 		--rsp-other-plugins-color: var(--rsp-green);
 		}
-		&.burst-updraftplus {
-		--rsp-other-plugins-color: var(--rsp-orange);
+		&.burst-complianz-gdpr {
+		--rsp-other-plugins-color: var(--rsp-blue);
 		}
-		&.burst-wp-optimize {
-			--rsp-other-plugins-color: var(--rsp-orange);
-		}
-
-		&.burst-all-in-one-wp-security-and-firewall {
-			--rsp-other-plugins-color: var(--rsp-orange);
+		&.burst-complianz-terms-conditions {
+			--rsp-other-plugins-color: var(--rsp-black);
 		}
 
 	  a {

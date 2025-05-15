@@ -1,4 +1,5 @@
 // TimeMe.js should be loaded and running to track time as soon as it is loaded.
+
 /**
  * @typedef {Object} BurstOptions
  * @property {boolean} enable_cookieless_tracking
@@ -63,7 +64,6 @@ const pageIsRendered = new Promise(resolve => {
     resolve();
   }
 });
-
 // Import goals if applicable
 if (burst.goals?.active?.some(goal => !goal.page_url || goal.page_url === '' || goal.page_url === burst.options.pageUrl)) {
   import(burst.goals.scriptUrl).then(goals => goals.default());
@@ -141,6 +141,7 @@ const burst_uid = () => {
 const burst_generate_uid = () => {
   return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 };
+
 
 const burst_fingerprint = () => {
   if (burst.cache.fingerprint !== null) return Promise.resolve(burst.cache.fingerprint);
@@ -229,6 +230,7 @@ async function burst_update_hit(update_uid = false, force = false) {
     return;
   }
 
+  // If we don't force the update, we only update the hit if 300ms have passed since the last update
   if (!force && Date.now() - burst.tracking.lastUpdateTimestamp < 300) return;
 
   document.dispatchEvent(new CustomEvent('burst_before_update_hit', { detail: burst }));
@@ -320,8 +322,7 @@ function burst_init_events() {
     // Check if this element is part of a goal
     const isGoalElement = burst.goals?.active?.some(goal => {
       if (goal.type !== 'clicks') return false;
-      const selector = goal.attribute === 'id' ? `#${goal.attribute_value}` : `.${goal.attribute_value}`;
-      return target.closest(selector);
+      return target.closest(goal.selector);
     });
 
     // Only update hit if it's not a goal element, as the goal will be tracked by the goal tracker
@@ -377,3 +378,8 @@ if (typeof wp_has_consent !== 'function') {
 } else if (wp_has_consent('statistics')) {
   burst_init_events();
 }
+
+window.burst_uid = burst_uid;
+window.burst_use_cookies = burst_use_cookies;
+window.burst_fingerprint = burst_fingerprint;
+window.burst_update_hit = burst_update_hit;

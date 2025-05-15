@@ -27,52 +27,31 @@
 
 @import 'variables.scss';
 @import 'admin/base.scss';
-@import 'admin/layout.scss';
-  @import 'admin/modules/modal.scss';
-  @import 'admin/modules/header.scss';
-  @import 'admin/modules/dashboard.scss';
-  @import 'admin/modules/statistics.scss';
-  @import 'admin/modules/buttons.scss';
-  @import 'admin/modules/bullets.scss';
-  @import 'admin/modules/icons.scss';
-  @import 'admin/modules/progress.scss';
-  @import "admin/modules/placeholder.scss";
-  @import 'admin/modules/other-plugins.scss';
-
-  @import 'admin/modules/tips-tricks.scss';
-  @import 'admin/modules/pro-popover.scss';
-  @import 'admin/modules/popover.scss';
-  @import 'admin/modules/tooltip.scss';
-  @import 'admin/modules/inputs/AcquisitionSwitch.scss';
-  @import 'admin/modules/inputs/CheckboxGroup.scss';
-  @import 'admin/modules/pill.scss';
-  @import 'admin/modules/error-boundary.scss';
-  @import 'admin/modules/dashboard/goals.scss';
-
-  @import 'admin/modules/inputs/SelectInput.scss';
-  @import "admin/modules/inputs/EmailReports.scss";
-
-  @import 'admin/modules/wizard.scss';
-    @import 'admin/modules/wizard/notice.scss';
-    @import 'admin/modules/wizard/menu.scss';
-    @import 'admin/modules/wizard/fields.scss';
-    @import 'admin/modules/wizard/snackbar.scss';
-    @import 'admin/modules/wizard/goals.scss';
-    @import 'admin/modules/wizard/logo_editor.scss';
-
-    @import 'admin/modules/statistics/insights.scss';
-    @import 'admin/modules/statistics/daterange.scss';
-    @import 'admin/modules/statistics/filters.scss';
-    @import 'admin/modules/statistics/countries.scss';
-    @import 'admin/modules/toast/main.scss';
-
-  @import 'admin/modules/settings.scss';
-  @import 'admin/modules/notices.scss';
-  @import 'admin/modules/datatables.scss';
-  @import 'admin/modules/animations.scss';
-  @import "admin/modules/tour.scss";
-  @import "admin/modules/archives.scss";
-
-  @import "admin/modules/premium.scss";
+@import 'admin/modules/dashboard/goals.scss';
+@import 'admin/modules/modal.scss';
+@import 'admin/modules/dashboard.scss';
+@import 'admin/modules/statistics.scss';
+@import 'admin/modules/bullets.scss';
+@import 'admin/modules/icons.scss';
+@import 'admin/modules/progress.scss';
+@import 'admin/modules/other-plugins.scss';
+@import 'admin/modules/tips-tricks.scss';
+@import 'admin/modules/pro-popover.scss';
+@import 'admin/modules/popover.scss';
+@import 'admin/modules/buttons.scss';
+@import 'admin/modules/inputs/CheckboxGroup.scss';
+@import 'admin/modules/tooltip.scss';
+@import 'admin/modules/inputs/SelectInput.scss';
+@import "admin/modules/inputs/EmailReports.scss";
+@import 'admin/modules/wizard.scss';
+@import 'admin/modules/wizard/fields.scss';
+@import 'admin/modules/wizard/goals.scss';
+@import 'admin/modules/wizard/logo_editor.scss';
+@import 'admin/modules/statistics/daterange.scss';
+@import 'admin/modules/statistics/filters.scss';
+@import 'admin/modules/statistics/countries.scss';
+@import 'admin/modules/toast/main.scss';
+@import 'admin/modules/datatables.scss';
+@import "admin/modules/tour.scss";
 @import 'admin/states.scss';
 @import 'admin/theme.scss';

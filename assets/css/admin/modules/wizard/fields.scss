@@ -7,170 +7,168 @@
     color: var(--rsp-input-text-color);
   }
 
-  div[class^="burst-wizard-"] { // starts with selector
 
-    input[type="text"], input[type="password"], input[type="date"], input[type="datetime"], input[type="datetime-local"], input[type="email"], input[type="month"], input[type="number"], input[type="search"], input[type="tel"], input[type="time"], input[type="url"], input[type="week"] {
-      background-color: var(--rsp-input-background-color);
-      border: 1px solid var(--rsp-input-border-color);
-      border-radius: var(--rsp-border-radius-xs);
-      color: var(--rsp-input-text-color);
+  input[type="text"], input[type="password"], input[type="date"], input[type="datetime"], input[type="datetime-local"], input[type="email"], input[type="month"], input[type="number"], input[type="search"], input[type="tel"], input[type="time"], input[type="url"], input[type="week"] {
+    background-color: var(--rsp-input-background-color);
+    border: 1px solid var(--rsp-input-border-color);
+    border-radius: var(--rsp-border-radius-xs);
+    color: var(--rsp-input-text-color);
+  }
+
+  .components-flex {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+
+    .components-flex-item label {
+      margin: 0;
     }
 
-    .components-flex {
+    .components-input-control__container {
+      max-width: max-content;
+    }
+  }
+
+  .burst-grid-item-content label {
+    color: var(--rsp-text-color);
+    font-size: var(--rsp-fs-400);
+    font-weight: 500;
+    line-height: 1.5;
+    text-transform: unset;
+    box-sizing: border-box;
+    display: inherit;
+    max-width: 100%;
+    z-index: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .components-base-control__field {
+    margin-bottom: 0;
+  }
+
+  .components-toggle-control {
+    .components-base-control__field, .components-flex {
       display: flex;
-      flex-direction: row;
+      flex-direction: row-reverse;
       align-items: center;
       justify-content: space-between;
 
-      .components-flex-item label {
-        margin: 0;
-      }
-
-      .components-input-control__container {
-        max-width: max-content;
+      .components-form-toggle {
+        margin-right: 0;
       }
     }
+  }
 
-    .burst-grid-item-content label {
-      color: var(--rsp-text-color);
-      font-size: var(--rsp-fs-400);
-      font-weight: 500;
-      line-height: 1.5;
-      text-transform: unset;
-      box-sizing: border-box;
-      display: inherit;
-      max-width: 100%;
-      z-index: 1;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+  .components-form-toggle.is-checked .components-form-toggle__track {
+    background-color: var(--rsp-green);
+  }
+
+  .burst-grid-item {
+    .burst-grid-item-content {
+      padding: var(--rsp-spacing-xs) 0;
     }
+  }
 
-    .components-base-control__field {
-      margin-bottom: 0;
+  .burst-field-wrap, .burst-settings-block-intro {
+    padding-block: var(--rsp-spacing-s);
+    @include burst-inline-block-padding;
+
+    & > .burst-field-wrap {
+      padding: 0;
     }
+  }
 
-    .components-toggle-control {
-      .components-base-control__field, .components-flex {
-        display: flex;
-        flex-direction: row-reverse;
-        align-items: center;
-        justify-content: space-between;
+  .burst-field-button {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    align-items: center;
+  }
 
-        .components-form-toggle {
-          margin-right: 0;
-        }
-      }
-    }
+  .burst-highlight {
+    background-color: transparent;
+    border-left: 4px solid var(--rsp-green);
+    -o-animation: fadeIt 3s ease-in-out;
+    animation: fadeIt 3s ease-in-out;
+  }
 
-    .components-form-toggle.is-checked .components-form-toggle__track {
-      background-color: var(--rsp-green);
-    }
-
-    .burst-grid-item {
-      .burst-grid-item-content {
-        padding: var(--rsp-spacing-xs) 0;
-      }
-    }
-
-    .burst-field-wrap, .burst-settings-block-intro {
-      padding-block: var(--rsp-spacing-s);
-      @include burst-inline-block-padding;
-
-      & > .burst-field-wrap {
-        padding: 0;
-      }
-    }
-
-    .burst-field-button {
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .burst-highlight {
+  @-o-keyframes fadeIt {
+    0% {
       background-color: transparent;
-      border-left: 4px solid var(--rsp-green);
-      -o-animation: fadeIt 3s ease-in-out;
-      animation: fadeIt 3s ease-in-out;
     }
-
-    @-o-keyframes fadeIt {
-      0% {
-        background-color: transparent;
-      }
-      30% {
-        background-color: var(--rsp-green-faded);
-      }
-      100% {
-        border-right: 0;
-        background-color: inherit;
-      }
+    30% {
+      background-color: var(--rsp-green-faded);
     }
-    @keyframes fadeIt {
-      0% {
-        background-color: transparent;
-        border-right: 0;
-      }
-      30% {
-        background-color: var(--rsp-green-faded);
-      }
-      100% {
-        background-color: inherit;
-      }
+    100% {
+      border-right: 0;
+      background-color: inherit;
     }
-    //switch padding to top, to prevent tasks from getting stuck to text field
-    .burst-license {
-      .burst-task-element {
-        padding-top: var(--rsp-spacing-s);
-        padding-bottom: 0;
-        //limit width of skeleton icon, which causes scrollbars in the side during loading
-        .burst-icon {
-          width:15px;
-        }
-      }
-
-      .burst-license-field {
-        display: flex;
+  }
+  @keyframes fadeIt {
+    0% {
+      background-color: transparent;
+      border-right: 0;
+    }
+    30% {
+      background-color: var(--rsp-green-faded);
+    }
+    100% {
+      background-color: inherit;
+    }
+  }
+  //switch padding to top, to prevent tasks from getting stuck to text field
+  .burst-license {
+    .burst-task-element {
+      padding-top: var(--rsp-spacing-s);
+      padding-bottom: 0;
+      //limit width of skeleton icon, which causes scrollbars in the side during loading
+      .burst-icon {
+        width: 15px;
       }
     }
 
-    .burst-user-role-checkbox-blocklist {
-      margin-top: var(--rsp-spacing-xs);
-
-      label {
-        margin-top: var(--rsp-spacing-xxs);
-        font-weight: 400;
-        font-size: var(--rsp-fs-300);
-      }
-    }
-
-    .burst-class-id-field {
+    .burst-license-field {
       display: flex;
-      flex-wrap: wrap;
-      width: 100%;
+    }
+  }
 
-      & > * {
-        width: 100%;
+  .burst-user-role-checkbox-blocklist {
+    margin-top: var(--rsp-spacing-xs);
+
+    label {
+      margin-top: var(--rsp-spacing-xxs);
+      font-weight: 400;
+      font-size: var(--rsp-fs-300);
+    }
+  }
+
+  .burst-class-id-field {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+
+    & > * {
+      width: 100%;
+    }
+
+    &__input {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 28px 1fr;
+
+      button {
+        background-color: var(--rsp-input-background-color);
+        border: 1px solid var(--rsp-input-border-color);
+        border-radius: var(--rsp-border-radius-xs) 0 0 var(--rsp-border-radius-xs);
+        border-right: 0;
+        cursor: pointer;
       }
 
-      &__input {
-        flex: 1;
-        display: grid;
-        grid-template-columns: 28px 1fr;
-
-        button {
-          background-color: var(--rsp-input-background-color);
-          border: 1px solid var(--rsp-input-border-color);
-          border-radius: var(--rsp-border-radius-xs) 0 0 var(--rsp-border-radius-xs);
-          border-right: 0;
-          cursor: pointer;
-        }
-
-        input {
-          margin-left: 0;
-          border-radius: 0 var(--rsp-border-radius-xs) var(--rsp-border-radius-xs) 0
-        }
+      input {
+        margin-left: 0;
+        border-radius: 0 var(--rsp-border-radius-xs) var(--rsp-border-radius-xs) 0
       }
     }
   }
@@ -180,8 +178,9 @@
       margin-top: var(--rsp-spacing-xs);
     }
   }
+
   .burst-comment {
-   width: 100%;
+    width: 100%;
   }
 }
 
