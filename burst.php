@@ -56,12 +56,12 @@ if ( ! function_exists( '\Burst\burst_loader' ) ) {
     }
 }
 
-if ( ! function_exists( '\Burst\burst_on_activation_premium' ) && ! function_exists( 'burst_on_activation_premium' ) ) {
+if ( ! function_exists( '\Burst\burst_on_activation' ) && ! function_exists( 'burst_on_activation' ) ) {
     /**
      * Set an activation time stamp
      * This function has te have a different name, to ensure that it runs and deactivates free, if required.
      */
-    function burst_on_activation_premium(): void {
+    function burst_on_activation(): void {
         update_option( 'burst_run_activation', true, false );
 
         // ensure that defaults are set only once.
@@ -69,7 +69,7 @@ if ( ! function_exists( '\Burst\burst_on_activation_premium' ) && ! function_exi
             update_option( 'burst_set_defaults', true, false );
         }
     }
-    register_activation_hook( __FILE__, '\Burst\burst_on_activation_premium' );
+    register_activation_hook( __FILE__, '\Burst\burst_on_activation' );
 }
 
 if ( ! function_exists( '\Burst\burst_clear_scheduled_hooks' ) && ! function_exists( 'burst_clear_scheduled_hooks' ) ) {
