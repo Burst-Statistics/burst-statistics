@@ -22,10 +22,10 @@ workflow:
   before_script:
     - npm ci --no-audit --cache .npm --prefer-offline
     - bash /usr/local/bin/entrypoint.sh
-    - cp -R . /var/www/html/wp-content/plugins/burst-pro/
+    - cp -R . /var/www/html/wp-content/plugins/burst-statistics/
     # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
-    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-pro/
-    - wp plugin activate burst-pro --path=/var/www/html
+    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
+    - wp plugin activate burst-statistics --path=/var/www/html
   after_script:
     - cp /var/log/php_errors.log error.log || true
     - cp /var/www/html/wp-content/debug.log debug.log || true
@@ -45,6 +45,18 @@ test:e2e:
   <<: *e2e_base
   script:
     - npm run e2e
+
+test:e2e:upgrade:
+  <<: *e2e_base
+  before_script:
+    - npm ci --no-audit --cache .npm --prefer-offline
+    - bash /usr/local/bin/entrypoint.sh
+    - cp -R . /var/www/html/wp-content/plugins/burst-statistics-new/
+    # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
+    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics-new/
+    - wp plugin install burst-statistics --activate --path=/var/www/html
+  script:
+    - npm run e2e:upgrade
 
 test:e2e:lowest_versions:
   <<: *e2e_base

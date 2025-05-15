@@ -183,31 +183,7 @@ class Upgrade {
 		}
 
 		if ( $prev_version && version_compare( $prev_version, '2.0.0', '<' ) ) {
-			// upgrade all goals to use the new selector field.
-			$goal_object = new Goals();
-			$goals       = $goal_object->get_goals();
-			foreach ( $goals as $goal ) {
-				if ( $goal->type === 'clicks' || $goal->type === 'views' ) {
-					if ( isset( $goal->attribute_value ) && $goal->attribute_value !== '' ) {
-						$goal->selector = $goal->attribute === 'id' ? '#' . $goal->attribute_value : '.' . $goal->attribute_value;
-					}
-				}
-				$goal->save();
-			}
-
-			// delete the setup, attribute and attribute_value fields from the db.
-			global $wpdb;
-			$table_name = $wpdb->prefix . 'burst_goals';
-
-			// Check if columns exist before querying them.
-			$columns = $wpdb->get_results( "SHOW COLUMNS FROM {$table_name}" );
-
-			foreach ( $columns as $column ) {
-                //phpcs:ignore
-				if ( $column->Field === 'setup' || $column->Field === 'attribute' || $column->Field === 'attribute_value' ) {
-					$wpdb->query( "ALTER TABLE {$table_name} DROP COLUMN {$column->Field}" );
-				}
-			}
+			add_action( 'plugins_loaded', [ $this, 'upgrade_goals' ], 30 );
 		}
 
 		// upgrade missing session_ids
@@ -220,5 +196,36 @@ class Upgrade {
 
 		do_action( 'burst_upgrade_after', $prev_version );
 		update_option( 'burst-current-version', $new_version, false );
+	}
+
+	/**
+	 * Run upgrade for goals after 2.0 update
+	 */
+	public function upgrade_goals(): void {
+		// upgrade all goals to use the new selector field.
+		$goal_object = new Goals();
+		$goals       = $goal_object->get_goals();
+		foreach ( $goals as $goal ) {
+			if ( $goal->type === 'clicks' || $goal->type === 'views' ) {
+				if ( isset( $goal->attribute_value ) && $goal->attribute_value !== '' ) {
+					$goal->selector = $goal->attribute === 'id' ? '#' . $goal->attribute_value : '.' . $goal->attribute_value;
+				}
+			}
+			$goal->save();
+		}
+
+		// delete the setup, attribute and attribute_value fields from the db.
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'burst_goals';
+
+		// Check if columns exist before querying them.
+		$columns = $wpdb->get_results( "SHOW COLUMNS FROM {$table_name}" );
+
+		foreach ( $columns as $column ) {
+            //phpcs:ignore
+            if ( $column->Field === 'setup' || $column->Field === 'attribute' || $column->Field === 'attribute_value' ) {
+				$wpdb->query( "ALTER TABLE {$table_name} DROP COLUMN {$column->Field}" );
+			}
+		}
 	}
 }
