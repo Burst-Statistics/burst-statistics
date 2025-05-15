@@ -19,7 +19,7 @@ test('admin can access Burst Dashboard and see its contents', async ({ page }) =
   }
 
   async function checkDashboardContent() {
-    const element = page.locator('p.burst-today-list-item-text', { hasText: 'Total Pageviews' });
+    const element = page.locator('p.burst-today-list-item-text', { hasText: 'Total pageviews' });
     return await element.isVisible();
   }
 

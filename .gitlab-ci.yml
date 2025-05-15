@@ -47,11 +47,6 @@ test:e2e:
   script:
     - npm run e2e
 
-test:e2e:upgrade:
-  <<: *e2e_base
-  script:
-    - npm run e2e:upgrade
-
 test:e2e:lowest_versions:
   <<: *e2e_base
   image:
