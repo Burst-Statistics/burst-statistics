@@ -97,6 +97,11 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 2.0.5 =
+* Improvement: optimized database upgrade
+* New: rewritten plugin for even better performance
+* New: extended range of automated tests to increase reliability
+
 = 1.8.0.1 =
 * Fix: Goals block details not showing correct data.
 * Fix: Click goals not always tracking correctly.
