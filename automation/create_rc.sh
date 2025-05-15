@@ -110,17 +110,8 @@ create_rc_zip() {
     "--exclude=/mailer/maizzle/node_modules/"
   )
 
-    # exclude src folder for pro plugin
-    if [ "$plugin_name" == "burst-statistics" ]; then
-#      EXCLUDES+=("--exclude=/src/Admin/App/src/") ## Tailwind is needed, so has to be included.
-      EXCLUDES+=("--exclude=/src/Admin/Dashboard_Widget/src/")
-      EXCLUDES+=("--exclude=/assets/js/src/")
-      EXCLUDES+=("--exclude=/src/Admin/Mailer/maizzle/") # maizzle is used to make template files, but they are build manually based on the maizzle code.
-    fi
-
-    #for RC zip generation for production, also exclude .po and .mo, as these are dynamically downloaded.
-      EXCLUDES+=("--exclude=languages/*.po")
-      EXCLUDES+=("--exclude=languages/*.mo")
+    EXCLUDES+=("--exclude=languages/*.po")
+    EXCLUDES+=("--exclude=languages/*.mo")
 
 
 #rsync -aqr "${EXCLUDES[@]}" ${plugin_name}/. updates/${plugin_name}/ || { echo "rsync failed"; exit 1; }
@@ -149,24 +140,6 @@ echo "remove obsolete directories from pre 2.0 versions"
 cd "$PLUGIN_DIR" || { echo "Failed to change directory"; exit 1; }
 rm -rf "settings"
 rm -rf "dashboard-widget"
-echo "Remove existing build directory"
-cd "$PLUGIN_DIR/src/Admin/App" || { echo "Failed to change directory"; exit 1; }
-rm -rf "build"
-echo "Run react build for App"
-npm install --force
-npm run build
-npm run build:css
-chown -R $(whoami):staff build/
-chmod -R u+rwX,go+rX build/
-
-cd "$PLUGIN_DIR/src/Admin/Dashboard_Widget" || { echo "Failed to change directory"; exit 1; }
-rm -rf "build";
-echo "Run react build for the dashboard widget"
-npm install --force
-npm run build
-chown -R $(whoami):staff build/
-chmod -R u+rwX,go+rX build/
-
 
 echo "Creating RC only..."
 create_rc_zip "true"
