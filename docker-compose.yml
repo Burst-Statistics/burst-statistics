@@ -1,0 +1,30 @@
+services:
+  php:
+    build:
+      context: .
+      dockerfile: php.Dockerfile
+    volumes:
+      - ./:/app
+    working_dir: /app
+  wordpress:
+    build: .
+    ports:
+      - "8000:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: password
+      WORDPRESS_DB_NAME: wordpress_test
+    volumes:
+      - ./wp-content/plugins/burst-statistics:/var/www/html/wp-content/plugins/burst-statistics
+
+  db:
+    image: mariadb:10.5
+    environment:
+      MARIADB_ROOT_PASSWORD: mysql
+      MARIADB_DATABASE: wordpress_test
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:

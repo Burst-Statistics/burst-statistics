@@ -1,0 +1,30 @@
+{
+  "name": "burst-statistics",
+  "version": "2.0",
+  "description": "Burst Statistics is a privacy-friendly analytics tool for Wordpress",
+  "main": "index.js",
+  "scripts": {
+    "e2e": "playwright test tests/e2e/specs/",
+    "e2e:upgrade": "playwright test tests/e2e/specs-upgrade/",
+    "e2e:open": "playwright test --headed"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Burst-Statistics/burst-statistics.git"
+  },
+  "keywords": [
+    "analytics",
+    "statistics",
+    "wordpress",
+    "privacy-friendly"
+  ],
+  "author": "Rogier Lankhorst & Hessel de Jong",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/Burst-Statistics/burst/issues"
+  },
+  "homepage": "https://github.com/Burst-Statistics/burst#readme",
+  "devDependencies": {
+    "@playwright/test": "1.52.0"
+  }
+}

@@ -1,0 +1,64 @@
+
+workflow:
+  auto_cancel:
+    # When one job fails, stop the other running jobs.
+    on_job_failure: all
+    on_new_commit: interruptible
+
+
+.e2e_base_template: &e2e_base
+  variables:
+    BASE_URL: "http://localhost"
+  image:
+    name: source.updraftplus.com:5050/ci/playwright-e2e:php-8.2-wp-6.8.0
+    entrypoint: [""]
+  cache:
+    - key:
+        files:
+          - package.json
+          - package-lock.json
+      paths:
+        - .npm/
+        - package-lock.json
+  before_script:
+    - npm ci --no-audit --cache .npm --prefer-offline
+    - bash /usr/local/bin/entrypoint.sh
+    - cp -R . /var/www/html/wp-content/plugins/burst-pro/
+    # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
+    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-pro/
+    - wp plugin activate burst-pro --path=/var/www/html
+  after_script:
+    - cp /var/log/php_errors.log error.log || true
+    - cp /var/www/html/wp-content/debug.log debug.log || true
+  artifacts:
+    paths:
+      - screenshots/
+      - debug.log
+      - error.log
+    expire_in: 1h
+    when: always
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    - when: never
+
+test:e2e:
+  <<: *e2e_base
+  script:
+    - npm run e2e
+
+test:e2e:upgrade:
+  <<: *e2e_base
+  script:
+    - npm run e2e:upgrade
+
+test:e2e:lowest_versions:
+  <<: *e2e_base
+  image:
+    name: source.updraftplus.com:5050/ci/playwright-e2e:php-7.4-wp-6.2.0
+    entrypoint: [""]
+  script:
+    - npm run e2e
+
+
+
