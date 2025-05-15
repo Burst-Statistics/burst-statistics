@@ -24,32 +24,14 @@ PLUGINS_DIR="$(dirname "$PLUGIN_DIR")"
 UPDATES_DIR="${PLUGINS_DIR}/updates"
 echo "UPDATES_DIR: ${UPDATES_DIR}"
 
-
-# Check if username is provided
-if [ -z "$1" ]; then
-  echo "Usage: $0 <username>"
-  exit 1
-fi
 if [ "$(id -u)" -eq 0 ]; then
   echo "❌ This script should NOT be run as root. Exiting."
   exit 1
 fi
 
 
-# Set username from the first argument
-username="$1"
-
-# Define variables
-root_path="public_html/"
-remote_path="public_html/wp-content"
-# Get the directory of the current script
-
-# Generate a timestamp
-timestamp=$(date +"%Y%m%d%H%M%S")
-
 # Define function to create RC
 create_rc_zip() {
-  exclude_languages="$1"
 	echo "Create RC for ${plugin_name}"
   echo "Create RC #1: Remove existing '${plugin_name}' directory if it exists"
   cd "${PLUGINS_DIR}" || { echo "Failed to change directory"; exit 1; }
