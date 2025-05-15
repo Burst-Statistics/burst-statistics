@@ -7,6 +7,7 @@ test('install old free and upgrade to current version of free', async ({ page })
     console.log("running upgrade test");
 
     await page.goto('wp-admin/plugins.php');
+    await page.goto('/wp-admin/admin.php?page=burst', { waitUntil: 'domcontentloaded' });
 
     //deactivate the old one
     await wpCli('plugin deactivate burst-statistics');
