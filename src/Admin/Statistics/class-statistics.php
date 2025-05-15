@@ -113,7 +113,6 @@ class Statistics {
 		$defaults = $this->get_metrics();
 		foreach ( $metrics as $metric => $value ) {
 			if ( ! isset( $defaults[ $value ] ) ) {
-				self::error_log( 'Metric ' . $value . ' does not exist' );
 				unset( $metrics[ $metric ] );
 			}
 		}
