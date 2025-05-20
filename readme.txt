@@ -98,7 +98,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 
 == Change log ==
 = 2.0.6 =
-* Improvement: optimized database upgrade
+* Improvement: optimized database upgrade.
 * New: rewritten plugin for even better performance
 * New: extended range of automated tests to increase reliability
 
