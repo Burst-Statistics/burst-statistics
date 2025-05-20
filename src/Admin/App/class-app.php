@@ -825,7 +825,6 @@ class App {
 		if ( ! $ajax_data ) {
 			$this->remove_fallback_notice();
 		}
-
 		switch ( $action ) {
 			case 'plugin_actions':
 				$data = $this->plugin_actions( $request, $data );
@@ -899,23 +898,32 @@ class App {
 			[
 				'slug'          => 'all-in-one-wp-security-and-firewall',
 				'constant_free' => 'AIO_WP_SECURITY_VERSION',
-				'constant_pro'  => false,
+				'premium'       => [
+					'type'  => 'constant',
+					'value' => 'AIOWPS_PREMIUM_VERSION',
+				],
 				'wordpress_url' => 'https://wordpress.org/plugins/all-in-one-wp-security-and-firewall/',
 				'upgrade_url'   => 'https://aiosplugin.com/product/all-in-one-wp-security-and-firewall-premium/?src=plugin-burst-other-plugins',
 				'title'         => 'All-In-One Security – Simply secure your site',
 			],
 			[
-				'slug'          => 'updraftplus',
-				'constant_free' => 'UPDRAFTPLUS_DIR',
-				'constant_pro'  => false,
-				'wordpress_url' => 'https://wordpress.org/plugins/updraftplus/',
-				'upgrade_url'   => 'https://updraftplus.com/shop/updraftplus-premium/?src=plugin-burst-other-plugins',
-				'title'         => 'UpdraftPlus - Back-up & migrate your site with ease',
+				'slug'              => 'updraftplus',
+				'constant_free'     => 'UPDRAFTPLUS_DIR',
+				// 'premium'  => [
+				// 'type' => 'function',
+				// 'value' => '$updraftplus_addons2 && method_exists($updraftplus_addons2, 'connection_status')) {'
+				// ],
+					'wordpress_url' => 'https://wordpress.org/plugins/updraftplus/',
+				'upgrade_url'       => 'https://updraftplus.com/shop/updraftplus-premium/?src=plugin-burst-other-plugins',
+				'title'             => 'UpdraftPlus - Back-up & migrate your site with ease',
 			],
 			[
 				'slug'          => 'wp-optimize',
 				'constant_free' => 'WPO_VERSION',
-				'constant_pro'  => false,
+				'premium'       => [
+					'type'  => 'slug',
+					'value' => 'wp-optimize-premium/wp-optimize.php',
+				],
 				'wordpress_url' => 'https://wordpress.org/plugins/wp-optimize/',
 				'upgrade_url'   => 'https://getwpo.com/buy/?src=plugin-burst-other-plugins',
 				'title'         => 'WP-Optimize – Easily boost your page speed',
@@ -924,15 +932,13 @@ class App {
 
 		foreach ( $plugins as $index => $plugin ) {
 			$installer = new Installer( $plugin['slug'] );
-			// @phpstan-ignore-next-line, constant_pro contain value in the future
-			if ( $plugin['constant_pro'] && defined( $plugin['constant_pro'] ) ) {
+			if ( isset( $plugin['premium'] ) && $this->plugin_is_installed( $plugin['premium']['type'], $plugin['premium']['value'] ) ) {
 				$plugins[ $index ]['pluginAction'] = 'installed';
 			} elseif ( ! $installer->plugin_is_downloaded() && ! $installer->plugin_is_activated() ) {
 				$plugins[ $index ]['pluginAction'] = 'download';
 			} elseif ( $installer->plugin_is_downloaded() && ! $installer->plugin_is_activated() ) {
 				$plugins[ $index ]['pluginAction'] = 'activate';
-				// @phpstan-ignore-next-line, might be true in the future
-			} elseif ( $plugin['constant_pro'] ) {
+			} elseif ( isset( $plugin['premium'] ) ) {
 				$plugins[ $index ]['pluginAction'] = 'upgrade-to-pro';
 			} else {
 				$plugins[ $index ]['pluginAction'] = 'installed';
@@ -948,6 +954,22 @@ class App {
 		}
 
 		return $plugins;
+	}
+
+	/**
+	 * Check if a plugin is installed based on the detection type and value.
+	 */
+	private function plugin_is_installed( string $detection_type, string $detection_value ): bool {
+		if ( $detection_type === 'constant' ) {
+			return defined( $detection_value );
+		} elseif ( $detection_type === 'slug' ) {
+			return file_exists( WP_PLUGIN_DIR . '/' . $detection_value );
+		} elseif ( $detection_type === 'function' ) {
+			return function_exists( $detection_value );
+		} elseif ( $detection_type === 'class' ) {
+			return class_exists( $detection_value );
+		}
+		return false;
 	}
 
 	/**

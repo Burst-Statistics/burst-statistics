@@ -50,12 +50,12 @@ const RestoreArchivesField = forwardRef(
   const onRestoreArchives = async( ids ) => {
     setSelectedArchives([]);
     await startRestoreArchives( ids );
-    addHelpNotice(
-      'archive_data',
-      'warning',
-      __( 'Because restoring files can conflict with the archiving functionality, archiving has been disabled.', 'burst-statistics' ),
-      __( 'Archiving disabled', 'burst-statistics' )
-    );
+    // addHelpNotice(
+    //   'archive_data',
+    //   'warning',
+    //   __( 'Because restoring files can conflict with the archiving functionality, archiving has been disabled.', 'burst-statistics' ),
+    //   __( 'Archiving disabled', 'burst-statistics' )
+    // );
   };
 
   const downloadArchives = async() => {

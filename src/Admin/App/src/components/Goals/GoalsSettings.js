@@ -26,8 +26,6 @@ const GoalsSettings = () => {
   const {getValue} = useSettingsData();
   const cookieless = getValue( 'enable_cookieless_tracking' );
 
-  console.log(isLicenseValid);
-
   const handleAddPredefinedGoal = ( goal ) => {
     addPredefinedGoal( goal.id, goal.type, cookieless );
 

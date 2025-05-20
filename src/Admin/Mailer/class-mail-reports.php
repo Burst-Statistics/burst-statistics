@@ -22,27 +22,72 @@ if ( ! class_exists( 'mail_reports' ) ) {
 		 */
 		public function __construct() {
 			add_action( 'burst_every_hour', [ $this, 'maybe_send_report' ] );
-			add_action( 'admin_init', [ $this, 'test_report' ] );
+			add_action( 'admin_init', [ $this, 'test_report_on_query_var' ] );
+			add_filter( 'burst_do_action', [ $this, 'send_test_report_action' ], 10, 3 );
+		}
+
+		/**
+		 * User can send a report by clicking the button in the settings page.
+		 *
+		 * @return array<string, mixed> The modified output array.
+		 */
+		public function send_test_report_action( array $output, string $action, array $data ): array {
+			// phpcs warning fixed.
+			unset( $data );
+			if ( ! $this->user_can_manage() ) {
+				return $output;
+			}
+
+			if ( $action === 'send_email_report' ) {
+				$this->send_test_report();
+				$output = [
+					'success' => true,
+					'message' => __( 'E-mail report sent.', 'burst-statistics' ),
+				];
+			}
+
+			return $output;
+		}
+
+		/**
+		 * User can add query var burst_test_report to send a report
+		 */
+		public function test_report_on_query_var(): void {
+			// not processing, just checking existence.
+            // phpcs:ignore
+			if ( ! isset( $_GET['burst_test_report'] ) ) {
+				return;
+			}
+			$this->send_test_report();
 		}
 
 		/**
 		 * Send a test email.
 		 */
-		public function test_report(): void {
-			// no formdata processed, only existence check.
-			if ( ! isset( $_GET['burst_test_report'] ) ) { // phpcs:ignore
+		public function send_test_report(): void {
+			if ( ! $this->user_can_manage() ) {
 				return;
 			}
-			// no formdata processed, only comparison check.
-			$frequency   = $_GET['burst_test_report'] === 'monthly' ? 'monthly' : 'weekly'; // phpcs:ignore
+			$frequency   = 'weekly';
 			$mailinglist = $this->get_option( 'email_reports_mailinglist' );
-			$emails      = [];
+			$monthly     = [];
+			$weekly      = [];
 			foreach ( $mailinglist as $mailing ) {
 				if ( isset( $mailing['email'] ) ) {
-					$emails[] = $mailing['email'];
+					if ( $mailing['frequency'] === 'monthly' ) {
+						$monthly[] = $mailing['email'];
+					}
+					if ( $mailing['frequency'] === 'weekly' ) {
+						$weekly[] = $mailing['email'];
+					}
 				}
 			}
-			$this->send_report( $emails, $frequency );
+			if ( count( $weekly ) > 0 ) {
+				$this->send_report( $weekly, 'weekly' );
+			}
+			if ( count( $monthly ) > 0 ) {
+				$this->send_report( $monthly, 'monthly' );
+			}
 		}
 
 		/**
@@ -89,7 +134,6 @@ if ( ! class_exists( 'mail_reports' ) ) {
 		 * Send the report to the mailing list.
 		 */
 		private function send_report( array $mailinglist, string $frequency = 'weekly' ): void {
-			global $wpdb;
 			$mailer     = new Mailer();
 			$mailer->to = $mailinglist;
 
@@ -154,6 +198,102 @@ if ( ! class_exists( 'mail_reports' ) ) {
 				$mailer->message = date_i18n( $wp_date_format, $date_start ) . ' - ' . date_i18n( $wp_date_format, $date_end );
 			}
 
+			$compare = $this->get_compare_data( $date_start, $date_end, $compare_date_start, $compare_date_end );
+			update_option( 'burst_last_report_sent', time(), false );
+
+			$blocks   = [];
+			$blocks[] = [
+				'title'    => __( 'Compare', 'burst-statistics' ),
+				'subtitle' => $frequency === 'weekly' ? __( 'vs. previous week', 'burst-statistics' ) : __( 'vs. previous month', 'burst-statistics' ),
+				'table'    => self::format_array_as_table( $compare ),
+				'url'      => $this->admin_url( 'burst#/statistics' ),
+			];
+
+			$custom_blocks = $this->get_blocks();
+			foreach ( $custom_blocks as $index => $block ) {
+					$results                 = $this->get_top_results( $date_start, $date_end, $block['type'] );
+					$completed_block         = [
+						'title' => $block['title'],
+						'table' => self::format_array_as_table( $results ),
+						'url'   => $this->admin_url( 'burst' . $block['url'] ),
+					];
+					$custom_blocks[ $index ] = $completed_block;
+			}
+
+			$blocks = array_merge( $blocks, $custom_blocks );
+			$blocks = apply_filters( 'burst_mail_reports_blocks', $blocks, $date_start, $date_end );
+
+			$mailer->blocks = $blocks;
+			$attachment_id  = $this->get_option( 'logo_attachment_id' );
+			if ( (int) $attachment_id > 0 ) {
+				$mailer->logo = wp_get_attachment_url( $attachment_id );
+			}
+			$mailer->send_mail_queue();
+		}
+
+		/**
+		 * Get blocks for the email report.
+		 *
+		 * @return array<int, array<string, mixed>> List of blocks for the email report.
+		 */
+		public function get_blocks(): array {
+			$blocks = require BURST_PATH . 'src/Admin/Mailer/config/blocks.php';
+			return apply_filters( 'burst_email_blocks', $blocks );
+		}
+
+		/**
+		 * Get top results for the email report.
+		 *
+		 * @return array<int, array<int, string>> List of results
+		 */
+		public function get_top_results( int $start_date, int $end_date, string $type ): array {
+			global $wpdb;
+			$metrics     = [
+				$type,
+				'pageviews',
+			];
+			$sql         = \Burst\burst_loader()->admin->statistics->get_sql_table(
+				$start_date,
+				$end_date,
+				$metrics,
+				[],
+				$type,
+				'pageviews DESC',
+				apply_filters( 'burst_mail_report_limit', 5 ),
+			);
+			$raw_results = $wpdb->get_results( $sql, ARRAY_A );
+
+			switch ( $type ) {
+				case 'page_url':
+					$header = __( 'Page', 'burst-statistics' );
+					break;
+				case 'source':
+					$header = __( 'Campaign', 'burst-statistics' );
+					break;
+				default:
+					$header = __( 'Referrers', 'burst-statistics' );
+					break;
+			}
+
+			$results = [
+				'header' => [ $header, __( 'Pageviews', 'burst-statistics' ) ],
+			];
+
+			foreach ( $raw_results as $row ) {
+				if ( $type !== 'referrer' || $row[ $type ] !== 'Direct' ) {
+					$results[] = [ $row[ $type ], $row['pageviews'] ];
+				}
+			}
+
+			return $results;
+		}
+
+		/**
+		 * Get compare data for the email report.
+		 *
+		 * @return array<int, array<int, string>> List of compare rows grouped by type.
+		 */
+		private function get_compare_data( int $date_start, int $date_end, int $compare_date_start, int $compare_date_end ): array {
 			$args = [
 				'date_start'         => $date_start,
 				'date_end'           => $date_end,
@@ -193,83 +333,7 @@ if ( ! class_exists( 'mail_reports' ) ) {
 			foreach ( $types as $type ) {
 				$compare[] = $this->get_compare_row( $type, $compare_data );
 			}
-
-			$sql     = \Burst\burst_loader()->admin->statistics->get_sql_table(
-				$args['date_start'],
-				$args['date_end'],
-				[
-					'page_url',
-					'pageviews',
-				],
-				[],
-				'page_url',
-				'pageviews DESC'
-			);
-			$results = $wpdb->get_results( $sql, ARRAY_A );
-
-			// max five urls.
-			$results = array_slice( $results, 0, 5 );
-
-			$urls = [
-				'header' => [ __( 'Page', 'burst-statistics' ), __( 'Pageviews', 'burst-statistics' ) ],
-			];
-
-			foreach ( $results as $index => $row ) {
-				$urls[] = [ $row['page_url'], $row['pageviews'] ];
-			}
-			$refferers_sql  = \Burst\burst_loader()->admin->statistics->get_sql_table(
-				$args['date_start'],
-				$args['date_end'],
-				[
-					'referrer',
-					'pageviews',
-				],
-				[],
-				'referrer',
-				'pageviews DESC'
-			);
-			$refferers_data = $wpdb->get_results( $refferers_sql, ARRAY_A );
-
-			// max five referrers.
-			$refferers_data = array_slice( $refferers_data, 0, 5 );
-
-			$referrers = [
-				'header' => [ __( 'Referrers', 'burst-statistics' ), __( 'Pageviews', 'burst-statistics' ) ],
-			];
-
-			foreach ( $refferers_data as $index => $row ) {
-				if ( $row['referrer'] !== 'Direct' ) {
-					$referrers[] = [ $row['referrer'], $row['pageviews'] ];
-				}
-			}
-
-			update_option( 'burst_last_report_sent', time(), false );
-			$blocks = [
-				[
-					'title'    => __( 'Compare', 'burst-statistics' ),
-					'subtitle' => $frequency === 'weekly' ? __( 'vs. previous week', 'burst-statistics' ) : __( 'vs. previous month', 'burst-statistics' ),
-					'table'    => self::format_array_as_table( $compare ),
-					'url'      => $this->admin_url( 'burst#/statistics' ),
-				],
-				[
-					'title' => __( 'Most visited pages', 'burst-statistics' ),
-					'table' => self::format_array_as_table( $urls ),
-					'url'   => $this->admin_url( 'burst#/statistics' ),
-				],
-				[
-					'title' => __( 'Top referrers', 'burst-statistics' ),
-					'table' => self::format_array_as_table( $referrers ),
-					'url'   => $this->admin_url( 'burst#/statistics' ),
-				],
-			];
-			$blocks = apply_filters( 'burst_mail_reports_blocks', $blocks, $args['date_start'], $args['date_end'] );
-
-			$mailer->blocks = $blocks;
-			$attachment_id  = $this->get_option( 'logo_attachment_id' );
-			if ( (int) $attachment_id > 0 ) {
-				$mailer->logo = wp_get_attachment_url( $attachment_id );
-			}
-			$mailer->send_mail_queue();
+			return $compare;
 		}
 
 		/**
@@ -314,13 +378,13 @@ if ( ! class_exists( 'mail_reports' ) ) {
 		/**
 		 * Format an array as an HTML table.
 		 *
-		 * @param array $table_array The array to format.
+		 * @param array $input_array The array to format.
 		 * @return string The formatted HTML table.
 		 */
-		public static function format_array_as_table( array $table_array ): string {
+		public static function format_array_as_table( array $input_array ): string {
 			$html = '';
-			if ( isset( $table_array['header'] ) ) {
-				$row       = $table_array['header'];
+			if ( isset( $input_array['header'] ) ) {
+				$row       = $input_array['header'];
 				$html     .= '<tr style="line-height: 32px">';
 				$first_row = true;
 				foreach ( $row as $column ) {
@@ -332,9 +396,9 @@ if ( ! class_exists( 'mail_reports' ) ) {
 					$first_row = false;
 				}
 				$html .= '</tr>';
-				unset( $table_array['header'] );
+				unset( $input_array['header'] );
 			}
-			foreach ( $table_array as $row ) {
+			foreach ( $input_array as $row ) {
 				$html     .= '<tr style="line-height: 32px">';
 				$first_row = true;
 				foreach ( $row as $column ) {

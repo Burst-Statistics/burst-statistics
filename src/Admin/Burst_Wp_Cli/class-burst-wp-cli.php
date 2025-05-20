@@ -117,6 +117,17 @@ class Burst_Wp_Cli {
 			}
 		}
 
+		// remove empty values, and duplicates.
+		$urls = array_filter(
+			$urls,
+			function ( $v ) {
+				return ! empty( $v );
+			}
+		);
+		$urls = array_unique( $urls );
+		// remove keys.
+		$urls = array_values( $urls );
+
 		echo wp_json_encode( $urls, JSON_PRETTY_PRINT );
 	}
 

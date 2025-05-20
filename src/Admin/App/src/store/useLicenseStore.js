@@ -11,8 +11,6 @@ const useLicenseStore = create((set, get) => ({
 
     // Property that returns true if license is valid
     get isLicenseValid() {
-        console.log(get().licenseStatus);
-        console.log(burst_settings.is_pro);
         return 'valid' === get().licenseStatus && burst_settings.is_pro === '1';
     }
 }));

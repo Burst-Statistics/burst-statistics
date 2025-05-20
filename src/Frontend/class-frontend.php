@@ -173,7 +173,7 @@ class Frontend {
 	 */
 	public function most_visited_posts(
 		array $atts = [],
-		string $content = null,
+		?string $content = null,
 		string $tag = ''
 	): string {
 		// normalize attribute keys, lowercase.

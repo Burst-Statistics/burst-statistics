@@ -1,6 +1,5 @@
 import { memo } from 'react';
 import Tooltip from '../components/Common/Tooltip';
-import clsx from 'clsx';
 import { LucideProps } from 'lucide-react';
 import {
   AlertCircle,
@@ -171,7 +170,8 @@ const Icon = memo(({
     color: colorVal,
     strokeWidth
   };
-  
+
+
   // Render the icon
   const renderIcon = () => {
     // Special handling for bullet and dot icons - they should be filled

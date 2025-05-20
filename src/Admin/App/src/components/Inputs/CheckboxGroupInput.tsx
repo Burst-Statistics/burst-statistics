@@ -120,10 +120,7 @@ const CheckboxGroupInput: React.FC<CheckboxGroupInputProps> = ({
               <Icon
                 name={indeterminate ? 'indeterminate' : 'check'}
                 size={14}
-                color="dark-blue"
-                tooltip=""
-                onClick={() => {}}
-                className=""
+                color="blue"
               />
             </Checkbox.Indicator>
           </Checkbox.Root>

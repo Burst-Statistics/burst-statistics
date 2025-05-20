@@ -75,6 +75,7 @@ class Installer {
 		if ( ! $this->user_can_manage() ) {
 			return false;
 		}
+
 		if ( get_transient( 'burst_plugin_download_active' ) !== $this->slug ) {
 			set_transient( 'burst_plugin_download_active', $this->slug, MINUTE_IN_SECONDS );
 			$info = $this->get_plugin_info();

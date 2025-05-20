@@ -29,9 +29,12 @@ const useArchiveStore = create( ( set, get ) => ({
         });
     },
     fetchData: async( ) => {
+        if ( !burst_settings.is_pro) {
+            return;
+        }
         if ( get().fetching ) {
-return;
-}
+            return;
+        }
         set({fetching: true});
         let data = {};
         const { archives, downloadUrl} = await doAction( 'get_archives', data ).then( ( response ) => {

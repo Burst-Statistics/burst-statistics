@@ -1635,8 +1635,6 @@ class Statistics {
 		return 0;
 	}
 
-
-
 	/**
 	 * Get Name from lookup table
 	 */

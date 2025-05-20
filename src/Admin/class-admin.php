@@ -293,7 +293,6 @@ class Admin {
 			Capability::add_capability( 'manage' );
 			do_action( 'burst_activation' );
 			delete_option( 'burst_run_activation' );
-			$this->tasks->add_initial_tasks();
 		}
 	}
 
@@ -402,7 +401,8 @@ class Admin {
 		if ( get_option( 'burst_set_defaults' ) ) {
 			update_option( 'burst_activation_time', time(), false );
 			update_option( 'burst_last_cron_hit', time(), false );
-			$this->run_table_init_hook();
+			$this->tasks->add_initial_tasks();
+
 			// tables installed, now set defaults.
 			$exclude_roles = $this->get_option( 'user_role_blocklist' );
 			if ( ! $exclude_roles ) {
