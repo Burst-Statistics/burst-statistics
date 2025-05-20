@@ -11,9 +11,4 @@ return [
 		'type'  => 'referrer',
 		'url'   => '#/statistics',
 	],
-	[
-		'title' => __( 'Top campaigns', 'burst-statistics' ),
-		'type'  => 'source',
-		'url'   => '#/statistics',
-	],
 ];
