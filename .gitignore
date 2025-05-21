@@ -456,3 +456,5 @@ sketch
 /blob-report/
 /playwright/.cache/
 /screenshots
+.idea/codeStyles/Project.xml
+.idea/codeStyles/codeStyleConfig.xml
