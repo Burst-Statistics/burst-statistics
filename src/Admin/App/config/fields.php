@@ -95,7 +95,7 @@ return [
 		'action'      => 'send_email_report',
 		'button_text' => __( 'Send', 'burst-statistics' ),
 		'label'       => __( 'Send an e-mail report', 'burst-statistics' ),
-		'comment'     => __( 'This will send an e-mail to all listed recipients.', 'burst-statistics' ),
+		'context'     => __( 'This will send an e-mail to all listed recipients.', 'burst-statistics' ),
 		'disabled'    => false,
 		'default'     => false,
 	],

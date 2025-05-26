@@ -22,7 +22,6 @@ if ( ! class_exists( 'mail_reports' ) ) {
 		 */
 		public function __construct() {
 			add_action( 'burst_every_hour', [ $this, 'maybe_send_report' ] );
-			add_action( 'admin_init', [ $this, 'test_report_on_query_var' ] );
 			add_filter( 'burst_do_action', [ $this, 'send_test_report_action' ], 10, 3 );
 		}
 
@@ -50,25 +49,12 @@ if ( ! class_exists( 'mail_reports' ) ) {
 		}
 
 		/**
-		 * User can add query var burst_test_report to send a report
-		 */
-		public function test_report_on_query_var(): void {
-			// not processing, just checking existence.
-            // phpcs:ignore
-			if ( ! isset( $_GET['burst_test_report'] ) ) {
-				return;
-			}
-			$this->send_test_report();
-		}
-
-		/**
 		 * Send a test email.
 		 */
 		public function send_test_report(): void {
 			if ( ! $this->user_can_manage() ) {
 				return;
 			}
-			$frequency   = 'weekly';
 			$mailinglist = $this->get_option( 'email_reports_mailinglist' );
 			$monthly     = [];
 			$weekly      = [];
@@ -154,11 +140,11 @@ if ( ! class_exists( 'mail_reports' ) ) {
 				$compare_end   = gmdate( 'Y-m-t', strtotime( '2 months ago' ) );
 
 				// convert to correct unix.
-				$date_start = \Burst\burst_loader()->admin->statistics->convert_date_to_unix( $start . ' 00:00:00' );
-				$date_end   = \Burst\burst_loader()->admin->statistics->convert_date_to_unix( $end . ' 23:59:59' );
+				$date_start = \Burst\burst_loader()->admin->statistics::convert_date_to_unix( $start . ' 00:00:00' );
+				$date_end   = \Burst\burst_loader()->admin->statistics::convert_date_to_unix( $end . ' 23:59:59' );
 
-				$compare_date_start = \Burst\burst_loader()->admin->statistics->convert_date_to_unix( $compare_start . ' 00:00:00' );
-				$compare_date_end   = \Burst\burst_loader()->admin->statistics->convert_date_to_unix( $compare_end . ' 23:59:59' );
+				$compare_date_start = \Burst\burst_loader()->admin->statistics::convert_date_to_unix( $compare_start . ' 00:00:00' );
+				$compare_date_end   = \Burst\burst_loader()->admin->statistics::convert_date_to_unix( $compare_end . ' 23:59:59' );
 
 				$wp_date_format = get_option( 'date_format' );
 				// translators: 1: start date, 2: end date.
@@ -188,11 +174,11 @@ if ( ! class_exists( 'mail_reports' ) ) {
 				$compare_end   = gmdate( 'Y-m-d', strtotime( 'last ' . $weekdays[ $week_start ] . ' -8 days' ) );
 
 				// convert to correct unix.
-				$date_start = \Burst\burst_loader()->admin->statistics->convert_date_to_unix( $start . ' 00:00:00' );
-				$date_end   = \Burst\burst_loader()->admin->statistics->convert_date_to_unix( $end . ' 23:59:59' );
+				$date_start = \Burst\burst_loader()->admin->statistics::convert_date_to_unix( $start . ' 00:00:00' );
+				$date_end   = \Burst\burst_loader()->admin->statistics::convert_date_to_unix( $end . ' 23:59:59' );
 
-				$compare_date_start = \Burst\burst_loader()->admin->statistics->convert_date_to_unix( $compare_start . ' 00:00:00' );
-				$compare_date_end   = \Burst\burst_loader()->admin->statistics->convert_date_to_unix( $compare_end . ' 23:59:59' );
+				$compare_date_start = \Burst\burst_loader()->admin->statistics::convert_date_to_unix( $compare_start . ' 00:00:00' );
+				$compare_date_end   = \Burst\burst_loader()->admin->statistics::convert_date_to_unix( $compare_end . ' 23:59:59' );
 
 				$wp_date_format  = get_option( 'date_format' );
 				$mailer->message = date_i18n( $wp_date_format, $date_start ) . ' - ' . date_i18n( $wp_date_format, $date_end );

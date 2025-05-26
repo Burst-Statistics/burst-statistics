@@ -62,9 +62,6 @@ trait Helper {
 	 * Check if open_basedir restriction is enabled
 	 */
 	public function has_open_basedir_restriction( string $path ): bool {
-		if ( isset( \Burst\burst_loader()->has_open_basedir_restrictions ) ) {
-			return \Burst\burst_loader()->has_open_basedir_restrictions;
-		}
 		// Default error handler is required.
         // phpcs:ignore
 		set_error_handler( null );
@@ -80,8 +77,11 @@ trait Helper {
 		restore_error_handler();
 		// Return `true` if error has occurred.
 		$error = error_get_last();
-		\Burst\burst_loader()->has_open_basedir_restrictions = $error !== null && $error['message'] !== '__clean_error_info';
-		return \Burst\burst_loader()->has_open_basedir_restrictions;
+
+		if ( is_array( $error ) ) {
+			return str_contains( $error['message'], 'open_basedir restriction in effect' );
+		}
+		return false;
 	}
 
 	/**

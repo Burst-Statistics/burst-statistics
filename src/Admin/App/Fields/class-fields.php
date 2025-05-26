@@ -33,7 +33,7 @@ class Fields {
 		$fields = $this->fields;
 
 		// If the plugin is considered high traffic, summary tables kick in. This can be disabled with this option.
-		if ( \Burst\burst_loader()->admin->summary->is_high_traffic() || $this->get_option_bool( 'disable_summary' ) ) {
+		if ( \Burst\burst_loader()->admin->summary::is_high_traffic() || $this->get_option_bool( 'disable_summary' ) ) {
 			$fields[] = [
 				'id'       => 'disable_summary',
 				'menu_id'  => 'advanced',
@@ -113,7 +113,7 @@ class Fields {
 	/**
 	 * Get the list of Goal Fields.
 	 *
-	 * @return array<string, array<int, mixed>> List of integrations keyed by plugin slug.
+	 * @return array<int|string, array<string, mixed>>
 	 */
 	public function get_goal_fields(): array {
 		if ( empty( $this->goal_fields ) ) {

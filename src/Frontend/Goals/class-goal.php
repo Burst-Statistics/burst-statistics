@@ -292,15 +292,13 @@ class Goal {
 	 */
 	private function get_available_goal_types(): array {
 		$fields = \Burst\burst_loader()->admin->app->fields->get_goal_fields();
-		// from the fields array, get the entry where id = 'type'.
-		$type_field = array_filter(
-			$fields,
-			static function ( $goal ) {
-				return isset( $goal['id'] ) && $goal['id'] === 'type';
-			}
-		);
 
-		$type_field = reset( $type_field );
-		return apply_filters( 'burst_goal_types', $type_field['options'] );
+		foreach ( $fields as $goal ) {
+			if ( is_array( $goal ) && ( $goal['id'] ?? null ) === 'type' ) {
+				return apply_filters( 'burst_goal_types', $goal['options'] ?? [] );
+			}
+		}
+
+		return [];
 	}
 }
