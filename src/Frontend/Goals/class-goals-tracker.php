@@ -70,7 +70,7 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 			$burst_uid = isset( $_COOKIE['burst_uid'] ) ? \Burst\burst_loader()->frontend->tracking->sanitize_uid( $_COOKIE['burst_uid'] ) : false;
 			// we assume there has at least been one interaction clientside, so there should be a uid.
 			if ( $burst_uid ) {
-				$statistic    = \Burst\burst_loader()->frontend->tracking->get_last_user_statistic( $burst_uid, false );
+				$statistic    = \Burst\burst_loader()->frontend->tracking->get_last_user_statistic( $burst_uid, '' );
 				$statistic_id = $statistic['ID'] ?? false;
 				if ( ! $statistic_id ) {
 					return;

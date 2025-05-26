@@ -10,7 +10,9 @@ if ( defined( 'burst_rest_api_optimizer' ) ) {
 if ( ! defined( 'BURST_REST_API_OPTIMIZER' ) && ! get_option( 'burst_rest_api_optimizer_not_writable' ) ) {
 	$burst_mu_plugin_file = trailingslashit( WPMU_PLUGIN_DIR ) . 'burst_rest_api_optimizer.php';
 
-	$burst_php_code = file_get_contents( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'optimization-code.php' );
+	// not a remote file.
+    // phpcs:ignore
+	$burst_php_code = file_get_contents( __DIR__ . '/optimization-code.php' );
 	global $wp_filesystem;
 	if ( ! function_exists( 'request_filesystem_credentials' ) ) {
 		require_once ABSPATH . 'wp-admin/includes/file.php';

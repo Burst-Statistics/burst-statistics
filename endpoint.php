@@ -30,7 +30,19 @@ if ( file_exists( __DIR__ . '/src/Pro/Tracking/tracking.php' ) ) {
  * Find the base path of WordPress
  */
 function burst_find_wordpress_base_path(): string {
-	// Check Bitnami-specific structure first.
+	// Try expected relative path first (common case).
+	$path = dirname( __DIR__, 3 );
+	if ( file_exists( $path . '/wp-load.php' ) ) {
+		return rtrim( $path, '/' ) . '/';
+	}
+
+	// check for symlinked directory.
+	$path = realpath( __DIR__ . '/../../..' );
+	if ( $path && file_exists( $path . '/wp-load.php' ) ) {
+		return rtrim( $path, '/' ) . '/';
+	}
+
+	// Check Bitnami-specific structure.
 	$bitnami_path = '/opt/bitnami/wordpress/wp-load.php';
 	if (
 		! burst_has_open_basedir_restriction( $bitnami_path ) &&
@@ -38,43 +50,6 @@ function burst_find_wordpress_base_path(): string {
 		file_exists( '/bitnami/wordpress/wp-config.php' )
 	) {
 		return '/opt/bitnami/wordpress/';
-	}
-
-	// Fall back to original logic, starting 3 levels up from this file.
-	$path  = realpath( __DIR__ . '/../../..' );
-	$tries = 0;
-	// current dir + two levels up.
-	$max_tries = 3;
-
-	while ( $path && $tries < $max_tries ) {
-		if ( file_exists( $path . '/wp-load.php' ) ) {
-			return $path . '/';
-		}
-
-		// Look in subdirectories.
-        // phpcs:ignore
-		if ( file_exists( $path ) && $handle = opendir( $path ) ) {
-            // phpcs:ignore
-            while ( false !== ( $file = readdir( $handle ) ) ) {
-				if ( $file !== '.' && $file !== '..' ) {
-					$subdir = $path . '/' . $file;
-					if ( is_dir( $subdir ) && file_exists( $subdir . '/wp-load.php' ) ) {
-						closedir( $handle );
-						return $subdir . '/';
-					}
-				}
-			}
-			closedir( $handle );
-		}
-
-		// Move up one level.
-		$parent = realpath( $path . '/..' );
-		if ( $parent === $path ) {
-			break;
-		}
-
-		$path = $parent;
-		++$tries;
 	}
 
 	return '/';
@@ -93,12 +68,17 @@ function burst_has_open_basedir_restriction( string $path ): bool {
 	// Clean last error info.
 	error_clear_last();
 	// Testing...
-    //phpcs:ignore
-	@file_exists( $path );
+	// @phpstan-ignore-next-line.
+	@file_exists( $path ); //phpcs:ignore
 	// Restore previous error handler.
-    //phpcs:ignore
+    // phpcs:ignore
 	restore_error_handler();
 	// Return `true` if error has occurred.
 	$error = error_get_last();
-	return $error['message'] !== '__clean_error_info';
+
+	if ( is_array( $error ) ) {
+		return str_contains( $error['message'], 'open_basedir restriction in effect' );
+	}
+
+	return false;
 }
