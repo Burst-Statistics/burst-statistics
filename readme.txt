@@ -97,8 +97,8 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
-* Fix: in some cases a php warning could be shown on the endpoint
-* Improvement: drop option for administrators to send an email report by adding a query variable.
+* Fix: in some cases a php warning could be shown on the endpoint.
+* Security: drop option for administrators to send an email report by adding a query variable, as an administrator could be tricked into sending this email report unintentionally.
 * Improvement: improved efficiency of burst_find_wordpress_base_path() function
 
 = 2.0.6 =
