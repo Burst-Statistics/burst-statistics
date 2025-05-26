@@ -252,7 +252,7 @@ class App {
 			$version
 		);
 
-		// @phpstan-ignore-next-line
+        // @phpstan-ignore-next-line
 		burst_wp_enqueue_media();
 
 		// Load the main script in the head with high priority.

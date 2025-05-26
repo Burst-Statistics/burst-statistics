@@ -92,7 +92,7 @@ class Goals {
 				continue;
 			}
 
-			if ( ! $skip_active_check && ! \Burst\burst_loader()->integrations->plugin_is_active( $plugin, true ) ) {
+			if ( ! $skip_active_check && ! \Burst\burst_loader()->integrations->plugin_is_active( $plugin ) ) {
 				continue;
 			}
 
