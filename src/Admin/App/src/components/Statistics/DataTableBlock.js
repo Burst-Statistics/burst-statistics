@@ -114,7 +114,7 @@ const config = {
       referrer: {
         label: __( 'Referrer', 'burst-statistics' ),
         default: true,
-        format: 'url',
+        format: 'referrer',
         align: 'left',
         group_by: true
       },
