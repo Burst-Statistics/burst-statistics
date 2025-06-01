@@ -51,7 +51,7 @@ if ( class_exists( 'Burst' ) ) {
 			array_pop( $burst_plugin );
 			$burst_plugin = implode( '/', $burst_plugin );
 			$debug        = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '#' . time() : '';
-			define( 'BURST_VERSION', '2.0.7' . $debug );
+			define( 'BURST_VERSION', '2.0.8' . $debug );
 			// deprecated constant.
             //phpcs:ignore
             define( 'burst_version', BURST_VERSION );

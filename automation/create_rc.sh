@@ -103,9 +103,8 @@ create_rc_zip() {
     "--exclude=/src/Admin/App/node_modules/"
     "--exclude=/src/Admin/Dashboard_Widget/node_modules/"
     "--exclude=/src/TeamUpdraft/SharedComponents/node_modules/"
-    "--exclude=/src/TeamUpdraft/src/SharedComponents/node_modules/"
     "--exclude=/src/TeamUpdraft/Onboarding/node_modules/"
-    "--exclude=/src/TeamUpdraft/src/Onboarding/node_modules/"
+    "--exclude=/src/TeamUpdraft/Other_Plugins/node_modules/"
     "--exclude=/src/TeamUpdraft/vendor/"
     "--exclude=/mailer/maizzle/node_modules/"
   )
