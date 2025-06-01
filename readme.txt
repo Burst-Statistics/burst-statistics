@@ -98,7 +98,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 
 == Change log ==
 * Fix: in some cases a php warning could be shown on the endpoint.
-* Security: drop option for administrators to send an email report by adding a query variable, as an administrator could be tricked into sending this email report unintentionally.
+* Improvement: drop option for administrators to send an email report by adding a query variable.
 * Improvement: improved efficiency of burst_find_wordpress_base_path() function
 
 = 2.0.6 =
