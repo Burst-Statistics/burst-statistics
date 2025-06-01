@@ -102,7 +102,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Improvement: improved efficiency of burst_find_wordpress_base_path() function
 
 = 2.0.8 =
-* Fix: filtering by referrer not working
+* Fix: filtering by referrer not working.
 
 = 2.0.6 =
 * Improvement: optimized database upgrade.
