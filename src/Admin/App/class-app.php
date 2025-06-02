@@ -58,86 +58,59 @@ class App {
 	 * Fix the duplicate menu item
 	 */
 	public function fix_duplicate_menu_item(): void {
-		?>
-		<script>
-			window.addEventListener("load", () => {
-				let burstMain = document.querySelector('li.wp-has-submenu.toplevel_page_burst a.wp-first-item');
-				if (burstMain) {
-					burstMain.href = '#/';
-				}
-			});
-		</script>
-
-		<?php
 		/**
 		 * Ensure the items are selected in sync with the burst react menu.
 		 */
 		if ( isset( $_GET['page'] ) && $_GET['page'] === 'burst' ) {
 			?>
 			<script>
-				/**
-				 * Handles URL changes to update the active menu item
-				 * Ensures the WordPress admin menu stays in sync with the React app navigation
-				 */
-				const handleUrlChange = () => {
-					try {
-						const currentUrl = window.location.href;
-						const submenuContainer = document.querySelector('li.wp-has-current-submenu.toplevel_page_burst .wp-submenu');
-						
-						if (!submenuContainer) {
-							console.warn('Burst: Submenu container not found');
-							return;
+				window.addEventListener("load", () => {
+					const submenu = document.querySelector('li.wp-has-current-submenu.toplevel_page_burst .wp-submenu');
+					const burstMain = document.querySelector('li.toplevel_page_burst > a.wp-first-item');
+					if (burstMain) burstMain.href = '#/';
+					if (!submenu) return;
+
+					const menuItems = submenu.querySelectorAll('li');
+
+					const getBaseHash = (url) => {
+						const [base, hash = ''] = url.split('#');
+						const section = hash.split('/')[1] || '';
+						return `${base}#/${section}`;
+					};
+
+					const normalize = (url) => {
+						try {
+							const u = new URL(url);
+							const page = u.searchParams.get('page');
+							if (!page) return url;
+							const hash = url.includes('#') ? '#' + url.split('#')[1] : '';
+							return getBaseHash(`${u.origin}${u.pathname}?page=${page}${hash}`);
+						} catch {
+							return url;
 						}
-						
-						const menuItems = submenuContainer.querySelectorAll('li');
-						
-						// Reset all menu items.
+					};
+
+					const updateActiveMenu = () => {
+						const current = normalize(location.href);
 						menuItems.forEach(item => {
-							item.classList.remove('current');
-						});
-						
-						// Find and activate the matching menu item.
-						for (const item of menuItems) {
 							const link = item.querySelector('a');
-							if (!link) continue;
-							
-							// Get the base URL without additional parameters after the hash.
-							const linkUrl = link.href;
-							const currentUrlBase = currentUrl.split('#')[0] + (currentUrl.includes('#') ? '#' + currentUrl.split('#')[1].split('?')[0] : '');
-							const linkUrlBase = linkUrl.split('#')[0] + (linkUrl.includes('#') ? '#' + linkUrl.split('#')[1].split('?')[0] : '');
-							
-							// Check for exact URL match (ignoring parameters after the hash).
-							if (linkUrlBase === currentUrlBase) {
-								item.classList.add('current');
-								break; // Exit loop once we've found the match.
-							}
-						}
-					} catch (error) {
-						console.error('Burst: Error in handleUrlChange', error);
-					}
-				};
-				
-				// Initial call to set the correct active state.
-				handleUrlChange();
-				
-				// Override history methods to detect URL changes.
-				const originalPushState = history.pushState;
-				history.pushState = function() {
-					originalPushState.apply(this, arguments);
-					handleUrlChange();
-				};
-				
-				const originalReplaceState = history.replaceState;
-				history.replaceState = function() {
-					originalReplaceState.apply(this, arguments);
-					handleUrlChange();
-				};
-				
-				// Listen for browser back/forward navigation.
-				window.addEventListener('popstate', handleUrlChange);
-				
-				// Optional: Listen for hash changes if using hash-based routing.
-				window.addEventListener('hashchange', handleUrlChange);
+							item.classList.toggle('current', link && normalize(link.href) === current);
+						});
+					};
+
+					updateActiveMenu();
+
+					['pushState', 'replaceState'].forEach(type => {
+						const original = history[type];
+						history[type] = function () {
+							original.apply(this, arguments);
+							updateActiveMenu();
+						};
+					});
+
+					window.addEventListener('popstate', updateActiveMenu);
+					window.addEventListener('hashchange', updateActiveMenu);
+				});
 			</script>
 			<?php
 		}
