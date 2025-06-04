@@ -6,7 +6,7 @@ Requires at least: 6.2
 License: GPL2
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 2.0.6
+Stable tag: 2.0.8
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 
@@ -97,8 +97,41 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 2.0.8 =
+* Fix: filtering by referrer not working
+* Fix: get_country_code returning null when ip was not found, while it is restricted to strings
+* Fix: dashboard menu item only working when Burst settings page already loaded.
+
+= 2.0.7 =
+* Fix: in some cases a php warning could be shown on the endpoint.
+* Security: drop option for administrators to send an email report by adding a query variable, as an administrator could be tricked into sending this email report unintentionally.
+* Improvement: improved efficiency of burst_find_wordpress_base_path() function
+
 = 2.0.6 =
-* Improvement: optimized database upgrade.
+* New: Top Campaigns in e-mail reports
+* Fix: invisible 'check' icon on multicheckbox field.
+
+= 2.0.5 =
+* Improvement: improve caching of language exists check.
+
+
+= 2.0.4 =
+* Fix: added upgrade for missing session_ids
+
+= 2.0.3 =
+* Fix: statistics not creating new session when typecasted strictly
+
+= 2.0.2 =
+* Improvement: Download pro language files in one zip
+* Fix: cookieless tracking in combination with the setting combine vars and scripts did not include the cookieless script. A new automated test has been added for this variation.
+* Fix: goal hooks not triggering
+
+= 2.0.1 =
+* Improvement: added auto installer test
+* Improvement: optimized database upgrade
+* Fix: archive option not available in settings
+
+= 2.0.0 =
 * New: rewritten plugin for even better performance
 * New: extended range of automated tests to increase reliability
 
