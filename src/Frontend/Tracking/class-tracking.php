@@ -558,6 +558,7 @@ class Tracking {
 	 * }
 	 */
 	public function get_options(): array {
+		$script_version = filemtime( BURST_PATH . '/assets/js/build/burst-goals.js' );
 		return apply_filters(
 			'burst_tracking_options',
 			[
@@ -577,7 +578,7 @@ class Tracking {
 				],
 				'goals'    => [
 					'completed' => [],
-					'scriptUrl' => apply_filters( 'burst_goals_script_url', BURST_URL . '/assets/js/build/burst-goals.js?v=' . BURST_VERSION ),
+					'scriptUrl' => apply_filters( 'burst_goals_script_url', BURST_URL . '/assets/js/build/burst-goals.js?v=' . $script_version ),
 					'active'    => self::get_active_goals(),
 				],
 				'cache'    => [

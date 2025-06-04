@@ -27,7 +27,6 @@ if ( class_exists( 'Burst' ) ) {
 		public ?bool $has_admin_access  = null;
 		public ?bool $is_logged_in_rest = null;
 		public string $admin_url;
-		public ?bool $has_open_basedir_restrictions = null;
 		/**
 		 * Constructor
 		 */
@@ -47,12 +46,8 @@ if ( class_exists( 'Burst' ) ) {
 			define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 			define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 			define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
+			define( 'BURST_VERSION', '2.0.8' );
 
-			$burst_plugin = explode( '/', BURST_PLUGIN );
-			array_pop( $burst_plugin );
-			$burst_plugin = implode( '/', $burst_plugin );
-			$debug        = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '#' . time() : '';
-			define( 'BURST_VERSION', '2.0.7' . $debug );
 			// deprecated constant.
             //phpcs:ignore
             define( 'burst_version', BURST_VERSION );

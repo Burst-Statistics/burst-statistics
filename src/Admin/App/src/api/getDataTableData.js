@@ -26,6 +26,12 @@ const UrlFilter = memo( ({ value }) => (
   </MemoizedClickToFilter>
 ) );
 
+const ReferrerFilter = memo( ({ value }) => (
+    <MemoizedClickToFilter filter="referrer" filterValue={value}>
+      {safeDecodeURI( value )}
+    </MemoizedClickToFilter>
+) );
+
 // Cache for format cell functions to avoid recreating them for every cell
 const formatFunctionCache = new Map();
 
@@ -134,6 +140,8 @@ return -1;
             return <CountryFilter value={value} />;
           case 'url':
             return <UrlFilter value={value} />;
+          case 'referrer':
+            return <ReferrerFilter value={value} />;
           case 'text':
             return value;
           case 'integer':

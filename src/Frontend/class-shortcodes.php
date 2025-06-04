@@ -96,6 +96,7 @@ class Shortcodes {
 				'type'           => 'pageviews',
 				'period'         => '30days',
 				'post_id'        => 'current',
+				'page_url'       => '',
 				'object_type'    => 'post',
 				'limit'          => 5,
 				'format'         => 'number',
@@ -113,14 +114,41 @@ class Shortcodes {
 			$tag
 		);
 
+		// Sanitize all text-based attributes using WordPress functions.
+		$atts['type']          = sanitize_key( $atts['type'] );
+		$atts['period']        = sanitize_key( $atts['period'] );
+		$atts['post_id']       = sanitize_text_field( $atts['post_id'] );
+		$atts['object_type']   = sanitize_key( $atts['object_type'] );
+		$atts['format']        = sanitize_key( $atts['format'] );
+		$atts['label']         = sanitize_text_field( $atts['label'] );
+		$atts['empty_message'] = sanitize_text_field( $atts['empty_message'] );
+		$atts['post_type']     = sanitize_key( $atts['post_type'] );
+		
+		// Sanitize numeric attributes.
+		$atts['limit']          = absint( $atts['limit'] );
+		$atts['cache_duration'] = absint( $atts['cache_duration'] );
+		
+		// Sanitize boolean attributes.
+		$atts['show_count'] = rest_sanitize_boolean( $atts['show_count'] );
+
 		// Validate post type.
 		if ( ! in_array( $atts['post_type'], get_post_types(), true ) ) {
 			$atts['post_type'] = 'post';
 		}
 
-		// Validate date formats.
-		if ( ! empty( $atts['start_date'] ) && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $atts['start_date'] ) ) {
-			$atts['start_date'] = '';
+		// Validate date formats using WordPress sanitization.
+		if ( ! empty( $atts['start_date'] ) ) {
+			$atts['start_date'] = sanitize_text_field( $atts['start_date'] );
+			if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $atts['start_date'] ) ) {
+				$atts['start_date'] = '';
+			}
+		}
+		
+		if ( ! empty( $atts['end_date'] ) ) {
+			$atts['end_date'] = sanitize_text_field( $atts['end_date'] );
+			if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $atts['end_date'] ) ) {
+				$atts['end_date'] = '';
+			}
 		}
 
 		// Handle special case for most_visited (replaces the old burst-most-visited shortcode).
@@ -132,24 +160,43 @@ class Shortcodes {
 			);
 		}
 
-		// Get actual post ID if set to 'current'.
-		if ( $atts['post_id'] === 'current' && is_object( $post ) ) {
-			$atts['post_id'] = $post->ID;
-		} else {
-			$atts['post_id'] = (int) $atts['post_id'];
-		}
-
-		// Create a simpler, consistent cache key.
-		$cache_key     = 'burst_statistics_' . md5( wp_json_encode( $atts ) );
-		$cached_output = get_transient( $cache_key );
-		if ( false !== $cached_output && ! defined( 'BURST_DISABLE_CACHE' ) ) {
-			return $cached_output;
+		// Handle page_url and post_id parameters
+		$page_url_filter = '';
+		if ( ! empty( $atts['page_url'] ) ) {
+			// Sanitize page_url using WordPress functions
+			$page_url = sanitize_text_field( $atts['page_url'] );
+			
+			// Ensure it's a valid relative URL path
+			$page_url = wp_parse_url( $page_url, PHP_URL_PATH );
+			if ( ! empty( $page_url ) ) {
+				$page_url_filter = $page_url;
+			}
+		} elseif ( $atts['post_id'] === 'current' && is_object( $post ) ) {
+			// Get page URL for current post
+			$page_url_filter = str_replace( home_url(), '', get_permalink( $post->ID ) );
+		} elseif ( is_numeric( $atts['post_id'] ) && (int) $atts['post_id'] > 0 ) {
+			// Get page URL for specific post ID
+			$page_url_filter = str_replace( home_url(), '', get_permalink( (int) $atts['post_id'] ) );
 		}
 
 		// Get date range based on period.
 		$date_range = $this->statistics->get_date_range( $atts['period'], $atts['start_date'], $atts['end_date'] );
 		$start      = $date_range['start'];
 		$end        = $date_range['end'];
+
+		// Create a consistent cache key including all parameters that affect output.
+		$cache_data = [
+			'atts'           => $atts,
+			'page_url'       => $page_url_filter,
+			'date_range'     => $date_range,
+			'plugin_version' => defined( 'BURST_VERSION' ) ? BURST_VERSION : '1.0',
+		];
+		
+		$cache_key     = 'burst_stats_' . md5( serialize( $cache_data ) );
+		$cached_output = get_transient( $cache_key );
+		if ( false !== $cached_output && ! defined( 'BURST_DISABLE_CACHE' ) ) {
+			return $cached_output;
+		}
 
 		// Initialize variables.
 		$output   = '';
@@ -170,10 +217,8 @@ class Shortcodes {
 			case 'first_time_visitors':
 			case 'conversions':
 				$select = [ $atts['type'] ];
-				if ( $atts['post_id'] > 0 ) {
-					// Get page URL for the post.
-					$page_url            = str_replace( home_url(), '', get_permalink( $atts['post_id'] ) );
-					$filters['page_url'] = $page_url;
+				if ( ! empty( $page_url_filter ) ) {
+					$filters['page_url'] = $page_url_filter;
 				}
 				break;
 
@@ -189,10 +234,19 @@ class Shortcodes {
 				$order_by = 'pageviews DESC';
 				break;
 
+			case 'device_breakdown':
+				$select   = [ 'pageviews', 'device' ];
+				$group_by = 'device';
+				$order_by = 'pageviews DESC';
+				if ( ! empty( $page_url_filter ) ) {
+					$filters['page_url'] = $page_url_filter;
+				}
+				break;
+
 			default:
 				// Allow custom types via filter.
 				$custom_query = apply_filters( 'burst_statistics_shortcode_custom_type', false, $atts, $start, $end );
-				if ( $custom_query !== false ) {
+				if ( $custom_query !== false && is_string( $custom_query ) ) {
 					return wp_kses_post( $custom_query );
 				}
 				return esc_html__( 'Invalid statistic type', 'burst-statistics' );
@@ -231,7 +285,7 @@ class Shortcodes {
 			);
 
 			// Execute query based on type.
-			if ( in_array( $atts['type'], [ 'top_pages', 'top_referrers' ], true ) ) {
+			if ( in_array( $atts['type'], [ 'top_pages', 'top_referrers', 'device_breakdown' ], true ) ) {
 				// List-type data.
 				$results = $wpdb->get_results( $sql, ARRAY_A );
 				$output  = $this->render_list_type_results( $results, $atts );
@@ -245,7 +299,11 @@ class Shortcodes {
 		}
 
 		// Allow output modification via filter.
-		$output = apply_filters( 'burst_statistics_shortcode_output', $output, $result, $atts );
+		$filtered_output = apply_filters( 'burst_statistics_shortcode_output', $output, $result, $atts );
+		if ( is_string( $filtered_output ) ) {
+			// Ensure filtered output is safe HTML
+			$output = wp_kses_post( $filtered_output );
+		}
 
 		// Cache the result.
 		if ( ! empty( $output ) && (int) $atts['cache_duration'] > 0 ) {
@@ -256,7 +314,7 @@ class Shortcodes {
 	}
 
 	/**
-	 * Render list-type results (top pages, top referrers)
+	 * Render list-type results (top pages, top referrers, device breakdown)
 	 *
 	 * @param array $results The query results.
 	 * @param array $atts Shortcode attributes.
@@ -270,6 +328,14 @@ class Shortcodes {
 		}
 
 		$output = '<ul class="burst-statistics-list burst-statistics-' . esc_attr( $atts['type'] ) . '">';
+
+		// Calculate total for percentage calculations (for device_breakdown)
+		$total_pageviews = 0;
+		if ( $atts['type'] === 'device_breakdown' ) {
+			foreach ( $results as $item ) {
+				$total_pageviews += (int) $item['pageviews'];
+			}
+		}
 
 		foreach ( $results as $item ) {
 			$label = '';
@@ -293,6 +359,22 @@ class Shortcodes {
 			} elseif ( $atts['type'] === 'top_referrers' ) {
 				$label = ! empty( $item['referrer'] ) ? $item['referrer'] : __( 'Direct', 'burst-statistics' );
 				$value = number_format_i18n( $item['pageviews'] );
+			} elseif ( $atts['type'] === 'device_breakdown' ) {
+				// Map device types to human-readable names
+				$device_labels = [
+					'desktop' => __( 'Desktop', 'burst-statistics' ),
+					'tablet'  => __( 'Tablet', 'burst-statistics' ),
+					'mobile'  => __( 'Mobile', 'burst-statistics' ),
+					'other'   => __( 'Other', 'burst-statistics' ),
+				];
+				
+				$device = strtolower( $item['device'] );
+				$label  = isset( $device_labels[ $device ] ) ? $device_labels[ $device ] : esc_html( ucfirst( $device ) );
+				
+				// Calculate percentage
+				$pageviews  = (int) $item['pageviews'];
+				$percentage = $total_pageviews > 0 ? round( ( $pageviews / $total_pageviews ) * 100, 1 ) : 0;
+				$value      = $percentage . '%';
 			}
 
 			$output .= '<li class="burst-statistics-item">';

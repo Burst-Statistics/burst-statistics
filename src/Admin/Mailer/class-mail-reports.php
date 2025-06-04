@@ -22,7 +22,6 @@ if ( ! class_exists( 'mail_reports' ) ) {
 		 */
 		public function __construct() {
 			add_action( 'burst_every_hour', [ $this, 'maybe_send_report' ] );
-			add_action( 'admin_init', [ $this, 'test_report_on_query_var' ] );
 			add_filter( 'burst_do_action', [ $this, 'send_test_report_action' ], 10, 3 );
 		}
 
@@ -50,25 +49,12 @@ if ( ! class_exists( 'mail_reports' ) ) {
 		}
 
 		/**
-		 * User can add query var burst_test_report to send a report
-		 */
-		public function test_report_on_query_var(): void {
-			// not processing, just checking existence.
-            // phpcs:ignore
-			if ( ! isset( $_GET['burst_test_report'] ) ) {
-				return;
-			}
-			$this->send_test_report();
-		}
-
-		/**
 		 * Send a test email.
 		 */
 		public function send_test_report(): void {
 			if ( ! $this->user_can_manage() ) {
 				return;
 			}
-			$frequency   = 'weekly';
 			$mailinglist = $this->get_option( 'email_reports_mailinglist' );
 			$monthly     = [];
 			$weekly      = [];

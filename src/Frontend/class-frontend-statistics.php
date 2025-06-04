@@ -62,6 +62,7 @@ class Frontend_Statistics {
 			'first_time_visitors',
 			'page_url',
 			'referrer',
+			'device',
 			'count',
 		];
 
@@ -349,7 +350,34 @@ class Frontend_Statistics {
 		foreach ( $filters as $key => $value ) {
 			// Only allow filters with whitelisted keys.
 			if ( in_array( $key, $this->allowed_filter_keys, true ) ) {
-				$sanitized[ esc_sql( $key ) ] = esc_sql( $value );
+				$sanitized_key = sanitize_key( $key );
+				
+				// Use appropriate sanitization based on filter type.
+				switch ( $key ) {
+					case 'page_url':
+						// For URLs, use wp_parse_url to extract path component.
+						$parsed_url = wp_parse_url( $value, PHP_URL_PATH );
+						$sanitized_value = $parsed_url ? $parsed_url : sanitize_text_field( $value );
+						break;
+					case 'referrer':
+						// For referrers, sanitize as URL.
+						$sanitized_value = esc_url_raw( $value );
+						break;
+					case 'device':
+					case 'browser':
+					case 'platform':
+						// For device/browser/platform, use sanitize_key for consistency.
+						$sanitized_value = sanitize_key( $value );
+						break;
+					default:
+						// Default to text field sanitization.
+						$sanitized_value = sanitize_text_field( $value );
+						break;
+				}
+				
+				if ( ! empty( $sanitized_value ) ) {
+					$sanitized[ $sanitized_key ] = $sanitized_value;
+				}
 			}
 		}
 
@@ -396,6 +424,9 @@ class Frontend_Statistics {
 				case 'referrer':
 					$select_parts[] = 'statistics.referrer';
 					break;
+				case 'device':
+					$select_parts[] = 'statistics.device';
+					break;
 				case 'count':
 				default:
 					$select_parts[] = 'COUNT(statistics.ID) as count';
@@ -417,7 +448,7 @@ class Frontend_Statistics {
 		$where_parts = [];
 
 		foreach ( $filters as $key => $value ) {
-			// Only process if key is in allowed list.
+			// Only process if key is in allowed list (already validated in sanitize_filters).
 			if ( ! in_array( $key, $this->allowed_filter_keys, true ) ) {
 				continue;
 			}
@@ -443,8 +474,8 @@ class Frontend_Statistics {
 					$where_parts[] = $wpdb->prepare( 'statistics.platform = %s', $value );
 					break;
 				default:
-					// We already checked against allowed keys above, so we can safely parameterize here.
-					$where_parts[] = $wpdb->prepare( "statistics.{$key} = %s", $value );
+					// default to empty where clause
+					break;
 			}
 		}
 

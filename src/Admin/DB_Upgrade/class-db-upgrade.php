@@ -80,12 +80,7 @@ class DB_Upgrade {
 	 * Get progress of the upgrade process
 	 */
 	public function get_progress(): float {
-		$version = BURST_VERSION;
-
-		// strip off everything after '#'.
-		if ( strpos( $version, '#' ) !== false ) {
-			$version = substr( $version, 0, strpos( $version, '#' ) );
-		}
+		$version            = BURST_VERSION;
 		$total_upgrades     = $this->get_db_upgrades( $version );
 		$remaining_upgrades = $total_upgrades;
 		// check if all upgrades are done.

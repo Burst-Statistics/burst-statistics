@@ -37,7 +37,8 @@ class Frontend {
 		add_action( 'burst_every_hour', [ $this, 'maybe_update_total_pageviews_count' ] );
 
 		new Sessions();
-		new Shortcodes();
+		// Lazy load shortcodes only when needed
+		add_action( 'wp', [ $this, 'maybe_load_shortcodes' ] );
 		$this->tracking   = new Tracking();
 		$this->statistics = new Frontend_Statistics();
 		new Goals();
@@ -297,5 +298,63 @@ class Frontend {
 	 */
 	private function enqueue_shortcode_styles(): void {
 		wp_enqueue_style( 'burst-statistics-shortcodes' );
+	}
+
+	/**
+	 * Load shortcodes only if they're detected in the content
+	 */
+	public function maybe_load_shortcodes(): void {
+		global $post;
+		
+		// Check if we're on a page that could contain shortcodes
+		if ( ! is_singular() && ! is_home() && ! is_front_page() ) {
+			return;
+		}
+		
+		// Check if shortcodes exist in the content
+		$has_shortcodes = false;
+		
+		if ( $post && ! empty( $post->post_content ) ) {
+			// Check for burst shortcodes in post content
+			if ( has_shortcode( $post->post_content, 'burst_statistics' ) || 
+				 has_shortcode( $post->post_content, 'burst-most-visited' ) ) {
+				$has_shortcodes = true;
+			}
+		}
+		
+		// Also check widgets for shortcodes (if needed)
+		// This is more expensive, so only do it if post content doesn't have shortcodes
+		if ( ! $has_shortcodes ) {
+			// Check if any widgets might contain shortcodes
+			$sidebars_widgets = wp_get_sidebars_widgets();
+			if ( ! empty( $sidebars_widgets ) ) {
+				foreach ( $sidebars_widgets as $sidebar_id => $widget_ids ) {
+					if ( $sidebar_id === 'wp_inactive_widgets' || empty( $widget_ids ) ) {
+						continue;
+					}
+					
+					foreach ( $widget_ids as $widget_id ) {
+						// Check text widgets for shortcodes
+						if ( strpos( $widget_id, 'text-' ) === 0 ) {
+							$widget_options = get_option( 'widget_text' );
+							$widget_number = str_replace( 'text-', '', $widget_id );
+							if ( isset( $widget_options[ $widget_number ]['text'] ) ) {
+								$widget_text = $widget_options[ $widget_number ]['text'];
+								if ( has_shortcode( $widget_text, 'burst_statistics' ) || 
+									 has_shortcode( $widget_text, 'burst-most-visited' ) ) {
+									$has_shortcodes = true;
+									break 2;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		// Only load shortcodes if they're actually used
+		if ( $has_shortcodes ) {
+			new Shortcodes();
+		}
 	}
 }

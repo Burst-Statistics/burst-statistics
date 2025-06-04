@@ -122,8 +122,6 @@ trait Admin_Helper {
 		$version_nr = defined( 'BURST_VERSION' ) ? BURST_VERSION : '0';
 
 		// strip debug time from version nr.
-		$version_nr     = explode( '#', $version_nr );
-		$version_nr     = $version_nr[0];
 		$default_params = [
 			'burst_campaign' => 'burst-' . $version . '-' . $version_nr,
 		];
