@@ -4,7 +4,7 @@
 
 ## Burst Statistics
 
-Burst Statistics is the latest addition to Really Simple Plugins. An opportunity to create a privacy-friendly analytics dashboard, where all data is yours. In collaboration with Complianz, Burst Statistics will try to create the best statistics tool without worrying about privacy.
+Burst Statistics is the latest addition to Team Updraft. An opportunity to create a privacy-friendly analytics dashboard, where all data is yours. Burst Statistics will try to create the best statistics tool without worrying about privacy.
 
 ### Developers Guide and Contributions
 
