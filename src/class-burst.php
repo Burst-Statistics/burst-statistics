@@ -46,7 +46,7 @@ if ( class_exists( 'Burst' ) ) {
 			define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 			define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 			define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
-			define( 'BURST_VERSION', '2.0.8' );
+			define( 'BURST_VERSION', '2.0.9' );
 
 			// deprecated constant.
             //phpcs:ignore
