@@ -123,11 +123,11 @@ class Shortcodes {
 		$atts['label']         = sanitize_text_field( $atts['label'] );
 		$atts['empty_message'] = sanitize_text_field( $atts['empty_message'] );
 		$atts['post_type']     = sanitize_key( $atts['post_type'] );
-		
+
 		// Sanitize numeric attributes.
 		$atts['limit']          = absint( $atts['limit'] );
 		$atts['cache_duration'] = absint( $atts['cache_duration'] );
-		
+
 		// Sanitize boolean attributes.
 		$atts['show_count'] = rest_sanitize_boolean( $atts['show_count'] );
 
@@ -143,7 +143,7 @@ class Shortcodes {
 				$atts['start_date'] = '';
 			}
 		}
-		
+
 		if ( ! empty( $atts['end_date'] ) ) {
 			$atts['end_date'] = sanitize_text_field( $atts['end_date'] );
 			if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $atts['end_date'] ) ) {
@@ -160,22 +160,22 @@ class Shortcodes {
 			);
 		}
 
-		// Handle page_url and post_id parameters
+		// Handle page_url and post_id parameters.
 		$page_url_filter = '';
 		if ( ! empty( $atts['page_url'] ) ) {
-			// Sanitize page_url using WordPress functions
+			// Sanitize page_url using WordPress functions.
 			$page_url = sanitize_text_field( $atts['page_url'] );
-			
-			// Ensure it's a valid relative URL path
+
+			// Ensure it's a valid relative URL path.
 			$page_url = wp_parse_url( $page_url, PHP_URL_PATH );
 			if ( ! empty( $page_url ) ) {
 				$page_url_filter = $page_url;
 			}
 		} elseif ( $atts['post_id'] === 'current' && is_object( $post ) ) {
-			// Get page URL for current post
+			// Get page URL for current post.
 			$page_url_filter = str_replace( home_url(), '', get_permalink( $post->ID ) );
 		} elseif ( is_numeric( $atts['post_id'] ) && (int) $atts['post_id'] > 0 ) {
-			// Get page URL for specific post ID
+			// Get page URL for specific post ID.
 			$page_url_filter = str_replace( home_url(), '', get_permalink( (int) $atts['post_id'] ) );
 		}
 
@@ -191,8 +191,8 @@ class Shortcodes {
 			'date_range'     => $date_range,
 			'plugin_version' => defined( 'BURST_VERSION' ) ? BURST_VERSION : '1.0',
 		];
-		
-		$cache_key     = 'burst_stats_' . md5( serialize( $cache_data ) );
+
+		$cache_key     = 'burst_stats_' . md5( wp_json_encode( $cache_data ) );
 		$cached_output = get_transient( $cache_key );
 		if ( false !== $cached_output && ! defined( 'BURST_DISABLE_CACHE' ) ) {
 			return $cached_output;
@@ -301,7 +301,7 @@ class Shortcodes {
 		// Allow output modification via filter.
 		$filtered_output = apply_filters( 'burst_statistics_shortcode_output', $output, $result, $atts );
 		if ( is_string( $filtered_output ) ) {
-			// Ensure filtered output is safe HTML
+			// Ensure filtered output is safe HTML.
 			$output = wp_kses_post( $filtered_output );
 		}
 
@@ -329,7 +329,7 @@ class Shortcodes {
 
 		$output = '<ul class="burst-statistics-list burst-statistics-' . esc_attr( $atts['type'] ) . '">';
 
-		// Calculate total for percentage calculations (for device_breakdown)
+		// Calculate total for percentage calculations (for device_breakdown).
 		$total_pageviews = 0;
 		if ( $atts['type'] === 'device_breakdown' ) {
 			foreach ( $results as $item ) {
@@ -360,18 +360,18 @@ class Shortcodes {
 				$label = ! empty( $item['referrer'] ) ? $item['referrer'] : __( 'Direct', 'burst-statistics' );
 				$value = number_format_i18n( $item['pageviews'] );
 			} elseif ( $atts['type'] === 'device_breakdown' ) {
-				// Map device types to human-readable names
+				// Map device types to human-readable names.
 				$device_labels = [
 					'desktop' => __( 'Desktop', 'burst-statistics' ),
 					'tablet'  => __( 'Tablet', 'burst-statistics' ),
 					'mobile'  => __( 'Mobile', 'burst-statistics' ),
 					'other'   => __( 'Other', 'burst-statistics' ),
 				];
-				
+
 				$device = strtolower( $item['device'] );
 				$label  = isset( $device_labels[ $device ] ) ? $device_labels[ $device ] : esc_html( ucfirst( $device ) );
-				
-				// Calculate percentage
+
+				// Calculate percentage.
 				$pageviews  = (int) $item['pageviews'];
 				$percentage = $total_pageviews > 0 ? round( ( $pageviews / $total_pageviews ) * 100, 1 ) : 0;
 				$value      = $percentage . '%';
@@ -438,13 +438,13 @@ class Shortcodes {
 	}
 
 	/**
-	 * Format a statistic value based on its type
+	 * Format a statistic value based on its type.
 	 *
-	 * @param string $type The statistic type.
-	 * @param mixed  $value The raw value.
-	 * @return string Formatted value
+	 * @param string $type  The statistic type.
+	 * @param string $value The raw value from database query.
+	 * @return string Formatted value.
 	 */
-	private function format_statistic_value( string $type, mixed $value ): string {
+	private function format_statistic_value( string $type, string $value ): string {
 		switch ( $type ) {
 			case 'avg_time_on_page':
 				// Convert milliseconds to seconds and format.

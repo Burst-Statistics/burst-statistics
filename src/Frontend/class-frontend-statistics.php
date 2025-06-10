@@ -351,13 +351,13 @@ class Frontend_Statistics {
 			// Only allow filters with whitelisted keys.
 			if ( in_array( $key, $this->allowed_filter_keys, true ) ) {
 				$sanitized_key = sanitize_key( $key );
-				
+
 				// Use appropriate sanitization based on filter type.
 				switch ( $key ) {
 					case 'page_url':
 						// For URLs, use wp_parse_url to extract path component.
-						$parsed_url = wp_parse_url( $value, PHP_URL_PATH );
-						$sanitized_value = $parsed_url ? $parsed_url : sanitize_text_field( $value );
+						$parsed_url      = wp_parse_url( $value, PHP_URL_PATH );
+						$sanitized_value = ( $parsed_url !== false && $parsed_url !== null ) ? $parsed_url : sanitize_text_field( $value );
 						break;
 					case 'referrer':
 						// For referrers, sanitize as URL.
@@ -374,7 +374,7 @@ class Frontend_Statistics {
 						$sanitized_value = sanitize_text_field( $value );
 						break;
 				}
-				
+
 				if ( ! empty( $sanitized_value ) ) {
 					$sanitized[ $sanitized_key ] = $sanitized_value;
 				}
@@ -474,7 +474,7 @@ class Frontend_Statistics {
 					$where_parts[] = $wpdb->prepare( 'statistics.platform = %s', $value );
 					break;
 				default:
-					// default to empty where clause
+					// Default to empty where clause.
 					break;
 			}
 		}

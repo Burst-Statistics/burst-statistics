@@ -246,4 +246,17 @@ return [
 		'disabled' => false,
 		'default'  => false,
 	],
+	[
+		'id'       => 'enable_shortcodes',
+		'menu_id'  => 'secret',
+		'group_id' => 'secret',
+		'type'     => 'checkbox',
+		'label'    => __( 'Enable shortcodes', 'burst-statistics' ),
+		'context'  => [
+			'text' => __( 'Allow shortcodes the use of shortcodes in widgets, posts and pages.', 'burst-statistics' ),
+			'url'  => 'burst-statistics-shortcodes/',
+		],
+		'disabled' => false,
+		'default'  => false,
+	],
 ];
