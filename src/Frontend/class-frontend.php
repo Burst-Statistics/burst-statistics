@@ -39,7 +39,6 @@ class Frontend {
 		new Sessions();
 		// Lazy load shortcodes only when needed.
 		$this->tracking   = new Tracking();
-		$this->statistics = new Frontend_Statistics();
 		new Goals();
 		new Goals_Tracker();
 		// Check if shortcodes option is enabled.
