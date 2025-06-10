@@ -219,13 +219,8 @@ trait Helper {
 
 		$logging_enabled = (bool) apply_filters( 'burst_enable_logging', true );
 		if ( $logging_enabled ) {
-			// strip everything after # in version number and check if defined.
 			if ( defined( 'BURST_VERSION' ) ) {
-				// strip off everything after '#'.
 				$version_nr = BURST_VERSION;
-				if ( strpos( $version_nr, '#' ) !== false ) {
-					$version_nr = substr( $version_nr, 0, strpos( $version_nr, '#' ) );
-				}
 			} else {
 				$version_nr = 'Endpoint request';
 			}

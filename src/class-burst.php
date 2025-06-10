@@ -46,12 +46,8 @@ if ( class_exists( 'Burst' ) ) {
 			define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 			define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 			define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
+			define( 'BURST_VERSION', '2.0.9' );
 
-			$burst_plugin = explode( '/', BURST_PLUGIN );
-			array_pop( $burst_plugin );
-			$burst_plugin = implode( '/', $burst_plugin );
-			$debug        = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '#' . time() : '';
-			define( 'BURST_VERSION', '2.0.8' . $debug );
 			// deprecated constant.
             //phpcs:ignore
             define( 'burst_version', BURST_VERSION );

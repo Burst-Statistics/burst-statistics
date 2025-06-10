@@ -66,7 +66,7 @@ class App {
 			<script>
 				window.addEventListener("load", () => {
 					const submenu = document.querySelector('li.wp-has-current-submenu.toplevel_page_burst .wp-submenu');
-					const burstMain = document.querySelector('li.toplevel_page_burst > a.wp-first-item');
+					const burstMain = document.querySelector('li.toplevel_page_burst ul.wp-submenu li.wp-first-item a');
 					if (burstMain) burstMain.href = '#/';
 					if (!submenu) return;
 
