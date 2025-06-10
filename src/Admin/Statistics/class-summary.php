@@ -42,7 +42,7 @@ if ( ! class_exists( 'summary' ) ) {
 				'id'          => 'cron',
 				'condition'   => [
 					'type'     => 'serverside',
-					'function' => '!(new Summary() )->cron_active()',
+					'function' => '!(new Burst\Admin\Statistics\Summary() )->cron_active()',
 				],
 				'msg'         => __( 'Because your cron has not been triggered more than 24 hours, Burst has stopped using the summary tables, which allow the dashboard to load faster.', 'burst-statistics' ),
 				'icon'        => 'warning',

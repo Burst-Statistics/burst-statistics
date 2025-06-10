@@ -15,6 +15,7 @@ class Statistics {
 
 	private array $look_up_table_names = [];
 	private $use_lookup_tables         = null;
+	private $exclude_bounces           = null;
 	/**
 	 * Constructor
 	 */
@@ -1242,6 +1243,16 @@ class Statistics {
 	}
 
 	/**
+	 * Check if bounces should be excluded from statistics.
+	 */
+	public function exclude_bounces(): bool {
+		if ( $this->exclude_bounces === null ) {
+			$this->exclude_bounces = (bool) apply_filters( 'burst_exclude_bounces', $this->get_option_bool( 'exclude_bounces' ) );
+		}
+		return $this->exclude_bounces;
+	}
+
+	/**
 	 * Generates a WHERE clause for SQL queries based on provided filters.
 	 *
 	 * @param array $filters Associative array of filters.
@@ -1414,8 +1425,7 @@ class Statistics {
 	 * Generate SQL for a metric
 	 */
 	public function get_sql_select_for_metric( string $metric ): string {
-		// default set to false.
-		$exclude_bounces = (bool) apply_filters( 'burst_exclude_bounces', $this->get_option_bool( 'exclude_bounces' ) );
+		$exclude_bounces = $this->exclude_bounces();
 
 		global $wpdb;
 		// if metric starts with  'count(' and ends with ')', then it's a custom metric.
