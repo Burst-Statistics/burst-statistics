@@ -360,6 +360,15 @@ class Shortcodes {
 				$label = ! empty( $item['referrer'] ) ? $item['referrer'] : __( 'Direct', 'burst-statistics' );
 				$value = number_format_i18n( $item['pageviews'] );
 			} elseif ( $atts['type'] === 'device_breakdown' ) {
+				// Get device name - handle both lookup table and direct storage modes.
+				if ( isset( $item['device_id'] ) ) {
+					// Using lookup tables - get device name by ID.
+					$device_name = $this->statistics->get_device_name_by_id( (int) $item['device_id'] );
+				} else {
+					// Direct storage mode - device name is directly in the result.
+					$device_name = $item['device'] ?? '';
+				}
+
 				// Map device types to human-readable names.
 				$device_labels = [
 					'desktop' => __( 'Desktop', 'burst-statistics' ),
@@ -368,7 +377,7 @@ class Shortcodes {
 					'other'   => __( 'Other', 'burst-statistics' ),
 				];
 
-				$device = strtolower( $item['device'] );
+				$device = strtolower( $device_name );
 				$label  = isset( $device_labels[ $device ] ) ? $device_labels[ $device ] : esc_html( ucfirst( $device ) );
 
 				// Calculate percentage.
@@ -448,7 +457,7 @@ class Shortcodes {
 		switch ( $type ) {
 			case 'avg_time_on_page':
 				// Convert milliseconds to seconds and format.
-				$seconds = (int) round( $value / 1000 );
+				$seconds = (int) round( (float) $value / 1000 );
 
 				// Translators: %s is the number of seconds a visitor spent on page.
 				return sprintf(
@@ -458,10 +467,10 @@ class Shortcodes {
 				);
 
 			case 'bounce_rate':
-				return number_format_i18n( $value, 1 ) . '%';
+				return number_format_i18n( (float) $value, 1 ) . '%';
 
 			default:
-				return number_format_i18n( $value );
+				return number_format_i18n( (float) $value );
 		}
 	}
 

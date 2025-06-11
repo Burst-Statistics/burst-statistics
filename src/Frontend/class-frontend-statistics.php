@@ -49,6 +49,13 @@ class Frontend_Statistics {
 	private $allowed_order_by;
 
 	/**
+	 * Cache for use_lookup_tables check
+	 *
+	 * @var bool|null
+	 */
+	private $use_lookup_tables = null;
+
+	/**
 	 * Constructor to initialize class properties
 	 */
 	public function __construct() {
@@ -261,8 +268,16 @@ class Frontend_Statistics {
 		// Build WHERE clause from filters.
 		$where = $this->build_where_clause( $filters );
 
-		// Build optional clauses.
-		$group_by_sql = ! empty( $group_by ) ? 'GROUP BY ' . esc_sql( $group_by ) : '';
+		// Build optional clauses, handling lookup table adjustments.
+		if ( ! empty( $group_by ) ) {
+			// Adjust group_by for lookup tables.
+			if ( $group_by === 'device' && $this->use_lookup_tables() ) {
+				$group_by = 'device_id';
+			}
+			$group_by_sql = 'GROUP BY ' . esc_sql( $group_by );
+		} else {
+			$group_by_sql = '';
+		}
 		$order_by_sql = ! empty( $order_by ) ? 'ORDER BY ' . esc_sql( $order_by ) : '';
 
 		// Build the complete SQL query using a prepared statement.
@@ -306,6 +321,104 @@ class Frontend_Statistics {
 		}
 
 		return $sql;
+	}
+
+	/**
+	 * Get lookup table ID for a given item and name
+	 *
+	 * @param string $item The item type (device, browser, platform).
+	 * @param string $name The name to look up.
+	 * @return int The ID from the lookup table, or 0 if not found.
+	 */
+	private function get_lookup_table_id( string $item, string $name ): int {
+		// Validate item type.
+		$allowed_items = [ 'device', 'browser', 'platform' ];
+		if ( ! in_array( $item, $allowed_items, true ) ) {
+			return 0;
+		}
+
+		// Try to get from cache first.
+		$cache_key = 'burst_' . $item . '_name_' . md5( $name );
+		$id        = wp_cache_get( $cache_key, 'burst' );
+
+		if ( false === $id ) {
+			global $wpdb;
+			$table_name = $wpdb->prefix . 'burst_' . $item . 's';
+
+			// Execute query with error handling.
+			$id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM {$table_name} WHERE name = %s LIMIT 1", $name ) );
+
+			// Check for database errors.
+			if ( $wpdb->last_error ) {
+				// Log the error for debugging.
+				self::error_log( 'DB Error in get_lookup_table_id(): ' . $wpdb->last_error );
+				// Return safe default.
+				return 0;
+			}
+
+			$id = $id ? (int) $id : 0;
+
+			// Cache the result.
+			wp_cache_set( $cache_key, $id, 'burst' );
+		}
+
+		return (int) $id;
+	}
+
+	/**
+	 * Get lookup table name by ID
+	 *
+	 * @param string $item The item type (device, browser, platform).
+	 * @param int    $id   The ID to look up.
+	 * @return string The name from the lookup table, or empty string if not found.
+	 */
+	private function get_lookup_table_name_by_id( string $item, int $id ): string {
+		if ( $id === 0 ) {
+			return '';
+		}
+
+		// Validate item type.
+		$allowed_items = [ 'device', 'browser', 'platform' ];
+		if ( ! in_array( $item, $allowed_items, true ) ) {
+			return '';
+		}
+
+		// Try to get from cache first.
+		$cache_key = 'burst_' . $item . '_' . $id;
+		$name      = wp_cache_get( $cache_key, 'burst' );
+
+		if ( false === $name ) {
+			global $wpdb;
+			$table_name = $wpdb->prefix . 'burst_' . $item . 's';
+
+			// Execute query with error handling.
+			$name = $wpdb->get_var( $wpdb->prepare( "SELECT name FROM {$table_name} WHERE ID = %s LIMIT 1", $id ) );
+
+			// Check for database errors.
+			if ( $wpdb->last_error ) {
+				// Log the error for debugging.
+				self::error_log( 'DB Error in get_lookup_table_name_by_id(): ' . $wpdb->last_error );
+				// Return safe default.
+				return '';
+			}
+
+			$name = $name ? (string) $name : '';
+
+			// Cache the result.
+			wp_cache_set( $cache_key, $name, 'burst' );
+		}
+
+		return (string) $name;
+	}
+
+	/**
+	 * Get device name by ID (public method for shortcode usage)
+	 *
+	 * @param int $device_id The device ID.
+	 * @return string The device name.
+	 */
+	public function get_device_name_by_id( int $device_id ): string {
+		return $this->get_lookup_table_name_by_id( 'device', $device_id );
 	}
 
 	/**
@@ -425,7 +538,11 @@ class Frontend_Statistics {
 					$select_parts[] = 'statistics.referrer';
 					break;
 				case 'device':
-					$select_parts[] = 'statistics.device';
+					if ( $this->use_lookup_tables() ) {
+						$select_parts[] = 'statistics.device_id';
+					} else {
+						$select_parts[] = 'statistics.device';
+					}
 					break;
 				case 'count':
 				default:
@@ -465,7 +582,13 @@ class Frontend_Statistics {
 					}
 					break;
 				case 'device':
-					$where_parts[] = $wpdb->prepare( 'statistics.device = %s', $value );
+					if ( $this->use_lookup_tables() ) {
+						// Convert device name to device_id if using lookup tables.
+						$device_id     = $this->get_lookup_table_id( 'device', $value );
+						$where_parts[] = $wpdb->prepare( 'statistics.device_id = %d', $device_id );
+					} else {
+						$where_parts[] = $wpdb->prepare( 'statistics.device = %s', $value );
+					}
 					break;
 				case 'browser':
 					$where_parts[] = $wpdb->prepare( 'statistics.browser = %s', $value );
@@ -534,7 +657,17 @@ class Frontend_Statistics {
 		);
 
 		global $wpdb;
+
+		// Execute query with error handling.
 		$result = $wpdb->get_var( $sql );
+
+		// Check for database errors.
+		if ( $wpdb->last_error ) {
+			// Log the error for debugging.
+			self::error_log( 'DB Error in get_post_views(): ' . $wpdb->last_error );
+			// Return safe default.
+			return 0;
+		}
 
 		return $result ? (int) $result : 0;
 	}
@@ -574,7 +707,16 @@ class Frontend_Statistics {
 			],
 		];
 
-		$posts  = get_posts( $args );
+		$posts = get_posts( $args );
+
+		// Check if get_posts returned an error (WP_Error object).
+		if ( is_wp_error( $posts ) ) {
+			// Log the error for debugging.
+			self::error_log( 'Error in get_most_viewed_posts(): ' . $posts->get_error_message() );
+			// Return safe default.
+			return [];
+		}
+
 		$result = [];
 
 		foreach ( $posts as $post ) {
@@ -587,5 +729,20 @@ class Frontend_Statistics {
 		}
 
 		return $result;
+	}
+
+
+
+	/**
+	 * Check if lookup tables should be used (cached method)
+	 *
+	 * @return bool True if using lookup tables, false if using direct storage.
+	 */
+	private function use_lookup_tables(): bool {
+		if ( $this->use_lookup_tables === null ) {
+			$this->use_lookup_tables = ! get_option( 'burst_db_upgrade_upgrade_lookup_tables' );
+		}
+
+		return $this->use_lookup_tables;
 	}
 }
