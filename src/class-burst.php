@@ -42,7 +42,10 @@ if ( class_exists( 'Burst' ) ) {
 			define( 'BURST_FILE', $plugin_file );
 			define( 'BURST_PATH', defined( 'BURST_PRO_FILE' ) ? dirname( BURST_PRO_FILE ) . '/' : dirname( BURST_FREE_FILE ) . '/' );
 
-			define( 'BURST_URL', plugin_dir_url( BURST_FILE ) );
+            $plugin_url = plugin_dir_url( BURST_FILE );
+            $scheme     = ( strpos( site_url(), 'https://' ) === 0 ) ? 'https' : 'http';
+            $plugin_url = set_url_scheme( $plugin_url, $scheme );
+            define( 'BURST_URL', $plugin_url );
 			define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 			define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 			define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
