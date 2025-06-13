@@ -384,7 +384,7 @@ class Admin {
 	/**
 	 * Enqueue some assets
 	 */
-	public function enqueue_assets( string $hook ): void {
+	public function enqueue_assets( ?string $hook ): void {
 		if ( $hook === 'toplevel_page_burst' ) {
 			$min  = ! is_rtl() && ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
 			$rtl  = is_rtl() ? 'rtl/' : '';
