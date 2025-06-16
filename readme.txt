@@ -100,6 +100,8 @@ We value your feedback. You can [submit a support request on the WordPress forum
 = 2.0.9 =
 * Fix: incorrect "best device" conversion rate on the goals block.
 * Fix: when running tasks validation, summary warning call caused an error, due to wrong call.
+* Improvement: allow null value in admin_enqueue_scripts to prevent Visual Composer causing fatal error.
+* Improvement: changed plugin_url value to use site_url instead of get_plugin_url() to prevent mixed content.
 
 = 2.0.8 =
 * Fix: filtering by referrer not working.
