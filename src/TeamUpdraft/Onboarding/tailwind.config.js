@@ -95,5 +95,5 @@ const greenColor = {
       extend: {}
     },
     plugins: [],
-    important: '#burst-onboarding'
+    important: '#teamupdraft-onboarding'
   };

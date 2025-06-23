@@ -3,6 +3,7 @@ namespace Burst\Admin\App;
 
 use Burst\Admin\App\Fields\Fields;
 use Burst\Admin\App\Menu\Menu;
+use Burst\Admin\Burst_Onboarding\Burst_Onboarding;
 use Burst\TeamUpdraft\Installer\Installer;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
@@ -13,7 +14,6 @@ use Burst\Frontend\Goals\Goals;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Save;
-use Burst\TeamUpdraft\Onboarding\Onboarding;
 use function Burst\burst_loader;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -40,19 +40,10 @@ class App {
 		add_filter( 'burst_localize_script', [ $this, 'extend_localized_settings_for_dashboard' ], 10, 1 );
 		$this->menu   = new Menu();
 		$this->fields = new Fields();
+		$onboarding   = new Burst_Onboarding();
+		$onboarding->init();
 
-		add_action( 'plugins_loaded', [ $this, 'setup_onboarding' ] );
 		add_action( 'admin_init', [ $this, 'maybe_redirect_to_settings_page' ] );
-	}
-
-	/**
-	 * Initialize the onboarding
-	 */
-	public function setup_onboarding(): void {
-		$onboarding = new Onboarding();
-		if ( $onboarding::is_onboarding_active( 'burst' ) ) {
-			$onboarding->init();
-		}
 	}
 
 	/**

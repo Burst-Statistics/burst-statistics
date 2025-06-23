@@ -3,7 +3,6 @@ namespace Burst\TeamUpdraft\Onboarding;
 
 defined( 'ABSPATH' ) || die();
 
-use Burst\TeamUpdraft\Burst\Burst_Plugin;
 use Burst\TeamUpdraft\Installer\Installer;
 use Burst\TeamUpdraft\RestResponse\RestResponse;
 
@@ -18,25 +17,24 @@ use Burst\TeamUpdraft\RestResponse\RestResponse;
  * - Pro plugin, onboarding already completed in free: only license activation, possibly pro feature configuration, and no plugins installation, no email signup.
  */
 class Onboarding {
-	use Burst_Plugin;
 
-	private string $version;
-	private string $prefix;
+	public string $version;
+	public string $prefix;
 	private string $onboarding_path;
 	private string $onboarding_url;
-	private string $privacy_statement_url;
-	private string $caller_slug;
-	private string $capability;
-	private string $support_url;
-	private string $documentation_url;
-	private string $upgrade_url;
-	private string $mailing_list_endpoint;
+	public string $privacy_statement_url;
+	public string $caller_slug;
+	public string $capability;
+	public string $support_url;
+	public string $documentation_url;
+	public string $upgrade_url;
+	public string $mailing_list_endpoint;
 	private array $steps;
-	private string $page_hook_suffix;
-	private string $languages_dir;
-	private string $text_domain;
+	public string $page_hook_suffix;
+	public string $languages_dir;
+	public string $text_domain;
 
-	private bool $is_pro = false;
+	public bool $is_pro = false;
 
 	/**
 	 * Add values and defaults to fields in steps
@@ -54,17 +52,20 @@ class Onboarding {
 		foreach ( $steps as $step_index => $step ) {
 			if ( isset( $step['fields'] ) && is_array( $step['fields'] ) ) {
 				foreach ( $step['fields'] as $field_index => $field ) {
-					$field = $this->parse_field( $field );
-					if ( $field['id'] === 'plugins' ) {
-						$field['options'] = $this->get_recommended_plugins();
-						$field['value']   = $this->get_recommended_plugins( true );
-					}
 					// update values and defaults based on plugin specific functions.
+					// using prefixed hook.
+                    // phpcs:ignore
+					$field = apply_filters( $this->prefix . '_onboarding_field', $field, $step['id'] );
 					if ( $field['type'] === 'email' ) {
 						$field['default'] = wp_get_current_user()->user_email;
 						$field['value']   = wp_get_current_user()->user_email;
 					}
+					if ( $field['id'] === 'plugins' ) {
+						$field['options'] = $this->get_recommended_plugins();
+						$field['value']   = $this->get_recommended_plugins( true );
+					}
 					$steps[ $step_index ]['fields'][ $field_index ] = $field;
+
 				}
 			}
 		}
@@ -99,7 +100,10 @@ class Onboarding {
 			}
 
 			if ( $step['id'] === 'license' ) {
-				if ( $this->license_is_valid() || ! $this->is_pro ) {
+				// using prefixed hook.
+                // phpcs:ignore
+                $license_is_valid = (bool) apply_filters( $this->prefix . '_license_is_valid', false );
+				if ( $license_is_valid || ! $this->is_pro ) {
 					unset( $steps[ $step_index ] );
 					continue;
 				}
@@ -175,21 +179,11 @@ class Onboarding {
 	 * Initialize hooks and filters
 	 */
 	public function init(): void {
-		$this->is_pro                = defined( 'BURST_PRO' );
-		$this->onboarding_path       = __DIR__;
-		$this->onboarding_url        = plugin_dir_url( __FILE__ );
-		$this->prefix                = 'burst';
-		$this->mailing_list_endpoint = 'https://mailinglist.burst-statistics.com';
-		$this->privacy_statement_url = 'https://burst-statistics.com/legal/privacy-statement/';
-		$this->caller_slug           = 'burst-statistics';
-		$this->capability            = 'manage_burst_statistics';
-		$this->support_url           = $this->is_pro ? 'https://burst-statistics.com/support' : 'https://wordpress.org/support/plugin/burst-statistics/';
-		$this->documentation_url     = 'https://burst-statistics.com/docs';
-		$this->upgrade_url           = 'https://burst-statistics.com/pricing';
-		$this->page_hook_suffix      = 'toplevel_page_burst';
-		$this->version               = BURST_VERSION;
-		$this->languages_dir         = BURST_PATH . 'languages';
-		$this->text_domain           = 'burst-statistics';
+		if ( ! self::is_compatible() ) {
+			return;
+		}
+		$this->onboarding_path = __DIR__;
+		$this->onboarding_url  = plugin_dir_url( __FILE__ );
 
 		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
 		add_action( 'wp_ajax_' . $this->prefix . '_onboarding_rest_api_fallback', [ $this, 'rest_api_fallback' ] );
@@ -198,9 +192,34 @@ class Onboarding {
 	}
 
 	/**
+	 * Check if the current environment is compatible with the onboarding app.
+	 */
+	private static function is_compatible(): bool {
+		if ( version_compare( PHP_VERSION, '7.4', '<' ) ) {
+			return false;
+		}
+		// check the WordPress version.
+		global $wp_version;
+		if ( version_compare( $wp_version, '6.2', '<' ) ) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * Check if the onboarding is active
 	 */
-	public static function is_onboarding_active( string $prefix ): bool {
+	public static function is_onboarding_active( string $prefix, string $caller_slug ): bool {
+		if ( ! self::is_compatible() ) {
+			return false;
+		}
+
+		// if this option is set, the plugin was installed through the onboarding or other plugins block.
+		// In that case, we skip the onboarding, to prevent an overload of onboardings.
+		if ( get_option( "teamupdraft_installation_source_$caller_slug" ) ) {
+			return false;
+		}
+
 		// object prefix not available yet, so we pass it.
 		// nonce is checked by the actual functions.
         // phpcs:ignore
@@ -211,7 +230,7 @@ class Onboarding {
 	 * Add root HTML element for the onboarding app
 	 */
 	public function add_root_html(): void {
-		echo '<div id="burst-onboarding"></div>';
+		echo '<div id="teamupdraft-onboarding"></div>';
 	}
 	/**
 	 * Register REST API routes
@@ -240,13 +259,13 @@ class Onboarding {
 	 */
 	public function handle_rest_request( \WP_REST_Request $request ): \WP_REST_Response {
 		if ( ! $this->has_permission() ) {
-			return $this->response( false, [], __( 'You do not have permission to do this.', 'burst-statistics' ), 403 );
+			return $this->response( false, [], 'You do not have permission to do this.', 403 );
 		}
 
 		$action = sanitize_text_field( $request->get_param( 'action' ) );
 		$data   = $request->get_json_params();
 		if ( ! wp_verify_nonce( $data['nonce'], $this->prefix . '_nonce' ) ) {
-			return $this->response( false, [], __( 'Nonce verification failed', 'burst-statistics' ), 403 );
+			return $this->response( false, [], 'Nonce verification failed', 403 );
 		}
 		return $this->handle_onboarding_action( $action, $data );
 	}
@@ -264,7 +283,7 @@ class Onboarding {
 
 		if ( ! wp_verify_nonce( $data['nonce'], $this->prefix . '_nonce' ) ) {
 			$response          = new RestResponse();
-			$response->message = __( 'Nonce verification failed', 'burst-statistics' );
+			$response->message = 'Nonce verification failed';
 			wp_send_json( $response );
 			exit;
 		}
@@ -331,7 +350,9 @@ class Onboarding {
 		$response = $this->response( false );
 		switch ( $action ) {
 			case 'activate_license':
-				$license_data = $this->activate_license( $data );
+				// using prefixed hook.
+                // phpcs:ignore
+				$license_data = apply_filters( $this->prefix . '_license_activation', [], $data );
 				$response     = $this->response( $license_data['success'], [], $license_data['message'] );
 				break;
 			case 'update_settings':
@@ -339,7 +360,9 @@ class Onboarding {
 				$step_fields = isset( $data['step'] ) ? $this->extract_fields_from_step( $data['step'] ) : [];
 				if ( ! empty( $step_fields ) ) {
 					// sanitized in save functions.
-					$this->update_step_settings( $step_fields, $data['settings'] );
+					// using prefixed hook.
+                    // phpcs:ignore
+					do_action( $this->prefix . '_onboarding_update_options', $data['settings'], $step_fields );
 				}
 				$response = $this->response( true );
 				break;
@@ -376,11 +399,16 @@ class Onboarding {
 						}
 
 						if ( ! empty( $reporting_email_field_name ) ) {
-							$this->update_plugin_option( $reporting_email_field_name, $email );
+							// using prefixed hook.
+                            // phpcs:ignore
+							do_action( $this->prefix . '_onboarding_update_single_option', $reporting_email_field_name, $email );
 						}
 						if ( ! empty( $mailinglist_email_field_name ) ) {
 							$include_tips = isset( $data['tips_tricks'] ) && (bool) $data['tips_tricks'];
-							$this->update_plugin_option( 'tips_tricks_mailinglist', $include_tips );
+							// using prefixed hook.
+                            // phpcs:ignore
+							do_action( $this->prefix . '_onboarding_update_single_option', 'tips_tricks_mailinglist', $email );
+
 							if ( $include_tips ) {
 								$this->signup_for_mailinglist( $email );
 							}
@@ -390,7 +418,7 @@ class Onboarding {
 				}
 				break;
 			default:
-				$response = $this->response( false, [], __( 'Unknown action', 'burst-statistics' ), 400 );
+				$response = $this->response( false, [], 'Unknown action', 400 );
 		}
 
 		return $response;
@@ -434,7 +462,7 @@ class Onboarding {
 		if ( ! empty( $this->steps ) ) {
 			return $this->steps;
 		}
-		$steps = require_once $this->onboarding_path . '/config/steps.php';
+		$steps = apply_filters( $this->prefix . '_onboarding_steps', [] );
 		// Hook name based on prefix.
         // phpcs:ignore
 		$steps       = apply_filters( $this->prefix . '_onboarding_steps', $steps );
@@ -470,17 +498,17 @@ class Onboarding {
 		return $plugins;
 	}
 
-    /**
-     * Check if the user has completed the onboarding in the free version.
-     * At least an hour ago, so we don't drop steps for the curren premium installing user.
-     */
-    private function is_pro_with_onboarding_free_completed(): bool {
-        // if the pro plugin is active, and the free plugin has completed onboarding, we can skip some parts of the onboarding.
-        $free_completed_time            = get_option( "{$this->prefix}_onboarding_free_completed" );
-        $now                            = time();
-        $free_completed_over_1_hour_ago = $free_completed_time && ( $now - $free_completed_time > HOUR_IN_SECONDS );
-        return $this->is_pro && $free_completed_over_1_hour_ago;
-    }
+	/**
+	 * Check if the user has completed the onboarding in the free version.
+	 * At least an hour ago, so we don't drop steps for the curren premium installing user.
+	 */
+	private function is_pro_with_onboarding_free_completed(): bool {
+		// if the pro plugin is active, and the free plugin has completed onboarding, we can skip some parts of the onboarding.
+		$free_completed_time            = get_option( "{$this->prefix}_onboarding_free_completed" );
+		$now                            = time();
+		$free_completed_over_1_hour_ago = $free_completed_time && ( $now - $free_completed_time > HOUR_IN_SECONDS );
+		return $this->is_pro && $free_completed_over_1_hour_ago;
+	}
 
 	/**
 	 * Enqueue onboarding scripts and styles
@@ -531,7 +559,6 @@ class Onboarding {
 				'network_link'          => network_site_url( 'plugins.php' ),
 			]
 		);
-
 		// remember if user has completed the onboarding in the free plugin.
 		if ( $this->is_pro ) {
 			update_option( "{$this->prefix}_onboarding_free_completed", time(), false );

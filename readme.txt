@@ -114,7 +114,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 = 2.0.7 =
 * Fix: in some cases a php warning could be shown on the endpoint.
 * Improvement: drop option for administrators to send an email report by adding a query variable.
-* Improvement: improved efficiency of burst_find_wordpress_base_path() function
+* Improvement: improved efficiency of burst_find_wordpress_base_path() function.
 
 = 2.0.6 =
 * Improvement: optimized database upgrade.
