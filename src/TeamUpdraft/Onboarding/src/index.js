@@ -4,7 +4,8 @@ import './onboarding.css';
 
 // Create QueryClient instance once
 document.addEventListener('DOMContentLoaded', () => {
-    const container = document.getElementById('burst-onboarding');
+
+    const container = document.getElementById('teamupdraft-onboarding');
     if (container) {
         const root = createRoot(container);
         root.render(

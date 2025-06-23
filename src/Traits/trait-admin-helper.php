@@ -200,7 +200,6 @@ trait Admin_Helper {
 				'tour_shown'        => $this->get_option_int( 'burst_tour_shown_once' ),
 				'gmt_offset'        => get_option( 'gmt_offset' ),
 				'burst_version'     => BURST_VERSION,
-				'burst_pro'         => defined( 'BURST_PRO' ),
 			]
 		);
 	}
