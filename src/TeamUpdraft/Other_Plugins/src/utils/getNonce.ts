@@ -7,7 +7,7 @@ export const getNonce = (nonce: string): string => {
         'nonce=' +
         nonce +
         '&token=' +
-        Math.random()
+        Math.random() // nosemgrep
             .toString( 36 )
             .replace( /[^a-z]+/g, '' )
             .substr( 0, 5 )

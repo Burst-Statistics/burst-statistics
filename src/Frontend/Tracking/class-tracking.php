@@ -285,27 +285,10 @@ class Tracking {
 		$sanitized_data['uid']         = $this->sanitize_uid( $data['uid'] );
 		$sanitized_data['fingerprint'] = $this->sanitize_fingerprint( $data['fingerprint'] );
 		$sanitized_data['referrer']    = $this->sanitize_referrer( $data['referrer_url'] );
-
-		// if new lookup tables upgrade is not completed, use legacy columns.
-		$_use_lookup_tables = ! get_option( 'burst_db_upgrade_create_lookup_tables' );
-		if ( $_use_lookup_tables ) {
-			// new lookup table structure.
-			// already sanitized.
-			$sanitized_data['browser_id'] = self::get_lookup_table_id( 'browser', $user_agent_data['browser'] );
-			// already sanitized.
-			$sanitized_data['browser_version_id'] = self::get_lookup_table_id( 'browser_version', $user_agent_data['browser_version'] );
-			// already sanitized.
-			$sanitized_data['platform_id'] = self::get_lookup_table_id( 'platform', $user_agent_data['platform'] );
-			// already sanitized.
-			$sanitized_data['device_id'] = self::get_lookup_table_id( 'device', $user_agent_data['device'] );
-		} else {
-			// legacy, until lookup tables are created. Drop this part on next update.
-			$sanitized_data['browser']         = $user_agent_data['browser'];
-			$sanitized_data['browser_version'] = $user_agent_data['browser_version'];
-			$sanitized_data['platform']        = $user_agent_data['platform'];
-			$sanitized_data['device']          = $user_agent_data['device'];
-		}
-
+        $sanitized_data['browser_id'] = self::get_lookup_table_id( 'browser', $user_agent_data['browser'] );
+        $sanitized_data['browser_version_id'] = self::get_lookup_table_id( 'browser_version', $user_agent_data['browser_version'] );
+        $sanitized_data['platform_id'] = self::get_lookup_table_id( 'platform', $user_agent_data['platform'] );
+        $sanitized_data['device_id'] = self::get_lookup_table_id( 'device', $user_agent_data['device'] );
 		$sanitized_data['time_on_page'] = $this->sanitize_time_on_page( $data['time_on_page'] );
 		$sanitized_data['bounce']       = 1;
 
@@ -323,12 +306,7 @@ class Tracking {
 	 */
 	public function get_hit_type( array $data ): array {
 		// Determine if it is an update hit based on the absence of certain data points.
-		$_use_lookup_tables = ! get_option( 'burst_db_upgrade_create_lookup_tables' );
-		if ( $_use_lookup_tables ) {
-			$is_update_hit = $data['browser_id'] === 0 && $data['browser_version_id'] === 0 && $data['platform_id'] === 0 && $data['device_id'] === 0;
-		} else {
-			$is_update_hit = empty( $data['browser'] ) && empty( $data['browser_version'] ) && empty( $data['platform'] ) && empty( $data['device'] );
-		}
+        $is_update_hit = $data['browser_id'] === 0 && $data['browser_version_id'] === 0 && $data['platform_id'] === 0 && $data['device_id'] === 0;
 
 		// Attempt to get the last user statistic based on the presence or absence of certain conditions.
 		if ( $is_update_hit ) {

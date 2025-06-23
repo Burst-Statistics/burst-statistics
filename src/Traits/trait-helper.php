@@ -159,6 +159,9 @@ trait Helper {
 	 * Used by geo IP in case a user has located the MaxMind database outside WordPress.
 	 */
 	public static function remote_file_exists( string $url ): bool {
+		// used to encode the url for the option name, not for security purposes.
+        // phpcs:ignore
+		// nosemgrep
 		$hash        = md5( $url );
 		$file_exists = get_option( "burst_remote_file_exists_$hash" );
 

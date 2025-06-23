@@ -169,7 +169,8 @@ const Field = memo(({ setting, control, ...props }) => {
     }),
     ...(setting.validation?.regex && {
       pattern: {
-        value: new RegExp(setting.validation.regex),
+        // hardcoded regex, no user input used.
+        value: new RegExp(setting.validation.regex),// nosemgrep
         message:
           setting.validation.message ||
           __('Invalid format', 'burst-statistics')

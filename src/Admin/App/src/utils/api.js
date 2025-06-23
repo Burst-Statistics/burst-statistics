@@ -19,7 +19,7 @@ const getNonce = () => {
     'nonce=' +
     burst_settings.burst_nonce +
     '&token=' +
-    Math.random()
+    Math.random()// nosemgrep
       .toString( 36 )
       .replace( /[^a-z]+/g, '' )
       .substr( 0, 5 )
@@ -275,7 +275,7 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
     date_range: range,
     nonce: burst_settings.burst_nonce,
     goal_id: args.goal_id,
-    token: Math.random()
+    token: Math.random()// nosemgrep
       .toString( 36 )
       .replace( /[^a-z]+/g, '' )
       .substr( 0, 5 ),

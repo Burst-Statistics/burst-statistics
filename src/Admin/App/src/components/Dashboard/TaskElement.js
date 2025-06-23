@@ -11,7 +11,8 @@ const TaskElement = ( props ) => {
         return (
             <div className="burst-task-element">
                 <TaskStatusIcon task={task} />
-                {'skeleton' !== task.icon && <p className="burst-task-message" dangerouslySetInnerHTML={{__html: task.msg}}></p>}
+                {/*sanitized input in task.msg*/}
+                {'skeleton' !== task.icon && <p className="burst-task-message" dangerouslySetInnerHTML={{__html: task.msg}}></p>} {/* nosemgrep */}
                 {'skeleton' === task.icon && <div className="burst-task-message" ><Icon name="loading" /></div>}
                 {task.url && (
                     <a

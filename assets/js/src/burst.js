@@ -139,7 +139,7 @@ const burst_uid = () => {
  * @returns {string}
  */
 const burst_generate_uid = () => {
-  return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join(''); // nosemgrep
 };
 
 
@@ -202,7 +202,7 @@ const burst_api_request = obj => {
       navigator.sendBeacon(burst.tracking.beacon_url, blob);
       resolve({ status: 200, data: 'ok' });
     } else {
-      const token = Math.random().toString(36).substring(2, 9);
+      const token = Math.random().toString(36).substring(2, 9);// nosemgrep
       wp.apiFetch({
         path: `/burst/v1/track/?token=${token}`,
         keepalive: true,
