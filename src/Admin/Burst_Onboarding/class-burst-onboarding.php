@@ -31,6 +31,18 @@ class Burst_Onboarding {
 
 	/**
 	 * Load the steps for the onboarding process.
+	 *
+	 * @return array<int, array{
+	 * id: string,
+	 * type: string,
+	 * title: string,
+	 * subtitle?: string,
+	 * button?: array{id: string, label: string},
+	 * fields?: array<int, array<string, mixed>>,
+	 * solutions?: array<int, string>,
+	 * bullets?: array<int, string>,
+	 * documentation?: string,
+	 * }> The onboarding steps array
 	 */
 	public function load_steps( array $steps ): array {
 		unset( $steps );

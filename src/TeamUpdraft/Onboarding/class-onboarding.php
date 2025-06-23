@@ -462,6 +462,8 @@ class Onboarding {
 		if ( ! empty( $this->steps ) ) {
 			return $this->steps;
 		}
+
+        // phpcs:ignore
 		$steps = apply_filters( $this->prefix . '_onboarding_steps', [] );
 		// Hook name based on prefix.
         // phpcs:ignore

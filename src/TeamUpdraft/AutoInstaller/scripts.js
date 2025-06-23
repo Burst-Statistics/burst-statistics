@@ -13,6 +13,18 @@ teamupdraft_steps.forEach( ( step, i ) =>	{
 	teamupdraft_total_step_html += stepHtml;
 });
 document.querySelector( '.teamupdraft-install-steps' ).innerHTML = teamupdraft_total_step_html + teamupdraft_start_button;
+
+const sanitizeRestAction = (action) => {
+	const allowedActions = [
+		'destination_clear',
+		'activate_license',
+		'package_information',
+		'install_plugin',
+		'activate_plugin',
+	];
+
+	return allowedActions.includes(action) ? action : '';
+}
 const ajaxRequest = async( path, requestData = null ) => {
 	const url = teamupdraft_autoinstaller.admin_ajax_url+`&rest_action=${path.replace('?', '&')}`;
 	const options = {
@@ -21,7 +33,8 @@ const ajaxRequest = async( path, requestData = null ) => {
 	};
 
 	try {
-		const response = await fetch(url, options);
+		// the path consists of sanitized actions. Url is hardcoded in localize scripts.
+		const response = await fetch(url, options); // nosemgrep
 		if (!response.ok) {
 			console.log(false, response.statusText);
 			throw new Error(response.statusText);
@@ -143,9 +156,9 @@ const teamupdraft_process_step = async ( current_step ) => {
 	// Get arguments from url
 	const query_string = window.location.search;
 	const urlParams = new URLSearchParams( query_string );
-
+	const action = sanitizeRestAction( step.action );
 	let data = {
-		'path': step.action,
+		'path': action,
 		'token': teamupdraft_autoinstaller.token,
 		'plugin': urlParams.get( 'plugin' ),
 		'license': urlParams.get( 'license' ),
@@ -154,7 +167,7 @@ const teamupdraft_process_step = async ( current_step ) => {
 		'install_pro': true
 	};
 	const queryString = new URLSearchParams(data).toString();
-	const path = `/teamupdraft/v1/auto_installer/${step.action}${glue()}${queryString}`;
+	const path = `/teamupdraft/v1/auto_installer/${action}${glue()}${queryString}`;
 
 	await wp.apiFetch( {
 		path: path,
