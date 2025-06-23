@@ -7,6 +7,8 @@ use Burst\Frontend\Frontend_Admin;
 use Burst\Pro\Pro;
 use Burst\Integrations\Integrations;
 use Burst\Traits\Admin_Helper;
+use Burst\TeamUpdraft\AutoInstaller\Auto_Installer;
+
 if ( class_exists( 'Burst' ) ) {
 	class Burst {}
 } else {
@@ -42,14 +44,14 @@ if ( class_exists( 'Burst' ) ) {
 			define( 'BURST_FILE', $plugin_file );
 			define( 'BURST_PATH', defined( 'BURST_PRO_FILE' ) ? dirname( BURST_PRO_FILE ) . '/' : dirname( BURST_FREE_FILE ) . '/' );
 
-            $plugin_url = plugin_dir_url( BURST_FILE );
-            $scheme     = ( strpos( site_url(), 'https://' ) === 0 ) ? 'https' : 'http';
-            $plugin_url = set_url_scheme( $plugin_url, $scheme );
-            define( 'BURST_URL', $plugin_url );
+			$plugin_url = plugin_dir_url( BURST_FILE );
+			$scheme     = ( strpos( site_url(), 'https://' ) === 0 ) ? 'https' : 'http';
+			$plugin_url = set_url_scheme( $plugin_url, $scheme );
+			define( 'BURST_URL', $plugin_url );
 			define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 			define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 			define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
-			define( 'BURST_VERSION', '2.0.9' );
+			define( 'BURST_VERSION', '2.1.0' );
 
 			// deprecated constant.
             //phpcs:ignore
@@ -65,8 +67,8 @@ if ( class_exists( 'Burst' ) ) {
 			$this->constants();
 			// not using the formdata.
             //phpcs:ignore
-			if ( isset( $_GET['install_pro'] ) ) {
-				require_once BURST_PATH . 'upgrade/class-auto-installer.php';
+            if ( isset( $_GET['install_pro'] ) ) {
+				new Auto_Installer( 'burst-statistics' );
 			}
 
 			$this->integrations = new Integrations();

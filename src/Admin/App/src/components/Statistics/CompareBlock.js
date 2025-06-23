@@ -1,4 +1,3 @@
-
 import { useFiltersStore } from '@/store/useFiltersStore';
 import { useDate } from '@/store/useDateStore';
 import ExplanationAndStatsItem from '@/components/Common/ExplanationAndStatsItem';
@@ -6,10 +5,10 @@ import { __ } from '@wordpress/i18n';
 import CompareFooter from './CompareFooter';
 import { useQuery } from '@tanstack/react-query';
 import getCompareData from '@/api/getCompareData';
-import Block from '@/components/Blocks/Block';
-import BlockHeading from '@/components/Blocks/BlockHeading';
-import BlockContent from '@/components/Blocks/BlockContent';
-import BlockFooter from '@/components/Blocks/BlockFooter';
+import { Block } from '@/components/Blocks/Block';
+import { BlockHeading } from '@/components/Blocks/BlockHeading';
+import { BlockContent } from '@/components/Blocks/BlockContent';
+import { BlockFooter } from '@/components/Blocks/BlockFooter';
 
 const CompareBlock = () => {
   const { startDate, endDate, range } = useDate( ( state ) => state );

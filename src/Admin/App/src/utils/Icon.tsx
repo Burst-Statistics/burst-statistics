@@ -9,7 +9,7 @@ import {
   Calendar,
   CalendarX,
   Check,
-  CheckCircle,
+  CircleCheck,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -66,11 +66,13 @@ const iconColors = {
   red: 'var(--rsp-red)',
   blue: 'var(--rsp-blue)',
   gray: 'var(--rsp-grey-400)',
+  lightgray: 'var(--rsp-grey-350)',
   white: 'var(--rsp-white)'
 };
 
 // Map existing icon names to Lucide icon components
 const iconComponents = {
+  'circle-open': Circle,
   bullet: Circle,
   dot: Circle,
   circle: CircleOff,
@@ -79,7 +81,7 @@ const iconComponents = {
   warning: AlertTriangle,
   error: AlertCircle,
   times: X,
-  'circle-check': CheckCircle,
+  'circle-check': CircleCheck,
   'circle-times': XCircle,
   'chevron-up': ChevronUp,
   'chevron-down': ChevronDown,

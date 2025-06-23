@@ -2,6 +2,7 @@ import { useState, useEffect, forwardRef } from 'react';
 import { __ } from '@wordpress/i18n';
 import Icon from '../../utils/Icon';
 import useArchiveStore from '@/store/useArchivesStore';
+import useSettingsData from '@/hooks/useSettingsData';
 import DataTable from 'react-data-table-component';
 
 const RestoreArchivesField = forwardRef(
@@ -26,7 +27,7 @@ const RestoreArchivesField = forwardRef(
   const fetchRestoreArchivesProgress = useArchiveStore( state => state.fetchRestoreArchivesProgress );
   const restoring = useArchiveStore( state => state.restoring );
   const progress = useArchiveStore( state => state.progress );
-
+  const {addNotice} = useSettingsData();
 
   useEffect( () => {
     fetchRestoreArchivesProgress();
@@ -42,23 +43,34 @@ const RestoreArchivesField = forwardRef(
     setPagination({ ...pagination, currentPage: page });
   };
 
-  const onDeleteArchives = async( ids ) => {
-    setSelectedArchives([]);
+  const updateSelectedArchives = ( ids ) => {
+    if ( 0 === ids.length ) {
+      setEntirePageSelected( false );
+      setIndeterminate( false );
+    }
+    setSelectedArchives( ids );
+  }
+
+  const onDeleteArchives = async( e, ids ) => {
+    e.preventDefault();
+    updateSelectedArchives([]);
     await deleteArchives( ids );
   };
 
-  const onRestoreArchives = async( ids ) => {
-    setSelectedArchives([]);
+  const onRestoreArchives = async( e, ids ) => {
+    e.preventDefault();
+    updateSelectedArchives([]);
     await startRestoreArchives( ids );
-    // addHelpNotice(
-    //   'archive_data',
-    //   'warning',
-    //   __( 'Because restoring files can conflict with the archiving functionality, archiving has been disabled.', 'burst-statistics' ),
-    //   __( 'Archiving disabled', 'burst-statistics' )
-    // );
+    addNotice(
+      'archive_data',
+      'warning',
+      __( 'Because restoring files can conflict with the archiving functionality, archiving has been disabled.', 'burst-statistics' ),
+      __( 'Archiving disabled', 'burst-statistics' )
+    );
   };
 
-  const downloadArchives = async() => {
+  const downloadArchives = async(e) => {
+    e.preventDefault();
     let selectedArchivesCopy = archives.filter( ( archive ) =>
       selectedArchives.includes( archive.id )
     );
@@ -77,12 +89,15 @@ const RestoreArchivesField = forwardRef(
             if ( 4 === this.readyState && 200 === this.status ) {
               let obj = window.URL.createObjectURL( this.response );
               let element = window.document.createElement( 'a' );
-              element.setAttribute( 'href', obj );
-              element.setAttribute( 'download', archive.title );
-              window.document.body.appendChild( element );
-
+              element.href = obj;
+              element.download = archive.title;
+              element.style.display = 'none';
+              document.body.appendChild(element);
               element.click();
-              setSelectedArchives( selectedArchivesCopy );
+              document.body.removeChild(element); // prevents redirect
+
+              updateSelectedArchives( selectedArchivesCopy );
+
               setDownloading( false );
 
               setTimeout( function() {
@@ -249,6 +264,7 @@ const RestoreArchivesField = forwardRef(
     archiveCopy.selectControl = (
       <input
         type="checkbox"
+        className="m-0"
         disabled={archiveCopy.restoring || restoring}
         checked={selectedArchives.includes( archiveCopy.id )}
         onChange={( e ) => onSelectArchive( e.target.checked, archiveCopy.id )}
@@ -282,57 +298,60 @@ const RestoreArchivesField = forwardRef(
       </div>
 
       {0 < selectedArchives.length && (
-        <div className="burst-selected-archive">
-          {1 < selectedArchives.length &&
-            __( '%s items selected', 'burst-statistics' ).replace(
-              '%s',
-              selectedArchives.length
-            )}
-          {1 === selectedArchives.length &&
-            __( '1 item selected', 'burst-statistics' )}
-          <div className="burst-selected-archive-controls">
-            {showDownloadButton && (
-              <>
-                <button
-                  disabled={downloading || ( progress && 100 > progress )}
-                  className="burst-button burst-button--secondary"
-                  onClick={() => downloadArchives()}
-                >
-                  {__( 'Download', 'burst-statistics' )}
-                  {downloading && <Icon name="loading" color="gray" />}
-                </button>
-              </>
-            )}
-            <button
-              disabled={progress && 100 > progress}
-              className="burst-button burst-button--primary"
-              onClick={() => onRestoreArchives( selectedArchives )}
-            >
-              {__( 'Restore', 'burst-statistics' )}
-              {100 > progress && <Icon name="loading" color="gray" />}
-            </button>
-            <button
-              disabled={progress && 100 > progress}
-              className="burst-button burst-button--tertiary"
-              onClick={() => onDeleteArchives( selectedArchives )}
-            >
-              {__( 'Delete', 'burst-statistics' )}
-            </button>
+          <div className="burst-selected-archive flex space-y-2">
+            <div className="burst-selected-archive-controls flex gap-2.5 mb-4 mt-4 items-center">
+              {showDownloadButton && (
+                  <>
+                    <button
+                        disabled={downloading || (progress && 100 > progress)}
+                        className="burst-button burst-button--secondary"
+                        onClick={(e) => downloadArchives(e)}
+                    >
+                      {__('Download', 'burst-statistics')}
+                      {downloading && <Icon name="loading" color="gray"/>}
+                    </button>
+                  </>
+              )}
+              <button
+                  disabled={progress && 100 > progress}
+                  className="burst-button burst-button--primary"
+                  onClick={(e) => onRestoreArchives(e, selectedArchives)}
+              >
+                {__('Restore', 'burst-statistics')}
+                {100 > progress && <Icon name="loading" color="gray"/>}
+              </button>
+              <button
+                  disabled={progress && 100 > progress}
+                  className="burst-button burst-button--tertiary"
+                  onClick={(e) => onDeleteArchives(e, selectedArchives)}
+              >
+                {__('Delete', 'burst-statistics')}
+              </button>
+              <div>
+                {1 < selectedArchives.length &&
+                    __('%s items selected', 'burst-statistics').replace(
+                        '%s',
+                        selectedArchives.length
+                    )}
+                {1 === selectedArchives.length &&
+                    __('1 item selected', 'burst-statistics')}
+              </div>
+            </div>
+
           </div>
-        </div>
       )}
       {0 < progress && 100 > progress && (
-        <div className="burst-selected-archive">
-          {__( 'Restore in progress, %s complete', 'burst-statistics' ).replace(
-            '%s',
-            progress + '%'
-          )}
-        </div>
+          <div className="burst-selected-archive">
+            {__('Restore in progress, %s complete', 'burst-statistics').replace(
+                '%s',
+                progress + '%'
+            )}
+          </div>
       )}
 
       {DataTable && (
-        <DataTable
-          columns={columns}
+          <DataTable
+              columns={columns}
           data={data}
           dense
           paginationPerPage={10}

@@ -26,6 +26,7 @@ class Goals {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		global $wpdb;
+		// server_side property to be removed after 2.2 update.
 		$charset_collate = $wpdb->get_charset_collate();
 		$table_name      = $wpdb->prefix . 'burst_goals';
 		$sql             = "CREATE TABLE $table_name (
@@ -33,10 +34,10 @@ class Goals {
         `title` varchar(255) NOT NULL,
         `type` varchar(30) NOT NULL,
         `status` varchar(30) NOT NULL,
-        `server_side` tinyint NOT NULL,
         `url` varchar(255) NOT NULL,
         `conversion_metric` varchar(255) NOT NULL,
         `date_created` int NOT NULL,
+        `server_side` int NOT NULL,
         `date_start` int NOT NULL,
         `date_end` int NOT NULL,
         `selector` varchar(255) NOT NULL,

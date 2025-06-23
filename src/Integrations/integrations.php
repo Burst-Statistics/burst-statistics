@@ -27,19 +27,12 @@ return [
 		'goals'                =>
 			[
 				[
-					'id'          => 'elementor_pro_forms_form_submitted',
-					'type'        => 'hook',
-					'status'      => 'active',
-					'server_side' => true,
-					'url'         => '*',
-					'hook'        => 'elementor_pro/forms/form_submitted',
+					'id'   => 'elementor_pro_forms_form_submitted',
+					'type' => 'hook',
+					'hook' => 'elementor_pro/forms/form_submitted',
 				],
 			],
 	],
-	'beaver-builder'                   => [],
-	'thrive-architect'                 => [],
-	'divi-builder'                     => [],
-
 	// eCommerce plugins.
 	'woocommerce'                      => [
 		'constant_or_function' => 'WC_VERSION',
@@ -47,29 +40,29 @@ return [
 		'goals'                =>
 			[
 				[
-					'id'          => 'woocommerce_add_to_cart',
-					'type'        => 'hook',
-					'status'      => 'active',
-					'server_side' => true,
-					'url'         => '*',
-					'hook'        => 'woocommerce_add_to_cart',
+					'id'   => 'woocommerce_add_to_cart',
+					'type' => 'hook',
+					'hook' => 'woocommerce_add_to_cart',
 				],
 				[
-					'id'          => 'woocommerce_checkout_order_created',
-					'type'        => 'hook',
-					'status'      => 'active',
-					'server_side' => true,
-					'url'         => '*',
-					'hook'        => 'woocommerce_checkout_order_created',
+					'id'   => 'woocommerce_checkout_order_created',
+					'type' => 'hook',
+					'hook' => 'woocommerce_checkout_order_created',
 				],
 				[
-					'id'                => 'woocommerce_payment_complete',
-					'type'              => 'hook',
-					'status'            => 'active',
-					'server_side'       => true,
-					'url'               => '*',
-					'hook'              => 'woocommerce_payment_complete',
-					'conversion_metric' => 'visitors',
+					'id'   => 'woocommerce_payment_complete',
+					'type' => 'hook',
+					'hook' => 'woocommerce_payment_complete',
+				],
+				[
+					'id'       => 'woocommerce_add_to_cart_click',
+					'type'     => 'clicks',
+					'selector' => '.add_to_cart_button',
+				],
+				[
+					'id'       => 'woocommerce_click_checkout_button',
+					'type'     => 'clicks',
+					'selector' => '.wc-block-cart__submit-button',
 				],
 			],
 	],
@@ -79,13 +72,24 @@ return [
 		'goals'                =>
 			[
 				[
-					'id'                => 'edd_complete_purchase',
-					'type'              => 'hook',
-					'status'            => 'active',
-					'server_side'       => true,
-					'url'               => '*',
-					'hook'              => 'edd_complete_purchase',
-					'conversion_metric' => 'visitors',
+					'id'   => 'edd_complete_purchase',
+					'type' => 'hook',
+					'hook' => 'edd_complete_purchase',
+				],
+				[
+					'id'       => 'edd_add_to_cart',
+					'type'     => 'clicks',
+					'selector' => '.edd-add-to-cart',
+				],
+				[
+					'id'       => 'edd_go_to_checkout',
+					'type'     => 'clicks',
+					'selector' => '.edd_go_to_checkout',
+				],
+				[
+					'id'       => 'edd_click_purchase',
+					'type'     => 'clicks',
+					'selector' => '#edd-purchase-button',
 				],
 			],
 	],
@@ -94,27 +98,39 @@ return [
 		'label'                => 'Easy Digital Downloads - Recurring Payments',
 		'goals'                => [
 			[
-				'id'          => 'edd_subscription_post_create',
-				'type'        => 'hook',
-				'status'      => 'active',
-				'server_side' => true,
-				'url'         => '*',
-				'hook'        => 'edd_subscription_post_create',
+				'id'   => 'edd_subscription_post_create',
+				'type' => 'hook',
+				'hook' => 'edd_subscription_post_create',
+
 			],
 			[
-				'id'          => 'edd_subscription_cancelled',
-				'type'        => 'hook',
-				'status'      => 'active',
-				'server_side' => true,
-				'url'         => '*',
-				'hook'        => 'edd_subscription_cancelled',
+				'id'   => 'edd_subscription_cancelled',
+				'type' => 'hook',
+				'hook' => 'edd_subscription_cancelled',
 			],
 		],
 	],
-	'wp-simple-pay'                    => [],
-	'charitable'                       => [],
-	'sure-cart'                        => [],
-
+	'give-wp'                          => [
+		'constant_or_function' => 'GIVE_VERSION',
+		'label'                => 'Give - Donation Plugin',
+		'goals'                => [
+			[
+				'id'       => 'give_click_donation_open_modal',
+				'type'     => 'clicks',
+				'selector' => '.givewp-donation-form-modal__open',
+			],
+			[
+				'id'       => 'give_click_donation',
+				'type'     => 'clicks',
+				'selector' => '.givewp-donation-form__steps-button-next',
+			],
+			[
+				'id'   => 'give_donation_hook',
+				'type' => 'hook',
+				'hook' => 'give_process_donation_after_validation',
+			],
+		],
+	],
 	// Contact from plugins.
 	'contact-form-7'                   => [
 		'constant_or_function' => 'WPCF7_VERSION',
@@ -122,12 +138,14 @@ return [
 		'goals'                =>
 			[
 				[
-					'id'          => 'wpcf7_submit',
-					'type'        => 'hook',
-					'status'      => 'active',
-					'server_side' => true,
-					'url'         => '*',
-					'hook'        => 'wpcf7_submit',
+					'id'   => 'wpcf7_submit',
+					'type' => 'hook',
+					'hook' => 'wpcf7_submit',
+				],
+				[
+					'id'       => 'wpcf7_submit_click',
+					'type'     => 'clicks',
+					'selector' => '.wpcf7-submit',
 				],
 			],
 	],
@@ -137,12 +155,38 @@ return [
 		'goals'                =>
 			[
 				[
-					'id'          => 'wpforms_process_complete',
-					'type'        => 'hook',
-					'status'      => 'active',
-					'server_side' => true,
-					'url'         => '*',
-					'hook'        => 'wpforms_process_complete',
+					'id'   => 'wpforms_process_complete',
+					'type' => 'hook',
+					'hook' => 'wpforms_process_complete',
+				],
+				[
+					'id'       => 'wpforms_click_submit',
+					'type'     => 'clicks',
+					'selector' => '.wpforms-submit',
+				],
+			],
+	],
+	'happy-forms'                      => [
+		'constant_or_function' => 'HAPPYFORMS_VERSION',
+		'label'                => 'Happyforms',
+		'goals'                =>
+			[
+				[
+					'id'   => 'happyforms_submission_success',
+					'type' => 'hook',
+					'hook' => 'happyforms_submission_success',
+				],
+			],
+	],
+	'ws-form'                          => [
+		'constant_or_function' => 'WS_FORM_VERSION',
+		'label'                => 'WS Form',
+		'goals'                =>
+			[
+				[
+					'id'   => 'wsf_submit',
+					'type' => 'hook',
+					'hook' => 'wsf_submit',
 				],
 			],
 	],
@@ -152,12 +196,14 @@ return [
 		'goals'                =>
 			[
 				[
-					'id'          => 'gform_post_submission',
-					'type'        => 'hook',
-					'status'      => 'active',
-					'server_side' => true,
-					'url'         => '*',
-					'hook'        => 'gform_post_submission',
+					'id'   => 'gform_post_submission',
+					'type' => 'hook',
+					'hook' => 'gform_post_submission',
+				],
+				[
+					'id'       => 'gform_click_submit',
+					'type'     => 'clicks',
+					'selector' => 'input[type="submit"].gform_button',
 				],
 			],
 	],
@@ -167,12 +213,9 @@ return [
 		'goals'                =>
 			[
 				[
-					'id'          => 'frm_submit_clicked',
-					'type'        => 'clicks',
-					'status'      => 'active',
-					'server_side' => false,
-					'url'         => '*',
-					'selector'    => '.frm_button_submit',
+					'id'       => 'frm_submit_clicked',
+					'type'     => 'clicks',
+					'selector' => '.frm_button_submit',
 				],
 			],
 	],
@@ -182,37 +225,12 @@ return [
 		'goals'                =>
 			[
 				[
-					'id'          => 'ninja_forms_after_submission',
-					'type'        => 'hook',
-					'status'      => 'active',
-					'server_side' => true,
-					'url'         => '*',
-					'hook'        => 'ninja_forms_after_submission',
+					'id'   => 'ninja_forms_after_submission',
+					'type' => 'hook',
+					'hook' => 'ninja_forms_after_submission',
 				],
 			],
 	],
-	'happy-forms'                      => [],
-	'forminator'                       => [],
-	'ws-form'                          => [],
-	'everest-forms'                    => [],
-	'kaliforms'                        => [],
-	'form-maker-web10'                 => [],
-
-	// Lead and CRM plugins.
-	'mail-poet'                        => [],
-	'mailster'                         => [],
-	// No hooks to my knowledge.
-	'optinmonster'                     => [],
-	'thrive-leads'                     => [],
-	'fluentcrm'                        => [],
-	'groundhogg'                       => [],
-	'mailchimp-for-wp'                 => [],
-
-	// LMS plugins.
-	'learndash'                        => [],
-	'lifterlms'                        => [],
-	'tutor-lms'                        => [],
-
 	// caching plugins.
 	'wp-rocket'                        => [
 		'constant_or_function' => 'WP_ROCKET_VERSION',

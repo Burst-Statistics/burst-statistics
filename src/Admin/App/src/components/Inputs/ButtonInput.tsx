@@ -51,7 +51,7 @@ const ButtonInput: React.FC<ButtonInputProps> = ({
     // Size-specific styles
     {
       "py-0.5 px-3 text-sm font-normal": size === "sm",    // Small: Reduced padding and smaller text
-      "py-1 px-4 text-base font-normal": size === "md",       // Medium (default): Standard padding and text size
+      "py-1 px-4 text-base font-medium": size === "md",       // Medium (default): Standard padding and text size
       "py-3 px-8 text-lg font-semibold": size === "lg",     // Large: Increased padding and larger, bolder text
     },
     // Disabled styles

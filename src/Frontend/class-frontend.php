@@ -153,9 +153,16 @@ class Frontend {
 	 */
 	public function exclude_from_tracking(): bool {
 		if ( is_user_logged_in() ) {
+			// a track hit is used by the onboarding process.
+			// Only an exists check, for the test. Enqueued scripts are public, so no need to check for nonce.
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( isset( $_GET['burst_test_hit'] ) ) {
+				return false;
+			}
+
 			$user                = wp_get_current_user();
 			$user_role_blocklist = $this->get_option( 'user_role_blocklist' );
-			$get_excluded_roles  = is_array( $user_role_blocklist ) ? $user_role_blocklist : [ 'adminstrator' ];
+			$get_excluded_roles  = is_array( $user_role_blocklist ) ? $user_role_blocklist : [];
 			$excluded_roles      = apply_filters( 'burst_roles_excluded_from_tracking', $get_excluded_roles );
 			if ( count( array_intersect( $excluded_roles, $user->roles ) ) > 0 ) {
 				return true;

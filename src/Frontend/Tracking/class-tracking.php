@@ -23,6 +23,7 @@ class Tracking {
 
 	public string $beacon_enabled;
 	public array $look_up_table_ids = [];
+	public array $goals             = [];
 	/**
 	 * Constructor
 	 */
@@ -186,11 +187,10 @@ class Tracking {
 		}
 		if ( $request === 'request=test' ) {
 			http_response_code( 200 );
-
 			return 'success';
 		}
 
-		if ( IP::is_ip_blocked() ) {
+		if ( IP::is_ip_blocked() && strpos( $request, 'burst_test_hit' ) === false ) {
 			http_response_code( 200 );
 
 			return 'ip blocked';
@@ -208,15 +208,17 @@ class Tracking {
 	 * Burst Statistics rest_api endpoint for collecting hits
 	 */
 	public function rest_track_hit( \WP_REST_Request $request ): \WP_REST_Response {
-		if ( Ip::is_ip_blocked() ) {
+		// has to be decoded, contrary to what phpstan says.
+		// @phpstan-ignore-next-line.
+		$data     = json_decode( $request->get_json_params(), true );
+		$test_hit = isset( $data['url'] ) && strpos( $data['url'], 'burst_test_hit' ) !== false;
+		if ( Ip::is_ip_blocked() && ! $test_hit ) {
 			// @phpstan-ignore-next-line.
 			$status_code = WP_DEBUG ? 202 : 200;
 
 			return new \WP_REST_Response( 'Burst Statistics: Your IP is blocked from tracking.', $status_code );
 		}
-		// should be decoded, although phpstan says otherwise.
-		// @phpstan-ignore-next-line.
-		$data = json_decode( $request->get_json_params(), true );
+
 		if ( isset( $data['request'] ) && $data['request'] === 'test' ) {
 			return new \WP_REST_Response( [ 'success' => 'test' ], 200 );
 		}
@@ -471,8 +473,10 @@ class Tracking {
 	 * @return array<int> Cleaned list of unique, active goal IDs as integers.
 	 */
 	public function sanitize_completed_goal_ids( array $completed_goals ): array {
+		$active_client_side_goals    = $this->get_active_goals( false );
+		$active_client_side_goal_ids = wp_list_pluck( $active_client_side_goals, 'ID' );
 		// only keep active goals ids.
-		$completed_goals = array_intersect( $completed_goals, self::get_active_goals_ids() );
+		$completed_goals = array_intersect( $completed_goals, $active_client_side_goal_ids );
 		// remove duplicates.
 		$completed_goals = array_unique( $completed_goals );
 		// make sure all values are integers.
@@ -482,7 +486,7 @@ class Tracking {
 	/**
 	 * Get cached value for lookup table id
 	 */
-	public function get_lookup_table_id_cached( string $item, string $value ): int {
+	public function get_lookup_table_id_cached( string $item, ?string $value ): int {
 		if ( isset( $this->look_up_table_ids[ $item ][ $value ] ) ) {
 			return $this->look_up_table_ids[ $item ][ $value ];
 		}
@@ -495,7 +499,7 @@ class Tracking {
 	/**
 	 * Get the id of the lookup table for the given item and value.
 	 */
-	public static function get_lookup_table_id( string $item, string $value ): int {
+	public static function get_lookup_table_id( string $item, ?string $value ): int {
 		if ( empty( $value ) ) {
 			return 0;
 		}
@@ -579,7 +583,7 @@ class Tracking {
 				'goals'    => [
 					'completed' => [],
 					'scriptUrl' => apply_filters( 'burst_goals_script_url', BURST_URL . '/assets/js/build/burst-goals.js?v=' . $script_version ),
-					'active'    => self::get_active_goals(),
+					'active'    => $this->get_active_goals( false ),
 				],
 				'cache'    => [
 					'uid'          => null,
@@ -608,31 +612,25 @@ class Tracking {
 	 * @param bool $server_side Whether to fetch only server-side goals.
 	 * @return array<array<string, mixed>> List of active goals as associative arrays.
 	 */
-	public static function get_active_goals( bool $server_side = false ): array {
+	public function get_active_goals( bool $server_side ): array {
 		if ( defined( 'BURST_INSTALL_TABLES_RUNNING' ) ) {
 			return [];
 		}
 
 		global $wpdb;
-		$goals = wp_cache_get( "burst_active_goals_$server_side", 'burst' );
-		if ( ! $goals ) {
-			$server_side = $server_side ? 'AND server_side = 1' : 'AND server_side = 0';
-			$goals       = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}burst_goals WHERE status = 'active' {$server_side}", ARRAY_A );
-			wp_cache_set( "burst_active_goals_$server_side", $goals, 'burst', 10 );
+		$server_side_key = $server_side ? 'server_side' : 'client_side';
+		if ( isset( $this->goals[ $server_side_key ] ) ) {
+			return $this->goals[ $server_side_key ];
 		}
+		$goals = wp_cache_get( "burst_active_goals_$server_side_key", 'burst' );
+		if ( ! $goals ) {
+			$server_side_sql = $server_side ? " AND (type = 'visits' OR type = 'hook') " : "AND type != 'visits' AND type != 'hook' ";
+			$goals           = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}burst_goals WHERE status = 'active' {$server_side_sql}", ARRAY_A );
+			wp_cache_set( "burst_active_goals_$server_side_key", $goals, 'burst', 10 );
+		}
+		$this->goals[ $server_side_key ] = $goals;
 
 		return $goals;
-	}
-
-	/**
-	 * Get a list of active goal IDs.
-	 *
-	 * @param bool $server_side Whether to return only server-side goals.
-	 * @return array<int> List of goal IDs.
-	 */
-	public function get_active_goals_ids( bool $server_side = false ): array {
-		$active_goals = self::get_active_goals( $server_side );
-		return wp_list_pluck( $active_goals, 'ID' );
 	}
 
 	/**
@@ -676,7 +674,7 @@ class Tracking {
 	 */
 	public function get_completed_goals( array $completed_client_goals, string $page_url ): array {
 		$completed_server_goals = [];
-		$server_goals           = self::get_active_goals( true );
+		$server_goals           = $this->get_active_goals( true );
 		// if server side goals exist.
 		if ( count( $server_goals ) > 0 ) {
 			// loop through server side goals.

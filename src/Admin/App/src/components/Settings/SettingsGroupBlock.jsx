@@ -1,7 +1,7 @@
-import { memo } from 'react';
-import Block from '../Blocks/Block';
-import BlockHeading from '../Blocks/BlockHeading';
-import BlockContent from '../Blocks/BlockContent';
+import {memo, useMemo} from 'react';
+import { Block } from '@/components/Blocks/Block';
+import { BlockHeading } from '@/components/Blocks/BlockHeading';
+import { BlockContent } from '@/components/Blocks/BlockContent';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import Field from '@/components/Fields/Field';
 import Overlay from '@/components/Common/Overlay';
@@ -11,13 +11,14 @@ import useLicenseStore from '@/store/useLicenseStore';
 
 const SettingsGroupBlock = memo(
   ({ group, fields, control, isLastGroup }) => {
-    const className = isLastGroup ? 'rounded-b-none' : 'mb-5';
+      const { isLicenseValid } = useLicenseStore();
 
-    // filter fields by group id
-    const selectedFields = fields.filter(
-      ( field ) => field.group_id === group.id
-    );
-    const { isLicenseValid } = useLicenseStore();
+      const className = isLastGroup ? 'rounded-b-none' : 'mb-5';
+
+
+    if ( fields.length === 0 ) {
+      return null; // No fields to display
+    }
 
     return (
       <Block key={group.id} className={className}>
@@ -39,15 +40,13 @@ const SettingsGroupBlock = memo(
         <BlockContent className="p-0 pb-4">
           {group.description && <h3 className="mb-5 text-sm">{group.description}</h3>}
           <div className="flex flex-wrap">
-            {selectedFields.map( ( field, i ) => (
+            {fields.map( ( field, i ) => (
               <ErrorBoundary key={i} fallback={'Could not load field'}>
                 <Field
                   key={i}
                   index={i}
                   setting={field}
                   control={control}
-
-                  // fields={selectedFields}
                 />
               </ErrorBoundary>
             ) )}

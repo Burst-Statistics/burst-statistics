@@ -57,14 +57,13 @@ class Admin {
 		add_filter( 'burst_do_action', [ $this, 'maybe_delete_all_data' ], 10, 3 );
 		add_action( 'burst_after_updated_goals', [ $this, 'create_js_file' ], 10, 1 );
 		add_action( 'burst_after_saved_fields', [ $this, 'create_js_file' ], 10, 1 );
-		add_action( 'upgrader_process_complete', [ $this, 'create_js_file' ], 10, 1 );
 		add_action( 'burst_daily', [ $this, 'create_js_file' ] );
 		add_action( 'wp_initialize_site', [ $this, 'create_js_file' ], 10, 1 );
 		add_action( 'admin_init', [ $this, 'activation' ] );
 		add_action( 'burst_activation', [ $this, 'run_table_init_hook' ], 10, 1 );
 		add_action( 'burst_activation', [ $this, 'setup_defaults' ], 20, 1 );
 		add_action( 'after_reset_stats', [ $this, 'run_table_init_hook' ], 10, 1 );
-		add_action( 'upgrader_process_complete', [ $this, 'run_table_init_hook' ], 10, 1 );
+		add_action( 'upgrader_process_complete', [ $this, 'after_plugin_upgrade' ], 10, 2 );
 		add_action( 'wp_initialize_site', [ $this, 'run_table_init_hook' ], 10, 1 );
 		add_action( 'burst_upgrade_before', [ $this, 'run_table_init_hook' ], 10, 1 );
 		add_action( 'burst_daily', [ $this, 'validate_tasks' ] );
@@ -323,10 +322,32 @@ class Admin {
 		}
 
 		if ( $wp_filesystem->is_dir( $upload_dir ) && $wp_filesystem->is_writable( $upload_dir ) ) {
-			$wp_filesystem->put_contents( $file, $js, 0644 );
+			$wp_filesystem->put_contents( $file, $js, FS_CHMOD_FILE );
 		}
 	}
 
+	/**
+	 * If this is a plugin upgrade or installation, check if this is coming from Burst.
+	 * If so, run some updates within the plugin.
+	 */
+	public function after_plugin_upgrade( ?object $upgrader_object = null, array $options = [] ): void {
+		// only if regarding plugins, install or update.
+		if ( isset( $options['type'] ) && $options['type'] !== 'plugin'
+		) {
+			return;
+		}
+
+		if ( $options['action'] !== 'install' && $options['action'] !== 'update' ) {
+			return;
+		}
+
+		if ( ! isset( $upgrader_object->new_plugin_data ) || $upgrader_object->new_plugin_data['TextDomain'] !== 'burst-statistics' ) {
+			return;
+		}
+
+		$this->run_table_init_hook();
+		$this->create_js_file();
+	}
 	/**
 	 * On Multisite site creation, run table init hook as well.
 	 */
@@ -399,28 +420,11 @@ class Admin {
 	 */
 	public function setup_defaults(): void {
 		if ( get_option( 'burst_set_defaults' ) ) {
+			update_option( 'burst_start_onboarding', true, false );
+			set_transient( 'burst_redirect_to_settings_page', true, 5 * MINUTE_IN_SECONDS );
 			update_option( 'burst_activation_time', time(), false );
 			update_option( 'burst_last_cron_hit', time(), false );
 			$this->tasks->add_initial_tasks();
-
-			// tables installed, now set defaults.
-			$exclude_roles = $this->get_option( 'user_role_blocklist' );
-			if ( ! $exclude_roles ) {
-				$defaults = [ 'administrator' ];
-				$this->update_option( 'user_role_blocklist', $defaults );
-			}
-
-			$mailinglist = $this->get_option( 'email_reports_mailinglist' );
-			if ( ! $mailinglist ) {
-				$defaults = [
-					[
-						'email'     => get_option( 'admin_email' ),
-						'frequency' => 'monthly',
-					],
-				];
-				$this->update_option( 'email_reports_mailinglist', $defaults );
-			}
-
 			if ( ! $this->table_exists( 'burst_goals' ) ) {
 				return;
 			}
@@ -935,6 +939,7 @@ class Admin {
 				'burst_goal_stats_db_version',
 				'burst_archive_db_version',
 				'burst_tasks',
+				'burst_onboarding_free_completed',
 			],
 		);
 

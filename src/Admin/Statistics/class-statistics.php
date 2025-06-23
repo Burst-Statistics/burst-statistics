@@ -23,6 +23,37 @@ class Statistics {
 		add_action( 'burst_install_tables', [ $this, 'install_statistics_table' ], 10 );
 		add_action( 'burst_daily', [ $this, 'update_page_visit_counts' ] );
 		add_action( 'burst_upgrade_post_meta', [ $this, 'update_page_visit_counts' ] );
+		add_action( 'burst_clear_test_visit', [ $this, 'clear_test_visit' ] );
+	}
+
+	/**
+	 * Clear the test hit from the database, which is added during onboarding.
+	 */
+	public function clear_test_visit(): void {
+		global $wpdb;
+		$session_ids = $wpdb->get_col(
+			"SELECT session_id FROM {$wpdb->prefix}burst_statistics WHERE parameters LIKE '%burst_test_hit%' OR parameters LIKE '%burst_nextpage%'"
+		);
+
+		$wpdb->query(
+			"DELETE FROM {$wpdb->prefix}burst_statistics WHERE parameters LIKE '%burst_test_hit%' OR parameters LIKE '%burst_nextpage%'"
+		);
+
+		if ( ! empty( $session_ids ) ) {
+			$placeholders = implode( ',', array_fill( 0, count( $session_ids ), '%d' ) );
+			$wpdb->query(
+				$wpdb->prepare(
+				// replacable %s located in $placeholders variable.
+                // phpcs:ignore
+					"DELETE FROM {$wpdb->prefix}burst_sessions WHERE ID IN ($placeholders)",
+					...$session_ids
+				)
+			);
+		}
+
+		$wpdb->query(
+			"DELETE FROM {$wpdb->prefix}burst_parameters WHERE parameter LIKE '%burst_test_hit%' OR parameter LIKE '%burst_nextpage%'"
+		);
 	}
 
 	/**
@@ -177,6 +208,8 @@ class Statistics {
                         WHERE time > $time_start
                         AND ( (time + time_on_page / 1000  + $on_page_offset) > $now)";
 		$live_value     = $wpdb->get_var( $sql );
+
+		// check if the plugin was activated in the last hour. If so, this could be a call coming from the onboarding.
 
 		return max( (int) $live_value, 0 );
 	}

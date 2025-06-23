@@ -1,9 +1,9 @@
 import { __ } from '@wordpress/i18n';
 import { burst_get_website_url } from '@//utils/lib';
-import Block from '@/components/Blocks/Block';
-import BlockHeading from '@/components/Blocks/BlockHeading';
-import BlockContent from '@/components/Blocks/BlockContent';
-import BlockFooter from '@/components/Blocks/BlockFooter';
+import { Block } from '@/components/Blocks/Block';
+import { BlockHeading } from '@/components/Blocks/BlockHeading';
+import { BlockContent } from '@/components/Blocks/BlockContent';
+import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 
 const TipsTricksBlock = ( props ) => {

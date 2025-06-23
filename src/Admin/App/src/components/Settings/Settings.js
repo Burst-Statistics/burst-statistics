@@ -5,6 +5,7 @@ import SettingsGroupBlock from './SettingsGroupBlock';
 import SettingsFooter from './SettingsFooter';
 import useSettingsData from '@/hooks/useSettingsData';
 import { useForm } from 'react-hook-form';
+import { useWatch } from 'react-hook-form';
 
 /**
  * Renders the selected settings
@@ -14,7 +15,6 @@ const Settings = ({ currentSettingPage }) => {
   const { settings, saveSettings } = useSettingsData();
   const { saveGoals } = useGoalsData();
   const settingsId = currentSettingPage.id;
-
   const currentFormDefaultValues = useMemo(
     () => extractFormValuesPerMenuId( settings, settingsId ),
     [ settings, settingsId ]
@@ -23,13 +23,6 @@ const Settings = ({ currentSettingPage }) => {
   const currentFormValues = useMemo(
     () => extractFormValuesPerMenuId( settings, settingsId, 'value' ),
     [ settings, settingsId ]
-  );
-
-  const lastGroup = useMemo(
-    () =>
-      currentSettingPage?.groups?.[currentSettingPage?.groups?.length - 1] ||
-      null,
-    [ currentSettingPage?.groups ]
   );
 
   // Initialize useForm with default values from the fetched settings data
@@ -42,80 +35,70 @@ const Settings = ({ currentSettingPage }) => {
     values: currentFormValues
   });
 
-  const filterCurrentFormFields = ( settings, settingsId, currentFormValues ) => {
+  const watchedValues = useWatch({ control });
+  const filteredGroups = useMemo(() => {
+    const grouped = [];
+    currentSettingPage.groups.forEach((group) => {
+      const groupFields = settings
+          .filter((setting) => setting.menu_id === settingsId && setting.group_id === group.id)
+          .filter((setting) => {
+            if (!setting.react_conditions) return true;
+            return Object.entries(setting.react_conditions).every(([field, allowedValues]) => {
+              const value = watchedValues?.[field];
+              return allowedValues.includes(value);
+            });
+          });
 
-    // do conditional checks
-    let filterSettings = settings.filter( ( setting ) => setting.menu_id === settingsId );
-
-    filterSettings.forEach( ( setting ) => {
-      if ( setting.react_conditions ) {
-
-        // Check if all conditions are met
-        const conditionsMet = Object.entries( setting.react_conditions ).every( ([ field, allowedValues ]) => {
-          const currentValue = currentFormValues[field];
-          return allowedValues.includes( currentValue );
-        });
-
-        // If conditions are not met, disable the field
-        if ( ! conditionsMet ) {
-          setting.visible = true;
-        }
+      if (groupFields.length > 0) {
+        grouped.push({ ...group, fields: groupFields });
       }
     });
 
-    return filterSettings;
-  };
-
-  const currentFormFields = filterCurrentFormFields( settings, settingsId, currentFormValues );
-
-  // based on current values we need to conditionally disable or enable other fields
+    return grouped;
+  }, [settings, settingsId, currentSettingPage.groups, watchedValues]);
 
   return (
-    <form>
-      <ErrorBoundary fallback={'Could not load Settings'}>
-        {currentSettingPage.groups?.map( ( group ) => {
-          const isLastGroup = lastGroup.id === group.id;
-          const currentGroupFields = currentFormFields.filter(
-            ( field ) => field.group_id === group.id
-          );
-          return (
-            <SettingsGroupBlock
-              key={group.id}
-              group={group}
-              fields={currentGroupFields}
-              control={control}
-              isLastGroup={isLastGroup}
-            />
-          );
-        })}
-        {/* Don't display the footer when we are on the license SettingsPage */}
-        {'license' !== settingsId && (
-        <SettingsFooter
-          onSubmit={handleSubmit( ( formData ) => {
-            // Only send changed fields
-            const changedData = Object.keys(dirtyFields).reduce((acc, key) => {
-              acc[key] = formData[key];
-              return acc;
-            }, {});
-            
-            saveSettings(changedData);
-            saveGoals();
+      <form>
+        <ErrorBoundary fallback={'Could not load Settings'}>
+          {filteredGroups.map((group, index) => {
+            const isLastGroup = index === filteredGroups.length - 1;
+
+            return (
+                <SettingsGroupBlock
+                    key={group.id}
+                    group={group}
+                    fields={group.fields}
+                    control={control}
+                    isLastGroup={isLastGroup}
+                />
+            );
           })}
-          control={control}
-        />
-        )}
-      </ErrorBoundary>
-    </form>
+
+          {'license' !== settingsId && (
+              <SettingsFooter
+                  onSubmit={handleSubmit((formData) => {
+                    const changedData = Object.keys(dirtyFields).reduce((acc, key) => {
+                      acc[key] = formData[key];
+                      return acc;
+                    }, {});
+                    saveSettings(changedData);
+                    saveGoals();
+                  })}
+                  control={control}
+              />
+          )}
+        </ErrorBoundary>
+      </form>
   );
 };
 export default Settings;
 
-const extractFormValuesPerMenuId = ( settings, menuId, key = 'default' ) => {
+const extractFormValuesPerMenuId = (settings, menuId, key = 'default') => {
 
   // Extract default values from settings data where menu_id ===  settingsId
   const formValues = {};
-  settings.forEach( ( setting ) => {
-    if ( setting.menu_id === menuId ) {
+  settings.forEach((setting) => {
+    if (setting.menu_id === menuId) {
       formValues[setting.id] = setting[key];
     }
   });

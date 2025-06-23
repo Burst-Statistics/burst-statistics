@@ -555,6 +555,38 @@ video {
     max-width: 1600px;
   }
 }
+.burst-indeterminate {
+  position: relative;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  border-width: 1px;
+  --tw-border-opacity: 1;
+  border-color: rgb(222 226 230 / var(--tw-border-opacity, 1));
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
+
+		&::after {
+			content: '';
+		}
+
+		&::after {
+    position: absolute;
+  }
+
+		&::after {
+    --tw-bg-opacity: 1;
+    background-color: rgb(21 22 21 / var(--tw-bg-opacity, 1));
+  }
+
+		&::after {
+			width: 8px;
+			height: 2px;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+		}
+}
 #burst-statistics .pointer-events-none {
   pointer-events: none;
 }
@@ -624,6 +656,12 @@ video {
 #burst-statistics .float-right {
   float: right;
 }
+#burst-statistics .m-0 {
+  margin: 0px;
+}
+#burst-statistics .m-0\.5 {
+  margin: 0.125rem;
+}
 #burst-statistics .m-3 {
   margin: 0.75rem;
 }
@@ -688,8 +726,14 @@ video {
 #burst-statistics .hidden {
   display: none;
 }
+#burst-statistics .h-0 {
+  height: 0px;
+}
 #burst-statistics .h-1 {
   height: 0.25rem;
+}
+#burst-statistics .h-10 {
+  height: 2.5rem;
 }
 #burst-statistics .h-11 {
   height: 2.75rem;
@@ -844,6 +888,15 @@ video {
 #burst-statistics .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+@keyframes spin {
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+#burst-statistics .animate-spin {
+  animation: spin 1s linear infinite;
+}
 #burst-statistics .cursor-default {
   cursor: default;
 }
@@ -912,6 +965,9 @@ video {
 #burst-statistics .gap-2 {
   gap: 0.5rem;
 }
+#burst-statistics .gap-2\.5 {
+  gap: 0.625rem;
+}
 #burst-statistics .gap-3 {
   gap: 0.75rem;
 }
@@ -920,6 +976,11 @@ video {
 }
 #burst-statistics .gap-5 {
   gap: 1.25rem;
+}
+#burst-statistics :is(.space-y-1 > :not([hidden]) ~ :not([hidden])) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.25rem * var(--tw-space-y-reverse));
 }
 #burst-statistics :is(.space-y-2 > :not([hidden]) ~ :not([hidden])) {
   --tw-space-y-reverse: 0;
@@ -987,10 +1048,6 @@ video {
 #burst-statistics .border-accent-dark {
   --tw-border-opacity: 1;
   border-color: rgb(20 41 99 / var(--tw-border-opacity, 1));
-}
-#burst-statistics .border-gray-100 {
-  --tw-border-opacity: 1;
-  border-color: rgb(248 249 250 / var(--tw-border-opacity, 1));
 }
 #burst-statistics .border-gray-200 {
   --tw-border-opacity: 1;

@@ -186,12 +186,17 @@ class Upgrade {
 			add_action( 'plugins_loaded', [ $this, 'upgrade_goals' ], 30 );
 		}
 
-		// upgrade missing session_ids
+		// upgrade missing session_ids.
 		// in the stats table, find the oldest session_id = 1 that is preceded with a higher sesssion_id.
 		if ( $prev_version && version_compare( $prev_version, '2.0.4', '<' ) && ! defined( 'BURST_FREE' ) ) {
 			update_option( 'burst_fix_incorrect_bounces', true, false );
 			update_option( 'burst_db_upgrade_fix_missing_session_ids', true, false );
 			update_option( 'burst_db_upgrade_clean_orphaned_session_ids', true, false );
+		}
+
+		// ensure the onboarding doesn't start again if users already had the plugin activated.
+		if ( $prev_version && version_compare( $prev_version, '2.1.0.', '<' ) ) {
+			update_option( 'burst_activation_time_pro', time(), false );
 		}
 
 		do_action( 'burst_upgrade_after', $prev_version );

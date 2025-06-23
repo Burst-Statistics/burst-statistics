@@ -1,8 +1,7 @@
 import { __ } from '@wordpress/i18n';
-import Block from '@/components/Blocks/Block';
-import BlockHeading from '@/components/Blocks/BlockHeading';
-import BlockContent from '@/components/Blocks/BlockContent';
-
+import { Block } from '@/components/Blocks/Block';
+import { BlockHeading } from '@/components/Blocks/BlockHeading';
+import { BlockContent } from '@/components/Blocks/BlockContent';
 import InsightsHeader from './InsightsHeader';
 import { useInsightsStore } from '../../store/useInsightsStore';
 import InsightsGraph from './InsightsGraph';

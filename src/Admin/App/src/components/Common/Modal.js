@@ -1,6 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import Icon from '../../utils/Icon';
-import { useState } from 'react';
 
 const Modal = ({
   title,
@@ -11,7 +10,6 @@ const Modal = ({
   isOpen,
   onClose
 }) => {
-  const [ container, setContainer ] = useState( null );
 
   return (
     <Dialog.Root

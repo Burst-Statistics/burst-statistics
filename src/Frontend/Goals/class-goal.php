@@ -80,7 +80,7 @@ class Goal {
 			$this->title             = $goal->title !== '' ? $goal->title : __( 'New goal', 'burst-statistics' );
 			$this->type              = $goal->type;
 			$this->status            = $goal->status;
-			$this->server_side       = $goal->server_side;
+			$this->server_side       = $this->type === 'hook' || $this->type === 'visits';
 			$this->url               = $goal->url;
 			$this->conversion_metric = $goal->conversion_metric;
 			if ( isset( $goal->attribute ) ) {
@@ -120,11 +120,10 @@ class Goal {
 		do_action( 'burst_before_save_goals' );
 		global $wpdb;
 		$table_name           = $wpdb->prefix . 'burst_goals';
-		$available_goal_types = $this->get_available_goal_types();
+		$available_goal_types = $this->get_available_goal_fields();
 		// merge url property from two separate properties, depending on 'website' value.
-		$url               = $this->page_or_website === 'website' ? '*' : $this->specific_page;
-		$this->url         = $url !== '*' ? $this->sanitize_relative_url( $url ) : '*';
-		$this->server_side = $available_goal_types[ $this->sanitize_type( $this->type ) ]['server_side'] ?? 0;
+		$url       = $this->page_or_website === 'website' ? '*' : $this->specific_page;
+		$this->url = $url !== '*' ? $this->sanitize_relative_url( $url ) : '*';
 		// update start time only if the goal status has changed to active, or if it's a new goal.
 		$db_goal = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}burst_goals WHERE ID = %s", $this->id ) );
 		if ( $db_goal ) {
@@ -141,7 +140,6 @@ class Goal {
 			'title'             => sanitize_text_field( $this->title ),
 			'type'              => $this->sanitize_type( $this->type ),
 			'status'            => $this->sanitize_status( $this->status ),
-			'server_side'       => $this->server_side,
 			'url'               => $this->url,
 			'conversion_metric' => $this->sanitize_metric( $this->conversion_metric ),
 			'date_start'        => $this->date_start,
@@ -231,11 +229,16 @@ class Goal {
 		$goal = array_shift( $filtered_goals );
 		unset( $goal['id'], $goal['description'] );
 		// add each item of this array to the current burst_goal object.
+		// by default, we set conversion_metric to visitors.
+		$this->conversion_metric = 'visitors';
+		$this->status            = 'active';
+		$this->url               = '*';
 		foreach ( $goal as $name => $value ) {
 			if ( property_exists( $this, $name ) ) {
 				$this->{$name} = $value;
 			}
 		}
+
 		$this->save();
 		return $this->id;
 	}
@@ -244,8 +247,8 @@ class Goal {
 	 * Sanitize a goal type
 	 */
 	private function sanitize_type( string $type ): string {
-		$available_goal_types = $this->get_available_goal_types();
-		return isset( $available_goal_types[ $type ] ) ? $type : 'clicks';
+		$available_goal_types = [ 'clicks', 'views', 'visits', 'hook' ];
+		return in_array( $type, $available_goal_types, true ) ? $type : 'clicks';
 	}
 
 	/**
@@ -290,7 +293,7 @@ class Goal {
 	 *
 	 * @return array<int, array{label: string, value: string}>
 	 */
-	private function get_available_goal_types(): array {
+	private function get_available_goal_fields(): array {
 		$fields = \Burst\burst_loader()->admin->app->fields->get_goal_fields();
 
 		foreach ( $fields as $goal ) {

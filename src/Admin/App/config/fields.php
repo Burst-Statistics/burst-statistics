@@ -88,6 +88,15 @@ return [
 		'default'  => false,
 	],
 	[
+		'id'       => 'tips_tricks_mailinglist',
+		'menu_id'  => 'general',
+		'group_id' => 'email_reports',
+		'type'     => 'checkbox',
+		'label'    => __( 'Receive trips & tricks to improve your conversion.', 'burst-statistics' ),
+		'disabled' => false,
+		'default'  => '',
+	],
+	[
 		'id'          => 'send_email_report',
 		'menu_id'     => 'general',
 		'group_id'    => 'email_reports',
@@ -239,11 +248,14 @@ return [
 		'default'     => false,
 	],
 	[
-		'id'       => 'restore_archives',
-		'menu_id'  => 'data',
-		'group_id' => 'restore_archives',
-		'type'     => 'restore_archives',
-		'disabled' => false,
-		'default'  => false,
+		'id'               => 'restore_archives',
+		'menu_id'          => 'data',
+		'group_id'         => 'restore_archives',
+		'type'             => 'restore_archives',
+		'disabled'         => false,
+		'default'          => false,
+		'react_conditions' => [
+			'archive_data' => [ 'archive' ],
+		],
 	],
 ];

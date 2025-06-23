@@ -1,12 +1,11 @@
 import { useEffect } from 'react';
-
+import { Block } from '@/components/Blocks/Block';
+import { BlockHeading } from '@/components/Blocks/BlockHeading';
+import { BlockContent } from '@/components/Blocks/BlockContent';
+import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import TaskElement from './TaskElement';
 import { __ } from '@wordpress/i18n';
 import useTasks from '@//store/useTasksStore';
-import Block from '@/components/Blocks/Block';
-import BlockHeading from '@/components/Blocks/BlockHeading';
-import BlockContent from '@/components/Blocks/BlockContent';
-import BlockFooter from '@/components/Blocks/BlockFooter';
 import ProgressFooter from '@/components/Dashboard/ProgressFooter';
 
 const LoadingComponent = () => (

@@ -62,6 +62,7 @@ trait Save {
 	public function sanitize_field_type( string $type ): string {
 		$types = [
 			'hidden',
+			'hidden_string',
 			'database',
 			'checkbox',
 			'radio',
@@ -116,6 +117,7 @@ trait Save {
 			case 'select':
 			case 'text':
 			case 'textarea':
+			case 'hidden_string':
 			default:
 				return sanitize_text_field( $value );
 		}

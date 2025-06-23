@@ -1,16 +1,16 @@
-import { useState } from 'react';
-import { __ } from '@wordpress/i18n';
+import {__} from '@wordpress/i18n';
 import * as burst_api from '@//utils/api';
-import Block from '@/components/Blocks/Block';
-import BlockHeading from '@/components/Blocks/BlockHeading';
-import BlockContent from '@/components/Blocks/BlockContent';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
+import {Block} from '@/components/Blocks/Block';
+import {BlockHeading} from '@/components/Blocks/BlockHeading';
+import {BlockContent} from '@/components/Blocks/BlockContent';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import Icon from "@/utils/Icon";
+import UpdraftPlusLogo from "@/utils/UpdraftPlusLogo";
 const OtherPluginsBlock = () => {
   const queryClient = useQueryClient();
 
   // Define pluginActionNice first, before it's used in the useQuery hook
-  const pluginActionNice = ( pluginAction ) => {
+  const pluginActionNice = ( action ) => {
     const statuses = {
       download: __( 'Install', 'burst-statistics' ),
       activate: __( 'Activate', 'burst-statistics' ),
@@ -18,7 +18,7 @@ const OtherPluginsBlock = () => {
       downloading: __( 'Downloading...', 'burst-statistics' ),
       'upgrade-to-pro': __( 'Downloading...', 'burst-statistics' )
     };
-    return statuses[pluginAction];
+    return statuses[action];
   };
 
   // Use TanStack Query for data fetching and state management
@@ -29,13 +29,13 @@ const OtherPluginsBlock = () => {
   } = useQuery({
     queryKey: [ 'otherPluginsData' ],
     queryFn: async() => {
-      const response = await burst_api.doAction( 'otherpluginsdata' );
-
+      let response = await burst_api.doAction( 'otherpluginsdata' );
+      response = Object.values(response);
       // Process the plugin data
-      return response.map( pluginItem => ({
-        ...pluginItem,
-        pluginActionNice: pluginActionNice( pluginItem.pluginAction )
-      }) );
+      return response.map(pluginItem => ({
+         ...pluginItem,
+         pluginActionNice: pluginActionNice(pluginItem.action)
+       }));
     },
 
     // Only fetch once when component mounts
@@ -50,14 +50,13 @@ const OtherPluginsBlock = () => {
     },
     onSuccess: ( response, variables ) => {
       const { slug } = variables;
-
       // Update the queryClient cache directly instead of using state
       queryClient.setQueryData([ 'otherPluginsData' ], ( oldData ) => {
-        return oldData.map( plugin => {
-          if ( plugin.slug === slug ) {
+        return oldData.map(plugin => {
+          if (plugin.slug === slug) {
             return {
               ...response,
-              pluginActionNice: pluginActionNice( response.pluginAction )
+              pluginActionNice: pluginActionNice(response.action)
             };
           }
           return plugin;
@@ -65,10 +64,10 @@ const OtherPluginsBlock = () => {
       });
 
       // If response has a next action, trigger it
-      if ( response.pluginAction &&
-          'installed' !== response.pluginAction &&
-          'upgrade-to-pro' !== response.pluginAction ) {
-        handlePluginAction( slug, response.pluginAction );
+      if ( response.action &&
+          'installed' !== response.action &&
+          'upgrade-to-pro' !== response.action ) {
+        handlePluginAction( slug, response.action );
       }
     }
   });
@@ -77,31 +76,30 @@ const OtherPluginsBlock = () => {
     return pluginData.find( plugin => plugin.slug === slug );
   };
 
-  const handlePluginAction = ( slug, pluginAction, e ) => {
+  const handlePluginAction = ( slug, action, e ) => {
     if ( e ) {
       e.preventDefault();
     }
 
-    if ( 'installed' === pluginAction || 'upgrade-to-pro' === pluginAction ) {
+    if ( 'installed' === action || 'upgrade-to-pro' === action ) {
       return;
     }
 
     const plugin = getPluginData( slug );
     if ( ! plugin ) {
-return;
-}
+      return;
+    }
 
-    // Update UI immediately for better UX
     queryClient.setQueryData([ 'otherPluginsData' ], ( oldData ) => {
       return oldData.map( item => {
         if ( item.slug === slug ) {
-          const updatedAction = 'download' === pluginAction ? 'downloading' :
-                              'activate' === pluginAction ? 'activating' :
-                              pluginAction;
+          const updatedAction = 'download' === action ? 'downloading' :
+                              'activate' === action ? 'activating' :
+                                  action;
 
           return {
             ...item,
-            pluginAction: updatedAction,
+            action: updatedAction,
             pluginActionNice: pluginActionNice( updatedAction )
           };
         }
@@ -112,14 +110,26 @@ return;
     // Call the API
     pluginActionMutation.mutate({
       slug,
-      pluginAction
+      action
     });
   };
 
-  const otherPluginElement = ( plugin, i ) => {
+  const otherPluginElement = ( plugin ) => {
+    let iconName, iconColor;
+    
+    if (['installed', 'upgrade-to-pro'].includes(plugin.action)) {
+      iconName = 'check';
+      iconColor = 'white';
+    } else if (['activate'].includes(plugin.action)) {
+      iconName = 'check';
+      iconColor = 'gray';
+    } else {
+      iconName = 'circle-open';
+      iconColor = 'gray';
+    }
+    
     return (
       <div
-        key={i}
         className={'burst-other-plugins-element burst-' + plugin.slug}
       >
         <a
@@ -127,31 +137,29 @@ return;
           target="_blank"
           title={plugin.title}
         >
-          <div className="burst-bullet"></div>
+          
+          <div className={['installed', 'upgrade-to-pro'].includes(plugin.action) ? 'bg-green rounded-full m-0.5' : ''}>
+            <Icon strokeWidth={3} name={iconName} color={iconColor} size={14} /></div>
           <div className="burst-other-plugins-content">{plugin.title}</div>
         </a>
         <div className="burst-other-plugin-status">
-          {'upgrade-to-pro' === plugin.pluginAction && (
-            <>
+          {'upgrade-to-pro' === plugin.action && (
               <a target="_blank" href={plugin.upgrade_url}>
                 {__( 'Upgrade', 'burst-statistics' )}
               </a>
-            </>
           )}
-          {'upgrade-to-pro' !== plugin.pluginAction &&
-            'installed' !== plugin.pluginAction && (
-              <>
+          {'upgrade-to-pro' !== plugin.action &&
+            'installed' !== plugin.action && (
                 <a
                   href="#"
                   onClick={( e ) =>
-                    handlePluginAction( plugin.slug, plugin.pluginAction, e )
+                    handlePluginAction( plugin.slug, plugin.action, e )
                   }
                 >
                   {plugin.pluginActionNice}
                 </a>
-              </>
             )}
-          {'installed' === plugin.pluginAction && (
+          {'installed' === plugin.action && (
             <>{__( 'Installed', 'burst-statistics' )}</>
           )}
         </div>
@@ -166,6 +174,7 @@ return;
         <BlockHeading
           className={'burst-column-2 no-border no-background'}
           title={__( 'Other plugins', 'burst-statistics' )}
+          controls=<UpdraftPlusLogo size={24} color="gray"/> 
         />
         <BlockContent className={'px-6 py-0'}>
           <div className="burst-other-plugins-container">
@@ -187,13 +196,14 @@ return;
       </Block>
     );
   }
-
   return (
     <Block className="bg-wp-gray row-span-1 shadow-none lg:col-span-6">
-      <BlockHeading title={__( 'Other plugins', 'burst-statistics' )} />
+      <BlockHeading title={__( 'Other plugins', 'burst-statistics' )}
+                    controls=<UpdraftPlusLogo size={24} color="gray"/>
+      />
       <BlockContent className={'px-6 py-0'}>
         <div className="burst-other-plugins-container">
-          {pluginData.map( ( plugin, i ) => otherPluginElement( plugin, i ) )}
+          {pluginData.map( ( plugin ) => otherPluginElement( plugin ) )}
         </div>
       </BlockContent>
     </Block>
