@@ -8,6 +8,7 @@ import useOnboardingStore from "../store/useOnboardingStore";
 import ModalContent from "./Modal/ModalContent";
 import { sprintf, __ } from '@wordpress/i18n';
 import Icon from "../utils/Icon";
+import {get_website_url} from "@/utils/lib.js";
 
 /**
  * Onboarding component that guides users through a series of steps
@@ -157,7 +158,10 @@ const Onboarding: FC = () => {
     if (!currentStep) {
         return null;
     }
-
+    const upgradeUrl = get_website_url(onboardingData.upgrade, {
+        burst_source: currentStep.id,
+        burst_content: 'upgrade'
+    });
     return (
         <ErrorBoundary>
             <div id="onboarding-modal-root"></div>
@@ -199,7 +203,7 @@ const Onboarding: FC = () => {
                                     className="w-full"
                                     btnVariant="secondary"
                                     size="lg"
-                                    link={onboardingData.upgrade}
+                                    link={upgradeUrl}
                                     key="upgrade-to-pro"
                                 >
                                     {__('Check out Burst Pro', 'burst-statistics')}

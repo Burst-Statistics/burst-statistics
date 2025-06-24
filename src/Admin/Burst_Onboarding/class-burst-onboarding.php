@@ -58,12 +58,12 @@ class Burst_Onboarding {
 			$onboarding->is_pro                         = defined( 'BURST_PRO' );
 			$onboarding->prefix                         = 'burst';
 			$onboarding->mailing_list_endpoint          = 'https://mailinglist.burst-statistics.com';
-			$onboarding->privacy_statement_url          = 'https://burst-statistics.com/legal/privacy-statement?burst_source=onboarding';
+			$onboarding->privacy_statement_url          = 'https://burst-statistics.com/legal/privacy-statement';
 			$onboarding->caller_slug                    = 'burst-statistics';
 			$onboarding->capability                     = 'manage_burst_statistics';
-			$onboarding->support_url                    = $onboarding->is_pro ? 'https://burst-statistics.com/support?burst_source=onboarding' : 'https://wordpress.org/support/plugin/burst-statistics/';
-			$onboarding->documentation_url              = 'https://burst-statistics.com/docs?burst_source=onboarding';
-			$onboarding->upgrade_url                    = 'https://burst-statistics.com/pricing?burst_source=onboarding';
+			$onboarding->support_url                    = $onboarding->is_pro ? 'https://burst-statistics.com/support' : 'https://wordpress.org/support/plugin/burst-statistics/';
+			$onboarding->documentation_url              = 'https://burst-statistics.com/docs';
+			$onboarding->upgrade_url                    = 'https://burst-statistics.com/pricing';
 			$onboarding->page_hook_suffix               = 'toplevel_page_burst';
 			$onboarding->version                        = BURST_VERSION;
 			$onboarding->languages_dir                  = BURST_PATH . 'languages';
