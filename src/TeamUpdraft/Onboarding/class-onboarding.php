@@ -34,7 +34,8 @@ class Onboarding {
 	public string $languages_dir;
 	public string $text_domain;
 
-	public bool $is_pro = false;
+	public bool $is_pro                         = false;
+	public bool $reload_settings_page_on_finish = false;
 
 	/**
 	 * Add values and defaults to fields in steps
@@ -559,6 +560,7 @@ class Onboarding {
 				'admin_ajax_url'        => add_query_arg( [ 'action' => $this->prefix . '_onboarding_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
 				'is_pro'                => $this->is_pro,
 				'network_link'          => network_site_url( 'plugins.php' ),
+				'reload_on_finish'      => $this->reload_settings_page_on_finish,
 			]
 		);
 		// remember if user has completed the onboarding in the free plugin.

@@ -143,6 +143,10 @@ const Onboarding: FC = () => {
         }
 
         setCurrentStepIndex(currentStepIndex + 1);
+        // If this is the last step, reload the page if this is so configured.
+        if (currentStepIndex + 1 >= steps.length && onboardingData.reload_on_finish ) {
+            window.location.reload();
+        }
     };
 
     //open the modal when the component mounts

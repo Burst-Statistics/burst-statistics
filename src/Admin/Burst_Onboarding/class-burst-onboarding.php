@@ -55,20 +55,20 @@ class Burst_Onboarding {
 	public function setup_onboarding(): void {
 		$onboarding = new Onboarding();
 		if ( $onboarding::is_onboarding_active( 'burst', 'burst-statistics' ) ) {
-
-			$onboarding->is_pro                = defined( 'BURST_PRO' );
-			$onboarding->prefix                = 'burst';
-			$onboarding->mailing_list_endpoint = 'https://mailinglist.burst-statistics.com';
-			$onboarding->privacy_statement_url = 'https://burst-statistics.com/legal/privacy-statement/';
-			$onboarding->caller_slug           = 'burst-statistics';
-			$onboarding->capability            = 'manage_burst_statistics';
-			$onboarding->support_url           = $onboarding->is_pro ? 'https://burst-statistics.com/support' : 'https://wordpress.org/support/plugin/burst-statistics/';
-			$onboarding->documentation_url     = 'https://burst-statistics.com/docs';
-			$onboarding->upgrade_url           = 'https://burst-statistics.com/pricing';
-			$onboarding->page_hook_suffix      = 'toplevel_page_burst';
-			$onboarding->version               = BURST_VERSION;
-			$onboarding->languages_dir         = BURST_PATH . 'languages';
-			$onboarding->text_domain           = 'burst-statistics';
+			$onboarding->is_pro                         = defined( 'BURST_PRO' );
+			$onboarding->prefix                         = 'burst';
+			$onboarding->mailing_list_endpoint          = 'https://mailinglist.burst-statistics.com';
+			$onboarding->privacy_statement_url          = 'https://burst-statistics.com/legal/privacy-statement?burst_source=onboarding';
+			$onboarding->caller_slug                    = 'burst-statistics';
+			$onboarding->capability                     = 'manage_burst_statistics';
+			$onboarding->support_url                    = $onboarding->is_pro ? 'https://burst-statistics.com/support?burst_source=onboarding' : 'https://wordpress.org/support/plugin/burst-statistics/';
+			$onboarding->documentation_url              = 'https://burst-statistics.com/docs?burst_source=onboarding';
+			$onboarding->upgrade_url                    = 'https://burst-statistics.com/pricing?burst_source=onboarding';
+			$onboarding->page_hook_suffix               = 'toplevel_page_burst';
+			$onboarding->version                        = BURST_VERSION;
+			$onboarding->languages_dir                  = BURST_PATH . 'languages';
+			$onboarding->text_domain                    = 'burst-statistics';
+			$onboarding->reload_settings_page_on_finish = true;
 			$onboarding->init();
 		}
 	}
@@ -246,9 +246,9 @@ class Burst_Onboarding {
 		unset( $step_id );
 		$field['value'] = $this->get_option( $field['id'] );
 		if ( $field['id'] === 'ip_blocklist' ) {
-			$field['default'] = IP::get_ip_address();
+			$field['default'] = true;
 			// translators: %s is the user's IP address.
-			$field['label'] = sprintf( __( 'Exclude your IP (%s) from being tracked', 'burst-statistics' ), $field['default'] );
+			$field['label'] = sprintf( __( 'Exclude your IP (%s) from being tracked', 'burst-statistics' ), IP::get_ip_address() );
 		}
 
 		if ( $field['id'] === 'user_role_blocklist' ) {

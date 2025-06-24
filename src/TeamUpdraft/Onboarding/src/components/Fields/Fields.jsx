@@ -17,6 +17,7 @@ import useOnboardingStore from "@/store/useOnboardingStore";
 const Fields = ({ fields, onChange }) => {
     const {
         getValue,
+        setValue,
         isEdited,
     } = useOnboardingStore();
     if (!fields) return null;
@@ -36,7 +37,8 @@ const Fields = ({ fields, onChange }) => {
             {fields.map((field) => {
                 let value = getValue(field.id);
                 const isEditedField = isEdited(field.id);
-                if ( !isEditedField && ( value === '' || value === undefined ) && field.default ) {
+                if ( !isEditedField && ( value === '' || value === undefined || value === false ) && field.default ) {
+                    setValue(field.id, field.default);
                     value = field.default;
                 }
                 const Component = fieldComponents[field.type] || null;

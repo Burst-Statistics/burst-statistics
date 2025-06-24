@@ -144,7 +144,7 @@ const useOnboardingStore = create<OnboardingState>((set) => ({
     },
     isEdited: (id: string) => {
         const state = useOnboardingStore.getState();
-        return state.settings.find((field) => field.id === id)?.edited;
+        return !!state.settings.find((field) => field.id === id)?.edited;
     },
     setValue: async (id: string, value: string | boolean) => {
         const state = useOnboardingStore.getState();
