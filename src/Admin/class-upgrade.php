@@ -196,7 +196,9 @@ class Upgrade {
 
 		// ensure the onboarding doesn't start again if users already had the plugin activated.
 		if ( $prev_version && version_compare( $prev_version, '2.1.0.', '<' ) ) {
-			update_option( 'burst_activation_time_pro', time(), false );
+			if ( defined( 'BURST_PRO' ) ) {
+				update_option( 'burst_activation_time_pro', time(), false );
+			}
 		}
 
 		do_action( 'burst_upgrade_after', $prev_version );
