@@ -282,15 +282,15 @@ class Tracking {
 		$sanitized_data['page_url'] = $destructured_url['path'];
 		$sanitized_data['host']     = $destructured_url['scheme'] . '://' . $destructured_url['host'];
 		// required.
-		$sanitized_data['uid']         = $this->sanitize_uid( $data['uid'] );
-		$sanitized_data['fingerprint'] = $this->sanitize_fingerprint( $data['fingerprint'] );
-		$sanitized_data['referrer']    = $this->sanitize_referrer( $data['referrer_url'] );
-        $sanitized_data['browser_id'] = self::get_lookup_table_id( 'browser', $user_agent_data['browser'] );
-        $sanitized_data['browser_version_id'] = self::get_lookup_table_id( 'browser_version', $user_agent_data['browser_version'] );
-        $sanitized_data['platform_id'] = self::get_lookup_table_id( 'platform', $user_agent_data['platform'] );
-        $sanitized_data['device_id'] = self::get_lookup_table_id( 'device', $user_agent_data['device'] );
-		$sanitized_data['time_on_page'] = $this->sanitize_time_on_page( $data['time_on_page'] );
-		$sanitized_data['bounce']       = 1;
+		$sanitized_data['uid']                = $this->sanitize_uid( $data['uid'] );
+		$sanitized_data['fingerprint']        = $this->sanitize_fingerprint( $data['fingerprint'] );
+		$sanitized_data['referrer']           = $this->sanitize_referrer( $data['referrer_url'] );
+		$sanitized_data['browser_id']         = self::get_lookup_table_id( 'browser', $user_agent_data['browser'] );
+		$sanitized_data['browser_version_id'] = self::get_lookup_table_id( 'browser_version', $user_agent_data['browser_version'] );
+		$sanitized_data['platform_id']        = self::get_lookup_table_id( 'platform', $user_agent_data['platform'] );
+		$sanitized_data['device_id']          = self::get_lookup_table_id( 'device', $user_agent_data['device'] );
+		$sanitized_data['time_on_page']       = $this->sanitize_time_on_page( $data['time_on_page'] );
+		$sanitized_data['bounce']             = 1;
 
 		return $sanitized_data;
 	}
@@ -306,7 +306,7 @@ class Tracking {
 	 */
 	public function get_hit_type( array $data ): array {
 		// Determine if it is an update hit based on the absence of certain data points.
-        $is_update_hit = $data['browser_id'] === 0 && $data['browser_version_id'] === 0 && $data['platform_id'] === 0 && $data['device_id'] === 0;
+		$is_update_hit = $data['browser_id'] === 0 && $data['browser_version_id'] === 0 && $data['platform_id'] === 0 && $data['device_id'] === 0;
 
 		// Attempt to get the last user statistic based on the presence or absence of certain conditions.
 		if ( $is_update_hit ) {

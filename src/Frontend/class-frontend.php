@@ -27,6 +27,7 @@ class Frontend {
 		add_filter( 'script_loader_tag', [ $this, 'defer_burst_tracking_script' ], 10, 3 );
 		add_action( 'burst_every_hour', [ $this, 'maybe_update_total_pageviews_count' ] );
 		add_shortcode( 'burst-most-visited', [ $this, 'most_visited_posts' ] );
+		add_action( 'init', [ $this, 'use_logged_out_state_for_tests' ] );
 
 		new Sessions();
 		$this->tracking = new Tracking();
@@ -49,6 +50,18 @@ class Frontend {
 				filemtime( BURST_PATH . "helpers/timeme/timeme$minified.js" ),
 				false
 			);
+		}
+	}
+
+	/**
+	 * When a tracking test is running, we don't want to show the logged in state, as caching plugins often show uncached content to logged in users.
+	 */
+	public function use_logged_out_state_for_tests(): void {
+		// No form data processed, no action connected, only not showing logged in state for testing purposes.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['burst_test_hit'] ) || isset( $_GET['burst_nextpage'] ) ) {
+			add_filter( 'determine_current_user', '__return_null', 100 );
+			wp_set_current_user( 0 );
 		}
 	}
 
