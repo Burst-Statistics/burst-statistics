@@ -106,7 +106,7 @@ return [
 		'subtitle'       => __( 'Stay up to date with your website\'s performance.', 'burst-statistics' ),
 		'fields'         => [
 			[
-				'id'      => 'email_reports_onboarding',
+				'id'      => 'email_reports_mailinglist',
 				'type'    => 'email',
 				'default' => '',
 			],

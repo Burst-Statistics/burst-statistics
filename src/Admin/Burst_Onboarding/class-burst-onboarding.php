@@ -161,6 +161,9 @@ class Burst_Onboarding {
         if ( $id === 'email_reports_mailinglist' ) {
             $value = sanitize_email( $value );
             $current_report_array = $this->get_plugin_option( 'email_reports_mailinglist' );
+            if ( ! is_array( $current_report_array ) ) {
+                $current_report_array = [];
+            }
             $mail_found           = false;
             foreach ( $current_report_array as $mailing_preferences ) {
                 if ( $mailing_preferences['email'] === $value ) {
@@ -176,7 +179,6 @@ class Burst_Onboarding {
 
             $value = $current_report_array;
         }
-
         return $value;
     }
     //phpcs:enable
