@@ -26,6 +26,28 @@ const useSettingsData = () => {
     select: ( data ) => [ ...data ] // create a new array so dependencies are updated
   });
 
+  const addNotice = ( settings_id, warning_type, message, title ) => {
+    queryClient.setQueryData( [ 'settings_fields' ], ( oldData ) => {
+      return oldData.map( ( field ) => {
+        if ( field.id !== settings_id ) return field;
+
+        const updatedNotice = {
+          title,
+          label: warning_type,
+          description: message,
+        };
+
+        return {
+          ...field,
+          notice: updatedNotice,
+        };
+      });
+    });
+
+    // Invalidate the query to refresh the data
+    // queryClient.invalidateQueries([ 'settings_fields' ]);
+  }
+  
   const getValue = ( id ) => query.data.find( ( field ) => field.id === id )?.value;
   const setValue = ( id, value ) => {
     const field = query.data.find( ( field ) => field.id === id );
@@ -54,6 +76,7 @@ const useSettingsData = () => {
     settings: query.data,
     saveSettings,
     getValue,
+    addNotice,
     setValue,
     isSavingSettings,
     invalidateSettings: () =>

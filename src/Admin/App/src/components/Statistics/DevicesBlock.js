@@ -8,9 +8,9 @@ import {
   getDevicesTitleAndValueData,
   getDevicesSubtitleData
 } from '@/api/getDevicesData';
-import Block from '@/components/Blocks/Block';
-import BlockHeading from '@/components/Blocks/BlockHeading';
-import BlockContent from '@/components/Blocks/BlockContent';
+import { Block } from '@/components/Blocks/Block';
+import { BlockHeading } from '@/components/Blocks/BlockHeading';
+import { BlockContent } from '@/components/Blocks/BlockContent';
 import { useMemo, memo } from 'react';
 
 // Memoize the device item to prevent unnecessary re-renders

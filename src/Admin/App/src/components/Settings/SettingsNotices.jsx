@@ -1,21 +1,18 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import CollapsableBlock from '@/components/Blocks/CollapsableBlock';
+import { CollapsableBlock } from '@/components/Blocks/CollapsableBlock';
 import { __ } from '@wordpress/i18n';
 import useSettingsData from '@/hooks/useSettingsData';
 
 const SettingsNotices = ({ settingsGroup }) => {
   const { settings } = useSettingsData();
 
-  const notices = settings.filter(
+  const settingsWithNotices = settings.filter(
     ( setting ) => setting.notice && setting.menu_id === settingsGroup.id
   );
 
-
-  const [ openStates, setOpenStates ] = useState( notices.map( () => false ) );
-
-
-  if ( ! notices.length ) {
+  const [ openStates, setOpenStates ] = useState( settingsWithNotices.map( () => false ) );
+  if ( ! settingsWithNotices.length ) {
     return null;
   }
 
@@ -35,7 +32,7 @@ const SettingsNotices = ({ settingsGroup }) => {
 
   const openCount = openStates.filter( ( isOpen ) => isOpen ).length;
   const toggleButtonText =
-    openCount > notices.length / 2 ?
+    openCount > settingsWithNotices.length / 2 ?
       __( 'Collapse all', 'burst-statistics' ) :
       __( 'Expand all', 'burst-statistics' );
 
@@ -53,24 +50,24 @@ const SettingsNotices = ({ settingsGroup }) => {
         </button>
       </div>
 
-      {0 < notices.length &&
-        notices.map( ( notice, index ) => (
+      {0 < settingsWithNotices.length &&
+          settingsWithNotices.map( ( setting, index ) => (
           <CollapsableBlock
             key={index}
-            title={notice.notice.title}
+            title={setting.notice.title}
             className="mb-4 w-full flex-1 !bg-accent-light"
             isOpen={openStates[index]}
             onToggle={( isOpen ) => handleToggle( index, isOpen )}
           >
             <div className="flex flex-col justify-start">
-              <p className="font-normal text-base">{notice.notice.description}</p>
-              <Link
+              <p className="font-normal text-base">{setting.notice.description}</p>
+              { setting.notice.url && setting.notice.url!=='' && <Link
                 className="text-gray-500 mt-2 text-base underline"
-                to={notice.notice.url}
+                to={setting.notice.url}
                 from={'/'}
               >
                 {__( 'Learn more', 'burst-statistics' )}
-              </Link>
+              </Link>}
             </div>
           </CollapsableBlock>
         ) )}

@@ -1,6 +1,6 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
-import Header from '@/components/Common/Header';
+import Header from '@/components/Common/Header.jsx';
 import { Suspense } from 'react';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 

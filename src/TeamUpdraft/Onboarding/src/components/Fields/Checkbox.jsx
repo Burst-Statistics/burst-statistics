@@ -1,0 +1,35 @@
+import FieldWrapper from "@/components/Fields/FieldWrapper";
+import CheckboxInput from "@/components/Fields/CheckboxInput";
+import { __ } from "@wordpress/i18n";
+import {get_website_url} from "@/utils/lib.js";
+
+const Checkbox = ({
+    field,
+    onChange,
+    value,
+}) => {
+    const privacy_statement = get_website_url(teamupdraft_onboarding.privacy_statement_url, {
+        burst_source: currentStep.id,
+        burst_content: 'mailing-list'
+    });
+    return (
+
+        <FieldWrapper label={''} inputId={field.id}>
+            <CheckboxInput
+                label={field.label}
+                onChange={onChange}
+                value={value}
+                id={field.id}
+            />
+
+            {field.show_privacy_link && (
+                <div className="text-right">
+                    <a rel="noopener noreferrer nofollow" className="underline" href={privacy_statement}>{__("Privacy Statement", "burst-statistics") }</a>
+                </div>
+            )}
+
+        </FieldWrapper>
+    );
+};
+
+export default Checkbox;

@@ -1,0 +1,33 @@
+#  docker-compose -f docker-compose-bitnami.yml down -v
+#  docker-compose -f docker-compose-bitnami.yml up
+
+services:
+  mariadb:
+    image: bitnami/mariadb:latest
+    environment:
+      - MARIADB_DATABASE=wordpress_test         # ✅ Use MARIADB_ prefix here
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - mariadb_data:/bitnami/mariadb
+
+  wordpress:
+    image: bitnami/wordpress:latest
+    depends_on:
+      - mariadb
+    ports:
+      - "8081:8080"
+    environment:
+      - WORDPRESS_DATABASE_HOST=mariadb
+      - WORDPRESS_DATABASE_NAME=wordpress_test
+      - WORDPRESS_DATABASE_USER=root
+      - WORDPRESS_DATABASE_PASSWORD=
+      - ALLOW_EMPTY_PASSWORD=yes
+      - WORDPRESS_EXTRA_WP_CONFIG_CONTENT=define( 'WP_DEBUG', true );  define( 'WP_DEBUG_LOG', true );
+    volumes:
+      - wordpress_data:/bitnami/wordpress
+      # Uncomment below only if this path exists and is clean
+      # - ./wp-content/plugins/burst-pro:/bitnami/wordpress/wp-content/plugins/burst-pro
+
+volumes:
+  mariadb_data:
+  wordpress_data:

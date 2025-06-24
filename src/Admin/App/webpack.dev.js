@@ -18,7 +18,7 @@ module.exports = {
     ...defaultConfig.resolve,
     extensions: [".ts", ".tsx", ".js", ".jsx"], // Add .ts and .tsx extensions
     alias: {
-      "@": path.resolve(__dirname, "src"), // Add alias for src directory
+      "@": path.resolve(__dirname, "src"), // Alias for src directory
     },
   },
   module: {

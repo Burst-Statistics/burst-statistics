@@ -1,7 +1,7 @@
 import SettingsNavigationItem from './SettingsNavigationItem';
-import BlockHeading from '@/components/Blocks/BlockHeading';
-import BlockContent from '@/components/Blocks/BlockContent';
-import Block from '@/components/Blocks/Block';
+import { Block } from '@/components/Blocks/Block';
+import { BlockHeading } from '@/components/Blocks/BlockHeading';
+import { BlockContent } from '@/components/Blocks/BlockContent';
 
 /**
  * Menu block, rendering the entire menu

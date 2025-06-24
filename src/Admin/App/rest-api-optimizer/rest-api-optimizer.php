@@ -32,7 +32,7 @@ if ( ! defined( 'BURST_REST_API_OPTIMIZER' ) && ! get_option( 'burst_rest_api_op
 
 	// Write file if dir now exists and is writable.
 	if ( $wp_filesystem->is_dir( WPMU_PLUGIN_DIR ) && $wp_filesystem->is_writable( WPMU_PLUGIN_DIR ) ) {
-		if ( $wp_filesystem->put_contents( $burst_mu_plugin_file, $burst_php_code ) === false ) {
+		if ( $wp_filesystem->put_contents( $burst_mu_plugin_file, $burst_php_code, FS_CHMOD_FILE ) === false ) {
 			update_option( 'burst_rest_api_optimizer_not_writable', true, false );
 		}
 	} else {

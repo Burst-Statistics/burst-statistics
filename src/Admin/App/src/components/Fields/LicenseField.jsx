@@ -1,5 +1,5 @@
 import {forwardRef} from 'react';
-import {__} from '@wordpress/i18n';
+import {__, sprintf} from '@wordpress/i18n';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import {doAction} from '@/utils/api';
@@ -8,6 +8,7 @@ import {useQuery, useQueryClient, useMutation} from '@tanstack/react-query';
 import useLicenseStore from '@/store/useLicenseStore';
 import Icon from '@/utils/Icon';
 import useSettingsData from '@/hooks/useSettingsData';
+import Hyperlink from "@/utils/Hyperlink";
 
 /**
  * LicenseField component for handling license key inputs.
@@ -51,7 +52,7 @@ const LicenseField = forwardRef(
                 if ( 'activate' === action ) {
                     return saveSettings({ [ field.name ]: field.value });
                 } else {
-                    return saveSettings({ [ field.name ]: '' });
+                    return doAction( 'deactivate_license', {});
                 }
             },
             onSuccess: () => {
@@ -77,13 +78,20 @@ const LicenseField = forwardRef(
             const contextText = (
             <>
                     {__( 'Activating your license gives you automatic updates and support.', 'burst-statistics' )}{' '}
-                    <a href="https://burst-statistics.com/how-to-install-burst-pro/" className="underline">
-                        {__( 'Having trouble? Check our installing guide', 'burst-statistics' )}
-                    </a>{' '}
-                    {__( 'or', 'burst-statistics' )}{' '}
-                    <a href="https://burst-statistics.com/support" className="underline">
-                        {__( 'open a support ticket', 'burst-statistics' )}
-                    </a>.
+                    <Hyperlink
+                        className={'underline'}
+                        url={'https://burst-statistics.com/how-to-install-burst-pro/'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        text={__( 'Having trouble? %sCheck our installation guide%s.', 'burst-statistics' )}
+                    />{' '}
+                    <Hyperlink
+                        className={'underline'}
+                        url={'https://burst-statistics.com/support/'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        text={__( 'If that does not help, please %sopen a support ticket%s so we can help you out!', 'burst-statistics' )}
+                    />
             </>
             );
 
@@ -102,7 +110,7 @@ const LicenseField = forwardRef(
                         id={inputId}
                         aria-invalid={!! fieldState?.error?.message}
                         type="password" // masked input for security.
-                        placeholder="XXXXXXXXXXXXXXXXXXXX"
+                        placeholder={__( 'Enter your license key here.', 'burst-statistics' )}
                         {...field}
                         {...props}
                         ref={ref}

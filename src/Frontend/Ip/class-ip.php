@@ -23,6 +23,7 @@ class Ip {
 	 * Check if IP is blocked
 	 */
 	public static function is_ip_blocked(): bool {
+
 		$ip = self::get_ip_address();
 		// split by line break.
 		$blocked_ips = preg_split( '/\r\n|\r|\n/', self::get_blocked_ips() );

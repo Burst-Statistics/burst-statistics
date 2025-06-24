@@ -6,9 +6,7 @@ import GoalSetup from './GoalSetup';
 import {useState} from 'react';
 import {burst_get_website_url} from '../../utils/lib';
 import * as Popover from '@radix-ui/react-popover';
-import Pro from '@/components/Common/Pro';
 import useSettingsData from '@/hooks/useSettingsData';
-
 const GoalsSettings = () => {
   const {
     goals,
@@ -31,6 +29,19 @@ const GoalsSettings = () => {
 
     setPredefinedGoalsVisible( false );
   };
+
+  const getGoalTypeNice = ( type ) => {
+    switch (type) {
+      case 'hook':
+        return 'Hook';
+      case 'clicks':
+        return __('Click', 'burst-statistics');
+      case 'views':
+        return __('View', 'burst-statistics');
+      default:
+        return type;
+    }
+  }
 
   let predefinedGoalsButtonClass =
       ! predefinedGoals || 0 === predefinedGoals.length ? 'burst-inactive' : '';
@@ -71,7 +82,7 @@ const GoalsSettings = () => {
                 >
                   {__( 'Add goal', 'burst-statistics' )}
                 </button>
-                {predefinedGoals && 1 <= predefinedGoals.length && (
+                {predefinedGoals &&  (
                     <Popover.Root
                         open={predefinedGoalsVisible}
                         onOpenChange={() => {
@@ -118,7 +129,7 @@ const GoalsSettings = () => {
                                       goal )}
                               >
                                 <Icon name={'plus'} size={18} color="gray"/>
-                                {goal.title}
+                                {goal.title+' ('+getGoalTypeNice(goal.type)+')'}
                                 {'hook' === goal.type && (
                                     cookieless ? (
                                         <Icon
@@ -134,6 +145,9 @@ const GoalsSettings = () => {
                               </div>
                           );
                         })}
+                        {__("Plug-in you're looking for not listed?", 'burst-statistics')+ ' '}
+                        <a className='underline' href={burst_get_website_url( '/request-goal-integration/', {burst_source: 'goals-integration-request'})}>{__("Request it here!", 'burst-statistics')}</a>
+
                       </Popover.Content>
                     </Popover.Root>
                 )}

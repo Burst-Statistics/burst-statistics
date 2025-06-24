@@ -95,7 +95,7 @@ class Shortcodes {
 			[
 				'type'           => 'pageviews',
 				'period'         => '30days',
-				'post_id'        => 'current',
+				'post_id'        => '',
 				'page_url'       => '',
 				'object_type'    => 'post',
 				'limit'          => 5,
@@ -179,7 +179,7 @@ class Shortcodes {
 			$page_url_filter = str_replace( home_url(), '', get_permalink( (int) $atts['post_id'] ) );
 		}
 
-		// Get date range based on period.
+		// Get date range based on period (now includes normalization for consistent caching).
 		$date_range = $this->statistics->get_date_range( $atts['period'], $atts['start_date'], $atts['end_date'] );
 		$start      = $date_range['start'];
 		$end        = $date_range['end'];
@@ -194,7 +194,7 @@ class Shortcodes {
 
 		$cache_key     = 'burst_stats_' . md5( wp_json_encode( $cache_data ) );
 		$cached_output = get_transient( $cache_key );
-		if ( false !== $cached_output && ! defined( 'BURST_DISABLE_CACHE' ) ) {
+		if ( false !== $cached_output && ! ( defined( 'WP_DEBUG' ) && WP_DEBUG ) ) {
 			return $cached_output;
 		}
 
@@ -367,6 +367,11 @@ class Shortcodes {
 				} else {
 					// Direct storage mode - device name is directly in the result.
 					$device_name = $item['device'] ?? '';
+				}
+
+				// If device name is empty, default to 'other'.
+				if ( empty( $device_name ) ) {
+					$device_name = 'other';
 				}
 
 				// Map device types to human-readable names.

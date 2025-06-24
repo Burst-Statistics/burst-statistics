@@ -1,0 +1,147 @@
+[
+  {
+    "file": "woocommerce-menu-bar-cart/wp-menu-cart.php",
+    "icon": "menu-cart.png",
+    "search_url": "wp%2520overnight%2520Menu%2520Cart%2520for%2520WooCommerce%2520&tab=search&type=term",
+    "constant_free": "WPMENUCART_VERSION",
+    "premium": {
+      "type": "class",
+      "value": "WPO_Menu_Cart_Pro"
+    },
+    "wordpress_url": "https://wordpress.org/plugins/woocommerce-menu-bar-cart/",
+    "upgrade_url": "https://wpovernight.com/downloads/menu-cart-pro/",
+    "title": "Menu Cart for WooCommerce",
+    "description": "Add a shopping cart button to your menu bar",
+    "conditions": {
+      "plugin": "WC_VERSION"
+    },
+    "conflicting_plugins": [
+      "XOO_WSC_PLUGIN_FILE",
+      "FKCART_PLUGIN_FILE",
+      "WOOFC_VERSION"
+    ],
+    "niche": true
+  },
+  {
+    "file": "woocommerce-pdf-invoices-packing-slips/woocommerce-pdf-invoices-packingslips.php",
+    "icon": "pdf-invoices.png",
+    "search_url": "wp%2520overnight&tab=search&type=term",
+    "constant_free": "WPO_WCPDF_VERSION",
+    "wordpress_url": "https://wordpress.org/plugins/woocommerce-pdf-invoices-packing-slips/",
+    "upgrade_url": "https://wpovernight.com/downloads/woocommerce-pdf-invoices-packing-slips-professional/",
+    "title": "PDF Invoices & Packing Slips for WooCommerce",
+    "description": "Automatically adds a PDF or UBL invoice to the order confirmation emails sent out to your customers",
+    "conflicting_plugins": [
+      "WF_PKLIST_VERSION",
+      "WPI_FILE",
+      "CHALLAN_FREE_VERSION"
+    ],
+    "premium": {
+      "type": "class",
+      "value": "WPO_WCPDF_PRO_VERSION"
+    },
+    "conditions": {
+      "plugin": "WC_VERSION"
+    }
+  },
+  {
+    "file": "all-in-one-wp-security-and-firewall/wp-security.php",
+    "icon": "all-in-one-security.png",
+    "search_url": "all-in-one%2520security%2520firewall%2520aios%2520security%2520updraftplus&tab=search&type=term",
+    "constant_free": "AIO_WP_SECURITY_VERSION",
+    "premium": {
+      "type": "constant",
+      "value": "AIOWPS_PREMIUM_VERSION"
+    },
+    "wordpress_url": "https://wordpress.org/plugins/all-in-one-wp-security-and-firewall/",
+    "upgrade_url": "https://teamupdraft.com/all-in-one-security/",
+    "title": "All-In-One Security – Simply secure your site",
+    "description": "The easiest way to secure your WordPress site",
+    "conflicting_plugins": [
+      "WORDFENCE_VERSION",
+      "ITSEC_VERSION",
+      "JETPACK__VERSION",
+      "BPS_VERSION",
+      "SECUPRESS_VERSION",
+      "SHIELD_VERSION",
+      "SECURITY_NINJA_VERSION",
+      "WPSCAN_VERSION",
+      "rsssl_version"
+    ]
+  },
+  {
+    "file": "burst-statistics/burst.php",
+    "icon": "burst-statistics.png",
+    "search_url": "burst%2520statistics%2520updraftplus&tab=search&type=term",
+    "constant_free": "BURST_FREE",
+    "premium": {
+      "type": "constant",
+      "value": "BURST_PRO"
+    },
+    "wordpress_url": "https://wordpress.org/plugins/burst-statistics/",
+    "upgrade_url": "https://burst-statistics.com/pricing/",
+    "title": "Burst Statistics – Privacy Friendly Analytics for WordPress",
+    "description": "Understandable, self hosted and privacy-friendly analytics for WordPress"
+  },
+  {
+    "file": "updraftplus/updraftplus.php",
+    "icon": "updraftplus.jpg",
+    "search_url": "updraftplus&tab=search&type=term",
+    "constant_free": "UPDRAFTPLUS_DIR",
+    "premium": {
+      "type": "class",
+      "value": "UpdraftPlus_Addon_Google_Enhanced"
+    },
+    "wordpress_url": "https://wordpress.org/plugins/updraftplus/",
+    "upgrade_url": "https://teamupdraft.com/updraftplus/pricing/",
+    "title": "UpdraftPlus - Back-up & migrate your site with ease",
+    "description": "The world’s highest ranking and most popular scheduled backup and migration plugin",
+    "conflicting_plugins": [
+      "DUPLICATOR_DISABLE_CAP_BASIC",
+      "WPVIVID_PLUGIN_VERSION",
+      "BACKWPUP_VERSION",
+      "BACKUPBUDDY_VERSION",
+      "BOLDGRID_BACKUP_VERSION",
+      "BLOGVAULT_VERSION",
+      "BACKUPWORDPRESS_VERSION"
+    ]
+  },
+  {
+    "file": "wp-optimize/wp-optimize.php",
+    "icon": "wp-optimize.png",
+    "search_url": "wp%2520optimize%2520innodb%2520updraftplus&tab=search&type=term",
+    "constant_free": "WPO_VERSION",
+    "premium": {
+      "type": "slug",
+      "value": "wp-optimize-premium/wp-optimize.php"
+    },
+    "wordpress_url": "https://wordpress.org/plugins/wp-optimize/",
+    "upgrade_url": "https://teamupdraft.com/wp-optimize/pricing/",
+    "title": "WP-Optimize – Easily boost your page speed",
+    "description": "Powerful, easy to use, all-in-one WordPress performance plugin",
+    "conflicting_plugins": [
+      "WP_ROCKET_VERSION",
+      "DISABLE_SUPERCACHE",
+      "W3TC",
+      "LSCWP_V",
+      "WPFC_VERSION",
+      "AUTOPTIMIZE_PLUGIN_VERSION",
+      "HUMMINGBIRD_VERSION",
+      "CACHE_ENABLER_VERSION"
+    ]
+  },
+  {
+    "file": "internal-links/wp-internal-linkjuicer.php",
+    "icon": "linkjuicer.svg",
+    "search_url": "internal%2520link%2520juicer%2520updraft&tab=search&type=term",
+    "constant_free": "ILJ_VERSION",
+    "premium": {
+      "type": "slug",
+      "value": "internal-links-premium/wp-internal-linkjuicer.php"
+    },
+    "wordpress_url": "https://wordpress.org/plugins/internal-links/",
+    "upgrade_url": "https://www.internallinkjuicer.com/#get",
+    "title": "Internal Link Juicer – SEO Auto Linker for WordPress",
+    "description": "Automatically create internal links to boost your SEO and user experience"
+  }
+]

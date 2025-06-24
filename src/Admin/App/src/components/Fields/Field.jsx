@@ -59,35 +59,35 @@ const Field = memo(({ setting, control, ...props }) => {
     );
   }
 
-  // Watch all condition fields at the top level
-  const watchedValues = {};
-  if (setting.react_conditions) {
-    Object.keys(setting.react_conditions).forEach(fieldName => {
-      watchedValues[fieldName] = useWatch({
-        control,
-        name: fieldName,
-        defaultValue: props.defaultValues?.[fieldName]
-      });
-    });
-  }
-
-  // Memoize the condition check result
-  const conditionsMet = useMemo(() => {
-    if (!setting.react_conditions || 0 === Object.keys(watchedValues).length) {
-      return true;
-    }
-
-    return Object.entries(setting.react_conditions).every(([field, allowedValues]) => {
-      const currentValue = watchedValues[field];
-
-      // Ensure allowedValues is an array
-      if (!Array.isArray(allowedValues)) {
-        return false;
-      }
-
-      return allowedValues.includes(currentValue);
-    });
-  }, [setting.react_conditions, watchedValues]);
+  // // Watch all condition fields at the top level
+  // const watchedValues = {};
+  // if (setting.react_conditions) {
+  //   Object.keys(setting.react_conditions).forEach(fieldName => {
+  //     watchedValues[fieldName] = useWatch({
+  //       control,
+  //       name: fieldName,
+  //       defaultValue: props.defaultValues?.[fieldName]
+  //     });
+  //   });
+  // }
+  //
+  // // Memoize the condition check result
+  // const conditionsMet = useMemo(() => {
+  //   if (!setting.react_conditions || 0 === Object.keys(watchedValues).length) {
+  //     return true;
+  //   }
+  //
+  //   return Object.entries(setting.react_conditions).every(([field, allowedValues]) => {
+  //     const currentValue = watchedValues[field];
+  //
+  //     // Ensure allowedValues is an array
+  //     if (!Array.isArray(allowedValues)) {
+  //       return false;
+  //     }
+  //
+  //     return allowedValues.includes(currentValue);
+  //   });
+  // }, [setting.react_conditions, watchedValues]);
 
 
 
@@ -169,7 +169,8 @@ const Field = memo(({ setting, control, ...props }) => {
     }),
     ...(setting.validation?.regex && {
       pattern: {
-        value: new RegExp(setting.validation.regex),
+        // hardcoded regex, no user input used.
+        value: new RegExp(setting.validation.regex),// nosemgrep
         message:
           setting.validation.message ||
           __('Invalid format', 'burst-statistics')
@@ -194,9 +195,9 @@ const Field = memo(({ setting, control, ...props }) => {
     return props.settingsIsUpdating;
   }, [setting.disabled, props.settingsIsUpdating]);
   // If conditions are not met, don't render the field
-  if (!conditionsMet) {
-    return null;
-  }
+  // if (!conditionsMet) {
+  //   return null;
+  // }
   return (
     <ErrorBoundary>
       <Controller

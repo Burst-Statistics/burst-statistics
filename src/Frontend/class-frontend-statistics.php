@@ -56,6 +56,13 @@ class Frontend_Statistics {
 	private $use_lookup_tables = null;
 
 	/**
+	 * Cache for exclude_bounces check
+	 *
+	 * @var bool|null
+	 */
+	private $exclude_bounces = null;
+
+	/**
 	 * Constructor to initialize class properties
 	 */
 	public function __construct() {
@@ -123,89 +130,105 @@ class Frontend_Statistics {
 	}
 
 	/**
-	 * Calculate start and end timestamps based on period
+	 * Get date range based on period.
 	 *
-	 * @param string $period The predefined period.
-	 * @param string $start_date Optional custom start date (YYYY-MM-DD).
-	 * @param string $end_date Optional custom end date (YYYY-MM-DD).
-	 * @return array<string, int> Array containing start and end timestamps.
+	 * @param string $period     The period ('today', '7days', '30days', etc.).
+	 * @param string $start_date Custom start date (Y-m-d format).
+	 * @param string $end_date   Custom end date (Y-m-d format).
+	 * @return array{start: int, end: int} Array with start and end timestamps.
 	 */
 	public function get_date_range( string $period, string $start_date = '', string $end_date = '' ): array {
-		$now = time();
-
-		// If custom dates are provided, use them.
+		// Handle custom date ranges first.
 		if ( ! empty( $start_date ) && ! empty( $end_date ) ) {
-			// Validate date format (YYYY-MM-DD).
-			if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $start_date ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $end_date ) ) {
-				$start = strtotime( $start_date . ' 00:00:00' );
-				$end   = strtotime( $end_date . ' 23:59:59' );
-				if ( $start && $end ) {
-					return [
-						'start' => $start,
-						'end'   => $end,
-					];
-				}
-			}
+			// Use convert_date_to_unix for proper timezone handling.
+			$start = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+			$end   = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $end_date . ' 23:59:59' );
+			return [
+				'start' => $start,
+				'end'   => $end,
+			];
 		}
 
-		// Process predefined periods.
+		// Get current time with proper timezone handling.
+		$now = time();
+
+		// Process predefined periods with timezone-aware calculations and normalization.
 		switch ( $period ) {
 			case 'today':
-				$start = strtotime( 'today' );
-				$end   = $now;
+				$start = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( gmdate( 'Y-m-d' ) . ' 00:00:00' );
+				// Normalize to nearest hour for consistent caching.
+				$end = (int) ( floor( $now / HOUR_IN_SECONDS ) * HOUR_IN_SECONDS );
 				break;
 			case 'yesterday':
-				$start = strtotime( 'yesterday' );
-				$end   = strtotime( 'today' ) - 1;
+				$yesterday = gmdate( 'Y-m-d', strtotime( '-1 day' ) );
+				$start     = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $yesterday . ' 00:00:00' );
+				$end       = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $yesterday . ' 23:59:59' );
 				break;
 			case '7days':
-				$start = strtotime( '-7 days' );
-				$end   = $now;
+				$start_date = gmdate( 'Y-m-d', strtotime( '-7 days' ) );
+				$start      = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+				// Normalize to nearest 6 hours for consistent caching.
+				$end = (int) ( floor( $now / ( 6 * HOUR_IN_SECONDS ) ) * ( 6 * HOUR_IN_SECONDS ) );
 				break;
 			case '14days':
-				$start = strtotime( '-14 days' );
-				$end   = $now;
+				$start_date = gmdate( 'Y-m-d', strtotime( '-14 days' ) );
+				$start      = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+				// Normalize to nearest 6 hours for consistent caching.
+				$end = (int) ( floor( $now / ( 6 * HOUR_IN_SECONDS ) ) * ( 6 * HOUR_IN_SECONDS ) );
 				break;
 			case '30days':
-				$start = strtotime( '-30 days' );
-				$end   = $now;
+				$start_date = gmdate( 'Y-m-d', strtotime( '-30 days' ) );
+				$start      = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+				// Normalize to nearest 6 hours for consistent caching.
+				$end = (int) ( floor( $now / ( 6 * HOUR_IN_SECONDS ) ) * ( 6 * HOUR_IN_SECONDS ) );
 				break;
 			case '90days':
-				$start = strtotime( '-90 days' );
-				$end   = $now;
+				$start_date = gmdate( 'Y-m-d', strtotime( '-90 days' ) );
+				$start      = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+				// Normalize to nearest day for consistent caching.
+				$end = (int) ( floor( $now / DAY_IN_SECONDS ) * DAY_IN_SECONDS );
 				break;
 			case 'this_week':
-				$start = strtotime( 'monday this week' );
-				$end   = $now;
+				$monday = gmdate( 'Y-m-d', strtotime( 'monday this week' ) );
+				$start  = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $monday . ' 00:00:00' );
+				// Normalize to nearest 6 hours for consistent caching.
+				$end = (int) ( floor( $now / ( 6 * HOUR_IN_SECONDS ) ) * ( 6 * HOUR_IN_SECONDS ) );
 				break;
 			case 'last_week':
-				$start = strtotime( 'monday last week' );
-				$end   = strtotime( 'sunday last week' );
+				$monday_last = gmdate( 'Y-m-d', strtotime( 'monday last week' ) );
+				$sunday_last = gmdate( 'Y-m-d', strtotime( 'sunday last week' ) );
+				$start       = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $monday_last . ' 00:00:00' );
+				$end         = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $sunday_last . ' 23:59:59' );
 				break;
 			case 'this_month':
-				$start = strtotime( 'first day of this month' );
-				$end   = $now;
+				$first_day = gmdate( 'Y-m-01' );
+				$start     = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $first_day . ' 00:00:00' );
+				// Normalize to nearest day for consistent caching.
+				$end = (int) ( floor( $now / DAY_IN_SECONDS ) * DAY_IN_SECONDS );
 				break;
 			case 'last_month':
-				$start = strtotime( 'first day of last month' );
-				$end   = strtotime( 'last day of last month' );
+				$first_day_last = gmdate( 'Y-m-01', strtotime( 'first day of last month' ) );
+				$last_day_last  = gmdate( 'Y-m-t', strtotime( 'last day of last month' ) );
+				$start          = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $first_day_last . ' 00:00:00' );
+				$end            = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $last_day_last . ' 23:59:59' );
 				break;
 			case 'this_year':
-				$start = strtotime( 'first day of january this year' );
-				$end   = $now;
+				$first_day = gmdate( 'Y-01-01' );
+				$start     = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $first_day . ' 00:00:00' );
+				// Normalize to nearest day for consistent caching.
+				$end = (int) ( floor( $now / DAY_IN_SECONDS ) * DAY_IN_SECONDS );
 				break;
 			case 'last_year':
-				$start = strtotime( 'first day of january last year' );
-				$end   = strtotime( 'last day of december last year' );
+				$first_day_last = gmdate( 'Y-01-01', strtotime( 'first day of last year' ) );
+				$last_day_last  = gmdate( 'Y-12-31', strtotime( 'last day of last year' ) );
+				$start          = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $first_day_last . ' 00:00:00' );
+				$end            = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $last_day_last . ' 23:59:59' );
 				break;
 			case 'all_time':
-				$start = 0;
-				$end   = $now;
-				break;
 			default:
-				// Default to last 30 days.
-				$start = strtotime( '-30 days' );
-				$end   = $now;
+				$start = 0;
+				// Normalize to nearest day for consistent caching.
+				$end = (int) ( floor( $now / DAY_IN_SECONDS ) * DAY_IN_SECONDS );
 				break;
 		}
 
@@ -504,7 +527,8 @@ class Frontend_Statistics {
 	 * @return string SELECT clause.
 	 */
 	private function build_select_metrics( array $metrics ): string {
-		$select_parts = [];
+		$select_parts    = [];
+		$exclude_bounces = $this->exclude_bounces();
 
 		foreach ( $metrics as $metric ) {
 			// Skip if not in allowed metrics list.
@@ -514,22 +538,32 @@ class Frontend_Statistics {
 
 			switch ( $metric ) {
 				case 'pageviews':
-					$select_parts[] = 'COUNT(statistics.ID) as pageviews';
+					$select_parts[] = $exclude_bounces
+						? 'COALESCE( SUM( CASE WHEN bounce = 0 THEN 1 ELSE 0 END ), 0) as pageviews'
+						: 'COUNT(statistics.ID) as pageviews';
 					break;
 				case 'visitors':
-					$select_parts[] = 'COUNT(DISTINCT statistics.uid) as visitors';
+					$select_parts[] = $exclude_bounces
+						? 'COUNT(DISTINCT CASE WHEN bounce = 0 THEN statistics.uid END) as visitors'
+						: 'COUNT(DISTINCT statistics.uid) as visitors';
 					break;
 				case 'sessions':
-					$select_parts[] = 'COUNT(DISTINCT statistics.session_id) as sessions';
+					$select_parts[] = $exclude_bounces
+						? 'COUNT( DISTINCT CASE WHEN bounce = 0 THEN statistics.session_id END ) as sessions'
+						: 'COUNT(DISTINCT statistics.session_id) as sessions';
 					break;
 				case 'bounce_rate':
 					$select_parts[] = 'SUM(statistics.bounce) / COUNT(DISTINCT statistics.session_id) * 100 as bounce_rate';
 					break;
 				case 'avg_time_on_page':
-					$select_parts[] = 'AVG(statistics.time_on_page) as avg_time_on_page';
+					$select_parts[] = $exclude_bounces
+						? 'COALESCE( AVG( CASE WHEN bounce = 0 THEN statistics.time_on_page END ), 0 ) as avg_time_on_page'
+						: 'AVG(statistics.time_on_page) as avg_time_on_page';
 					break;
 				case 'first_time_visitors':
-					$select_parts[] = 'SUM(statistics.first_time_visit) as first_time_visitors';
+					$select_parts[] = $exclude_bounces
+						? 'COALESCE( SUM( CASE WHEN bounce = 0 THEN statistics.first_time_visit ELSE 0 END ), 0 ) as first_time_visitors'
+						: 'SUM(statistics.first_time_visit) as first_time_visitors';
 					break;
 				case 'page_url':
 					$select_parts[] = 'statistics.page_url';
@@ -546,7 +580,9 @@ class Frontend_Statistics {
 					break;
 				case 'count':
 				default:
-					$select_parts[] = 'COUNT(statistics.ID) as count';
+					$select_parts[] = $exclude_bounces
+						? 'COALESCE( SUM( CASE WHEN bounce = 0 THEN 1 ELSE 0 END ), 0) as count'
+						: 'COUNT(statistics.ID) as count';
 					break;
 			}
 		}
@@ -720,7 +756,13 @@ class Frontend_Statistics {
 		$result = [];
 
 		foreach ( $posts as $post ) {
-			$view_count = (int) get_post_meta( $post->ID, 'burst_total_pageviews_count', true );
+			// For time-specific queries, get actual view count for the period.
+			if ( $start_time > 0 || $end_time < time() - DAY_IN_SECONDS ) {
+				$view_count = $this->get_post_views( $post->ID, $start_time, $end_time );
+			} else {
+				// Use cached total for all-time or recent queries.
+				$view_count = (int) get_post_meta( $post->ID, 'burst_total_pageviews_count', true );
+			}
 
 			$result[] = [
 				'post'  => $post,
@@ -731,7 +773,15 @@ class Frontend_Statistics {
 		return $result;
 	}
 
-
+	/**
+	 * Check if bounces should be excluded from statistics.
+	 */
+	public function exclude_bounces(): bool {
+		if ( $this->exclude_bounces === null ) {
+			$this->exclude_bounces = (bool) apply_filters( 'burst_exclude_bounces', $this->get_option_bool( 'exclude_bounces' ) );
+		}
+		return $this->exclude_bounces;
+	}
 
 	/**
 	 * Check if lookup tables should be used (cached method)

@@ -3,16 +3,14 @@ import Tooltip from '@/components/Common/Tooltip';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import getLiveVisitors from '@//api/getLiveVisitors';
 import getTodayData from '@//api/getTodayData';
-
 import Icon from '@//utils/Icon';
 import { endOfDay, format, startOfDay } from 'date-fns';
 import { useState, useRef, useMemo } from 'react';
 import { getDateWithOffset } from '@//utils/formatting';
 import { safeDecodeURI } from '@//utils/lib';
-
-import Block from '@/components/Blocks/Block';
-import BlockHeading from '@/components/Blocks/BlockHeading';
-import BlockContent from '@/components/Blocks/BlockContent';
+import { Block } from '@/components/Blocks/Block';
+import { BlockHeading } from '@/components/Blocks/BlockHeading';
+import { BlockContent } from '@/components/Blocks/BlockContent';
 
 function selectVisitorIcon( value ) {
   value = parseInt( value );

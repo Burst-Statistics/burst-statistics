@@ -3,7 +3,8 @@ namespace Burst\Admin\App;
 
 use Burst\Admin\App\Fields\Fields;
 use Burst\Admin\App\Menu\Menu;
-use Burst\Admin\Installer\Installer;
+use Burst\Admin\Burst_Onboarding\Burst_Onboarding;
+use Burst\TeamUpdraft\Installer\Installer;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
 use Burst\Admin\Tasks;
@@ -30,9 +31,6 @@ class App {
 	public Menu $menu;
 	public Fields $fields;
 	public Tasks $tasks;
-	/**
-	 * Constructor
-	 */
 	public function __construct() {
 		add_action( 'admin_menu', [ $this, 'add_menu' ] );
 		add_action( 'wp_ajax_burst_rest_api_fallback', [ $this, 'rest_api_fallback' ] );
@@ -42,6 +40,22 @@ class App {
 		add_filter( 'burst_localize_script', [ $this, 'extend_localized_settings_for_dashboard' ], 10, 1 );
 		$this->menu   = new Menu();
 		$this->fields = new Fields();
+		$onboarding   = new Burst_Onboarding();
+		$onboarding->init();
+
+		add_action( 'admin_init', [ $this, 'maybe_redirect_to_settings_page' ] );
+	}
+
+	/**
+	 * After activation, redirect the user to the settings page.
+	 */
+	public function maybe_redirect_to_settings_page(): void {
+		if ( get_transient( 'burst_redirect_to_settings_page' ) && ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'burst' ) ) {
+			delete_transient( 'burst_redirect_to_settings_page' );
+
+			wp_redirect( $this->admin_url( 'burst' ) );
+			exit;
+		}
 	}
 
 	/**
@@ -54,12 +68,54 @@ class App {
 		}
 	}
 
+
+	/**
+	 * Get pro features for onboarding
+	 *
+	 * @return array
+	 */
+	private function get_pro_features(): array {
+		return [
+			[
+				'title'     => __( 'Country insights', 'burst-statistics' ),
+				'id'        => 'geo_ip',
+				'premium'   => true,
+				'options'   => [],
+				'activated' => true,
+			],
+			[
+				'title'     => __( 'UTM Campaign tracking', 'burst-statistics' ),
+				'id'        => 'utm-campaigns',
+				'premium'   => true,
+				'options'   => [],
+				'activated' => true,
+			],
+			[
+				'title'     => __( 'Auto archiving', 'burst-statistics' ),
+				'id'        => 'archiving',
+				'premium'   => true,
+				'options'   => [],
+				'activated' => true,
+			],
+			[
+				'title'     => __( 'Multiple goals', 'burst-statistics' ),
+				'id'        => 'multiple-goals',
+				'premium'   => true,
+				'options'   => [],
+				'activated' => true,
+			],
+		];
+	}
+
+
+
 	/**
 	 * Fix the duplicate menu item
 	 */
 	public function fix_duplicate_menu_item(): void {
 		/**
-		 * Ensure the items are selected in sync with the burst react menu.
+		 * Handles URL changes to update the active menu item
+		 * Ensures the WordPress admin menu stays in sync with the React app navigation
 		 */
 		if ( isset( $_GET['page'] ) && $_GET['page'] === 'burst' ) {
 			?>
@@ -277,13 +333,29 @@ class App {
 		);
 	}
 
+	public function get_date_ranges() {
+		return apply_filters(
+			'burst_date_ranges',
+			[
+				'today',
+				'yesterday',
+				'last-7-days',
+				'last-30-days',
+				'last-90-days',
+				'last-month',
+				'last-year',
+				'week-to-date',
+				'month-to-date',
+				'year-to-date',
+			]
+		);
+	}
+
 	/**
-	 * Add menu and fields to the localized data for the dashboard widget.
-	 *
-	 * @param array<string, mixed> $data Existing localized data.
-	 * @return array<string, mixed> Localized data with added 'menu' and 'fields' keys.
+	 * @param $data
+	 * @return array
 	 */
-	public function extend_localized_settings_for_dashboard( array $data ): array {
+	public function extend_localized_settings_for_dashboard( $data ): array {
 		$data['menu']   = $this->menu->get();
 		$data['fields'] = $this->fields->get();
 		return $data;
@@ -846,14 +918,13 @@ class App {
 			return [];
 		}
 		$slug      = sanitize_title( $data['slug'] );
-		$action    = sanitize_title( $data['pluginAction'] );
-		$installer = new Installer( $slug );
+		$action    = sanitize_title( $data['action'] );
+		$installer = new Installer( 'burst-statistics', $slug );
 		if ( $action === 'download' ) {
 			$installer->download_plugin();
 		} elseif ( $action === 'activate' ) {
 			$installer->activate_plugin();
 		}
-
 		return $this->other_plugins_data( $slug );
 	}
 
@@ -867,82 +938,13 @@ class App {
 		if ( ! $this->user_can_view() ) {
 			return [];
 		}
-		$plugins = [
-			[
-				'slug'          => 'all-in-one-wp-security-and-firewall',
-				'constant_free' => 'AIO_WP_SECURITY_VERSION',
-				'premium'       => [
-					'type'  => 'constant',
-					'value' => 'AIOWPS_PREMIUM_VERSION',
-				],
-				'wordpress_url' => 'https://wordpress.org/plugins/all-in-one-wp-security-and-firewall/',
-				'upgrade_url'   => 'https://aiosplugin.com/product/all-in-one-wp-security-and-firewall-premium/?src=plugin-burst-other-plugins',
-				'title'         => 'All-In-One Security – Simply secure your site',
-			],
-			[
-				'slug'              => 'updraftplus',
-				'constant_free'     => 'UPDRAFTPLUS_DIR',
-				// 'premium'  => [
-				// 'type' => 'function',
-				// 'value' => '$updraftplus_addons2 && method_exists($updraftplus_addons2, 'connection_status')) {'
-				// ],
-					'wordpress_url' => 'https://wordpress.org/plugins/updraftplus/',
-				'upgrade_url'       => 'https://updraftplus.com/shop/updraftplus-premium/?src=plugin-burst-other-plugins',
-				'title'             => 'UpdraftPlus - Back-up & migrate your site with ease',
-			],
-			[
-				'slug'          => 'wp-optimize',
-				'constant_free' => 'WPO_VERSION',
-				'premium'       => [
-					'type'  => 'slug',
-					'value' => 'wp-optimize-premium/wp-optimize.php',
-				],
-				'wordpress_url' => 'https://wordpress.org/plugins/wp-optimize/',
-				'upgrade_url'   => 'https://getwpo.com/buy/?src=plugin-burst-other-plugins',
-				'title'         => 'WP-Optimize – Easily boost your page speed',
-			],
-		];
 
-		foreach ( $plugins as $index => $plugin ) {
-			$installer = new Installer( $plugin['slug'] );
-			if ( isset( $plugin['premium'] ) && $this->plugin_is_installed( $plugin['premium']['type'], $plugin['premium']['value'] ) ) {
-				$plugins[ $index ]['pluginAction'] = 'installed';
-			} elseif ( ! $installer->plugin_is_downloaded() && ! $installer->plugin_is_activated() ) {
-				$plugins[ $index ]['pluginAction'] = 'download';
-			} elseif ( $installer->plugin_is_downloaded() && ! $installer->plugin_is_activated() ) {
-				$plugins[ $index ]['pluginAction'] = 'activate';
-			} elseif ( isset( $plugin['premium'] ) ) {
-				$plugins[ $index ]['pluginAction'] = 'upgrade-to-pro';
-			} else {
-				$plugins[ $index ]['pluginAction'] = 'installed';
-			}
+		$installer = new Installer( 'burst-statistics' );
+		if ( empty( $slug ) ) {
+			return $installer->get_plugins( true );
+		} else {
+			return $installer->get_plugin( $slug );
 		}
-
-		if ( ! empty( $slug ) ) {
-			foreach ( $plugins as $plugin ) {
-				if ( $plugin['slug'] === $slug ) {
-					return $plugin;
-				}
-			}
-		}
-
-		return $plugins;
-	}
-
-	/**
-	 * Check if a plugin is installed based on the detection type and value.
-	 */
-	private function plugin_is_installed( string $detection_type, string $detection_value ): bool {
-		if ( $detection_type === 'constant' ) {
-			return defined( $detection_value );
-		} elseif ( $detection_type === 'slug' ) {
-			return file_exists( WP_PLUGIN_DIR . '/' . $detection_value );
-		} elseif ( $detection_type === 'function' ) {
-			return function_exists( $detection_value );
-		} elseif ( $detection_type === 'class' ) {
-			return class_exists( $detection_value );
-		}
-		return false;
 	}
 
 	/**
@@ -980,6 +982,10 @@ class App {
 
 		switch ( $type ) {
 			case 'live-visitors':
+				$is_onboarding = $request->get_param( 'isOnboarding' );
+				if ( $is_onboarding ) {
+					wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'burst_clear_test_visit' );
+				}
 				$data = \Burst\burst_loader()->admin->statistics->get_live_visitors_data();
 				break;
 			case 'today':
@@ -1073,10 +1079,13 @@ class App {
 	/**
 	 * Save multiple Burst settings fields via REST API
 	 *
-	 * @throws \Exception //exception.
+	 * @param \WP_REST_Request $request
+	 * @param array|false      $ajax_data Optional ajax data if not using REST
+	 * @return \WP_REST_Response|\WP_Error
 	 */
-	public function rest_api_fields_set( \WP_REST_Request $request, $ajax_data = false ) {
-		// Permission check.
+	public function rest_api_fields_set( $request, $ajax_data = false ) {
+
+		// Permission check
 		if ( ! $this->user_can_manage() ) {
 			return new \WP_Error(
 				'burst_rest_forbidden',
@@ -1088,7 +1097,6 @@ class App {
 		// Get and validate data.
 		try {
 			$data = $ajax_data ?: $request->get_json_params();
-
 			if ( ! isset( $data['nonce'], $data['fields'] ) || ! is_array( $data['fields'] ) ) {
 				throw new \Exception( __( 'Invalid request format', 'burst-statistics' ) );
 			}
@@ -1097,7 +1105,6 @@ class App {
 				throw new \Exception( __( 'Invalid nonce', 'burst-statistics' ) );
 			}
 
-			// Clean output buffer for AJAX fallback.
 			if ( ! $ajax_data ) {
 				$this->remove_fallback_notice();
 			}
@@ -1125,8 +1132,8 @@ class App {
 
 			// Track which fields were actually updated.
 			$updated_fields = [];
-
 			foreach ( $data['fields'] as $field_id => $value ) {
+
 				// Validate field exists in config.
 				if ( ! isset( $config_fields[ $field_id ] ) ) {
 					continue;
@@ -1193,8 +1200,10 @@ class App {
 
 	/**
 	 * Get the rest api fields
+	 *
+	 * @return \WP_Error | \WP_REST_Response
 	 */
-	public function rest_api_fields_get( \WP_REST_Request $request ) {
+	public function rest_api_fields_get( $request ) {
 
 		if ( ! $this->user_can_view() ) {
 			return new \WP_Error( 'rest_forbidden', 'You do not have permission to perform this action.', [ 'status' => 403 ] );
@@ -1252,8 +1261,11 @@ class App {
 
 	/**
 	 * Get goals for the react dashboard
+	 *
+	 * @param \WP_REST_Request $request
+	 * @return \WP_REST_Response | \WP_Error
 	 */
-	public function rest_api_goals_get( \WP_REST_Request $request ) {
+	public function rest_api_goals_get( $request ) {
 		if ( ! $this->user_can_view() ) {
 			return new \WP_Error( 'rest_forbidden', 'You do not have permission to perform this action.', [ 'status' => 403 ] );
 		}

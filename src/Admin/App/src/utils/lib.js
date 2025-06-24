@@ -15,8 +15,7 @@ export const burst_get_website_url = ( url = '/', params = {}) => {
 
   // make sure the url ends with a slash
   url = url.replace( /\/?$/, '/' );
-  const version = burst_settings.burst_pro ? 'pro' : 'free';
-
+  const version = burst_settings.is_pro ? 'pro' : 'free';
   const versionNr = burst_settings.burst_version.replace( /#.*$/, '' );
   const defaultParams = {
     burst_campaign: `burst-${version}-${versionNr}`

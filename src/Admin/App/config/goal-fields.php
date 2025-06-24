@@ -7,7 +7,7 @@ return [
 		'type'    => 'hidden',
 		'default' => false,
 	],
-	'status' => [
+	[
 		'id'      => 'status',
 		'type'    => 'hidden',
 		'default' => false,
@@ -22,28 +22,24 @@ return [
 				'description' => __( 'Track clicks on element', 'burst-statistics' ),
 				'type'        => 'clicks',
 				'icon'        => 'mouse',
-				'server_side' => false,
 			],
 			'views'  => [
 				'label'       => __( 'Views', 'burst-statistics' ),
 				'description' => __( 'Track views of element', 'burst-statistics' ),
 				'type'        => 'views',
 				'icon'        => 'eye',
-				'server_side' => false,
 			],
 			'visits' => [
 				'label'       => __( 'Visits', 'burst-statistics' ),
 				'description' => __( 'Track visits to page', 'burst-statistics' ),
 				'type'        => 'visits',
 				'icon'        => 'visitors',
-				'server_side' => true,
 			],
 			'hook'   => [
 				'label'       => __( 'Hook', 'burst-statistics' ),
 				'description' => __( 'Track execution of a WordPress hook', 'burst-statistics' ),
 				'type'        => 'hook',
 				'icon'        => 'hook',
-				'server_side' => true,
 			],
 		],
 		'disabled' => false,

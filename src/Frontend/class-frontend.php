@@ -35,6 +35,7 @@ class Frontend {
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_shortcodes_styles' ] );
 		add_filter( 'script_loader_tag', [ $this, 'defer_burst_tracking_script' ], 10, 3 );
 		add_action( 'burst_every_hour', [ $this, 'maybe_update_total_pageviews_count' ] );
+		add_action( 'init', [ $this, 'use_logged_out_state_for_tests' ] );
 
 		new Sessions();
 		// Lazy load shortcodes only when needed.
@@ -62,6 +63,18 @@ class Frontend {
 				filemtime( BURST_PATH . "helpers/timeme/timeme$minified.js" ),
 				false
 			);
+		}
+	}
+
+	/**
+	 * When a tracking test is running, we don't want to show the logged in state, as caching plugins often show uncached content to logged in users.
+	 */
+	public function use_logged_out_state_for_tests(): void {
+		// No form data processed, no action connected, only not showing logged in state for testing purposes.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['burst_test_hit'] ) || isset( $_GET['burst_nextpage'] ) ) {
+			add_filter( 'determine_current_user', '__return_null', 100 );
+			wp_set_current_user( 0 );
 		}
 	}
 
@@ -166,9 +179,16 @@ class Frontend {
 	 */
 	public function exclude_from_tracking(): bool {
 		if ( is_user_logged_in() ) {
+			// a track hit is used by the onboarding process.
+			// Only an exists check, for the test. Enqueued scripts are public, so no need to check for nonce.
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( isset( $_GET['burst_test_hit'] ) ) {
+				return false;
+			}
+
 			$user                = wp_get_current_user();
 			$user_role_blocklist = $this->get_option( 'user_role_blocklist' );
-			$get_excluded_roles  = is_array( $user_role_blocklist ) ? $user_role_blocklist : [ 'adminstrator' ];
+			$get_excluded_roles  = is_array( $user_role_blocklist ) ? $user_role_blocklist : [];
 			$excluded_roles      = apply_filters( 'burst_roles_excluded_from_tracking', $get_excluded_roles );
 			if ( count( array_intersect( $excluded_roles, $user->roles ) ) > 0 ) {
 				return true;

@@ -1,6 +1,8 @@
 <?php
 namespace Burst\Admin;
 
+// don't remove, it is used in the Tasks code.
+use Burst\Admin\Statistics\Summary;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 

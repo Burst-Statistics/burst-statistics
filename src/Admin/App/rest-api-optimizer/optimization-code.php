@@ -16,7 +16,12 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 		// if not an rsp request return all plugins.
 		// but for some requests, we need to load other plugins, to ensure we can detect them.
 		if ( isset( $_SERVER['REQUEST_URI'] ) && (
+				// burst/v1 not included means this is a not Burst request.
 				strpos( $_SERVER['REQUEST_URI'], 'burst/v1' ) === false ||
+
+				// below requests are burst requests, but requiring the other plugins to load.
+				strpos( $_SERVER['REQUEST_URI'], 'burst/v1/otherplugins' ) !== false ||
+				strpos( $_SERVER['REQUEST_URI'], 'burst/v1/onboarding' ) !== false ||
 				strpos( $_SERVER['REQUEST_URI'], 'otherpluginsdata' ) !== false ||
 				strpos( $_SERVER['REQUEST_URI'], 'plugin_actions' ) !== false ||
 				strpos( $_SERVER['REQUEST_URI'], 'fields/set' ) !== false ||

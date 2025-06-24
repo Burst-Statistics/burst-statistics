@@ -9,10 +9,10 @@ import {
 } from '@//utils/formatting';
 import GoalStatus from './GoalStatus';
 import useGoalsData from '@/hooks/useGoalsData';
-import Block from '@/components/Blocks/Block';
-import BlockHeading from '@/components/Blocks/BlockHeading';
-import BlockContent from '@/components/Blocks/BlockContent';
-import BlockFooter from '@/components/Blocks/BlockFooter';
+import { Block } from '@/components/Blocks/Block';
+import { BlockHeading } from '@/components/Blocks/BlockHeading';
+import { BlockContent } from '@/components/Blocks/BlockContent';
+import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import GoalsHeader from './GoalsHeader';
 import { setOption } from '@//utils/api';
 import { useQueries } from '@tanstack/react-query';
