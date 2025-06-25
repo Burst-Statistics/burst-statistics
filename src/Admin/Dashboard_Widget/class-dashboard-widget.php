@@ -44,7 +44,7 @@ class Dashboard_Widget {
 	/**
 	 * Enqueue the dashboard widget scripts and styles
 	 */
-	public function enqueue( ?string $hook ): void {
+	public function enqueue( string $hook ): void {
 
 		if ( $hook !== 'index.php' ) {
 			return;

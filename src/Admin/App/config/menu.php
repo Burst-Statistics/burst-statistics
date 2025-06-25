@@ -83,6 +83,19 @@ return [
 					],
 				],
 			],
+			[
+				'id'           => 'secret',
+				'group_id'     => 'secret',
+				'title'        => __( 'Secret', 'burst-statistics' ),
+				'hidden'       => true,
+				'capabilities' => 'manage_burst_statistics',
+				'groups'       => [
+					[
+						'id'    => 'secret',
+						'title' => __( 'Secret Settings', 'burst-statistics' ),
+					],
+				],
+			],
 
 		],
 	],
