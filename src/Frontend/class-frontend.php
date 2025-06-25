@@ -16,6 +16,14 @@ class Frontend {
 	use Admin_Helper;
 
 	public Tracking $tracking;
+
+	/**
+	 * Frontend statistics instance
+	 *
+	 * @var Frontend_Statistics
+	 */
+	public Frontend_Statistics $statistics;
+
 	/**
 	 * Constructor
 	 */
@@ -24,15 +32,20 @@ class Frontend {
 		add_action( 'init', [ $this, 'register_pageviews_block' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_time_tracking_script' ], 0 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_tracking_script' ], 0 );
+		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_shortcodes_styles' ] );
 		add_filter( 'script_loader_tag', [ $this, 'defer_burst_tracking_script' ], 10, 3 );
 		add_action( 'burst_every_hour', [ $this, 'maybe_update_total_pageviews_count' ] );
-		add_shortcode( 'burst-most-visited', [ $this, 'most_visited_posts' ] );
 		add_action( 'init', [ $this, 'use_logged_out_state_for_tests' ] );
 
 		new Sessions();
+		// Lazy load shortcodes only when needed.
 		$this->tracking = new Tracking();
 		new Goals();
 		new Goals_Tracker();
+		// Check if shortcodes option is enabled.
+		if ( $this->get_option_bool( 'enable_shortcodes' ) ) {
+			new Shortcodes();
+		}
 	}
 
 	/**
@@ -189,80 +202,6 @@ class Frontend {
 	}
 
 	/**
-	 * Show content conditionally, based on consent
-	 */
-	public function most_visited_posts(
-		array $atts = [],
-		?string $content = null,
-		string $tag = ''
-	): string {
-		// normalize attribute keys, lowercase.
-		$atts = array_change_key_case( $atts, CASE_LOWER );
-		// override default attributes with user attributes.
-		$atts = shortcode_atts(
-			[
-				'count'      => 5,
-				'post_type'  => 'post',
-				'show_count' => false,
-			],
-			$atts,
-			$tag
-		);
-
-		// sanitize post type.
-		$post_types = get_post_types();
-		if ( ! in_array( $atts['post_type'], $post_types, true ) ) {
-			$atts['post_type'] = 'post';
-		}
-
-		$count      = (int) $atts['count'];
-		$show_count = (bool) $atts['show_count'];
-		$post_type  = $atts['post_type'];
-		// posts, sorted by post_meta.
-		$args  = [
-			'post_type'   => $post_type,
-			'numberposts' => $count,
-			'meta_key'    => 'burst_total_pageviews_count',
-			'orderby'     => 'meta_value_num',
-			'order'       => 'DESC',
-			'meta_query'  => [
-				// Same meta key for sorting.
-				'key'  => 'burst_total_pageviews_count',
-				// Make sure to specify the type as numeric for correct sorting.
-				'type' => 'NUMERIC',
-			],
-		];
-		$posts = get_posts( $args );
-		ob_start();
-
-		if ( count( $posts ) > 0 ) {
-			?>
-			<ul class="burst-posts-list">
-				<?php
-				foreach ( $posts as $post ) {
-					$count      = (int) get_post_meta( $post->ID, 'burst_total_pageviews_count', true );
-					$count_html = '';
-					if ( $show_count ) {
-						$count_html = '&nbsp;<span class="burst-post-count">(' . apply_filters( 'burst_most_visited_count', $count, $post ) . ')</span>';
-					}
-					?>
-
-					<li class="burst-posts-list__item"><a href="<?php echo esc_url_raw( get_the_permalink( $post ) ); ?>"><?php echo esc_html( get_the_title( $post ) ); ?><?php echo wp_kses_post( $count_html ); ?></a></li>
-				<?php } ?>
-			</ul>
-			<?php
-		} else {
-			?>
-			<p class="burst-posts-list__not-found">
-				<?php esc_html_e( 'No posts found', 'burst-statistics' ); ?>
-			</p>
-			<?php
-		}
-		$output = ob_get_clean();
-		return $output ?: '';
-	}
-
-	/**
 	 * Register the pageviews block for the Block Editor
 	 */
 	public function register_pageviews_block(): void {
@@ -297,5 +236,89 @@ class Frontend {
 		$text = sprintf( _n( 'This page has been viewed %d time.', 'This page has been viewed %d times.', $count, 'burst-statistics' ), $count );
 
 		return '<p class="burst-pageviews">' . $text . '</p>';
+	}
+
+	/**
+	 * Register the shortcodes stylesheet and enqueue it when needed
+	 */
+	public function enqueue_burst_shortcodes_styles(): void {
+		// Register the stylesheet but don't enqueue it yet.
+		wp_register_style(
+			'burst-statistics-shortcodes',
+			BURST_URL . 'assets/css/burst-statistics-shortcodes.css',
+			[],
+			filemtime( BURST_PATH . 'assets/css/burst-statistics-shortcodes.css' )
+		);
+
+		// Add filters to detect our shortcodes and enqueue the style when needed.
+		add_filter( 'the_content', [ $this, 'check_for_burst_shortcodes' ], 10, 1 );
+
+		// Also check in widgets, Gutenberg blocks, etc.
+		add_action( 'wp_footer', [ $this, 'maybe_enqueue_shortcode_styles' ], 10 );
+	}
+
+	/**
+	 * Check content for Burst shortcodes
+	 *
+	 * @param string $content The post content.
+	 * @return string The unmodified content
+	 */
+	public function check_for_burst_shortcodes( string $content ): string {
+		if ( ! is_admin() &&
+			(
+				has_shortcode( $content, 'burst-most-visited' ) ||
+				has_shortcode( $content, 'burst_statistics' )
+			)
+		) {
+			$this->enqueue_shortcode_styles();
+		}
+
+		return $content;
+	}
+
+	/**
+	 * Fallback check for shortcodes in widgets or other areas
+	 */
+	public function maybe_enqueue_shortcode_styles(): void {
+		global $wp_query;
+
+		// Check if we're on a singular post or page.
+		if ( is_singular() ) {
+			$post = $wp_query->get_queried_object();
+
+			// Check post content for shortcodes.
+			if ( $post && isset( $post->post_content ) && (
+				has_shortcode( $post->post_content, 'burst-most-visited' ) ||
+				has_shortcode( $post->post_content, 'burst_statistics' )
+			) ) {
+				$this->enqueue_shortcode_styles();
+				return;
+			}
+		}
+
+		// Check active widgets for shortcodes.
+		$active_widgets = wp_get_sidebars_widgets();
+		if ( is_array( $active_widgets ) ) {
+			foreach ( $active_widgets as $sidebar_widgets ) {
+				if ( ! is_array( $sidebar_widgets ) ) {
+					continue;
+				}
+
+				foreach ( $sidebar_widgets as $widget ) {
+					if ( strpos( $widget, 'text' ) !== false ) {
+						// This is a text widget that might contain shortcodes.
+						$this->enqueue_shortcode_styles();
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Actually enqueue the shortcode styles
+	 */
+	private function enqueue_shortcode_styles(): void {
+		wp_enqueue_style( 'burst-statistics-shortcodes' );
 	}
 }

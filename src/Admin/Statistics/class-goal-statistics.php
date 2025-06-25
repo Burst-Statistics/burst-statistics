@@ -39,12 +39,10 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 		 */
 		private function get_goal_completed_count_sql( int $goal_id, int $date_start = 0 ): string {
 			global $wpdb;
-			$goal            = new Goal( $goal_id );
-			$goal_url        = $goal->url;
-			$date_start      = $date_start > 0 ? $date_start : $goal->date_created;
-			$date_end        = 0;
-			$exclude_bounces = \Burst\burst_loader()->admin->statistics->exclude_bounces();
-			$bounce_sql      = $exclude_bounces ? ' statistics.bounce = 0 AND ' : '';
+			$goal       = new Goal( $goal_id );
+			$goal_url   = $goal->url;
+			$date_start = $date_start > 0 ? $date_start : $goal->date_created;
+			$date_end   = 0;
 			// we may want to add a date_end later, so we ignore the warning about obsolete date_end check.
 			// @phpstan-ignore-next-line.
 			$date_end_sql = $date_end > 0 ? $wpdb->prepare( 'AND statistics.time < %s', $date_end ) : '';
@@ -62,7 +60,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 				"SELECT {$count_sql} AS value FROM {$wpdb->prefix}burst_statistics AS statistics
 								INNER JOIN {$wpdb->prefix}burst_goal_statistics AS goals
 								ON statistics.ID = goals.statistic_id
-								WHERE {$bounce_sql} goals.goal_id = %s AND statistics.time > %s {$date_end_sql} {$goal_url_sql}",
+								WHERE goals.goal_id = %s AND statistics.time > %s {$date_end_sql} {$goal_url_sql}",
 				$goal_id,
 				$date_start
 			);
@@ -176,8 +174,6 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 			$use_lookup_tables            = \Burst\burst_loader()->admin->statistics->use_lookup_tables();
 
 			if ( $goal_id !== 0 && $use_lookup_tables ) {
-				$exclude_bounces = \Burst\burst_loader()->admin->statistics->exclude_bounces();
-				$bounce_sql      = $exclude_bounces ? ' statistics.bounce = 0 AND ' : '';
 				// we may want to add a date_end later, so we ignore the warning about obsolete date_end check.
 				// @phpstan-ignore-next-line.
 				$date_end_sql = $date_end > 0 ? $wpdb->prepare( 'AND statistics.time < %s', $date_end ) : '';
@@ -201,7 +197,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 				// Query to get total number of visitors, sessions or pageviews with get_sql_table.
 				$conversion_metric                 = $wpdb->prepare(
 					"SELECT {$count_sql} FROM {$wpdb->prefix}burst_statistics as statistics
-									WHERE {$bounce_sql} statistics.time > %s {$date_end_sql} {$goal_url_sql}",
+									WHERE statistics.time > %s {$date_end_sql} {$goal_url_sql}",
 					$date_start
 				);
 				$data['conversionMetric']['value'] = $wpdb->get_var( $conversion_metric );
@@ -214,7 +210,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 
 				$pageviews_per_device_sql = $wpdb->prepare(
 					"SELECT {$count_sql} AS value, device_id FROM {$wpdb->prefix}burst_statistics as statistics
-										WHERE {$bounce_sql} statistics.time > %s {$date_end_sql} {$goal_url_sql}
+										WHERE statistics.time > %s {$date_end_sql} {$goal_url_sql}
 										GROUP BY statistics.device_id ORDER BY value DESC LIMIT 4",
 					$date_start
 				);
