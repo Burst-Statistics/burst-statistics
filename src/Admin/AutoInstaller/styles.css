@@ -1,0 +1,161 @@
+:root {
+	--burst-green: #2B8133;
+	--burst-red: #c6273b;
+	--burst-yellow: #FFDA4A;
+	--burst-grey-400: #dadada;
+	--burst-grey-600: #696969;
+}
+
+#burst-step-template, #burst-plugin-suggestion-template {
+	display: none;
+}
+
+.burst-recommended {
+	padding-bottom: 10px;
+}
+
+.burst-plugin-suggestion {
+	display: flex;
+	gap: 10px;
+	padding: 20px 10px;
+	background-color: #f0f6fc;
+}
+.burst-plugin-suggestion .burst-title {
+	font-weight: bold;
+}
+.burst-plugin-suggestion .burst-description-short {
+	font-weight: bold;
+	font-size: 10px;
+}
+.burst-plugin-suggestion .burst-icon img {
+	width: 50px;
+	height: inherit;
+}
+.burst-plugin-suggestion .burst-summary {
+	flex: 1;
+}
+.burst-plugin-suggestion .burst-install-button {
+	align-items: center;
+	justify-content: center;
+	display: flex;
+}
+.burst-plugin-suggestion .burst-install-button .button-secondary {
+	font-size: 18px;
+}
+.burst-plugin-suggestion .star-rating .star {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+}
+
+.burst-modal-transparent-background {
+	position: fixed;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.7);
+	z-index: 9999;
+}
+.burst-modal-transparent-background .burst-start {
+	margin-top: 20px;
+	font-size: 18px;
+}
+.burst-modal-transparent-background .burst-install-plugin-modal {
+	max-height: calc(100vh - 20px);
+	position: fixed;
+	left: 50%;
+	top: 50%;
+	-ms-transform: translateX(-50%) translateY(-50%);
+	transform: translateX(-50%) translateY(-50%);
+	width: fit-content;
+	height: fit-content;
+	min-width: 700px;
+	padding: 25px;
+	background-color: white;
+	border-radius: 10px;
+}
+.burst-modal-transparent-background .burst-install-plugin-modal h3 {
+	font-size: 23px;
+	margin: 0 0 20px 0;
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-progress-bar-container {
+	margin: 0 0 15px 0;
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-progress-bar-container .burst-progress {
+	overflow: hidden;
+	height: 10px;
+	border-radius: 5px;
+	width: 100%;
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-progress-bar-container .burst-progress .burst-bar {
+	height: 100%;
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-install-steps {
+	display: flex;
+	flex-direction: column;
+	margin: 0 0 15px 0;
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-install-steps .burst-install-step {
+	display: grid;
+	grid-template-columns: 50px 1fr;
+	grid-template-rows: 25px;
+	align-items: center;
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-footer {
+	display: flex;
+	gap: 20px;
+	align-items: center;
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-footer .burst-error-message {
+	color: var(--burst-red);
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-footer .burst-error-message a {
+	color: var(--burst-red);
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-footer .burst-btn {
+	width: fit-content;
+	margin: 0;
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-footer .burst-btn.burst-yellow {
+	background-color: var(--burst-yellow);
+	color: #333;
+	font-size: 17px;
+	border: 1px solid var(--burst-yellow);
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-footer .burst-btn.burst-yellow:hover {
+	background-color: var(--burst-yellow);
+	border: 1px solid var(--burst-yellow);
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-footer .burst-btn.burst-red {
+	background-color: var(--burst-red);
+	color: white;
+	border: 1px solid var(--burst-red);
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-footer .burst-btn.burst-red:hover {
+	background-color: var(--burst-red);
+	border: 1px solid var(--burst-red);
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-bullet {
+	height: 13px;
+	width: 13px;
+	border-radius: 50%;
+	margin-right: 10px;
+	text-decoration: none;
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-grey {
+	background-color: var(--burst-grey-400);
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-green {
+	background-color: var(--burst-green);
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-red {
+	background-color: var(--burst-red);
+}
+.burst-modal-transparent-background .burst-install-plugin-modal .burst-hidden {
+	display: none;
+}
+
+/*# sourceMappingURL=styles.css.map */

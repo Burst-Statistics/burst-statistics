@@ -1,10 +1,10 @@
 <?php
 namespace Burst\Admin\DB_Upgrade;
 
-use Burst\Admin\Tasks;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
+use Burst\Traits\Sanitize;
 use Burst\Admin\Statistics\Summary;
 
 defined( 'ABSPATH' ) || die();
@@ -12,6 +12,7 @@ class DB_Upgrade {
 	use Admin_Helper;
 	use Database_Helper;
 	use Helper;
+	use Sanitize;
 
 	private $cron_interval = MINUTE_IN_SECONDS;
 	private $batch         = 100000;
@@ -19,7 +20,7 @@ class DB_Upgrade {
 	/**
 	 * DB_Upgrade constructor.
 	 */
-	public function __construct() {
+	public function init(): void {
 		add_action( 'burst_daily', [ $this, 'upgrade' ] );
 		add_action( 'admin_init', [ $this, 'maybe_fire_upgrade' ] );
 		add_action( 'burst_upgrade_iteration', [ $this, 'upgrade' ] );
@@ -59,7 +60,7 @@ class DB_Upgrade {
 				'id'          => 'upgrade_progress',
 				'condition'   => [
 					'type'     => 'serverside',
-					'function' => '!(new Burst\Admin\DB_Upgrade() )->progress_complete()',
+					'function' => '!(new \Burst\Admin\DB_Upgrade\DB_Upgrade() )->progress_complete()',
 				],
 				'status'      => 'all',
 				'msg'         => $this->sprintf(
@@ -79,9 +80,14 @@ class DB_Upgrade {
 	/**
 	 * Get progress of the upgrade process
 	 */
-	public function get_progress(): float {
-		$version            = BURST_VERSION;
-		$total_upgrades     = $this->get_db_upgrades( $version );
+	public function get_progress( string $type = 'all' ): float {
+		$version = BURST_VERSION;
+
+		// strip off everything after '#'.
+		if ( strpos( $version, '#' ) !== false ) {
+			$version = substr( $version, 0, strpos( $version, '#' ) );
+		}
+		$total_upgrades     = $this->get_db_upgrades( $type );
 		$remaining_upgrades = $total_upgrades;
 		// check if all upgrades are done.
 		$count_remaining_upgrades = 0;
@@ -122,22 +128,19 @@ class DB_Upgrade {
 	 * - only one upgrade at a time
 	 */
 	public function upgrade(): void {
-
 		if ( defined( 'BURST_NO_UPGRADE' ) && BURST_NO_UPGRADE ) {
 			return;
 		}
-
 		if ( ! $this->has_admin_access() ) {
 			return;
 		}
-
 		$upgrade_running = get_transient( 'burst_upgrade_running' );
 		if ( $upgrade_running ) {
 			return;
 		}
 		set_transient( 'burst_upgrade_running', true, 60 );
 		// check if we need to upgrade.
-		$db_upgrades = $this->get_db_upgrades( 'all' );
+		$db_upgrades = $this->get_db_upgrades( 'free' );
 		// check if all upgrades are done.
 		$do_upgrade = false;
 		foreach ( $db_upgrades as $upgrade ) {
@@ -219,10 +222,17 @@ class DB_Upgrade {
 			$this->clean_orphaned_session_ids();
 		}
 
-		if ( $this->get_progress() < 100 ) {
+		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
+		if ( $this->get_progress( 'free' ) < 100 ) {
+			// free upgardes not finished yet.
 			wp_schedule_single_event( time() + $this->cron_interval, 'burst_upgrade_iteration' );
 		} else {
 			wp_clear_scheduled_hook( 'burst_upgrade_iteration' );
+			// if pro upgrades are not finished yet, do them.
+			if ( $this->get_progress( 'pro' ) < 100 ) {
+				delete_transient( 'burst_upgrade_running' );
+				do_action( 'burst_upgrade_pro_iteration' );
+			}
 		}
 
 		delete_transient( 'burst_upgrade_running' );
@@ -233,7 +243,7 @@ class DB_Upgrade {
 	 *
 	 * @return string[]
 	 */
-	private function get_db_upgrades( string $select_version ): array {
+	protected function get_db_upgrades( string $select_version ): array {
 		$upgrades = apply_filters(
 			'burst_db_upgrades',
 			[
@@ -280,21 +290,47 @@ class DB_Upgrade {
 			]
 		);
 
+		// Get all upgrades from all versions.
+		$all_upgrades = [];
+		foreach ( $upgrades as $upgrade_version => $upgrade ) {
+			$all_upgrades = array_merge( $all_upgrades, $upgrade );
+		}
+
 		if ( $select_version === 'all' ) {
-			$all_upgrades = [];
-			foreach ( $upgrades as $upgrade_version => $upgrade ) {
-				$all_upgrades = array_merge( $all_upgrades, $upgrade );
-			}
 			return $all_upgrades;
 		}
 
-		$all_upgrades = [];
+		// Handle special selectors for pro and free upgrades.
+		if ( $select_version === 'pro' ) {
+			// Get only pro upgrades - these are determined by filter and will have 'pro_' prefix.
+			$pro_upgrades = [];
+			foreach ( $all_upgrades as $upgrade ) {
+				if ( strpos( $upgrade, 'pro_' ) === 0 ) {
+					$pro_upgrades[] = $upgrade;
+				}
+			}
+			return $pro_upgrades;
+		}
+
+		if ( $select_version === 'free' ) {
+			// Get only free upgrades - these don't have 'pro_' prefix.
+			$free_upgrades = [];
+			foreach ( $all_upgrades as $upgrade ) {
+				if ( strpos( $upgrade, 'pro_' ) !== 0 ) {
+					$free_upgrades[] = $upgrade;
+				}
+			}
+			return $free_upgrades;
+		}
+
+		// Handle version-based selection (original behavior).
+		$version_upgrades = [];
 		foreach ( $upgrades as $upgrade_version => $upgrade ) {
 			if ( version_compare( $upgrade_version, $select_version, '>=' ) ) {
-				$all_upgrades = array_merge( $all_upgrades, $upgrade );
+				$version_upgrades = array_merge( $version_upgrades, $upgrade );
 			}
 		}
-		return $all_upgrades;
+		return $version_upgrades;
 	}
 
 	/**
@@ -660,7 +696,7 @@ class DB_Upgrade {
 		// we have lookup tables with values. Now we can upgrade the statistics table.
 		if ( $selected_item ) {
 			$batch         = $this->batch;
-			$selected_item = $this->sanitize_type( $selected_item );
+			$selected_item = $this->sanitize_lookup_table_type( $selected_item );
 			$start         = microtime( true );
 			// check what's still to do.
 			$remaining_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_statistics where {$selected_item}_id = 999999" );
@@ -716,17 +752,6 @@ class DB_Upgrade {
 		if ( 0 === $total_not_completed ) {
 			delete_option( 'burst_db_upgrade_upgrade_lookup_tables' );
 		}
-	}
-
-	/**
-	 * Sanitize the type
-	 */
-	private function sanitize_type( string $type ): string {
-		$types = [ 'browser', 'browser_version', 'device', 'platform' ];
-		if ( ! in_array( $type, $types, true ) ) {
-			return 'browser';
-		}
-		return $type;
 	}
 
 	/**

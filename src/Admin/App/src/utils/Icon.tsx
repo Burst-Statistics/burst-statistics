@@ -55,7 +55,10 @@ import {
   XCircle,
   Activity,
   Webhook,
-  Earth
+  Earth, 
+  LogIn,
+  CircleAlert,
+
 } from 'lucide-react';
 
 // Color mapping from our custom colors to CSS variables
@@ -133,7 +136,10 @@ const iconComponents = {
   world: Earth,
   filters: Filter,
   referrers: ExternalLink,
-  hook: Webhook
+  hook: Webhook,
+  'log-in': LogIn,
+  'log-out': LogOut,
+  alert: CircleAlert,
 };
 
 // Define types for icon names and colors
@@ -181,7 +187,7 @@ const Icon = memo(({
       return <Circle {...iconProps} fill={colorVal} />;
     }
     
-    return <IconComponent {...iconProps} />;
+    return <IconComponent className={className} {...iconProps} />;
   };
 
   const handleClick = () => {

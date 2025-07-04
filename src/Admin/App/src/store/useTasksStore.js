@@ -1,18 +1,19 @@
 import {create} from 'zustand';
+import {persist} from 'zustand/middleware';
 import {doAction} from '../utils/api';
-import {getLocalStorage, setLocalStorage} from '../utils/api';
 
 
-const useTasks = create( ( set, get ) => ({
-  filter: getLocalStorage( 'task_filter', 'all' ),
-  tasks: [],
-  filteredTasks: [],
-  error: false,
-  loading: true,
-  setFilter: ( filter ) => {
-    setLocalStorage( 'task_filter', filter );
-    set( state => ({ filter }) );
-  },
+const useTasks = create(
+  persist(
+    ( set, get ) => ({
+      filter: 'all',
+      tasks: [],
+      filteredTasks: [],
+      error: false,
+      loading: true,
+      setFilter: ( filter ) => {
+        set({ filter });
+      },
   filterTasks: () => {
   let filteredTasks = [];
   
@@ -46,7 +47,7 @@ const useTasks = create( ( set, get ) => ({
     tasks = tasks.filter( function( task ) {
       return task.id !== taskId;
     });
-    set( state => ({ tasks: tasks }) );
+    set({ tasks: tasks });
 
     await doAction( 'dismiss_task', {id: taskId}).then( ( response ) => {
 
@@ -54,7 +55,15 @@ const useTasks = create( ( set, get ) => ({
       response.error && console.error( response.error );
     });
   }
-}) );
+    }),
+    {
+      name: 'burst-tasks-storage',
+      partialize: ( state ) => ({
+        filter: state.filter
+      })
+    }
+  )
+);
 
 export default useTasks;
 

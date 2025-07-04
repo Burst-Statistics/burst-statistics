@@ -9,7 +9,7 @@ class Capability {
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	public function init(): void {
 		add_action( 'wp_initialize_site', [ $this, 'add_role_to_subsite' ], 10, 1 );
 	}
 

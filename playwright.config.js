@@ -12,7 +12,7 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
-const baseURL = process.env.BASE_URL || 'http://localhost:8888';
+const baseURL = process.env.BASE_URL || 'http://localhost:8889';
 
 export default defineConfig({
   testDir: './tests/e2e',

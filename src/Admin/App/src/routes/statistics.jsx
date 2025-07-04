@@ -7,6 +7,7 @@ import DevicesBlock from '@/components/Statistics/DevicesBlock';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import {__} from '@wordpress/i18n';
+import useLicenseStore from '@/store/useLicenseStore';
 
 export const Route = createFileRoute( '/statistics' )({
   component: Statistics,
@@ -19,6 +20,9 @@ export const Route = createFileRoute( '/statistics' )({
 });
 
 function Statistics() {
+  const { isPro } = useLicenseStore();
+  const blockOneItems = ['pages'];
+  const blockTwoItems = isPro ? ['parameters'] : ['referrers'];
   return (
       <>
         <div className="col-span-12 flex justify-between items-center">
@@ -40,13 +44,13 @@ function Statistics() {
         </ErrorBoundary>
         <ErrorBoundary>
           <DataTableBlock
-              allowedConfigs={[ 'pages', 'parameters', 'campaigns' ]}
+              allowedConfigs={blockOneItems}
               id={1}
           />
         </ErrorBoundary>
         <ErrorBoundary>
           <DataTableBlock
-              allowedConfigs={[ 'referrers', 'countries' ]}
+              allowedConfigs={blockTwoItems}
               id={2}
           />
         </ErrorBoundary>

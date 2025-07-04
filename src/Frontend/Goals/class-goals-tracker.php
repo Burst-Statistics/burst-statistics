@@ -1,8 +1,6 @@
 <?php
 namespace Burst\Frontend\Goals;
 
-use Burst\Frontend\Tracking\Tracking;
-use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 
 defined( 'ABSPATH' ) || die();
@@ -14,7 +12,7 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 		/**
 		 * Constructor
 		 */
-		public function __construct() {
+		public function init(): void {
 			add_action( 'init', [ $this, 'add_dynamic_hooks' ] );
 		}
 

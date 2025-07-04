@@ -16,6 +16,7 @@ import SelectField from './SelectField';
 import NumberField from './NumberField';
 import LogoEditorField from './LogoEditorField';
 import RestoreArchivesField from './RestoreArchivesField';
+import RadioField from './RadioField';
 import { useFormContext } from 'react-hook-form';
 import useLicenseStore from '@/store/useLicenseStore';
 
@@ -34,7 +35,8 @@ const fieldComponents = {
   license: LicenseField,
   select: SelectField,
   logo_editor: LogoEditorField,
-  restore_archives: RestoreArchivesField
+  restore_archives: RestoreArchivesField,
+  radio: RadioField
 };
 
 const Field = memo(({ setting, control, ...props }) => {
@@ -188,7 +190,7 @@ const Field = memo(({ setting, control, ...props }) => {
       return true;
     }
     // if has anything (true|array|object|etc) in setting.pro and is not valid license
-    if (setting.pro && !isLicenseValid) {
+    if (setting.pro && !isLicenseValid()) {
       return true;
     }
 
@@ -217,6 +219,8 @@ const Field = memo(({ setting, control, ...props }) => {
             help={setting.help}
             options={setting.options}
             setting={setting}
+            recommended={setting.recommended}
+            pro={setting.pro}
             {...props}
           />
         )}

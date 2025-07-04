@@ -18,6 +18,9 @@ const TextAreaField = forwardRef(
         className={className}
         inputId={inputId}
         required={props.required}
+        recommended={props.recommended}
+        disabled={props.disabled}
+        {...props}
       >
         <TextAreaInput
           id={inputId}

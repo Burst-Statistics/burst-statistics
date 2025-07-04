@@ -2,13 +2,25 @@ import { getData } from '@/utils/api';
 import {
   formatPercentage,
   formatTime,
-  getCountryName
+  getCountryName,
+  getContinentName
 } from '@/utils/formatting';
 import Flag from '@/components/Statistics/Flag';
 import ClickToFilter from '@/components/Common/ClickToFilter';
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 import { safeDecodeURI } from '@/utils/lib';
 import { __ } from '@wordpress/i18n';
+
+// Column format constants
+const FORMATS = {
+  PERCENTAGE: 'percentage',
+  TIME: 'time',
+  COUNTRY: 'country',
+  CONTINENT: 'continent',
+  URL: 'url',
+  TEXT: 'text',
+  INTEGER: 'integer',
+};
 
 // Create memoized version of ClickToFilter to prevent unnecessary re-renders
 const MemoizedClickToFilter = memo( ClickToFilter );
@@ -159,50 +171,244 @@ return -1;
   return result;
 };
 
-// Memoize API call result for the same parameters
-const resultCache = new Map();
-const getCacheKey = ( startDate, endDate, range, args ) =>
-  `${startDate}:${endDate}:${range}:${JSON.stringify( args )}`;
+// Memoized filter components - created once, reused everywhere
+const MemoizedClickToFilter = memo(ClickToFilter);
 
-const getDataTableData = async({
-  startDate,
-  endDate,
-  range,
-  args,
-  columnsOptions
-}) => {
-  try {
-    const cacheKey = getCacheKey( startDate, endDate, range, args );
+const CountryFilter = memo(({ value }) => (
+  <MemoizedClickToFilter filter="country_code" filterValue={value}>
+    <Flag country={value} countryNiceName={getCountryName(value)} />
+  </MemoizedClickToFilter>
+));
 
-    // Check if we have a cached result for these parameters
-    if ( resultCache.has( cacheKey ) ) {
-      return resultCache.get( cacheKey );
+const ContinentFilter = memo(({ value }) => (
+  <MemoizedClickToFilter filter="continent_code" filterValue={value}>
+    <>{getContinentName(value)}</>
+  </MemoizedClickToFilter>
+));
+
+const UrlFilter = memo(({ filter, value }) => (
+  <MemoizedClickToFilter filter={filter} filterValue={value}>
+    {safeDecodeURI(value)}
+  </MemoizedClickToFilter>
+));
+
+const TextFilter = memo(({ filter, value }) => (
+  <MemoizedClickToFilter filter={filter} filterValue={value}>
+    {value}
+  </MemoizedClickToFilter>
+));
+
+/**
+ * Registry of column formatters - easily extensible
+ * @type {Object<string, function>}
+ */
+const COLUMN_FORMATTERS = {
+  [FORMATS.PERCENTAGE]: (value) => formatPercentage(value),
+  [FORMATS.TIME]: (value) => formatTime(value),
+  [FORMATS.INTEGER]: (value) => parseInt(value, 10),
+  [FORMATS.COUNTRY]: (value) => {
+    if (!value || value === '') {
+      return __('Not set', 'burst-statistics');
     }
+    return <CountryFilter value={value} />;
+  },
+  [FORMATS.CONTINENT]: (value) => <ContinentFilter value={value} />,
+  [FORMATS.URL]: (value, columnId) => <UrlFilter filter={columnId} value={value} />,
+  [FORMATS.TEXT]: (value, columnId) => <TextFilter filter={columnId} value={value} />,
+};
 
-    const { data } = await getData(
-      'datatable',
-      startDate,
-      endDate,
-      range,
-      args
-    );
+/**
+ * Unified sorting function that handles all data types
+ * @param {string} columnId - The column identifier
+ * @param {string} format - The column format type
+ * @returns {function} Sort comparison function
+ */
+const createSortFunction = (columnId, format) => {
+  const isNumeric = [FORMATS.PERCENTAGE, FORMATS.TIME, FORMATS.INTEGER].includes(format);
+  
+  return (rowA, rowB) => {
+    const valueA = rowA[columnId];
+    const valueB = rowB[columnId];
 
-    const result = transformDataTableData( data, columnsOptions );
+    // Handle null/undefined values consistently
+    if (valueA == null && valueB == null) return 0;
+    if (valueA == null) return 1;
+    if (valueB == null) return -1;
 
-    // Cache the result
-    resultCache.set( cacheKey, result );
-
-    // Clear old cache entries if cache gets too large (limit to 20 entries)
-    if ( 20 < resultCache.size ) {
-      const oldestKey = resultCache.keys().next().value;
-      resultCache.delete( oldestKey );
+    if (isNumeric) {
+      const numA = parseFloat(valueA);
+      const numB = parseFloat(valueB);
+      
+      if (isNaN(numA) && isNaN(numB)) return 0;
+      if (isNaN(numA)) return 1;
+      if (isNaN(numB)) return -1;
+      
+      return numA - numB;
+    } else {
+      // String comparison for text-based columns
+      return String(valueA).toLowerCase().localeCompare(String(valueB).toLowerCase());
     }
+  };
+};
 
-    return result;
-  } catch ( error ) {
-    console.error( 'Error fetching data table data:', error );
-    return { columns: [], data: [] }; // Return an empty result on error
+/**
+ * Creates a cell formatter function for a specific column
+ * @param {string} format - The column format type
+ * @param {string} columnId - The column identifier
+ * @returns {function} Cell formatter function
+ */
+const createCellFormatter = (format, columnId) => {
+  const formatter = COLUMN_FORMATTERS[format];
+  
+  if (!formatter) {
+    console.warn(`Unknown column format: ${format}. Using default text formatter.`);
+    return (row) => row[columnId] || '';
   }
+
+  return (row) => {
+    try {
+      const value = row[columnId] ?? '';
+      return formatter(value, columnId);
+    } catch (error) {
+      console.error(`Error formatting cell value for column ${columnId}:`, error);
+      return row[columnId] || '';
+    }
+  };
+};
+
+/**
+ * Transforms a single column configuration
+ * @param {Object} column - Column definition from API
+ * @param {Object} columnOptions - Column configuration options
+ * @returns {Object} Transformed column for data table
+ */
+const transformColumn = (column, columnOptions) => {
+  const options = columnOptions[column.id];
+  
+  // Return original column if no options configured
+  if (!options) {
+    return column;
+  }
+
+  const format = options.format || FORMATS.INTEGER;
+  const align = options.align || 'left';
+
+  const transformedColumn = {
+    ...column,
+    selector: (row) => row[column.id],
+    right: align !== 'left',
+    sortFunction: createSortFunction(column.id, format),
+    cell: createCellFormatter(format, column.id),
+  };
+
+  return transformedColumn;
+};
+
+/**
+ * Validates API response structure
+ * @param {*} response - API response to validate
+ * @throws {Error} If response is invalid
+ */
+const validateResponse = (response) => {
+  if (!response || typeof response !== 'object') {
+    throw new Error('Invalid response: expected object');
+  }
+
+  if (!Array.isArray(response.columns)) {
+    throw new Error('Invalid response: columns must be an array');
+  }
+
+  if (!Array.isArray(response.data)) {
+    throw new Error('Invalid response: data must be an array');
+  }
+};
+
+/**
+ * Transforms API response data for data table consumption
+ * @param {Object} response - Raw API response
+ * @param {Object} columnOptions - Column configuration options
+ * @returns {Object} Transformed data with columns and data arrays
+ */
+const transformDataTableData = (response, columnOptions) => {
+  try {
+    validateResponse(response);
+
+    return {
+      columns: response.columns.map(column => transformColumn(column, columnOptions)),
+      data: [...response.data],
+    };
+  } catch (error) {
+    console.error('Data transformation error:', error);
+    return { 
+      columns: [], 
+      data: [],
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Validates input parameters for data fetching
+ * @param {Object} params - Input parameters
+ * @throws {Error} If required parameters are missing
+ */
+const validateParams = ({ startDate, endDate, range, columnsOptions }) => {
+  if (!startDate || !endDate || !range) {
+    throw new Error('Missing required parameters: startDate, endDate, range');
+  }
+
+  if (!columnsOptions || typeof columnsOptions !== 'object') {
+    throw new Error('Missing or invalid columnsOptions parameter');
+  }
+};
+
+/**
+ * Fetches and transforms data table data
+ * @param {Object} params - Request parameters
+ * @param {string} params.startDate - Start date for data range
+ * @param {string} params.endDate - End date for data range
+ * @param {string} params.range - Date range identifier
+ * @param {Object} params.args - Additional query arguments
+ * @param {Object} params.columnsOptions - Column configuration options
+ * @returns {Promise<Object>} Transformed data table data
+ */
+const getDataTableData = async (params) => {
+  try {
+    validateParams(params);
+
+    const { startDate, endDate, range, args, columnsOptions } = params;
+
+    // Fetch data from API
+    const { data } = await getData('datatable', startDate, endDate, range, args);
+
+    if (!data) {
+      throw new Error('No data received from API');
+    }
+
+    // Transform data for table consumption
+    return transformDataTableData(data, columnsOptions);
+
+  } catch (error) {
+    console.error('Error fetching data table data:', error);
+    
+    return {
+      columns: [],
+      data: [],
+      error: error.message,
+    };
+  }
+};
+
+// Export utilities for testing and extension
+export {
+  FORMATS,
+  COLUMN_FORMATTERS,
+  createSortFunction,
+  createCellFormatter,
+  transformColumn,
+  transformDataTableData,
+  validateResponse,
+  validateParams,
 };
 
 export default getDataTableData;

@@ -107,7 +107,7 @@ const DateRange = () => {
           isOpen={isOpen}
           setIsOpen={setIsOpen}
         />
-        <ReactPopover.Portal>
+        <ReactPopover.Portal container={document.querySelector('.burst')}>
           <ReactPopover.Content
             align="end"
             sideOffset={10}

@@ -24,7 +24,14 @@ trait Database_Helper {
 	}
 
 	/**
-	 * Add Index ta a table, with fallback.
+	 * Adds an index to a database table if it doesn't already exist.
+	 *
+	 * Attempts to create a database index with proper error handling. If an index already exists
+	 * with the same name, it will skip the operation. If the index creation fails due to key length,
+	 * it will retry with a reduced key length.
+	 *
+	 * @param string $table_name The table to add the index to (without prefix).
+	 * @param array  $indexes Array of column names to include in the index.
 	 */
 	public function add_index( string $table_name, array $indexes ): void {
 		global $wpdb;
@@ -38,11 +45,18 @@ trait Database_Helper {
 		$index_name   = esc_sql( implode( '_', $indexes ) . '_index' );
 		$sql          = $wpdb->prepare( "SHOW INDEX FROM $table_name WHERE Key_name = %s", $index_name );
 		$result       = $wpdb->get_results( $sql );
-		$index_exists = count( $result ) > 0;
+		$index_exists = ! empty( $result );
+
 		if ( ! $index_exists ) {
 			$sql = "ALTER TABLE $table_name ADD INDEX $index_name ($index)";
 			$wpdb->query( $sql );
+
 			if ( $wpdb->last_error ) {
+				// Skip reporting duplicate key errors as they're not actual errors.
+				if ( str_contains( $wpdb->last_error, 'Duplicate key name' ) ) {
+					return;
+				}
+
 				self::error_log( "Error creating index $index_name in $table_name: " . $wpdb->last_error );
 				// If the error is about key length, try with reduced length.
 				if ( str_contains( $wpdb->last_error, 'Specified key was too long' ) ) {
@@ -53,8 +67,14 @@ trait Database_Helper {
 					// Try with reduced length.
 					$reduced_sql = "ALTER TABLE $table_name ADD INDEX $index_name ($index(100))";
 					$wpdb->query( $reduced_sql );
+					// Ignore phpstan error for the last_error check.
 					// @phpstan-ignore-next-line.
 					if ( $wpdb->last_error ) {
+						// Skip duplicate key errors on retry as well.
+						// @phpstan-ignore-next-line.
+						if ( str_contains( $wpdb->last_error, 'Duplicate key name' ) ) {
+							return;
+						}
 						self::error_log( 'Error creating reduced length sessions index: ' . $wpdb->last_error );
 					}
 				}

@@ -86,7 +86,7 @@ export const PageFilter = () => {
               <Icon name={filtersConf[filter].icon} size="16" />
               <p className="font-medium">{filtersConf[filter].label}</p>
               <span className="h-4 w-px bg-gray-400"></span>
-              <p className="text-gray-600">{safeDecodeURI( title )}</p>
+              <p className="text-gray">{safeDecodeURI( title )}</p>
               <button
                 onClick={() => removeFilter( filter )}
                 className="rounded-full p-1 transition-colors hover:bg-gray-200"

@@ -30,34 +30,29 @@ const NoTasksComponent = () => (
   </div>
 );
 
-const TaskSwitch = ({filter, setFilter}) => {
+const TaskSwitch = ({ filter, setFilter }) => {
   return (
     <div className="flex items-center justify-center gap-2">
-      
-      
-      <button 
-        className={`py-1.5 text-sm rounded-md transition-colors ${
-          filter === 'all' 
-            ? 'text-gray-700 underline font-bold' : ''
+      <button
+        className={`rounded-md py-1.5 text-sm transition-colors ${
+          'all' === filter ? 'font-bold text-gray underline' : ''
         }`}
-        onClick={() => setFilter('all')}
+        onClick={() => setFilter( 'all' )}
       >
-        {__('All tasks', 'burst-statistics')}
+        {__( 'All tasks', 'burst-statistics' )}
       </button>
-      <span className="text-gray-400">|</span>
-      <button 
-        className={`py-1.5 text-sm rounded-md transition-colors text-gray-700 ${
-          filter === 'remaining' 
-            ? 'text-gray-700 underline font-bold' : ''
+      <span className="text-gray">|</span>
+      <button
+        className={`rounded-md py-1.5 text-sm text-gray transition-colors ${
+          'remaining' === filter ? 'font-bold text-gray underline' : ''
         }`}
-        onClick={() => setFilter('remaining')}
+        onClick={() => setFilter( 'remaining' )}
       >
-        {__('Remaining tasks', 'burst-statistics')}
+        {__( 'Remaining tasks', 'burst-statistics' )}
       </button>
     </div>
   );
 };
-
 
 const ProgressBlock = ({ highLightField }) => {
   const loading = useTasks( ( state ) => state.loading );
@@ -92,7 +87,6 @@ const ProgressBlock = ({ highLightField }) => {
       />
     ) );
   };
-  
 
   return (
     <Block className="row-span-2 lg:col-span-12 xl:col-span-6">

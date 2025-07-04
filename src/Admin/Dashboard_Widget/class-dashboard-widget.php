@@ -18,7 +18,7 @@ class Dashboard_Widget {
 	/**
 	 * Dashboard_Widget constructor.
 	 */
-	public function __construct() {
+	public function init(): void {
 		add_action( 'wp_dashboard_setup', [ $this, 'add_burst_dashboard_widget' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue' ] );
 	}

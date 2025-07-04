@@ -28,6 +28,9 @@ const SwitchField = forwardRef(
         inputId={inputId}
         required={props.required}
         alignWithLabel={true}
+        recommended={props.recommended}
+        disabled={props.disabled}
+        {...props}
       >
         <SwitchInput
           {...field}

@@ -8,9 +8,19 @@ class Cron {
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	public function init(): void {
 		add_action( 'plugins_loaded', [ $this, 'schedule_cron' ], 10, 2 );
 		add_action( 'cron_schedules', [ $this, 'filter_cron_schedules' ], 10, 2 );
+		add_action( 'burst_every_hour', [ $this, 'test_hourly_cron' ] );
+	}
+
+	/**
+	 * Check if the hourly cron is working.
+	 */
+	public function test_hourly_cron(): void {
+		// This is just a test function to check if the hourly cron is working.
+		// You can remove this function once you have verified that the cron is working.
+		update_option( 'burst_last_cron_hit', time(), false );
 	}
 
 	/**
@@ -28,6 +38,21 @@ class Cron {
 		if ( ! wp_next_scheduled( 'burst_weekly' ) ) {
 			wp_schedule_event( time(), 'burst_weekly', 'burst_weekly' );
 		}
+	}
+
+	/**
+	 * Check if the cron has run the last 24 hours
+	 */
+	public function cron_active(): bool {
+		$now           = time();
+		$last_cron_hit = get_option( 'burst_last_cron_hit', 0 );
+		$diff          = $now - $last_cron_hit;
+
+		$cron_active = $diff <= DAY_IN_SECONDS;
+		if ( $cron_active ) {
+			\Burst\burst_loader()->admin->tasks->dismiss_task( 'cron' );
+		}
+		return $cron_active;
 	}
 
 	/**

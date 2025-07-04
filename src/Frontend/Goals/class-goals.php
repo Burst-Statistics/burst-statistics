@@ -3,19 +3,21 @@ namespace Burst\Frontend\Goals;
 
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
+use Burst\Traits\Sanitize;
 
 defined( 'ABSPATH' ) || die( 'you do not have access to this page!' );
 
 class Goals {
 	use Helper;
 	use Admin_Helper;
+	use Sanitize;
 
 	private array $orderby_columns = [];
 
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	public function init(): void {
 		add_action( 'burst_install_tables', [ $this, 'install_goals_table' ], 10 );
 	}
 
@@ -131,8 +133,7 @@ class Goals {
 			// sanitize args.
 			$args['order']   = $args['order'] === 'DESC' ? 'DESC' : 'ASC';
 			$args['orderby'] = $this->sanitize_orderby( $args['orderby'] );
-			$goal            = ( new Goal() );
-			$args['status']  = $goal->sanitize_status( $args['status'] );
+			$args['status']  = $this->sanitize_status( $args['status'] );
 			$args['limit']   = (int) $args['limit'];
 			$args['offset']  = (int) $args['offset'];
 

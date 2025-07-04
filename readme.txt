@@ -6,7 +6,7 @@ Requires at least: 6.2
 License: GPL2
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 
@@ -97,6 +97,15 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 2.2.0 =
+* New: extended range of shortcodes.
+* New: goal element preview to check if the selected element exists on the page.
+* Improvement: moved all hooks from constructor to init method.
+* Improvement: remove bounce=0 conditions on goal filtering
+* Fix: Integrations not loading due to path change in 2.0.
+* Fix: First time visits counting duplicates for visitors on cookieless tracking when they came back after a month.
+* Fix: multisite redirect to network, but should redirect to main site, props @muttleydosomething
+
 = 2.1.0 =
 * Fix: type mismatch when browser key is not in the user agent data.
 * New: Onboarding wizard for new users.

@@ -12,6 +12,7 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as StatisticsImport } from './routes/statistics'
+import { Route as SourcesImport } from './routes/sources'
 import { Route as SettingsImport } from './routes/settings'
 import { Route as IndexImport } from './routes/index'
 import { Route as SettingsSettingsIdImport } from './routes/settings.$settingsId'
@@ -21,6 +22,12 @@ import { Route as SettingsSettingsIdImport } from './routes/settings.$settingsId
 const StatisticsRoute = StatisticsImport.update({
   id: '/statistics',
   path: '/statistics',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SourcesRoute = SourcesImport.update({
+  id: '/sources',
+  path: '/sources',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -60,6 +67,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsImport
       parentRoute: typeof rootRoute
     }
+    '/sources': {
+      id: '/sources'
+      path: '/sources'
+      fullPath: '/sources'
+      preLoaderRoute: typeof SourcesImport
+      parentRoute: typeof rootRoute
+    }
     '/statistics': {
       id: '/statistics'
       path: '/statistics'
@@ -94,6 +108,7 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/sources': typeof SourcesRoute
   '/statistics': typeof StatisticsRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
 }
@@ -101,6 +116,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/sources': typeof SourcesRoute
   '/statistics': typeof StatisticsRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
 }
@@ -109,28 +125,42 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/sources': typeof SourcesRoute
   '/statistics': typeof StatisticsRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/statistics' | '/settings/$settingsId'
+  fullPaths:
+    | '/'
+    | '/settings'
+    | '/sources'
+    | '/statistics'
+    | '/settings/$settingsId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/statistics' | '/settings/$settingsId'
-  id: '__root__' | '/' | '/settings' | '/statistics' | '/settings/$settingsId'
+  to: '/' | '/settings' | '/sources' | '/statistics' | '/settings/$settingsId'
+  id:
+    | '__root__'
+    | '/'
+    | '/settings'
+    | '/sources'
+    | '/statistics'
+    | '/settings/$settingsId'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SettingsRoute: typeof SettingsRouteWithChildren
+  SourcesRoute: typeof SourcesRoute
   StatisticsRoute: typeof StatisticsRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SettingsRoute: SettingsRouteWithChildren,
+  SourcesRoute: SourcesRoute,
   StatisticsRoute: StatisticsRoute,
 }
 
@@ -146,6 +176,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/settings",
+        "/sources",
         "/statistics"
       ]
     },
@@ -157,6 +188,9 @@ export const routeTree = rootRoute
       "children": [
         "/settings/$settingsId"
       ]
+    },
+    "/sources": {
+      "filePath": "sources.jsx"
     },
     "/statistics": {
       "filePath": "statistics.jsx"

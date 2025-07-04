@@ -48,7 +48,7 @@ class Ip {
 	 */
 	public static function get_ip_address(): string {
 		// least common types first.
-		$variables  = [
+		$variables = [
 			'HTTP_CF_CONNECTING_IP',
 			'CF-IPCountry',
 			'HTTP_TRUE_CLIENT_IP',
@@ -61,10 +61,11 @@ class Ip {
 			'HTTP_FORWARDED',
 			'REMOTE_ADDR',
 		];
+
 		$current_ip = '';
 		foreach ( $variables as $variable ) {
 			$current_ip = self::is_real_ip( $variable );
-			if ( $current_ip !== '' ) {
+			if ( ! empty( $current_ip ) ) {
 				break;
 			}
 		}
@@ -80,12 +81,14 @@ class Ip {
 
 	/**
 	 * Get ip from var, and check if the found ip is a valid one
+	 *
+	 * @param string $ip_number The environment variable name to check.
+	 * @return string The IP address if valid, empty string otherwise
 	 */
 	public static function is_real_ip( string $ip_number ): string {
 		$ip = getenv( $ip_number );
 		return ! $ip || trim( $ip ) === '127.0.0.1' ? '' : $ip;
 	}
-
 
 	/**
 	 * Checks if a given IP address is within a specified IP range.

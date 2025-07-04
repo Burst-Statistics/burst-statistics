@@ -27,7 +27,7 @@ class Frontend {
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	public function init(): void {
 
 		add_action( 'init', [ $this, 'register_pageviews_block' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_time_tracking_script' ], 0 );
@@ -37,14 +37,19 @@ class Frontend {
 		add_action( 'burst_every_hour', [ $this, 'maybe_update_total_pageviews_count' ] );
 		add_action( 'init', [ $this, 'use_logged_out_state_for_tests' ] );
 
-		new Sessions();
+		$sessions = new Sessions();
+		$sessions->init();
 		// Lazy load shortcodes only when needed.
 		$this->tracking = new Tracking();
-		new Goals();
-		new Goals_Tracker();
+		$this->tracking->init();
+		$goals = new Goals();
+		$goals->init();
+		$goals_tracker = new Goals_Tracker();
+		$goals_tracker->init();
 		// Check if shortcodes option is enabled.
 		if ( $this->get_option_bool( 'enable_shortcodes' ) ) {
-			new Shortcodes();
+			$shortcodes = new Shortcodes();
+			$shortcodes->init();
 		}
 	}
 
@@ -68,11 +73,12 @@ class Frontend {
 
 	/**
 	 * When a tracking test is running, we don't want to show the logged in state, as caching plugins often show uncached content to logged in users.
+	 * Also handles the force logged out functionality for previewing click goals.
 	 */
 	public function use_logged_out_state_for_tests(): void {
 		// No form data processed, no action connected, only not showing logged in state for testing purposes.
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( isset( $_GET['burst_test_hit'] ) || isset( $_GET['burst_nextpage'] ) ) {
+		if ( isset( $_GET['burst_test_hit'] ) || isset( $_GET['burst_nextpage'] ) || ( isset( $_GET['burst_force_logged_out'] ) && $_GET['burst_force_logged_out'] === '1' ) ) {
 			add_filter( 'determine_current_user', '__return_null', 100 );
 			wp_set_current_user( 0 );
 		}
@@ -193,7 +199,7 @@ class Frontend {
 			if ( count( array_intersect( $excluded_roles, $user->roles ) ) > 0 ) {
 				return true;
 			}
-			if ( is_preview() || $this->is_pagebuilder_preview() ) {
+			if ( is_preview() || $this->is_pagebuilder_preview() || $this->is_plugin_preview() ) {
 				return true;
 			}
 		}

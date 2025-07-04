@@ -22,7 +22,7 @@ const SettingsGroupBlock = memo(
 
     return (
       <Block key={group.id} className={className}>
-        {group.pro && !isLicenseValid && (
+        {group.pro && !isLicenseValid() && (
           <Overlay className='backdrop-blur-sm'>
             <div className='flex flex-col gap-4'>
               <h4>{__( 'Unlock Advanced Features with Burst Pro', 'burst-statistics' )}</h4>

@@ -1,8 +1,8 @@
 import { __ } from '@wordpress/i18n';
-import { useState, useCallback, useEffect, useMemo, memo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import PopoverFilter from '../Common/PopoverFilter';
-import { getLocalStorage, setLocalStorage } from '@/utils/api';
 import DataTableSelect from './DataTableSelect';
+import { useDataTableStore } from '@/store/useDataTableStore';
 import EmptyDataTable from './EmptyDataTable';
 import DataTable from 'react-data-table-component';
 import { useDate } from '@/store/useDateStore';
@@ -17,29 +17,35 @@ import { BlockContent } from '@/components/Blocks/BlockContent';
 const defaultColumnsOptions = {
   pageviews: {
     label: __( 'Pageviews', 'burst-statistics' ),
-    default: true
+    default: true,
+    align: 'right'
   },
   sessions: {
     label: __( 'Sessions', 'burst-statistics' ),
-    pro: true
+    pro: true,
+    align: 'right'
   },
   visitors: {
     label: __( 'Visitors', 'burst-statistics' ),
-    pro: true
+    pro: true,
+    align: 'right'
   },
   conversions: {
     label: __( 'Conversions', 'burst-statistics' ),
-    pro: true
+    pro: true,
+    align: 'right'
   },
   bounce_rate: {
     label: __( 'Bounce rate', 'burst-statistics' ),
     format: 'percentage',
-    pro: true
+    pro: true,
+    align: 'right'
   },
   avg_time_on_page: {
     label: __( 'Time on page', 'burst-statistics' ),
     pro: true,
-    format: 'time'
+    format: 'time',
+    align: 'right'
   }
 };
 
@@ -58,53 +64,6 @@ const config = {
       },
       ...defaultColumnsOptions
     },
-    upsellPopover: {
-      title: __( 'Unlock Campaign Insights with Pro', 'burst-statistics' ),
-      subtitle: __(
-        'Get in-depth analysis of your marketing efforts.',
-        'burst-statistics'
-      ),
-      bulletPoints: [
-        {
-          text: (
-            <>
-              <b>{__( 'Track URL parameters:', 'burst-statistics' )}</b>{' '}
-              {__( 'Understand visitors patterns.', 'burst-statistics' )}
-            </>
-          ),
-          icon: 'world'
-        },
-        {
-          text: (
-            <>
-              <b>{__( 'UTM Analytics:', 'burst-statistics' )}</b>{' '}
-              {__(
-                'Measure the success of your UTM campaigns.',
-                'burst-statistics'
-              )}
-            </>
-          ),
-          icon: 'goals'
-        },
-        {
-          text: (
-            <>
-              <b>{__( 'Filter data:', 'burst-statistics' )}</b>{' '}
-              {__( 'By device, page, goal, or country.', 'burst-statistics' )}
-            </>
-          ),
-          icon: 'filter'
-        }
-      ],
-      primaryButtonUrl: burst_get_website_url( '/pricing/', {
-        burst_source: 'params-campaigns-upsell',
-        burst_content: 'upgrade'
-      }),
-      secondaryButtonUrl: burst_get_website_url( '/', {
-        burst_source: 'params-campaigns-upsell',
-        burst_content: 'more-info'
-      })
-    }
   },
   referrers: {
     label: __( 'Referrers', 'burst-statistics' ),
@@ -120,59 +79,12 @@ const config = {
       },
       ...defaultColumnsOptions
     },
-    upsellPopover: {
-      title: __( 'Unlock Country Insights with Pro', 'burst-statistics' ),
-      subtitle: __(
-        'Get detailed information on your users',
-        'burst-statistics'
-      ),
-      bulletPoints: [
-        {
-          text: (
-            <>
-              <b>{__( 'See Countries:', 'burst-statistics' )}</b>{' '}
-              {__( 'Know where your visitors are from.', 'burst-statistics' )}
-            </>
-          ),
-          icon: 'world'
-        },
-        {
-          text: (
-            <>
-              <b>{__( 'Track More Goals:', 'burst-statistics' )}</b>{' '}
-              {__(
-                'Follow different things at the same time.',
-                'burst-statistics'
-              )}
-            </>
-          ),
-          icon: 'goals'
-        },
-        {
-          text: (
-            <>
-              <b>{__( 'Filter by Country:', 'burst-statistics' )}</b>{' '}
-              {__( 'Only see data from specific places.', 'burst-statistics' )}
-            </>
-          ),
-          icon: 'filter'
-        }
-      ],
-      primaryButtonUrl: burst_get_website_url( '/pricing/', {
-        burst_source: 'countries-upsell',
-        burst_content: 'upgrade'
-      }),
-      secondaryButtonUrl: burst_get_website_url( '/', {
-        burst_source: 'countries-upsell',
-        burst_content: 'more-info'
-      })
-    }
   },
   countries: {
-    label: __( 'Countries', 'burst-statistics' ),
+    label: __( 'Locations', 'burst-statistics' ),
     pro: true,
-    searchable: false,
-    defaultColumns: [ 'country_code', 'pageviews' ],
+    searchable: true,
+    defaultColumns: [ 'country_code', 'state', 'city', 'pageviews' ],
     columnsOptions: {
       country_code: {
         label: __( 'Country', 'burst-statistics' ),
@@ -181,6 +93,25 @@ const config = {
         align: 'left',
         group_by: true
       },
+      state: {
+        label: __( 'State', 'burst-statistics' ),
+        format: 'text',
+        align: 'left',
+        group_by: true
+      },
+      city: {
+        label: __( 'City', 'burst-statistics' ),
+        format: 'text',
+        align: 'left',
+        group_by: true
+      },
+      continent: {
+        label: __( 'Continent', 'burst-statistics' ),
+        format: 'continent',
+        align: 'left',
+        group_by: true
+      },
+
       ...defaultColumnsOptions
     }
   },
@@ -245,6 +176,14 @@ const config = {
       },
       ...defaultColumnsOptions
     }
+  },
+  ghost: {
+    label: __( 'Ghost', 'burst-statistics' ),
+    searchable: true,
+    defaultColumns: [ 'pageviews' ],
+    columnsOptions: {
+      ...defaultColumnsOptions
+    }
   }
 };
 
@@ -260,16 +199,31 @@ const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id }) => {
   const { startDate, endDate, range } = useDate( ( state ) => state );
   const filters = useFiltersStore( ( state ) => state.filters );
   const defaultConfig = allowedConfigs[0];
+
+  // Use the DataTable store
+  const {
+    getSelectedConfig,
+    setSelectedConfig: setSelectedConfigStore,
+    getColumns: getColumnsStore,
+    setColumns: setColumnsStore
+  } = useDataTableStore();
+
   const [ selectedConfig, setSelectedConfigState ] = useState( () =>
-    getLocalStorage( 'datatable_config_' + id, defaultConfig )
+    getSelectedConfig( id, defaultConfig )
   );
 
   const configDetails = useMemo( () => config[selectedConfig], [ selectedConfig ]);
-  const columnsOptions = useMemo( () => configDetails?.columnsOptions || {}, [ configDetails ]);
-  const defaultColumns = useMemo( () => configDetails?.defaultColumns || [], [ configDetails ]);
+  const columnsOptions = useMemo(
+    () => configDetails?.columnsOptions || {},
+    [ configDetails ]
+  );
+  const defaultColumns = useMemo(
+    () => configDetails?.defaultColumns || [],
+    [ configDetails ]
+  );
 
   const [ columns, setColumnsState ] = useState( () => {
-    const initialColumns = getLocalStorage( `datatable_columns_${selectedConfig}`, defaultColumns );
+    const initialColumns = getColumnsStore( selectedConfig, defaultColumns );
     const availableColumns = Object.keys( columnsOptions );
     return initialColumns.filter( ( column ) => availableColumns.includes( column ) );
   });
@@ -277,31 +231,31 @@ const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id }) => {
   const setColumns = useCallback(
     ( value ) => {
       const orderedColumns = value.filter( ( key ) =>
-      Object.keys( columnsOptions ).includes( key )
-    );
-    if ( JSON.stringify( orderedColumns ) !== JSON.stringify( columns ) ) {
-      setColumnsState( orderedColumns );
-      setLocalStorage( `datatable_columns_${selectedConfig}`, orderedColumns );
-    }
-  },
-  [ selectedConfig, columns, columnsOptions ]
-);
+        Object.keys( columnsOptions ).includes( key )
+      );
+      if ( JSON.stringify( orderedColumns ) !== JSON.stringify( columns ) ) {
+        setColumnsState( orderedColumns );
+        setColumnsStore( selectedConfig, orderedColumns );
+      }
+    },
+    [ selectedConfig, columns, columnsOptions, setColumnsStore ]
+  );
 
   const setSelectedConfig = useCallback(
     async( value ) => {
       setSelectedConfigState( value );
-      setLocalStorage( 'datatable_config_' + id, value );
+      setSelectedConfigStore( id, value );
     },
-    [ id ]
+    [ id, setSelectedConfigStore ]
   );
 
   useEffect( () => {
-    const newColumns = getLocalStorage(
-      'datatable_columns_' + selectedConfig,
+    const newColumns = getColumnsStore(
+      selectedConfig,
       config[selectedConfig]?.defaultColumns || []
     );
     setColumns( newColumns );
-  }, [ selectedConfig, setColumns ]);
+  }, [ selectedConfig, setColumns, getColumnsStore ]);
 
   // search
   const [ filterText, setFilterText ] = useState( '' );
@@ -363,15 +317,23 @@ const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id }) => {
       if ( '' === filterText.trim() ) {
         filtered = tableData;
       } else {
+        const searchTerm = filterText.toLowerCase();
+
+        // Get searchable columns (those with group_by: true)
+        const searchableColumns = Object.keys( columnsOptions ).filter(
+          ( column ) => columnsOptions[column]?.group_by
+        );
+
         filtered = tableData.filter( ( item ) => {
 
-          // Get the first key and its corresponding value in the object
-          const firstKey = Object.keys( item )[0];
-          const firstValue =
-            null === item[firstKey] ? '' : item[firstKey].toString().toLowerCase();
-
-          // Check if the first value includes the filter text
-          return firstValue.includes( filterText.toLowerCase() );
+          // Search through all searchable columns
+          return searchableColumns.some( ( column ) => {
+            const value = item[column];
+            if ( null === value || value === undefined ) {
+              return false;
+            }
+            return value.toString().toLowerCase().includes( searchTerm );
+          });
         });
       }
     } else {
@@ -379,7 +341,7 @@ const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id }) => {
     }
 
     return Array.isArray( filtered ) ? filtered : [];
-  }, [ tableData, filterText, configDetails?.searchable ]);
+  }, [ tableData, filterText, configDetails?.searchable, columnsOptions ]);
 
   const isLoading = query.isLoading || query.isFetching;
   const error = query.error;
@@ -411,42 +373,47 @@ const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id }) => {
   }
 
   // Memoize DataTable props to prevent unnecessary re-renders
-  const dataTableProps = useMemo( () => ({
-    columns: sortedColumnsData,
-    data: filteredData,
-    defaultSortFieldId: 2,
-    defaultSortAsc: false,
-    pagination: true,
-    paginationRowsPerPageOptions: [ 10, 25, 50, 100, 200 ],
-    paginationPerPage: 10,
-    paginationComponentOptions: {
-      rowsPerPageText: '',
-      rangeSeparatorText: __( 'of', 'burst-statistics' ),
-      noRowsPerPage: false,
-      selectAllRowsItem: true,
-      selectAllRowsItemText: __( 'All', 'burst-statistics' )
-    },
-    noDataComponent: (
-      <EmptyDataTable
-        noData={noData}
-        data={[]}
-        isLoading={isLoading}
-        error={error}
-      />
-    ),
+  const dataTableProps = useMemo(
+    () => ({
+      columns: sortedColumnsData,
+      data: filteredData,
+      defaultSortFieldId: 2,
+      defaultSortAsc: false,
+      pagination: true,
+      paginationRowsPerPageOptions: [ 10, 25, 50, 100, 200 ],
+      paginationPerPage: 10,
+      paginationComponentOptions: {
+        rowsPerPageText: '',
+        rangeSeparatorText: __( 'of', 'burst-statistics' ),
+        noRowsPerPage: false,
+        selectAllRowsItem: true,
+        selectAllRowsItemText: __( 'All', 'burst-statistics' )
+      },
+      noDataComponent: (
+        <EmptyDataTable
+          noData={noData}
+          data={[]}
+          isLoading={isLoading}
+          error={error}
+        />
+      ),
 
-    // Additional optimization
-    progressPending: isLoading,
-    progressComponent: <EmptyDataTable
-    noData={noData}
-    data={[]}
-    isLoading={isLoading}
-    error={error}
-  />
-  }), [ sortedColumnsData, filteredData, noData, isLoading, error ]);
+      // Additional optimization
+      progressPending: isLoading,
+      progressComponent: (
+        <EmptyDataTable
+          noData={noData}
+          data={[]}
+          isLoading={isLoading}
+          error={error}
+        />
+      )
+    }),
+    [ sortedColumnsData, filteredData, noData, isLoading, error ]
+  );
 
   return (
-    <Block className="row-span-2 xl:col-span-6">
+    <Block className="row-span-2 overflow-hidden xl:col-span-6">
       <BlockHeading
         title={
           <DataTableSelect

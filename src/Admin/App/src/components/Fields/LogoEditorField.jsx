@@ -85,6 +85,9 @@ const LogoEditorField = forwardRef(
         error={fieldState.error}
         pro={props.setting.pro}
         context={props.setting.context}
+        recommended={props.recommended}
+        disabled={props.disabled}
+        {...props}
       >
 
           <div

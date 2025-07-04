@@ -82,7 +82,7 @@ return [
 	],
 	[
 		'id'               => 'selector',
-		'type'             => 'class-id',
+		'type'             => 'selector',
 		'label'            => __( 'What element do you want to track?', 'burst-statistics' ),
 		'disabled'         => false,
 		'default'          => '',

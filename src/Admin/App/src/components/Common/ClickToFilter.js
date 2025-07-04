@@ -9,15 +9,15 @@ import { toast } from 'react-toastify';
 import { isValidDate } from '@/utils/formatting';
 
 /**
- *
- * @param filter
- * @param filterValue
- * @param label
- * @param children
- * @param startDate
- * @param endDate
- * @return {Element}
- * @constructor
+ * ClickToFilter component - makes any child element clickable to apply filters
+ * 
+ * @param {string} filter - The filter type (e.g., 'country_code', 'page_url', 'device')
+ * @param {string} filterValue - The specific value to filter by
+ * @param {string} label - Display label for tooltips
+ * @param {React.ReactNode} children - The wrapped content that becomes clickable
+ * @param {string} startDate - Optional start date to set when filtering
+ * @param {string} endDate - Optional end date to set when filtering
+ * @return {React.ReactElement}
  */
 const ClickToFilter = ({
   filter,
@@ -27,106 +27,120 @@ const ClickToFilter = ({
   startDate,
   endDate
 }) => {
-
-  // Only get the specific functions needed from the stores
-  const setFilters = useFiltersStore( ( state ) => state.setFilters );
-  const setAnimate = useFiltersStore( ( state ) => state.setAnimate );
+  // Store actions
+  const setFilters = useFiltersStore(state => state.setFilters);
+  const filtersConf = useFiltersStore(state => state.filtersConf);
   const { getGoal } = useGoalsData();
-  const setInsightsMetrics = useInsightsStore( ( state ) => state.setMetrics );
-  const insightsMetrics = useInsightsStore( ( state ) => state.getMetrics() );
-  const setStartDate = useDate( ( state ) => state.setStartDate );
-  const setEndDate = useDate( ( state ) => state.setEndDate );
-  const setRange = useDate( ( state ) => state.setRange );
+  const setInsightsMetrics = useInsightsStore(state => state.setMetrics);
+  const insightsMetrics = useInsightsStore(state => state.getMetrics());
+  const setStartDate = useDate(state => state.setStartDate);
+  const setEndDate = useDate(state => state.setEndDate);
+  const setRange = useDate(state => state.setRange);
 
-  // Memoize the tooltip to prevent recalculation on every render
-  const tooltip = useMemo( () => {
-    return label ?
-      __( 'Click to filter by:', 'burst-statistics' ) + ' ' + label :
-      __( 'Click to filter', 'burst-statistics' );
-  }, [ label ]);
+  // Check if the filter is allowed
+  const isValidFilter = useMemo(() => {
+    return filter && filtersConf && Object.prototype.hasOwnProperty.call(filtersConf, filter);
+  }, [filter, filtersConf]);
+  
+  if ( !isValidFilter ) {
+    return <>{children}</>;
+  }
 
-  // Memoize the handleDateRange function
-  const handleDateRange = useCallback( () => {
+  // Memoize tooltip content
+  const tooltip = useMemo(() => {
+    
+    return label 
+      ? `${__('Click to filter by:', 'burst-statistics')} ${label}`
+      : __('Click to filter', 'burst-statistics');
+  }, [label, isValidFilter]);
+
+  // Handle date range updates
+  const handleDateRange = useCallback(() => {
+    if (!startDate) return;
+
     let formattedStartDate = '';
     let formattedEndDate = '';
 
-    // Check if startDate is in Unix, Unix in milliseconds, or yyyy-MM-dd format
-    if ( /^\d+$/.test( startDate ) ) {
-
-      // Unix or Unix in milliseconds
-      const unixTime =
-        10 === startDate.toString().length ? startDate * 1000 : startDate;
-      formattedStartDate = new Date( unixTime ).toISOString().split( 'T' )[0];
-    } else if ( /\d{4}-\d{2}-\d{2}/.test( startDate ) ) {
-
+    // Format start date
+    if (/^\d+$/.test(startDate)) {
+      // Unix timestamp (10 digits) or Unix in milliseconds (13 digits)
+      const unixTime = startDate.toString().length === 10 
+        ? startDate * 1000 
+        : startDate;
+      formattedStartDate = new Date(unixTime).toISOString().split('T')[0];
+    } else if (/\d{4}-\d{2}-\d{2}/.test(startDate)) {
       // Already in yyyy-MM-dd format
       formattedStartDate = startDate;
     }
 
-    // If endDate is not set, set to today
-    if ( ! endDate ) {
-      formattedEndDate = new Date().toISOString().split( 'T' )[0];
-    } else if ( /^\d+$/.test( endDate ) ) {
-
-      // Unix or Unix in milliseconds
-      const unixTime =
-        10 === endDate.toString().length ? endDate * 1000 : endDate;
-      formattedEndDate = new Date( unixTime ).toISOString().split( 'T' )[0];
-    } else if ( /\d{4}-\d{2}-\d{2}/.test( endDate ) ) {
-
-      // Already in yyyy-MM-dd format
+    // Format end date (default to today if not provided)
+    if (!endDate) {
+      formattedEndDate = new Date().toISOString().split('T')[0];
+    } else if (/^\d+$/.test(endDate)) {
+      const unixTime = endDate.toString().length === 10 
+        ? endDate * 1000 
+        : endDate;
+      formattedEndDate = new Date(unixTime).toISOString().split('T')[0];
+    } else if (/\d{4}-\d{2}-\d{2}/.test(endDate)) {
       formattedEndDate = endDate;
     }
 
-    if ( isValidDate( formattedStartDate ) && isValidDate( formattedEndDate ) ) {
-      setStartDate( formattedStartDate );
-      setEndDate( formattedEndDate );
-      setRange( 'custom' );
+    // Apply date range if valid
+    if (isValidDate(formattedStartDate) && isValidDate(formattedEndDate)) {
+      setStartDate(formattedStartDate);
+      setEndDate(formattedEndDate);
+      setRange('custom');
     }
-  }, [ startDate, endDate, setStartDate, setEndDate, setRange ]);
+  }, [startDate, endDate, setStartDate, setEndDate, setRange]);
 
-  // Memoize the handleClick function to prevent recreation on every render
-  const handleClick = useCallback( async( event ) => {
-    window.location.href = '#statistics';
-
-    if ( 'goal_id' === filter ) {
-
-      // Check if we have a goal with a specific page
-      const goal = getGoal( filterValue );
-      if (
-        goal &&
-        goal.goal_specific_page
-      ) {
-        setFilters(
-          'page_url',
-          goal.goal_specific_page
-        );
-        setFilters( filter, filterValue );
-        toast.info(
-          __( 'Filtering by goal & goal specific page', 'burst-statistics' )
-        );
-      } else {
-        setFilters( filter, filterValue );
-        toast.info( __( 'Filtering by goal', 'burst-statistics' ) );
-      }
-      if ( ! insightsMetrics.includes( 'conversions' ) ) {
-
-        // Add 'conversions' to the array and update the state
-        setInsightsMetrics([ ...insightsMetrics, 'conversions' ]);
-      }
+  // Handle goal-specific filtering
+  const handleGoalFilter = useCallback((goalId) => {
+    const goal = getGoal(goalId);
+    
+    if (goal?.goal_specific_page) {
+      setFilters('page_url', goal.goal_specific_page);
+      setFilters('goal_id', goalId);
+      toast.info(__('Filtering by goal & goal specific page', 'burst-statistics'));
     } else {
-      setFilters( filter, '' );
-
-      await new Promise( ( resolve ) => setTimeout( resolve, 10 ) );
-      setFilters( filter, filterValue, true );
-
-      setAnimate( false );
+      setFilters('goal_id', goalId);
+      toast.info(__('Filtering by goal', 'burst-statistics'));
     }
-    handleDateRange();
-  }, [ filter, filterValue, getGoal, setFilters, insightsMetrics, setInsightsMetrics, setAnimate, handleDateRange ]);
 
-  // Early return if no filter or filterValue
-  if ( ! filter || ! filterValue ) {
+    // Add conversions metric if not already present
+    if (!insightsMetrics.includes('conversions')) {
+      setInsightsMetrics([...insightsMetrics, 'conversions']);
+    }
+  }, [getGoal, setFilters, insightsMetrics, setInsightsMetrics]);
+
+  // Main click handler
+  const handleClick = useCallback(() => {
+    // Validate filter before processing
+    if (!isValidFilter) {
+      console.warn(`ClickToFilter: Invalid filter "${filter}" - not found in filter configuration`);
+      return;
+    }
+
+    // Apply the appropriate filter
+    if (filter === 'goal_id') {
+      handleGoalFilter(filterValue);
+    } else {
+      setFilters(filter, filterValue);
+    }
+
+    // Apply date range if provided
+    handleDateRange();
+  }, [filter, filterValue, isValidFilter, handleGoalFilter, setFilters, handleDateRange]);
+
+  // Early return if no filter configuration or invalid filter
+  if (!filter || !filterValue) {
+    return <>{children}</>;
+  }
+
+  // If filter is not valid, render children without click functionality
+  if (!isValidFilter) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`ClickToFilter: Filter "${filter}" is not configured in FILTER_CONFIG`);
+    }
     return <>{children}</>;
   }
 
@@ -139,5 +153,4 @@ const ClickToFilter = ({
   );
 };
 
-// Wrap the component with React.memo to prevent unnecessary re-renders
-export default React.memo( ClickToFilter );
+export default React.memo(ClickToFilter);

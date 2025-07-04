@@ -15,12 +15,10 @@ const Tooltip = ({
           <TooltipUI.Trigger asChild>
             {children}
           </TooltipUI.Trigger>
-          <TooltipUI.Portal>
-            <TooltipUI.Content className="burst-tooltip-content" sideOffset={5}>
+            <TooltipUI.Content className="burst-tooltip-content z-53" sideOffset={5}>
               {content}
               <TooltipUI.Arrow className="burst-tooltip-arrow" />
             </TooltipUI.Content>
-          </TooltipUI.Portal>
         </TooltipUI.Root>
       </TooltipUI.Provider>
   );

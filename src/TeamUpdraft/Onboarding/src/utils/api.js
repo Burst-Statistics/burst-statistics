@@ -65,6 +65,8 @@ const siteUrl = ( ) => {
 const ajaxRequest = async( method, path, requestData = null ) => {
     //if requestData is an object, convert it to an array
     const queryString = buildQueryString( requestData );
+    //add path to request data
+    requestData.path = path;
     const url = 'GET' === method ? `${siteUrl()}&rest_action=${path.replace( '?', '&' )}&`+queryString : siteUrl();
     const options = {
         method,
@@ -72,9 +74,9 @@ const ajaxRequest = async( method, path, requestData = null ) => {
     };
 
     if ( 'POST' === method ) {
+
         options.body = JSON.stringify({ path, data: requestData } );
     }
-
     try {
         const response = await fetch( url, options );
         if ( ! response.ok ) {

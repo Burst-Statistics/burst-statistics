@@ -18,7 +18,7 @@ class Frontend_Admin {
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	public function init(): void {
 		add_action( 'admin_bar_menu', [ $this, 'add_to_admin_bar_menu' ], 35 );
 		add_action( 'admin_bar_menu', [ $this, 'add_top_bar_menu' ], 400 );
 	}
@@ -63,6 +63,7 @@ class Frontend_Admin {
 		global $post;
 		if ( $post && is_object( $post ) ) {
 			$count = (int) get_post_meta( $post->ID, 'burst_total_pageviews_count', true );
+			$count = $this->format_number_short( $count );
 		} else {
 			$count = 0;
 		}
@@ -82,5 +83,24 @@ class Frontend_Admin {
 				'href'   => BURST_DASHBOARD_URL,
 			]
 		);
+	}
+
+	/**
+	 * Format number to a short version (e.g., 1.2M, 3.4B)
+	 *
+	 * @param int $n The number to format.
+	 * @return string The formatted number.
+	 */
+	private function format_number_short( int $n ): string {
+		if ( $n >= 1_000_000_000 ) {
+			return round( $n / 1_000_000_000, 1 ) . 'B';
+		}
+		if ( $n >= 1_000_000 ) {
+			return round( $n / 1_000_000, 1 ) . 'M';
+		}
+		if ( $n >= 1_000 ) {
+			return round( $n / 1_000, 1 ) . 'k';
+		}
+		return (string) $n;
 	}
 }
