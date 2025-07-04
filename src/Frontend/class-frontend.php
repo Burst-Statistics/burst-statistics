@@ -184,6 +184,12 @@ class Frontend {
 	 * Check if this should be excluded from tracking
 	 */
 	public function exclude_from_tracking(): bool {
+		// no form data processed, only excluding from tracking.
+        // phpcs:ignore
+		if ( isset( $_GET['burst_force_logged_out'] ) ) {
+			return true;
+		}
+
 		if ( is_user_logged_in() ) {
 			// a track hit is used by the onboarding process.
 			// Only an exists check, for the test. Enqueued scripts are public, so no need to check for nonce.
