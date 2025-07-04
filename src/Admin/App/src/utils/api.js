@@ -75,13 +75,16 @@ const makeRequest = async( path, method = 'GET', data = {}) => {
     args.data = data;
   }
 
-
   return apiFetch( args )
     .then( ( response ) => {
       if ( ! response.request_success ) {
-        throw new Error( 'invalid data error' );
+        if (response.hasOwnProperty('message')) {
+          throw new Error( response.message );
+        } else {
+          throw new Error('Received unexpected response from server. Please check if the Rest API is enabled.');
+        }
       }
-      if ( response.code ) {
+      if ( response.code && response.code !== 200 ) {
         throw new Error( response.message );
       }
       delete response.request_success;
@@ -266,7 +269,7 @@ const buildQueryString = ( params ) => {
 export const getData = async( type, startDate, endDate, range, args = {}) => {
 
   // Extract filters and metrics from args if they exist
-  const { filters, metrics, group_by } = args;
+  const { filters, metrics, group_by, currentView } = args;
 
   // Combine all query parameters
   const queryParams = {
@@ -281,7 +284,8 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
       .substr( 0, 5 ),
     ...( filters && { filters }), // type is object
     ...( metrics && { metrics }), // type is array
-    ...( group_by && { group_by }) // type is array
+    ...( group_by && { group_by }), // type is array
+    ...( currentView && { currentView }) // type is object
   };
 
   const queryString = buildQueryString( queryParams );
@@ -334,3 +338,31 @@ export const setLocalStorage = ( key, value ) => {
     localStorage.setItem( 'burst_' + key, JSON.stringify( value ) );
   }
 };
+
+
+export const getJsonData = async( path ) => {
+	try {
+
+		// Initiate the fetch request to the specified path
+		const response = await fetch( path );
+
+		// Check if the response status is OK (status code 200-299)
+		if ( ! response.ok ) {
+			throw new Error( `HTTP error! Status: ${response.status}` );
+		}
+
+		// Parse the response as JSON
+		const data = await response.json();
+
+		// Return the parsed JSON data
+		return data;
+	} catch ( error ) {
+
+		// Log any errors to the console
+		console.error( 'Error fetching JSON data:', error );
+
+		// Optionally, rethrow the error if you want to handle it further up the call stack
+		throw error;
+	}
+};
+

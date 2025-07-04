@@ -81,6 +81,9 @@ const IpBlockField = forwardRef(
         className={className}
         inputId={inputId}
         required={props.required}
+        recommended={props.recommended}
+        disabled={props.disabled}
+        {...props}
       >
         <div className="space-y-2 w-full">
           <TextAreaInput

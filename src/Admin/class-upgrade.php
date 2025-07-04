@@ -20,7 +20,7 @@ class Upgrade {
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	public function init(): void {
 		add_action( 'init', [ $this, 'check_upgrade' ], 10, 2 );
 	}
 
@@ -39,6 +39,7 @@ class Upgrade {
 		if ( strpos( $new_version, '#' ) !== false ) {
 			$new_version = substr( $new_version, 0, strpos( $new_version, '#' ) );
 		}
+
 		if ( $prev_version === $new_version ) {
 			return;
 		}

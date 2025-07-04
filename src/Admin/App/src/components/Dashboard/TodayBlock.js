@@ -91,7 +91,7 @@ const TodayBlock = () => {
   }
 
   return (
-    <Block className="row-span-2 lg:col-span-6 xl:col-span-3">
+    <Block className="row-span-2 lg:col-span-6 xl:col-span-3 overflow-hidden">
       <BlockHeading
         title={__( 'Today', 'burst-statistics' )}
         controls={undefined}

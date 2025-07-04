@@ -24,12 +24,6 @@ class Burst_Wp_Cli {
 	public array $tasks = [];
 
 	/**
-	 * Burst_Wp_Cli constructor.
-	 */
-	public function __construct() {
-	}
-
-	/**
 	 * Check if WP CLI is active
 	 */
 	private function wp_cli_active(): bool {
@@ -143,7 +137,9 @@ class Burst_Wp_Cli {
 			return;
 		}
 
-		( new Admin() )->install_demo_data();
+		$admin = new Admin();
+		$admin->init();
+		$admin->install_demo_data();
 		\WP_CLI::success( 'Demo data installed' );
 	}
 
@@ -154,8 +150,9 @@ class Burst_Wp_Cli {
 		if ( ! $this->wp_cli_active() ) {
 			return;
 		}
-
-		( new Admin() )->reset();
+		$admin = new Admin();
+		$admin->init();
+		$admin->reset();
 		\WP_CLI::success( 'Data reset' );
 	}
 
@@ -237,7 +234,9 @@ class Burst_Wp_Cli {
 		foreach ( $assoc_args as $name => $value ) {
 			$value = $value === 'true' ? true : $value;
 			$this->update_option( $name, $value );
-			( new Admin() )->create_js_file();
+			$admin = new Admin();
+			$admin->init();
+			$admin->create_js_file();
 			// response used in test.
 			\WP_CLI::success( "Option $name updated" );
 		}

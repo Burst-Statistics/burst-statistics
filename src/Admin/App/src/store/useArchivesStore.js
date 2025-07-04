@@ -2,6 +2,7 @@ import {create} from 'zustand';
 import {doAction} from '../utils/api';
 import {toast} from 'react-toastify';
 import {__} from '@wordpress/i18n';
+import useLicenseStore from './useLicenseStore';
 const useArchiveStore = create( ( set, get ) => ({
     archivesLoaded: false,
     fetching: false,
@@ -29,7 +30,8 @@ const useArchiveStore = create( ( set, get ) => ({
         });
     },
     fetchData: async( ) => {
-        if ( !burst_settings.is_pro) {
+        const { isPro } = useLicenseStore.getState();
+        if ( !isPro ) {
             return;
         }
         if ( get().fetching ) {

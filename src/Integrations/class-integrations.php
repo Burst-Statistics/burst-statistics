@@ -12,7 +12,7 @@ class Integrations {
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	public function init(): void {
 		add_action( 'plugins_loaded', [ $this, 'load_integrations' ] );
 		add_action( 'plugins_loaded', [ $this, 'register_for_consent_api' ] );
 		add_action( 'init', [ $this, 'load_translations' ] );
@@ -43,7 +43,7 @@ class Integrations {
 	public function load_integrations(): void {
 		foreach ( $this->integrations as $plugin => $details ) {
 			if ( $this->plugin_is_active( $plugin ) ) {
-				$file          = apply_filters( 'burst_integration_path', BURST_PATH . "integrations/plugins/$plugin.php", $plugin );
+				$file          = apply_filters( 'burst_integration_path', BURST_PATH . "src/Integrations/plugins/$plugin.php", $plugin );
 				$is_admin_only = $details['admin_only'] ?? false;
 				$can_load      = ( $is_admin_only && $this->has_admin_access() ) || ! $is_admin_only;
 

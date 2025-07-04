@@ -105,6 +105,7 @@ const LicenseField = forwardRef(
                     className={className}
                     inputId={inputId}
                     required={props.required}
+                    {...props}
                 >
                     <TextInput
                         id={inputId}

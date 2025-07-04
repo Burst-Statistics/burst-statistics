@@ -18,7 +18,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 		/**
 		 * Constructor
 		 */
-		public function __construct() {
+		public function init(): void {
 			add_action( 'burst_install_tables', [ $this, 'install_goal_statistics_table' ], 10 );
 		}
 

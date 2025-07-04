@@ -9,8 +9,8 @@ const DataTableSelect = ({ value, onChange, options }) => {
     onChange( newValue );
   }, [ onChange ]);
 
-  const { isLicenseValid } = useLicenseStore();
-  const isProActive = burst_settings.is_pro && isLicenseValid;
+  const { isLicenseValid, isPro } = useLicenseStore();
+  const isProActive = isPro && isLicenseValid();
 
   // Memoize expensive calculations
   const { hasProOptions, firstOption } = useMemo( () => {
@@ -21,7 +21,7 @@ const DataTableSelect = ({ value, onChange, options }) => {
     };
   }, [ options ]);
 
-  if ( hasProOptions && ! isProActive ) {
+  if ( hasProOptions && ! isProActive && firstOption?.upsellPopover ) {
     return (
       <ProPopover
         title={firstOption.upsellPopover.title}
@@ -35,6 +35,11 @@ const DataTableSelect = ({ value, onChange, options }) => {
       </ProPopover>
     );
   } else {
+    if ( options.length === 1 ) {
+      return (
+        <span className="text-lg font-semibold">{options[0].label}</span>
+      );
+    }
     return (
       <Select.Root value={value} onValueChange={handleValueChange}>
         <Select.Trigger className="burst-datatable__select-trigger">
@@ -54,7 +59,7 @@ const DataTableSelect = ({ value, onChange, options }) => {
                 key={option.key}
                 value={option.key}
                 className="burst-datatable__select-content__item"
-                disabled={option.pro && ! burst_settings.is_pro}
+                disabled={option.pro && ! isPro}
               >
                 <Select.ItemText
                   className={'burst-datatable__select-content__label'}

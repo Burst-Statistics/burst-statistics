@@ -1,11 +1,13 @@
 import {__} from '@wordpress/i18n';
 import {burst_get_website_url} from '../../utils/lib';
+import useLicenseStore from '../../store/useLicenseStore';
 
 /**
  * Render a premium tag
  */
 const Pro = ({pro, id}) => {
-  if ( burst_settings.is_pro || ! pro ) {
+  const { isPro } = useLicenseStore();
+  if ( isPro || ! pro ) {
     return null;
   }
 

@@ -2,14 +2,20 @@ import FieldWrapper from "@/components/Fields/FieldWrapper";
 import CheckboxInput from "@/components/Fields/CheckboxInput";
 import { __ } from "@wordpress/i18n";
 import {get_website_url} from "@/utils/lib.js";
+import useOnboardingStore from "@/store/useOnboardingStore";
 
 const Checkbox = ({
     field,
     onChange,
     value,
 }) => {
-    const privacy_statement = get_website_url(teamupdraft_onboarding.privacy_statement_url, {
-        burst_source: currentStep.id,
+
+    const {
+        onboardingData,
+    } = useOnboardingStore();
+
+    const privacy_statement = get_website_url(onboardingData.privacy_statement_url, {
+        burst_source: onboardingData.prefix + '_onboarding',
         burst_content: 'mailing-list'
     });
     return (

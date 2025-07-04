@@ -24,12 +24,12 @@ class Shortcodes {
 	 *
 	 * @var Frontend_Statistics
 	 */
-	private $statistics;
+	private Frontend_Statistics $statistics;
 
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	public function init(): void {
 		// Register old shortcode as deprecated but keep for backward compatibility.
 		add_shortcode( 'burst-most-visited', [ $this, 'deprecated_most_visited_posts' ] );
 

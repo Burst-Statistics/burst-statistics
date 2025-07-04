@@ -20,7 +20,7 @@ if ( ! class_exists( 'mail_reports' ) ) {
 		/**
 		 * Constructor
 		 */
-		public function __construct() {
+		public function init(): void {
 			add_action( 'burst_every_hour', [ $this, 'maybe_send_report' ] );
 			add_filter( 'burst_do_action', [ $this, 'send_test_report_action' ], 10, 3 );
 		}
@@ -132,12 +132,14 @@ if ( ! class_exists( 'mail_reports' ) ) {
 				$mailer->message = '';
 
 				// last month first and last day.
-				$start = gmdate( 'Y-m-01', strtotime( 'last month' ) );
-				$end   = gmdate( 'Y-m-t', strtotime( 'last month' ) );
+				$first_day_of_current_month = gmdate( 'Y-m-01' );
+				$start                      = gmdate( 'Y-m-01', strtotime( '-1 month', strtotime( $first_day_of_current_month ) ) );
+				$end                        = gmdate( 'Y-m-t', strtotime( $start ) );
 
 				// second to last month first and last day.
-				$compare_start = gmdate( 'Y-m-01', strtotime( '2 months ago' ) );
-				$compare_end   = gmdate( 'Y-m-t', strtotime( '2 months ago' ) );
+				$compare_first_day_of_previous_month = strtotime( '-2 months', strtotime( $first_day_of_current_month ) );
+				$compare_start                       = gmdate( 'Y-m-01', $compare_first_day_of_previous_month );
+				$compare_end                         = gmdate( 'Y-m-t', $compare_first_day_of_previous_month );
 
 				// convert to correct unix.
 				$date_start = \Burst\burst_loader()->admin->statistics::convert_date_to_unix( $start . ' 00:00:00' );
@@ -161,17 +163,19 @@ if ( ! class_exists( 'mail_reports' ) ) {
 				$weekdays = [ 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday' ];
 
 				// last week first and last day based on wp start of the week.
-				$start = gmdate( 'Y-m-d', strtotime( 'last ' . $weekdays[ $week_start ] ) );
-				$end   = gmdate( 'Y-m-d', strtotime( 'last ' . $weekdays[ $week_start ] . ' +6 days' ) );
-				// if end is in the future we need to adjust both start and end to substract 7 days.
-				if ( strtotime( $end ) > time() ) {
-					$start = gmdate( 'Y-m-d', strtotime( 'last ' . $weekdays[ $week_start ] . ' -7 days' ) );
-					$end   = gmdate( 'Y-m-d', strtotime( 'last ' . $weekdays[ $week_start ] . ' -1 days' ) );
-				}
+				// Monday june 30th => previous monday is 24th.
+				// Tuesday july 1st => previous monday should also be june 24th.
+				// So we first get the week_start.
+				$today           = strtotime( 'today' );
+				$this_week_start = strtotime( 'last ' . $weekdays[ $week_start ], $today + DAY_IN_SECONDS );
 
-				// second to last week first and last day based on wp start of the week.
-				$compare_start = gmdate( 'Y-m-d', strtotime( 'last ' . $weekdays[ $week_start ] . ' -14 days' ) );
-				$compare_end   = gmdate( 'Y-m-d', strtotime( 'last ' . $weekdays[ $week_start ] . ' -8 days' ) );
+				// Last week.
+				$start = gmdate( 'Y-m-d', $this_week_start - WEEK_IN_SECONDS );
+				$end   = gmdate( 'Y-m-d', $this_week_start - 1 );
+
+				// Week before last.
+				$compare_start = gmdate( 'Y-m-d', $this_week_start - 2 * WEEK_IN_SECONDS );
+				$compare_end   = gmdate( 'Y-m-d', $this_week_start - WEEK_IN_SECONDS - 1 );
 
 				// convert to correct unix.
 				$date_start = \Burst\burst_loader()->admin->statistics::convert_date_to_unix( $start . ' 00:00:00' );

@@ -27,7 +27,7 @@ class Tracking {
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	public function init(): void {
 		add_action( 'rest_api_init', [ $this, 'register_track_hit_route' ] );
 	}
 
@@ -52,7 +52,6 @@ class Tracking {
 	public function track_hit( array $data ): string {
 		// validate & sanitize all data.
 		$sanitized_data = $this->prepare_tracking_data( $data );
-		$sanitized_data = apply_filters( 'burst_before_track_hit', apply_filters_deprecated( 'before_burst_track_hit', [ $sanitized_data ], '2.0.1', 'burst_before_track_hit', 'before_burst_track_hit is deprecated, use burst_before_track_hit instead' ) );
 
 		if ( $sanitized_data['referrer'] === 'spammer' ) {
 			self::error_log( 'Referrer spam prevented.' );
@@ -85,13 +84,19 @@ class Tracking {
 			}
 		}
 
-		$sanitized_data = apply_filters( 'burst_before_track_hit', $sanitized_data );
+		$filtered_previous_hit = $previous_hit;
+		if ( $previous_hit === null ) {
+			$filtered_previous_hit = [];
+		}
+		$sanitized_data = apply_filters( 'burst_before_track_hit', $sanitized_data, $hit_type, $filtered_previous_hit );
 		$session_arr    = [
-			'last_visited_url' => $this->create_path( $sanitized_data ),
-			'goal_id'          => false,
-			'country_code'     => $sanitized_data['country_code'] ?? '',
+			'last_visited_url'   => $this->create_path( $sanitized_data ),
+			'goal_id'            => false,
+			'city_code'          => $sanitized_data['city_code'] ?? '',
+			'accuracy_radius_km' => $sanitized_data['accuracy_radius_km'] ?? '',
 		];
-		unset( $sanitized_data['country_code'] );
+		unset( $sanitized_data['city_code'] );
+		unset( $sanitized_data['accuracy_radius_km'] );
 		// update burst_sessions table.
 		// Get the last record with the same uid within 30 minutes. If it exists, use session_id. If not, create a new session.
 
@@ -131,7 +136,7 @@ class Tracking {
 			do_action( 'burst_before_create_statistic', $sanitized_data );
 			// if it is not an update hit, create a new record.
 			$sanitized_data['time']             = time();
-			$sanitized_data['first_time_visit'] = $this->get_first_time_visit( $sanitized_data['uid'] );
+			$sanitized_data['first_time_visit'] = $this->is_first_time_visit( $sanitized_data['uid'] );
 			$insert_id                          = $this->create_statistic( $sanitized_data );
 			do_action( 'burst_after_create_statistic', $insert_id, $sanitized_data );
 		}
@@ -212,10 +217,10 @@ class Tracking {
 		// @phpstan-ignore-next-line.
 		$data     = json_decode( $request->get_json_params(), true );
 		$test_hit = isset( $data['url'] ) && strpos( $data['url'], 'burst_test_hit' ) !== false;
+
 		if ( Ip::is_ip_blocked() && ! $test_hit ) {
 			// @phpstan-ignore-next-line.
 			$status_code = WP_DEBUG ? 202 : 200;
-
 			return new \WP_REST_Response( 'Burst Statistics: Your IP is blocked from tracking.', $status_code );
 		}
 
@@ -741,14 +746,12 @@ class Tracking {
 	/**
 	 * Get first time visit
 	 */
-	public function get_first_time_visit( string $burst_uid ): int {
+	public function is_first_time_visit( string $burst_uid ): int {
 		global $wpdb;
-		// Check if uid is already in the database in the past 30 days for a different sessions_id.
-		$after_time         = time() - MONTH_IN_SECONDS;
+		// Check if uid is already in the database.
 		$sql                = $wpdb->prepare(
-			"SELECT EXISTS(SELECT 1 FROM {$wpdb->prefix}burst_statistics WHERE uid = %s AND time > %s LIMIT 1)",
+			"SELECT EXISTS(SELECT 1 FROM {$wpdb->prefix}burst_statistics WHERE uid = %s LIMIT 1)",
 			$burst_uid,
-			$after_time
 		);
 		$fingerprint_exists = $wpdb->get_var( $sql );
 

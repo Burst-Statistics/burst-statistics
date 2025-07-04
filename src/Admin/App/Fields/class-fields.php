@@ -4,6 +4,7 @@ namespace Burst\Admin\App\Fields;
 defined( 'ABSPATH' ) || die();
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
+use Burst\Traits\Save;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -13,6 +14,7 @@ class Fields {
 
 	use Helper;
 	use Admin_Helper;
+	use Save;
 
 	public array $fields;
 	public array $goal_fields;
@@ -40,7 +42,7 @@ class Fields {
 				'group_id' => 'tracking',
 				'type'     => 'checkbox',
 				'label'    => __( 'Disable the usage of summary tables', 'burst-statistics' ),
-				'comment'  => __( 'Using summary tables speeds up the dashboard on higher traffic environments, but can show small differences from the actual data.', 'burst-statistics' ),
+				'context'  => __( 'Using summary tables speeds up the dashboard on higher traffic environments, but can show small differences from the actual data.', 'burst-statistics' ),
 				'disabled' => false,
 				'default'  => false,
 			];

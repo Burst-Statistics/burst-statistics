@@ -3,9 +3,12 @@ import SelectPageField from '@/components/Fields/SelectPageField';
 import { useEffect, useState } from 'react';
 import  TextField from '@/components/Fields/TextField';
 import RadioButtonsField from '@/components/Fields/RadioButtonsField';
+import SelectorField from '@/components/Fields/SelectorField';
 
-const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
+const GoalField = ({ field = {}, fields, goal, value, setGoalValue }) => {
   const [ validated, setValidated ] = useState( false );
+
+  console.log("goal", goal);
 
   useEffect( () => {
     validateInput( field, value );
@@ -14,15 +17,12 @@ const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
   const onChangeHandler = ( value ) => {
     validateInput( field, value );
 
-    // if value is validated, set it
-    if ( validated ) {
-
-      //when we update to type=views, the page_or_website property is not visible, so should be reset to the corresponding value.
-      if ( 'type' === field.id && 'visits' === value ) {
-        setGoalValue( goal.id, 'page_or_website', 'page' );
-      }
-      setGoalValue( goal.id, field.id, value );
+    //when we update to type=views, the page_or_website property is not visible, so should be reset to the corresponding value.
+    if ( 'type' === field.id && 'visits' === value ) {
+      setGoalValue( goal.id, 'page_or_website', 'page' );
     }
+    setGoalValue( goal.id, field.id, value );
+  
   };
 
   const validateInput = ( field, value ) => {
@@ -47,6 +47,11 @@ const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
       ); // fragment locator
       valid = !! pattern.test( value );
     }
+
+    if ( valid && 'css-selector' === field.type ) {
+      valid = !! value.length;
+    }
+
 
     setValidated( valid );
   };
@@ -115,22 +120,6 @@ const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
     );
   }
 
-  if ( 'class-id' === field.type ) {
-    return (
-      <div className={className}>
-        <TextField
-          disabled={disabled}
-          field={field}
-          goal={goal}
-          label={field.label}
-          help={field.comment}
-          value={goal.selector}
-          onChange={( value ) => onChangeHandler( value.target.value )}
-        />
-      </div>
-    );
-  }
-
   if ( 'select-page' === field.type ) {
     return (
       <div className={className}>
@@ -141,6 +130,23 @@ const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
           label={field.label}
           help={field.comment}
           value={false === goal.url || '*' === goal.url ? '' : goal.url}
+          onChange={( value ) => onChangeHandler( value )}
+        />
+      </div>
+    );
+  }
+
+  if ( 'selector' === field.type ) {
+    return (
+      <div className={className}>
+        <SelectorField
+          disabled={disabled}
+          field={field}
+          goal={goal}
+          goal_id={goal.id}
+          label={field.label}
+          help={field.comment}
+          value={goal.selector}
           onChange={( value ) => onChangeHandler( value )}
         />
       </div>

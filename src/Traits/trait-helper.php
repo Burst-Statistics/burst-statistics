@@ -155,8 +155,16 @@ trait Helper {
 	}
 
 	/**
-	 * Check if the remote file exists.
-	 * Used by geo IP in case a user has located the MaxMind database outside WordPress.
+	 * Check if we are in preview mode for Burst
+	 */
+	public function is_plugin_preview(): bool {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only checking if parameter exists, not processing data.
+		return isset( $_GET['burst_preview'] );
+	}
+
+	/**
+	 * Check if the remote file exists
+	 * Used by geo ip in case a user has located the maxmind database outside WordPress.
 	 */
 	public static function remote_file_exists( string $url ): bool {
 		// used to encode the url for the option name, not for security purposes.

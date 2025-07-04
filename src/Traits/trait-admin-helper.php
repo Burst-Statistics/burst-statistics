@@ -4,6 +4,7 @@ namespace Burst\Traits;
 
 use Burst\Frontend\Ip\Ip;
 
+use function Burst\burst_loader;
 use function burst_is_logged_in_rest;
 use function burst_get_option;
 if ( ! defined( 'ABSPATH' ) ) {
@@ -20,47 +21,25 @@ trait Admin_Helper {
 
 
 	/**
-	 * Get possible date ranges for the date picker.
-	 *
-	 * @return array<int, string> List of available date range keys.
-	 */
-	public function get_date_ranges(): array {
-		return apply_filters(
-			'burst_date_ranges',
-			[
-				'today',
-				'yesterday',
-				'last-7-days',
-				'last-30-days',
-				'last-90-days',
-				'last-month',
-				'last-year',
-				'week-to-date',
-				'month-to-date',
-				'year-to-date',
-			]
-		);
-	}
-	/**
 	 * Check if user has Burst view permissions
 	 *
 	 * @return boolean true or false
 	 */
 	public function user_can_view(): bool {
-		if ( isset( \Burst\burst_loader()->user_can_view ) ) {
-			return \Burst\burst_loader()->user_can_view;
+		if ( isset( burst_loader()->user_can_view ) ) {
+			return burst_loader()->user_can_view;
 		}
 
 		if ( ! is_user_logged_in() ) {
-			\Burst\burst_loader()->user_can_view = false;
+			burst_loader()->user_can_view = false;
 			return false;
 		}
 		if ( ! current_user_can( 'view_burst_statistics' ) ) {
-			\Burst\burst_loader()->user_can_view = false;
+			burst_loader()->user_can_view = false;
 			return false;
 		}
 
-		\Burst\burst_loader()->user_can_view = true;
+		burst_loader()->user_can_view = true;
 		return true;
 	}
 
@@ -68,47 +47,12 @@ trait Admin_Helper {
 	 * Verify if this is an authenticated rest request for Burst
 	 */
 	public function is_logged_in_rest(): bool {
-		if ( isset( \Burst\burst_loader()->is_logged_in_rest ) ) {
-			return \Burst\burst_loader()->is_logged_in_rest;
+		if ( isset( burst_loader()->is_logged_in_rest ) ) {
+			return burst_loader()->is_logged_in_rest;
 		}
 
-		\Burst\burst_loader()->is_logged_in_rest = burst_is_logged_in_rest();
-		return \Burst\burst_loader()->is_logged_in_rest;
-	}
-
-	/**
-	 * Check if user has Burst manage permissions
-	 *
-	 * @return boolean true or false
-	 */
-	public function user_can_manage(): bool {
-		if ( isset( \Burst\burst_loader()->user_can_manage ) ) {
-			return \Burst\burst_loader()->user_can_manage;
-		}
-
-		if ( (bool) get_option( 'burst_run_activation' ) ) {
-			\Burst\burst_loader()->user_can_manage = true;
-			return true;
-		}
-
-		$is_wpli = ( defined( 'WP_CLI' ) && WP_CLI );
-		if ( wp_doing_cron() || $is_wpli ) {
-			\Burst\burst_loader()->user_can_manage = true;
-			return true;
-		}
-
-		if ( ! is_user_logged_in() ) {
-			\Burst\burst_loader()->user_can_manage = false;
-			return false;
-		}
-
-		if ( ! current_user_can( 'manage_burst_statistics' ) ) {
-			\Burst\burst_loader()->user_can_manage = false;
-			return false;
-		}
-
-		\Burst\burst_loader()->user_can_manage = true;
-		return true;
+		burst_loader()->is_logged_in_rest = burst_is_logged_in_rest();
+		return burst_loader()->is_logged_in_rest;
 	}
 
 	/**
@@ -137,23 +81,24 @@ trait Admin_Helper {
 	 * Checks if the user has admin access to the Burst plugin.
 	 */
 	public function has_admin_access(): bool {
-		if ( isset( \Burst\burst_loader()->has_admin_access ) ) {
-			return \Burst\burst_loader()->has_admin_access;
+		if ( isset( burst_loader()->has_admin_access ) ) {
+			return burst_loader()->has_admin_access;
 		}
 
 		// during activation, we need to allow access.
 		if ( get_option( 'burst_run_activation' ) ) {
-			\Burst\burst_loader()->has_admin_access = true;
-			return \Burst\burst_loader()->has_admin_access;
+			burst_loader()->has_admin_access = true;
+			return burst_loader()->has_admin_access;
 		}
 
-		\Burst\burst_loader()->has_admin_access =
+		burst_loader()->has_admin_access =
 			( is_admin() && current_user_can( 'view_burst_statistics' ) )
 			|| burst_is_logged_in_rest()
 			|| wp_doing_cron()
 			|| ( defined( 'WP_CLI' ) && WP_CLI );
-		return \Burst\burst_loader()->has_admin_access;
+		return burst_loader()->has_admin_access;
 	}
+
 	/**
 	 * Prepare localized settings data to expose to JavaScript.
 	 *
@@ -205,20 +150,98 @@ trait Admin_Helper {
 	}
 
 	/**
-	 * Get admin url, adjusted for multisite
+	 * Get admin url. We don't use a different URL for multisite, as there is no network settings page.
 	 */
 	public function admin_url( string $page = '' ): string {
-		if ( isset( \Burst\burst_loader()->admin_url ) ) {
-			$url = \Burst\burst_loader()->admin_url;
+		if ( isset( burst_loader()->admin_url ) ) {
+			$url = burst_loader()->admin_url;
 		} else {
-			$url                             = is_multisite() && is_network_admin() ? network_admin_url( 'admin.php' ) : admin_url( 'admin.php' );
-			\Burst\burst_loader()->admin_url = $url;
+			$url                      = admin_url( 'admin.php' );
+			burst_loader()->admin_url = $url;
 		}
 
 		if ( ! empty( $page ) ) {
 			$url = add_query_arg( 'page', $page, $url );
 		}
 		return $url;
+	}
+
+	/**
+	 * Get user roles for the settings page in Burst.
+	 *
+	 * @return array<string, string> Associative array of role slugs and their translated names.
+	 */
+	public function get_user_roles(): array {
+		if ( ! $this->user_can_manage() ) {
+			return [];
+		}
+
+		global $wp_roles;
+
+		return $wp_roles->get_names();
+	}
+
+	/**
+	 * Check if user has Burst manage permissions
+	 *
+	 * @return boolean true or false
+	 */
+	public function user_can_manage(): bool {
+		// Check if we already have a cached result.
+		if ( isset( burst_loader()->user_can_manage ) ) {
+			return burst_loader()->user_can_manage;
+		}
+
+		// During activation, allow access.
+		if ( (bool) get_option( 'burst_run_activation' ) ) {
+			burst_loader()->user_can_manage = true;
+			return true;
+		}
+
+		// Allow access during cron jobs and WP-CLI.
+		$is_wpli = ( defined( 'WP_CLI' ) && WP_CLI );
+		if ( wp_doing_cron() || $is_wpli ) {
+			burst_loader()->user_can_manage = true;
+			return true;
+		}
+
+		// Check if user is logged in.
+		if ( ! is_user_logged_in() ) {
+			burst_loader()->user_can_manage = false;
+			return false;
+		}
+
+		// Check if user has the required capability.
+		if ( ! current_user_can( 'manage_burst_statistics' ) ) {
+			burst_loader()->user_can_manage = false;
+			return false;
+		}
+
+		burst_loader()->user_can_manage = true;
+		return true;
+	}
+
+	/**
+	 * Get possible date ranges for the date picker.
+	 *
+	 * @return array<int, string> List of available date range keys.
+	 */
+	public function get_date_ranges(): array {
+		return apply_filters(
+			'burst_date_ranges',
+			[
+				'today',
+				'yesterday',
+				'last-7-days',
+				'last-30-days',
+				'last-90-days',
+				'last-month',
+				'last-year',
+				'week-to-date',
+				'month-to-date',
+				'year-to-date',
+			]
+		);
 	}
 
 	/**
@@ -310,21 +333,6 @@ trait Admin_Helper {
 			'dependencies'      => $asset_file['dependencies'],
 			'version'           => $asset_file['version'],
 		];
-	}
-
-	/**
-	 * Get user roles for the settings page in Burst.
-	 *
-	 * @return array<string, string> Associative array of role slugs and their translated names.
-	 */
-	public function get_user_roles(): array {
-		if ( ! $this->user_can_manage() ) {
-			return [];
-		}
-
-		global $wp_roles;
-
-		return $wp_roles->get_names();
 	}
 
 	/**

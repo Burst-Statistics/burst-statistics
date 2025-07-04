@@ -13,7 +13,7 @@ class Sessions {
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	public function init(): void {
 		add_action( 'burst_install_tables', [ $this, 'install_sessions_table' ], 10 );
 	}
 
@@ -32,7 +32,8 @@ class Sessions {
             `first_visited_url` TEXT NOT NULL,
             `last_visited_url` TEXT NOT NULL,
             `goal_id` int,
-            `country_code` char(2),
+            `city_code` int DEFAULT 0,
+			`accuracy_radius_km` int DEFAULT 0,
             PRIMARY KEY (ID)
         ) $charset_collate;";
 
@@ -44,7 +45,7 @@ class Sessions {
 
 		$indexes = [
 			[ 'goal_id' ],
-			[ 'country_code' ],
+			[ 'city_code' ],
 		];
 
 		// Try to create indexes with full length.

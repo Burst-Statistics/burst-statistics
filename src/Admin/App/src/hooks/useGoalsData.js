@@ -3,6 +3,7 @@ import { getGoals, setGoals, addGoal, deleteGoal, addPredefinedGoal } from '@/ut
 import { toast } from 'react-toastify';
 import { __ } from '@wordpress/i18n';
 import { produce } from 'immer';
+import useLicenseStore from '@/store/useLicenseStore';
 
 /**
  * Custom hook for managing goals data using TanStack Query.
@@ -173,7 +174,8 @@ return oldData;
         throw new Error( __( 'Cannot add server side goals in combination with cookieless tracking', 'burst-statistics' ) );
       }
 
-      if ( ! burst_settings.is_pro ) {
+      const { isPro } = useLicenseStore.getState();
+      if ( ! isPro ) {
         throw new Error( __( 'Predefined goals are a premium feature.', 'burst-statistics' ) );
       }
 

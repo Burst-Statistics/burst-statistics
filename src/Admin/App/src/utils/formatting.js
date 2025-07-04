@@ -194,14 +194,12 @@ function formatTime( timeInMilliSeconds = 0 ) {
     }
     return String( num ).padStart( 2, '0' );
   };
+// if hours is 0, return minutes and seconds
+if (hours === 0) {
+  return [minutes, remainingSeconds].map(zeroPad).join(':');
+}
 
-  const formatted = [
-    hours,
-    minutes,
-    remainingSeconds
-  ].map( zeroPad );
-
-  return formatted.join( ':' );
+return [hours, minutes, remainingSeconds].map( zeroPad ).join( ':' );
 }
 
 /**
@@ -214,6 +212,10 @@ function formatNumber( value, decimals = 1 ) {
   value = Number( value );
   if ( isNaN( value ) ) {
     value = 0;
+  }
+  // if value is smaller than 1000, return the number without decimals.
+  if ( value < 1000 ) {
+    decimals = 0;
   }
   return new Intl.NumberFormat( undefined, {
     style: 'decimal',
@@ -230,15 +232,21 @@ function formatNumber( value, decimals = 1 ) {
  * @returns {string} The formatted percentage
  */
 function formatPercentage( value, decimals = 1 ) {
-  value = Number( value ) / 100;
-
-  if ( isNaN( value ) ) {
+  value = Number(value);
+  if (isNaN(value)) {
     value = 0;
   }
-  return new Intl.NumberFormat( undefined, {
+  if (value === 0) {
+    return '0%';
+  }
+  if (value > 0 && value < 0.1) {
+    return '<0.1%';
+  }
+  // For other values, format as percent with given decimals
+  return new Intl.NumberFormat(undefined, {
     style: 'percent',
     maximumFractionDigits: decimals
-  }).format( value );
+  }).format(value / 100);
 }
 
 /**
@@ -248,7 +256,14 @@ function formatPercentage( value, decimals = 1 ) {
  */
 function getCountryName( countryCode ) {
   if ( countryCode ) {
-    return burst_settings.countries[countryCode.toUpperCase()] || __( 'Unknown', 'burst-statistics' );
+    return burst_settings.countries[countryCode.toUpperCase()] || __( 'Not set', 'burst-statistics' );
+  }
+  return __( 'Unknown', 'burst-statistics' );
+}
+
+function getContinentName( continentCode ) {
+  if ( continentCode ) {
+    return burst_settings.continents[continentCode.toUpperCase()] || __( 'Not set', 'burst-statistics' );
   }
   return __( 'Unknown', 'burst-statistics' );
 }
@@ -384,6 +399,38 @@ function isSelected( range ) {
   );
 }
 
+/**
+ * Creates a value formatter function based on metric options.
+ * @param {string} metric - The metric key.
+ * @param {Object} metricOptions - The metric options object.
+ * @returns {Function} A value formatter function.
+ */
+function createValueFormatter(metric, metricOptions = {}) {
+  if (!metric || !metricOptions[metric]) {
+    return (d) => formatNumber(d);
+  }
+
+  const { isPercentage, isTime, precision, suffix } = metricOptions[metric];
+
+  return (value) => {
+    if (value === null || value === undefined) return '';
+
+    if (isPercentage) {
+      return formatPercentage(value, precision);
+    }
+    
+    if (isTime) {
+      return formatTime(value);
+    }
+    
+    let formatted = formatNumber(value, precision);
+    if (suffix) {
+      formatted += suffix;
+    }
+    return formatted;
+  };
+}
+
 export {
   getRelativeTime,
   getPercentage,
@@ -397,10 +444,12 @@ export {
   formatNumber,
   formatPercentage,
   getCountryName,
+  getContinentName,
   getDateWithOffset,
   availableRanges,
   getAvailableRanges,
   getAvailableRangesWithKeys,
-  getDisplayDates
+  getDisplayDates,
+  createValueFormatter
   
 };

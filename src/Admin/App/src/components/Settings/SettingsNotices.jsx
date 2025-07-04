@@ -11,7 +11,9 @@ const SettingsNotices = ({ settingsGroup }) => {
     ( setting ) => setting.notice && setting.menu_id === settingsGroup.id
   );
 
-  const [ openStates, setOpenStates ] = useState( settingsWithNotices.map( () => false ) );
+  const [ openStates, setOpenStates ] = useState(
+    settingsWithNotices.map( () => false )
+  );
   if ( ! settingsWithNotices.length ) {
     return null;
   }
@@ -38,12 +40,12 @@ const SettingsNotices = ({ settingsGroup }) => {
 
   return (
     <>
-      <div className="flex justify-between  w-full">
+      <div className="flex w-full justify-between">
         <h2 className="py-4 text-base font-bold">
           {__( 'Notifications', 'burst-statistics' )}
         </h2>
         <button
-          className="text-gray-500 cursor-pointer text-sm underline"
+          className="cursor-pointer text-sm text-gray underline"
           onClick={toggleAllNotices}
         >
           {toggleButtonText}
@@ -51,7 +53,7 @@ const SettingsNotices = ({ settingsGroup }) => {
       </div>
 
       {0 < settingsWithNotices.length &&
-          settingsWithNotices.map( ( setting, index ) => (
+        settingsWithNotices.map( ( setting, index ) => (
           <CollapsableBlock
             key={index}
             title={setting.notice.title}
@@ -60,14 +62,18 @@ const SettingsNotices = ({ settingsGroup }) => {
             onToggle={( isOpen ) => handleToggle( index, isOpen )}
           >
             <div className="flex flex-col justify-start">
-              <p className="font-normal text-base">{setting.notice.description}</p>
-              { setting.notice.url && setting.notice.url!=='' && <Link
-                className="text-gray-500 mt-2 text-base underline"
-                to={setting.notice.url}
-                from={'/'}
-              >
-                {__( 'Learn more', 'burst-statistics' )}
-              </Link>}
+              <p className="text-base font-normal">
+                {setting.notice.description}
+              </p>
+              {setting.notice.url && '' !== setting.notice.url && (
+                <Link
+                  className="mt-2 text-base text-gray underline"
+                  to={setting.notice.url}
+                  from={'/'}
+                >
+                  {__( 'Learn more', 'burst-statistics' )}
+                </Link>
+              )}
             </div>
           </CollapsableBlock>
         ) )}

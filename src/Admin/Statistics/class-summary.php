@@ -16,11 +16,10 @@ if ( ! class_exists( 'summary' ) ) {
 		/**
 		 * Summary constructor.
 		 */
-		public function __construct() {
+		public function init(): void {
 			add_action( 'burst_every_hour', [ $this, 'update_summary_table_today' ] );
 			add_action( 'burst_weekly', [ $this, 'update_is_high_traffic' ] );
 			add_filter( 'burst_do_action', [ $this, 'refresh_data' ], 10, 3 );
-			add_filter( 'burst_tasks', [ $this, 'add_cron_warning' ] );
 
 			if ( defined( 'BURST_RESTART_SUMMARY_UPGRADE' ) && BURST_RESTART_SUMMARY_UPGRADE ) {
 				$this->restart_update_summary_table_alltime();
@@ -28,30 +27,6 @@ if ( ! class_exists( 'summary' ) ) {
 		}
 
 
-		/**
-		 * Add warning about cron
-		 *
-		 * @return array<int, array<string, mixed>>
-		 */
-		public function add_cron_warning( array $warnings ): array {
-			if ( ! self::is_high_traffic() ) {
-				return $warnings;
-			}
-
-			$warnings[] = [
-				'id'          => 'cron',
-				'condition'   => [
-					'type'     => 'serverside',
-					'function' => '!(new Burst\Admin\Statistics\Summary() )->cron_active()',
-				],
-				'msg'         => __( 'Because your cron has not been triggered more than 24 hours, Burst has stopped using the summary tables, which allow the dashboard to load faster.', 'burst-statistics' ),
-				'icon'        => 'warning',
-				'url'         => 'instructions/cron-error/',
-				'dismissible' => true,
-			];
-
-			return $warnings;
-		}
 
 		/**
 		 * Refresh the summary data
@@ -342,20 +317,22 @@ if ( ! class_exists( 'summary' ) ) {
 			$date_end = Statistics::convert_date_to_unix( $today . ' 23:59:59' );
 			// get today's date.
 			// get the summary from the statistics table.
-			$select_sql = \Burst\burst_loader()->admin->statistics->get_sql_table_raw(
-				$date_start,
-				$date_end,
+			$select_sql = \Burst\burst_loader()->admin->statistics->get_sql_table_enhanced(
 				[
-					'pageviews',
-					'visitors',
-					'first_time_visitors',
-					'page_url',
-					'bounces',
-					'sessions',
-					'avg_time_on_page',
-				],
-				[],
-				'page_url'
+					'date_start' => $date_start,
+					'date_end'   => $date_end,
+					'select'     => [
+						'pageviews',
+						'visitors',
+						'first_time_visitors',
+						'page_url',
+						'bounces',
+						'sessions',
+						'avg_time_on_page',
+					],
+					'filters'    => [],
+					'group_by'   => 'page_url',
+				]
 			);
 			// if this is the update for yesterday or before, mark it as completed.
 			$completed  = $days_offset !== 0 ? 1 : 0;
@@ -390,16 +367,19 @@ if ( ! class_exists( 'summary' ) ) {
 			$wpdb->query( $update_sql );
 
 			// we also create the day total for this day.
-			$select_sql = \Burst\burst_loader()->admin->statistics->get_sql_table_raw(
-				$date_start,
-				$date_end,
+			$select_sql = \Burst\burst_loader()->admin->statistics->get_sql_table_enhanced(
 				[
-					'pageviews',
-					'visitors',
-					'first_time_visitors',
-					'bounces',
-					'sessions',
-					'avg_time_on_page',
+					'date_start' => $date_start,
+					'date_end'   => $date_end,
+					'select'     => [
+						'pageviews',
+						'visitors',
+						'first_time_visitors',
+						'bounces',
+						'sessions',
+						'avg_time_on_page',
+					],
+					'filters'    => [],
 				]
 			);
 			$update_sql = $wpdb->prepare(

@@ -4,25 +4,43 @@ defined( 'ABSPATH' ) || die();
 
 return [
 	[
-		'id'             => 'dashboard',
-		'title'          => __( 'Dashboard', 'burst-statistics' ),
-		'default_hidden' => false,
-		'menu_items'     => [],
-		'capabilities'   => 'view_burst_statistics',
+		'id'                      => 'dashboard',
+		'title'                   => __( 'Dashboard', 'burst-statistics' ),
+		'default_hidden'          => false,
+		'menu_items'              => [],
+		'capabilities'            => 'view_burst_statistics',
+		'menu_slug'               => 'burst',
+		'show_in_admin'           => true,
+		'show_in_plugin_overview' => true,
 	],
 	[
 		'id'             => 'statistics',
-		'title'          => __( 'Statistics', 'burst-statistics' ),
+		'title'          => __( 'Insights', 'burst-statistics' ),
+		'default_hidden' => true,
+		'menu_items'     => [],
+		'capabilities'   => 'view_burst_statistics',
+		'menu_slug'      => 'burst#/statistics',
+		'show_in_admin'  => true,
+	],
+	[
+		'id'             => 'sources',
+		'title'          => __( 'Sources', 'burst-statistics' ),
 		'default_hidden' => false,
 		'menu_items'     => [],
 		'capabilities'   => 'view_burst_statistics',
+		'menu_slug'      => 'burst#/sources',
+		'show_in_admin'  => true,
+		'pro'            => true,
 	],
 	[
-		'id'             => 'settings',
-		'title'          => __( 'Settings', 'burst-statistics' ),
-		'default_hidden' => false,
-		'capabilities'   => 'manage_burst_statistics',
-		'menu_items'     => [
+		'id'                      => 'settings',
+		'title'                   => __( 'Settings', 'burst-statistics' ),
+		'default_hidden'          => false,
+		'capabilities'            => 'manage_burst_statistics',
+		'menu_slug'               => 'burst#/settings/general',
+		'show_in_admin'           => true,
+		'show_in_plugin_overview' => true,
+		'menu_items'              => [
 			[
 				'id'       => 'general',
 				'group_id' => 'general',
@@ -75,7 +93,11 @@ return [
 				'groups'   => [
 					[
 						'id'    => 'tracking',
-						'title' => __( 'Tracking', 'burst-statistics' ),
+						'title' => __( 'Tracking exclusions', 'burst-statistics' ),
+					],
+					[
+						'id'    => 'data_collection',
+						'title' => __( 'Tracking behavior', 'burst-statistics' ),
 					],
 					[
 						'id'    => 'scripts',

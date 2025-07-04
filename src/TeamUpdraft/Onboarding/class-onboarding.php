@@ -38,6 +38,23 @@ class Onboarding {
 	public bool $reload_settings_page_on_finish = false;
 
 	/**
+	 * Initialize hooks and filters
+	 */
+	public function init(): void {
+		if ( ! self::is_compatible() ) {
+			return;
+		}
+
+		$this->onboarding_path = __DIR__;
+		$this->onboarding_url  = plugin_dir_url( __FILE__ );
+
+		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
+		add_action( 'wp_ajax_' . $this->prefix . '_onboarding_rest_api_fallback', [ $this, 'rest_api_fallback' ] );
+		add_action( "admin_print_scripts-{$this->page_hook_suffix}", [ $this, 'enqueue_onboarding_scripts' ], 1 );
+		add_action( 'admin_footer', [ $this, 'add_root_html' ] );
+	}
+
+	/**
 	 * Add values and defaults to fields in steps
 	 *
 	 * @param array $steps array of onboarding steps.
@@ -177,22 +194,6 @@ class Onboarding {
 	}
 
 	/**
-	 * Initialize hooks and filters
-	 */
-	public function init(): void {
-		if ( ! self::is_compatible() ) {
-			return;
-		}
-		$this->onboarding_path = __DIR__;
-		$this->onboarding_url  = plugin_dir_url( __FILE__ );
-
-		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
-		add_action( 'wp_ajax_' . $this->prefix . '_onboarding_rest_api_fallback', [ $this, 'rest_api_fallback' ] );
-		add_action( "admin_print_scripts-{$this->page_hook_suffix}", [ $this, 'enqueue_onboarding_scripts' ], 1 );
-		add_action( 'admin_footer', [ $this, 'add_root_html' ] );
-	}
-
-	/**
 	 * Check if the current environment is compatible with the onboarding app.
 	 */
 	private static function is_compatible(): bool {
@@ -262,7 +263,6 @@ class Onboarding {
 		if ( ! $this->has_permission() ) {
 			return $this->response( false, [], 'You do not have permission to do this.', 403 );
 		}
-
 		$action = sanitize_text_field( $request->get_param( 'action' ) );
 		$data   = $request->get_json_params();
 		if ( ! wp_verify_nonce( $data['nonce'], $this->prefix . '_nonce' ) ) {
@@ -278,10 +278,8 @@ class Onboarding {
 		if ( ! $this->has_permission() ) {
 			wp_send_json_error( 'Unauthorized', 403 );
 		}
-
 		$data = json_decode( file_get_contents( 'php://input' ), true );
 		$data = $data['data'] ?? [];
-
 		if ( ! wp_verify_nonce( $data['nonce'], $this->prefix . '_nonce' ) ) {
 			$response          = new RestResponse();
 			$response->message = 'Nonce verification failed';
@@ -289,8 +287,8 @@ class Onboarding {
 			exit;
 		}
 
-		$action = isset( $data['path'] ) ? sanitize_title( $_POST['path'] ) : '';
-		preg_match( '/do_action\/([a-z\_\-]+)$/', $action, $matches );
+		$action = isset( $data['path'] ) ? sanitize_title( $data['path'] ) : sanitize_title( $_GET['rest_action'] );
+		preg_match( '/do_action[\/|\-]([a-z\_\-]+)$/', $action, $matches );
 		if ( isset( $matches[1] ) ) {
 			$action = $matches[1];
 		}

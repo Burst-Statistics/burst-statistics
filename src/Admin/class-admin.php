@@ -32,10 +32,11 @@ class Admin {
 	public Statistics $statistics;
 	public Summary $summary;
 	public App $app;
+
 	/**
-	 * Constructor
+	 * Initialize the admin class
 	 */
-	public function __construct() {
+	public function init(): void {
 		/**
 		 * Tell the consent API we're following the api
 		 */
@@ -69,17 +70,31 @@ class Admin {
 		add_action( 'burst_daily', [ $this, 'validate_tasks' ] );
 		add_action( 'burst_validate_tasks', [ $this, 'validate_tasks' ] );
 		add_action( 'plugins_loaded', [ $this, 'init_wpcli' ] );
-		new Upgrade();
-		new DB_Upgrade();
-		new Cron();
-		new Goal_Statistics();
+
+		$upgrade = new Upgrade();
+		$upgrade->init();
+		$db_upgrade = new DB_Upgrade();
+		$db_upgrade->init();
+		$cron = new Cron();
+		$cron->init();
+
+		$goal_statistics = new Goal_Statistics();
+		$goal_statistics->init();
 		$this->statistics = new Statistics();
-		new Mail_Reports();
+		$this->statistics->init();
+		$reports = new Mail_Reports();
+		$reports->init();
 		$this->summary = new Summary();
-		$this->app     = new App();
-		new Review();
+		$this->summary->init();
+		$this->app = new App();
+		$this->app->init();
+
+		$review = new Review();
+		$review->init();
 		$this->tasks = new Tasks();
-		new Dashboard_Widget();
+		$widget      = new Dashboard_Widget();
+		$widget->init();
+
 		if ( defined( 'BURST_BLUEPRINT' ) && ! get_option( 'burst_demo_data_installed' ) ) {
 			add_action( 'init', [ $this, 'install_demo_data' ] );
 			update_option( 'burst_demo_data_installed', true, false );
@@ -420,7 +435,6 @@ class Admin {
 	 */
 	public function setup_defaults(): void {
 		if ( get_option( 'burst_set_defaults' ) ) {
-			update_option( 'burst_start_onboarding', true, false );
 			set_transient( 'burst_redirect_to_settings_page', true, 5 * MINUTE_IN_SECONDS );
 			update_option( 'burst_activation_time', time(), false );
 			update_option( 'burst_last_cron_hit', time(), false );
@@ -450,12 +464,21 @@ class Admin {
 	 * @return array<int, string> Modified array with additional plugin links.
 	 */
 	public function plugin_settings_link( array $links ): array {
-		$settings_link = '<a href="'
-			. admin_url( 'admin.php?page=burst#/settings/general' )
-			. '" class="burst-settings-link">'
-			. __( 'Settings', 'burst-statistics' ) . '</a>';
-		array_unshift( $links, $settings_link );
+		// Add "Upgrade to Pro" link at the start if not Pro version.
+		if ( ! defined( 'BURST_PRO' ) ) {
+			$upgrade_link
+				= '<a style="color:#2e8a37;font-weight:bold" target="_blank" href="' . $this->get_website_url( 'pricing', [ 'burst_source' => 'plugin-overview' ] ) . '">'
+				. __( 'Upgrade to Pro', 'burst-statistics' ) . '</a>';
+			array_unshift( $links, $upgrade_link );
+		}
 
+		// Get menu links from configuration and add them after upgrade.
+		$menu_links = $this->get_menu_links_from_config();
+		foreach ( array_reverse( $menu_links ) as $menu_link ) {
+			array_unshift( $links, $menu_link );
+		}
+
+		// Add support link at the end.
 		$support_link = defined( 'BURST_FREE' )
 			? 'https://wordpress.org/support/plugin/burst-statistics'
 			: $this->get_website_url(
@@ -467,16 +490,58 @@ class Admin {
 			);
 		$faq_link     = '<a target="_blank" href="' . $support_link . '">'
 			. __( 'Support', 'burst-statistics' ) . '</a>';
-		array_unshift( $links, $faq_link );
-
-		if ( ! defined( 'BURST_PRO' ) ) {
-			$upgrade_link
-				= '<a style="color:#2e8a37;font-weight:bold" target="_blank" href="' . $this->get_website_url( 'pricing', [ 'burst_source' => 'plugin-overview' ] ) . '">'
-				. __( 'Upgrade to Pro', 'burst-statistics' ) . '</a>';
-			array_unshift( $links, $upgrade_link );
-		}
+		array_push( $links, $faq_link );
 
 		return $links;
+	}
+
+	/**
+	 * Get menu links from menu configuration for plugin action links
+	 *
+	 * @return array<int, string> Array of menu links HTML
+	 */
+	private function get_menu_links_from_config(): array {
+		$menu_config = $this->get_menu_config();
+		$menu_links  = [];
+
+		foreach ( $menu_config as $menu_item ) {
+			// Skip items that shouldn't appear in WordPress admin menu.
+			if ( ! isset( $menu_item['show_in_plugin_overview'] ) || ! $menu_item['show_in_plugin_overview'] ) {
+				continue;
+			}
+
+			// Check user capabilities.
+			$capability = $menu_item['capabilities'] ?? 'view_burst_statistics';
+			if ( ! current_user_can( $capability ) ) {
+				continue;
+			}
+
+			$title     = $menu_item['title'] ?? '';
+			$menu_slug = $menu_item['menu_slug'] ?? 'burst';
+			$css_class = 'burst-' . ( $menu_item['id'] ?? 'menu' ) . '-link';
+
+			$menu_links[] = '<a href="'
+				. admin_url( 'admin.php?page=' . $menu_slug )
+				. '" class="' . esc_attr( $css_class ) . '">'
+				. esc_html( $title ) . '</a>';
+		}
+
+		return $menu_links;
+	}
+
+	/**
+	 * Get menu configuration from config file
+	 *
+	 * @return array<int, array<string, mixed>> Menu configuration array
+	 */
+	private function get_menu_config(): array {
+		$config_file = BURST_PATH . 'src/Admin/App/config/menu.php';
+		if ( ! file_exists( $config_file ) ) {
+			return [];
+		}
+
+		$menu_config = include $config_file;
+		return is_array( $menu_config ) ? $menu_config : [];
 	}
 
 	/**
@@ -572,9 +637,8 @@ class Admin {
 	 * @return array<string, string> Modified SQL clauses.
 	 */
 	public function filter_get_meta_sql( array $clauses ): array {
-
-		// Change the inner join to a left join,.
-		// and change the where so it is applied to the join, not the results of the query.
+		// Change the inner join to a left join.
+		// And change the where so it is applied to the join, not the results of the query.
 		$clauses['join']  = str_replace( 'INNER JOIN', 'LEFT JOIN', $clauses['join'] ) . $clauses['where'];
 		$clauses['where'] = '';
 
@@ -907,6 +971,7 @@ class Admin {
 			[
 				'burst_statistics',
 				'burst_campaigns',
+				'burst_locations',
 				'burst_sessions',
 				'burst_goals',
 				'burst_goal_statistics',

@@ -15,7 +15,7 @@ class Review {
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	public function init(): void {
 		if ( ! defined( 'BURST_PRO' ) || self::is_test() ) {
 			add_action( 'admin_init', [ $this, 'show_review_notice' ] );
 			add_action( 'admin_init', [ $this, 'process_get_review_dismiss' ] );

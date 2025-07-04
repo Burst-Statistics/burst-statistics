@@ -2,12 +2,13 @@
 namespace Burst;
 
 use Burst\Admin\Admin;
+use Burst\Admin\Capability\Capability;
 use Burst\Frontend\Frontend;
 use Burst\Frontend\Frontend_Admin;
 use Burst\Pro\Pro;
 use Burst\Integrations\Integrations;
 use Burst\Traits\Admin_Helper;
-use Burst\TeamUpdraft\AutoInstaller\Auto_Installer;
+use Burst\Admin\AutoInstaller\Auto_Installer;
 
 if ( class_exists( 'Burst' ) ) {
 	class Burst {}
@@ -51,8 +52,11 @@ if ( class_exists( 'Burst' ) ) {
 			define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 			define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 			define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
-			define( 'BURST_VERSION', '2.1.0' );
 
+			$burst_plugin = explode( '/', BURST_PLUGIN );
+			array_pop( $burst_plugin );
+			$burst_plugin = implode( '/', $burst_plugin );
+			define( 'BURST_VERSION', '2.2.0' );
 			// deprecated constant.
             //phpcs:ignore
             define( 'burst_version', BURST_VERSION );
@@ -72,17 +76,26 @@ if ( class_exists( 'Burst' ) ) {
 			}
 
 			$this->integrations = new Integrations();
+			$this->integrations->init();
 
 			if ( is_user_logged_in() ) {
 				$this->frontend_admin = new Frontend_Admin();
+				$this->frontend_admin->init();
 			}
+
 			if ( $this->has_admin_access() ) {
 				$this->admin = new Admin();
+				$this->admin->init();
+				$capability = new Capability();
+				$capability->init();
+
 				if ( defined( 'BURST_PRO_FILE' ) ) {
 					$this->pro = new Pro();
+					$this->pro->init();
 				}
 			}
 			$this->frontend = new Frontend();
+			$this->frontend->init();
 		}
 	}
 }

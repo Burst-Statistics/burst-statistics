@@ -174,7 +174,7 @@ const OtherPluginsBlock = () => {
         <BlockHeading
           className={'burst-column-2 no-border no-background'}
           title={__( 'Other plugins', 'burst-statistics' )}
-          controls=<UpdraftPlusLogo size={24} color="gray"/> 
+          controls={<UpdraftPlusLogo size={24} color="gray"/> }
         />
         <BlockContent className={'px-6 py-0'}>
           <div className="burst-other-plugins-container">
@@ -199,7 +199,7 @@ const OtherPluginsBlock = () => {
   return (
     <Block className="bg-wp-gray row-span-1 shadow-none lg:col-span-6">
       <BlockHeading title={__( 'Other plugins', 'burst-statistics' )}
-                    controls=<UpdraftPlusLogo size={24} color="gray"/>
+                    controls={<UpdraftPlusLogo size={24} color="gray"/>}
       />
       <BlockContent className={'px-6 py-0'}>
         <div className="burst-other-plugins-container">

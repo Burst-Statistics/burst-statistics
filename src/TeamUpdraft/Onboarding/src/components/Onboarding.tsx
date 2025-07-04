@@ -159,9 +159,10 @@ const Onboarding: FC = () => {
         return null;
     }
     const upgradeUrl = get_website_url(onboardingData.upgrade, {
-        burst_source: currentStep.id,
+        burst_source:onboardingData.prefix + '_onboarding',
         burst_content: 'upgrade'
     });
+
     return (
         <ErrorBoundary>
             <div id="onboarding-modal-root"></div>

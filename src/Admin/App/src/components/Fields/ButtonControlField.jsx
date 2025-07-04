@@ -28,6 +28,9 @@ const ButtonControlField = forwardRef(
         inputId={inputId}
         className={className}
         alignWithLabel={true}
+        recommended={props.recommended}
+        disabled={props.disabled}
+        {...props}
       >
         <ButtonControlInput
 

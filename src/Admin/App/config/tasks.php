@@ -29,7 +29,7 @@ return [
 
 		],
 		'msg'         => __( 'Due to your server or website configuration it is not possible to track statistics.', 'burst-statistics' ),
-		'url'         => 'instructions/tracking-error/',
+		'url'         => 'instructions/troubleshoot-tracking/',
 		'plusone'     => true,
 		'icon'        => 'error',
 		'dismissible' => false,
@@ -97,5 +97,16 @@ return [
 		'url'         => 'statistics-including-bounces/',
 		'dismissible' => true,
 		'plusone'     => false,
+	],
+	[
+		'id'          => 'cron',
+		'condition'   => [
+			'type'     => 'serverside',
+			'function' => '!(new \Burst\Admin\Cron\Cron() )->cron_active()',
+		],
+		'msg'         => __( 'Because your cron has not been triggered more than 24 hours, some functionality might not work as expected, like updating the page views counter in a post.', 'burst-statistics' ),
+		'icon'        => 'warning',
+		'url'         => 'instructions/cron-error/',
+		'dismissible' => true,
 	],
 ];
