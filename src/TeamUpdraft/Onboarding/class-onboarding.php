@@ -45,7 +45,6 @@ class Onboarding {
 			return;
 		}
 
-		update_option( 'burst_start_onboarding', true );
 		$this->onboarding_path = __DIR__;
 		$this->onboarding_url  = plugin_dir_url( __FILE__ );
 
