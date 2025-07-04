@@ -66,6 +66,8 @@ if ( ! function_exists( '\Burst\burst_on_activation' ) && ! function_exists( 'bu
 
         // ensure that defaults are set only once.
         if ( ! get_option( 'burst_activation_time' ) ) {
+            set_transient( 'burst_redirect_to_settings_page', true, 5 * MINUTE_IN_SECONDS );
+            update_option( 'burst_start_onboarding', true, false );
             update_option( 'burst_set_defaults', true, false );
         }
     }
