@@ -89,6 +89,7 @@ create_rc_zip() {
     "--exclude=.github/"
     "--exclude=.million/"
     "--exclude=webpack.config.js"
+    "--exclude=phpstan.wp-env.neon"
     "--exclude=webpack.dev.js"
     "--exclude=webpack.prod.js"
     "--exclude=.travis.yml"
