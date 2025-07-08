@@ -190,7 +190,7 @@ const Field = memo(({ setting, control, ...props }) => {
       return true;
     }
     // if has anything (true|array|object|etc) in setting.pro and is not valid license
-    if (setting.pro && !isLicenseValid()) {
+    if ( setting.pro && !isLicenseValid() ) {
       return true;
     }
 
