@@ -93,7 +93,7 @@ const Header = () => {
               activeProps={{ className: activeClassName }}
             >
               {__( menuItem.title, 'burst-statistics' )}
-              { (menuItem.pro && ! isLicenseValid) && <ProBadge className={'ml-1'} label={'Pro'} />}
+              { (menuItem.pro && ! isLicenseValid() ) && <ProBadge className={'ml-1'} label={'Pro'} />}
             </Link>
           ) )}
         </div>

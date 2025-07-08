@@ -107,7 +107,7 @@ const FieldWrapper = memo(
         )}
         {recommended && <RecommendBadge />}
         {disabled && !pro && <DisabledBadge />}
-        {pro && !isLicenseValid && <ProBadge id={inputId} url={pro.url} />}
+        {pro && !isLicenseValid() && <ProBadge id={inputId} url={pro.url} />}
         {help && (
           <HelpTooltip content={help}>
             <span className="inline-flex h-5 w-5 cursor-default items-center justify-center rounded-full border border-gray-400 bg-gray-200 text-center text-base leading-none text-gray hover:bg-gray-300 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary">
