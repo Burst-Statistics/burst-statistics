@@ -1,0 +1,29 @@
+{
+  "name": "burst-widget",
+  "version": "1.0.0",
+  "description": "separate widget for the dashboard",
+  "main": "index.js",
+  "scripts": {
+    "start": "wp-scripts start",
+    "build": "set \"INLINE_RUNTIME_CHUNK=false\" && wp-scripts build",
+    "packages-update": "wp-scripts packages-update --dist-tag=wp-6.2"
+  },
+  "author": "Rogier Lankhorst & Hessel de Jong",
+  "license": "GPL-2.0-only",
+  "devDependencies": {
+    "@wordpress/scripts": "^25.3.6",
+    "sass": "^1.68.0",
+    "sass-loader": "^13.3.2",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^4.36.1",
+    "@tanstack/react-query-devtools": "^4.36.1",
+    "ajv": "^8.17.1",
+    "css-loader": "^6.8.1",
+    "date-fns": "^2.29.2",
+    "style-loader": "^3.3.3",
+    "styled-components": "^6.0.8"
+  }
+}

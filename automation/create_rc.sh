@@ -29,6 +29,29 @@ if [ "$(id -u)" -eq 0 ]; then
   exit 1
 fi
 
+#cleanup build directory and recreate
+echo "remove obsolete directories from pre 2.0 versions"
+cd "$PLUGIN_DIR" || { echo "Failed to change directory"; exit 1; }
+rm -rf "settings"
+rm -rf "dashboard-widget"
+echo "Remove existing build directory"
+cd "$PLUGIN_DIR/src/Admin/App" || { echo "Failed to change directory"; exit 1; }
+rm -rf "build"
+echo "Run react build for App"
+npm install --force
+npm run build
+npm run build:css
+chown -R $(whoami):staff build/
+chmod -R u+rwX,go+rX build/
+
+cd "$PLUGIN_DIR/src/Admin/Dashboard_Widget" || { echo "Failed to change directory"; exit 1; }
+rm -rf "build";
+echo "Run react build for the dashboard widget"
+npm install --force
+npm run build
+chown -R $(whoami):staff build/
+chmod -R u+rwX,go+rX build/
+
 
 # Define function to create RC
 create_rc_zip() {
