@@ -784,6 +784,9 @@ video {
 #burst-statistics .mb-6 {
   margin-bottom: 1.5rem;
 }
+#burst-statistics .mb-8 {
+  margin-bottom: 2rem;
+}
 #burst-statistics .ml-1 {
   margin-left: 0.25rem;
 }
@@ -792,6 +795,9 @@ video {
 }
 #burst-statistics .ml-4 {
   margin-left: 1rem;
+}
+#burst-statistics .ml-6 {
+  margin-left: 1.5rem;
 }
 #burst-statistics .ml-auto {
   margin-left: auto;
@@ -822,6 +828,9 @@ video {
 }
 #burst-statistics .mt-6 {
   margin-top: 1.5rem;
+}
+#burst-statistics .mt-8 {
+  margin-top: 2rem;
 }
 #burst-statistics .box-border {
   box-sizing: border-box;
@@ -910,6 +919,9 @@ video {
 #burst-statistics .max-h-\[80vh\] {
   max-height: 80vh;
 }
+#burst-statistics .max-h-\[85vh\] {
+  max-height: 85vh;
+}
 #burst-statistics .max-h-\[90vh\] {
   max-height: 90vh;
 }
@@ -979,6 +991,9 @@ video {
 #burst-statistics .w-\[90\%\] {
   width: 90%;
 }
+#burst-statistics .w-\[90vw\] {
+  width: 90vw;
+}
 #burst-statistics .w-auto {
   width: auto;
 }
@@ -1020,6 +1035,9 @@ video {
 #burst-statistics .max-w-3xl {
   max-width: 48rem;
 }
+#burst-statistics .max-w-4xl {
+  max-width: 56rem;
+}
 #burst-statistics .max-w-64 {
   max-width: 16rem;
 }
@@ -1031,6 +1049,9 @@ video {
 }
 #burst-statistics .max-w-\[400px\] {
   max-width: 400px;
+}
+#burst-statistics .max-w-\[500px\] {
+  max-width: 500px;
 }
 #burst-statistics .max-w-\[600px\] {
   max-width: 600px;
@@ -1136,6 +1157,9 @@ video {
 }
 #burst-statistics .list-decimal {
   list-style-type: decimal;
+}
+#burst-statistics .list-disc {
+  list-style-type: disc;
 }
 #burst-statistics .grid-cols-1 {
   grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -1261,6 +1285,9 @@ video {
   --tw-space-y-reverse: 0;
   margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));
   margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));
+}
+#burst-statistics .overflow-auto {
+  overflow: auto;
 }
 #burst-statistics .overflow-hidden {
   overflow: hidden;
@@ -1479,6 +1506,13 @@ video {
 #burst-statistics .bg-opacity-5 {
   --tw-bg-opacity: 0.05;
 }
+#burst-statistics .bg-gradient-to-r {
+  background-image: linear-gradient(to right, var(--tw-gradient-stops));
+}
+#burst-statistics .bg-clip-text {
+  -webkit-background-clip: text;
+          background-clip: text;
+}
 #burst-statistics .fill-gray-300 {
   fill: #dee2e6;
 }
@@ -1623,6 +1657,10 @@ video {
 #burst-statistics .text-2xl {
   font-size: 1.25rem;
   line-height: 1.75rem;
+}
+#burst-statistics .text-3xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
 }
 #burst-statistics .text-base {
   font-size: 0.8125rem;
