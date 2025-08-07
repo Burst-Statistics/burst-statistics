@@ -15,8 +15,8 @@ const Checkbox = ({
     } = useOnboardingStore();
 
     const privacy_statement = get_website_url(onboardingData.privacy_statement_url, {
-        burst_source: onboardingData.prefix + '_onboarding',
-        burst_content: 'mailing-list'
+        utm_source: onboardingData.prefix + '_onboarding',
+        utm_content: 'mailing-list'
     });
     return (
 

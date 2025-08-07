@@ -134,8 +134,8 @@ class Tasks {
 				$this->tasks[ $key ]['url'] = $this->get_website_url(
 					$task['url'],
 					[
-						'burst_source'  => 'tasks',
-						'burst_content' => $task['id'],
+						'utm_source'  => 'tasks',
+						'utm_content' => $task['id'],
 					]
 				);
 			}

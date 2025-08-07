@@ -33,7 +33,8 @@
 // Ensure tracking object exists
 burst.tracking = burst.tracking || {
   isInitialHit: true,
-  lastUpdateTimestamp: 0
+  lastUpdateTimestamp: 0,
+  ajaxUrl: '',
 };
 
 // Cache fallback normalizations
@@ -139,7 +140,7 @@ const burst_uid = () => {
  * @returns {string}
  */
 const burst_generate_uid = () => {
-  return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join(''); // nosemgrep
 };
 
 
@@ -190,29 +191,90 @@ const burst_is_do_not_track = () => {
   burst.cache.isDoNotTrack = result;
   return result;
 };
+const burst_log_tracking_error = ({ status = 0, error = '', data = {} }) => {
+  if ( !burst.options.debug || !burst.tracking.ajaxUrl ) {
+    return;
+  }
+
+  fetch(burst.tracking.ajaxUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'burst_tracking_error',
+      status,
+      error,
+      data: data
+    })
+  });
+};
+
+const burst_beacon_request = (payload) => {
+  const blob = new Blob([payload], { type: 'application/json' });
+  if ( burst.options.debug ) {
+    fetch( burst.tracking.beacon_url, {
+      method: 'POST',
+      body: blob,
+      keepalive: true,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+        .then(response => {
+          if (!response.ok) {
+              burst_log_tracking_error({
+                status: 0,
+                error: 'sendBeacon failed',
+                data: payload
+              });
+          }
+        })
+        .catch(error => {
+          burst_log_tracking_error({
+            status: 0,
+            error: error?.message || 'sendBeacon failed',
+            data: payload
+          });
+        });
+  } else {
+    navigator.sendBeacon(burst.tracking.beacon_url, blob);
+  }
+}
+
 /**
  * Make a XMLHttpRequest and return a promise
  * @param obj
  * @returns {Promise<unknown>}
  */
 const burst_api_request = obj => {
+  const payload = JSON.stringify(obj.data || {});
   return new Promise(resolve => {
     if (burst.options.beacon_enabled) {
-      const blob = new Blob([JSON.stringify(obj.data)], { type: 'application/json' });
-      navigator.sendBeacon(burst.tracking.beacon_url, blob);
+      burst_beacon_request(payload);
       resolve({ status: 200, data: 'ok' });
     } else {
-      const token = Math.random().toString(36).substring(2, 9);
+      const token = Math.random().toString(36).substring(2, 9);// nosemgrep
       wp.apiFetch({
         path: `/burst/v1/track/?token=${token}`,
         keepalive: true,
         method: 'POST',
-        data: obj.data
+        data: payload,
       }).then(res => {
         const status = res.status || 200;
         resolve({ status, data: res.data || res });
-      }).catch(() => {
+        if (status !== 200) {
+          burst_log_tracking_error({
+            status,
+            error: 'Non-200 status',
+            data: payload
+          });
+        }
+      }).catch(error => {
         resolve({ status: 200, data: 'ok' });
+        burst_log_tracking_error({
+          status: 0,
+          error: error?.message || 'Burst tracking request failed',
+          data: payload
+        });
       });
     }
   });
@@ -249,7 +311,7 @@ async function burst_update_hit(update_uid = false, force = false) {
   };
 
   if (time > 0 || data.uid !== false) {
-    await burst_api_request({ data: JSON.stringify(data) });
+    await burst_api_request({ data: data });
     burst.tracking.lastUpdateTimestamp = Date.now();
   }
 }
@@ -287,7 +349,7 @@ async function burst_track_hit() {
   };
 
   document.dispatchEvent(new CustomEvent('burst_track_hit', { detail: data }));
-  await burst_api_request({ method: 'POST', data: JSON.stringify(data) });
+  await burst_api_request({ method: 'POST', data: data });
   burst.tracking.lastUpdateTimestamp = Date.now();
 }
 /**

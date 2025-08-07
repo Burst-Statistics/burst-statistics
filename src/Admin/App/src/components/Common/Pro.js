@@ -12,8 +12,8 @@ const Pro = ({pro, id}) => {
   }
 
   let url = burst_get_website_url( 'pricing', {
-    burst_source: 'settings-pro-tag',
-    burst_content: id
+    utm_source: 'settings-pro-tag',
+    utm_content: id
   });
   return (
         <a className="bg-primary py-0.5 px-3 rounded-2xl text-white" target="_blank" href={url}>

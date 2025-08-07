@@ -31,9 +31,6 @@ export const Route = createFileRoute( '/sources' )({
 function Sources() {
   const { hasActiveLicense, isPro } = Route.useLoaderData();
 
-  console.log( 'hasActiveLicense', hasActiveLicense );
-  console.log( 'isPro', isPro );
-
   if ( ! isPro ) {
     return (
       <>

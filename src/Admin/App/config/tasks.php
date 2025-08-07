@@ -109,4 +109,16 @@ return [
 		'url'         => 'instructions/cron-error/',
 		'dismissible' => true,
 	],
+	[
+		'id'          => 'malicous_data_removal',
+		'condition'   => [
+			'type'     => 'serverside',
+			'function' => 'wp_option_burst_removed_malicious_data_count',
+		],
+		// translators: %d is the number of visits detected from a single user in 24 hours.
+		'msg'         => sprintf( __( 'Burst has detected an anomalous number of visits (%d in 24 hours) from one user. As these visits distort your statistics, these have been removed.', 'burst-statistics' ), (int) get_option( 'burst_removed_malicious_data_count', 0 ) ),
+		'icon'        => 'warning',
+		'url'         => 'why-burst-removes-anomalous-visits-and-how-you-can-customize-it/',
+		'dismissible' => true,
+	],
 ];

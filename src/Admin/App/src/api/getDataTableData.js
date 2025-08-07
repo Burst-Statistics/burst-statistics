@@ -20,6 +20,7 @@ const FORMATS = {
   URL: 'url',
   TEXT: 'text',
   INTEGER: 'integer',
+  REFERRER: 'referrer'
 };
 
 // Create memoized version of ClickToFilter to prevent unnecessary re-renders
@@ -215,6 +216,7 @@ const COLUMN_FORMATTERS = {
   [FORMATS.CONTINENT]: (value) => <ContinentFilter value={value} />,
   [FORMATS.URL]: (value, columnId) => <UrlFilter filter={columnId} value={value} />,
   [FORMATS.TEXT]: (value, columnId) => <TextFilter filter={columnId} value={value} />,
+  [FORMATS.REFERRER]: (value, columnId) => <ReferrerFilter value={value} />,
 };
 
 /**

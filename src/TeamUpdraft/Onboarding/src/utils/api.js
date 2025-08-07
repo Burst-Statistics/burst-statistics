@@ -8,33 +8,39 @@ import {glue} from './glue';
  * @returns {Promise<*>}
  */
 
-export const handleRequest = async( args ) => {
-    const {method, path, data} = args;
+export const handleRequest = async (args) => {
+    const { method, path, data } = args;
 
-    if ( method === 'GET' ) {
-        args.path = `${args.path}${glue(args.path)}${buildQueryString( args.data )}`;
+    if (method === 'GET') {
+        args.path = `${args.path}${glue(args.path)}${buildQueryString(args.data)}`;
         delete args.data;
     }
-    return apiFetch( args )
-        .then( ( response ) => {
-            if ( ! response.request_success ) {
-                throw new Error( 'invalid data error' );
-            }
-            if ( response.code ) {
-                throw new Error( response.message );
-            }
-            delete response.request_success;
-            return response;
-        })
-        .catch( ( error ) => {
-            // If REST API fails, try AJAX request
-            return ajaxRequest( method, path, data ).catch( () => {
-                // If AJAX also fails, generate error
-                console.log( error.message, args.path );
-                throw error;
-            });
-        });
-}
+
+    let response;
+
+    try {
+        response = await apiFetch(args);
+
+        if (!response.request_success) {
+            throw new Error('invalid data error');
+        }
+        if (response.code) {
+            throw new Error(response.message);
+        }
+
+        delete response.request_success;
+    } catch (error) {
+        console.log(error.message, args.path);
+        response = await ajaxRequest(method, path, data);
+    }
+
+    document.dispatchEvent(new CustomEvent('teamupdraft_api_response', {
+        detail: { response, method, path, data }
+    }));
+
+    return response;
+};
+
 
 export const updateAction = async( data = {}, action ) => {
     const onboardingData = window[`teamupdraft_onboarding`] || {}

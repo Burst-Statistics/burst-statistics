@@ -71,17 +71,6 @@ const Choropleth = memo(forwardRef((props, ref) => {
         geoIpDatabaseType,
     } = props
 
-    // log everything we need to create the choropleth
-    console.log( 'features', features );
-    console.log( 'data', data );
-    console.log( 'match', match );
-    console.log( 'label', label );
-    console.log( 'value', value );
-    console.log( 'valueFormat', valueFormat );
-    console.log( 'baseMapFeatures', baseMapFeatures );
-    console.log( 'baseMapFeatures length', baseMapFeatures?.length );
-    console.log( 'layers', layers );
-
     const svgRef = useRef(null)
     const mapLayersRef = useRef(null)
     const zoomRef = useRef(null)
@@ -361,16 +350,11 @@ const Choropleth = memo(forwardRef((props, ref) => {
             }
 
             if (layer === 'baseMapFeatures') {
-                console.log('Processing baseMapFeatures layer');
-                console.log('baseMapFeatures check:', baseMapFeatures);
-                console.log('baseMapFeatures length check:', baseMapFeatures?.length);
-                
+
                 if (!baseMapFeatures || baseMapFeatures.length === 0) {
-                    console.log('baseMapFeatures is null or empty, returning null');
                     return null;
                 }
 
-                console.log('Rendering baseMapFeatures with', baseMapFeatures.length, 'features');
                 return (
                     <Fragment key="baseMapFeatures">
                         <g className="base-map-features-group">

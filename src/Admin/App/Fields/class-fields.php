@@ -93,8 +93,8 @@ class Fields {
 					$fields[ $key ][ $type ]['url'] = $this->get_website_url(
 						$field[ $type ]['url'],
 						[
-							'burst_source'  => $source,
-							'burst_content' => $field['id'],
+							'utm_source'  => $source,
+							'utm_content' => $field['id'],
 						]
 					);
 				}

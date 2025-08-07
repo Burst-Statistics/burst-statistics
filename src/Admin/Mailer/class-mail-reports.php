@@ -1,6 +1,7 @@
 <?php
 namespace Burst\Admin\Mailer;
 
+use Burst\Admin\Statistics\Query_Data;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 
@@ -201,7 +202,15 @@ if ( ! class_exists( 'mail_reports' ) ) {
 
 			$custom_blocks = $this->get_blocks();
 			foreach ( $custom_blocks as $index => $block ) {
-					$results                 = $this->get_top_results( $date_start, $date_end, $block['type'] );
+					$qd = new Query_Data(
+						[
+							'select'   => $block['select'],
+							'group_by' => $block['group_by'] ?? '',
+							'order_by' => $block['order_by'],
+						]
+					);
+
+					$results                 = $this->get_top_results( $date_start, $date_end, $qd );
 					$completed_block         = [
 						'title' => $block['title'],
 						'table' => self::format_array_as_table( $results ),
@@ -236,46 +245,61 @@ if ( ! class_exists( 'mail_reports' ) ) {
 		 *
 		 * @return array<int, array<int, string>> List of results
 		 */
-		public function get_top_results( int $start_date, int $end_date, string $type ): array {
+		public function get_top_results( int $start_date, int $end_date, Query_Data $qd ): array {
 			global $wpdb;
-			$metrics     = [
-				$type,
-				'pageviews',
-			];
-			$sql         = \Burst\burst_loader()->admin->statistics->get_sql_table(
-				$start_date,
-				$end_date,
-				$metrics,
-				[],
-				$type,
-				'pageviews DESC',
-				apply_filters( 'burst_mail_report_limit', 5 ),
-			);
+
+			if ( in_array( 'page_url', $qd->select, true ) ) {
+				$results = [
+					'header' => [ __( 'Page', 'burst-statistics' ), __( 'Pageviews', 'burst-statistics' ) ],
+				];
+			} elseif ( in_array( 'source', $qd->select, true ) ) {
+				$results = [
+					'header' => [ __( 'Campaign', 'burst-statistics' ), __( 'Conversion rate', 'burst-statistics' ) ],
+				];
+			} else {
+				$results = [
+					'header' => [ __( 'Referrers', 'burst-statistics' ), __( 'Pageviews', 'burst-statistics' ) ],
+				];
+			}
+
+			$qd->limit      = apply_filters( 'burst_mail_report_limit', 5 );
+			$qd->date_start = $start_date;
+			$qd->date_end   = $end_date;
+
+			$sql         = \Burst\burst_loader()->admin->statistics->get_sql_table( $qd );
 			$raw_results = $wpdb->get_results( $sql, ARRAY_A );
 
-			switch ( $type ) {
-				case 'page_url':
-					$header = __( 'Page', 'burst-statistics' );
-					break;
-				case 'source':
-					$header = __( 'Campaign', 'burst-statistics' );
-					break;
-				default:
-					$header = __( 'Referrers', 'burst-statistics' );
-					break;
-			}
-
-			$results = [
-				'header' => [ $header, __( 'Pageviews', 'burst-statistics' ) ],
-			];
-
-			foreach ( $raw_results as $row ) {
-				if ( $type !== 'referrer' || $row[ $type ] !== 'Direct' ) {
-					$results[] = [ $row[ $type ], $row['pageviews'] ];
+			// filter out rows where one of the columns === 'Direct.
+			$raw_results = array_filter(
+				$raw_results,
+				function ( $row ) {
+					return ! in_array( 'Direct', $row, true );
 				}
-			}
+			);
 
-			return $results;
+			$raw_results = array_map(
+				function ( $row ) {
+					foreach ( $row as $key => &$value ) {
+						if ( strpos( $key, '_rate' ) !== false && is_numeric( $value ) ) {
+							$value = round( (float) $value, 1 ) . '%';
+						}
+					}
+					return $row;
+				},
+				$raw_results
+			);
+
+			return $results + array_map(
+				function ( $row ) {
+					if ( count( $row ) <= 2 ) {
+						return $row;
+					}
+					$all_but_last = array_filter( array_slice( $row, 0, -1 ), fn( $v ) => $v !== null && $v !== '' );
+					$last         = end( $row );
+					return [ implode( '-', $all_but_last ), $last ];
+				},
+				$raw_results
+			);
 		}
 
 		/**
@@ -392,7 +416,6 @@ if ( ! class_exists( 'mail_reports' ) ) {
 				$html     .= '<tr style="line-height: 32px">';
 				$first_row = true;
 				foreach ( $row as $column ) {
-
 					if ( $first_row ) {
 						// max 45 characters add ...
 						if ( $column === null ) {

@@ -171,9 +171,8 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 			$data['dateEnd']              = $date_end;
 			$data['status']               = $goal->status;
 			$data['goalId']               = $goal_id;
-			$use_lookup_tables            = \Burst\burst_loader()->admin->statistics->use_lookup_tables();
 
-			if ( $goal_id !== 0 && $use_lookup_tables ) {
+			if ( $goal_id !== 0 ) {
 				// we may want to add a date_end later, so we ignore the warning about obsolete date_end check.
 				// @phpstan-ignore-next-line.
 				$date_end_sql = $date_end > 0 ? $wpdb->prepare( 'AND statistics.time < %s', $date_end ) : '';

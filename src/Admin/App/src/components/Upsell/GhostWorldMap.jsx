@@ -3,8 +3,7 @@ import { useGeoData } from '@/hooks/useGeoData';
 import { useGeoStore } from '@/store/useGeoStore';
 
 const GhostWorldMap = () => {
-  console.log('GhostWorldMap: Component mounted');
-  
+
   const { 
     simplifiedWorldGeoJson,
     isGeoSimpleLoading
@@ -13,21 +12,14 @@ const GhostWorldMap = () => {
      // Get projection values from store
   const projection = useGeoStore( ( state ) => state.projection );
 
-   console.log('GhostWorldMap: isGeoSimpleLoading:', isGeoSimpleLoading);
-   console.log('GhostWorldMap: simplifiedWorldGeoJson:', simplifiedWorldGeoJson);
-   
+
    if ( isGeoSimpleLoading ) {
-    console.log('GhostWorldMap: Still loading, returning loading message');
     return <div>Loading...</div>;
    }
 
    if ( ! simplifiedWorldGeoJson ) {
-    console.log('GhostWorldMap: No simplifiedWorldGeoJson data available');
     return <div>No data available</div>;
    }
-
-   console.log('GhostWorldMap: simplifiedWorldGeoJson.features length:', simplifiedWorldGeoJson.features?.length);
-   console.log('GhostWorldMap: About to render ResponsiveChoropleth');
 
   return (
     <div className="relative h-full min-h-[450px] w-full rounded-b-lg"

@@ -143,5 +143,20 @@
     "upgrade_url": "https://www.internallinkjuicer.com/#get",
     "title": "Internal Link Juicer – SEO Auto Linker for WordPress",
     "description": "Automatically create internal links to boost your SEO and user experience"
+  },
+  {
+    "file": "wpgetapi/wpgetapi.php",
+    "icon": "wpgetapi.jpg",
+    "search_url": "wpgetapi&tab=search&type=term",
+    "constant_free": "WPGETAPIVERSION",
+    "premium": {
+      "type": "slug",
+      "value": "wpgetapi-extras/wpgetapi-extras.php"
+    },
+    "wordpress_url": "https://wordpress.org/plugins/wpgetapi/",
+    "upgrade_url": "https://wpgetapi.com/pricing/",
+    "title": "WPGet API",
+    "description": "Connect to any external REST API",
+    "niche": true
   }
 ]

@@ -16,6 +16,30 @@ if ( ! file_exists( BASE_PATH . 'wp-load.php' ) ) {
 	die( 'WordPress not installed here' );
 }
 require_once BASE_PATH . 'wp-load.php';
+
+if ( defined( 'BURST_ALLOWED_ORIGINS' ) ) {
+	$burst_allowed_origins = explode( ',', BURST_ALLOWED_ORIGINS );
+	$burst_origin          = $_SERVER['HTTP_ORIGIN'] ?? '';
+    // phpcs:ignore
+	$burst_origin_host     = parse_url( $burst_origin, PHP_URL_HOST );
+	if ( in_array( $burst_origin_host, $burst_allowed_origins, true ) ) {
+		header( 'Access-Control-Allow-Origin: ' . $burst_origin );
+		header( 'Access-Control-Allow-Credentials: true' );
+		header( 'Access-Control-Allow-Methods: POST, OPTIONS' );
+		header( 'Access-Control-Allow-Headers: Content-Type' );
+
+		if ( $_SERVER['REQUEST_METHOD'] === 'OPTIONS' ) {
+			header( 'Access-Control-Max-Age: 3600' );
+			http_response_code( 204 );
+			exit;
+		}
+	} else {
+		// Strict mode: constant is defined, but origin not allowed → reject.
+		http_response_code( 403 );
+		exit;
+	}
+}
+
 define( 'BURST_PATH', plugin_dir_path( __FILE__ ) );
 
 require_once __DIR__ . '/src/autoload.php';
@@ -34,6 +58,14 @@ function burst_find_wordpress_base_path(): string {
 	$path = dirname( __DIR__, 3 );
 	if ( file_exists( $path . '/wp-load.php' ) ) {
 		return rtrim( $path, '/' ) . '/';
+	}
+
+	// check subdirectories for wp-load.php.
+	$subdirs = glob( $path . '/*', GLOB_ONLYDIR );
+	foreach ( $subdirs as $subdir ) {
+		if ( file_exists( $subdir . '/wp-load.php' ) ) {
+			return rtrim( $subdir, '/' ) . '/';
+		}
 	}
 
 	// check for symlinked directory.

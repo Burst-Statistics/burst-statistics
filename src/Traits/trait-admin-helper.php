@@ -58,8 +58,8 @@ trait Admin_Helper {
 	/**
 	 * Create a website URL with optional parameters.
 	 *               Example usage:
-	 *               burst_content=page-analytics -> specifies that the user is interacting with the page analytics feature.
-	 *               burst_source=download-button -> indicates that the click originated from the download button.
+	 *               utm_content=page-analytics -> specifies that the user is interacting with the page analytics feature.
+	 *               utm_source=download-button -> indicates that the click originated from the download button.
 	 */
 	public function get_website_url( string $url = '/', array $params = [] ): string {
 		$version    = defined( 'BURST_PRO' ) ? 'pro' : 'free';
@@ -67,7 +67,7 @@ trait Admin_Helper {
 
 		// strip debug time from version nr.
 		$default_params = [
-			'burst_campaign' => 'burst-' . $version . '-' . $version_nr,
+			'utm_campaign' => 'burst-' . $version . '-' . $version_nr,
 		];
 
 		$params = wp_parse_args( $params, $default_params );
@@ -248,7 +248,10 @@ trait Admin_Helper {
 	 * Add some additional sanitizing
 	 * https://developer.wordpress.org/news/2023/08/understand-and-use-wordpress-nonces-properly/#verifying-the-nonce
 	 */
-	public function verify_nonce( string $nonce, string $action ): bool {
+	public function verify_nonce( ?string $nonce, string $action ): bool {
+		if ( empty( $nonce ) ) {
+			return false;
+		}
 		return wp_verify_nonce( sanitize_text_field( wp_unslash( $nonce ) ), $action );
 	}
 

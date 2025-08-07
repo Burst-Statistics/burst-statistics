@@ -1,1 +1,0 @@
-"use strict";(globalThis.webpackChunkburst_statistics=globalThis.webpackChunkburst_statistics||[]).push([[705],{11705:(s,r,t)=>{t.r(r),t.d(r,{errorComponent:()=>a});var e=t(74848),i=t(27723),a=(t(16060),function(s){var r=s.error;return(0,e.jsx)("div",{className:"text-red-500 p-4",children:r.message||(0,i.__)("An error occurred loading statistics","burst-statistics")})})}}]);

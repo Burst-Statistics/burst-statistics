@@ -70,6 +70,7 @@ class Admin {
 		add_action( 'burst_daily', [ $this, 'validate_tasks' ] );
 		add_action( 'burst_validate_tasks', [ $this, 'validate_tasks' ] );
 		add_action( 'plugins_loaded', [ $this, 'init_wpcli' ] );
+		add_action( 'burst_daily', [ $this, 'clean_malicious_data' ] );
 
 		$upgrade = new Upgrade();
 		$upgrade->init();
@@ -114,6 +115,77 @@ class Admin {
 		// Register the command.
 		\WP_CLI::add_command( 'burst', Burst_Wp_Cli::class );
 	}
+
+	/**
+	 * On a daily basis, cleanup suspiciously high amounts of data.
+	 *
+	 * @hooked burst_daily
+	 * @return void
+	 */
+	public function clean_malicious_data(): void {
+		if ( ! $this->user_can_manage() ) {
+			return;
+		}
+
+		$interval_days = (int) apply_filters( 'burst_data_cleanup_interval_days', 1 );
+		$data_treshold = (int) apply_filters( 'burst_data_cleanup_treshold', 1000 );
+
+		global $wpdb;
+
+		$sql = "
+        DELETE FROM {$wpdb->prefix}burst_goal_statistics
+        WHERE statistic_id IN (
+            SELECT s.ID
+            FROM {$wpdb->prefix}burst_statistics s
+            JOIN (
+                SELECT uid
+                FROM {$wpdb->prefix}burst_statistics
+                WHERE time > UNIX_TIMESTAMP(NOW() - INTERVAL {$interval_days} DAY)
+                GROUP BY uid
+                HAVING COUNT(*) > {$data_treshold}
+            ) AS filtered_uids ON s.uid = filtered_uids.uid
+        )
+    ";
+		$wpdb->query( $sql );
+
+		$sql = "
+        DELETE FROM {$wpdb->prefix}burst_sessions
+        WHERE ID IN (
+            SELECT DISTINCT s.session_id
+            FROM {$wpdb->prefix}burst_statistics s
+            JOIN (
+                SELECT uid
+                FROM {$wpdb->prefix}burst_statistics
+                WHERE time > UNIX_TIMESTAMP(NOW() - INTERVAL {$interval_days} DAY)
+                GROUP BY uid
+                HAVING COUNT(*) > {$data_treshold}
+            ) AS filtered_uids ON s.uid = filtered_uids.uid
+            WHERE s.session_id IS NOT NULL
+        )
+    ";
+		$wpdb->query( $sql );
+
+		$sql           = "
+        DELETE FROM {$wpdb->prefix}burst_statistics
+        WHERE uid IN (
+            SELECT uid FROM (
+                SELECT uid
+                FROM {$wpdb->prefix}burst_statistics
+                WHERE time > UNIX_TIMESTAMP(NOW() - INTERVAL {$interval_days} DAY)
+                GROUP BY uid
+                HAVING COUNT(*) > {$data_treshold}
+            ) AS filtered_uids
+        )
+    ";
+		$removed_count = $wpdb->query( $sql );
+
+		if ( $removed_count > 0 ) {
+			update_option( 'burst_removed_malicious_data_count', $removed_count );
+		} else {
+			delete_option( 'burst_removed_malicious_data_count' );
+		}
+	}
+
 
 	/**
 	 * Once a day, check if any tasks need to be added again
@@ -467,7 +539,7 @@ class Admin {
 		// Add "Upgrade to Pro" link at the start if not Pro version.
 		if ( ! defined( 'BURST_PRO' ) ) {
 			$upgrade_link
-				= '<a style="color:#2e8a37;font-weight:bold" target="_blank" href="' . $this->get_website_url( 'pricing', [ 'burst_source' => 'plugin-overview' ] ) . '">'
+				= '<a style="color:#2e8a37;font-weight:bold" target="_blank" href="' . $this->get_website_url( 'pricing', [ 'utm_source' => 'plugin-overview' ] ) . '">'
 				. __( 'Upgrade to Pro', 'burst-statistics' ) . '</a>';
 			array_unshift( $links, $upgrade_link );
 		}
@@ -484,8 +556,8 @@ class Admin {
 			: $this->get_website_url(
 				'support',
 				[
-					'burst_source'  => 'plugin-overview',
-					'burst_content' => 'support-link',
+					'utm_source'  => 'plugin-overview',
+					'utm_content' => 'support-link',
 				]
 			);
 		$faq_link     = '<a target="_blank" href="' . $support_link . '">'
@@ -982,7 +1054,7 @@ class Admin {
 				'burst_browser_versions',
 				'burst_platforms',
 				'burst_devices',
-				'burst_summary',
+				'burst_referrers',
 			],
 		);
 

@@ -159,8 +159,8 @@ const Onboarding: FC = () => {
         return null;
     }
     const upgradeUrl = get_website_url(onboardingData.upgrade, {
-        burst_source:onboardingData.prefix + '_onboarding',
-        burst_content: 'upgrade'
+        utm_source:onboardingData.prefix + '_onboarding',
+        utm_content: 'upgrade'
     });
 
     return (

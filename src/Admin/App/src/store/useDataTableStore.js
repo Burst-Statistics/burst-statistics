@@ -76,6 +76,7 @@ export const useDataTableStore = create(
     }),
     {
       name: "burst-datatable-storage",
+      version: 1.1,
       partialize: (state) => ({
         selectedConfigs: state.selectedConfigs,
         columnConfigs: state.columnConfigs,
