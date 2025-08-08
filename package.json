@@ -1,60 +1,16 @@
 {
-  "name": "burst-pro",
-  "version": "1.7",
+  "name": "burst-statistics",
+  "version": "2.0",
   "description": "Burst Statistics is a privacy-friendly analytics tool for Wordpress",
   "main": "index.js",
-  "workspaces": [
-    "src/TeamUpdraft"
-  ],
   "scripts": {
-    "start": "gulp",
-    "gulp": "gulp",
-    "dev": "wp-env start && wp-env exec wp theme activate twentytwentyone",
-    "build": "gulp js && gulp scss",
-    "create-rc": "npm run build && cd automation && ./create_rc.sh $npm_config_user",
-    "create-rc:upload": "npm run build && cd automation && ./create_rc.sh $npm_config_user --upload",
-    "sniff": "vendor/bin/phpcs --standard=phpcs.xml.dist . -s -p",
-    "sniff-fix": "vendor/bin/phpcbf --standard=phpcs.xml.dist . -s -p",
-    "lint": "eslint . --ext .js,.jsx --ignore-path .eslintignore",
-    "lint:fix": "eslint . --ext .js,.jsx --ignore-path .eslintignore --fix",
-    "build:js": "webpack --config webpack.config.js",
-    "scss": "gulp scss",
-    "build:apps": "cd settings && npm install --legacy-peer-deps && npm run build && cd ../dashboard-widget &&  npm install --legacy-peer-deps && npm run build && cd ..",
     "e2e": "playwright test tests/e2e/specs/",
-    "e2e:integrations": "playwright test tests/e2e/specs-integrations/",
-    "e2e:review": "playwright test tests/e2e/specs-review/",
-    "e2e:license": "playwright test tests/e2e/specs-license/",
-    "e2e:translate": "playwright test tests/e2e/specs-translate/",
-    "e2e:deactivate": "playwright test tests/e2e/specs-deactivate/",
-    "e2e:goals:click": "playwright test tests/e2e/goals/specs-click/",
-    "e2e:goals:click-turbomode": "playwright test tests/e2e/goals/specs-click-turbomode/",
-    "e2e:goals:view": "playwright test tests/e2e/goals/specs-view/",
-    "e2e:goals:visitpage": "playwright test tests/e2e/goals/specs-visitpage/",
-    "e2e:reset": "playwright test tests/e2e/specs-reset/",
     "e2e:upgrade": "playwright test tests/e2e/specs-upgrade/",
-    "e2e:upgrade_premium": "playwright test tests/e2e/specs-upgrade_premium/",
-    "e2e:auto-installer": "playwright test tests/e2e/specs-auto-installer/",
-    "e2e:otherplugins": "playwright test tests/e2e/specs-otherplugins/",
-    "e2e:tracking:beacon": "playwright test tests/e2e/tracking/specs-beacon/",
-    "e2e:tracking:beacon-turbomode": "playwright test tests/e2e/tracking/specs-beacon-turbomode/",
-    "e2e:tracking:beaconcookieless": "playwright test tests/e2e/tracking/specs-beaconcookieless/",
-    "e2e:tracking:uglyrest": "playwright test tests/e2e/tracking/specs-uglyrest/",
-    "e2e:tracking:prettyrest": "playwright test tests/e2e/tracking/specs-prettyrest/",
-    "e2e:tracking:combinescripts": "playwright test tests/e2e/tracking/specs-combine-scripts/",
-    "e2e:onboarding": "playwright test tests/e2e/specs-onboarding/",
-    "e2e:open": "playwright test --headed",
-    "test:unit": "wp-env run tests-cli --env-cwd=wp-content/plugins/burst-pro sh -c 'wp plugin activate burst-pro && vendor/bin/phpunit'",
-    "gitlab:php": "npx gitlab-ci-local test:php8.2:latest",
-    "test": "npm run test:unit && npm run test:e2e",
-    "gitlab:phpunit": "npx gitlab-ci-local test:phpunit",
-    "testlocal:unit": "wp-env start && wp-env run tests-cli --env-cwd=wp-content/plugins/burst-pro sh -c 'wp plugin activate burst-pro && vendor/bin/phpunit'",
-    "testlocal": "npm run testlocal:unit && npm run testlocal:e2e",
-    "build:shared": "cd src/TeamUpdraft && npm run build",
-    "dev:shared": "cd src/TeamUpdraft && npm run dev"
+    "e2e:open": "playwright test tests/e2e/specs/ --headed"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Really-Simple-Plugins/burst.git"
+    "url": "git+https://github.com/Burst-Statistics/burst-statistics.git"
   },
   "keywords": [
     "analytics",
@@ -68,25 +24,7 @@
     "url": "https://github.com/Burst-Statistics/burst/issues"
   },
   "homepage": "https://github.com/Burst-Statistics/burst#readme",
-  "dependencies": {
-    "gulp-cli": "^2.3.0",
-    "gulp-concat": "^2.6.1",
-    "gulp-cssbeautify": "^3.0.1",
-    "gulp-rtlcss": "^2.0.0",
-    "gulp-sass": "^5.1.0",
-    "gulp-shell": "^0.8.0",
-    "gulp-uglify": "^3.0.2",
-    "gulp-uglifycss": "^1.1.0"
-  },
   "devDependencies": {
-    "@playwright/test": "1.52.0",
-    "@wordpress/env": "^9.10.0",
-    "eslint": "^8.49.0",
-    "eslint-config-wordpress": "^2.0.0",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "express": "^4.21.2",
-    "gulp": "^4.0.2",
-    "sass": "^1.54.9"
+    "@playwright/test": "1.52.0"
   }
 }
