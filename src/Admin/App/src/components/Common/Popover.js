@@ -1,20 +1,22 @@
 import Icon from '../../utils/Icon';
 import * as ReactPopover from '@radix-ui/react-popover';
 
-const Popover = ({ title, children, footer, isOpen, setIsOpen }) => {
+const Popover = ({ title, children, footer, isOpen, setIsOpen, showFilterIcon=true, size='large' }) => {
   return (
     <ReactPopover.Root open={isOpen} onOpenChange={setIsOpen}>
-      <ReactPopover.Trigger
-        id="burst-filter-button"
-        className={`${isOpen ? 'bg-gray-400 shadow-lg' : 'bg-gray-300'} focus:ring-blue-500 cursor-pointer rounded-full p-3 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2`}
-        onClick={() => setIsOpen( ! isOpen )}
-      >
-        <Icon name="filter" />
-      </ReactPopover.Trigger>
+            <ReactPopover.Trigger
+                id="burst-filter-button"
+                onClick={() => setIsOpen( ! isOpen )}
+              >
+                {showFilterIcon &&
+                <div className={`${isOpen ? 'bg-gray-400 shadow-lg' : 'bg-gray-300'} focus:ring-blue-500 cursor-pointer rounded-full p-3 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2`}>
+                    <Icon name="filter" />
+                </div>}
+            </ReactPopover.Trigger>
       <ReactPopover.Portal container={document.querySelector( '.burst' )}>
         <ReactPopover.Content
-          className="z-50 min-w-[280px] max-w-[400px] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"
-          align={'end'}
+          className={"z-50 min-w-[280px] max-w-[600px] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"}
+          align={'start'}
           sideOffset={10}
           arrowPadding={10}
         >

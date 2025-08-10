@@ -237,7 +237,7 @@ class Shortcodes {
 
 			case 'device_breakdown':
 				$select   = [ 'pageviews', 'device' ];
-				$group_by = 'device';
+				$group_by = 'device_id';
 				$order_by = 'pageviews DESC';
 				if ( ! empty( $page_url_filter ) ) {
 					$filters['page_url'] = $page_url_filter;

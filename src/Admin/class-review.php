@@ -130,7 +130,7 @@ class Review {
 							'<a href="' . $this->get_website_url(
 								'support',
 								[
-									'burst_source' => 'review_notice',
+									'utm_source' => 'review_notice',
 								]
 							) . '" target="_blank">',
 							'</a>'

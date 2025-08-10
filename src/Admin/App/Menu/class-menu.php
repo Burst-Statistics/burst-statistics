@@ -49,8 +49,8 @@ class Menu {
 					$menu_items[ $key ]['groups'][ $group_key ]['upgrade'] = $this->get_website_url(
 						$menu_item['groups'][ $group_key ]['upgrade'],
 						[
-							'burst_source'  => 'setting-upgrade',
-							'burst_content' => $menu_item['groups'][ $group_key ]['id'],
+							'utm_source'  => 'setting-upgrade',
+							'utm_content' => $menu_item['groups'][ $group_key ]['id'],
 						]
 					);
 				}

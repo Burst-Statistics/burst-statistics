@@ -9,7 +9,7 @@
     const prefix = onboardingData.prefix || 'teamupdraft';
     const versionNr = onboardingData.version;
     const defaultParams = {
-      burst_campaign: `${prefix}-${version}-${versionNr}`
+      utm_campaign: `${prefix}-${version}-${versionNr}`
     };
   
     params = Object.assign( defaultParams, params );

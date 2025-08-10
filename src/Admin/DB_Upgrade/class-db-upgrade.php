@@ -1010,17 +1010,4 @@ class DB_Upgrade {
 			delete_transient( 'burst_progress_drop_path_from_parameters_column' );
 		}
 	}
-
-
-
-
-	/**
-	 * Check if a table has a specific column
-	 */
-	public function column_exists( string $table_name, string $column_name ): bool {
-		global $wpdb;
-		$table_name = $wpdb->prefix . $table_name;
-		$columns    = $wpdb->get_col( "DESC $table_name" );
-		return in_array( $column_name, $columns, true );
-	}
 }

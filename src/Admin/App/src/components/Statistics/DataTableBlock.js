@@ -1,6 +1,7 @@
 import { __ } from '@wordpress/i18n';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import PopoverFilter from '../Common/PopoverFilter';
+import SearchButton from '../Common/SearchButton';
 import DataTableSelect from './DataTableSelect';
 import { useDataTableStore } from '@/store/useDataTableStore';
 import EmptyDataTable from './EmptyDataTable';
@@ -32,6 +33,12 @@ const defaultColumnsOptions = {
   },
   conversions: {
     label: __( 'Conversions', 'burst-statistics' ),
+    pro: true,
+    align: 'right'
+  },
+  conversion_rate: {
+    label: __( 'Conversion Rate', 'burst-statistics' ),
+    format: 'percentage',
     pro: true,
     align: 'right'
   },
@@ -178,7 +185,7 @@ const config = {
     }
   },
   ghost: {
-    label: __( 'Ghost', 'burst-statistics' ),
+    label: __( 'Dummy', 'burst-statistics' ),
     searchable: true,
     defaultColumns: [ 'pageviews' ],
     columnsOptions: {
@@ -425,13 +432,11 @@ const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id }) => {
         }
         controls={
           <>
-            {configDetails.searchable && (
-              <input
-                className="burst-datatable-search ml-auto"
-                type="text"
-                placeholder={__( 'Search', 'burst-statistics' )}
+            {configDetails?.searchable && (
+              <SearchButton
                 value={filterText}
-                onChange={( e ) => setFilterText( e.target.value )}
+                onChange={setFilterText}
+                className="ml-auto"
               />
             )}
             <PopoverFilter

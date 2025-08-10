@@ -6,7 +6,7 @@ Requires at least: 6.2
 License: GPL2
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 2.2.0
+Stable tag: 2.2.2
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 
@@ -97,6 +97,19 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 2.2.2 =
+* New: Extensive range of filter options to easily track what campaigns are delivering your conversions!
+* Improvement: Added CORS support to tracking endpoint to allow cross-origin requests via fetch/sendBeacon. props Alex
+* Improvement: automatic cleanup of anomalous numbers of visits, when one visitor results in over 1000 page views in 24 hours (customizable with filters).
+* Improvement: remove duplicate non necessary json_encode from endpoint
+* Improvement: Add logging option to check error responses on the endpoint or rest api, when BURST_DEBUG and WP_DEBUG are set to true.
+* Fix: when the weekly statistics report was sent on another day than the default day, date range calculation could retrieve the wrong range. props Pieter
+* Fix: Referrer filter not working. props @lekkerbezig
+* Fix: allow for alternative WordPress location, e.g. in subfolder 'wp'.
+
+= 2.2.1 =
+* Fix: usage of wrong key prevented upgrade from completing
+
 = 2.2.0 =
 * New: extended range of shortcodes.
 * New: goal element preview to check if the selected element exists on the page.

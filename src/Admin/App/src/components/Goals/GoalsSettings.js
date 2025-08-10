@@ -150,7 +150,7 @@ const GoalsSettings = () => {
                   <a
                     className="underline"
                     href={burst_get_website_url( '/request-goal-integration/', {
-                      burst_source: 'goals-integration-request'
+                      utm_source: 'goals-integration-request'
                     })}
                   >
                     {__( 'Request it here!', 'burst-statistics' )}
@@ -179,8 +179,8 @@ const GoalsSettings = () => {
             <p>{__( 'Upgrade to Burst Pro', 'burst-statistics' )}</p>
             <a
               href={burst_get_website_url( '/pricing/', {
-                burst_source: 'goals-setting',
-                burst_content: 'more-goals'
+                utm_source: 'goals-setting',
+                utm_content: 'more-goals'
               })}
               target={'_blank'}
               className={'burst-button burst-button--pro'}

@@ -197,6 +197,7 @@ export const setGoals = ( data ) => {
 
 export const getGoals = () =>
   makeRequest( 'burst/v1/goals/get' + glue() + getNonce() );
+
 export const deleteGoal = ( id ) =>
   makeRequest( 'burst/v1/goals/delete' + glue() + getNonce(), 'POST', {
     id: id

@@ -37,8 +37,8 @@ const ProBadge: React.FC<ProBadgeProps> = ({
   let finalUrl = url;
   if (!finalUrl) {
     finalUrl = burst_get_website_url("pricing", {
-      burst_source: "pro-badge",
-      burst_content: id || "empty-content",
+      utm_source: "pro-badge",
+      utm_content: id || "empty-content",
     });
   }
 

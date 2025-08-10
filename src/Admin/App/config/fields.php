@@ -306,7 +306,7 @@ return [
 		'type'     => 'checkbox',
 		'label'    => __( 'Enable shortcodes', 'burst-statistics' ),
 		'context'  => [
-			'text' => __( 'Allow shortcodes the use of shortcodes in widgets, posts and pages.', 'burst-statistics' ),
+			'text' => __( 'Enable statistics shortcodes for use on your website.', 'burst-statistics' ),
 			'url'  => 'burst-statistics-shortcodes/',
 		],
 		'disabled' => false,

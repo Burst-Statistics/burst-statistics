@@ -8,8 +8,6 @@ import SelectorField from '@/components/Fields/SelectorField';
 const GoalField = ({ field = {}, fields, goal, value, setGoalValue }) => {
   const [ validated, setValidated ] = useState( false );
 
-  console.log("goal", goal);
-
   useEffect( () => {
     validateInput( field, value );
   });

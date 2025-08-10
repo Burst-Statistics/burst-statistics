@@ -27,14 +27,14 @@ const Header = () => {
   const supportUrl = ! isPro ?
     'https://wordpress.org/support/plugin/burst-statistics/' :
     burst_get_website_url( '/support/', {
-        burst_source: 'header',
-        burst_content: 'support'
+        utm_source: 'header',
+        utm_content: 'support'
       });
   const upgradeUrl = isPro ?
     false :
     burst_get_website_url( '/pricing/', {
-        burst_source: 'header',
-        burst_content: 'upgrade-to-pro'
+        utm_source: 'header',
+        utm_content: 'upgrade-to-pro'
       });
 
   const getMenuItemUrl = ( menuItem ) => {

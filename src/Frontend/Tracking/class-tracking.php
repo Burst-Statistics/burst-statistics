@@ -201,8 +201,7 @@ class Tracking {
 			return 'ip blocked';
 		}
 
-		// The data is encoded in JSON and decoded twice to get the array.
-		$data = json_decode( json_decode( $request, true ), true );
+		$data = json_decode( $request, true );
 		$this->track_hit( $data );
 		http_response_code( 200 );
 
@@ -553,6 +552,7 @@ class Tracking {
 					'isInitialHit'        => true,
 					'lastUpdateTimestamp' => 0,
 					'beacon_url'          => self::get_beacon_url(),
+					'ajaxUrl'             => admin_url( 'admin-ajax.php' ),
 				],
 				'options'  => [
 					'cookieless'            => $this->get_option_int( 'enable_cookieless_tracking' ),
@@ -562,6 +562,7 @@ class Tracking {
 					'enable_turbo_mode'     => $this->get_option_int( 'enable_turbo_mode' ),
 					'track_url_change'      => $this->get_option_int( 'track_url_change' ),
 					'cookie_retention_days' => apply_filters( 'burst_cookie_retention_days', 30 ),
+					'debug'                 => defined( 'BURST_DEBUG' ) && BURST_DEBUG ? 1 : 0,
 				],
 				'goals'    => [
 					'completed' => [],

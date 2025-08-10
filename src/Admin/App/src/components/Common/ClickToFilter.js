@@ -4,6 +4,7 @@ import useGoalsData from '@/hooks/useGoalsData';
 import { useInsightsStore } from '@/store/useInsightsStore';
 import { useDate } from '@/store/useDateStore';
 import Tooltip from '@/components/Common/Tooltip';
+import Icon from '@/utils/Icon';
 import { __ } from '@wordpress/i18n';
 import { toast } from 'react-toastify';
 import { isValidDate } from '@/utils/formatting';
@@ -41,18 +42,60 @@ const ClickToFilter = ({
   const isValidFilter = useMemo(() => {
     return filter && filtersConf && Object.prototype.hasOwnProperty.call(filtersConf, filter);
   }, [filter, filtersConf]);
+
+  // Check if this filter value represents a URL that can be opened externally
+  const isExternalLinkable = useMemo(() => {
+    if (!filterValue) return false;
+    
+    // Check if it's a URL-related filter type
+    const urlFilters = ['page_url', 'referrer'];
+    if (urlFilters.includes(filter)) return true;
+    
+    // Check if the value looks like a URL
+    try {
+      const urlPattern = /^https?:\/\/.+/i;
+      return urlPattern.test(filterValue);
+    } catch {
+      return false;
+    }
+  }, [filter, filterValue]);
   
   if ( !isValidFilter ) {
     return <>{children}</>;
   }
 
-  // Memoize tooltip content
-  const tooltip = useMemo(() => {
+  // Handle external link clicks
+  const handleExternalLinkClick = useCallback((e) => {
+    e.stopPropagation();
     
+    let url = filterValue;
+    
+    // For page_url filters, construct the full URL if it's a relative path
+    if (filter === 'page_url' && !filterValue.startsWith('http')) {
+      // Get the site URL from window.burst_admin if available, otherwise use current origin
+      const siteUrl = window.burst_admin?.site_url || window.location.origin;
+      url = `${siteUrl}${filterValue.startsWith('/') ? '' : '/'}${filterValue}`;
+    }
+
+    if (filter === 'referrer' && !filterValue.startsWith('http')) {
+      //assuming https always.
+      url = `https://${filterValue}`;
+    }
+    
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, [filter, filterValue]);
+
+  // Memoize tooltip content for filter icon
+  const filterTooltip = useMemo(() => {
     return label 
       ? `${__('Click to filter by:', 'burst-statistics')} ${label}`
       : __('Click to filter', 'burst-statistics');
-  }, [label, isValidFilter]);
+  }, [label]);
+
+  // Memoize tooltip content for external link icon
+  const externalLinkTooltip = useMemo(() => {
+    return __('Open in new tab', 'burst-statistics');
+  }, []);
 
   // Handle date range updates
   const handleDateRange = useCallback(() => {
@@ -112,8 +155,10 @@ const ClickToFilter = ({
     }
   }, [getGoal, setFilters, insightsMetrics, setInsightsMetrics]);
 
-  // Main click handler
-  const handleClick = useCallback(() => {
+  // Main filter click handler
+  const handleFilterClick = useCallback((e) => {
+    e.stopPropagation();
+    
     // Validate filter before processing
     if (!isValidFilter) {
       console.warn(`ClickToFilter: Invalid filter "${filter}" - not found in filter configuration`);
@@ -145,11 +190,37 @@ const ClickToFilter = ({
   }
 
   return (
-    <Tooltip content={tooltip}>
-      <span onClick={handleClick} className="burst-click-to-filter">
+    <div className="group flex items-center gap-2">
+      {/* Main content */}
+      <div className="flex-1">
         {children}
-      </span>
-    </Tooltip>
+      </div>
+      
+      {/* Icons that appear on hover to the right */}
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* Filter icon - always show when hoverable */}
+        <Tooltip content={filterTooltip}>
+          <div 
+            onClick={handleFilterClick}
+            className="flex items-center justify-center w-6 h-6 bg-white/90 hover:bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
+          >
+            <Icon name="filter" size={14} color="black" />
+          </div>
+        </Tooltip>
+        
+        {/* External link icon - only show for URLs */}
+        {isExternalLinkable && (
+          <Tooltip content={externalLinkTooltip}>
+            <div 
+              onClick={handleExternalLinkClick}
+              className="flex items-center justify-center w-6 h-6 bg-white/90 hover:bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
+            >
+              <Icon name="referrers" size={14} color="black" />
+            </div>
+          </Tooltip>
+        )}
+      </div>
+    </div>
   );
 };
 

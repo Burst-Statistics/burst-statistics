@@ -29,10 +29,10 @@ class ErrorBoundary extends Component<Props, State> {
             return (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-md">
                     <h2 className="text-red-800 font-semibold mb-2">
-                        {__('Something went wrong', 'burst-pro')}
+                        {__('Something went wrong', 'burst-statistics')}
                     </h2>
                     <p className="text-red-600">
-                        {__('Please try refreshing the page or contact support if the problem persists.', 'burst-pro')}
+                        {__('Please try refreshing the page or contact support if the problem persists.', 'burst-statistics')}
                     </p>
                 </div>
             );

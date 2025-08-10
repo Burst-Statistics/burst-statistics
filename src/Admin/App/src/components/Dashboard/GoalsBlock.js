@@ -253,7 +253,7 @@ const GoalsBlock = () => {
                 <a
                   className='text-blue underline'
                   href={burst_get_website_url( 'how-to-set-goals', {
-                    burst_source: 'goals-block-overlay'
+                    utm_source: 'goals-block-overlay'
                   })}
                 >
                   {__( 'Learn how to set your first goal', 'burst-statistics' )}

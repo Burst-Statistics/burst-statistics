@@ -12,11 +12,12 @@ export const burst_get_website_url = ( url = '/', params = {}) => {
   const versionNr = burst_settings.burst_version.replace( /#.*$/, '' );
   
   const defaultParams = {
-    burst_campaign: `burst-${version}-${versionNr}`
+    utm_campaign: `burst-${version}-${versionNr}`
   };
 
-  // Merge default params with provided params
-  const mergedParams = { ...defaultParams, ...params };
+  // Merge default params with provided params, but force our default utm_campaign with the version.
+  const { utm_campaign, ...cleanParams } = params;
+  const mergedParams = { ...defaultParams, ...cleanParams };
   
   // Use WordPress addQueryArgs utility to handle URL parameters properly
   return addQueryArgs(baseUrl + url, mergedParams);

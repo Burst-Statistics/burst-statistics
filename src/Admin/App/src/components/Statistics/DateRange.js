@@ -19,7 +19,7 @@ const CLICKS_TO_CLOSE = 2;
 // Separate trigger button component
 const DateRangeTrigger = ({ range, display, isOpen, setIsOpen }) => (
   <ReactPopover.Trigger
-    className="flex min-w-[200px] items-center gap-2 rounded-md border border-gray-400 bg-gray-100 px-3 py-2  shadow-md transition-all duration-200 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.1)]"
+    className="flex min-w-[200px] items-center gap-2 rounded-md border border-gray-400 bg-gray-100 px-3 py-2 shadow-md transition-all duration-200 hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)]"
     onClick={() => setIsOpen( ! isOpen )}
   >
     <Icon name="calendar" size="18" />
@@ -107,7 +107,7 @@ const DateRange = () => {
           isOpen={isOpen}
           setIsOpen={setIsOpen}
         />
-        <ReactPopover.Portal container={document.querySelector('.burst')}>
+        <ReactPopover.Portal container={document.querySelector( '.burst' )}>
           <ReactPopover.Content
             align="end"
             sideOffset={10}

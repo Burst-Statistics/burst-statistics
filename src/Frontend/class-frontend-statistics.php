@@ -49,13 +49,6 @@ class Frontend_Statistics {
 	private $allowed_order_by;
 
 	/**
-	 * Cache for use_lookup_tables check
-	 *
-	 * @var bool|null
-	 */
-	private $use_lookup_tables = null;
-
-	/**
 	 * Cache for exclude_bounces check
 	 *
 	 * @var bool|null
@@ -291,12 +284,7 @@ class Frontend_Statistics {
 		// Build WHERE clause from filters.
 		$where = $this->build_where_clause( $filters );
 
-		// Build optional clauses, handling lookup table adjustments.
 		if ( ! empty( $group_by ) ) {
-			// Adjust group_by for lookup tables.
-			if ( $group_by === 'device' && $this->use_lookup_tables() ) {
-				$group_by = 'device_id';
-			}
 			$group_by_sql = 'GROUP BY ' . esc_sql( $group_by );
 		} else {
 			$group_by_sql = '';
@@ -572,11 +560,7 @@ class Frontend_Statistics {
 					$select_parts[] = 'statistics.referrer';
 					break;
 				case 'device':
-					if ( $this->use_lookup_tables() ) {
-						$select_parts[] = 'statistics.device_id';
-					} else {
-						$select_parts[] = 'statistics.device';
-					}
+					$select_parts[] = 'statistics.device_id';
 					break;
 				case 'count':
 				default:
@@ -618,13 +602,9 @@ class Frontend_Statistics {
 					}
 					break;
 				case 'device':
-					if ( $this->use_lookup_tables() ) {
-						// Convert device name to device_id if using lookup tables.
-						$device_id     = $this->get_lookup_table_id( 'device', $value );
-						$where_parts[] = $wpdb->prepare( 'statistics.device_id = %d', $device_id );
-					} else {
-						$where_parts[] = $wpdb->prepare( 'statistics.device = %s', $value );
-					}
+					// Convert device name to device_id if using lookup tables.
+					$device_id     = $this->get_lookup_table_id( 'device', $value );
+					$where_parts[] = $wpdb->prepare( 'statistics.device_id = %d', $device_id );
 					break;
 				case 'browser':
 					$where_parts[] = $wpdb->prepare( 'statistics.browser = %s', $value );
@@ -781,18 +761,5 @@ class Frontend_Statistics {
 			$this->exclude_bounces = (bool) apply_filters( 'burst_exclude_bounces', $this->get_option_bool( 'exclude_bounces' ) );
 		}
 		return $this->exclude_bounces;
-	}
-
-	/**
-	 * Check if lookup tables should be used (cached method)
-	 *
-	 * @return bool True if using lookup tables, false if using direct storage.
-	 */
-	private function use_lookup_tables(): bool {
-		if ( $this->use_lookup_tables === null ) {
-			$this->use_lookup_tables = ! get_option( 'burst_db_upgrade_upgrade_lookup_tables' );
-		}
-
-		return $this->use_lookup_tables;
 	}
 }

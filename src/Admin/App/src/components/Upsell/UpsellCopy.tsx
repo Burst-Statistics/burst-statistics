@@ -18,10 +18,10 @@ const UpsellCopy: React.FC<UpsellCopyProps> = ({ className = "" }) => {
   const { variation } = useABTest("upsell-copy-v1", ["A", "B"]);
 
   // Base campaign parameters for all variations
+  // Don't use `utm_campaign` here as it is filled in by the plugin automatically
   const baseParams = {
     utm_source: "plugin",
-    utm_medium: "upsell",
-    utm_campaign: `upsell-variation-${variation.toLowerCase()}`,
+    utm_medium: `upsell-variation-${variation.toLowerCase()}`,
   };
 
   // Get the appropriate copy based on variation

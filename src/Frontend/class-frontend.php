@@ -36,6 +36,8 @@ class Frontend {
 		add_filter( 'script_loader_tag', [ $this, 'defer_burst_tracking_script' ], 10, 3 );
 		add_action( 'burst_every_hour', [ $this, 'maybe_update_total_pageviews_count' ] );
 		add_action( 'init', [ $this, 'use_logged_out_state_for_tests' ] );
+		add_action( 'wp_ajax_burst_tracking_error', [ $this, 'log_tracking_error' ] );
+		add_action( 'wp_ajax_nopriv_burst_tracking_error', [ $this, 'log_tracking_error' ] );
 
 		$sessions = new Sessions();
 		$sessions->init();
@@ -51,6 +53,54 @@ class Frontend {
 			$shortcodes = new Shortcodes();
 			$shortcodes->init();
 		}
+	}
+
+	/**
+	 * Log payload of 400 response errors on tracking requests if BURST_DEBUG is enabled
+	 *
+	 * @return void
+	 */
+	public function log_tracking_error(): void {
+		if ( ! defined( 'BURST_DEBUG' ) || ! BURST_DEBUG ) {
+			// If debug mode is not enabled, do not log errors.
+			return;
+		}
+
+		// No form data processed, only exit if not present.
+        // phpcs:ignore
+		if ( ! isset( $_POST['status'] ) || ! isset( $_POST['data'] ) || ! isset( $_POST['error'] ) ) {
+			$this::error_log( 'Posted log error, but missing required POST parameters.' );
+			return;
+		}
+
+		// no nonce verification, as we are logging public 400 response errors.
+        // phpcs:ignore
+		$status = (int) ( $_POST['status'] );
+        // phpcs:ignore
+        $raw_data = stripslashes( $_POST['data'] );
+		$data     = json_decode( $raw_data, true );
+		if ( ! is_array( $data ) ) {
+			$data = [];
+		}
+
+		$data = [
+			'uid'               => isset( $data['uid'] ) && is_string( $data['uid'] ) ? sanitize_text_field( $data['uid'] ) : false,
+			'fingerprint'       => isset( $data['fingerprint'] ) && is_string( $data['fingerprint'] ) ? sanitize_text_field( $data['fingerprint'] ) : false,
+			'url'               => isset( $data['url'] ) ? esc_url_raw( $data['url'] ) : '',
+			'referrer_url'      => isset( $data['referrer_url'] ) ? esc_url_raw( $data['referrer_url'] ) : '',
+			'user_agent'        => isset( $data['user_agent'] ) ? sanitize_text_field( $data['user_agent'] ) : '',
+			'device_resolution' => isset( $data['device_resolution'] ) ? preg_replace( '/[^0-9x]/', '', $data['device_resolution'] ) : '',
+			'time_on_page'      => isset( $data['time_on_page'] ) ? (int) $data['time_on_page'] : 0,
+			'completed_goals'   => isset( $data['completed_goals'] ) && is_array( $data['completed_goals'] )
+				? array_map( 'intval', $data['completed_goals'] )
+				: [],
+		];
+		// no nonce verification, as we are logging public 400 response errors.
+        // phpcs:ignore
+		$error = sanitize_text_field( $_POST['error'] );
+		// usage of print_r is intentional here, as this is a debug log.
+        // phpcs:ignore
+		$this::error_log( "Burst tracking error: status=$status, error=$error, data=" . print_r( $data, true ) );
 	}
 
 	/**

@@ -347,7 +347,7 @@ const computedContext = error
                 <div className="col-start-2 flex items-center justify-center">
                 <div 
                   role="group" 
-                  aria-label={__("Cycle matches", "burst-statistics")}
+                  aria-label={__("Step through matches", "burst-statistics")}
                   className="flex items-center justify-center rounded overflow-hidden shadow-sm"
                 >
                   <button
@@ -403,8 +403,7 @@ const computedContext = error
         {/* Screen reader info */}
         {previewData.previews.length > 0 && (
           <span className="sr-only" aria-live="polite">
-            {previewData.count}{" "}
-            {__("elements match your selector. Use arrow keys to cycle through matches.", "burst-statistics")}
+            {__("%s elements match your selector. Use arrow keys to cycle through matches.", "burst-statistics").replace("%s", previewData.count)}
           </span>
         )}
 

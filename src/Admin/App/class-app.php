@@ -4,6 +4,7 @@ namespace Burst\Admin\App;
 use Burst\Admin\App\Fields\Fields;
 use Burst\Admin\App\Menu\Menu;
 use Burst\Admin\Burst_Onboarding\Burst_Onboarding;
+use Burst\Pro\Pro_Statistics;
 use Burst\TeamUpdraft\Installer\Installer;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
@@ -45,6 +46,7 @@ class App {
 		add_action( 'burst_after_save_field', [ $this, 'update_for_multisite' ], 10, 4 );
 		add_action( 'rest_api_init', [ $this, 'settings_rest_route' ], 8 );
 		add_filter( 'burst_localize_script', [ $this, 'extend_localized_settings_for_dashboard' ], 10, 1 );
+		add_action( 'burst_weekly', [ $this, 'weekly_clear_referrers_table' ] );
 		$this->menu   = new Menu();
 		$this->fields = new Fields();
 		$onboarding   = new Burst_Onboarding();
@@ -256,7 +258,7 @@ class App {
 		$submenu['burst'][] = [
 			__( 'Upgrade to Pro', 'burst-statistics' ),
 			'manage_burst_statistics',
-			$this->get_website_url( 'pricing/', [ 'burst_source' => 'plugin-submenu-upgrade' ] ),
+			$this->get_website_url( 'pricing/', [ 'utm_source' => 'plugin-submenu-upgrade' ] ),
 		];
 
 		if ( isset( $submenu['burst'][ $highest_index ] ) ) {
@@ -413,7 +415,7 @@ class App {
 		$get_params = $_GET;
 		// remove the rest_action parameter.
 		unset( $get_params['rest_action'] );
-		$nonce = $get_params['nonce'];
+		$nonce = $get_params['nonce'] ?? false;
 		if ( ! $this->verify_nonce( $nonce, 'burst_nonce' ) ) {
 			$response = new \WP_REST_Response(
 				[
@@ -667,7 +669,7 @@ class App {
 				--tw-blur: blur(4px);
 				filter: var(--tw-blur);
 			}
-			
+
 			/* Borders */
 			#burst-statistics .border-b-4 {
 				border-bottom-width: 4px;
@@ -942,6 +944,10 @@ class App {
 			case 'tracking':
 				$data = Endpoint::get_tracking_status_and_time();
 				break;
+			case 'get_filter_options':
+				$data_type = isset( $data['data_type'] ) ? sanitize_title( $data['data_type'] ) : '';
+				$data      = $this->get_filter_options( $data_type );
+				break;
 			default:
 				$data = apply_filters( 'burst_do_action', [], $action, $data );
 		}
@@ -957,6 +963,162 @@ class App {
 			],
 			200
 		);
+	}
+
+	/**
+	 * Get advanced filter options.
+	 *
+	 * @param string $data_type The specific data type to return (devices, browsers, platforms, countries, pages, referrers, campaigns).
+	 * @return array
+	 */
+	private function get_filter_options( string $data_type ): array {
+		if ( ! $this->user_can_view() ) {
+			return [];
+		}
+
+		global $wpdb;
+		$valid_types = [ 'devices', 'browsers', 'platforms', 'countries', 'states', 'cities', 'pages', 'referrers', 'campaigns', 'sources', 'mediums', 'contents', 'terms' ];
+
+		// Return invalid data type error.
+		if ( empty( $data_type ) || ! in_array( $data_type, $valid_types, true ) ) {
+			return [
+				'success' => false,
+				'message' => 'Invalid data type. Valid types are: ' . implode( ', ', $valid_types ),
+			];
+		}
+
+		// Define data type queries.
+		$queries = [
+			'devices'   => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_devices GROUP BY name",
+			'browsers'  => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_browsers GROUP BY name",
+			'platforms' => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_platforms GROUP BY name",
+			'states'    => "SELECT DISTINCT state AS name FROM {$wpdb->prefix}burst_locations",
+			'cities'    => "SELECT DISTINCT city AS name FROM {$wpdb->prefix}burst_locations",
+			'pages'     => "SELECT DISTINCT page_url AS name FROM {$wpdb->prefix}burst_statistics",
+			'campaigns' => "SELECT DISTINCT campaign AS name FROM {$wpdb->prefix}burst_campaigns",
+			'sources'   => "SELECT DISTINCT source AS name FROM {$wpdb->prefix}burst_campaigns",
+			'mediums'   => "SELECT DISTINCT medium AS name FROM {$wpdb->prefix}burst_campaigns",
+			'contents'  => "SELECT DISTINCT content AS name FROM {$wpdb->prefix}burst_campaigns",
+			'terms'     => "SELECT DISTINCT term AS name FROM {$wpdb->prefix}burst_campaigns",
+		];
+
+		// Get raw data based on data type.
+		if ( $data_type === 'countries' ) {
+			$raw_data = apply_filters( 'burst_countries', [] );
+			// filter out localhost.
+			unset( $raw_data['LO'] );
+			$raw_data = array_map(
+				fn( $key, $value ) => [
+					'ID'   => $key,
+					'name' => $value,
+				],
+				array_keys( $raw_data ),
+				$raw_data
+			);
+		} elseif ( $data_type === 'referrers' ) {
+			$raw_data = $this->get_referrer_options();
+			$raw_data = array_map(
+				fn( $value ) => [
+					'ID'   => $value['name'],
+					'name' => $value['name'],
+				],
+				array_values( $raw_data )
+			);
+		} else {
+			$raw_data = $wpdb->get_results( $queries[ $data_type ], ARRAY_A );
+			$raw_data = array_filter(
+				$raw_data,
+				function ( $item ) {
+					foreach ( [ 'name', 'id', 'key' ] as $field ) {
+						if ( isset( $item[ $field ] ) ) {
+							$value = trim( (string) $item[ $field ] );
+							if ( $value === '' || $value === '-1' || $value === 'null' ) {
+								return false;
+							}
+						}
+					}
+
+					return true;
+				}
+			);
+
+			if ( $data_type === 'devices' ) {
+				$raw_data = array_map(
+					function ( $item ) {
+						$item['key'] = $item['name'];
+						// get nicename for device.
+						switch ( $item['name'] ) {
+							case 'desktop':
+								$item['name'] = __( 'Desktop', 'burst-statistics' );
+								break;
+							case 'mobile':
+								$item['name'] = __( 'Mobile', 'burst-statistics' );
+								break;
+							case 'tablet':
+								$item['name'] = __( 'Tablet', 'burst-statistics' );
+								break;
+							default:
+								$item['name'] = __( 'Other', 'burst-statistics' );
+								break;
+						}
+
+						return $item;
+					},
+					$raw_data
+				);
+			}
+		}
+
+		return [
+			'success' => true,
+			'data'    => [
+				$data_type => $raw_data,
+			],
+		];
+	}
+
+	/**
+	 * On a weekly basis, clear the referrers table.
+	 *
+	 * @hooked burst_weekly
+	 */
+	public function weekly_clear_referrers_table(): void {
+		if ( ! $this->user_can_manage() ) {
+			return;
+		}
+		global $wpdb;
+		$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}burst_referrers" );
+	}
+
+	/**
+	 * Get referrer options for the advanced filter. The table is cleared weekly, to ensure up to date data.
+	 *
+	 * @return array
+	 */
+	private function get_referrer_options(): array {
+		global $wpdb;
+		$referrers = $wpdb->get_results( "SELECT name FROM {$wpdb->prefix}burst_referrers ORDER BY ID ASC", ARRAY_A );
+		if ( empty( $referrers ) ) {
+			$sql = "INSERT IGNORE INTO {$wpdb->prefix}burst_referrers (name)
+                    SELECT domain
+                    FROM (
+                      SELECT 
+                        LOWER(SUBSTRING_INDEX(SUBSTRING_INDEX(referrer, '/', 3), '/', -1)) AS domain
+                      FROM {$wpdb->prefix}burst_statistics
+                      WHERE referrer IS NOT NULL 
+                        AND referrer != ''
+                        AND referrer LIKE 'http%'
+                        AND referrer NOT LIKE '/%'
+                    ) AS derived
+                    WHERE domain != ''
+                      AND SUBSTRING_INDEX(domain, ':', 1) NOT REGEXP '^[0-9]{1,3}(\\.[0-9]{1,3}){3}$'
+                    GROUP BY domain
+                    ORDER BY COUNT(*) DESC
+                    LIMIT 2000;";
+			$wpdb->query( $sql );
+			$referrers = $wpdb->get_results( "select name from {$wpdb->prefix}burst_referrers ORDER BY ID ASC", ARRAY_A );
+		}
+		return $referrers;
 	}
 
 	/**
@@ -1007,7 +1169,7 @@ class App {
 	 * @param string           $permission_level 'view' or 'manage'.
 	 * @return array<string, mixed> Processed request data or error.
 	 */
-	private function process_rest_request( \WP_REST_Request $request, string $permission_level = 'view' ) {
+	private function process_rest_request( \WP_REST_Request $request, string $permission_level = 'view' ): array {
 		$can_access = $permission_level === 'manage' ? $this->user_can_manage() : $this->user_can_view();
 		if ( ! $can_access ) {
 			return [
