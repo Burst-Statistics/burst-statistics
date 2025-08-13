@@ -102,7 +102,8 @@ const useOnboardingStore = create<OnboardingState>((set) => ({
     setTrackingTestSuccess: (success) => set({ trackingTestSuccess: success }),
     getCurrentStep: () => {
         const state = useOnboardingStore.getState();
-        return state.steps[state.currentStepIndex];
+        const visibleSteps = state.steps?.filter(step => step.visible !== false) || [];
+        return visibleSteps[state.currentStepIndex];
     },
     getCurrentStepDocumentation: () => {
         const state = useOnboardingStore.getState();

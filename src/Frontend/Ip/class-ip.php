@@ -12,7 +12,9 @@ class Ip {
 	use Helper;
 
 	/**
-	 * Get blocked ip's
+	 * Get blocked IP addresses.
+	 *
+	 * @return string
 	 */
 	public static function get_blocked_ips(): string {
 		$options = get_option( 'burst_options_settings', [] );
@@ -20,20 +22,21 @@ class Ip {
 	}
 
 	/**
-	 * Check if IP is blocked
+	 * Check if IP is blocked.
+	 *
+	 * @return bool
 	 */
 	public static function is_ip_blocked(): bool {
-
 		$ip = self::get_ip_address();
-		// split by line break.
+
+		// Split by line break.
 		$blocked_ips = preg_split( '/\r\n|\r|\n/', self::get_blocked_ips() );
 		if ( is_array( $blocked_ips ) ) {
 			$blocked_ips_array = array_map( 'trim', $blocked_ips );
 			$ip_blocklist      = apply_filters( 'burst_ip_blocklist', $blocked_ips_array );
 			foreach ( $ip_blocklist as $ip_range ) {
 				if ( self::ip_in_range( $ip, $ip_range ) ) {
-					self::error_log( 'IP ' . $ip . ' is blocked for tracking' );
-
+					self::error_log( 'IP ' . $ip . ' is blocked for tracking.' );
 					return true;
 				}
 			}
@@ -43,150 +46,179 @@ class Ip {
 	}
 
 	/**
-	 * Get the ip of visiting user
-	 * https://stackoverflow.com/questions/11452938/how-to-use-http-x-forwarded-for-properly
+	 * Get the visitor IP, considering common proxy headers.
+	 * Note: trusting X-Forwarded-For should be limited to trusted proxies.
+	 *
+	 * @return string
 	 */
 	public static function get_ip_address(): string {
-		// least common types first.
-		$variables = [
-			'HTTP_CF_CONNECTING_IP',
-			'CF-IPCountry',
-			'HTTP_TRUE_CLIENT_IP',
-			'HTTP_X_CLUSTER_CLIENT_IP',
-			'HTTP_CLIENT_IP',
-			'HTTP_X_FORWARDED_FOR',
-			'HTTP_X_FORWARDED',
-			'HTTP_X_REAL_IP',
-			'HTTP_FORWARDED_FOR',
-			'HTTP_FORWARDED',
-			'REMOTE_ADDR',
-		];
+		$candidates = [];
 
-		$current_ip = '';
-		foreach ( $variables as $variable ) {
-			$current_ip = self::is_real_ip( $variable );
-			if ( ! empty( $current_ip ) ) {
-				break;
+		// Cloudflare first (real client IP).
+		if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
+			$candidates[] = $_SERVER['HTTP_CF_CONNECTING_IP'];
+		}
+
+		// True-Client-IP (Akamai/CF).
+		if ( ! empty( $_SERVER['HTTP_TRUE_CLIENT_IP'] ) ) {
+			$candidates[] = $_SERVER['HTTP_TRUE_CLIENT_IP'];
+		}
+
+		// X-Forwarded-For may contain a CSV list: pick the left-most valid public IP.
+		if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+			foreach ( explode( ',', $_SERVER['HTTP_X_FORWARDED_FOR'] ) as $part ) {
+				$candidates[] = trim( $part );
 			}
 		}
 
-		// in some cases, multiple ip's get passed. split it to get just one.
-		if ( strpos( $current_ip, ',' ) !== false ) {
-			$ips        = explode( ',', $current_ip );
-			$current_ip = $ips[0];
+		// Other common headers.
+		foreach ( [ 'HTTP_X_REAL_IP', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_CLIENT_IP', 'REMOTE_ADDR' ] as $h ) {
+			if ( ! empty( $_SERVER[ $h ] ) ) {
+				$candidates[] = $_SERVER[ $h ];
+			}
 		}
 
-		return apply_filters( 'burst_visitor_ip', $current_ip );
+		// Select first valid IP (prefer public, fallback to any valid).
+		$valid = [];
+		foreach ( $candidates as $ip ) {
+			$ip = trim( $ip );
+			if ( $ip === '' || $ip === '127.0.0.1' ) {
+				continue;
+			}
+			if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 ) ) {
+				$valid[] = $ip;
+			}
+		}
+
+		if ( empty( $valid ) ) {
+			return apply_filters( 'burst_visitor_ip', '' );
+		}
+
+		// Prefer public (non-private, non-reserved).
+		foreach ( $valid as $ip ) {
+			if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+				return apply_filters( 'burst_visitor_ip', $ip );
+			}
+		}
+
+		// Fallback: first valid.
+		return apply_filters( 'burst_visitor_ip', $valid[0] );
 	}
 
 	/**
-	 * Get ip from var, and check if the found ip is a valid one
+	 * Convert IP address to packed binary format.
 	 *
-	 * @param string $ip_number The environment variable name to check.
-	 * @return string The IP address if valid, empty string otherwise
+	 * @param string $ip the IP address to convert.
+	 * @return string Packed binary representation of the IP address.
 	 */
-	public static function is_real_ip( string $ip_number ): string {
-		$ip = getenv( $ip_number );
-		return ! $ip || trim( $ip ) === '127.0.0.1' ? '' : $ip;
+	private static function inet_pton( string $ip ): string {
+		if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 ) === false ) {
+			return '';
+		}
+		return inet_pton( $ip );
 	}
 
 	/**
-	 * Checks if a given IP address is within a specified IP range.
+	 * Check if IP is within range (single IP or CIDR, IPv4/IPv6).
+	 * Compares in binary (inet_pton) to avoid IPv6 string format issues.
+	 * Uses byte masks for both IPv4 and IPv6 (safe on 32-bit PHP).
 	 *
-	 * This function supports both IPv4 and IPv6 addresses, and can handle ranges in
-	 * both standard notation (e.g. "192.0.2.0") and CIDR notation (e.g. "192.0.2.0/24").
-	 *
-	 * In CIDR notation, the function uses a bitmask to check if the IP address falls within
-	 * the range. For IPv4 addresses, it uses the `ip2long()` function to convert the IP
-	 * address and subnet to their integer representations, and then uses the bitmask to
-	 * compare them. For IPv6 addresses, it uses the `inet_pton()` function to convert the IP
-	 * address and subnet to their binary representations, and uses a similar bitmask approach.
-	 *
-	 * If the range is not in CIDR notation, it simply checks if the IP equals the range.
-	 *
-	 * @param  string $ip  The IP address to check.
-	 * @param  string $range  The range to check the IP address against.
-	 * @return bool True if the IP address is within the range, false otherwise.
+	 * @param string $ip    IP address.
+	 * @param string $range Single IP or CIDR range.
+	 * @return bool
 	 */
 	public static function ip_in_range( string $ip, string $range ): bool {
-		// Check if the IP address is properly formatted.
-		if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 ) ) {
+		$ip_bin = self::inet_pton( $ip );
+		if ( $ip_bin === '' ) {
 			return false;
 		}
-		// Check if the range is in CIDR notation.
-		if ( strpos( $range, '/' ) !== false ) {
-			// The range is in CIDR notation, so we split it into the subnet and the bit count.
-			[ $subnet, $bits ] = explode( '/', $range );
 
-			if ( ! is_numeric( $bits ) || $bits < 0 || $bits > 128 ) {
+		// Single IP (no slash) → binary equality (also handles IPv6 compressed).
+		if ( strpos( $range, '/' ) === false ) {
+			$range_bin = self::inet_pton( $range );
+			if ( $range_bin === '' ) {
 				return false;
 			}
 
-			// Check if the subnet is a valid IPv4 address.
-			if ( filter_var( $subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
-				// Convert the IP address and subnet to their integer representations.
-				$ip     = ip2long( $ip );
-				$subnet = ip2long( $subnet );
-
-				// Create a mask based on the number of bits.
-				$mask = - 1 << ( 32 - $bits );
-
-				// Apply the mask to the subnet.
-				$subnet &= $mask;
-
-				// Compare the masked IP address and subnet.
-				return ( $ip & $mask ) === $subnet;
+			// Treat IPv4 vs IPv4-mapped IPv6 as equal.
+			if ( strlen( $ip_bin ) !== strlen( $range_bin ) ) {
+				$ip_bin_v4    = self::ipv4_from_mapped( $ip_bin );
+				$range_bin_v4 = self::ipv4_from_mapped( $range_bin );
+				if ( $ip_bin_v4 !== '' && $range_bin_v4 !== '' ) {
+					return hash_equals( $ip_bin_v4, $range_bin_v4 );
+				}
+				return false;
 			}
 
-			// Check if the subnet is a valid IPv6 address.
-			if ( filter_var( $subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
-				// Convert the IP address and subnet to their binary representations.
-				$ip     = inet_pton( $ip );
-				$subnet = inet_pton( $subnet );
-				// Divide the number of bits by 8 to find the number of full bytes.
-				$full_bytes = floor( $bits / 8 );
-				// Find the number of remaining bits after the full bytes.
-				$partial_byte = $bits % 8;
-				// Initialize the mask.
-				$mask = '';
-				// Add the full bytes to the mask, each byte being "\xff" (255 in binary).
-				$mask .= str_repeat( "\xff", (int) $full_bytes );
-				// If there are any remaining bits...
-				if ( 0 !== $partial_byte ) {
-					// Add a byte to the mask with the correct number of 1 bits.
-					// First, create a string with the correct number of 1s.
-					// Then, pad the string to 8 bits with 0s.
-					// Convert the binary string to a decimal number.
-					// Convert the decimal number to a character and add it to the mask.
-					$mask .= chr( bindec( str_pad( str_repeat( '1', $partial_byte ), 8, '0' ) ) );
-				}
+			return hash_equals( $ip_bin, $range_bin );
+		}
 
-				// Fill in the rest of the mask with "\x00" (0 in binary).
-				// The total length of the mask should be 16 bytes, so subtract the number of bytes already added.
-				// If we added a partial byte, we need to subtract 1 more from the number of bytes to add.
-				$mask .= str_repeat( "\x00", (int) ( 16 - $full_bytes - ( 0 !== $partial_byte ? 1 : 0 ) ) );
-
-				// Compare the masked IP address and subnet.
-				if ( $ip === false || $subnet === false ) {
-					return false;
-				}
-
-				$masked_ip     = $ip & $mask;
-				$masked_subnet = $subnet & $mask;
-
-				return $masked_ip === $masked_subnet;
-			}
-
-			// The subnet was not a valid IP address.
+		// CIDR.
+		[ $subnet, $bits ] = explode( '/', $range, 2 );
+		if ( ! is_numeric( $bits ) ) {
+			return false;
+		}
+		$subnet_bin = self::inet_pton( $subnet );
+		if ( $subnet_bin === '' ) {
 			return false;
 		}
 
-		if ( ! filter_var( $range, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 ) ) {
-			// The range was not in CIDR notation and was not a valid IP address.
+		// 4 for v4, 16 for v6.
+		$len      = strlen( $subnet_bin );
+		$max_bits = $len * 8;
+		$bits     = (int) $bits;
+		if ( $bits < 0 || $bits > $max_bits ) {
 			return false;
 		}
 
-		// The range is not in CIDR notation, so we simply check if the IP equals the range.
-		return $ip === $range;
+		// IP and subnet must be same family, but allow v4-mapped match.
+		if ( strlen( $ip_bin ) !== $len ) {
+			$ip_bin_v4     = self::ipv4_from_mapped( $ip_bin );
+			$subnet_bin_v4 = self::ipv4_from_mapped( $subnet_bin );
+			if ( $ip_bin_v4 === '' || $subnet_bin_v4 === '' ) {
+				return false;
+			}
+			$ip_bin     = $ip_bin_v4;
+			$subnet_bin = $subnet_bin_v4;
+			$len        = 4;
+			$max_bits   = 32;
+			if ( $bits > $max_bits ) {
+				return false;
+			}
+		}
+
+		// Build mask bytes.
+		$full_bytes   = intdiv( $bits, 8 );
+		$partial_bits = $bits % 8;
+
+		$mask = str_repeat( "\xFF", $full_bytes );
+		if ( $partial_bits > 0 ) {
+			$mask .= chr( bindec( str_pad( str_repeat( '1', $partial_bits ), 8, '0' ) ) );
+		}
+		$mask .= str_repeat( "\x00", $len - strlen( $mask ) );
+
+		// Compare masked values.
+		$masked_ip     = $ip_bin & $mask;
+		$masked_subnet = $subnet_bin & $mask;
+
+		return hash_equals( $masked_ip, $masked_subnet );
+	}
+
+	/**
+	 * If binary is IPv4-mapped IPv6, return 4-byte IPv4 binary; else empty string.
+	 *
+	 * @param string $bin Binary IP.
+	 * @return string
+	 */
+	private static function ipv4_from_mapped( string $bin ): string {
+		if ( strlen( $bin ) === 16 && substr( $bin, 0, 12 ) === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff" ) {
+			// Last 4 bytes.
+			return substr( $bin, 12 );
+		}
+		if ( strlen( $bin ) === 4 ) {
+			// Already IPv4.
+			return $bin;
+		}
+		return '';
 	}
 }

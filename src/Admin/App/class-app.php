@@ -74,6 +74,7 @@ class App {
 	public function remove_fallback_notice(): void {
 		if ( get_option( 'burst_ajax_fallback_active' ) !== false ) {
 			delete_option( 'burst_ajax_fallback_active' );
+			delete_option( 'burst_ajax_fallback_active_timestamp' );
 			\Burst\burst_loader()->admin->tasks->schedule_task_validation();
 		}
 	}
@@ -391,31 +392,48 @@ class App {
 		$error     = false;
 		$action    = false;
 		$do_action = false;
-		$data      = false;
+		$data      = [];
 		$data_type = false;
+
 		if ( ! $this->user_can_view() ) {
 			$error = true;
 		}
-		// if the site is using this fallback, we want to show a notice.
-		update_option( 'burst_ajax_fallback_active', time(), false );
-		// nonce is verified further down.
+
+		// --- Parse GET ---
         // phpcs:ignore
-		if ( isset( $_GET['rest_action'] ) ) {
-			// nonce is verified further down.
+        if ( isset( $_GET['rest_action'] ) ) {
             // phpcs:ignore
-			$action = sanitize_text_field( $_GET['rest_action'] );
+            $action = sanitize_text_field( $_GET['rest_action'] );
 			if ( strpos( $action, 'burst/v1/data/' ) !== false ) {
 				$data_type = strtolower( str_replace( 'burst/v1/data/', '', $action ) );
 			}
 		}
 
-		// get all of the rest of the $_GET parameters so we can forward them in the REST request.
-		// we will verify nonce a few lines down.
+		// --- Collect GET params ---
         // phpcs:ignore
-		$get_params = $_GET;
-		// remove the rest_action parameter.
+        $get_params = $_GET;
 		unset( $get_params['rest_action'] );
-		$nonce = $get_params['nonce'] ?? false;
+
+		// --- Parse POST body, if present ---
+		$request_data = json_decode( file_get_contents( 'php://input' ), true );
+		if ( is_array( $request_data ) ) {
+			$req_path = isset( $request_data['path'] ) ? sanitize_text_field( $request_data['path'] ) : false;
+			if ( $req_path ) {
+				// override if provided by POST.
+				$action = $req_path;
+				if ( ! $data_type && strpos( $action, 'burst/v1/data/' ) !== false ) {
+					// Extract data type for /data/* when using POST.
+					$data_type = strtolower( str_replace( 'burst/v1/data/', '', $action ) );
+				}
+			}
+			$data = isset( $request_data['data'] ) && is_array( $request_data['data'] ) ? $request_data['data'] : [];
+
+			if ( strpos( $action, 'burst/v1/do_action/' ) !== false ) {
+				$do_action = strtolower( str_replace( 'burst/v1/do_action/', '', $action ) );
+			}
+		}
+
+		$nonce = $get_params['nonce'] ?? ( $request_data['data']['nonce'] ?? null );
 		if ( ! $this->verify_nonce( $nonce, 'burst_nonce' ) ) {
 			$response = new \WP_REST_Response(
 				[
@@ -429,36 +447,44 @@ class App {
 			exit;
 		}
 
-		// convert get metrics to array if it is a string.
-		if ( isset( $get_params['metrics'] ) && is_string( $get_params['metrics'] ) ) {
-			$get_params['metrics'] = explode( ',', $get_params['metrics'] );
+		// Fallback notice.
+		$fallback_already_active = (int) get_option( 'burst_ajax_fallback_active_timestamp', 0 );
+		if ( $fallback_already_active === 0 ) {
+			update_option( 'burst_ajax_fallback_active_timestamp', time(), false );
+		}
+		if ( $fallback_already_active > 0 && ( time() - $fallback_already_active ) > 48 * HOUR_IN_SECONDS ) {
+			update_option( 'burst_ajax_fallback_active', true, false );
 		}
 
-		// Handle filters - check if it's a string and needs slashes removed.
-		if ( isset( $get_params['filters'] ) ) {
-			if ( is_string( $get_params['filters'] ) ) {
-				// Remove slashes but keep as JSON string for later decoding.
-				$get_params['filters'] = stripslashes( $get_params['filters'] );
+		// Normalize/merge params from GET and POST data.
+		$merged = $get_params;
+		foreach ( [ 'goal_id', 'type', 'date_start', 'date_end', 'args', 'search', 'filters', 'metrics', 'group_by' ] as $k ) {
+			if ( array_key_exists( $k, $data ) ) {
+				$merged[ $k ] = $data[ $k ];
 			}
 		}
 
-		$request_data = json_decode( file_get_contents( 'php://input' ), true );
-		if ( $request_data ) {
-			$action = $request_data['path'] ?? false;
-
-			$action = sanitize_text_field( $action );
-			$data   = $request_data['data'] ?? false;
-			if ( strpos( $action, 'burst/v1/do_action/' ) !== false ) {
-				$do_action = strtolower( str_replace( 'burst/v1/do_action/', '', $action ) );
-			}
+		// Convert metrics string -> array.
+		if ( isset( $merged['metrics'] ) && is_string( $merged['metrics'] ) ) {
+			$merged['metrics'] = explode( ',', $merged['metrics'] );
 		}
 
+		// Handle filters slashes (string JSON coming from GET); keep arrays as-is.
+		if ( isset( $merged['filters'] ) && is_string( $merged['filters'] ) ) {
+			$merged['filters'] = stripslashes( $merged['filters'] );
+		}
+
+		// Build WP_REST_Request with merged params.
 		$request = new \WP_REST_Request();
-		$args    = [ 'goal_id', 'type', 'nonce', 'date_start', 'date_end', 'args', 'search', 'filters', 'metrics', 'group_by' ];
-		foreach ( $args as $arg ) {
-			if ( isset( $get_params[ $arg ] ) ) {
-				$request->set_param( $arg, $get_params[ $arg ] );
+		foreach ( [ 'goal_id', 'type', 'nonce', 'date_start', 'date_end', 'args', 'search', 'filters', 'metrics', 'group_by' ] as $arg ) {
+			if ( isset( $merged[ $arg ] ) ) {
+				$request->set_param( $arg, $merged[ $arg ] );
 			}
+		}
+
+		// If we detected /data/, make sure 'type' is set from the path.
+		if ( $data_type ) {
+			$request->set_param( 'type', $data_type );
 		}
 
 		if ( ! $error ) {
@@ -480,13 +506,12 @@ class App {
 				$response = $this->rest_api_goals_set( $request, $data );
 			} elseif ( strpos( $action, '/posts/' ) !== false ) {
 				$response = $this->get_posts( $request, $data );
-			} elseif ( strpos( $action, '/data/' ) ) {
-				$request->set_param( 'type', $data_type );
+			} elseif ( strpos( $action, '/data/' ) !== false ) {
 				$response = $this->get_data( $request );
 			} elseif ( $do_action ) {
-				$request = new \WP_REST_Request();
-				$request->set_param( 'action', $do_action );
-				$response = $this->do_action( $request, $data );
+				$req = new \WP_REST_Request();
+				$req->set_param( 'action', $do_action );
+				$response = $this->do_action( $req, $data );
 			}
 		}
 
@@ -741,6 +766,10 @@ class App {
 	 * Register REST API routes for the plugin.
 	 */
 	public function settings_rest_route(): void {
+		// for our ajax fallback test, we don't want to register the REST API routes.
+		if ( defined( 'BURST_FALLBACK_TEST' ) ) {
+			return;
+		}
 		register_rest_route(
 			'burst/v1',
 			'menu',

@@ -1127,6 +1127,7 @@ class Admin {
 			'burst_last_update_geo_ip',
 			'burst_license_attempts',
 			'burst_ajax_fallback_active',
+			'burst_ajax_fallback_active_timestamp',
 			'burst_tour_shown_once',
 			'burst_options_settings',
 			'burst-current-version',

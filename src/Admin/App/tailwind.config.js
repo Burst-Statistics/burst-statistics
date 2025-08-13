@@ -12,6 +12,12 @@ const yellowColor = {
   dark: '#555248'
 };
 
+const goldColor = {
+  light: '#FFD700',
+  DEFAULT: '#B8860B',
+  dark: '#8B6508'
+};
+
 const blueColor = {
   light: '#ebf2f9',
   DEFAULT: '#1D3C8F',
@@ -55,6 +61,7 @@ module.exports = {
       blue: blueColor,
       red: redColor,
       orange: orangeColor,
+      gold: goldColor,
       gray: {
         50: '#F9F9F9',
         100: '#f8f9fa',

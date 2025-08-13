@@ -43,7 +43,7 @@ interface QueryConfig {
 
 const queryCache = new QueryCache({
   onError: (error: Error) => {
-    console.error("Error in query cache", error);
+    //console.error("Error in query cache", error);
   },
 });
 

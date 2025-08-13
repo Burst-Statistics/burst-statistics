@@ -19,7 +19,7 @@ class Statistics {
 	private array $look_up_table_names = [];
 	private $exclude_bounces           = null;
 
-	private $campaign_parameters = [ 'source', 'medium', 'campaign', 'term', 'content' ];
+	public $campaign_parameters = [ 'source', 'medium', 'campaign', 'term', 'content' ];
 	/**
 	 * Constructor
 	 */
@@ -907,7 +907,8 @@ class Statistics {
 		);
 		$sql               = $this->get_sql_table( $qd );
 		$data              = $wpdb->get_results( $sql, ARRAY_A );
-		$data              = apply_filters( 'burst_datatable_data', $data, $start, $end, $metrics, $filters, $group_by, $order_by, $limit );
+
+		$data = apply_filters( 'burst_datatable_data', $data, $qd );
 
 		return [
 			'columns' => $columns,
@@ -1740,7 +1741,7 @@ class Statistics {
 	/**
 	 * Check if the query is for campaign conversions.
 	 */
-	private function is_campaign_conversion_query( Query_Data $data ): bool {
+	public function is_campaign_conversion_query( Query_Data $data ): bool {
 		// Check if the select contains campaign related fields.
 		$goal_or_conversion = in_array( 'conversion_rate', $data->select, true ) || in_array( 'conversions', $data->select, true ) || isset( $data->filters['goal_id'] );
 		if ( $goal_or_conversion && ! empty( array_intersect( $this->campaign_parameters, $data->select ) ) ) {
@@ -1860,7 +1861,6 @@ class Statistics {
 				$sql .= ' UNION ' . $union_query;
 			}
 		}
-		// Log the generated SQL for debugging.
 		return $sql;
 	}
 

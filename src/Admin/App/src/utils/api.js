@@ -26,6 +26,9 @@ const getNonce = () => {
   );
 };
 
+
+let lastErrorMessage = '';
+let lastErrorTime = 0;
 const generateError = ( error, path = false ) => {
   let message = __( 'Server error', 'burst-statistics' );
   error = error.replace( /(<([^>]+)>)/gi, '' );
@@ -43,7 +46,13 @@ const generateError = ( error, path = false ) => {
       urlParts[index + 1];
   }
   message += ': ' + error;
-
+  // Skip if same message was shown in the last 3 seconds
+  const now = Date.now();
+  if (message === lastErrorMessage && now - lastErrorTime < 3000) {
+    return;
+  }
+  lastErrorMessage = message;
+  lastErrorTime = now;
   // wrap the message in a div react component and give it an onclick to copy
   // the text to the clipboard this way the user can easily copy the error
   // message and send it to us
@@ -64,44 +73,42 @@ const generateError = ( error, path = false ) => {
   });
 };
 
-const makeRequest = async( path, method = 'GET', data = {}) => {
-  let args = {
-    path,
-    method
-  };
+const makeRequest = async (path, method = 'GET', data = {}) => {
+  let args = { path, method };
 
-  if ( 'POST' === method ) {
+  if (method === 'POST') {
     data.nonce = burst_settings.burst_nonce;
     args.data = data;
   }
 
-  return apiFetch( args )
-    .then( ( response ) => {
-      if ( ! response.request_success ) {
-        if (response.hasOwnProperty('message')) {
-          throw new Error( response.message );
-        } else {
-          throw new Error('Received unexpected response from server. Please check if the Rest API is enabled.');
-        }
-      }
-      if ( response.code && response.code !== 200 ) {
-        throw new Error( response.message );
-      }
-      delete response.request_success;
-      return response;
-    })
-    .catch( ( error ) => {
+  try {
+    const response = await apiFetch(args);
 
-      // If REST API fails, try AJAX request
-      return ajaxRequest( method, path, data ).catch( () => {
+    if (!response.request_success) {
+      if (Object.prototype.hasOwnProperty.call(response, 'message')) {
+        throw new Error(response.message);
+      } else {
+        throw new Error('Received unexpected response from server. Please check if the Rest API is enabled.');
+      }
+    }
 
-        // If AJAX also fails, generate error
-        generateError( error.message, args.path );
-        throw error;
-      });
-    });
+    if (response.code && response.code !== 200) {
+      throw new Error(response.message);
+    }
+
+    delete response.request_success;
+    return response;
+
+  } catch (error) {
+    try {
+      // Wait for ajaxRequest to resolve before continuing
+      return await ajaxRequest(method, path, data);
+    } catch {
+      generateError(error.message, args.path);
+      throw error;
+    }
+  }
 };
-
 const ajaxRequest = async( method, path, requestData = null ) => {
   const url =
     'GET' === method ?
@@ -130,6 +137,8 @@ const ajaxRequest = async( method, path, requestData = null ) => {
       ! responseData.data ||
       ! Object.prototype.hasOwnProperty.call( responseData.data, 'request_success' )
     ) {
+      //log for automted fallback test. Do not remove.
+      console.log("Ajax fallback request failed.");
       throw new Error( 'Invalid data error' );
     }
 
