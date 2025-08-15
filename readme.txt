@@ -100,6 +100,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 = 2.2.3 =
 * Improvement: allow ipv6 addresses
 * Improvement: prevent false positives on ajax fallback notice
+* Improvement: rest optimizer improvements
 
 = 2.2.2 =
 * New: Extensive range of filter options to easily track what campaigns are delivering your conversions!
