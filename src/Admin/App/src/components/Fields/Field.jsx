@@ -61,104 +61,86 @@ const Field = memo(({ setting, control, ...props }) => {
     );
   }
 
-  // // Watch all condition fields at the top level
-  // const watchedValues = {};
-  // if (setting.react_conditions) {
-  //   Object.keys(setting.react_conditions).forEach(fieldName => {
-  //     watchedValues[fieldName] = useWatch({
-  //       control,
-  //       name: fieldName,
-  //       defaultValue: props.defaultValues?.[fieldName]
-  //     });
-  //   });
-  // }
-  //
-  // // Memoize the condition check result
-  // const conditionsMet = useMemo(() => {
-  //   if (!setting.react_conditions || 0 === Object.keys(watchedValues).length) {
-  //     return true;
-  //   }
-  //
-  //   return Object.entries(setting.react_conditions).every(([field, allowedValues]) => {
-  //     const currentValue = watchedValues[field];
-  //
-  //     // Ensure allowedValues is an array
-  //     if (!Array.isArray(allowedValues)) {
-  //       return false;
-  //     }
-  //
-  //     return allowedValues.includes(currentValue);
-  //   });
-  // }, [setting.react_conditions, watchedValues]);
-
-
-
    // Custom validation for IP blocklist field
-   const getCustomValidation = () => {
+  // IPv4 + IPv6 validation + duplicate detection
+  const getCustomValidation = () => {
     if (setting.type === 'ip_blocklist') {
+      // Strict IPv4
+      const ipv4Regex =
+          /^((25[0-5]|2[0-4]\d|1?\d{1,2})\.){3}(25[0-5]|2[0-4]\d|1?\d{1,2})$/;
+
+      // IPv6 (full, compressed, leading ::, trailing ::, and IPv4-mapped)
+      // Note: This is intentionally broad but practical for UI validation.
+      const ipv6Regex =
+          /^((?:[0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,7}:|:(?::[0-9A-Fa-f]{1,4}){1,7}|(?:[0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,5}(?::[0-9A-Fa-f]{1,4}){1,2}|(?:[0-9A-Fa-f]{1,4}:){1,4}(?::[0-9A-Fa-f]{1,4}){1,3}|(?:[0-9A-Fa-f]{1,4}:){1,3}(?::[0-9A-Fa-f]{1,4}){1,4}|(?:[0-9A-Fa-f]{1,4}:){1,2}(?::[0-9A-Fa-f]{1,4}){1,5}|[0-9A-Fa-f]{1,4}:(?:(?::[0-9A-Fa-f]{1,4}){1,6})|::(?:ffff(?::0{1,4})?:)?(?:(25[0-5]|2[0-4]\d|1?\d{1,2})\.){3}(25[0-5]|2[0-4]\d|1?\d{1,2}))$/;
+
+      // Helper: is valid IP (v4 or v6)
+      const isValidIp = (ip) => ipv4Regex.test(ip) || ipv6Regex.test(ip);
+
+      // Helper: normalize list input to clean lines
+      const toLines = (value) =>
+          value
+              .replace(/\r\n/g, '\n')
+              .replace(/\r/g, '\n')
+              .split('\n')
+              .map((s) => s.trim())
+              .filter((s) => s !== '');
+
+      // Helper: key for duplicate detection (case-insensitive for IPv6)
+      const dupKey = (ip) => ip.toLowerCase();
+
       return {
         validate: {
-          // Validate each line is a valid IP address
+          // Validate each line is IPv4 or IPv6
           validIps: (value) => {
-            if (!value) return true; // Allow empty field
-            
-            const ipRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-            
-            // Normalize newlines (handle different OS line endings) and split
-            // This handles \n, \r, or \r\n
-            const lines = value.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-            
-            // Filter out empty lines and trim whitespace
-            const nonEmptyLines = lines.filter(line => line.trim() !== '').map(ip => ip.trim());
-            
-            // If there are no valid lines after filtering, return true
-            if (nonEmptyLines.length === 0) return true;
-            
-            const invalidIps = nonEmptyLines.filter(ip => {
-              const isValid = ipRegex.test(ip);
-              return !isValid;
-            });
-            
-            return invalidIps.length === 0 || 
-              __('Invalid IP address format: ', 'burst-statistics') + invalidIps.join(', ');
+            if (!value) return true;
+
+            const lines = toLines(value);
+
+            if (lines.length === 0) return true;
+
+            const invalid = lines.filter((ip) => !isValidIp(ip));
+
+            // Return true or an error string (react-hook-form compatible)
+            return (
+                invalid.length === 0 ||
+                __('Invalid IP address format: ', 'burst-statistics') +
+                invalid.join(', ')
+            );
           },
-          
-          // Check for duplicates
+
+          // Check duplicates (case-insensitive to avoid IPv6 casing dupes)
           noDuplicates: (value) => {
             if (!value) return true;
-            
-            // Normalize newlines (handle different OS line endings) and split
-            const lines = value.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-            
-            // Filter out empty lines and trim whitespace
-            const nonEmptyLines = lines.filter(line => line.trim() !== '').map(ip => ip.trim());
-            
-            // Skip duplicate check if there are no valid lines
-            if (nonEmptyLines.length === 0) return true;
-            
-            const uniqueIps = new Set(nonEmptyLines);
-            
-            if (uniqueIps.size !== nonEmptyLines.length) {
-              // Find duplicates by checking which IPs appear more than once
-              const ipCounts = {};
-              nonEmptyLines.forEach(ip => {
-                ipCounts[ip] = (ipCounts[ip] || 0) + 1;
-              });
-              
-              const duplicates = Object.keys(ipCounts).filter(ip => ipCounts[ip] > 1);
-              
-              return __('Duplicate IP addresses found: ', 'burst-statistics') + 
-                duplicates.join(', ');
-            }
-            
-            return true;
-          }
-        }
+
+            const lines = toLines(value);
+            if (lines.length === 0) return true;
+
+            /** @type {Record<string, number>} */
+            const counts = {};
+            lines.forEach((ip) => {
+              const key = dupKey(ip);
+              counts[key] = (counts[key] || 0) + 1;
+            });
+
+            const dups = Object.entries(counts)
+                .filter(([, n]) => n > 1)
+                .map(([k]) => k);
+
+            return (
+                dups.length === 0 ||
+                __('Duplicate IP addresses found: ', 'burst-statistics') +
+                dups.join(', ')
+            );
+          },
+        },
       };
     }
-    
+
+    // Fallback to existing validation if present
     return setting.validation?.validate ? { validate: setting.validation.validate } : {};
   };
+
 
   const validationRules = {
     ...(setting.required && {

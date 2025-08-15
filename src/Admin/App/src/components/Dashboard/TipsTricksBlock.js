@@ -21,8 +21,8 @@ const TipsTricksBlock = ( props ) => {
       })
     },
     {
-      content: 'Why is Burst Privacy-Friendly?',
-      link: burst_get_website_url( 'why-is-burst-privacy-friendly/', {
+      content: 'Easily create campaign URLS',
+      link: burst_get_website_url( 'campaign-url-builder/', {
         utm_source: 'tips-tricks'
       })
     },

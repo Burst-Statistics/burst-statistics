@@ -14,6 +14,7 @@ import { burst_get_website_url } from '../../utils/lib';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
+import Icon from "@/utils/Icon";
 
 const defaultColumnsOptions = {
   pageviews: {
@@ -313,8 +314,9 @@ const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id }) => {
     enabled: !! selectedConfig // The query will run only if selectedConfig is truthy
   });
 
+
   const data = query.data || {};
-  const tableData = data.data;
+  const tableData = data.data || [];
   const columnsData = data.columns;
 
   // Memoize the filtered data to avoid recalculations
