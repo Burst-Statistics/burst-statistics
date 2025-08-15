@@ -110,6 +110,7 @@ create_rc_zip() {
     "--exclude=.eslintrc.json"
     "--exclude=.gitignore"
     "--exclude=.github/"
+    "--exclude=.gitlab/"
     "--exclude=.million/"
     "--exclude=webpack.config.js"
     "--exclude=phpstan.wp-env.neon"
