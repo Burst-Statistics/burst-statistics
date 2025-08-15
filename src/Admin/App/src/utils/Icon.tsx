@@ -73,7 +73,10 @@ import {
   CircleAlert,
   MapPinned,
   Milestone,
-  Brain
+  Brain,
+  Frown,
+  Hourglass,
+  Scale,
 
 } from 'lucide-react';
 
@@ -86,7 +89,8 @@ const iconColors = {
   blue: 'var(--rsp-blue)',
   gray: 'var(--rsp-grey-500)',
   lightgray: 'var(--rsp-grey-300)',
-  white: 'var(--rsp-white)'
+  white: 'var(--rsp-white)',
+  gold: 'var(--rsp-gold)',
 };
 
 // Map existing icon names to Lucide icon components
@@ -100,6 +104,10 @@ const iconComponents = {
   warning: AlertTriangle,
   error: AlertCircle,
   times: X,
+  trophy: Trophy,
+  frown: Frown,
+  hourglass: Hourglass,
+  scale: Scale,
   'circle-check': CircleCheck,
   'circle-times': XCircle,
   'chevron-up': ChevronUp,
@@ -246,7 +254,7 @@ const Icon = memo(({
   };
 
   const iconElement = (
-    <div onClick={handleClick} className='flex items-center justify-center'>
+    <div onClick={() => handleClick() } className='flex items-center justify-center'>
       {renderIcon()}
     </div>
   );

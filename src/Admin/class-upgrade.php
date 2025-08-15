@@ -202,6 +202,13 @@ class Upgrade {
 			}
 		}
 
+		if ( $prev_version && version_compare( $prev_version, '2.2.3.', '<' ) ) {
+			$mu_plugin = trailingslashit( WPMU_PLUGIN_DIR ) . 'burst_rest_api_optimizer.php';
+			if ( file_exists( $mu_plugin ) ) {
+				wp_delete_file( $mu_plugin );
+			}
+		}
+
 		do_action( 'burst_upgrade_after', $prev_version );
 		update_option( 'burst-current-version', $new_version, false );
 	}
