@@ -10,6 +10,7 @@ use Burst\Admin\Burst_Wp_Cli\Burst_Wp_Cli;
 use Burst\Admin\Cron\Cron;
 use Burst\Admin\Dashboard_Widget\Dashboard_Widget;
 use Burst\Admin\DB_Upgrade\DB_Upgrade;
+use Burst\Admin\Debug\Debug;
 use Burst\Admin\Mailer\Mail_Reports;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
@@ -95,6 +96,9 @@ class Admin {
 		$this->tasks = new Tasks();
 		$widget      = new Dashboard_Widget();
 		$widget->init();
+
+		$debug = new Debug();
+		$debug->init();
 
 		if ( defined( 'BURST_BLUEPRINT' ) && ! get_option( 'burst_demo_data_installed' ) ) {
 			add_action( 'init', [ $this, 'install_demo_data' ] );

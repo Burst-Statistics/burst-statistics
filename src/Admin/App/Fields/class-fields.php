@@ -35,7 +35,7 @@ class Fields {
 		$fields = $this->fields;
 
 		// If the plugin is considered high traffic, summary tables kick in. This can be disabled with this option.
-		if ( \Burst\burst_loader()->admin->summary::is_high_traffic() || $this->get_option_bool( 'disable_summary' ) ) {
+		if ( $this->get_option_bool( 'disable_summary' ) ) {
 			$fields[] = [
 				'id'       => 'disable_summary',
 				'menu_id'  => 'advanced',

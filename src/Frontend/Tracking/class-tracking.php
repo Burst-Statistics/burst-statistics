@@ -202,7 +202,12 @@ class Tracking {
 		}
 
 		$data = json_decode( $request, true );
-		$this->track_hit( $data );
+		if ( is_array( $data ) ) {
+			$this->track_hit( $data );
+		} else {
+			self::error_log( 'The posted data has to be an array. Please check if your Javascript code is cached, using the old version.' );
+		}
+
 		http_response_code( 200 );
 
 		return 'success';
@@ -226,7 +231,12 @@ class Tracking {
 		if ( isset( $data['request'] ) && $data['request'] === 'test' ) {
 			return new \WP_REST_Response( [ 'success' => 'test' ], 200 );
 		}
-		$this->track_hit( $data );
+
+		if ( is_array( $data ) ) {
+			$this->track_hit( $data );
+		} else {
+			self::error_log( 'The posted data has to be an array. Please check if your Javascript code is cached, using the old version.' );
+		}
 
 		return new \WP_REST_Response( [ 'success' => 'hit_tracked' ], 200 );
 	}
@@ -371,9 +381,11 @@ class Tracking {
 		if ( ! filter_var( $sanitized_url, FILTER_VALIDATE_URL ) ) {
 			return $url_destructured;
 		}
-		// we don't use wp_parse_url so we don't need to load an additional wp file.
-        // phpcs:ignore
-		$url = parse_url( esc_url_raw( $sanitized_url ) );
+
+		if ( ! function_exists( 'wp_parse_url' ) ) {
+			require_once ABSPATH . '/wp-includes/http.php';
+		}
+		$url = wp_parse_url( esc_url_raw( $sanitized_url ) );
 		if ( isset( $url['host'] ) ) {
 			$url_destructured['host']        = $url['host'];
 			$url_destructured['scheme']      = $url['scheme'];

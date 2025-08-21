@@ -136,7 +136,7 @@ if ( ! class_exists( 'summary' ) ) {
 			$end_of_last_month   = strtotime( 'last day of last month 23:59:59' );
 			$sql                 = $wpdb->prepare( "select count(*) from {$wpdb->prefix}burst_statistics where time>=%s and time<=%s", $start_of_last_month, $end_of_last_month );
 			$count               = (int) $wpdb->get_var( $sql );
-			$is_high_traffic     = $count > apply_filters( 'burst_high_traffic_treshold', 200000 );
+			$is_high_traffic     = $count > apply_filters( 'burst_high_traffic_treshold', 400000 );
 			update_option( 'burst_is_high_traffic_site', $is_high_traffic, false );
 		}
 
