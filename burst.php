@@ -86,7 +86,26 @@ try {
         }
         register_deactivation_hook( __FILE__, '\Burst\burst_clear_scheduled_hooks' );
     }
-} catch ( Throwable $e ) {
-    error_log( 'Burst could not load, due to error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine() );
-    return;
+} catch ( \Throwable $e ) {
+    $burst_message = $e->getMessage();
+    // phpcs:ignore
+    error_log( 'Burst could not load, due to error: ' . $burst_message . ' in ' . $e->getFile() . ' on line ' . $e->getLine() );
+    update_option( 'burst_php_error_time', time() );
+    $burst_count = get_option( 'burst_php_error_count', 0 ) + 1;
+    update_option( 'burst_php_error_count', $burst_count );
+    $burst_existing_errors = get_option( 'burst_php_error_detected', '' );
+    if ( strpos( $burst_existing_errors, $burst_message ) === false ) {
+        $burst_existing_errors .= $burst_message . ' in ' . $e->getFile() . ' on line ' . $e->getLine() . PHP_EOL;
+        update_option( 'burst_php_error_detected', $burst_existing_errors );
+    }
+
+    add_action(
+        'admin_notices',
+        function () {
+            echo '<div class="notice notice-error">';
+            echo '<h3>Urgent action required</h3>';
+            echo '<p>Burst can not load due to the following error:<br>' . esc_html( str_replace( PHP_EOL, '<br>', get_option( 'burst_php_error_detected', '' ) ) ) . '</p>';
+            echo '</div>';
+        }
+    );
 }
