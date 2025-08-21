@@ -36,52 +36,57 @@ if ( defined( 'BURST_PRO_FILE' ) ) {
     return;
 }
 
-define( 'BURST_FREE_FILE', __FILE__ );
+try {
+    define( 'BURST_FREE_FILE', __FILE__ );
 
-require_once __DIR__ . '/src/autoload.php';
+    require_once __DIR__ . '/src/autoload.php';
 
-if ( ! function_exists( '\Burst\burst_loader' ) ) {
-    global $burst;
-    $burst = new Burst();
-
-    require_once __DIR__ . '/src/functions.php';
-    require_once __DIR__ . '/src/class-compatibility.php';
-
-    /**
-     * Get the Burst instance
-     */
-    function burst_loader(): Burst {
+    if ( ! function_exists( '\Burst\burst_loader' ) ) {
         global $burst;
-        return $burst;
-    }
-}
+        $burst = new Burst();
 
-if ( ! function_exists( '\Burst\burst_on_activation' ) && ! function_exists( 'burst_on_activation' ) ) {
-    /**
-     * Set an activation time stamp
-     * This function has te have a different name, to ensure that it runs and deactivates free, if required.
-     */
-    function burst_on_activation(): void {
-        update_option( 'burst_run_activation', true, false );
+        require_once __DIR__ . '/src/functions.php';
+        require_once __DIR__ . '/src/class-compatibility.php';
 
-        // ensure that defaults are set only once.
-        if ( ! get_option( 'burst_activation_time' ) ) {
-            set_transient( 'burst_redirect_to_settings_page', true, 5 * MINUTE_IN_SECONDS );
-            update_option( 'burst_start_onboarding', true, false );
-            update_option( 'burst_set_defaults', true, false );
+        /**
+         * Get the Burst instance
+         */
+        function burst_loader(): Burst {
+            global $burst;
+            return $burst;
         }
     }
-    register_activation_hook( __FILE__, '\Burst\burst_on_activation' );
-}
 
-if ( ! function_exists( '\Burst\burst_clear_scheduled_hooks' ) && ! function_exists( 'burst_clear_scheduled_hooks' ) ) {
-    /**
-     * Clear scheduled hooks
-     */
-    function burst_clear_scheduled_hooks(): void {
-        wp_clear_scheduled_hook( 'burst_every_hour' );
-        wp_clear_scheduled_hook( 'burst_daily' );
-        wp_clear_scheduled_hook( 'burst_weekly' );
+    if ( ! function_exists( '\Burst\burst_on_activation' ) && ! function_exists( 'burst_on_activation' ) ) {
+        /**
+         * Set an activation time stamp
+         * This function has te have a different name, to ensure that it runs and deactivates free, if required.
+         */
+        function burst_on_activation(): void {
+            update_option( 'burst_run_activation', true, false );
+
+            // ensure that defaults are set only once.
+            if ( ! get_option( 'burst_activation_time' ) ) {
+                set_transient( 'burst_redirect_to_settings_page', true, 5 * MINUTE_IN_SECONDS );
+                update_option( 'burst_start_onboarding', true, false );
+                update_option( 'burst_set_defaults', true, false );
+            }
+        }
+        register_activation_hook( __FILE__, '\Burst\burst_on_activation' );
     }
-    register_deactivation_hook( __FILE__, '\Burst\burst_clear_scheduled_hooks' );
+
+    if ( ! function_exists( '\Burst\burst_clear_scheduled_hooks' ) && ! function_exists( 'burst_clear_scheduled_hooks' ) ) {
+        /**
+         * Clear scheduled hooks
+         */
+        function burst_clear_scheduled_hooks(): void {
+            wp_clear_scheduled_hook( 'burst_every_hour' );
+            wp_clear_scheduled_hook( 'burst_daily' );
+            wp_clear_scheduled_hook( 'burst_weekly' );
+        }
+        register_deactivation_hook( __FILE__, '\Burst\burst_clear_scheduled_hooks' );
+    }
+} catch ( Throwable $e ) {
+    error_log( 'Burst could not load, due to error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine() );
+    return;
 }
