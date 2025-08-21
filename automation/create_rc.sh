@@ -110,6 +110,7 @@ create_rc_zip() {
     "--exclude=.eslintrc.json"
     "--exclude=.gitignore"
     "--exclude=.github/"
+    "--exclude=.gitlab/"
     "--exclude=.million/"
     "--exclude=webpack.config.js"
     "--exclude=phpstan.wp-env.neon"
@@ -158,8 +159,7 @@ cd .. || { echo "Failed to change directory"; exit 1; }
 echo "Changed to directory: $(pwd), starting script..."
 
 # Extract the stable tag from readme.txt
-stable_tag=$(grep "Stable tag:" readme.txt | awk '{print $NF}')
-
+stable_tag=$(grep "Stable tag:" "$PLUGIN_DIR/readme.txt" | awk '{print $NF}')
 #cleanup build directory and recreate
 echo "remove obsolete directories from pre 2.0 versions"
 cd "$PLUGIN_DIR" || { echo "Failed to change directory"; exit 1; }
