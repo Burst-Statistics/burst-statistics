@@ -1251,11 +1251,10 @@ class Statistics {
 				$filters[ $filter_name ] = \Burst\burst_loader()->frontend->tracking->get_lookup_table_id_cached( $filter_name, $filter_value );
 			}
 		}
-
+		global $wpdb;
 		foreach ( $filters as $filter => $value ) {
 			if ( array_key_exists( $filter, $possible_filters_with_prefix ) ) {
 				$qualified_name = $possible_filters_with_prefix[ $filter ];
-
 				// Special handling for include/exclude values.
 				if ( $value === 'include' ) {
 					$where_clauses[] = "{$qualified_name} = 1";
@@ -1263,6 +1262,11 @@ class Statistics {
 					$where_clauses[] = "{$qualified_name} = 0";
 				} elseif ( is_numeric( $value ) ) {
 					$where_clauses[] = "{$qualified_name} = " . intval( $value );
+				} elseif ( substr( $value, -1 ) === '*' ) {
+					// remove asterisk.
+					$value           = substr( $value, 0, -1 );
+					$like            = $wpdb->esc_like( $value ) . '%';
+					$where_clauses[] = $wpdb->prepare( "{$qualified_name} LIKE %s", $like );
 				} elseif ( strpos( $value, ',' ) !== false ) {
 					// explode comma separated values.
 					$values          = explode( ',', $value );
@@ -1271,10 +1275,13 @@ class Statistics {
 				} else {
 					$value = esc_sql( sanitize_text_field( $value ) );
 					if ( $filter === 'referrer' ) {
-						$value           = ( $value === __( 'Direct', 'burst-statistics' ) ) ? "''" : "'%{$value}'";
-						$where_clauses[] = "{$qualified_name} LIKE {$value}";
+						if ( $value === __( 'Direct', 'burst-statistics' ) ) {
+							$where_clauses[] = $wpdb->prepare( "{$qualified_name} = %s", '' );
+						} else {
+							$where_clauses[] = $wpdb->prepare( "{$qualified_name} LIKE %s", "%{$value}" );
+						}
 					} else {
-						$where_clauses[] = "{$qualified_name} = '{$value}'";
+						$where_clauses[] = $wpdb->prepare( "{$qualified_name} = %s", $value );
 					}
 				}
 			}
@@ -1282,7 +1289,6 @@ class Statistics {
 
 		// Construct the WHERE clause.
 		$where = implode( ' AND ', $where_clauses );
-
 		return ! empty( $where ) ? "AND $where " : '';
 	}
 

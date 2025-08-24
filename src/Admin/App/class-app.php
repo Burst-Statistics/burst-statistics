@@ -35,6 +35,7 @@ class App {
 	public Menu $menu;
 	public Fields $fields;
 	public Tasks $tasks;
+	public string $nonce_expired_feedback = 'The provided nonce has expired. Please refresh the page.';
 
 	/**
 	 * Initialize the App class
@@ -438,7 +439,7 @@ class App {
 			$response = new \WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'The provided nonce is not valid.',
+					'message' => $this->nonce_expired_feedback,
 				]
 			);
 			ob_get_clean();
@@ -945,7 +946,7 @@ class App {
 			return new \WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'The provided nonce is not valid.',
+					'message' => $this->nonce_expired_feedback,
 				]
 			);
 		}
@@ -972,6 +973,9 @@ class App {
 				break;
 			case 'tracking':
 				$data = Endpoint::get_tracking_status_and_time();
+				break;
+			case 'get_article_data':
+				$data = $this->get_articles();
 				break;
 			case 'get_filter_options':
 				$data_type = isset( $data['data_type'] ) ? sanitize_title( $data['data_type'] ) : '';
@@ -1023,7 +1027,7 @@ class App {
 			'platforms' => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_platforms GROUP BY name",
 			'states'    => "SELECT DISTINCT state AS name FROM {$wpdb->prefix}burst_locations",
 			'cities'    => "SELECT DISTINCT city AS name FROM {$wpdb->prefix}burst_locations",
-			'pages'     => "SELECT DISTINCT page_url AS name FROM {$wpdb->prefix}burst_statistics",
+			'pages'     => "SELECT page_url as name FROM {$wpdb->prefix}burst_statistics GROUP BY page_url ORDER BY COUNT(*) DESC",
 			'campaigns' => "SELECT DISTINCT campaign AS name FROM {$wpdb->prefix}burst_campaigns",
 			'sources'   => "SELECT DISTINCT source AS name FROM {$wpdb->prefix}burst_campaigns",
 			'mediums'   => "SELECT DISTINCT medium AS name FROM {$wpdb->prefix}burst_campaigns",
@@ -1508,7 +1512,7 @@ class App {
 			return new \WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'The provided nonce is not valid.',
+					'message' => $this->nonce_expired_feedback,
 				]
 			);
 		}
@@ -1556,7 +1560,7 @@ class App {
 			return new \WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'The provided nonce is not valid.',
+					'message' => $this->nonce_expired_feedback,
 				]
 			);
 		}
@@ -1600,7 +1604,7 @@ class App {
 			return new \WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'The provided nonce is not valid.',
+					'message' => $this->nonce_expired_feedback,
 				]
 			);
 		}
@@ -1642,7 +1646,7 @@ class App {
 			return new \WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'The provided nonce is not valid.',
+					'message' => $this->nonce_expired_feedback,
 				]
 			);
 		}
@@ -1694,7 +1698,7 @@ class App {
 			return new \WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'The provided nonce is not valid.',
+					'message' => $this->nonce_expired_feedback,
 				]
 			);
 		}
@@ -1746,7 +1750,7 @@ class App {
 			return new \WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'The provided nonce is not valid.',
+					'message' => $this->nonce_expired_feedback,
 				]
 			);
 		}
@@ -1796,7 +1800,7 @@ class App {
 			return new \WP_REST_Response(
 				[
 					'success' => false,
-					'message' => 'The provided nonce is not valid.',
+					'message' => $this->nonce_expired_feedback,
 				]
 			);
 		}
@@ -1865,6 +1869,63 @@ class App {
 		return $new_menu_items;
 	}
 
+
+	/**
+	 * Get raw posts array
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *         Returns a list of plugin arrays.
+	 */
+	private function get_articles(): array {
+		$json_path = __DIR__ . '/posts.json';
+		// if the file is over one month old, delete it, so we can download a new one.
+		if ( file_exists( $json_path ) && ( time() - filemtime( $json_path ) > MONTH_IN_SECONDS ) ) {
+			wp_delete_file( $json_path );
+		}
+
+		if ( ! file_exists( $json_path ) ) {
+			$this->download_articles_json_file();
+		}
+		if ( ! file_exists( $json_path ) ) {
+			$json_path = __DIR__ . '/posts-fallback.json';
+		}
+
+        // phpcs:disable WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		$json = file_get_contents( $json_path );
+		// decode the json file.
+		$decoded = json_decode( $json, true );
+		if ( ! is_array( $decoded ) ) {
+			return [];
+		}
+
+		// Shuffle array and take 6 random entries.
+		shuffle( $decoded );
+		return array_slice( $decoded, 0, 6 );
+	}
+
+	/**
+	 * Get the posts.json file from the remote server.
+	 */
+	private function download_articles_json_file(): void {
+		$remote_json = 'https://burst.ams3.cdn.digitaloceanspaces.com/posts/posts.json';
+		$response    = wp_remote_get( $remote_json );
+		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
+			return;
+		}
+		$json = wp_remote_retrieve_body( $response );
+		if ( ! empty( $json ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			global $wp_filesystem;
+			if ( ! WP_Filesystem() ) {
+				return;
+			}
+
+			if ( $wp_filesystem->is_writable( __DIR__ ) ) {
+				$wp_filesystem->put_contents( __DIR__ . '/posts.json', $json, FS_CHMOD_FILE );
+			}
+		}
+	}
+
 	/**
 	 * Sanitize an ip number
 	 */
@@ -1903,7 +1964,7 @@ class App {
 		$search         = isset( $data['search'] ) ? $data['search'] : '';
 
 		if ( ! $this->verify_nonce( $nonce, 'burst_nonce' ) ) {
-			return new \WP_Error( 'rest_invalid_nonce', 'The provided nonce is not valid.', [ 'status' => 400 ] );
+			return new \WP_Error( 'rest_invalid_nonce', $this->nonce_expired_feedback, [ 'status' => 400 ] );
 		}
 
 		// do full search for string length above 3, but set a cap at 1000.

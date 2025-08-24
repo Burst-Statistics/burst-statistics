@@ -10,6 +10,7 @@ use Burst\Admin\Burst_Wp_Cli\Burst_Wp_Cli;
 use Burst\Admin\Cron\Cron;
 use Burst\Admin\Dashboard_Widget\Dashboard_Widget;
 use Burst\Admin\DB_Upgrade\DB_Upgrade;
+use Burst\Admin\Debug\Debug;
 use Burst\Admin\Mailer\Mail_Reports;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
@@ -71,6 +72,7 @@ class Admin {
 		add_action( 'burst_validate_tasks', [ $this, 'validate_tasks' ] );
 		add_action( 'plugins_loaded', [ $this, 'init_wpcli' ] );
 		add_action( 'burst_daily', [ $this, 'clean_malicious_data' ] );
+		add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
 
 		$upgrade = new Upgrade();
 		$upgrade->init();
@@ -95,6 +97,9 @@ class Admin {
 		$this->tasks = new Tasks();
 		$widget      = new Dashboard_Widget();
 		$widget->init();
+
+		$debug = new Debug();
+		$debug->init();
 
 		if ( defined( 'BURST_BLUEPRINT' ) && ! get_option( 'burst_demo_data_installed' ) ) {
 			add_action( 'init', [ $this, 'install_demo_data' ] );
@@ -208,6 +213,23 @@ class Admin {
 				$table,
 				$row
 			);
+		}
+	}
+
+	/**
+	 * Clean up errors after some time, to prevent them hanging around indefinitely.
+	 */
+	public function cleanup_php_error_notices(): void {
+		$last_detected = get_option( 'burst_php_error_time', time() );
+		if ( ! $last_detected ) {
+			return;
+		}
+
+		$x_days_ago = time() - 7 * DAY_IN_SECONDS;
+		if ( $last_detected < $x_days_ago ) {
+			delete_option( 'burst_php_error_time' );
+			delete_option( 'burst_php_error_detected' );
+			delete_option( 'burst_php_error_count' );
 		}
 	}
 

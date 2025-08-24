@@ -42,8 +42,22 @@ if ( defined( 'BURST_ALLOWED_ORIGINS' ) ) {
 
 define( 'BURST_PATH', plugin_dir_path( __FILE__ ) );
 
-require_once __DIR__ . '/src/autoload.php';
+// Check if Burst is active, in case the plugin was deactivated in the meantime but javascript is still loading.
+$burst_plugins = [
+	'burst-pro'        => 'burst-pro/burst-pro.php',
+	'burst-statistics' => 'burst-statistics/burst.php',
+];
 
+$burst_dir            = basename( BURST_PATH );
+$burst_active_plugins = (array) get_option( 'active_plugins', [] );
+if ( is_multisite() ) {
+	$burst_active_plugins += (array) get_site_option( 'active_sitewide_plugins', [] );
+}
+if ( isset( $burst_plugins[ $burst_dir ] ) && ! in_array( $burst_plugins[ $burst_dir ], $burst_active_plugins, true ) ) {
+	return;
+}
+
+require_once __DIR__ . '/src/autoload.php';
 require_once __DIR__ . '/helpers/php-user-agent/UserAgentParser.php';
 if ( file_exists( __DIR__ . '/src/Pro/Tracking/tracking.php' ) ) {
 	require_once __DIR__ . '/src/Pro/Tracking/tracking.php';
