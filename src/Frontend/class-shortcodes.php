@@ -68,6 +68,10 @@ class Shortcodes {
 	 * @return string The unmodified content
 	 */
 	public function check_for_burst_shortcodes( ?string $content ): string {
+        if ( empty( $content ) ) {
+            return $content;
+        }
+
 		if ( ! is_admin() &&
 			(
 				has_shortcode( $content, 'burst-most-visited' ) ||
