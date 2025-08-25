@@ -32,7 +32,6 @@ class Frontend {
 		add_action( 'init', [ $this, 'register_pageviews_block' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_time_tracking_script' ], 0 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_tracking_script' ], 0 );
-		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_shortcodes_styles' ] );
 		add_filter( 'script_loader_tag', [ $this, 'defer_burst_tracking_script' ], 10, 3 );
 		add_action( 'burst_every_hour', [ $this, 'maybe_update_total_pageviews_count' ] );
 		add_action( 'init', [ $this, 'use_logged_out_state_for_tests' ] );
@@ -298,89 +297,5 @@ class Frontend {
 		$text = sprintf( _n( 'This page has been viewed %d time.', 'This page has been viewed %d times.', $count, 'burst-statistics' ), $count );
 
 		return '<p class="burst-pageviews">' . $text . '</p>';
-	}
-
-	/**
-	 * Register the shortcodes stylesheet and enqueue it when needed
-	 */
-	public function enqueue_burst_shortcodes_styles(): void {
-		// Register the stylesheet but don't enqueue it yet.
-		wp_register_style(
-			'burst-statistics-shortcodes',
-			BURST_URL . 'assets/css/burst-statistics-shortcodes.css',
-			[],
-			filemtime( BURST_PATH . 'assets/css/burst-statistics-shortcodes.css' )
-		);
-
-		// Add filters to detect our shortcodes and enqueue the style when needed.
-		add_filter( 'the_content', [ $this, 'check_for_burst_shortcodes' ], 10, 1 );
-
-		// Also check in widgets, Gutenberg blocks, etc.
-		add_action( 'wp_footer', [ $this, 'maybe_enqueue_shortcode_styles' ], 10 );
-	}
-
-	/**
-	 * Check content for Burst shortcodes
-	 *
-	 * @param string $content The post content.
-	 * @return string The unmodified content
-	 */
-	public function check_for_burst_shortcodes( string $content ): string {
-		if ( ! is_admin() &&
-			(
-				has_shortcode( $content, 'burst-most-visited' ) ||
-				has_shortcode( $content, 'burst_statistics' )
-			)
-		) {
-			$this->enqueue_shortcode_styles();
-		}
-
-		return $content;
-	}
-
-	/**
-	 * Fallback check for shortcodes in widgets or other areas
-	 */
-	public function maybe_enqueue_shortcode_styles(): void {
-		global $wp_query;
-
-		// Check if we're on a singular post or page.
-		if ( is_singular() ) {
-			$post = $wp_query->get_queried_object();
-
-			// Check post content for shortcodes.
-			if ( $post && isset( $post->post_content ) && (
-				has_shortcode( $post->post_content, 'burst-most-visited' ) ||
-				has_shortcode( $post->post_content, 'burst_statistics' )
-			) ) {
-				$this->enqueue_shortcode_styles();
-				return;
-			}
-		}
-
-		// Check active widgets for shortcodes.
-		$active_widgets = wp_get_sidebars_widgets();
-		if ( is_array( $active_widgets ) ) {
-			foreach ( $active_widgets as $sidebar_widgets ) {
-				if ( ! is_array( $sidebar_widgets ) ) {
-					continue;
-				}
-
-				foreach ( $sidebar_widgets as $widget ) {
-					if ( strpos( $widget, 'text' ) !== false ) {
-						// This is a text widget that might contain shortcodes.
-						$this->enqueue_shortcode_styles();
-						return;
-					}
-				}
-			}
-		}
-	}
-
-	/**
-	 * Actually enqueue the shortcode styles
-	 */
-	private function enqueue_shortcode_styles(): void {
-		wp_enqueue_style( 'burst-statistics-shortcodes' );
 	}
 }

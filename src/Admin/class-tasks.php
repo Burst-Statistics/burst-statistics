@@ -224,6 +224,7 @@ class Tasks {
 			'open'      => __( 'Open', 'burst-statistics' ),
 			'pro'       => __( 'Pro', 'burst-statistics' ),
 			'sale'      => __( 'Sale', 'burst-statistics' ),
+			'offer'     => __( 'Offer', 'burst-statistics' ),
 		];
 		return $icon_labels[ $icon ];
 	}
@@ -286,26 +287,6 @@ class Tasks {
 			return 0;
 		}
 		return $count;
-	}
-
-	/**
-	 * Check if we're on the Burst page
-	 */
-	public function is_burst_page(): bool {
-		if ( $this->is_logged_in_rest() ) {
-			return true;
-		}
-
-		if ( ! isset( $_SERVER['QUERY_STRING'] ) ) {
-			return false;
-		}
-
-		parse_str( $_SERVER['QUERY_STRING'], $params );
-		if ( array_key_exists( 'page', $params ) && ( $params['page'] === 'burst' ) ) {
-			return true;
-		}
-
-		return false;
 	}
 
 	/**

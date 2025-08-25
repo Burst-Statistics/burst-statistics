@@ -8,13 +8,20 @@ if ( ! function_exists( '\Burst\burst_is_logged_in_rest' ) && ! function_exists(
 	 * Check if the request is an authenticated Burst Rest Request
 	 */
 	function burst_is_logged_in_rest(): bool {
-		$valid_request       = isset( $_SERVER['REQUEST_URI'] ) && strpos( $_SERVER['REQUEST_URI'], '/burst/v1/' ) !== false;
-		$valid_plain_request = isset( $_SERVER['REQUEST_URI'] ) && strpos( $_SERVER['REQUEST_URI'], '%2Fburst%2Fv1%2F' ) !== false;
-		if ( ! $valid_request && ! $valid_plain_request ) {
-			return false;
+		static $memo = null;
+		if ( $memo !== null ) {
+			return $memo;
+		}
+		$uri = $_SERVER['REQUEST_URI'] ?? '';
+		// Cheap path: return early if not our REST route.
+		if ( strpos( $uri, '/burst/v1/' ) === false && strpos( $uri, '%2Fburst%2Fv1%2F' ) === false ) {
+			$memo = false;
+			return $memo;
 		}
 
-		return is_user_logged_in();
+		// Only now ask WP about the user (may hit usermeta once).
+		$memo = is_user_logged_in();
+		return $memo;
 	}
 }
 

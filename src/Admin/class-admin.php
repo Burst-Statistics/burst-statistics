@@ -10,6 +10,7 @@ use Burst\Admin\Burst_Wp_Cli\Burst_Wp_Cli;
 use Burst\Admin\Cron\Cron;
 use Burst\Admin\Dashboard_Widget\Dashboard_Widget;
 use Burst\Admin\DB_Upgrade\DB_Upgrade;
+use Burst\Admin\Debug\Debug;
 use Burst\Admin\Mailer\Mail_Reports;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
@@ -71,6 +72,8 @@ class Admin {
 		add_action( 'burst_validate_tasks', [ $this, 'validate_tasks' ] );
 		add_action( 'plugins_loaded', [ $this, 'init_wpcli' ] );
 		add_action( 'burst_daily', [ $this, 'clean_malicious_data' ] );
+		add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
+		add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
 
 		$upgrade = new Upgrade();
 		$upgrade->init();
@@ -96,9 +99,32 @@ class Admin {
 		$widget      = new Dashboard_Widget();
 		$widget->init();
 
+		$debug = new Debug();
+		$debug->init();
+
 		if ( defined( 'BURST_BLUEPRINT' ) && ! get_option( 'burst_demo_data_installed' ) ) {
 			add_action( 'init', [ $this, 'install_demo_data' ] );
 			update_option( 'burst_demo_data_installed', true, false );
+		}
+	}
+
+	/**
+	 * Users who are using the plugin for at least a year get a one time trial offer.
+	 */
+	public function long_term_user_deal(): void {
+		if ( ! defined( 'BURST_FREE' ) ) {
+			return;
+		}
+
+		$activated = get_option( 'burst_activation_time', 0 );
+		if ( $activated === 0 ) {
+			return;
+		}
+
+		$one_year_ago = time() - YEAR_IN_SECONDS;
+		if ( $activated > $one_year_ago && ! get_option( 'burst_trial_offered' ) ) {
+			\Burst\burst_loader()->admin->tasks->add_task( 'trial_offer_loyal_users' );
+			update_option( 'burst_trial_offered', true, false );
 		}
 	}
 
@@ -208,6 +234,23 @@ class Admin {
 				$table,
 				$row
 			);
+		}
+	}
+
+	/**
+	 * Clean up errors after some time, to prevent them hanging around indefinitely.
+	 */
+	public function cleanup_php_error_notices(): void {
+		$last_detected = get_option( 'burst_php_error_time', time() );
+		if ( ! $last_detected ) {
+			return;
+		}
+
+		$x_days_ago = time() - 7 * DAY_IN_SECONDS;
+		if ( $last_detected < $x_days_ago ) {
+			delete_option( 'burst_php_error_time' );
+			delete_option( 'burst_php_error_detected' );
+			delete_option( 'burst_php_error_count' );
 		}
 	}
 
@@ -378,7 +421,7 @@ class Admin {
 			Capability::add_capability( 'view', [ 'administrator', 'editor' ] );
 			Capability::add_capability( 'manage' );
 			do_action( 'burst_activation' );
-			delete_option( 'burst_run_activation' );
+			update_option( 'burst_run_activation', false );
 		}
 	}
 
@@ -1133,6 +1176,7 @@ class Admin {
 			'burst-current-version',
 			'burst_tasks',
 			'burst_demo_data_installed',
+			'burst_trial_offered',
 		];
 		// delete options.
 		foreach ( $options as $option_name ) {

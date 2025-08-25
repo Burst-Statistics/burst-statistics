@@ -16,34 +16,38 @@ class Review {
 	 * Constructor
 	 */
 	public function init(): void {
-		if ( ! defined( 'BURST_PRO' ) || self::is_test() ) {
-			add_action( 'admin_init', [ $this, 'show_review_notice' ] );
-			add_action( 'admin_init', [ $this, 'process_get_review_dismiss' ] );
-			add_action( 'wp_ajax_dismiss_review_notice', [ $this, 'dismiss_review_notice_callback' ] );
+		if ( $this->show_review_notice() ) {
+			add_action( 'admin_notices', [ $this, 'review_notice_html' ] );
 			add_action( 'admin_print_footer_scripts', [ $this, 'insert_dismiss_review' ] );
+			add_action( 'wp_ajax_dismiss_review_notice', [ $this, 'dismiss_review_notice_callback' ] );
+			add_action( 'admin_init', [ $this, 'process_get_review_dismiss' ] );
 		}
 	}
 
 	/**
 	 * Check if the conditions apply, and show the review notice
 	 */
-	public function show_review_notice(): void {
+	public function show_review_notice(): bool {
+		if ( defined( 'BURST_PRO' ) && ! self::is_test() ) {
+			return false;
+		}
+
 		// uncomment for testing.
 		// update_option( 'burst_review_notice_shown', false );.
 		// update_option( 'burst_activation_time', strtotime( "-5 weeks" ) );.
 		// show review notice, but only on single site installs.
 		if ( is_multisite() ) {
-			return;
+			return false;
 		}
 
 		// set a time for users who didn't have it set yet.
 		if ( ! get_option( 'burst_activation_time' ) ) {
 			update_option( 'burst_activation_time', time(), false );
-			return;
+			return false;
 		}
 
 		if ( get_option( 'burst_review_notice_shown' ) ) {
-			return;
+			return false;
 		}
 
 		$activation_time = get_option( 'burst_activation_time' );
@@ -52,20 +56,20 @@ class Review {
 		// between 4 and 6 weeks ago, check if we reached 200 visitors. If so show the notice. If longer than 6 weeks, always show the notice.
 		if ( $activation_time < $four_weeks_ago ) {
 			$this->visitors = get_transient( 'burst_review_visitors' );
-
 			if ( ! $this->visitors ) {
 				$data           = \Burst\burst_loader()->admin->statistics->get_data( [ 'visitors' ], 0, time(), [] );
 				$this->visitors = $data['visitors'];
 				set_transient( 'burst_review_visitors', $this->visitors, DAY_IN_SECONDS );
 			}
 			if ( $this->visitors > $this->min_visitors ) {
-				add_action( 'admin_notices', [ $this, 'review_notice_html' ] );
+				return true;
 			}
 			// always show the notice after 6 weeks have gone by.
 			if ( $activation_time < $five_weeks_ago ) {
-				add_action( 'admin_notices', [ $this, 'review_notice_html' ] );
+				return true;
 			}
 		}
+		return false;
 	}
 
 	/**

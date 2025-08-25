@@ -28,13 +28,21 @@ const useTasks = create(
   getTasks: async() => {
     try {
       const { tasks } = await doAction( 'tasks' );
-      // check if tasks is an array
-      if ( ! Array.isArray( tasks ) ) {
-        console.error("Tasks is not an array");
-        throw new Error( 'Tasks is not an array' );
+      let tasksArray;
+      if (Array.isArray(tasks)) {
+        tasksArray = tasks;
+      } else if (typeof tasks === 'object' && tasks !== null) {
+        // filter out prototype objects.
+        tasksArray = Object.keys(tasks)
+            .filter(key => tasks.hasOwnProperty(key) && !isNaN(key))
+            .map(key => tasks[key]);
+      } else {
+        console.log("tasks array has unexpected format: ", tasks );
+        tasksArray = [];
       }
+
       set( state => ({
-        tasks: tasks,
+        tasks: tasksArray,
         loading: false
       }) );
       get().filterTasks();

@@ -210,7 +210,7 @@ class Upgrade {
 		}
 
 		do_action( 'burst_upgrade_after', $prev_version );
-		update_option( 'burst-current-version', $new_version, false );
+		update_option( 'burst-current-version', $new_version );
 	}
 
 	/**

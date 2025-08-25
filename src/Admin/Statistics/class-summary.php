@@ -136,7 +136,7 @@ if ( ! class_exists( 'summary' ) ) {
 			$end_of_last_month   = strtotime( 'last day of last month 23:59:59' );
 			$sql                 = $wpdb->prepare( "select count(*) from {$wpdb->prefix}burst_statistics where time>=%s and time<=%s", $start_of_last_month, $end_of_last_month );
 			$count               = (int) $wpdb->get_var( $sql );
-			$is_high_traffic     = $count > apply_filters( 'burst_high_traffic_treshold', 200000 );
+			$is_high_traffic     = $count > apply_filters( 'burst_high_traffic_treshold', 400000 );
 			update_option( 'burst_is_high_traffic_site', $is_high_traffic, false );
 		}
 
@@ -168,7 +168,7 @@ if ( ! class_exists( 'summary' ) ) {
 		public function upgrade_summary_table_alltime(): void {
 			global $wpdb;
 			// 1644260876.
-			$first_statistics_date_unix = $wpdb->get_var( "select min(time) from {$wpdb->prefix}burst_statistics" );
+			$first_statistics_date_unix = (int) $wpdb->get_var( "select min(time) from {$wpdb->prefix}burst_statistics" );
 			// convert unix to date and back to unix, to ensure that the date is at the start of the day, for comparison purposes.
 			// 2022-02-07.
 			$first_statistics_date = Statistics::convert_unix_to_date( $first_statistics_date_unix );

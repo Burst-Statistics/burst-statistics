@@ -22,12 +22,11 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 		public function add_dynamic_hooks(): void {
 			$goals = \Burst\burst_loader()->frontend->tracking->get_active_goals( true );
 			foreach ( $goals as $goal ) {
-				$goal = new Goal( $goal['ID'] );
-				if ( $goal->type !== 'hook' ) {
+				if ( $goal['type'] !== 'hook' ) {
 					continue;
 				}
-				$hook = $goal->hook;
-				if ( $hook ) {
+				$hook = (string) $goal['hook'];
+				if ( strlen( $hook ) > 0 ) {
 					add_action(
 						$hook,
 						function () use ( $hook ): void {
