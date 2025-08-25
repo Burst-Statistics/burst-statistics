@@ -60,18 +60,10 @@ return [
 		'plusone'     => true,
 	],
 	[
-		'id'          => 'new_parameters',
+		'id'          => 'leave-feedback',
 		'condition'   => [
 			'type' => 'activation',
 		],
-		'msg'         => __( "New! Track your UTM Campaigns and URL Parameters! Click on the 'Pages' dropdown in the Statistics tab.", 'burst-statistics' ),
-		'icon'        => 'new',
-		'url'         => '#/statistics',
-		'dismissible' => true,
-		'plusone'     => false,
-	],
-	[
-		'id'          => 'leave-feedback',
 		// @phpstan-ignore-next-line
 		'msg'         => $this->sprintf(
 		// translators: 1: opening anchor tag to support thread, 2: closing anchor tag.
