@@ -6,7 +6,7 @@ Requires at least: 6.2
 License: GPL2
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 2.2.3
+Stable tag: 2.2.4
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 
@@ -97,6 +97,16 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 2.2.4 =
+* New: debug information in Site Health Info.
+* New: wildcard filtering on page URL in advanced filters, by adding an asterisk behind your string.
+* Improvement: check in endpoint if Burst is still active, for situations where javascript is still active, due to caching, but plugin not active.
+* Improvement: catch incorrect data structure on hit, for situations where previous javascript is still active due to caching.
+* Improvement: larger selection of Tips & Tricks retrieved from website, showing a variety of different and more up to date articles.
+* Improvement: performance optimizations.
+* Fix: when statistics table is empty, the summary table upgrade could fail on an empty value for "first visit", props @programmin.
+* Fix: catch edge case where a theme passes a null value to the "the_content" filter (which is incorrect behaviour). props @sllew.
+
 = 2.2.3 =
 * Improvement: allow ipv6 addresses
 * Improvement: prevent false positives on ajax fallback notice
@@ -160,39 +170,6 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Fix: A dismissible task like the new email reports upgrade notice stayed in the “remaining tasks” section.
 * Fix: predefined goals were not loading due to changes in translation structure within WordPress.
 * Fix: on track_updates, empty values were not cleaned up correctly, possibly leading to rows with empty devices and browsers.
-
-= 1.7.6 =
-* Fix: translations not loading correctly
-* Fix: when using the reset button, a fatal error occurred
-
-= 1.7.5 =
-* Fix: Resolved an issue where plain permalinks were not working correctly.
-* Fix: Goals were not saving the start date properly, this has been corrected.
-* Fix: Fixed the goals ID/class toggle issue for better consistency.
-* Improvement: Added a new filter for customizing datatable output.
-* Improvement: Enhanced `get_website_url()` for improved reliability.
-* Security: Applied `unslash()` to `verify_nonce` to enhance security measures.
-
-= 1.7.4 =
-* Improvement: Limit live update requests to enhance system performance.
-* Improvement: Added an option to exclude bounces, allowing users to adjust settings more easily.
-* Fix: This addresses the issue with sorting by 0 in WordPress.
-* Fix: Prevent duplication of burst post meta when Yoast Duplicate Post is used. props @dariuserdt
-* Fix: Corrects the behavior of the burst_admin_url() function when it receives a path, ensuring it is properly handled.
-* Fix: Prevent burst tracking from causing server spikes when Complianz clears cookies without consent for stats.
-
-= 1.7.3 =
-* November 18, 2024
-* New: Blueprint.js demo data
-* Improvement: option to override the default time between endpoint tests, props @tobaco
-* Improvement: allow parameter length over 250 characters, props @ficusmedia
-* Improvement: option to dismiss all notices, except critical issues, props @3cstudio
-* Fix: clear unused 5 minutes cron job
-* Fix: on deactivation on multisite, not all tables were deleted yet, props @ecce-homo
-* Improvement: Change column parameters to text to allow longer params.
-* Improvement: Added a composite index on uid and time to speed up inserting tracking data. props @johannesdb
-* Fix: Language issue with malformed URL's. props @apollosk
-* Fix: Issue with translatable files with WP 6.7.
 
 == Upgrade notice ==
 * Please backup before upgrading.
