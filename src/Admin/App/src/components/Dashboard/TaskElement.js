@@ -20,7 +20,9 @@ const TaskElement = ( props ) => {
                         href={task.url}
                         className="text-blue underline"
                     >
-                        {'sale' === task.icon ? __( 'Get 40% Off', 'burst-statistics' ) : __( 'More info', 'burst-statistics' )}
+                        {'sale' === task.icon && __( 'Get 40% Off', 'burst-statistics' )}
+                        {'offer' === task.icon && __( 'Get 3 months free!', 'burst-statistics' )}
+                        { ('offer' !== task.icon && 'sale' !== task.icon )&& __( 'More info', 'burst-statistics' )}
                     </a>
                 )}
 

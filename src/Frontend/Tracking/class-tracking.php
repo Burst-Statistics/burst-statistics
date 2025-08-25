@@ -202,7 +202,12 @@ class Tracking {
 		}
 
 		$data = json_decode( $request, true );
-		$this->track_hit( $data );
+		if ( is_array( $data ) ) {
+			$this->track_hit( $data );
+		} else {
+			self::error_log( 'The posted data has to be an array. Please check if your Javascript code is cached, using the old version.' );
+		}
+
 		http_response_code( 200 );
 
 		return 'success';
@@ -226,7 +231,12 @@ class Tracking {
 		if ( isset( $data['request'] ) && $data['request'] === 'test' ) {
 			return new \WP_REST_Response( [ 'success' => 'test' ], 200 );
 		}
-		$this->track_hit( $data );
+
+		if ( is_array( $data ) ) {
+			$this->track_hit( $data );
+		} else {
+			self::error_log( 'The posted data has to be an array. Please check if your Javascript code is cached, using the old version.' );
+		}
 
 		return new \WP_REST_Response( [ 'success' => 'hit_tracked' ], 200 );
 	}
@@ -371,9 +381,11 @@ class Tracking {
 		if ( ! filter_var( $sanitized_url, FILTER_VALIDATE_URL ) ) {
 			return $url_destructured;
 		}
-		// we don't use wp_parse_url so we don't need to load an additional wp file.
-        // phpcs:ignore
-		$url = parse_url( esc_url_raw( $sanitized_url ) );
+
+		if ( ! function_exists( 'wp_parse_url' ) ) {
+			require_once ABSPATH . '/wp-includes/http.php';
+		}
+		$url = wp_parse_url( esc_url_raw( $sanitized_url ) );
 		if ( isset( $url['host'] ) ) {
 			$url_destructured['host']        = $url['host'];
 			$url_destructured['scheme']      = $url['scheme'];
@@ -591,31 +603,62 @@ class Tracking {
 	}
 
 	/**
-	 * Get all active goals from the database.
+	 * Get all active goals from the database with single query + cached result.
 	 *
-	 * @param bool $server_side Whether to fetch only server-side goals.
-	 * @return array<array<string, mixed>> List of active goals as associative arrays.
+	 * @param bool $server_side Whether to return server-side goals only.
+	 * @return array<array<string, mixed>> Filtered list of active goals.
 	 */
 	public function get_active_goals( bool $server_side ): array {
+		// Prevent queries during install.
 		if ( defined( 'BURST_INSTALL_TABLES_RUNNING' ) ) {
 			return [];
 		}
 
-		global $wpdb;
-		$server_side_key = $server_side ? 'server_side' : 'client_side';
-		if ( isset( $this->goals[ $server_side_key ] ) ) {
-			return $this->goals[ $server_side_key ];
+		// Reuse per-scope cache if we already computed it this request.
+		$scope = $server_side ? 'server_side' : 'client_side';
+		if ( isset( $this->goals[ $scope ] ) ) {
+			return $this->goals[ $scope ];
 		}
-		$goals = wp_cache_get( "burst_active_goals_$server_side_key", 'burst' );
-		if ( ! $goals ) {
-			$server_side_sql = $server_side ? " AND (type = 'visits' OR type = 'hook') " : "AND type != 'visits' AND type != 'hook' ";
-			$goals           = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}burst_goals WHERE status = 'active' {$server_side_sql}", ARRAY_A );
-			wp_cache_set( "burst_active_goals_$server_side_key", $goals, 'burst', 10 );
-		}
-		$this->goals[ $server_side_key ] = $goals;
 
-		return $goals;
+		// Get full active goals list from in-memory or object cache.
+		if ( isset( $this->goals['all'] ) ) {
+			$all_goals = $this->goals['all'];
+		} else {
+			$all_goals = wp_cache_get( 'burst_active_goals_all', 'burst' );
+			if ( ! $all_goals ) {
+				global $wpdb;
+				// Single query: fetch ALL active goals (no type condition).
+				$all_goals = $wpdb->get_results(
+					"SELECT * FROM {$wpdb->prefix}burst_goals WHERE status = 'active'",
+					ARRAY_A
+				);
+				// Cache full set for reuse across calls.
+				wp_cache_set( 'burst_active_goals_all', $all_goals, 'burst', 60 );
+			}
+			// Memoize for this request.
+			$this->goals['all'] = $all_goals;
+		}
+
+		// Filter in PHP to avoid a second DB roundtrip.
+		$filtered = array_values(
+			array_filter(
+				$all_goals,
+				static function ( array $goal ) use ( $server_side ): bool {
+					$server_side_types = [ 'visits', 'hook' ];
+					$type              = $goal['type'] ?? '';
+					return $server_side
+						? in_array( $type, $server_side_types, true )
+						: ! in_array( $type, $server_side_types, true );
+				}
+			)
+		);
+
+		// Memoize filtered results.
+		$this->goals[ $scope ] = $filtered;
+
+		return $filtered;
 	}
+
 
 	/**
 	 * Checks if a specified goal is completed based on the provided page URL.

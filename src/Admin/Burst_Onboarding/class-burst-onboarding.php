@@ -53,6 +53,11 @@ class Burst_Onboarding {
 	 * Initialize the onboarding
 	 */
 	public function setup_onboarding(): void {
+		// only run this if the page is burst, or a Burst rest request.
+		if ( ! $this->is_burst_page() && ! $this->is_logged_in_rest() ) {
+			return;
+		}
+
 		$onboarding = new Onboarding();
 		if ( $onboarding::is_onboarding_active( 'burst', 'burst-statistics' ) ) {
 			$onboarding->is_pro                         = defined( 'BURST_PRO' );

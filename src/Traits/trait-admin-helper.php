@@ -56,6 +56,26 @@ trait Admin_Helper {
 	}
 
 	/**
+	 * Check if we're on the Burst page
+	 */
+	public function is_burst_page(): bool {
+		if ( $this->is_logged_in_rest() ) {
+			return true;
+		}
+
+		if ( ! isset( $_SERVER['QUERY_STRING'] ) ) {
+			return false;
+		}
+
+		parse_str( $_SERVER['QUERY_STRING'], $params );
+		if ( array_key_exists( 'page', $params ) && ( $params['page'] === 'burst' ) ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Create a website URL with optional parameters.
 	 *               Example usage:
 	 *               utm_content=page-analytics -> specifies that the user is interacting with the page analytics feature.
@@ -85,18 +105,23 @@ trait Admin_Helper {
 			return burst_loader()->has_admin_access;
 		}
 
-		// during activation, we need to allow access.
+		// Cheap fast-paths that don't require user/caps.
+		if ( wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) || burst_is_logged_in_rest() ) {
+			return burst_loader()->has_admin_access = true;
+		}
+		// during activation, we need to load some additional files.
 		if ( get_option( 'burst_run_activation' ) ) {
-			burst_loader()->has_admin_access = true;
-			return burst_loader()->has_admin_access;
+			return burst_loader()->has_admin_access = true;
+		}
+		// Only check caps in admin; avoids loading user on frontend.
+		if ( is_admin() ) {
+			// Avoids double calls; still loads user once if needed.
+			if ( is_user_logged_in() && current_user_can( 'view_burst_statistics' ) ) {
+				return burst_loader()->has_admin_access = true;
+			}
 		}
 
-		burst_loader()->has_admin_access =
-			( is_admin() && current_user_can( 'view_burst_statistics' ) )
-			|| burst_is_logged_in_rest()
-			|| wp_doing_cron()
-			|| ( defined( 'WP_CLI' ) && WP_CLI );
-		return burst_loader()->has_admin_access;
+		return burst_loader()->has_admin_access = false;
 	}
 
 	/**

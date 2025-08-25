@@ -71,14 +71,6 @@ return [
 		'plusone'     => false,
 	],
 	[
-		'id'          => 'new_email_reporting',
-		'msg'         => __( 'New! Send weekly or monthly email reports to multiple recipients.', 'burst-statistics' ),
-		'icon'        => 'new',
-		'url'         => '#/settings/general',
-		'dismissible' => false,
-		'plusone'     => false,
-	],
-	[
 		'id'          => 'leave-feedback',
 		// @phpstan-ignore-next-line
 		'msg'         => $this->sprintf(
@@ -120,5 +112,25 @@ return [
 		'icon'        => 'warning',
 		'url'         => 'why-burst-removes-anomalous-visits-and-how-you-can-customize-it/',
 		'dismissible' => true,
+	],
+	[
+		'id'          => 'trial_offer_loyal_users',
+		'msg'         => __( 'Thanks for using Burst for over a year! To show our appreciation, enjoy 3 months of Burst Pro for free.', 'burst-statistics' ),
+		'icon'        => 'offer',
+		'url'         => 'checkout/?edd_action=add_to_cart&download_id=889&edd_options[price_id]=102',
+		'dismissible' => true,
+		'plusone'     => true,
+	],
+	[
+		'id'          => 'php_error_detected',
+		'condition'   => [
+			'type'     => 'serverside',
+			'function' => 'wp_option_burst_php_error_detected',
+		],
+		// translators: %d: error count, %s time of error.
+		'msg'         => sprintf( __( 'Burst has detected %d PHP errors, the last one on %s. Detected errors:', 'burst-statistics' ) . ' ' . substr( get_option( 'burst_php_error_detected', '' ), 0, 500 ), (int) get_option( 'burst_php_error_count', 0 ), date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), get_option( 'burst_php_error_time' ) ) ),
+		'icon'        => 'warning',
+		'dismissible' => true,
+		'url'         => 'how-to-enable-debugging-in-wordpress',
 	],
 ];

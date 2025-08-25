@@ -35,9 +35,99 @@ class Shortcodes {
 
 		// Register the main statistics shortcode.
 		add_shortcode( 'burst_statistics', [ $this, 'statistics_shortcode' ] );
+		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_shortcodes_styles' ] );
 
 		// Initialize statistics handler.
 		$this->statistics = new Frontend_Statistics();
+	}
+
+
+	/**
+	 * Register the shortcodes stylesheet and enqueue it when needed
+	 */
+	public function enqueue_burst_shortcodes_styles(): void {
+		// Register the stylesheet but don't enqueue it yet.
+		wp_register_style(
+			'burst-statistics-shortcodes',
+			BURST_URL . 'assets/css/burst-statistics-shortcodes.css',
+			[],
+			filemtime( BURST_PATH . 'assets/css/burst-statistics-shortcodes.css' )
+		);
+
+		// Add filters to detect our shortcodes and enqueue the style when needed.
+		add_filter( 'the_content', [ $this, 'check_for_burst_shortcodes' ], 10, 1 );
+
+		// Also check in widgets, Gutenberg blocks, etc.
+		add_action( 'wp_footer', [ $this, 'maybe_enqueue_shortcode_styles' ], 10 );
+	}
+
+	/**
+	 * Check content for Burst shortcodes
+	 *
+	 * @param string|null $content The post content.
+	 * @return string The unmodified content
+	 */
+	public function check_for_burst_shortcodes( ?string $content ): string {
+		if ( empty( $content ) ) {
+			return $content;
+		}
+
+		if ( ! is_admin() &&
+			(
+				has_shortcode( $content, 'burst-most-visited' ) ||
+				has_shortcode( $content, 'burst_statistics' )
+			)
+		) {
+			$this->enqueue_shortcode_styles();
+		}
+
+		return $content;
+	}
+
+	/**
+	 * Fallback check for shortcodes in widgets or other areas
+	 */
+	public function maybe_enqueue_shortcode_styles(): void {
+		global $wp_query;
+
+		// Check if we're on a singular post or page.
+		if ( is_singular() ) {
+			$post = $wp_query->get_queried_object();
+
+			// Check post content for shortcodes.
+			if ( $post && isset( $post->post_content ) && (
+					has_shortcode( $post->post_content, 'burst-most-visited' ) ||
+					has_shortcode( $post->post_content, 'burst_statistics' )
+				) ) {
+				$this->enqueue_shortcode_styles();
+				return;
+			}
+		}
+
+		// Check active widgets for shortcodes.
+		$active_widgets = wp_get_sidebars_widgets();
+		if ( is_array( $active_widgets ) ) {
+			foreach ( $active_widgets as $sidebar_widgets ) {
+				if ( ! is_array( $sidebar_widgets ) ) {
+					continue;
+				}
+
+				foreach ( $sidebar_widgets as $widget ) {
+					if ( strpos( $widget, 'text' ) !== false ) {
+						// This is a text widget that might contain shortcodes.
+						$this->enqueue_shortcode_styles();
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Actually enqueue the shortcode styles
+	 */
+	private function enqueue_shortcode_styles(): void {
+		wp_enqueue_style( 'burst-statistics-shortcodes' );
 	}
 
 	/**
@@ -524,14 +614,5 @@ class Shortcodes {
 		}
 		$output = ob_get_clean();
 		return $output ?: '';
-	}
-
-	/**
-	 * Ensure the shortcode styles are enqueued
-	 */
-	private function enqueue_shortcode_styles(): void {
-		if ( function_exists( 'wp_enqueue_style' ) && wp_style_is( 'burst-statistics-shortcodes', 'registered' ) ) {
-			wp_enqueue_style( 'burst-statistics-shortcodes' );
-		}
 	}
 }
