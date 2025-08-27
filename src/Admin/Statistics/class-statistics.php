@@ -2015,7 +2015,7 @@ class Statistics {
 					'table'      => "( 
                                           SELECT 
                                             session_id,
-                                            CASE WHEN COUNT(*) = 1 THEN 1 ELSE 0 END AS bounce
+                                            CASE WHEN MAX(bounce) = 1 THEN 1 ELSE 0 END AS bounce 
                                           FROM {$wpdb->prefix}burst_statistics
                                           WHERE time > {$data->date_start} AND time < {$data->date_end}
                                           GROUP BY session_id
