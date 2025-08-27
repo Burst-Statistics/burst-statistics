@@ -106,6 +106,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Improvement: performance optimizations.
 * Fix: when statistics table is empty, the summary table upgrade could fail on an empty value for "first visit", props @programmin.
 * Fix: catch edge case where a theme passes a null value to the "the_content" filter (which is incorrect behaviour). props @sllew.
+* Fix: incorrect bounce calculation, resulting in too high bounces and bounce rates.
 
 = 2.2.3 =
 * Improvement: allow ipv6 addresses
