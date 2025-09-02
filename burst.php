@@ -42,20 +42,25 @@ try {
     require_once __DIR__ . '/src/autoload.php';
 
     if ( ! function_exists( '\Burst\burst_loader' ) ) {
-        global $burst;
-        $burst = new Burst();
-
         require_once __DIR__ . '/src/functions.php';
+        require_once __DIR__ . '/src/Pro/Tracking/tracking.php';
         require_once __DIR__ . '/src/class-compatibility.php';
-
         /**
          * Get the Burst instance
          */
         function burst_loader(): Burst {
-            global $burst;
-            return $burst;
+            return Burst::instance();
         }
     }
+
+    add_action(
+        'plugins_loaded',
+        static function () {
+            // creates/returns the singleton; constructor registers hooks.
+            burst_loader();
+        },
+        1
+    );
 
     if ( ! function_exists( '\Burst\burst_on_activation' ) && ! function_exists( 'burst_on_activation' ) ) {
         /**
