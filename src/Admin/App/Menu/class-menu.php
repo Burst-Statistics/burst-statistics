@@ -44,15 +44,21 @@ class Menu {
 				unset( $menu_items[ $key ] );
 			}
 
-			if ( isset( $menu_item['groups'] ) ) {
-				foreach ( $menu_item['groups'] as $group_key => $group ) {
-					$menu_items[ $key ]['groups'][ $group_key ]['upgrade'] = $this->get_website_url(
-						$menu_item['groups'][ $group_key ]['upgrade'],
-						[
-							'utm_source'  => 'setting-upgrade',
-							'utm_content' => $menu_item['groups'][ $group_key ]['id'],
-						]
-					);
+			$sub_menu_items = $menu_item['menu_items'] ?: [];
+			foreach ( $sub_menu_items as $sub_menu_item_key => $sub_menu_item ) {
+				if ( isset( $sub_menu_item['groups'] ) ) {
+					foreach ( $sub_menu_item['groups'] as $group_key => $group ) {
+						if ( ! isset( $sub_menu_item['groups'][ $group_key ]['pro']['url'] ) ) {
+							continue;
+						}
+						$menu_items[ $key ]['menu_items'][ $sub_menu_item_key ]['groups'][ $group_key ]['pro']['url'] = $this->get_website_url(
+							$sub_menu_item['groups'][ $group_key ]['pro']['url'],
+							[
+								'utm_source'  => 'setting-upgrade',
+								'utm_content' => $sub_menu_item['groups'][ $group_key ]['id'],
+							]
+						);
+					}
 				}
 			}
 		}

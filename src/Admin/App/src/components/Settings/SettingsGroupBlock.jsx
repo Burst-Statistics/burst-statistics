@@ -30,7 +30,7 @@ const SettingsGroupBlock = memo(
                 {__( 'This setting is exclusive to Pro users.', 'burst-statistics' )} 
               {group.pro && group.pro.text && (' ' + group.pro.text)}
               </p>
-              {group.pro.url && <ButtonInput to={group.pro.url} btnVariant='primary' btnSize='small'>
+              {group.pro.url && <ButtonInput className="text-center" target="_blank" link={{ to: group.pro.url }} btnVariant='primary' btnSize='small'>
                 {__( 'Upgrade to Pro', 'burst-statistics' )}
               </ButtonInput>}
             </div>

@@ -42,7 +42,7 @@ class DB_Upgrade {
 	 * If there is any upgrade running
 	 */
 	public function progress_complete(): bool {
-		return $this->get_progress() >= 100;
+		return $this->get_progress( 'all', 'all' ) >= 100;
 	}
 
 	/**
@@ -53,7 +53,7 @@ class DB_Upgrade {
      * @return array
 	 */
 	public function add_progress_notice( array $warnings ): array {
-		$progress = $this->get_progress();
+		$progress = $this->get_progress( 'all', BURST_VERSION );
 		if ( $progress < 100 ) {
 			$progress   = round( $progress, 2 );
 			$warnings[] = [
@@ -80,14 +80,8 @@ class DB_Upgrade {
 	/**
 	 * Get progress of the upgrade process
 	 */
-	public function get_progress( string $type = 'all' ): float {
-		$version = BURST_VERSION;
-
-		// strip off everything after '#'.
-		if ( strpos( $version, '#' ) !== false ) {
-			$version = substr( $version, 0, strpos( $version, '#' ) );
-		}
-		$total_upgrades     = $this->get_db_upgrades( $type );
+	public function get_progress( string $type, string $version ): float {
+		$total_upgrades     = $this->get_db_upgrades( $type, $version );
 		$remaining_upgrades = $total_upgrades;
 		// check if all upgrades are done.
 		$count_remaining_upgrades = 0;
@@ -140,7 +134,7 @@ class DB_Upgrade {
 		}
 		set_transient( 'burst_upgrade_running', true, 60 );
 		// check if we need to upgrade.
-		$db_upgrades = $this->get_db_upgrades( 'free' );
+		$db_upgrades = $this->get_db_upgrades( 'free', 'all' );
 		// check if all upgrades are done.
 		$do_upgrade = false;
 		foreach ( $db_upgrades as $upgrade ) {
@@ -166,7 +160,6 @@ class DB_Upgrade {
 		if ( $do_upgrade ) {
 			\Burst\burst_loader()->admin->tasks->schedule_task_validation();
 		}
-
 		// only one upgrade at a time.
 		if ( 'bounces' === $do_upgrade ) {
 			$this->upgrade_bounces();
@@ -222,14 +215,18 @@ class DB_Upgrade {
 			$this->clean_orphaned_session_ids();
 		}
 
+		if ( 'add_page_ids' === $do_upgrade ) {
+			$this->upgrade_add_page_ids();
+		}
+
 		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
-		if ( $this->get_progress( 'free' ) < 100 ) {
-			// free upgardes not finished yet.
+		if ( $this->get_progress( 'free', 'all' ) < 100 ) {
+			// free upgrades not finished yet.
 			wp_schedule_single_event( time() + $this->cron_interval, 'burst_upgrade_iteration' );
 		} else {
 			wp_clear_scheduled_hook( 'burst_upgrade_iteration' );
 			// if pro upgrades are not finished yet, do them.
-			if ( $this->get_progress( 'pro' ) < 100 ) {
+			if ( $this->get_progress( 'pro', 'all' ) < 100 ) {
 				delete_transient( 'burst_upgrade_running' );
 				do_action( 'burst_upgrade_pro_iteration' );
 			}
@@ -243,7 +240,7 @@ class DB_Upgrade {
 	 *
 	 * @return string[]
 	 */
-	protected function get_db_upgrades( string $select_version ): array {
+	protected function get_db_upgrades( string $plugin_type, string $select_version ): array {
 		$upgrades = apply_filters(
 			'burst_db_upgrades',
 			[
@@ -287,6 +284,9 @@ class DB_Upgrade {
 					'fix_missing_session_ids',
 					'clean_orphaned_session_ids',
 				],
+				'2.2.6'   => [
+					'add_page_ids',
+				],
 			]
 		);
 
@@ -296,12 +296,12 @@ class DB_Upgrade {
 			$all_upgrades = array_merge( $all_upgrades, $upgrade );
 		}
 
-		if ( $select_version === 'all' ) {
+		if ( $plugin_type === 'all' && $select_version === 'all' ) {
 			return $all_upgrades;
 		}
 
 		// Handle special selectors for pro and free upgrades.
-		if ( $select_version === 'pro' ) {
+		if ( $plugin_type === 'pro' ) {
 			// Get only pro upgrades - these are determined by filter and will have 'pro_' prefix.
 			$pro_upgrades = [];
 			foreach ( $all_upgrades as $upgrade ) {
@@ -312,7 +312,7 @@ class DB_Upgrade {
 			return $pro_upgrades;
 		}
 
-		if ( $select_version === 'free' ) {
+		if ( $plugin_type === 'free' ) {
 			// Get only free upgrades - these don't have 'pro_' prefix.
 			$free_upgrades = [];
 			foreach ( $all_upgrades as $upgrade ) {
@@ -751,6 +751,89 @@ class DB_Upgrade {
 		// stop upgrading if all have been completed.
 		if ( 0 === $total_not_completed ) {
 			delete_option( 'burst_db_upgrade_upgrade_lookup_tables' );
+		}
+	}
+
+	/**
+	 * Upgrade the database to use page_ids for pages.
+	 *
+	 * @return void
+	 */
+	private function upgrade_add_page_ids() {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+
+		// check if required upgrade has been completed.
+		if ( ! get_option( 'burst_db_upgrade_add_page_ids' ) ) {
+			return;
+		}
+
+		// check if the columsn page_id and page_type are created.
+		if ( ! $this->column_exists( 'burst_statistics', 'page_id' ) || ! $this->column_exists( 'burst_statistics', 'page_type' ) ) {
+			return;
+		}
+
+		// get all posts of type post or page that do not have the meta yet.
+		$posts = get_posts(
+			[
+				'post_type'   => [ 'post', 'page' ],
+				'post_status' => 'any',
+				'numberposts' => 1,
+				'meta_query'  => [
+					[
+						'key'     => 'burst_page_id_upgraded',
+						'compare' => 'NOT EXISTS',
+					],
+				],
+			]
+		);
+
+		global $wpdb;
+
+		$total_count = (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$wpdb->posts} 
+             WHERE post_type IN ('post', 'page') 
+             AND post_status != 'trash'
+             AND ID NOT IN (
+                 SELECT post_id FROM {$wpdb->postmeta} 
+                 WHERE meta_key = 'burst_page_id_upgraded'
+             )"
+		);
+		$done_count  = (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$wpdb->postmeta} 
+         WHERE meta_key = 'burst_page_id_upgraded'"
+		);
+
+		// store progress for $selected_item, to show it in the progress notice.
+		$progress = 0 === $total_count ? 1 : $done_count / $total_count;
+		$progress = round( $progress, 2 );
+		set_transient( 'burst_progress_add_page_ids', $progress, HOUR_IN_SECONDS );
+		if ( count( $posts ) === 0 || $total_count === 0 ) {
+			delete_option( 'burst_db_upgrade_add_page_ids' );
+			delete_post_meta_by_key( 'burst_page_id_upgraded' );
+		}
+
+		if ( ! empty( $posts ) ) {
+			foreach ( $posts as $post ) {
+				update_post_meta( $post->ID, 'burst_page_id_upgraded', 1 );
+				$post_id  = $post->ID;
+				$page_url = get_permalink( $post_id );
+				// Strip home_url from page_url.
+				$page_url = str_replace( home_url(), '', $page_url );
+
+				$wpdb->query(
+					$wpdb->prepare(
+						"
+                    UPDATE {$wpdb->prefix}burst_statistics 
+                    SET page_id = %d, page_type = 'post' 
+                    WHERE page_url LIKE %s
+                ",
+						$post_id,
+						$wpdb->esc_like( $page_url ) . '%'
+					)
+				);
+			}
 		}
 	}
 

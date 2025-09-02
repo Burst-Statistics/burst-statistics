@@ -62,10 +62,14 @@ class Frontend_Admin {
 
 		global $post;
 		if ( $post && is_object( $post ) ) {
-			$count = (int) get_post_meta( $post->ID, 'burst_total_pageviews_count', true );
-			$count = $this->format_number_short( $count );
+			if ( ! in_array( $post->post_type, [ 'post', 'page' ], true ) ) {
+				return;
+			}
+			$statistics = new Frontend_Statistics();
+			$count      = $statistics->get_post_views( $post->ID, 0, time() );
+			$count      = $this->format_number_short( $count );
 		} else {
-			$count = 0;
+			return;
 		}
 
 		$wp_admin_bar->add_menu(
