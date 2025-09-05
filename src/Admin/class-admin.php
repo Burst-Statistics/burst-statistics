@@ -12,6 +12,7 @@ use Burst\Admin\Dashboard_Widget\Dashboard_Widget;
 use Burst\Admin\DB_Upgrade\DB_Upgrade;
 use Burst\Admin\Debug\Debug;
 use Burst\Admin\Mailer\Mail_Reports;
+use Burst\Admin\Posts\Posts;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
 use Burst\Admin\Statistics\Summary;
@@ -47,8 +48,6 @@ class Admin {
 		add_filter( "network_admin_plugin_action_links_$plugin", [ $this, 'plugin_settings_link' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 
-		add_action( 'admin_init', [ $this, 'add_burst_admin_columns' ], 1 );
-		add_action( 'pre_get_posts', [ $this, 'posts_orderby_total_pageviews' ], 1 );
 		// deactivating.
 		add_action( 'admin_footer', [ $this, 'deactivate_popup' ], 40 );
 		add_action( 'admin_init', [ $this, 'listen_for_deactivation' ], 40 );
@@ -72,6 +71,8 @@ class Admin {
 		add_action( 'burst_validate_tasks', [ $this, 'validate_tasks' ] );
 		add_action( 'plugins_loaded', [ $this, 'init_wpcli' ] );
 		add_action( 'burst_daily', [ $this, 'clean_malicious_data' ] );
+		add_action( 'burst_daily', [ $this, 'test_database_tables' ] );
+		add_action( 'burst_attempt_database_fix', [ $this, 'test_database_tables' ] );
 		add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
 		add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
 
@@ -93,6 +94,9 @@ class Admin {
 		$this->app = new App();
 		$this->app->init();
 
+		$posts = new Posts();
+		$posts->init();
+
 		$review = new Review();
 		$review->init();
 		$this->tasks = new Tasks();
@@ -105,6 +109,36 @@ class Admin {
 		if ( defined( 'BURST_BLUEPRINT' ) && ! get_option( 'burst_demo_data_installed' ) ) {
 			add_action( 'init', [ $this, 'install_demo_data' ] );
 			update_option( 'burst_demo_data_installed', true, false );
+		}
+	}
+
+	/**
+	 * Run a daily check if all database tables exist.
+	 *
+	 * @return void
+	 */
+	public function test_database_tables(): void {
+		$table_names    = $this->get_table_list();
+		$missing_tables = [];
+		foreach ( $table_names as $table_name ) {
+			if ( ! $this->table_exists( $table_name ) ) {
+				$missing_tables[] = $table_name;
+			}
+		}
+
+		if ( ! empty( $missing_tables ) ) {
+			$first_attempt = ! get_option( 'burst_attempt_database_fix' );
+			if ( $first_attempt ) {
+				// first, try installing them.
+				$this->run_table_init_hook();
+				update_option( 'burst_attempt_database_fix', true, false );
+				wp_schedule_single_event( time() + 10, 'burst_attempt_database_fix' );
+			} else {
+				update_option( 'burst_missing_tables', implode( ',', $missing_tables ), false );
+			}
+		} else {
+			delete_option( 'burst_missing_tables' );
+			delete_option( 'burst_attempt_database_fix' );
 		}
 	}
 
@@ -384,10 +418,6 @@ class Admin {
                     VALUES " . implode( ', ', $placeholders );
 				$wpdb->query( $wpdb->prepare( $query, ...$values ) );
 
-				$post_hit_count  = get_post_meta( $post_id, 'burst_total_pageviews_count', true );
-				$post_hit_count  = $post_hit_count ?: 0;
-				$post_hit_count += $page_views;
-				update_post_meta( $post_id, 'burst_total_pageviews_count', $post_hit_count );
 				if ( ! $total_entry_added ) {
 					$wpdb->insert(
 						"{$wpdb->prefix}burst_summary",
@@ -657,107 +687,6 @@ class Admin {
 
 		$menu_config = include $config_file;
 		return is_array( $menu_config ) ? $menu_config : [];
-	}
-
-	/**
-	 * Add counts column
-	 *
-	 * @since 1.1
-	 */
-	public function add_admin_column( string $column_name, string $column_title, string $post_type, bool $sortable, callable $cb ): void {
-		// Add column.
-		add_filter(
-			'manage_' . $post_type . '_posts_columns',
-			function ( $columns ) use ( $column_name, $column_title ) {
-				$columns[ $column_name ] = $column_title;
-
-				return $columns;
-			}
-		);
-
-		// Add column content.
-		add_action(
-			'manage_' . $post_type . '_posts_custom_column',
-			function ( $column, $post_id ) use ( $column_name, $cb ): void {
-				if ( $column_name === $column ) {
-					$cb( $post_id );
-				}
-			},
-			10,
-			2
-		);
-
-		// Add sortable column.
-		if ( $sortable ) {
-			add_filter(
-				'manage_edit-' . $post_type . '_sortable_columns',
-				function ( $columns ) use ( $column_name ) {
-					$columns[ $column_name ] = $column_name;
-
-					return $columns;
-				}
-			);
-		}
-	}
-
-	/**
-	 * Function to add pageviews column to post table
-	 *
-	 * @since 1.1
-	 */
-	public function add_burst_admin_columns(): void {
-		if ( ! $this->user_can_view() ) {
-			return;
-		}
-		$burst_column_post_types = apply_filters(
-			'burst_column_post_types',
-			[ 'post', 'page' ]
-		);
-		foreach ( $burst_column_post_types as $post_type ) {
-			$this->add_admin_column(
-				'pageviews',
-				__( 'Pageviews', 'burst-statistics' ),
-				$post_type,
-				true,
-				function ( $post_id ): void {
-					echo (int) get_post_meta( $post_id, 'burst_total_pageviews_count', true );
-				}
-			);
-		}
-	}
-
-	/**
-	 * Function to order posts by pageviews
-	 */
-	public function posts_orderby_total_pageviews( \WP_Query $query ): void {
-		if ( ! is_admin() || ! $query->is_main_query() || ! $this->user_can_view() ) {
-			return;
-		}
-
-		if ( 'pageviews' === $query->get( 'orderby' ) ) {
-			$query->set( 'orderby', 'meta_value_num title' );
-			$query->set( 'meta_key', 'burst_total_pageviews_count' );
-			// Ensure posts with meta_value = 0 or no meta_value are included.
-			add_filter( 'get_meta_sql', [ $this, 'filter_get_meta_sql' ] );
-		}
-	}
-
-	/**
-	 * Because WordPress by default excludes 0-value post meta, we need to change the inner join to a left join
-	 * to include posts with 0 pageviews.
-	 * Might be included in core later.
-	 *
-	 * @link https://core.trac.wordpress.org/ticket/19653
-	 * @param array<string, string> $clauses An array of SQL clauses for the meta query.
-	 * @return array<string, string> Modified SQL clauses.
-	 */
-	public function filter_get_meta_sql( array $clauses ): array {
-		// Change the inner join to a left join.
-		// And change the where so it is applied to the join, not the results of the query.
-		$clauses['join']  = str_replace( 'INNER JOIN', 'LEFT JOIN', $clauses['join'] ) . $clauses['where'];
-		$clauses['where'] = '';
-
-		return $clauses;
 	}
 
 	/**
@@ -1059,29 +988,10 @@ class Admin {
 	}
 
 	/**
-	 * Clear plugin data
+	 * Get array of Burst Tables.
 	 */
-	public function delete_all_burst_data(): void {
-		if ( ! $this->user_can_manage() ) {
-			return;
-		}
-
-		global $wpdb;
-
-		// post meta to delete.
-		$post_meta = [
-			'burst_total_pageviews_count',
-		];
-
-		if ( ! function_exists( 'delete_post_meta_by_key' ) ) {
-			require_once ABSPATH . WPINC . '/post.php';
-		}
-		foreach ( $post_meta as $post_meta_key ) {
-			delete_post_meta_by_key( $post_meta_key );
-		}
-
-		// tables to delete.
-		$table_names = apply_filters(
+	private function get_table_list(): array {
+		return apply_filters(
 			'burst_all_tables',
 			[
 				'burst_statistics',
@@ -1100,6 +1010,20 @@ class Admin {
 				'burst_referrers',
 			],
 		);
+	}
+
+	/**
+	 * Clear plugin data
+	 */
+	public function delete_all_burst_data(): void {
+		if ( ! $this->user_can_manage() ) {
+			return;
+		}
+
+		global $wpdb;
+
+		// tables to delete.
+		$table_names = $this->get_table_list();
 
 		// delete tables.
 		foreach ( $table_names as $table_name ) {
@@ -1120,6 +1044,7 @@ class Admin {
 				'burst_archive_db_version',
 				'burst_tasks',
 				'burst_onboarding_free_completed',
+				'burst_missing_tables',
 			],
 		);
 

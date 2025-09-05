@@ -211,6 +211,7 @@ class Upgrade {
 
 		if ( $prev_version && version_compare( $prev_version, '2.2.6.', '<' ) ) {
 			update_option( 'burst_db_upgrade_add_page_ids', true, false );
+			delete_post_meta_by_key( 'burst_total_pageviews_count' );
 		}
 
 		do_action( 'burst_upgrade_after', $prev_version );

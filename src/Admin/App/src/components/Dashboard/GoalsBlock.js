@@ -42,10 +42,10 @@ const TodayFilterItem = memo( ({ filter, filterValue, label, startDate, icon, co
     label={label}
     startDate={startDate}
   >
-    <div className="burst-goals-select-item">
+    <div className="rounded-xs flex flex-col justify-center items-center text-center flex-wrap bg-white py-s [&.active]:shadow-greenShadow [&.active]:border-2 [&.active]:border-green">
       <Icon name={icon} size="26" />
-      <h2>{count}</h2>
-      <span>
+      <h2 className="mt-xxs font-extrabold">{count}</h2>
+      <span className="flex gap-[3px] justify-center text-xs">
         <Icon name="sun" color={'yellow'} size="13" />{' '}
         {__( 'Today', 'burst-statistics' )}
       </span>
@@ -61,10 +61,10 @@ const TotalFilterItem = memo( ({ filter, filterValue, label, startDate, icon, co
     startDate={startDate}
     endDate={endDate}
   >
-    <div className="burst-goals-select-item">
+    <div className="rounded-xs flex flex-col justify-center items-center text-center flex-wrap bg-white py-s [&.active]:shadow-greenShadow [&.active]:border-2 [&.active]:border-green">
       <Icon name={icon} size="26" />
-      <h2>{count}</h2>
-      <span>
+      <h2 className="mt-xxs font-extrabold">{count}</h2>
+      <span className="flex gap-[3px] justify-center text-xs">
         <Icon name="calendar" size="13" />{' '}
         {__( 'Total', 'burst-statistics' )}
       </span>
@@ -275,56 +275,56 @@ const GoalsBlock = () => {
       />
       <BlockContent className={'px-0 py-0 relative'}>
         {isError ? (
-          <div className="burst-error-message p-4">
+          <div className="text-red p-4">
             {__( 'Error loading goals data. Please try again later.', 'burst-statistics' )}
           </div>
         ) : (
           <>
-            <div className="burst-goals-select bg-yellow-light">
+            <div className="px-l py-m grid w-full grid-cols-2 gap-s bg-yellow-light">
               <TodayFilterItem {...todayFilterProps} />
               <TotalFilterItem {...totalFilterProps} />
             </div>
-            <div className="burst-goals-list">
+            <div className="w-full">
               <Tooltip content={data.topPerformer?.tooltip}>
-                <div className="burst-goals-list-item burst-tooltip-topPerformer">
+                <div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-s py-xs px-l even:bg-gray-100">
                   <Icon name="winner" />
-                  <p className="burst-goals-list-item-text">
+                  <p className="w-full mr-auto">
                     {safeDecodeURI( data.topPerformer?.title || '-' )}
                   </p>
-                  <p className="burst-goals-list-item-number">
+                  <p className="font-semibold">
                     {data.topPerformer?.value || '-'}
                   </p>
                 </div>
               </Tooltip>
               <Tooltip arrow title={data.conversionMetric?.tooltip}>
-                <div className="burst-goals-list-item">
+                <div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-s py-xs px-l even:bg-gray-100">
                   <Icon name={data.conversionMetric?.icon || 'visitors'} />
-                  <p className="burst-goals-list-item-text">
+                  <p className="w-full mr-auto">
                     {data.conversionMetric?.title || '-'}
                   </p>
-                  <p className="burst-goals-list-item-number">
+                  <p className="font-semibold">
                     {data.conversionMetric?.value || '-'}
                   </p>
                 </div>
               </Tooltip>
               <Tooltip content={data.conversionPercentage?.tooltip}>
-                <div className="burst-goals-list-item burst-tooltip-conversionPercentage">
+                <div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-s py-xs px-l even:bg-gray-100">
                   <Icon name="graph" />
-                  <p className="burst-goals-list-item-text">
+                  <p className="w-full mr-auto">
                     {data.conversionPercentage?.title || '-'}
                   </p>
-                  <p className="burst-goals-list-item-number">
+                  <p className="font-semibold">
                     {data.conversionPercentage?.value || '-'}
                   </p>
                 </div>
               </Tooltip>
               <Tooltip content={data.bestDevice?.tooltip}>
-                <div className="burst-goals-list-item burst-tooltip-bestDevice">
+                <div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-s py-xs px-l even:bg-gray-100">
                   <Icon name={data.bestDevice?.icon || 'desktop'} />
-                  <p className="burst-goals-list-item-text">
+                  <p className="w-full mr-auto">
                     {data.bestDevice?.title || '-'}
                   </p>
-                  <p className="burst-goals-list-item-number">
+                  <p className="font-semibold">
                     {data.bestDevice?.value || '-'}
                   </p>
                 </div>
@@ -342,7 +342,7 @@ const GoalsBlock = () => {
           >
             {__( 'View setup', 'burst-statistics' )}
           </a>
-          <div className={'burst-flex-push-right'}>
+          <div className="ml-auto">
             {! isLoading && ! isError && <GoalStatus data={data} />}
           </div>
         </BlockFooter>

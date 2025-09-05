@@ -16,4 +16,122 @@
 			transform: translate(-50%, -50%);
 		}
 	}
+
+	/* Primary */
+	a.burst-button--primary,
+	button.burst-button--primary,
+	input.burst-button--primary {
+		@apply bg-button-accent text-button-secondary border border-button-accent;
+	}
+	a.burst-button--primary:hover,
+	button.burst-button--primary:hover,
+	input.burst-button--primary:hover {
+		@apply bg-button-accent text-button-secondary border-button-accent
+		shadow-primaryButtonHover;
+	}
+
+	/* Secondary */
+	a.burst-button--secondary,
+	button.burst-button--secondary,
+	input.burst-button--secondary {
+		@apply bg-gray-100 text-gray border border-gray-400;
+	}
+	a.burst-button--secondary:hover,
+	button.burst-button--secondary:hover,
+	input.burst-button--secondary:hover {
+		@apply bg-gray-200 text-black border-gray-400
+		shadow-secondaryButtonHover;
+	}
+
+	/* Tertiary (red button) */
+	a.burst-button--tertiary,
+	button.burst-button--tertiary,
+	input.burst-button--tertiary {
+		@apply bg-red text-white border border-red;
+	}
+	a.burst-button--tertiary:hover,
+	button.burst-button--tertiary:hover,
+	input.burst-button--tertiary:hover {
+		@apply bg-red-light text-red border-red
+		shadow-tertiaryButtonHover;
+	}
+
+	/* Pro */
+	a.burst-button--pro,
+	button.burst-button--pro,
+	input.burst-button--pro {
+		@apply bg-brandColor text-white border border-brandColor-dark;
+	}
+	a.burst-button--pro:hover,
+	button.burst-button--pro:hover,
+	input.burst-button--pro:hover {
+		@apply bg-brandColor-dark text-button-secondary border-brandColor-darker
+		shadow-proButtonHover;
+	}
+
+	/* Base button preset */
+	a.burst-button,
+	button.burst-button,
+	input.burst-button {
+		@apply flex items-center gap-xxs text-button font-button leading-[2]
+		tracking-[0.5px] transition-all duration-[300ms] ease-[ease]
+		min-h-[30px] rounded text-center cursor-pointer
+		px-[10px] py-0 m-0 no-underline;
+	}
+
+	.burst-button-icon {
+		@apply bg-gray-300 text-button-accent border border-none rounded-full
+		w-[1em] h-[1em] p-[10px] m-[5px]
+		inline-flex items-center justify-center
+		transition-all duration-300 ease-in-out
+		cursor-pointer
+		hover:p-[15px] hover:m-0;;
+	}
+
+	.burst-button-icon--delete:hover {
+		@apply bg-red-light;
+	}
+
+	.burst-button-icon--delete:hover svg path {
+		@apply fill-red;
+	}
+
+	.burst-button--date-range {
+		@apply flex items-center cursor-pointer
+		shadow-rsp
+		gap-xs
+		text-gray
+		bg-white
+		border border-gray-400
+		rounded-xs
+		px-[4.3px] py-[14.4px];
+	}
+
+	.burst-button--date-range .burst-icon {
+		@apply h-max;
+	}
+}
+
+@layer utilities {
+	.burst-scroll {
+		/* Track */
+		&::-webkit-scrollbar-track {
+			border-radius: 10px;
+			-webkit-box-shadow: inset 0 0 2px rgba(0, 0, 0, 0);
+			background-color: transparent;
+		}
+
+		/* Scrollbar */
+		&::-webkit-scrollbar {
+			width: 8px;
+			background-color: theme(colors.gray.300);
+			cursor: pointer;
+		}
+
+		/* Thumb */
+		&::-webkit-scrollbar-thumb {
+			background-color: theme(colors.gray.400);
+			border-radius: 10px;
+		}
+	}
 }

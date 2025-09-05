@@ -96,7 +96,7 @@ const ProgressFooter = ( props ) => {
         {__( 'View my statistics', 'burst-statistics' )}
       </ButtonInput>
       <Tooltip content={trackingTooltipText}>
-        <div className="burst-legend burst-flex-push-right burst-tooltip-trackingtext">
+        <div className="w-max text-gray flex items-center min-w-0 leading-none gap-xxs no-underline ml-auto burst-tooltip-trackingtext">
           <Icon name={trackingIcon} color={trackingIconColor} />
           <div>{trackingText}</div>
         </div>

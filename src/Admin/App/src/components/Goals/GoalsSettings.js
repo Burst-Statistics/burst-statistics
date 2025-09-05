@@ -23,12 +23,10 @@ const GoalsSettings = () => {
   const { isLicenseValid } = useLicenseStore();
   const [ predefinedGoalsVisible, setPredefinedGoalsVisible ] = useState( false );
   const { getValue } = useSettingsData();
-  const cookieless = getValue( 'enable_cookieless_tracking' );
 
-  const handleAddPredefinedGoal = ( goal ) => {
-    addPredefinedGoal( goal.id, goal.type, cookieless );
-
+  const handleAddPredefinedGoal = async ( goal ) => {
     setPredefinedGoalsVisible( false );
+    await addPredefinedGoal( goal.id );
   };
 
   const getGoalTypeNice = ( type ) => {
@@ -120,26 +118,11 @@ const GoalsSettings = () => {
                     return (
                       <div
                         key={index}
-                        className={
-                          'hook' === goal.type && cookieless ?
-                            'pointer-events-none relative z-50 flex cursor-not-allowed flex-row gap-1 rounded-lg border border-gray-400 bg-gray-100 p-2 opacity-50' :
-                            'relative z-50 flex cursor-pointer flex-row gap-1 rounded-lg border border-gray-400 bg-gray-100 p-2'
-                        }
+                        className={'relative z-50 flex cursor-pointer flex-row gap-1 rounded-lg border border-gray-400 bg-gray-100 p-2'}
                         onClick={() => handleAddPredefinedGoal( goal )}
                       >
                         <Icon name={'plus'} size={18} color="gray" />
                         {goal.title + ' (' + getGoalTypeNice( goal.type ) + ')'}
-                        {'hook' === goal.type &&
-                          ( cookieless ? (
-                            <Icon
-                              name={'error'}
-                              color={'black'}
-                              tooltip={__(
-                                'Not available in combination with cookieless tracking',
-                                'burst-statistics'
-                              )}
-                            />
-                          ) : null )}
                       </div>
                     );
                   })}

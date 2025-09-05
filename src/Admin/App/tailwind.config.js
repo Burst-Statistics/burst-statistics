@@ -36,19 +36,93 @@ const orangeColor = {
   dark: '#631a25'
 }
 
+const brandColor = {
+  lightest: '#ecf4ed',
+  lighter: '#d2e4d3',
+  light: '#b7d4b8',
+  DEFAULT: '#2B8133',
+  dark: '#1e7e1e',
+  darker: '#1a6c1a',
+  darkest: '#155515',
+  secondary: yellowColor.DEFAULT,
+}
+
 module.exports = {
   mode: 'jit',
   content: [
     './src/**/*.{js,jsx,ts,tsx}',
   ],
   safelist: [
-    'animate-spin'
+    'animate-spin',
+	  {
+		pattern: /(yellow|green|blue|black|gray-400)$/,
+		variants: [
+		  'hover',
+		  '[&_a:hover]',
+		  '[&_a>.burst-bullet:hover]'
+		],
+	  },
   ],
   theme: {
     extend: {
       screens: {
         '2xl': '1600px'
-      }
+      },
+      spacing: {
+        xxs: '5px',
+        xs: '10px',
+        s: '15px',
+        m: '20px',
+        l: '25px',
+        xl: '30px',
+      },
+      padding: {
+        button: '0 10px',
+      },
+      borderRadius: {
+        xs: '5px',
+        s: '8px',
+        DEFAULT: '4px',
+        m: '12px',
+      },
+      boxShadow: {
+        rsp: "rgba(0,0,0,0.1) 0 4px 6px -1px, rgba(0,0,0,0.06) 0 2px 4px -1px",
+        greenShadow: `inset 0 0 3px 2px ${greenColor.light}`,
+        primaryButtonHover: `0 0 0 3px rgba(34, 113, 177, 0.3)`,
+        secondaryButtonHover: `0 0 0 3px rgba(0, 0, 0, 0.1)`,
+        tertiaryButtonHover: `0 0 0 3px rgba(255, 0, 0, 0.3)`,
+        proButtonHover: `0 0 0 3px ${brandColor.light}`,
+      },
+      gridTemplateColumns: {
+        'auto-1fr-auto': 'auto 1fr auto',
+      },
+      keyframes: {
+        slideUpAndFade: {
+          '0%': { opacity: '0', transform: 'translateY(2px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideRightAndFade: {
+          '0%': { opacity: '0', transform: 'translateX(-2px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        slideDownAndFade: {
+          '0%': { opacity: '0', transform: 'translateY(-2px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideLeftAndFade: {
+          '0%': { opacity: '0', transform: 'translateX(2px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+      },
+      animation: {
+        slideUpAndFade: 'slideUpAndFade 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+        slideRightAndFade: 'slideRightAndFade 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+        slideDownAndFade: 'slideDownAndFade 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+        slideLeftAndFade: 'slideLeftAndFade 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+      fontWeight: {
+        button: '400',
+      },
     },
     colors: {
       primary: greenColor,
@@ -63,7 +137,7 @@ module.exports = {
       orange: orangeColor,
       gold: goldColor,
       gray: {
-        50: '#F9F9F9',
+        50: '#f9f9f9',
         100: '#f8f9fa',
         200: '#e9ecef',
         300: '#dee2e6',
@@ -74,12 +148,14 @@ module.exports = {
         800: '#343a40',
         900: '#212529',
       },
+      'button-accent': '#2271b1',
       wp: {
         blue: '#2271b1',
         gray: '#f0f0f1',
         orange: '#d63638',
         black: '#1d2327'
-      }
+      },
+      brandColor: brandColor,
     },
     textColor: {
       black: 'rgba(26,26,26,0.9)',
@@ -91,7 +167,11 @@ module.exports = {
       blue: blueColor.DEFAULT,
       green: greenColor.DEFAULT,
       red: '#c6273b',
-      orange: '#ef8a09'
+      orange: '#ef8a09',
+      'button-contrast': '#000',
+      'button-secondary': '#fff',
+	  'button-accent': '#2271b1',
+	  'gray-400': '#c6c6c6',
     },
     fontSize: {
       xs: [ '0.625rem', '0.875rem' ], // 10px with 14px line-height
@@ -102,8 +182,9 @@ module.exports = {
       xl: [ '1.125rem', '1.625rem' ], // 18px with 26px line-height
       '2xl': [ '1.25rem', '1.75rem' ], // 20px with 28px line-height
       '3xl': [ '1.5rem', '2rem' ], // 24px with 32px line-height
-      '4xl': [ '1.875rem', '2.25rem' ] // 30px with 36px line-height
-    }
+      '4xl': [ '1.875rem', '2.25rem' ], // 30px with 36px line-height
+      button: [ '0.8125rem', '1.625' ], // 13px with 26px line-height
+    },
   },
   variants: {
     extend: {}

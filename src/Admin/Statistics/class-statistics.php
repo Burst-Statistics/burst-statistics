@@ -803,6 +803,7 @@ class Statistics {
 			'filters'    => [],
 			'limit'      => '',
 		];
+
 		$args     = wp_parse_args( $args, $defaults );
 		$filters  = $this->sanitize_filters( (array) $args['filters'] );
 		$metrics  = $this->sanitize_metrics( $args['metrics'] );
@@ -1729,7 +1730,7 @@ class Statistics {
                 FROM {$wpdb->prefix}burst_parameters AS p
                 JOIN {$wpdb->prefix}burst_statistics AS s ON s.ID = p.statistic_id
                 WHERE s.time > {$data->date_start} AND s.time < {$data->date_end}
-                GROUP BY p.parameter, p.value, s.uid
+                GROUP BY CONCAT(p.parameter, '|', p.value), s.uid
             ) AS params ";
 		}
 
@@ -1874,8 +1875,19 @@ class Statistics {
 				);
 				$data->group_by = implode( ', ', $group_by_array );
 			}
-			$group_by_sql = ! empty( $data->group_by ) ? "GROUP BY {$data->group_by}" : '';
-			return esc_sql( $group_by_sql );
+
+			// we need to group parameters by parmater AND value, so we do a concat.
+			if ( strpos( $data->group_by, 'parameter' ) !== false ) {
+				$group_by_array = explode( ',', $data->group_by );
+				foreach ( $group_by_array as $key => $group_by_item ) {
+					if ( trim( $group_by_item ) === 'parameter' ) {
+						$group_by_array[ $key ] = "CONCAT(params.parameter, '|', params.value)";
+					}
+				}
+				$data->group_by = implode( ', ', $group_by_array );
+			}
+
+			return ! empty( $data->group_by ) ? "GROUP BY {$data->group_by}" : '';
 		}
 
 		// If no explicit group_by is provided, return empty string.

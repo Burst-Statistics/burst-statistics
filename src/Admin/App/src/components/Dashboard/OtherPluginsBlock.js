@@ -127,10 +127,46 @@ const OtherPluginsBlock = () => {
       iconName = 'circle-open';
       iconColor = 'gray';
     }
+
+    let defaultColorClass = 'gray-400';
+
+    switch ( plugin.slug ) {
+      case 'really-simple-ssl':
+        defaultColorClass = 'yellow';
+        break;
+      case 'burst-statistics':
+        defaultColorClass = 'green';
+        break;
+      case 'complianz-gdpr':
+        defaultColorClass = 'blue';
+        break;
+      case 'complianz-terms-conditions':
+        defaultColorClass = 'black';
+        break;
+    }
     
     return (
       <div
-        className={'burst-other-plugins-element burst-' + plugin.slug}
+        className={`
+        burst-other-plugins-element burst-${plugin.slug}
+        w-full
+        flex
+        content-between
+        justify-between
+        gap-[10px]
+        [&_a]:w-max
+        [&_a]:text-gray
+        [&_a]:transition-colors
+        [&_a]:duration-300
+        [&_a]:ease-in-out
+        [&_a]:flex
+        [&_a]:items-center
+        [&_a]:min-w-0
+        [&_a]:gap-xs
+        [&_a]:no-underline
+        [&_a:hover]:underline
+        [&_a:hover]:text-${defaultColorClass}
+    	[&_a>.burst-bullet:hover]:bg-${defaultColorClass}`}
       >
         <a
           href={plugin.wordpress_url}
@@ -140,9 +176,9 @@ const OtherPluginsBlock = () => {
           
           <div className={['installed', 'upgrade-to-pro'].includes(plugin.action) ? 'bg-green rounded-full m-0.5' : ''}>
             <Icon strokeWidth={3} name={iconName} color={iconColor} size={14} /></div>
-          <div className="burst-other-plugins-content">{plugin.title}</div>
+          <div className="truncate">{plugin.title}</div>
         </a>
-        <div className="burst-other-plugin-status">
+        <div className="min-w-fit burst-other-plugin-status">
           {'upgrade-to-pro' === plugin.action && (
               <a target="_blank" href={plugin.upgrade_url}>
                 {__( 'Upgrade', 'burst-statistics' )}
@@ -177,16 +213,16 @@ const OtherPluginsBlock = () => {
           controls={<UpdraftPlusLogo size={24} color="gray"/> }
         />
         <BlockContent className={'px-6 py-0'}>
-          <div className="burst-other-plugins-container">
+          <div className="!flex flex-row flex-wrap mb-[10px] text-base gap-xxs max-[992px]:flex-row max-[992px]:overflow-hidden">
             {[ ...Array( n ) ].map( ( e, i ) => (
-              <div key={i} className={'burst-other-plugins-element'}>
+              <div key={i}>
                 <a>
-                  <div className="burst-bullet"></div>
-                  <div className="burst-other-plugins-content">
+                  <div className={`bg-gray-400 transition-colors duration-300 ease-in-out`}></div>
+                  <div className="truncate">
                     {__( 'Loading..', 'burst-statistics' )}
                   </div>
                 </a>
-                <div className="burst-other-plugin-status">
+                <div className="min-w-fit burst-other-plugin-status">
                   {__( 'Activate', 'burst-statistics' )}
                 </div>
               </div>
@@ -202,7 +238,7 @@ const OtherPluginsBlock = () => {
                     controls={<UpdraftPlusLogo size={24} color="gray"/>}
       />
       <BlockContent className={'px-6 py-0'}>
-        <div className="burst-other-plugins-container">
+        <div className="!flex flex-row flex-wrap mb-[10px] text-base gap-xxs max-[992px]:flex-row max-[992px]:overflow-hidden">
           {pluginData.map( ( plugin ) => otherPluginElement( plugin ) )}
         </div>
       </BlockContent>

@@ -118,6 +118,7 @@ class Tracking {
 
 		// if there is a fingerprint use that instead of uid.
 		if ( $sanitized_data['fingerprint'] && ! $sanitized_data['uid'] ) {
+			$this->store_fingerprint_in_session( $sanitized_data['fingerprint'] );
 			$sanitized_data['uid'] = $sanitized_data['fingerprint'];
 		}
 		unset( $sanitized_data['fingerprint'] );
@@ -1048,6 +1049,36 @@ class Tracking {
 		unset( $data['host'] );
 		unset( $data['completed_goals'] );
 		return $data;
+	}
+
+
+	/**
+	 * Store fingerprint in PHP session.
+	 *
+	 * @param string $fingerprint The fingerprint to store.
+	 * @return bool True on success, false on failure.
+	 */
+	public function store_fingerprint_in_session( string $fingerprint ): bool {
+		if ( session_status() === PHP_SESSION_NONE ) {
+			session_start();
+		}
+
+		$_SESSION['burst_fingerprint'] = $this->sanitize_fingerprint( $fingerprint );
+
+		return true;
+	}
+
+	/**
+	 * Retrieve fingerprint from PHP session.
+	 *
+	 * @return string The stored fingerprint or empty string if not found.
+	 */
+	public function get_fingerprint_from_session(): string {
+		if ( session_status() === PHP_SESSION_NONE ) {
+			session_start();
+		}
+		$fingerprint = $_SESSION['burst_fingerprint'] ?? '';
+		return $this->sanitize_fingerprint( $fingerprint );
 	}
 
 	/**

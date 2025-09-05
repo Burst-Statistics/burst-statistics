@@ -708,45 +708,35 @@ class Frontend_Statistics {
 			$end_time = time();
 		}
 
+		global $wpdb;
 		// Get posts sorted by pageviews.
-		$args = [
-			'post_type'   => $post_type,
-			'numberposts' => $count,
-			'meta_key'    => 'burst_total_pageviews_count',
-			'orderby'     => 'meta_value_num',
-			'order'       => 'DESC',
-			'meta_query'  => [
-				[
-					'key'  => 'burst_total_pageviews_count',
-					'type' => 'NUMERIC',
-				],
-			],
-		];
+		$sql = $wpdb->prepare(
+			"SELECT s.page_id, COUNT(*) as pageview_count
+             FROM {$wpdb->prefix}burst_statistics s
+             JOIN {$wpdb->prefix}posts p ON s.page_id = p.ID
+             WHERE p.post_type = %s
+               AND p.post_status = 'publish'
+               AND s.page_id > 0
+               AND s.time >= %d
+               AND s.time <= %d
+               AND s.page_type = 'post'
+             GROUP BY s.page_id
+             ORDER BY pageview_count DESC
+             LIMIT %d",
+			$post_type,
+			$start_time,
+			$end_time,
+			$count
+		);
 
-		$posts = get_posts( $args );
-
-		// Check if get_posts returned an error (WP_Error object).
-		if ( is_wp_error( $posts ) ) {
-			// Log the error for debugging.
-			self::error_log( 'Error in get_most_viewed_posts(): ' . $posts->get_error_message() );
-			// Return safe default.
-			return [];
-		}
-
+		$posts  = $wpdb->get_results( $sql, ARRAY_A );
 		$result = [];
 
 		foreach ( $posts as $post ) {
-			// For time-specific queries, get actual view count for the period.
-			if ( $start_time > 0 || $end_time < time() - DAY_IN_SECONDS ) {
-				$view_count = $this->get_post_views( $post->ID, $start_time, $end_time );
-			} else {
-				// Use cached total for all-time or recent queries.
-				$view_count = (int) get_post_meta( $post->ID, 'burst_total_pageviews_count', true );
-			}
-
-			$result[] = [
-				'post'  => $post,
-				'views' => $view_count,
+			$post_object = get_post( $post['page_id'] );
+			$result[]    = [
+				'post'  => $post_object,
+				'views' => $post['pageview_count'],
 			];
 		}
 

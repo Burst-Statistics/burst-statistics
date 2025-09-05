@@ -94,9 +94,15 @@ const ProgressBlock = ({ highLightField }) => {
         title={__( 'Progress', 'burst-statistics' )}
         controls={<TaskSwitch filter={filter} setFilter={setFilter} />}
       />
-      <BlockContent className={'px-0 py-0'}>
-        <div className="burst-progress-block">
-          <div className="burst-scroll-container">{renderTasks()}</div>
+      <BlockContent className="px-0 py-0">
+        <div>
+          <div className="burst-scroll px-l pt-m h-[300px] overflow-y-auto rounded-none
+         bg-blue-light
+         [background-image:linear-gradient(to_top,theme(colors.blue.light),theme(colors.blue.light)),linear-gradient(to_top,theme(colors.blue.light),theme(colors.blue.light)),linear-gradient(to_top,rgba(0,0,0,0.15),rgba(255,255,255,0)),linear-gradient(to_bottom,rgba(0,0,0,0.15),rgba(255,255,255,0))]
+         [background-position:bottom_center,top_center,bottom_center,top_center]
+         [background-repeat:no-repeat]
+         [background-size:100%_25px,100%_25px,100%_15px,100%_15px]
+         [background-attachment:local,local,scroll,scroll]">{renderTasks()}</div>
         </div>
       </BlockContent>
       <BlockFooter>

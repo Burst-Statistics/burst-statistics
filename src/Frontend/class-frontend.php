@@ -415,14 +415,38 @@ class Frontend {
 		);
 	}
 
+	/**
+	 * Get the pageviews all time for a post.
+	 */
+	public function get_post_pageviews( int $post_id ): int {
+		$cache_key    = 'burst_post_views_' . $post_id;
+		$cached_views = wp_cache_get( $cache_key, 'burst' );
+
+		if ( $cached_views !== false ) {
+			return (int) $cached_views;
+		}
+
+		global $wpdb;
+		$sql = $wpdb->prepare(
+			"SELECT COUNT(*) as total_views
+         FROM {$wpdb->prefix}burst_statistics
+         WHERE page_id = %d",
+			$post_id
+		);
+
+		$views = (int) $wpdb->get_var( $sql );
+		wp_cache_set( $cache_key, $views, 'burst' );
+
+		return $views;
+	}
+
 
 	/**
 	 * Render the pageviews on the front-end
 	 */
 	public function render_burst_pageviews(): string {
 		global $post;
-		$burst_total_pageviews_count = get_post_meta( $post->ID, 'burst_total_pageviews_count', true );
-		$count                       = (int) $burst_total_pageviews_count ?: 0;
+		$count = $this->get_post_pageviews( $post->ID );
 		// translators: %d is the number of times the page has been viewed.
 		$text = sprintf( _n( 'This page has been viewed %d time.', 'This page has been viewed %d times.', $count, 'burst-statistics' ), $count );
 
