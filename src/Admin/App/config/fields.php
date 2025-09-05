@@ -200,16 +200,6 @@ return [
 		'default'  => false,
 	],
 	[
-		'id'       => 'exclude_bounces',
-		'menu_id'  => 'advanced',
-		'group_id' => 'tracking',
-		'type'     => 'checkbox',
-		'label'    => __( 'Exclude bounced visits', 'burst-statistics' ),
-		'context'  => __( 'Enable this to exclude "bounced" visits (typically single-page views) from your statistics. This helps highlight users who interact more deeply with your content.', 'burst-statistics' ),
-		'disabled' => false,
-		'default'  => false,
-	],
-	[
 		'id'       => 'combine_vars_and_script',
 		'menu_id'  => 'advanced',
 		'group_id' => 'scripts',

@@ -1972,25 +1972,35 @@ class App {
 			$max_post_count = 1000;
 		}
 
+		global $wpdb;
+
+		$sql = $wpdb->prepare(
+			"SELECT p.ID as page_id, 
+            p.post_title, 
+            COALESCE(s.pageviews, 0) as pageviews
+             FROM {$wpdb->prefix}posts p
+             LEFT JOIN (
+                 SELECT page_id, COUNT(*) as pageviews
+                 FROM {$wpdb->prefix}burst_statistics
+                 WHERE page_id > 0
+                 GROUP BY page_id
+             ) s ON p.ID = s.page_id
+             WHERE p.post_type IN ('post', 'page')
+               AND p.post_status = 'publish'
+             ORDER BY p.post_title ASC
+             LIMIT %d",
+			$max_post_count
+		);
+
+		$results = $wpdb->get_results( $sql, ARRAY_A );
+
 		$result_array = [];
-		$args         = [
-			'post_type'   => [ 'post', 'page' ],
-			'numberposts' => $max_post_count,
-			'order'       => 'DESC',
-			'orderby'     => 'meta_value_num',
-			'meta_query'  => [
-				'key'  => 'burst_total_pageviews_count',
-				'type' => 'NUMERIC',
-			],
-		];
-		$posts        = get_posts( $args );
-		foreach ( $posts as $post ) {
-			$page_url       = get_permalink( $post );
+		foreach ( $results as $result ) {
 			$result_array[] = [
-				'page_url'   => str_replace( site_url(), '', $page_url ),
-				'page_id'    => $post->ID,
-				'post_title' => $post->post_title,
-				'pageviews'  => (int) get_post_meta( $post->ID, 'burst_total_pageviews_count', true ),
+				'page_url'   => str_replace( site_url(), '', get_permalink( $result['page_id'] ) ),
+				'page_id'    => (int) $result['page_id'],
+				'post_title' => $result['post_title'],
+				'pageviews'  => (int) $result['pageviews'],
 			];
 		}
 

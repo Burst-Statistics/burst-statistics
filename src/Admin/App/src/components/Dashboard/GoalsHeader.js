@@ -14,7 +14,7 @@ const GoalsHeader = ({goals, goalId, setGoalId}) => {
   };
 
   return (
-    <div className={'burst-goals-controls-flex'}>
+    <div className="flex items-center gap-xs">
       {1 === goals.length && goals[0] &&
         <p>{goals[0].title}</p>
       }

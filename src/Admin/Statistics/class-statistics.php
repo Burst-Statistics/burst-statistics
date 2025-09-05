@@ -17,16 +17,12 @@ class Statistics {
 	use Sanitize;
 
 	private array $look_up_table_names = [];
-	private $exclude_bounces           = null;
-
-	public $campaign_parameters = [ 'source', 'medium', 'campaign', 'term', 'content' ];
+	public $campaign_parameters        = [ 'source', 'medium', 'campaign', 'term', 'content' ];
 	/**
 	 * Constructor
 	 */
 	public function init(): void {
 		add_action( 'burst_install_tables', [ $this, 'install_statistics_table' ], 10 );
-		add_action( 'burst_daily', [ $this, 'update_page_visit_counts' ] );
-		add_action( 'burst_upgrade_post_meta', [ $this, 'update_page_visit_counts' ] );
 		add_action( 'burst_clear_test_visit', [ $this, 'clear_test_visit' ] );
 	}
 
@@ -58,57 +54,6 @@ class Statistics {
 		$wpdb->query(
 			"DELETE FROM {$wpdb->prefix}burst_parameters WHERE parameter LIKE '%burst_test_hit%' OR parameter LIKE '%burst_nextpage%'"
 		);
-	}
-
-	/**
-	 * Update page visit counts
-	 */
-	public function update_page_visit_counts(): void {
-		$offset = (int) get_option( 'burst_post_meta_offset', 0 );
-		$chunk  = 100;
-
-		$today = self::convert_unix_to_date( strtotime( 'today' ) );
-		// deduct days offset in days.
-		$yesterday = self::convert_unix_to_date( strtotime( $today . ' - 1 days' ) );
-
-		// get start of $yesterday in unix.
-		$date_start = self::convert_date_to_unix( $yesterday . ' 00:00:00' );
-		// get end of $yesterday in unix.
-		$date_end = self::convert_date_to_unix( $yesterday . ' 23:59:59' );
-		$qd       = new Query_Data(
-			[
-				'date_start' => $date_start,
-				'date_end'   => $date_end,
-				'select'     => [ 'page_url', 'pageviews' ],
-				'group_by'   => 'page_url',
-				'order_by'   => 'pageviews DESC',
-			]
-		);
-		$sql      = $this->get_sql_table( $qd );
-		// add offset.
-		$sql .= " LIMIT $chunk OFFSET $offset";
-
-		global $wpdb;
-		$rows = $wpdb->get_results( $sql, ARRAY_A );
-
-		if ( count( $rows ) === 0 ) {
-			delete_option( 'burst_post_meta_offset' );
-			wp_clear_scheduled_hook( 'burst_upgrade_post_meta' );
-		} else {
-			update_option( 'burst_post_meta_offset', $offset, false );
-			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'burst_upgrade_post_meta' );
-			if ( ! function_exists( 'url_to_post_id' ) ) {
-				require_once ABSPATH . 'wp-includes/rewrite.php';
-			}
-			foreach ( $rows  as $row ) {
-				$post_id = url_to_postid( $row['page_url'] );
-				if ( $post_id === 0 ) {
-					continue;
-				}
-				$pageviews = $this->get_post_views( $post_id, 0, time() );
-				update_post_meta( $post_id, 'burst_total_pageviews_count', $pageviews );
-			}
-		}
 	}
 
 	/**
@@ -621,7 +566,7 @@ class Statistics {
 	 */
 	public function get_data( array $select, int $start, int $end, array $filters ): array {
 		global $wpdb;
-		$qd  = new Query_Data(
+		$qd     = new Query_Data(
 			[
 				'date_start' => $start,
 				'date_end'   => $end,
@@ -629,8 +574,7 @@ class Statistics {
 				'filters'    => $filters,
 			]
 		);
-		$sql = $this->get_sql_table( $qd );
-
+		$sql    = $this->get_sql_table( $qd );
 		$result = $wpdb->get_results( $sql, 'ARRAY_A' );
 
 		return $result[0] ?? array_fill_keys( $select, 0 );
@@ -859,6 +803,7 @@ class Statistics {
 			'filters'    => [],
 			'limit'      => '',
 		];
+
 		$args     = wp_parse_args( $args, $defaults );
 		$filters  = $this->sanitize_filters( (array) $args['filters'] );
 		$metrics  = $this->sanitize_metrics( $args['metrics'] );
@@ -1195,16 +1140,6 @@ class Statistics {
 	}
 
 	/**
-	 * Check if bounces should be excluded from statistics.
-	 */
-	public function exclude_bounces(): bool {
-		if ( $this->exclude_bounces === null ) {
-			$this->exclude_bounces = (bool) apply_filters( 'burst_exclude_bounces', $this->get_option_bool( 'exclude_bounces' ) );
-		}
-		return $this->exclude_bounces;
-	}
-
-	/**
 	 * Generates a WHERE clause for SQL queries based on provided filters.
 	 *
 	 * @param Query_Data $data Query_Data object.
@@ -1292,13 +1227,12 @@ class Statistics {
 		return ! empty( $where ) ? "AND $where " : '';
 	}
 
-
 	/**
 	 * Generate SQL for a metric
 	 */
-	public function get_sql_select_for_metric( string $metric ): string {
-		$exclude_bounces = $this->exclude_bounces();
-
+	public function get_sql_select_for_metric( string $metric, Query_Data $query_data ): string {
+		$exclude_bounces = $query_data->exclude_bounces;
+		$non_bounce      = 'COALESCE(session_bounces.bounce, 0) = 0';
 		global $wpdb;
 		// if metric starts with  'count(' and ends with ')', then it's a custom metric.
 		// so we sanitize it and return it.
@@ -1312,30 +1246,38 @@ class Statistics {
 		switch ( $metric ) {
 			case 'pageviews':
 			case 'count':
-				$sql = $exclude_bounces ? 'COALESCE( SUM( CASE WHEN bounce = 0 THEN 1 ELSE 0 END ), 0)' : 'COUNT( statistics.ID )';
+				$sql = $exclude_bounces
+				? "COALESCE( SUM( CASE WHEN {$non_bounce} THEN 1 ELSE 0 END ), 0)"
+				: 'COUNT( statistics.ID )';
 				break;
 			case 'bounces':
 				$sql = 'SUM(session_bounces.bounce) ';
 				break;
 			case 'bounce_rate':
-				$sql = 'ROUND(SUM(session_bounces.bounce) / COUNT(DISTINCT statistics.session_id) * 100, 2) ';
+				$sql = 'ROUND(SUM(session_bounces.bounce) / COUNT(DISTINCT session_bounces.session_id) * 100, 2) ';
 				break;
 			case 'sessions':
-				$sql = $exclude_bounces ? 'COUNT( DISTINCT CASE WHEN bounce = 0 THEN statistics.session_id END )' : 'COUNT( DISTINCT statistics.session_id )';
+				$sql = $exclude_bounces
+					? "COUNT( DISTINCT CASE WHEN {$non_bounce} THEN statistics.session_id END )"
+					: 'COUNT( DISTINCT statistics.session_id )';
 				break;
 			case 'avg_time_on_page':
-				$sql = $exclude_bounces ? 'COALESCE( AVG( CASE WHEN bounce = 0 THEN statistics.time_on_page END ), 0 )' : 'AVG( statistics.time_on_page )';
+				$sql = $exclude_bounces
+					? "COALESCE( AVG( CASE WHEN {$non_bounce} THEN statistics.time_on_page END ), 0 )"
+					: 'AVG( statistics.time_on_page )';
 				break;
 			case 'avg_session_duration':
 				$sql = 'CASE WHEN COUNT( DISTINCT statistics.session_id ) > 0 THEN AVG( statistics.time_on_page ) ELSE 0 END';
 				break;
 			case 'first_time_visitors':
-				$sql = $exclude_bounces ?
-					'COALESCE( COUNT(DISTINCT CASE WHEN bounce = 0 AND statistics.first_time_visit = 1 THEN statistics.uid END),0)' :
-					'COUNT(DISTINCT CASE WHEN statistics.first_time_visit = 1 THEN statistics.uid END)';
+				$sql = $exclude_bounces
+					? "COALESCE( COUNT(DISTINCT CASE WHEN {$non_bounce} AND statistics.first_time_visit = 1 THEN statistics.uid END), 0)"
+					: 'COUNT(DISTINCT CASE WHEN statistics.first_time_visit = 1 THEN statistics.uid END)';
 				break;
 			case 'visitors':
-				$sql = $exclude_bounces ? 'COUNT(DISTINCT CASE WHEN bounce = 0 THEN statistics.uid END)' : 'COUNT(DISTINCT statistics.uid)';
+				$sql = $exclude_bounces
+					? "COUNT(DISTINCT CASE WHEN {$non_bounce} THEN statistics.uid END)"
+					: 'COUNT(DISTINCT statistics.uid)';
 				break;
 			case 'page_url':
 				$sql = 'statistics.page_url';
@@ -1384,13 +1326,13 @@ class Statistics {
 	/**
 	 * Get select sql for metrics
 	 */
-	public function get_sql_select_for_metrics( array $metrics ): string {
+	public function get_sql_select_for_metrics( array $metrics, Query_Data $query_data ): string {
 		$metrics = array_map( 'esc_sql', $metrics );
 		$select  = '';
 		$count   = count( $metrics );
 		$i       = 1;
 		foreach ( $metrics as $metric ) {
-			$sql = $this->get_sql_select_for_metric( $metric );
+			$sql = $this->get_sql_select_for_metric( $metric, $query_data );
 			if ( $sql !== '' && $metric !== '*' ) {
 				// if metric starts with  'count(' and ends with ')', then it's a custom metric.
 				// so we change the $metric name to 'metric'_count.
@@ -1411,7 +1353,7 @@ class Statistics {
 					// Don't add comma if this is the last metric or if next iteration will be the last.
 					$next_metrics_empty = true;
 					for ( $j = $i + 1; $j <= $count; $j++ ) {
-						if ( $this->get_sql_select_for_metric( $metrics[ $j - 1 ] ) !== '' || $metrics[ $j - 1 ] === '*' ) {
+						if ( $this->get_sql_select_for_metric( $metrics[ $j - 1 ], $query_data ) !== '' || $metrics[ $j - 1 ] === '*' ) {
 							$next_metrics_empty = false;
 							break;
 						}
@@ -1539,32 +1481,6 @@ class Statistics {
 		return $status;
 	}
 
-
-	/**
-	 * Get post_views by post_id
-	 */
-	public function get_post_views( int $post_id, int $date_start = 0, int $date_end = 0 ): int {
-		// get relative page url by post_id.
-		$page_url = get_permalink( $post_id );
-		// strip home_url from page_url.
-		$page_url = str_replace( home_url(), '', $page_url );
-		$qd       = new Query_Data(
-			[
-				'date_start' => $date_start,
-				'date_end'   => $date_end,
-				'select'     => [ 'pageviews' ],
-				'filters'    => [ 'page_url' => $page_url ],
-			]
-		);
-		$sql      = $this->get_sql_table( $qd );
-		global $wpdb;
-		$data = $wpdb->get_row( $sql );
-		if ( $data && isset( $data->pageviews ) ) {
-			return (int) $data->pageviews;
-		}
-		return 0;
-	}
-
 	/**
 	 * Get Name from lookup table
 	 */
@@ -1609,6 +1525,8 @@ class Statistics {
 			'burst_statistics'       => "CREATE TABLE {$wpdb->prefix}burst_statistics (
         `ID` int NOT NULL AUTO_INCREMENT,
         `page_url` varchar(191) NOT NULL,
+        `page_id` int(11) NOT NULL,
+        `page_type` varchar(191) NOT NULL,
         `time` int NOT NULL,
         `uid` varchar(255) NOT NULL,
         `time_on_page` int,
@@ -1679,6 +1597,7 @@ class Statistics {
 			[ 'session_id' ],
 			[ 'time', 'page_url' ],
 			[ 'uid', 'time' ],
+			[ 'page_id', 'page_type' ],
 		];
 
 		$table_name = $wpdb->prefix . 'burst_statistics';
@@ -1811,7 +1730,7 @@ class Statistics {
                 FROM {$wpdb->prefix}burst_parameters AS p
                 JOIN {$wpdb->prefix}burst_statistics AS s ON s.ID = p.statistic_id
                 WHERE s.time > {$data->date_start} AND s.time < {$data->date_end}
-                GROUP BY p.parameter, p.value, s.uid
+                GROUP BY CONCAT(p.parameter, '|', p.value), s.uid
             ) AS params ";
 		}
 
@@ -1841,7 +1760,7 @@ class Statistics {
 
 		// check if this query needs referrer data.
 		if ( $this->is_referrer_conversion_query( $data ) ) {
-			$referrer_sql = str_replace( 'statistics.', 's.', $this->get_sql_select_for_metric( 'referrer' ) );
+			$referrer_sql = str_replace( 'statistics.', 's.', $this->get_sql_select_for_metric( 'referrer', $data ) );
 			$table_name   = " (
             SELECT
                 s.uid, 
@@ -1896,7 +1815,7 @@ class Statistics {
 		}
 
 		// Build metrics select.
-		$metrics_select = $this->get_sql_select_for_metrics( $select );
+		$metrics_select = $this->get_sql_select_for_metrics( $select, $data );
 		if ( $manually_add_referrer ) {
 			$metrics_select = ' referrers.referrer, ' . $metrics_select;
 		}
@@ -1956,8 +1875,19 @@ class Statistics {
 				);
 				$data->group_by = implode( ', ', $group_by_array );
 			}
-			$group_by_sql = ! empty( $data->group_by ) ? "GROUP BY {$data->group_by}" : '';
-			return esc_sql( $group_by_sql );
+
+			// we need to group parameters by parmater AND value, so we do a concat.
+			if ( strpos( $data->group_by, 'parameter' ) !== false ) {
+				$group_by_array = explode( ',', $data->group_by );
+				foreach ( $group_by_array as $key => $group_by_item ) {
+					if ( trim( $group_by_item ) === 'parameter' ) {
+						$group_by_array[ $key ] = "CONCAT(params.parameter, '|', params.value)";
+					}
+				}
+				$data->group_by = implode( ', ', $group_by_array );
+			}
+
+			return ! empty( $data->group_by ) ? "GROUP BY {$data->group_by}" : '';
 		}
 
 		// If no explicit group_by is provided, return empty string.
@@ -2049,7 +1979,7 @@ class Statistics {
 		// Include the actual built SELECT clause which contains the real SQL field references.
 		$search_string = $select_string . ' ' . $where_string . ' ' . $custom_select . ' ' . $select_clause . ' ';
 		foreach ( $data->select as $metric ) {
-			$metric_sql     = $this->get_sql_select_for_metric( $metric );
+			$metric_sql     = $this->get_sql_select_for_metric( $metric, $data );
 			$search_string .= ' ' . $metric_sql;
 		}
 
@@ -2345,7 +2275,6 @@ class Statistics {
 					break;
 			}
 		}
-
 		return $result;
 	}
 }

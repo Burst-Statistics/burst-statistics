@@ -125,4 +125,15 @@ return [
 		'dismissible' => true,
 		'url'         => 'how-to-enable-debugging-in-wordpress',
 	],
+	[
+		'id'          => 'missing_tables',
+		'condition'   => [
+			'type'     => 'serverside',
+			'function' => 'wp_option_burst_missing_tables',
+		],
+		// translators: %d: error count, %s time of error.
+		'msg'         => sprintf( __( 'Burst has detecting missing database tables: %s.', 'burst-statistics' ), get_option( 'burst_missing_tables' ) ) . ' ' . __( 'Please deactivate Burst (keep the data!), then activate again, to trigger a database upgrade.', 'burst-statistics' ),
+		'icon'        => 'warning',
+		'dismissible' => true,
+	],
 ];

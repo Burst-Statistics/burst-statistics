@@ -1,6 +1,7 @@
 <?php
 namespace Burst\Frontend;
 
+use Burst\Admin\Statistics\Query_Data;
 use Burst\Traits\Helper;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -356,24 +357,20 @@ class Shortcodes {
 			$atts
 		);
 
-		// Extract query parameters.
-		$select   = $query_args['select'];
-		$filters  = $query_args['filters'];
-		$group_by = $query_args['group_by'];
-		$order_by = $query_args['order_by'];
-		$limit    = $query_args['limit'];
-
 		try {
-			// Use our frontend statistics query builder.
-			$sql = $this->statistics->generate_statistics_query(
-				$start,
-				$end,
-				$select,
-				$filters,
-				$group_by,
-				$order_by,
-				$limit
+			$qd = new Query_Data(
+				[
+					'date_start' => $start,
+					'date_end'   => $end,
+					'select'     => $query_args['select'],
+					'filters'    => $query_args['filters'],
+					'group_by'   => $query_args['group_by'],
+					'order_by'   => $query_args['order_by'],
+					'limit'      => $query_args['limit'],
+				]
 			);
+			// Use our frontend statistics query builder.
+			$sql = $this->statistics->generate_statistics_query( $qd );
 
 			// Execute query based on type.
 			if ( in_array( $atts['type'], [ 'top_pages', 'top_referrers', 'device_breakdown' ], true ) ) {

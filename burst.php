@@ -3,7 +3,7 @@
  * Plugin Name: Burst Statistics - Privacy-Friendly Analytics for WordPress
  * Plugin URI: https://www.wordpress.org/plugins/burst-statistics
  * Description: Get detailed insights into visitors’ behavior with Burst Statistics, the privacy-friendly analytics dashboard.
- * Version: 2.2.4
+ * Version: 2.2.6
  * Requires at least: 6.2
  * Requires PHP: 7.4
  * Text Domain: burst-statistics
@@ -42,20 +42,24 @@ try {
     require_once __DIR__ . '/src/autoload.php';
 
     if ( ! function_exists( '\Burst\burst_loader' ) ) {
-        global $burst;
-        $burst = new Burst();
-
         require_once __DIR__ . '/src/functions.php';
         require_once __DIR__ . '/src/class-compatibility.php';
-
         /**
          * Get the Burst instance
          */
         function burst_loader(): Burst {
-            global $burst;
-            return $burst;
+            return Burst::instance();
         }
     }
+
+    add_action(
+        'plugins_loaded',
+        static function () {
+            // creates/returns the singleton; constructor registers hooks.
+            burst_loader();
+        },
+        1
+    );
 
     if ( ! function_exists( '\Burst\burst_on_activation' ) && ! function_exists( 'burst_on_activation' ) ) {
         /**

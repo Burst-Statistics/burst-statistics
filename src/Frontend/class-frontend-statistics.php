@@ -1,7 +1,10 @@
 <?php
 namespace Burst\Frontend;
 
+use Burst\Admin\Statistics\Query_Data;
+use Burst\Admin\Statistics\Statistics;
 use Burst\Traits\Helper;
+use Peast\Query;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -49,13 +52,6 @@ class Frontend_Statistics {
 	private $allowed_order_by;
 
 	/**
-	 * Cache for exclude_bounces check
-	 *
-	 * @var bool|null
-	 */
-	private $exclude_bounces = null;
-
-	/**
 	 * Constructor to initialize class properties
 	 */
 	public function __construct() {
@@ -78,6 +74,8 @@ class Frontend_Statistics {
 
 		// Define allowed filter keys.
 		$default_filter_keys = [
+			'page_type',
+			'page_id',
 			'page_url',
 			'referrer',
 			'device',
@@ -90,6 +88,8 @@ class Frontend_Statistics {
 
 		// Define allowed group_by values.
 		$default_group_by = [
+			'page_type',
+			'page_id',
 			'page_url',
 			'referrer',
 			'device',
@@ -134,8 +134,8 @@ class Frontend_Statistics {
 		// Handle custom date ranges first.
 		if ( ! empty( $start_date ) && ! empty( $end_date ) ) {
 			// Use convert_date_to_unix for proper timezone handling.
-			$start = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
-			$end   = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $end_date . ' 23:59:59' );
+			$start = Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+			$end   = Statistics::convert_date_to_unix( $end_date . ' 23:59:59' );
 			return [
 				'start' => $start,
 				'end'   => $end,
@@ -148,74 +148,74 @@ class Frontend_Statistics {
 		// Process predefined periods with timezone-aware calculations and normalization.
 		switch ( $period ) {
 			case 'today':
-				$start = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( gmdate( 'Y-m-d' ) . ' 00:00:00' );
+				$start = Statistics::convert_date_to_unix( gmdate( 'Y-m-d' ) . ' 00:00:00' );
 				// Normalize to nearest hour for consistent caching.
 				$end = (int) ( floor( $now / HOUR_IN_SECONDS ) * HOUR_IN_SECONDS );
 				break;
 			case 'yesterday':
 				$yesterday = gmdate( 'Y-m-d', strtotime( '-1 day' ) );
-				$start     = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $yesterday . ' 00:00:00' );
-				$end       = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $yesterday . ' 23:59:59' );
+				$start     = Statistics::convert_date_to_unix( $yesterday . ' 00:00:00' );
+				$end       = Statistics::convert_date_to_unix( $yesterday . ' 23:59:59' );
 				break;
 			case '7days':
 				$start_date = gmdate( 'Y-m-d', strtotime( '-7 days' ) );
-				$start      = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+				$start      = Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
 				// Normalize to nearest 6 hours for consistent caching.
 				$end = (int) ( floor( $now / ( 6 * HOUR_IN_SECONDS ) ) * ( 6 * HOUR_IN_SECONDS ) );
 				break;
 			case '14days':
 				$start_date = gmdate( 'Y-m-d', strtotime( '-14 days' ) );
-				$start      = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+				$start      = Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
 				// Normalize to nearest 6 hours for consistent caching.
 				$end = (int) ( floor( $now / ( 6 * HOUR_IN_SECONDS ) ) * ( 6 * HOUR_IN_SECONDS ) );
 				break;
 			case '30days':
 				$start_date = gmdate( 'Y-m-d', strtotime( '-30 days' ) );
-				$start      = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+				$start      = Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
 				// Normalize to nearest 6 hours for consistent caching.
 				$end = (int) ( floor( $now / ( 6 * HOUR_IN_SECONDS ) ) * ( 6 * HOUR_IN_SECONDS ) );
 				break;
 			case '90days':
 				$start_date = gmdate( 'Y-m-d', strtotime( '-90 days' ) );
-				$start      = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+				$start      = Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
 				// Normalize to nearest day for consistent caching.
 				$end = (int) ( floor( $now / DAY_IN_SECONDS ) * DAY_IN_SECONDS );
 				break;
 			case 'this_week':
 				$monday = gmdate( 'Y-m-d', strtotime( 'monday this week' ) );
-				$start  = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $monday . ' 00:00:00' );
+				$start  = Statistics::convert_date_to_unix( $monday . ' 00:00:00' );
 				// Normalize to nearest 6 hours for consistent caching.
 				$end = (int) ( floor( $now / ( 6 * HOUR_IN_SECONDS ) ) * ( 6 * HOUR_IN_SECONDS ) );
 				break;
 			case 'last_week':
 				$monday_last = gmdate( 'Y-m-d', strtotime( 'monday last week' ) );
 				$sunday_last = gmdate( 'Y-m-d', strtotime( 'sunday last week' ) );
-				$start       = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $monday_last . ' 00:00:00' );
-				$end         = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $sunday_last . ' 23:59:59' );
+				$start       = Statistics::convert_date_to_unix( $monday_last . ' 00:00:00' );
+				$end         = Statistics::convert_date_to_unix( $sunday_last . ' 23:59:59' );
 				break;
 			case 'this_month':
 				$first_day = gmdate( 'Y-m-01' );
-				$start     = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $first_day . ' 00:00:00' );
+				$start     = Statistics::convert_date_to_unix( $first_day . ' 00:00:00' );
 				// Normalize to nearest day for consistent caching.
 				$end = (int) ( floor( $now / DAY_IN_SECONDS ) * DAY_IN_SECONDS );
 				break;
 			case 'last_month':
 				$first_day_last = gmdate( 'Y-m-01', strtotime( 'first day of last month' ) );
 				$last_day_last  = gmdate( 'Y-m-t', strtotime( 'last day of last month' ) );
-				$start          = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $first_day_last . ' 00:00:00' );
-				$end            = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $last_day_last . ' 23:59:59' );
+				$start          = Statistics::convert_date_to_unix( $first_day_last . ' 00:00:00' );
+				$end            = Statistics::convert_date_to_unix( $last_day_last . ' 23:59:59' );
 				break;
 			case 'this_year':
 				$first_day = gmdate( 'Y-01-01' );
-				$start     = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $first_day . ' 00:00:00' );
+				$start     = Statistics::convert_date_to_unix( $first_day . ' 00:00:00' );
 				// Normalize to nearest day for consistent caching.
 				$end = (int) ( floor( $now / DAY_IN_SECONDS ) * DAY_IN_SECONDS );
 				break;
 			case 'last_year':
 				$first_day_last = gmdate( 'Y-01-01', strtotime( 'first day of last year' ) );
 				$last_day_last  = gmdate( 'Y-12-31', strtotime( 'last day of last year' ) );
-				$start          = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $first_day_last . ' 00:00:00' );
-				$end            = \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $last_day_last . ' 23:59:59' );
+				$start          = Statistics::convert_date_to_unix( $first_day_last . ' 00:00:00' );
+				$end            = Statistics::convert_date_to_unix( $last_day_last . ' 23:59:59' );
 				break;
 			case 'all_time':
 			default:
@@ -234,41 +234,26 @@ class Frontend_Statistics {
 	/**
 	 * Generate a SQL query for frontend statistics without admin dependencies
 	 *
-	 * @param int    $start     Start timestamp.
-	 * @param int    $end       End timestamp.
-	 * @param array  $select    Metrics to select.
-	 * @param array  $filters   Query filters.
-	 * @param string $group_by  Group by clause.
-	 * @param string $order_by  Order by clause.
-	 * @param int    $limit     Results limit.
+	 * @param Query_Data $query_data The Query Data object.
 	 * @return string SQL query.
 	 */
-	public function generate_statistics_query(
-		int $start,
-		int $end,
-		array $select = [ '*' ],
-		array $filters = [],
-		string $group_by = '',
-		string $order_by = '',
-		int $limit = 0
-	): string {
+	public function generate_statistics_query( Query_Data $query_data ): string {
 		global $wpdb;
 
 		// Sanitize inputs.
-		$filters = $this->sanitize_filters( $filters );
-		$select  = array_map( 'esc_sql', $select );
+		$filters = $this->sanitize_filters( $query_data->filters );
+		$select  = array_map( 'esc_sql', $query_data->select );
 
 		// Validate group_by and order_by against whitelists.
-		$group_by = $this->validate_group_by( $group_by );
-		$order_by = $this->validate_order_by( $order_by );
-		$limit    = $limit;
+		$group_by = $this->validate_group_by( $query_data->group_by );
+		$order_by = $this->validate_order_by( $query_data->order_by );
 
 		// Filter select to only include allowed metrics.
 		// Ensure both arrays contain only strings for proper comparison.
 		$allowed_metrics = array_map( 'strval', $this->allowed_metrics );
 		$select_strings  = array_map( 'strval', $select );
 		$select          = array_intersect( $select_strings, $allowed_metrics );
-
+		$limit           = $query_data->limit;
 		// Ensure we have at least one valid metric.
 		if ( empty( $select ) ) {
 			// Default to pageviews if no valid metrics.
@@ -276,7 +261,7 @@ class Frontend_Statistics {
 		}
 
 		// Prepare SELECT clause with metrics.
-		$select_sql = $this->build_select_metrics( $select );
+		$select_sql = $this->build_select_metrics( $select, $query_data );
 
 		// Base table.
 		$table_name = $wpdb->prefix . 'burst_statistics AS statistics';
@@ -318,16 +303,16 @@ class Frontend_Statistics {
 			$sql_string  = implode( ' ', $sql_parts );
 			$sql         = $wpdb->prepare(
 				$sql_string,
-				$start,
-				$end,
+				$query_data->date_start,
+				$query_data->date_end,
 				$limit
 			);
 		} else {
 			$sql_string = implode( ' ', $sql_parts );
 			$sql        = $wpdb->prepare(
 				$sql_string,
-				$start,
-				$end
+				$query_data->date_start,
+				$query_data->date_end
 			);
 		}
 
@@ -454,7 +439,7 @@ class Frontend_Statistics {
 		return in_array( $order_by, $this->allowed_order_by, true ) ? $order_by : '';
 	}
 
-	/**
+	/**§
 	 * Sanitize filters for safe SQL usage
 	 *
 	 * @param array $filters Filters to sanitize.
@@ -487,6 +472,13 @@ class Frontend_Statistics {
 						// For referrers, sanitize as URL.
 						$sanitized_value = esc_url_raw( $value );
 						break;
+					case 'page_id':
+						$sanitized_value = absint( $value );
+						break;
+					case 'page_type':
+						$allowed_page_types = apply_filters( 'burst_allowed_page_types', [ 'post' ] );
+						$sanitized_value    = in_array( $value, $allowed_page_types, true ) ? $value : 'post';
+						break;
 					case 'device':
 					case 'browser':
 					case 'platform':
@@ -504,19 +496,19 @@ class Frontend_Statistics {
 				}
 			}
 		}
-
 		return $sanitized;
 	}
 
 	/**
 	 * Build the SELECT clause for chosen metrics
 	 *
-	 * @param array $metrics Metrics to include.
+	 * @param array      $metrics Metrics to include.
+	 * @param Query_Data $query_data The parameters for querying.
 	 * @return string SELECT clause.
 	 */
-	private function build_select_metrics( array $metrics ): string {
+	private function build_select_metrics( array $metrics, Query_Data $query_data ): string {
 		$select_parts    = [];
-		$exclude_bounces = $this->exclude_bounces();
+		$exclude_bounces = $query_data->exclude_bounces;
 
 		foreach ( $metrics as $metric ) {
 			// Skip if not in allowed metrics list.
@@ -591,6 +583,12 @@ class Frontend_Statistics {
 			}
 
 			switch ( $key ) {
+				case 'page_id':
+					$where_parts[] = $wpdb->prepare( 'statistics.page_id = %s', $value );
+					break;
+				case 'page_type':
+					$where_parts[] = $wpdb->prepare( 'statistics.page_type = %s', $value );
+					break;
 				case 'page_url':
 					$where_parts[] = $wpdb->prepare( 'statistics.page_url = %s', $value );
 					break;
@@ -659,24 +657,26 @@ class Frontend_Statistics {
 			$end_time = time();
 		}
 
-		// Get relative page URL by post_id.
-		$page_url = get_permalink( $post_id );
-
-		// Strip home_url from page_url.
-		$page_url = str_replace( home_url(), '', $page_url );
-
-		$sql = $this->generate_statistics_query(
-			$start_time,
-			$end_time,
-			[ 'pageviews' ],
-			[ 'page_url' => $page_url ]
+		$qd  = new Query_Data(
+			[
+				'date_start' => $start_time,
+				'date_end'   => $end_time,
+				'filters'    => [
+					'page_id'   => $post_id,
+					'page_type' => 'post',
+				],
+				'select'     =>
+					[
+						'pageviews',
+					],
+			]
 		);
+		$sql = $this->generate_statistics_query( $qd );
 
 		global $wpdb;
 
 		// Execute query with error handling.
 		$result = $wpdb->get_var( $sql );
-
 		// Check for database errors.
 		if ( $wpdb->last_error ) {
 			// Log the error for debugging.
@@ -708,58 +708,38 @@ class Frontend_Statistics {
 			$end_time = time();
 		}
 
+		global $wpdb;
 		// Get posts sorted by pageviews.
-		$args = [
-			'post_type'   => $post_type,
-			'numberposts' => $count,
-			'meta_key'    => 'burst_total_pageviews_count',
-			'orderby'     => 'meta_value_num',
-			'order'       => 'DESC',
-			'meta_query'  => [
-				[
-					'key'  => 'burst_total_pageviews_count',
-					'type' => 'NUMERIC',
-				],
-			],
-		];
+		$sql = $wpdb->prepare(
+			"SELECT s.page_id, COUNT(*) as pageview_count
+             FROM {$wpdb->prefix}burst_statistics s
+             JOIN {$wpdb->prefix}posts p ON s.page_id = p.ID
+             WHERE p.post_type = %s
+               AND p.post_status = 'publish'
+               AND s.page_id > 0
+               AND s.time >= %d
+               AND s.time <= %d
+               AND s.page_type = 'post'
+             GROUP BY s.page_id
+             ORDER BY pageview_count DESC
+             LIMIT %d",
+			$post_type,
+			$start_time,
+			$end_time,
+			$count
+		);
 
-		$posts = get_posts( $args );
-
-		// Check if get_posts returned an error (WP_Error object).
-		if ( is_wp_error( $posts ) ) {
-			// Log the error for debugging.
-			self::error_log( 'Error in get_most_viewed_posts(): ' . $posts->get_error_message() );
-			// Return safe default.
-			return [];
-		}
-
+		$posts  = $wpdb->get_results( $sql, ARRAY_A );
 		$result = [];
 
 		foreach ( $posts as $post ) {
-			// For time-specific queries, get actual view count for the period.
-			if ( $start_time > 0 || $end_time < time() - DAY_IN_SECONDS ) {
-				$view_count = $this->get_post_views( $post->ID, $start_time, $end_time );
-			} else {
-				// Use cached total for all-time or recent queries.
-				$view_count = (int) get_post_meta( $post->ID, 'burst_total_pageviews_count', true );
-			}
-
-			$result[] = [
-				'post'  => $post,
-				'views' => $view_count,
+			$post_object = get_post( $post['page_id'] );
+			$result[]    = [
+				'post'  => $post_object,
+				'views' => $post['pageview_count'],
 			];
 		}
 
 		return $result;
-	}
-
-	/**
-	 * Check if bounces should be excluded from statistics.
-	 */
-	public function exclude_bounces(): bool {
-		if ( $this->exclude_bounces === null ) {
-			$this->exclude_bounces = (bool) apply_filters( 'burst_exclude_bounces', $this->get_option_bool( 'exclude_bounces' ) );
-		}
-		return $this->exclude_bounces;
 	}
 }

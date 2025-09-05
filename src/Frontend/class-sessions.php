@@ -33,7 +33,6 @@ class Sessions {
             `last_visited_url` TEXT NOT NULL,
             `goal_id` int,
             `city_code` int DEFAULT 0,
-			`accuracy_radius_km` int DEFAULT 0,
             PRIMARY KEY (ID)
         ) $charset_collate;";
 

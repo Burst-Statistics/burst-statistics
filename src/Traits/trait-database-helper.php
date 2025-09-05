@@ -25,6 +25,7 @@ trait Database_Helper {
 
 	/**
 	 * Check if a table has a specific column
+	 * pass the table name without WordPress (wp_) prefix, but with burst prefix.
 	 */
 	public function column_exists( string $table_name, string $column_name ): bool {
 		global $wpdb;

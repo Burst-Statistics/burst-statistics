@@ -184,11 +184,7 @@ const useGoalsData = () => {
 
     // Mutation to add a predefined goal
     const addPredefinedGoalMutation = useMutation({
-        mutationFn: async ({predefinedGoalId, type, cookieless}) => {
-            if ('hook' === type && cookieless) {
-                throw new Error(__('Cannot add server side goals in combination with cookieless tracking', 'burst-statistics'));
-            }
-
+        mutationFn: async ({predefinedGoalId}) => {
             const {isPro} = useLicenseStore.getState();
             if (!isPro) {
                 throw new Error(__('Predefined goals are a premium feature.', 'burst-statistics'));
@@ -235,8 +231,8 @@ const useGoalsData = () => {
         saveGoalTitle: (id, value) => saveGoalTitleMutation.mutateAsync({id, value}),
         addGoal: addGoalMutation.mutateAsync,
         deleteGoal: deleteGoalMutation.mutateAsync,
-        addPredefinedGoal: (predefinedGoalId, type, cookieless) =>
-            addPredefinedGoalMutation.mutateAsync({predefinedGoalId, type, cookieless}),
+        addPredefinedGoal: (predefinedGoalId) =>
+            addPredefinedGoalMutation.mutateAsync({predefinedGoalId}),
         // Utility for invalidating queries
         invalidateGoals: () => queryClient.invalidateQueries(['goals_data'])
     };

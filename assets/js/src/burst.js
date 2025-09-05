@@ -345,7 +345,9 @@ async function burst_track_hit() {
     user_agent: navigator.userAgent || 'unknown',
     device_resolution: `${window.screen.width * window.devicePixelRatio}x${window.screen.height * window.devicePixelRatio}`,
     time_on_page: time,
-    completed_goals: burst.goals.completed
+    completed_goals: burst.goals.completed,
+    page_id: document.body?.dataset?.burstId || 0,
+    page_type: document.body?.dataset?.burstType || '',
   };
 
   document.dispatchEvent(new CustomEvent('burst_track_hit', { detail: data }));

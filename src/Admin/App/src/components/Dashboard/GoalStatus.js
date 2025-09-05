@@ -35,9 +35,9 @@ const GoalStatus = ({ data }) => {
   const statusLabel = getStatusLabel( status );
 
   return (
-    <div className="burst-goal-status">
+    <div className="flex items-center gap-xxs">
       <Icon name="dot" color={iconColor} size={12} />
-      <p>{statusLabel}</p>
+      <p className="text-gray text-sm">{statusLabel}</p>
     </div>
   );
 };

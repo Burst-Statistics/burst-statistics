@@ -28,11 +28,13 @@ class Query_Data {
 	public array $union          = [];
 	public bool $distinct        = false;
 	public array $window         = [];
+	public bool $exclude_bounces = false;
 
 	/**
 	 * Constructor to initialize the Query_Data object with sanitizing arguments.
 	 */
 	public function __construct( array $args = [] ) {
+
 		foreach ( $args as $key => $value ) {
 			if ( property_exists( $this, $key ) ) {
 				if ( $key === 'filters' ) {
@@ -48,5 +50,19 @@ class Query_Data {
 				$this::error_log( "Invalid property '$key' in Query_Data class. Please check your arguments." );
 			}
 		}
+		$this->exclude_bounces = $this->exclude_bounces();
+	}
+
+	/**
+	 * Check if bounces should be excluded from statistics.
+	 */
+	private function exclude_bounces(): bool {
+		// default, included.
+		if ( ! isset( $this->filters['bounces'] ) ) {
+			return false;
+		}
+
+		// otherwise, if it's exclude, true, otherwise, false.
+		return $this->filters['bounces'] === 'exclude';
 	}
 }

@@ -62,9 +62,13 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 		 * Process the execution of a hook as goal achieved
 		 */
 		public function handle_hook( string $hook_name ): void {
-
 			// get cookie burst_uid.
 			$burst_uid = isset( $_COOKIE['burst_uid'] ) ? \Burst\burst_loader()->frontend->tracking->sanitize_uid( $_COOKIE['burst_uid'] ) : false;
+			if ( ! $burst_uid ) {
+				// try fingerprint from session.
+				$burst_uid = \Burst\burst_loader()->tracking->get_fingerprint_from_session();
+			}
+
 			// we assume there has at least been one interaction clientside, so there should be a uid.
 			if ( $burst_uid ) {
 				$statistic    = \Burst\burst_loader()->frontend->tracking->get_last_user_statistic( $burst_uid, '' );
