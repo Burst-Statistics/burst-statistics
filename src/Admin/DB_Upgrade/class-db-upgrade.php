@@ -593,6 +593,8 @@ class DB_Upgrade {
                     );";
 			$wpdb->query( $sql );
 			delete_option( "burst_db_upgrade_create_lookup_tables_$selected_item" );
+		} else {
+			self::error_log( 'no item to upgrade found' );
 		}
 
 		// check if all items have been created.
