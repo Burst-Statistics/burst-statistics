@@ -45,7 +45,7 @@ const TipsTricksBlock = ( props ) => {
                 title={he.decode(item.title.rendered)}
 				className="group text-gray transition-colors duration-300 ease-in-out flex items-center gap-xs min-w-0 no-underline hover:text-primary hover:underline"
               >
-                <div className="h-[13px] w-[13px] flex-none rounded-full transition-colors duration-300 ease-in-out bg-gray-300 group-hover:bg-primary medium" />
+                <div className="h-[13px] w-[13px] flex-none rounded-full transition-colors duration-300 ease-in-out group-[:visited]:bg-gray-300 bg-primary group-hover:!bg-primary medium" />
                 <div className="whitespace-nowrap overflow-hidden text-ellipsis hover:underline">{he.decode(item.title.rendered)}</div>
               </a>
             </div>

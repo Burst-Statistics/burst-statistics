@@ -39,7 +39,7 @@ class ErrorBoundary extends Component {
   render() {
     if ( this.state.hasError ) {
       return (
-        <div className="rounded-md bg-white p-5 text-black shadow-md">
+        <div className="rounded-md bg-white p-5 text-black shadow-sm">
           <h3 className="mb-4 text-xl font-bold text-black">
             {__( 'Uh-oh! We stumbled upon an error.', 'burst-statistics' )}
           </h3>

@@ -21,7 +21,7 @@ const CompareFooter = ({noCompare, startDate, endDate}) => {
 
   return (
       <>
-        <p className={'burst-small-text'}>{text}</p>
+        <p className="text-sm font-medium leading-[1.5] text-gray">{text}</p>
       </>
   );
 };

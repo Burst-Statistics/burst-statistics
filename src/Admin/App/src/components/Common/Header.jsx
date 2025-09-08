@@ -18,7 +18,7 @@ const Header = () => {
     'rounded-sm',
     'relative',
     'text-md',
-    'border-b-4 border-transparent',
+    'border-b-4',
     'hover:border-gray-500 hover:bg-gray-100',
     'transition-border duration-150',
     'transition-background duration-150'
@@ -67,7 +67,7 @@ const Header = () => {
   }, []);
 
   return (
-    <div className="bg-white">
+    <div className="bg-white shadow-sm">
       <div className="mx-auto flex max-w-screen-2xl items-center gap-5 px-5">
         <div>
           <Link className={'flex gap-3 align-middle'} from="/" to="/">

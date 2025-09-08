@@ -6,9 +6,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Burst\Traits\Admin_Helper;
+use Burst\Traits\Helper;
 
 class Posts {
 	use Admin_Helper;
+	use Helper;
 
 	/**
 	 * Initialize the posts class
@@ -79,7 +81,8 @@ class Posts {
 				$post_type,
 				true,
 				function ( $post_id ): void {
-					echo (int) \Burst\burst_loader()->frontend->get_post_pageviews( $post_id );
+					$page_views = \Burst\burst_loader()->frontend->get_post_pageviews( $post_id );
+					echo esc_html( $this->format_number_short( $page_views ) );
 				}
 			);
 		}
@@ -107,15 +110,21 @@ class Posts {
 	 * Join the pageviews for the ordering
 	 */
 	public function join_pageviews_table( string $join ): string {
-		global $wpdb;
+		global $wpdb, $wp_query;
 
-		$join .= " LEFT JOIN (
+		$current_post_type = $wp_query->get( 'post_type' );
+		if ( empty( $current_post_type ) ) {
+			$current_post_type = 'post';
+		}
+		$join .= $wpdb->prepare(
+			" LEFT JOIN (
             SELECT page_id, COUNT(*) as pageview_count
             FROM {$wpdb->prefix}burst_statistics
-            WHERE page_id > 0 && page_type = 'post'
+            WHERE page_id > 0 AND page_type = %s
             GROUP BY page_id
-        ) burst_stats ON {$wpdb->posts}.ID = burst_stats.page_id";
-
+        ) burst_stats ON {$wpdb->posts}.ID = burst_stats.page_id",
+			$current_post_type
+		);
 		return $join;
 	}
 

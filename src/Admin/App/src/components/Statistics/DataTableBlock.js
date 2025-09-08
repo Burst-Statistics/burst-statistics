@@ -449,7 +449,7 @@ const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id }) => {
           </>
         }
       />
-      <BlockContent className={'px-0 py-0'}>
+      <BlockContent className="px-0 py-0">
         <DataTable {...dataTableProps} />
       </BlockContent>
     </Block>

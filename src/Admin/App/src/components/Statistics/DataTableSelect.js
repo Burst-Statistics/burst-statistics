@@ -30,7 +30,7 @@ const DataTableSelect = ({ value, onChange, options }) => {
         primaryButtonUrl={firstOption.upsellPopover.primaryButtonUrl}
         secondaryButtonUrl={firstOption.upsellPopover.secondaryButtonUrl}
       >
-        <h3 className={'burst-grid-title burst-h4'}>{firstOption.label}</h3>
+        <h3 className="flex items-center gap-s burst-h4">{firstOption.label}</h3>
         <Icon name="chevron-down" />
       </ProPopover>
     );
@@ -42,14 +42,25 @@ const DataTableSelect = ({ value, onChange, options }) => {
     }
     return (
       <Select.Root value={value} onValueChange={handleValueChange}>
-        <Select.Trigger className="burst-datatable__select-trigger">
+        <Select.Trigger className="inline-flex items-center justify-between cursor-pointer py-2 px-0 all-[unset]">
           <Select.Value placeholder="Select an option…" />
-          <Select.Icon className={'burst-datatable__select-trigger__icon'}>
+          <Select.Icon className="ml-2">
             <Icon name="chevron-down" />
           </Select.Icon>
         </Select.Trigger>
         <Select.Content
-          className="burst-datatable__select-content"
+          className="bg-gray-100
+          z-[99]
+          border border-gray-400
+          rounded
+          flex flex-col flex-wrap
+          gap-s
+          left-0 right-0
+          shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px]
+          [animation-duration:600ms]
+          [animation-timing-function:cubic-bezier(0.16,1,0.3,1)]
+          [will-change:transform,opacity]
+          data-[state=open]:animate-slideDownAndFade"
           position={'popper'}
           alignOffset={-10}
         >
@@ -58,12 +69,24 @@ const DataTableSelect = ({ value, onChange, options }) => {
               <Select.Item
                 key={option.key}
                 value={option.key}
-                className="burst-datatable__select-content__item"
+                className="min-w-[min(100vw,150px)]
+                cursor-pointer
+                text-black
+                text-md
+                px-s py-xs
+                rounded-[3px]
+                flex items-center
+                data-[disabled]:text-gray
+                data-[disabled]:bg-gray-100
+                data-[disabled]:cursor-not-allowed
+                data-[highlighted]:text-black
+                data-[highlighted]:outline-none
+                data-[highlighted]:bg-brand-lightest
+                data-[state=selected]:text-gray
+                data-[state=selected]:outline-none"
                 disabled={option.pro && ! isPro}
               >
-                <Select.ItemText
-                  className={'burst-datatable__select-content__label'}
-                >
+                <Select.ItemText>
                   {option.label}
                 </Select.ItemText>
               </Select.Item>

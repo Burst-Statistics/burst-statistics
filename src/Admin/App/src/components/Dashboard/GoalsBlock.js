@@ -273,7 +273,7 @@ const GoalsBlock = () => {
         title={__( 'Goals', 'burst-statistics' )}
         controls={<GoalsHeader goalId={initializedGoalId || goalId} goals={goals} setGoalId={setGoalId} />}
       />
-      <BlockContent className={'px-0 py-0 relative'}>
+      <BlockContent className="px-0 py-0 relative">
         {isError ? (
           <div className="text-red p-4">
             {__( 'Error loading goals data. Please try again later.', 'burst-statistics' )}

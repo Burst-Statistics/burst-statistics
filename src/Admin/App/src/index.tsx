@@ -96,7 +96,7 @@ const PendingComponent = () => {
   return (
     <>
       {/* Left Block */}
-      <div className="col-span-6 row-span-2 bg-white shadow-md rounded-xl p-5">
+      <div className="col-span-6 row-span-2 bg-white shadow-sm rounded-xl p-5">
         <div className="h-6 w-1/2 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
         <div className="h-6 w-4/5 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
         <div className="h-6 w-full px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
@@ -108,7 +108,7 @@ const PendingComponent = () => {
       </div>
 
       {/* Middle Block */}
-      <div className="col-span-3 row-span-2 bg-white shadow-md rounded-xl p-5">
+      <div className="col-span-3 row-span-2 bg-white shadow-sm rounded-xl p-5">
         <div className="h-6 w-1/2 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
         <div className="h-6 w-4/5 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
         <div className="h-6 w-full px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
@@ -120,7 +120,7 @@ const PendingComponent = () => {
       </div>
 
       {/* Right Block */}
-      <div className="col-span-3 row-span-2 bg-white shadow-md rounded-xl p-5">
+      <div className="col-span-3 row-span-2 bg-white shadow-sm rounded-xl p-5">
         <div className="h-6 w-1/2 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
         <div className="h-6 w-4/5 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
         <div className="h-6 w-full px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
@@ -174,7 +174,7 @@ const initApp = () => {
           <Suspense fallback={null}>
             <ToastContainer
               position="bottom-right"
-              autoClose={5000}
+              // autoClose={5000}
               hideProgressBar={true}
               newestOnTop={false}
               closeOnClick

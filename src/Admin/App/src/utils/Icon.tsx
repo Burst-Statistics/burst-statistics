@@ -79,18 +79,19 @@ import {
   Scale,
 
 } from 'lucide-react';
+import {clsx} from "clsx";
 
 // Color mapping from our custom colors to CSS variables
 const iconColors = {
-  black: 'var(--rsp-black)',
-  green: 'var(--rsp-green)',
-  yellow: 'var(--rsp-yellow)',
-  red: 'var(--rsp-red)',
-  blue: 'var(--rsp-blue)',
-  gray: 'var(--rsp-grey-500)',
-  lightgray: 'var(--rsp-grey-300)',
-  white: 'var(--rsp-white)',
-  gold: 'var(--rsp-gold)',
+  black: 'black',
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+  blue: 'blue',
+  gray: 'gray-500',
+  lightgray: 'gray-300',
+  white: 'white',
+  gold: 'gold',
 };
 
 // Map existing icon names to Lucide icon components
@@ -211,7 +212,7 @@ export interface IconProps {
 
 const Icon = memo(({ 
   name = 'bullet', 
-  color = 'black', 
+  color = 'black',
   size = 18, 
   strokeWidth = 1.5,
   tooltip, 
@@ -227,7 +228,7 @@ const Icon = memo(({
   // Create the icon component props
   const iconProps: LucideProps = {
     size,
-    color: colorVal,
+    color: 'currentColor',
     strokeWidth
   };
 
@@ -236,15 +237,15 @@ const Icon = memo(({
   const renderIcon = () => {
     // Special handling for bullet and dot icons - they should be filled
     if ((name === 'bullet' || name === 'dot') && IconComponent === Circle) {
-      return <Circle {...iconProps} fill={colorVal} />;
+      return <Circle {...iconProps} className={`fill-${colorVal}`} />;
     }
     
     // Special handling for star-filled - should be filled
     if (name === 'star-filled' && IconComponent === Star) {
-      return <Star {...iconProps} fill={colorVal} />;
+      return <Star {...iconProps} className={`fill-${colorVal}`} />;
     }
     
-    return <IconComponent className={className} {...iconProps} />;
+    return <IconComponent className={clsx( className, `text-${colorVal}` )} {...iconProps} />;
   };
 
   const handleClick = () => {

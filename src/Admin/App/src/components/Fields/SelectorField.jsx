@@ -393,7 +393,7 @@ const computedContext = error
               srcDoc={previewData.previews[previewData.currentIndex]}
               sandbox="allow-scripts allow-same-origin"
               title={`${inputId}-preview`}
-              className={`w-full h-48 border-none`}
+              className="w-full h-48 border-none"
               aria-live="polite"
             />
             )}

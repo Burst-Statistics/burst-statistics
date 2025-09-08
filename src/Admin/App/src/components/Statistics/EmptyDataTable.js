@@ -22,7 +22,7 @@ const EmptyDataTable = ({
   // Loading state
   if ( isLoading ) {
     return (
-        <div className="burst-datatable-message burst-loading">
+        <div className="p-xl text-center burst-loading">
           <p>{__( 'Loading data...', 'burst-statistics' )}</p>
         </div>
     );
@@ -31,7 +31,7 @@ const EmptyDataTable = ({
   // Error state
   if ( error ) {
     return (
-        <div className="burst-datatable-message burst-error">
+        <div className="p-xl text-center burst-error">
           <p>{__( 'Error:', 'burst-statistics' )} {error.message}</p>
         </div>
     );
@@ -40,7 +40,7 @@ const EmptyDataTable = ({
   // No data state
   if ( noData ) {
     return (
-        <div className="burst-datatable-message burst-no-data">
+        <div className="p-xl text-center burst-no-data">
           <p>{__( 'No data available in table', 'burst-statistics' )}</p>
         </div>
     );
@@ -48,7 +48,7 @@ const EmptyDataTable = ({
 
   // Fallback or unexpected error state
   return (
-      <div className="burst-datatable-message burst-unexpected-error">
+      <div className="p-xl text-center burst-unexpected-error">
         <p>{__( 'Unexpected error', 'burst-statistics' )}</p>
       </div>
   );

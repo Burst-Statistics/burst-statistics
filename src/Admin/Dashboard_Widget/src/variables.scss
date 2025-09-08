@@ -1,0 +1,52 @@
+// Break points
+$rsp-break-m: 1280px;
+
+:root {
+  // Margins, Paddings and Border Radius
+  --rsp-spacing-xxs: 5px;
+  --rsp-spacing-xs: 10px;
+  --rsp-spacing-s: 15px;
+  --rsp-spacing-m: 20px;
+  --rsp-spacing-l: 25px;
+
+  // Grid settings
+  --rsp-grid-margin: var(--rsp-spacing-s);
+  --rsp-grid-gap: var(--rsp-spacing-m);
+
+  // Borders and stuff
+  --rsp-border-radius: 12px;
+  --rsp-border-radius-s: 8px;
+  --rsp-border-radius-xs: 5px;
+  --rsp-border: 1px solid var(--rsp-border-color);
+  --rsp-box-shadow: rgba(0, 0, 0, 0.1) 0 4px 6px -1px, rgba(0, 0, 0, 0.06) 0 2px 4px -1px;
+  --rsp-border-color: #dfdfdf;
+
+  // RSP Brand Colors
+  --rsp-white: #fff;
+  --rsp-green: #2B8133;
+  --rsp-red: #c6273b;
+  --rsp-green-faded: #ecf4ed;
+  --rsp-red-faded: #fbebed;
+
+  --rsp-background-block-color: var(--rsp-white);
+  --rsp-background-color: #f0f0f1; //#f0f0f1 is the default wordpress bg color
+
+  //Input colors
+  --rsp-input-background-color: #fff;
+  --rsp-input-text-color: var(--rsp-text-color);
+  --rsp-input-border-color: var(--rsp-grey-400);
+
+  --rsp-text-color: rgba(26, 26, 26, 0.9);
+  --rsp-text-color-white: rgba(255, 255, 255, 0.9);
+  --rsp-text-color-light: rgba(69, 69, 82, 0.9);
+
+  --rsp-grey-100: #fafafa;
+  --rsp-grey-200: #f7f7f7;
+  --rsp-grey-300: #ededed;
+  --rsp-grey-400: #c6c6c6;
+  --rsp-grey-500: #737373;
+
+  // Font sizes
+  --rsp-fs-100: 0.6875rem;        // 11px
+  --rsp-fs-300: 0.8125rem;        // 13px
+}

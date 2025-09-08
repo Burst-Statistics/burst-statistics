@@ -46,7 +46,6 @@ class Admin {
 		add_filter( "wp_consent_api_registered_$plugin", '__return_true' );
 		add_filter( "plugin_action_links_$plugin", [ $this, 'plugin_settings_link' ] );
 		add_filter( "network_admin_plugin_action_links_$plugin", [ $this, 'plugin_settings_link' ] );
-		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 
 		// deactivating.
 		add_action( 'admin_footer', [ $this, 'deactivate_popup' ], 40 );
@@ -560,19 +559,6 @@ class Admin {
 			'Burst Statistics',
 			wp_kses_post( wpautop( $content, false ) )
 		);
-	}
-
-	/**
-	 * Enqueue some assets
-	 */
-	public function enqueue_assets( ?string $hook ): void {
-		if ( $hook === 'toplevel_page_burst' ) {
-			$min  = ! is_rtl() && ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
-			$rtl  = is_rtl() ? 'rtl/' : '';
-			$url  = trailingslashit( BURST_URL ) . "assets/css/{$rtl}admin{$min}.css";
-			$path = trailingslashit( BURST_PATH ) . "assets/css/{$rtl}admin{$min}.css";
-			wp_enqueue_style( 'burst-admin', $url, [ 'wp-components' ], filemtime( $path ) );
-		}
 	}
 
 	/**

@@ -15,7 +15,7 @@ const Popover = ({ title, children, footer, isOpen, setIsOpen, showFilterIcon=tr
             </ReactPopover.Trigger>
       <ReactPopover.Portal container={document.querySelector( '.burst' )}>
         <ReactPopover.Content
-          className={"z-50 min-w-[280px] max-w-[600px] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"}
+          className="z-50 min-w-[280px] max-w-[600px] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"
           align={'start'}
           sideOffset={10}
           arrowPadding={10}

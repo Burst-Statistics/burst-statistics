@@ -206,7 +206,7 @@ const OtherPluginsBlock = () => {
   if ( isLoading ) {
     const n = 3;
     return (
-      <Block className="bg-wp-gray row-span-1 shadow-none lg:col-span-6">
+      <Block className="bg-wp-gray row-span-1 shadow-transparent border-wp-gray lg:col-span-6">
         <BlockHeading
           className={'burst-column-2 no-border no-background'}
           title={__( 'Other plugins', 'burst-statistics' )}
@@ -233,7 +233,7 @@ const OtherPluginsBlock = () => {
     );
   }
   return (
-    <Block className="bg-wp-gray row-span-1 shadow-none lg:col-span-6">
+    <Block className="bg-wp-gray row-span-1 shadow-transparent border-wp-gray lg:col-span-6">
       <BlockHeading title={__( 'Other plugins', 'burst-statistics' )}
                     controls={<UpdraftPlusLogo size={24} color="gray"/>}
       />

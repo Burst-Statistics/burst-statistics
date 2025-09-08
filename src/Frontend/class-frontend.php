@@ -105,7 +105,7 @@ class Frontend {
 		if ( is_singular() || ( is_front_page() && is_page() ) ) {
 			return [
 				'ID'   => get_the_ID(),
-				'type' => 'post',
+				'type' => get_post_type( get_the_ID() ),
 			];
 		}
 

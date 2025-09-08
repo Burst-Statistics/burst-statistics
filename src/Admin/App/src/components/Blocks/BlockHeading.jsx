@@ -6,7 +6,7 @@ export const BlockHeading = memo(({ title, controls, className = '' }) => {
     <div
       className={clsx(
         className,
-        'flex min-h-16 items-center justify-between px-6 gap-4'
+        'flex min-h-16 items-center justify-between px-l gap-4 max-m:px-s'
       )}
     >
       <h2 className="text-lg font-semibold">{title}</h2>
