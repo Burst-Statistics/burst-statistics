@@ -19,12 +19,12 @@ const UpsellOverlay: React.FC<UpsellOverlayProps> = ({
 }) => {
   return (
     <div className={`absolute inset-0 z-50 ${className}`}>
-      {/* Backdrop with blur effect */}
+      {/* Backdrop with blur effect and lttle darker */}
       <div className="absolute inset-0 backdrop-blur-sm" />
 
       {/* Content container positioned at top-middle */}
       <div className="relative flex justify-center pt-8 m-8 mt-24">
-        <div className="mx-4 min-w-fit rounded-md border border-gray-300 bg-gray-100 px-8 py-12 shadow-md">
+        <div className="mx-4 min-w-fit rounded-md border border-gray-300 bg-gray-100 px-8 py-12 shadow-sm">
           {children}
         </div>
       </div>

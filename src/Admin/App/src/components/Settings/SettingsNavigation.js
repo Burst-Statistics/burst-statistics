@@ -15,7 +15,7 @@ const SettingsNavigation = ({ subMenu }) => {
   return (
     <Block>
       <BlockHeading title={subMenu.title} controls={undefined} />
-      <BlockContent className={'px-0 py-0 pb-4'}>
+      <BlockContent className="px-0 py-0 pb-4">
         <div className="flex flex-col justify-start">
           {visibleMenuItems.map( ( item ) => (
             <SettingsNavigationItem key={item.id} item={item} />

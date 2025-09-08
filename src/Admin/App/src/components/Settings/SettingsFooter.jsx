@@ -29,13 +29,13 @@ function SettingsFooter({ onSubmit, control }) {
   const currentState = formStates.find( ( state ) => state.condition );
 
   return (
-    <div className="sticky bottom-0 start-0 z-10 rounded-b-md border-t border-gray-200 bg-gray-100 shadow-[0_-8px_15px_-3px_rgba(0,0,0,0.05),0_4px_6px_-2px_rgba(0,0,0,0.05)]">
+    <div className="sticky bottom-0 start-0 z-10 rounded-b-md border-b border-r border-l border-gray-300 bg-gray-100 shadow-[0_-8px_15px_-3px_rgba(0,0,0,0.05),0_4px_6px_-2px_rgba(0,0,0,0.05)]">
       <SettingsScrollProgressLine />
       <div className="flex flex-row items-center justify-end gap-2 p-5">
         {currentState?.message && <div className={'flex gap-2 items-center py-1 px-2 rounded-md transition-opacity duration-150' + ( currentState?.message ? ' opacity-100' : ' opacity-0' ) + ( 'red' === currentState?.color ? ' bg-red-light border border-red' : '' )}>
           <span className={'text-sm' + ( 'red' === currentState?.color ? ' font-semibold text-red' : ' italic text-gray-900' )}>{currentState?.message}</span>
         </div>}
-        <ButtonInput className={'burst-save'} onClick={onSubmit}>
+        <ButtonInput className="burst-save" onClick={onSubmit}>
           {__( 'Save', 'burst-statistics' )} 
         </ButtonInput>
       </div>

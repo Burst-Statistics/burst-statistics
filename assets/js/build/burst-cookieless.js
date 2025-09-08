@@ -1408,8 +1408,8 @@ async function burst_track_hit() {
     device_resolution: `${window.screen.width * window.devicePixelRatio}x${window.screen.height * window.devicePixelRatio}`,
     time_on_page: time,
     completed_goals: burst.goals.completed,
-    page_id: document.body?.dataset?.burstId || 0,
-    page_type: document.body?.dataset?.burstType || '',
+    page_id: document.body?.dataset?.burst_id || 0,
+    page_type: document.body?.dataset?.burst_type || '',
   };
 
   document.dispatchEvent(new CustomEvent('burst_track_hit', { detail: data }));

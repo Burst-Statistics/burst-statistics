@@ -50,9 +50,9 @@ class Shortcodes {
 		// Register the stylesheet but don't enqueue it yet.
 		wp_register_style(
 			'burst-statistics-shortcodes',
-			BURST_URL . 'assets/css/burst-statistics-shortcodes.css',
+			BURST_URL . 'assets/css/shortcodes.css',
 			[],
-			filemtime( BURST_PATH . 'assets/css/burst-statistics-shortcodes.css' )
+			filemtime( BURST_PATH . 'assets/css/shortcodes.css' )
 		);
 
 		// Add filters to detect our shortcodes and enqueue the style when needed.

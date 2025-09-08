@@ -14,7 +14,7 @@ const Flag = ({country, countryNiceName = ''}) => {
   if ( 'string' !== typeof country ) {
  
     return (
-        <span className={'burst-flag-wrapper'}>{countryNiceName}</span>
+        <span className="flex items-center justify-start gap-xxs">{countryNiceName}</span>
     );
   }
 
@@ -30,7 +30,7 @@ const Flag = ({country, countryNiceName = ''}) => {
   country = country.toLowerCase();
   const src = `${burst_settings.plugin_url}src/Pro/assets/flags/4x3/${country}.svg`;
   return (
-      <span className={'burst-flag-wrapper'}><ReactSVG src={src} className={`burst-flag burst-flag-${country}`} title={countryNiceName}/> {countryNiceName}</span>
+      <span className="flex items-center justify-start gap-xxs"><ReactSVG src={src} className={`burst-flag [&_svg]:h-[13px] [&_svg]:w-auto [&_div]:flex burst-flag-${country}`} title={countryNiceName}/> {countryNiceName}</span>
   );
 };
 export default Flag;

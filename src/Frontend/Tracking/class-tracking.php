@@ -52,7 +52,6 @@ class Tracking {
 	public function track_hit( array $data ): string {
 		// validate & sanitize all data.
 		$sanitized_data = $this->prepare_tracking_data( $data );
-
 		if ( $sanitized_data['referrer'] === 'spammer' ) {
 			self::error_log( 'Referrer spam prevented.' );
 			return 'referrer is spam';
@@ -311,9 +310,12 @@ class Tracking {
 			return '';
 		}
 
-		$page_identifier = trim( $page_identifier );
+		if ( ! function_exists( 'get_post_types' ) ) {
+			require_once ABSPATH . 'wp-includes/post.php';
+		}
 
-		$fixed_values = [
+		$page_identifier = trim( $page_identifier );
+		$fixed_values    = [
 			'front-page',
 			'blog-index',
 			'date-archive',
@@ -325,14 +327,15 @@ class Tracking {
 			'author',
 			'search',
 			'category',
-			'singular',
+			'page',
+			'post',
 		];
 
 		if ( in_array( $page_identifier, $fixed_values, true ) ) {
 			return $page_identifier;
 		}
 
-		return '';
+		return sanitize_title( $page_identifier );
 	}
 
 	/**

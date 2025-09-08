@@ -65,7 +65,7 @@ const GoalField = ({ field = {}, fields, goal, value, setGoalValue }) => {
     return (
       <div className={className}>
         {field.parent_label && (
-          <div className="burst-parent-label">
+          <div>
             <label>{field.parent_label}</label>
           </div>
         )}
@@ -104,7 +104,7 @@ const GoalField = ({ field = {}, fields, goal, value, setGoalValue }) => {
 
   if ( 'hook' === field.type ) {
     return (
-      <div className={className}>
+      <div className="flex flex-wrap align-content-stretch gap-xl [&>*]: w-full [&>input[type='text']]:w-full [&>input[type='text']]:box-border">
         <TextField
           disabled={disabled}
           field={field}

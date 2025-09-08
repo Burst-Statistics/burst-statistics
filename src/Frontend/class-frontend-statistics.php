@@ -476,7 +476,7 @@ class Frontend_Statistics {
 						$sanitized_value = absint( $value );
 						break;
 					case 'page_type':
-						$allowed_page_types = apply_filters( 'burst_allowed_page_types', [ 'post' ] );
+						$allowed_page_types = apply_filters( 'burst_allowed_post_types', [ 'post', 'page' ] );
 						$sanitized_value    = in_array( $value, $allowed_page_types, true ) ? $value : 'post';
 						break;
 					case 'device':
@@ -663,7 +663,7 @@ class Frontend_Statistics {
 				'date_end'   => $end_time,
 				'filters'    => [
 					'page_id'   => $post_id,
-					'page_type' => 'post',
+					'page_type' => get_post_type( $post_id ),
 				],
 				'select'     =>
 					[
@@ -712,20 +712,17 @@ class Frontend_Statistics {
 		// Get posts sorted by pageviews.
 		$sql = $wpdb->prepare(
 			"SELECT s.page_id, COUNT(*) as pageview_count
-             FROM {$wpdb->prefix}burst_statistics s
-             JOIN {$wpdb->prefix}posts p ON s.page_id = p.ID
-             WHERE p.post_type = %s
-               AND p.post_status = 'publish'
-               AND s.page_id > 0
-               AND s.time >= %d
-               AND s.time <= %d
-               AND s.page_type = 'post'
+             FROM {$wpdb->prefix}burst_statistics
+             WHERE page_id > 0
+               AND time >= %d
+               AND time <= %d
+               AND page_type = %s
              GROUP BY s.page_id
              ORDER BY pageview_count DESC
              LIMIT %d",
-			$post_type,
 			$start_time,
 			$end_time,
+			$post_type,
 			$count
 		);
 

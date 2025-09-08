@@ -65,16 +65,12 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 		define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 		define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 		define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
-
-			$burst_plugin = explode( '/', BURST_PLUGIN );
-			array_pop( $burst_plugin );
-			$burst_plugin = implode( '/', $burst_plugin );
-			define( 'BURST_VERSION', '2.2.6' );
-			// deprecated constant.
-            //phpcs:ignore
-            define( 'burst_version', BURST_VERSION );
-			define( 'BURST_ITEM_ID', 889 );
-			define( 'BURST_PRODUCT_NAME', 'Burst Pro' );
+		define( 'BURST_VERSION', '2.2.6' );
+		// deprecated constant.
+        //phpcs:ignore
+        define( 'burst_version', BURST_VERSION );
+		define( 'BURST_ITEM_ID', 889 );
+		define( 'BURST_PRODUCT_NAME', 'Burst Pro' );
 	}
 
 	/**

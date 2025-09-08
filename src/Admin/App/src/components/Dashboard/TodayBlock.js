@@ -96,7 +96,7 @@ const TodayBlock = () => {
         title={__( 'Today', 'burst-statistics' )}
         controls={undefined}
       />
-      <BlockContent className={'px-0 py-0'}>
+      <BlockContent className="px-0 py-0">
         <div className="burst-today">
           <div className="px-m py-l grid w-full grid-cols-2 gap-s bg-green-light">
             <Tooltip content={data.live.tooltip}>

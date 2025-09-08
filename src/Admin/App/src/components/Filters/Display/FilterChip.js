@@ -20,7 +20,7 @@ const FilterChip = ({
     className = '', 
     showRemoveButton = true
 }) => {
-    const baseClasses = 'inline-flex items-center gap-2 px-3 py-2 bg-gray-100 border border-gray-400 hover:bg-gray-200 shadow-md rounded-md text-sm transition-all duration-200 hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)] cursor-pointer';
+    const baseClasses = 'inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-200 shadow-sm rounded-md text-sm transition-all duration-200 hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)] cursor-pointer';
     const combinedClasses = `${baseClasses} ${className}`.trim();
 
 

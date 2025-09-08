@@ -246,5 +246,24 @@ trait Helper {
 			}
 		}
 	}
+
+    /**
+     * Format number to a short version (e.g., 1.2M, 3.4B)
+     *
+     * @param int $n The number to format.
+     * @return string The formatted number.
+     */
+    private function format_number_short( int $n ): string {
+        if ( $n >= 1_000_000_000 ) {
+            return round( $n / 1_000_000_000, 1 ) . 'B';
+        }
+        if ( $n >= 1_000_000 ) {
+            return round( $n / 1_000_000, 1 ) . 'M';
+        }
+        if ( $n >= 1_000 ) {
+            return round( $n / 1_000, 1 ) . 'k';
+        }
+        return (string) $n;
+    }
     // phpcs:enable
 }

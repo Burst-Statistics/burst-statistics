@@ -20,7 +20,7 @@ const WorldMapBlock = () => {
         title={__( 'World View', 'burst-statistics' )}
         controls={<WorldMapHeader />}
       />
-      <BlockContent className={'px-0 py-0'}>
+      <BlockContent className="px-0 py-0">
        <WorldMap/>
       </BlockContent>
       </ErrorBoundary>

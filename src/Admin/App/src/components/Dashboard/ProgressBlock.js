@@ -9,22 +9,22 @@ import useTasks from '@//store/useTasksStore';
 import ProgressFooter from '@/components/Dashboard/ProgressFooter';
 
 const LoadingComponent = () => (
-  <div className="burst-task-element">
-    <span className={'burst-task-status burst-loading'}>
+  <div className="flex items-center justify-center gap-m pb-s">
+    <span className="block min-w-[96px] text-center rounded-[15px] px-2 py-1 font-semibold text-xxs burst-loading">
       {__( 'Loading...', 'burst-statistics' )}
     </span>
-    <p className="burst-task-message">
+    <p className="flex-1">
       {__( 'Loading tasks...', 'burst-statistics' )}
     </p>
   </div>
 );
 
 const NoTasksComponent = () => (
-  <div className="burst-task-element">
-    <span className={'burst-task-status burst-completed'}>
+  <div className="flex items-center justify-center gap-m pb-s">
+    <span className="block min-w-[96px] text-center rounded-[15px] px-2 py-1 font-semibold text-xxs burst-completed">
       {__( 'Completed', 'burst-statistics' )}
     </span>
-    <p className="burst-task-message">
+    <p className="flex-1">
       {__( 'No remaining tasks to show', 'burst-statistics' )}
     </p>
   </div>

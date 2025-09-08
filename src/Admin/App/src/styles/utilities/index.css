@@ -1,0 +1,72 @@
+@tailwind utilities;
+
+@layer utilities {
+	.burst-scroll {
+		/* Track */
+		&::-webkit-scrollbar-track {
+			border-radius: 10px;
+			-webkit-box-shadow: inset 0 0 2px rgba(0, 0, 0, 0);
+			background-color: transparent;
+		}
+
+		/* Scrollbar */
+		&::-webkit-scrollbar {
+			width: 8px;
+			background-color: theme(colors.gray.300);
+			cursor: pointer;
+		}
+
+		/* Thumb */
+		&::-webkit-scrollbar-thumb {
+			background-color: theme(colors.gray.400);
+			border-radius: 10px;
+		}
+	}
+
+	.burst-no-marker::-webkit-details-marker {
+		display: none;
+	}
+
+	.burst-no-marker::marker {
+		display: none;
+	}
+
+	.burst-completed,
+	.burst-success {
+		@apply bg-green text-white;
+	}
+
+	.burst-open {
+		@apply bg-yellow;
+	}
+
+	.burst-error {
+		@apply bg-red text-white;
+	}
+
+	.burst-sale{
+		@apply bg-orange text-white;
+	}
+
+	.burst-warning {
+		@apply bg-red text-white;
+	}
+
+	.burst-new{
+		@apply bg-blue text-white;
+	}
+
+	.burst-pro {
+		@apply bg-green text-white;
+	}
+
+	&.burst-loading{
+		@apply bg-white text-white;
+		background-color: var(--rsp-white);
+	}
+
+	/* Used in License block */
+	&.burst-skeleton{
+		@apply bg-gray-400 text-white;
+	}
+}

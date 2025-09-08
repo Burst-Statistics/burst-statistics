@@ -14,7 +14,7 @@ export const Block = memo(({ className = "", children }: BlockProps) => {
       <ErrorBoundary>
     <div
       className={clsx(
-        "col-span-12 flex flex-col rounded-xl bg-white shadow-md relative border border-gray-100",
+        "col-span-12 flex flex-col rounded-xl bg-white shadow-sm relative border border-gray-300",
         className, // later so should override the above
       )}
     >

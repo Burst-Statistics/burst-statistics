@@ -775,11 +775,12 @@ class DB_Upgrade {
 		}
 
 		// get all posts of type post or page that do not have the meta yet.
-		$posts = get_posts(
+		$post_types = apply_filters( 'burst_column_post_types', [ 'post', 'page' ] );
+		$posts      = get_posts(
 			[
-				'post_type'   => [ 'post', 'page' ],
+				'post_type'   => $post_types,
 				'post_status' => 'any',
-				'numberposts' => 1,
+				'numberposts' => 5,
 				'meta_query'  => [
 					[
 						'key'     => 'burst_page_id_upgraded',
@@ -791,19 +792,18 @@ class DB_Upgrade {
 
 		global $wpdb;
 
-		$total_count = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$wpdb->posts} 
-             WHERE post_type IN ('post', 'page') 
-             AND post_status != 'trash'
-             AND ID NOT IN (
-                 SELECT post_id FROM {$wpdb->postmeta} 
-                 WHERE meta_key = 'burst_page_id_upgraded'
-             )"
-		);
-		$done_count  = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$wpdb->postmeta} 
-         WHERE meta_key = 'burst_page_id_upgraded'"
-		);
+		$placeholders = implode( ',', array_fill( 0, count( $post_types ), '%s' ) );
+		$sql          = "SELECT COUNT(*) FROM {$wpdb->posts} 
+                 WHERE post_type IN ($placeholders) 
+                 AND post_status != 'trash'
+                 AND ID NOT IN (
+                     SELECT post_id FROM {$wpdb->postmeta} 
+                     WHERE meta_key = 'burst_page_id_upgraded')";
+		// dynamic placeholder insertion with array_fill.
+        //phpcs:ignore
+        $sql =$wpdb->prepare($sql, ...$post_types);
+		$total_count = (int) $wpdb->get_var( $sql );
+		$done_count  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = 'burst_page_id_upgraded'" );
 
 		// store progress for $selected_item, to show it in the progress notice.
 		$progress = 0 === $total_count ? 1 : $done_count / $total_count;
@@ -813,26 +813,41 @@ class DB_Upgrade {
 			delete_option( 'burst_db_upgrade_add_page_ids' );
 			delete_post_meta_by_key( 'burst_page_id_upgraded' );
 		}
-
+		$permalink_structure = get_option( 'permalink_structure' );
+		$is_plain_permalinks = empty( $permalink_structure );
 		if ( ! empty( $posts ) ) {
 			foreach ( $posts as $post ) {
 				update_post_meta( $post->ID, 'burst_page_id_upgraded', 1 );
-				$post_id  = $post->ID;
-				$page_url = get_permalink( $post_id );
+				$post_id   = $post->ID;
+				$page_url  = get_permalink( $post_id );
+				$post_type = get_post_type( $post_id );
 				// Strip home_url from page_url.
 				$page_url = str_replace( home_url(), '', $page_url );
-
-				$wpdb->query(
-					$wpdb->prepare(
-						"
-                    UPDATE {$wpdb->prefix}burst_statistics 
-                    SET page_id = %d, page_type = 'post' 
-                    WHERE page_url LIKE %s
-                ",
-						$post_id,
-						$wpdb->esc_like( $page_url ) . '%'
-					)
-				);
+				// plain permalinks.
+				if ( $is_plain_permalinks ) {
+					$param_key = ( $post_type === 'page' ) ? "page_id=$post_id" : "p=$post_id";
+					$wpdb->query(
+						$wpdb->prepare(
+							"UPDATE {$wpdb->prefix}burst_statistics 
+                             SET page_id = %d, page_type = %s 
+                             WHERE page_url='/' AND parameters LIKE %s",
+							$post_id,
+							$post_type,
+							$wpdb->esc_like( $param_key ) . '%'
+						)
+					);
+				} else {
+					$wpdb->query(
+						$wpdb->prepare(
+							"UPDATE {$wpdb->prefix}burst_statistics 
+                         SET page_id = %d, page_type = %s 
+                         WHERE page_url = %s",
+							$post_id,
+							$post_type,
+							$page_url,
+						)
+					);
+				}
 			}
 		}
 	}

@@ -95,9 +95,8 @@ const FilterCard: React.FC<FilterCardProps> = ({
                 'focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2',
                 {
                     'border-primary bg-primary-light': isActive,
-                    'border-gray-300 hover:border-gray-400': !isActive && !isDisabled,
+                    'border-gray-300 shadow-sm hover:border-gray-400': !isActive && !isDisabled,
                     'bg-gray-100 border-gray-200': isDisabled,
-                    'hover:shadow-md': !isDisabled,
                     'bg-gray-300 opacity-90': config.coming_soon
                 }
             )}

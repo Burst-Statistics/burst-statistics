@@ -210,19 +210,6 @@ a.burst-button, button.burst-button, input.burst-button {
       box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.3);
     }
   }
-
-  &--pro {
-    background: var(--rsp-brand-primary);
-    color: var(--rsp-text-color-white);
-    border: 1px solid var(--rsp-brand-primary-dark);
-
-    &:hover {
-      background: var(--rsp-brand-primary-dark);
-      color: var(--button-secondary-bg);
-      border-color: var(--rsp-brand-primary-darker);
-      box-shadow: 0 0 0 3px var(--rsp-brand-primary-light);
-    }
-  }
 }
 
 .burst-button-icon {

@@ -1,0 +1,46 @@
+@import "./buttons.css";
+@import "./date-range.css";
+
+@tailwind components;
+
+@layer components {
+	.burst-indeterminate {
+		@apply appearance-none relative bg-white border border-gray-300;
+	}
+
+	.burst-indeterminate::after {
+		content: '';
+		@apply absolute bg-black w-2 h-0.5 top-1/2 left-1/2;
+		transform: translate(-50%, -50%); /* keep as raw CSS */
+	}
+
+	.burst-block {
+		@apply bg-primary-lightest shadow-rsp rounded-m;
+	}
+
+	.burst-block-padding {
+		@apply px-l py-m max-m:px-s max-m:py-xs;
+	}
+
+	.burst-block-block-padding {
+		@apply py-m max-m:py-xs;
+	}
+
+	.burst-inline-block-padding {
+		@apply px-l max-m:px-s;
+	}
+
+	.rdt_TableHeadRow,
+	.rdt_TableRow {
+		@apply burst-inline-block-padding;
+	}
+
+	.rdt_TableCol,
+	.rdt_TableCell {
+		@apply pl-0 pr-0;
+	}
+
+	.rdt_Pagination select + svg {
+		@apply hidden;
+	}
+}

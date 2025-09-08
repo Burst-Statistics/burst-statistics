@@ -1,5 +1,5 @@
 import DashboardWidget from './components/DashboardWidget/DashboardWidget';
-import '../../../../assets/css/variables.scss';
+import './variables.scss';
 
 import {
     QueryClient,

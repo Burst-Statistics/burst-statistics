@@ -57,10 +57,8 @@ const InsightsGraph = ({data, loading}) => {
     }
   }), []);
 
-  const loadingClass = loading ? 'burst-loading' : '';
-
   return (
-      <Line className={`burst-loading-container ${loadingClass}`} options={options} data={data} />
+      <Line options={options} data={data} />
   );
 };
 

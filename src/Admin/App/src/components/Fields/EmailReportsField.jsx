@@ -178,7 +178,7 @@ const EmailReportsField = forwardRef(
           <FieldWrapper
             label="Add emails to receive weekly or monthly reports"
             error={emailError}
-            className={'justify-start'}
+            className="justify-start"
           >
             <TextInput
               name={inputId}
@@ -194,7 +194,7 @@ const EmailReportsField = forwardRef(
             <ButtonInput
               onClick={handleAddEmail}
               btnVariant="tertiary"
-              className={'mt-2'}
+              className="mt-2"
               type="button"
             >
               {__( 'Add to list', 'burst-statistics' )}

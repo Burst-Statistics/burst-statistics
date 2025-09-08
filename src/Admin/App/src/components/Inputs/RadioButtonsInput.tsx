@@ -61,7 +61,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
           const isSelected = option.type === value;
           
           return (
-            <div className="burst-radio-buttons__list__item" key={optionId}>
+            <div className="w-full bg-gray-200 rounded-m" key={optionId}>
               <input
                 type="radio"
                 checked={isSelected}
@@ -72,12 +72,12 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
                 onChange={(e) => {
                   onChange(e.target.value);
                 }}
-                className="sr-only"
+                className="sr-only opacity-0 absolute"
               />
               <label 
                 htmlFor={optionId}
                 className={clsx(
-                  'flex items-start space-x-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer',
+                  'flex gap-xs m-[1px] items-start space-x-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer',
                   'focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2',
                   {
                     'border-primary bg-primary-light': isSelected,
@@ -120,7 +120,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
                     <>
                       <div className="w-px bg-gray-400 mx-3 h-5"></div>
                       <p className={clsx(
-                        'text-sm transition-colors',
+                        'text-sm transition-colors truncate',
                         {
                           'text-gray-600': isSelected,
                           'text-gray-500': !isSelected,

@@ -49,7 +49,7 @@ export default function EditableTextField({ value, id, onChange }) {
     setIsEditing( true );
   }
   return (
-    <div className={'burst-click-to-edit'}>
+    <div>
       {isEditing ? (
         <input
           type="text"
@@ -62,7 +62,7 @@ export default function EditableTextField({ value, id, onChange }) {
       ) : (
         <Tooltip content={__( 'Click to edit', 'burst-statistics' )}>
           <h5
-            className="burst-tooltip-clicktoedit"
+            className="min-w-[150px] font-semibold inline-block burst-tooltip-clicktoedit"
             tabIndex="0"
             onClick={handleClick}
             onFocus={handleFocus}
