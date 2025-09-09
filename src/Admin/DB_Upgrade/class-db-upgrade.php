@@ -160,6 +160,7 @@ class DB_Upgrade {
 		if ( $do_upgrade ) {
 			\Burst\burst_loader()->admin->tasks->schedule_task_validation();
 		}
+        self::error_log("Upgrade to run now: $do_upgrade");
 		// only one upgrade at a time.
 		if ( 'bounces' === $do_upgrade ) {
 			$this->upgrade_bounces();
