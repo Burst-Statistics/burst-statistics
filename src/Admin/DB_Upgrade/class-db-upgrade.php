@@ -151,7 +151,7 @@ class DB_Upgrade {
 			// log all upgrades that still need to be done.
 			foreach ( $db_upgrades as $upgrade ) {
 				if ( get_option( "burst_db_upgrade_$upgrade" ) ) {
-					self::error_log( "Upgrade $upgrade still needs to be done." );
+					self::error_log( "Upgrade $upgrade still needs to be done. (logging branch)." );
 				}
 			}
 		}
