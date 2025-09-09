@@ -66,7 +66,7 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 			$burst_uid = isset( $_COOKIE['burst_uid'] ) ? \Burst\burst_loader()->frontend->tracking->sanitize_uid( $_COOKIE['burst_uid'] ) : false;
 			if ( ! $burst_uid ) {
 				// try fingerprint from session.
-				$burst_uid = \Burst\burst_loader()->tracking->get_fingerprint_from_session();
+                $burst_uid = \Burst\burst_loader()->frontend->tracking->get_fingerprint_from_session();
 			}
 
 			// we assume there has at least been one interaction clientside, so there should be a uid.
