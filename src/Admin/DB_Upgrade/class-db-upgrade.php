@@ -536,8 +536,10 @@ class DB_Upgrade {
 	 * Upgrade statistics table to use lookup tables instead.
 	 */
 	private function create_lookup_tables(): void {
+        self::error_log( "run create_lookup_tables " );
 		if ( ! $this->has_admin_access() ) {
-			return;
+            self::error_log( "exit create_lookup_tables, insufficient privileges " );
+            return;
 		}
 		global $wpdb;
 		$items = [ 'device', 'browser', 'browser_version', 'platform' ];
@@ -545,7 +547,9 @@ class DB_Upgrade {
 		$selected_item = false;
 		foreach ( $items as $item ) {
 			$table = $item . 's';
-			// check if table exists.
+            self::error_log( "Check if $table should be created " );
+
+            // check if table exists.
 			if ( ! $this->table_exists( 'burst_' . $table ) ) {
 				self::error_log( "required table $table does not exist" );
 				return;
@@ -562,7 +566,9 @@ class DB_Upgrade {
 		}
 
 		if ( $selected_item ) {
-			// check if the $selected_item column exists in the wp_burst_statistics table.
+            self::error_log( "found $selected_item to create, check if it exists already " );
+
+            // check if the $selected_item column exists in the wp_burst_statistics table.
 			if ( ! $this->column_exists( 'burst_statistics', $selected_item ) ) {
 				self::error_log( "$selected_item does not exist as a column in the burst_statistics table. It was already migrated" );
 				// already dropped, so mark this one as completed.
@@ -575,15 +581,19 @@ class DB_Upgrade {
 					! get_option( 'burst_db_upgrade_upgrade_lookup_tables_platform' ) &&
 					! get_option( 'burst_db_upgrade_upgrade_lookup_tables_device' )
 				) {
-					delete_option( 'burst_db_upgrade_create_lookup_tables' );
+                    self::error_log( "all lookup tables created, clear upgrade properties" );
+
+                    delete_option( 'burst_db_upgrade_create_lookup_tables' );
 					delete_option( 'burst_db_upgrade_init_lookup_ids' );
 					delete_option( 'burst_db_upgrade_upgrade_lookup_tables' );
 					delete_option( 'burst_db_upgrade_upgrade_lookup_tables_drop_columns' );
 				} else {
-					self::error_log( 'not all look up tables have been migrated yet.' );
+					self::error_log( 'not all lookup tables have been migrated yet.' );
 				}
 				return;
-			}
+			} else {
+                self::error_log( "column $selected_item still exists in the stats table, continue to migrate it to a separate table" );
+            }
 
 			$sql = "INSERT INTO {$wpdb->prefix}burst_{$selected_item}s (name) SELECT DISTINCT $selected_item FROM {$wpdb->prefix}burst_statistics
                     WHERE $selected_item IS NOT NULL AND
@@ -591,7 +601,8 @@ class DB_Upgrade {
                         SELECT name
                         FROM {$wpdb->prefix}burst_{$selected_item}s
                     );";
-			$wpdb->query( $sql );
+            self::error_log("run upgrade query $sql");
+            $wpdb->query( $sql );
 			delete_option( "burst_db_upgrade_create_lookup_tables_$selected_item" );
 		} else {
 			self::error_log( 'no item to upgrade found' );
@@ -602,19 +613,25 @@ class DB_Upgrade {
 		foreach ( $items as $item ) {
 			// check if table is updated with data yet.
 			if ( ! get_option( "burst_db_upgrade_create_lookup_tables_$item" ) ) {
-				continue;
+                self::error_log( "item $item was already completed" );
+
+                continue;
 			}
-			$missing_items[] = $item;
+            self::error_log( "still missing item $item" );
+
+            $missing_items[] = $item;
 		}
 
 		// stop upgrading if all have been completed.
 		if ( count( $missing_items ) === 0 ) {
+            self::error_log( "no items to upgrade found" );
 			delete_option( 'burst_db_upgrade_create_lookup_tables' );
 		} else {
             //phpcs:ignore
 			self::error_log( 'missing items in create_lookup_tables: ' . print_r( $missing_items, true ) );
 		}
-	}
+        self::error_log( "Finished run create lookup_tables" );
+    }
 
 	/**
 	 * To reliably be able to check if the upgrade is completed, we set an initial bogus value for the lookup id's.
