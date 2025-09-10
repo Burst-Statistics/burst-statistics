@@ -215,6 +215,9 @@ class Upgrade {
 		}
 
 		do_action( 'burst_upgrade_after', $prev_version );
+
+		// ensure that we schedule at least one database upgrade.
+		wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'burst_run_database_upgrade_single_event' );
 		update_option( 'burst-current-version', $new_version );
 	}
 
