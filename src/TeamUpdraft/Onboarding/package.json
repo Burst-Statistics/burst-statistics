@@ -1,5 +1,5 @@
 {
-    "name": "burst-onboarding",
+    "name": "@burst-statistics/burst-onboarding",
     "version": "1.0.0",
     "description": "Team Updraft Onboarding App",
     "scripts": {

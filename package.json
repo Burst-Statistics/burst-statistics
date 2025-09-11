@@ -1,6 +1,6 @@
 {
-  "name": "burst-statistics",
-  "version": "2.0",
+  "name": "@burst-statistics/burst-statistics",
+  "version": "1.0.0",
   "description": "Burst Statistics is a privacy-friendly analytics tool for Wordpress",
   "main": "index.js",
   "scripts": {

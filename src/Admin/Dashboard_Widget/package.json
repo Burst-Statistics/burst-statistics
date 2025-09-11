@@ -1,5 +1,5 @@
 {
-  "name": "burst-widget",
+  "name": "@burst-statistics/burst-widget",
   "version": "1.0.0",
   "description": "separate widget for the dashboard",
   "main": "index.js",
