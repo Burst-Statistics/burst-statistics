@@ -1,5 +1,5 @@
 {
-    "name": "teamupdraft-other-plugins",
+    "name": "@burst-statistics/teamupdraft-other-plugins",
     "version": "1.0.0",
     "description": "Burst Statistics Other Plugins App",
     "scripts": {
