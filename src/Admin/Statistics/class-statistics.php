@@ -51,9 +51,11 @@ class Statistics {
 			);
 		}
 
-		$wpdb->query(
-			"DELETE FROM {$wpdb->prefix}burst_parameters WHERE parameter LIKE '%burst_test_hit%' OR parameter LIKE '%burst_nextpage%'"
-		);
+        if ( $this->table_exists( 'burst_parameters') ) {
+            $wpdb->query(
+                "DELETE FROM {$wpdb->prefix}burst_parameters WHERE parameter LIKE '%burst_test_hit%' OR parameter LIKE '%burst_nextpage%'"
+            );
+        }
 	}
 
 	/**
