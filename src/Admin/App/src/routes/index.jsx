@@ -1,5 +1,5 @@
 import {createFileRoute} from '@tanstack/react-router';
-import ProgressBlock from '@/components/Dashboard/ProgressBlock';
+import OverviewBlock from '@/components/Dashboard/OverviewBlock';
 import TodayBlock from '@/components/Dashboard/TodayBlock';
 import GoalsBlock from '@/components/Dashboard/GoalsBlock';
 import TipsTricksBlock from '@/components/Dashboard/TipsTricksBlock';
@@ -12,11 +12,11 @@ export const Route = createFileRoute( '/' )({
 function Dashboard() {
   return (
       <>
-        <ProgressBlock/>
-        <TodayBlock/>
-        <GoalsBlock/>
-        <TipsTricksBlock/>
-        <OtherPluginsBlock/>
+        <OverviewBlock />
+        <TodayBlock />
+        <GoalsBlock />
+        <TipsTricksBlock />
+        <OtherPluginsBlock />
       </>
   );
 }

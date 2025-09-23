@@ -58,6 +58,7 @@ class Admin {
 		add_action( 'burst_after_updated_goals', [ $this, 'create_js_file' ], 10, 1 );
 		add_action( 'burst_after_saved_fields', [ $this, 'create_js_file' ], 10, 1 );
 		add_action( 'burst_daily', [ $this, 'create_js_file' ] );
+		add_action( 'burst_daily', [ $this, 'detect_malicious_data' ] );
 		add_action( 'wp_initialize_site', [ $this, 'create_js_file' ], 10, 1 );
 		add_action( 'admin_init', [ $this, 'activation' ] );
 		add_action( 'burst_run_database_upgrade_single_event', [ $this, 'run_table_init_hook' ], 10, 1 );
@@ -70,7 +71,7 @@ class Admin {
 		add_action( 'burst_daily', [ $this, 'validate_tasks' ] );
 		add_action( 'burst_validate_tasks', [ $this, 'validate_tasks' ] );
 		add_action( 'plugins_loaded', [ $this, 'init_wpcli' ] );
-		add_action( 'burst_daily', [ $this, 'clean_malicious_data' ] );
+		add_action( 'burst_scheduled_task_fix', [ $this, 'clean_malicious_data' ] );
 		add_action( 'burst_daily', [ $this, 'test_database_tables' ] );
 		add_action( 'burst_attempt_database_fix', [ $this, 'test_database_tables' ] );
 		add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
@@ -106,6 +107,9 @@ class Admin {
 		$debug = new Debug();
 		$debug->init();
 
+		$milestones = new Milestones();
+		$milestones->init();
+
 		if ( defined( 'BURST_BLUEPRINT' ) && ! get_option( 'burst_demo_data_installed' ) ) {
 			add_action( 'init', [ $this, 'install_demo_data' ] );
 			update_option( 'burst_demo_data_installed', true, false );
@@ -114,8 +118,6 @@ class Admin {
 
 	/**
 	 * Run a daily check if all database tables exist.
-	 *
-	 * @return void
 	 */
 	public function test_database_tables(): void {
 		$table_names    = $this->get_table_list();
@@ -177,75 +179,159 @@ class Admin {
 	}
 
 	/**
+	 * Check if there is anomalous data in the past 24 hours, over 1000 requests from one visitor.
+	 */
+	public function detect_malicious_data(): void {
+		if ( ! $this->user_can_manage() ) {
+			return;
+		}
+		$interval_days = (int) apply_filters( 'burst_data_cleanup_interval_days', 1 );
+		$data_treshold = (int) apply_filters( 'burst_data_cleanup_treshold', 1000 );
+		global $wpdb;
+
+		$sql = "
+            SELECT uid, COUNT(*) as record_count
+            FROM {$wpdb->prefix}burst_statistics
+            WHERE time > UNIX_TIMESTAMP(NOW() - INTERVAL {$interval_days} DAY)
+            GROUP BY uid
+            HAVING COUNT(*) > {$data_treshold} LIMIT 1;
+        ";
+
+		$uids = $wpdb->get_results( $sql, ARRAY_A );
+		if ( ! empty( $uids ) ) {
+
+			$uids = array_map(
+				function ( $item ) {
+					return $item['uid'];
+				},
+				$uids
+			);
+			// get first $uid.
+			$uid = reset( $uids );
+			update_option( 'burst_cleanup_uid', $uid, false );
+			$total_hits   = array_sum( wp_list_pluck( $uids, 'record_count' ) );
+			$average_hits = round( $total_hits / count( $uids ) );
+			update_option( 'burst_cleanup_uid_visits', $average_hits, false );
+			update_option( 'burst_cleanup_data_detected_time', time(), false );
+		} else {
+			// if this notice is over two weeks old, clear it.
+			$detected_time     = (int) get_option( 'burst_cleanup_data_detected_time', time() );
+			$max_age_threshold = time() - ( 14 * DAY_IN_SECONDS );
+			if ( $detected_time < $max_age_threshold ) {
+				delete_option( 'burst_cleanup_data_detected_time' );
+				delete_option( 'burst_clean_data' );
+				delete_option( 'burst_cleanup_uid' );
+				delete_option( 'burst_cleanup_uid_visits' );
+			}
+		}
+	}
+
+	/**
 	 * On a daily basis, cleanup suspiciously high amounts of data.
 	 *
 	 * @hooked burst_daily
-	 * @return void
 	 */
 	public function clean_malicious_data(): void {
 		if ( ! $this->user_can_manage() ) {
 			return;
 		}
 
-		$interval_days = (int) apply_filters( 'burst_data_cleanup_interval_days', 1 );
-		$data_treshold = (int) apply_filters( 'burst_data_cleanup_treshold', 1000 );
+		// only when explicitly triggerred.
+		if ( ! get_option( 'burst_clean_data' ) ) {
+			return;
+		}
+
+		$uid = get_option( 'burst_cleanup_uid' );
+		if ( strlen( $uid ) < 10 ) {
+			self::error_log( 'Suspicious UID format, cleanup aborted: ' . $uid );
+			return;
+		}
+
+		$detected_time     = (int) get_option( 'burst_cleanup_data_detected_time', time() );
+		$max_age_threshold = time() - ( 14 * DAY_IN_SECONDS );
+
+		delete_option( 'burst_cleanup_data_detected_time' );
+		delete_option( 'burst_clean_data' );
+		delete_option( 'burst_cleanup_uid' );
+		delete_option( 'burst_cleanup_uid_visits' );
+
+		if ( $detected_time < $max_age_threshold ) {
+			return;
+		}
+
+		if ( empty( $uid ) ) {
+			return;
+		}
+
+		$interval_days     = (int) apply_filters( 'burst_data_cleanup_interval_days', 1 );
+		$cleanup_threshold = $detected_time - ( $interval_days * DAY_IN_SECONDS );
 
 		global $wpdb;
+		$wpdb->query( 'START TRANSACTION' );
 
-		$sql = "
-        DELETE FROM {$wpdb->prefix}burst_goal_statistics
-        WHERE statistic_id IN (
-            SELECT s.ID
-            FROM {$wpdb->prefix}burst_statistics s
-            JOIN (
-                SELECT uid
-                FROM {$wpdb->prefix}burst_statistics
-                WHERE time > UNIX_TIMESTAMP(NOW() - INTERVAL {$interval_days} DAY)
-                GROUP BY uid
-                HAVING COUNT(*) > {$data_treshold}
-            ) AS filtered_uids ON s.uid = filtered_uids.uid
-        )
-    ";
-		$wpdb->query( $sql );
+		try {
+			// 1. Get statistic IDs first.
+			$statistic_ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"
+            SELECT ID
+            FROM {$wpdb->prefix}burst_statistics
+            WHERE uid = %s
+            AND time >= %d
+        ",
+					$uid,
+					$cleanup_threshold
+				)
+			);
 
-		$sql = "
-        DELETE FROM {$wpdb->prefix}burst_sessions
-        WHERE ID IN (
-            SELECT DISTINCT s.session_id
-            FROM {$wpdb->prefix}burst_statistics s
-            JOIN (
-                SELECT uid
-                FROM {$wpdb->prefix}burst_statistics
-                WHERE time > UNIX_TIMESTAMP(NOW() - INTERVAL {$interval_days} DAY)
-                GROUP BY uid
-                HAVING COUNT(*) > {$data_treshold}
-            ) AS filtered_uids ON s.uid = filtered_uids.uid
-            WHERE s.session_id IS NOT NULL
-        )
-    ";
-		$wpdb->query( $sql );
+			// 2. Delete goal statistics.
+			if ( ! empty( $statistic_ids ) ) {
+				$placeholders = implode( ',', array_fill( 0, count( $statistic_ids ), '%d' ) );
+				$sql          = "DELETE FROM {$wpdb->prefix}burst_goal_statistics WHERE statistic_id IN ($placeholders)";
+				$wpdb->query( $wpdb->prepare( $sql, ...$statistic_ids ) );
+			}
 
-		$sql           = "
-        DELETE FROM {$wpdb->prefix}burst_statistics
-        WHERE uid IN (
-            SELECT uid FROM (
-                SELECT uid
-                FROM {$wpdb->prefix}burst_statistics
-                WHERE time > UNIX_TIMESTAMP(NOW() - INTERVAL {$interval_days} DAY)
-                GROUP BY uid
-                HAVING COUNT(*) > {$data_treshold}
-            ) AS filtered_uids
-        )
-    ";
-		$removed_count = $wpdb->query( $sql );
+			// 3. Get session IDs first.
+			$session_ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"
+            SELECT DISTINCT session_id
+            FROM {$wpdb->prefix}burst_statistics
+            WHERE uid = %s
+            AND time >= %d
+            AND session_id IS NOT NULL
+        ",
+					$uid,
+					$cleanup_threshold
+				)
+			);
 
-		if ( $removed_count > 0 ) {
-			update_option( 'burst_removed_malicious_data_count', $removed_count );
-		} else {
-			delete_option( 'burst_removed_malicious_data_count' );
+			// 4. Delete sessions.
+			if ( ! empty( $session_ids ) ) {
+				$placeholders = implode( ',', array_fill( 0, count( $session_ids ), '%d' ) );
+				$sql          = "DELETE FROM {$wpdb->prefix}burst_sessions WHERE ID IN ($placeholders)";
+				$wpdb->query( $wpdb->prepare( $sql, ...$session_ids ) );
+			}
+
+			// 5. Delete statistics.
+			$sql = $wpdb->prepare(
+				"
+            DELETE FROM {$wpdb->prefix}burst_statistics
+            WHERE uid = %s
+            AND time >= %d
+        ",
+				$uid,
+				$cleanup_threshold
+			);
+			$wpdb->query( $sql );
+
+			$wpdb->query( 'COMMIT' );
+
+		} catch ( \Exception $e ) {
+			$wpdb->query( 'ROLLBACK' );
+			self::error_log( 'Rolled back data cleanup: ' . $e->getMessage() );
 		}
 	}
-
 
 	/**
 	 * Once a day, check if any tasks need to be added again
@@ -519,7 +605,7 @@ class Admin {
 
 		define( 'BURST_INSTALL_TABLES_RUNNING', true );
 
-		if ( get_transient( 'burst_running_upgrade' ) ) {
+		if ( get_transient( 'burst_running_upgrade_process' ) ) {
 			return;
 		}
 
@@ -528,7 +614,7 @@ class Admin {
 			return;
 		}
 
-		set_transient( 'burst_running_upgrade', true, 30 );
+		set_transient( 'burst_running_upgrade_process', true, 30 );
 		do_action( 'burst_install_tables' );
 		// we need to run table creation across subsites as well.
 		if ( is_multisite() ) {
@@ -541,6 +627,7 @@ class Admin {
 				}
 			}
 		}
+		delete_transient( 'burst_running_upgrade_process' );
 	}
 
 	/**
@@ -835,16 +922,16 @@ class Admin {
 			jQuery(document).ready(function($) {
 				$('#burst_close_tb_window').click(tb_remove);
                 <?php //phpcs:ignore ?>
-				$(document).on('click', '#deactivate-<?php echo $slug; ?>', function(e) {
+                $(document).on('click', '#deactivate-<?php echo $slug; ?>', function(e) {
 					e.preventDefault();
 					tb_show('', '#TB_inline?height=420&inlineId=deactivate_and_delete_data', 'null');
 					$('#TB_window').addClass('burst-deactivation-popup');
 
 				});
                 <?php //phpcs:ignore ?>
-				if ($('#deactivate-<?php echo $slug; ?>').length) {
+                if ($('#deactivate-<?php echo $slug; ?>').length) {
                     <?php //phpcs:ignore ?>
-					$('.burst-button-deactivate').attr('href', $('#deactivate-<?php echo $slug; ?>').attr('href'));
+                    $('.burst-button-deactivate').attr('href', $('#deactivate-<?php echo $slug; ?>').attr('href'));
 				}
 
 			});
@@ -895,19 +982,19 @@ class Admin {
 
 		// check nonce. ignore phpcs: no data is stored here. only verified.
         //phpcs:ignore
-		if ( ! isset( $_GET['token'] ) || ( ! $this->verify_nonce( $_GET['token'], 'burst_deactivate_plugin' ) ) ) {
+        if ( ! isset( $_GET['token'] ) || ( ! $this->verify_nonce( $_GET['token'], 'burst_deactivate_plugin' ) ) ) {
 			return;
 		}
 
 		// check for action.
         //phpcs:ignore
-		if ( isset( $_GET['action'] ) && $_GET['action'] === 'uninstall_delete_all_data' ) {
+        if ( isset( $_GET['action'] ) && $_GET['action'] === 'uninstall_delete_all_data' ) {
 			define( 'BURST_NO_UPGRADE', true );
 			define( 'BURST_UNINSTALLING', true );
 			\Burst\burst_clear_scheduled_hooks();
 
             //phpcs:ignore
-			$networkwide = isset( $_GET['networkwide'] ) && $_GET['networkwide'] === '1';
+            $networkwide = isset( $_GET['networkwide'] ) && $_GET['networkwide'] === '1';
 			if ( $networkwide && is_multisite() ) {
 				$sites = get_sites();
 				if ( count( $sites ) > 0 ) {
@@ -982,14 +1069,10 @@ class Admin {
 			'burst_all_tables',
 			[
 				'burst_statistics',
-				'burst_campaigns',
-				'burst_locations',
 				'burst_sessions',
 				'burst_goals',
 				'burst_goal_statistics',
 				'burst_summary',
-				'burst_archived_months',
-				'burst_parameters',
 				'burst_browsers',
 				'burst_browser_versions',
 				'burst_platforms',

@@ -45,7 +45,7 @@ const InsightsBlock = () => {
     <Block className="row-span-1 lg:col-span-12 xl:col-span-6 min-h-96">
       <BlockHeading
         title={__( 'Insights', 'burst-statistics' )}
-        className='border-b border-gray-300'
+        className='border-b border-gray-200'
         controls={
           <InsightsHeader selectedMetrics={metrics} filters={filters} />
         }

@@ -182,6 +182,16 @@ const keyFrames = {
 		'0%': { transform: 'scaleX(1)' },
 		'100%': { transform: 'scaleX(0)' },
 	},
+	scrollIndicator: {
+		'0%': { transform: 'translateX(0)' },
+		'50%': {
+			transform: 'translateX(-60px)',
+			zIndex: '0',
+		},
+		'100%': {
+			transform: 'translateX(0)',
+		},
+	},
 }
 
 const animations = {
@@ -211,6 +221,7 @@ const animations = {
 	toastZoomIn: 'toastZoomIn 0.5s ease both',
 	toastZoomOut: 'toastZoomOut 0.5s ease both',
 	toastTrackProgress: 'toastTrackProgress 1s linear forwards',
+	scrollIndicator: 'scrollIndicator 1.5s ease-in-out',
 }
 
 export {

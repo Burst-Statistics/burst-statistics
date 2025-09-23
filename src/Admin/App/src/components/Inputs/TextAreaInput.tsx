@@ -3,13 +3,14 @@ import { forwardRef, TextareaHTMLAttributes } from "react";
 interface TextAreaInputProps
   extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   rows?: number;
+  recommended?: boolean; // Add custom props to the interface
 }
 
 /**
  * Styled textarea input component
  */
 const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(
-  ({ className, rows = 4, ...props }, ref) => {
+  ({ className, rows = 4, recommended, ...props }, ref) => {
     return (
       <textarea
         ref={ref}

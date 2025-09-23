@@ -265,5 +265,25 @@ trait Helper {
         }
         return (string) $n;
     }
+
+	/**
+	 * Get the checkout page ID, with caching
+	 *
+	 * @return int The checkout page ID.
+	 */
+	public function burst_checkout_page_id(): int {
+		$cache_key = 'burst_checkout_page_id';
+		$page_id   = get_transient( $cache_key );
+
+		if ( false === $page_id ) {
+			// Default to -1, allow plugins to filter this
+			$page_id = apply_filters( 'burst_checkout_page_id', -1 );
+
+			// Cache for 24 hours
+			set_transient( $cache_key, $page_id, DAY_IN_SECONDS );
+		}
+
+		return (int) $page_id;
+	}
     // phpcs:enable
 }

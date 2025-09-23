@@ -7,9 +7,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! class_exists( 'Email_Block' ) ) {
 	class Email_Block {
-		public $title   = '';
-		public $message = '';
-		public $url     = '';
+		public string $title   = '';
+		public string $message = '';
+		public string $url     = '';
 
 		/**
 		 * Get the email block data.

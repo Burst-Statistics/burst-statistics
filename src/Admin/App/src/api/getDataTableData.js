@@ -11,7 +11,6 @@ import { memo } from 'react';
 import { safeDecodeURI } from '@/utils/lib';
 import { __ } from '@wordpress/i18n';
 import Icon from "@/utils/Icon";
-import Tooltip from "@/components/Common/Tooltip";
 
 // Column format constants
 const FORMATS = {

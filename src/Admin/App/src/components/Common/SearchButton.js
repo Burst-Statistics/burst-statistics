@@ -64,7 +64,7 @@ const SearchButton = ({
     <div className={`relative ${className}`}>
       {!shouldBeOpen ? (
         <div
-          className="bg-gray-300 focus:ring-blue-500 cursor-pointer rounded-full p-3 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2"
+          className="bg-gray-200 border border-gray-300 focus:ring-blue-500 cursor-pointer rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2"
           onClick={toggleSearch}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -82,7 +82,7 @@ const SearchButton = ({
         <div className="relative">
           <input
             ref={searchInputRef}
-            className="bg-white border border-gray-300 rounded-full px-4 py-2 pr-10 min-w-48 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+            className="bg-white border border-gray-300 rounded-full px-2.5 py-1 pr-10 min-w-48 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none focus:shadow-sm"
             type="text"
             placeholder={placeholder}
             value={value}

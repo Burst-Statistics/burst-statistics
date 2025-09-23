@@ -162,7 +162,7 @@ class Posts {
 	/**
 	 * Cleanup filters after ordering.
 	 */
-	public function cleanup_pageviews_filters( array $posts, \WP_Query $query ) {
+	public function cleanup_pageviews_filters( array $posts, \WP_Query $query ): array {
 		if ( 'pageviews' === $query->get( 'orderby' ) ) {
 			remove_filter( 'posts_join', [ $this, 'join_pageviews_table' ] );
 			remove_filter( 'posts_fields', [ $this, 'select_pageviews_field' ] );

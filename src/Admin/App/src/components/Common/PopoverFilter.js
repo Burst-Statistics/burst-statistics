@@ -155,7 +155,7 @@ const PopoverFilter = ({
         // Checkbox mode for multiple selection
         Object.keys( options ).map( ( value ) => {
           return (
-            <div key={value} className="flex items-center gap-3 py-1">
+            <div key={value} className="flex items-center gap-2.5 py-1">
               <Checkbox.Root
                 className="focus:ring-blue-500 flex h-4 w-4 items-center justify-center rounded border-2 border-gray-300 bg-white transition-colors hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2"
                 id={id + '_' + value}

@@ -10,8 +10,8 @@ class Review {
 	use Admin_Helper;
 	use Helper;
 
-	private $visitors     = 0;
-	private $min_visitors = 20;
+	private int $visitors     = 0;
+	private int $min_visitors = 20;
 	/**
 	 * Constructor
 	 */
@@ -55,8 +55,9 @@ class Review {
 		$five_weeks_ago  = strtotime( '-5 weeks' );
 		// between 4 and 6 weeks ago, check if we reached 200 visitors. If so show the notice. If longer than 6 weeks, always show the notice.
 		if ( $activation_time < $four_weeks_ago ) {
-			$this->visitors = get_transient( 'burst_review_visitors' );
-			if ( ! $this->visitors ) {
+			$this->visitors = (int) get_transient( 'burst_review_visitors' );
+
+			if ( $this->visitors === 0 ) {
 				$data           = \Burst\burst_loader()->admin->statistics->get_data( [ 'visitors' ], 0, time(), [] );
 				$this->visitors = $data['visitors'];
 				set_transient( 'burst_review_visitors', $this->visitors, DAY_IN_SECONDS );

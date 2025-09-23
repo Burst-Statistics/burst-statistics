@@ -11,33 +11,29 @@ class Goal {
 	use Helper;
 	use Sanitize;
 
-	public $id;
-	public $title             = '';
-	public $type              = 'clicks';
-	public $status            = 'inactive';
-	public $server_side       = false;
-	public $url               = '*';
-	public $conversion_metric = 'visitors';
-	public $date_start;
-	public $date_end;
-	public $date_created;
+	public int $id;
+	public string $title             = '';
+	public string $type              = 'clicks';
+	public string $status            = 'inactive';
+	public bool $server_side         = false;
+	public string $url               = '*';
+	public string $conversion_metric = 'visitors';
+	public int $date_start;
+	public int $date_end;
+	public int $date_created = 0;
 
     //phpcs:ignore
-	public $setup;// deprecated.
+	public ?string $attribute; //deprecated since 2.0.0.
     //phpcs:ignore
-    public $attribute; // deprecated since 2.0.0.
-    //phpcs:ignore
-    public $attribute_value; // deprecated since 2.0.0.
+    public ?string $attribute_value; // deprecated since 2.0.0.
 
 	/**
 	 * Selector, id or class, for the goal.
-	 *
-	 * @var string
 	 */
-	public $selector        = '';
-	public $hook            = '';
-	public $page_or_website = 'website';
-	public $specific_page   = '';
+	public string $selector        = '';
+	public string $hook            = '';
+	public string $page_or_website = 'website';
+	public string $specific_page   = '';
 	/**
 	 * Constructor
 	 */
@@ -57,7 +53,6 @@ class Goal {
 		return false;
 	}
 
-
 	/**
 	 * Set a property value
 	 */
@@ -70,7 +65,7 @@ class Goal {
 	/**
 	 * Get the goal object, with values if an id is provided
 	 */
-	private function get( bool $upgrade = true ): Goal {
+	private function get(): Goal {
 		global $wpdb;
 		$goal = wp_cache_get( 'burst_goal_' . $this->id, 'burst' );
 		if ( ! $goal ) {
@@ -103,14 +98,6 @@ class Goal {
 			// Split url property into two separate properties, depending on * value.
 			$this->page_or_website = $this->url !== '*' ? 'page' : 'website';
 			$this->specific_page   = $this->page_or_website === 'page' ? $this->url : '';
-
-			// Upgrade old structure data, then remove it.
-			$setup = isset( $goal->setup ) ? json_decode( $goal->setup, false ) : null;
-			if ( $upgrade && $setup !== null && isset( $setup->attribute ) && isset( $setup->value ) ) {
-				$this->selector = $setup->attribute === 'id' ? '#' . $setup->value : '.' . $setup->value;
-				$this->setup    = null;
-				$this->save();
-			}
 		}
 		return $this;
 	}
@@ -139,8 +126,8 @@ class Goal {
 		if ( ! isset( $available_goal_types[ $this->type ] ) ) {
 			return false;
 		}
-
-		$this->server_side       = $available_goal_types[ $this->type ]['server_side'] ?? 0;
+		$server_side             = $available_goal_types[ $this->type ]['server_side'] ?? false;
+		$this->server_side       = (bool) $server_side;
 		$this->conversion_metric = $this->sanitize_goal_conversion_metric( $this->conversion_metric );
 
 		// Update start time only if the goal status has changed to active, or if it's a new goal.
@@ -163,7 +150,7 @@ class Goal {
 			'conversion_metric' => $this->conversion_metric,
 			'date_start'        => $this->date_start,
 			'date_end'          => $this->date_end,
-			'date_created'      => (int) $this->date_created,
+			'date_created'      => $this->date_created,
 			'selector'          => sanitize_text_field( $this->selector ),
 			'hook'              => sanitize_text_field( $this->hook ),
 		];
@@ -172,10 +159,6 @@ class Goal {
 
 		// Check if we have an id, and if so, check if this id exists in the database.
 		if ( $this->id > 0 ) {
-			// If legacy property exists, update it so we can clear the contents after saving.
-			if ( $this->has_setup_column() ) {
-				$args['setup'] = $this->setup;
-			}
 			$result  = $wpdb->update( $table_name, $args, [ 'ID' => $this->id ] );
 			$success = $result !== false;
 		} elseif ( $this->can_add_goal() ) {
@@ -192,20 +175,11 @@ class Goal {
 			// Clear cache for this goal.
 			wp_cache_delete( 'burst_goal_' . $this->id, 'burst' );
 			// Prevent loops by ensuring the save (for upgrading) doesn't get called again in the get method.
-			$this->get( false );
+			$this->get();
 			do_action( 'burst_after_save_goals', $this );
 		}
 
 		return $success;
-	}
-
-	/**
-	 * Check if the legacy column setup exists
-	 */
-	private function has_setup_column(): bool {
-		global $wpdb;
-		$table_name = $wpdb->prefix . 'burst_goals';
-		return (bool) $wpdb->get_var( "SHOW COLUMNS FROM $table_name LIKE 'setup'" );
 	}
 
 	/**
@@ -281,7 +255,7 @@ class Goal {
 	/**
 	 * Get the goal types. These are an option list from the goal_fields array.
 	 *
-	 * @return array<int, array{label: string, value: string}>
+	 * @return array<string, array{label: string, value?: string, description?: string, type?: string, icon?: string, server_side?: bool}>
 	 */
 	private function get_available_goal_fields(): array {
 		$fields = \Burst\burst_loader()->admin->app->fields->get_goal_fields();

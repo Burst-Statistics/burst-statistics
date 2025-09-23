@@ -146,5 +146,3 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
         );
     },
 );
-
-;

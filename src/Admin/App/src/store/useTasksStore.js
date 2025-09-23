@@ -25,6 +25,10 @@ const useTasks = create(
     });
     set( state => ({ filteredTasks: filteredTasks }) );
   },
+  fixTask: async( taskId) => {
+    await doAction('fix_task', { task_id: taskId });
+    get().getTasks();
+  },
   getTasks: async() => {
     try {
       const { tasks } = await doAction( 'tasks' );

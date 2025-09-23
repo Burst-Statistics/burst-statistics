@@ -51,8 +51,10 @@ $burst_plugins = [
 $burst_dir            = basename( BURST_PATH );
 $burst_active_plugins = (array) get_option( 'active_plugins', [] );
 if ( is_multisite() ) {
-	$burst_active_plugins += (array) get_site_option( 'active_sitewide_plugins', [] );
+	$burst_network_active_plugins = array_keys( (array) get_site_option( 'active_sitewide_plugins', [] ) );
+	$burst_active_plugins         = array_merge( $burst_active_plugins, $burst_network_active_plugins );
 }
+
 if ( isset( $burst_plugins[ $burst_dir ] ) && ! in_array( $burst_plugins[ $burst_dir ], $burst_active_plugins, true ) ) {
 	return;
 }

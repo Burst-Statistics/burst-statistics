@@ -40,8 +40,8 @@ const GoalSetup = ({
 
   return (
       <div className="w-full bg-gray-100 rounded-m">
-        <details className="rounded-m border border-gray-200">
-          <summary className="burst-no-marker py-xxs px-s grid gap-s items-center list-none [grid-template-columns:26px_1fr_auto_auto_auto]">
+        <details className="rounded-md border border-gray-200">
+          <summary className="burst-no-marker py-1.5 px-2.5 grid gap-3 items-center list-none [grid-template-columns:26px_1fr_auto_auto_auto]">
             <Icon name={
               goal.type && fields[1] && fields[1].options &&
               fields[1].options[goal.type] ?

@@ -241,7 +241,7 @@ return [
 		'id'               => 'archive_after_months',
 		'menu_id'          => 'data',
 		'group_id'         => 'data_archiving',
-		'min'              => 1,
+		'min'              => 12,
 		'type'             => 'number',
 		'label'            => __( 'Retain data for how many months?', 'burst-statistics' ),
 		'disabled'         => false,

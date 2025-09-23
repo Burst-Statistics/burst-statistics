@@ -821,6 +821,10 @@ video {
   max-width: 20%;
 }
 
+#teamupdraft-onboarding .max-w-\[40ch\] {
+  max-width: 40ch;
+}
+
 #teamupdraft-onboarding .max-w-\[700px\] {
   max-width: 700px;
 }
@@ -861,6 +865,10 @@ video {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
+#teamupdraft-onboarding .animate-\[none\] {
+  animation: none;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -877,6 +885,12 @@ video {
 
 #teamupdraft-onboarding .cursor-pointer {
   cursor: pointer;
+}
+
+#teamupdraft-onboarding .select-none {
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
 }
 
 #teamupdraft-onboarding .list-inside {
@@ -1011,6 +1025,11 @@ video {
   border-color: rgb(255 218 74 / var(--tw-border-opacity, 1));
 }
 
+#teamupdraft-onboarding .bg-black {
+  --tw-bg-opacity: 1;
+  background-color: rgb(21 22 21 / var(--tw-bg-opacity, 1));
+}
+
 #teamupdraft-onboarding .bg-black\/50 {
   background-color: rgb(21 22 21 / 0.5);
 }
@@ -1114,6 +1133,10 @@ video {
   --tw-gradient-stops: var(--tw-gradient-from), #FFDA4A var(--tw-gradient-via-position), var(--tw-gradient-to);
 }
 
+#teamupdraft-onboarding .fill-black {
+  fill: #151615;
+}
+
 #teamupdraft-onboarding .p-2 {
   padding: 0.5rem;
 }
@@ -1160,6 +1183,11 @@ video {
 #teamupdraft-onboarding .py-5 {
   padding-top: 1.25rem;
   padding-bottom: 1.25rem;
+}
+
+#teamupdraft-onboarding .py-\[7px\] {
+  padding-top: 7px;
+  padding-bottom: 7px;
 }
 
 #teamupdraft-onboarding .text-center {
@@ -1218,6 +1246,10 @@ video {
 
 #teamupdraft-onboarding .font-semibold {
   font-weight: 600;
+}
+
+#teamupdraft-onboarding .leading-\[1\.5\] {
+  line-height: 1.5;
 }
 
 #teamupdraft-onboarding .leading-relaxed {
@@ -1306,6 +1338,10 @@ video {
 
 #teamupdraft-onboarding .ease-out {
   transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+#teamupdraft-onboarding .will-change-transform {
+  will-change: transform;
 }
 
 /* Custom styles for the onboarding component */

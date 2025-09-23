@@ -3,7 +3,7 @@ import { useFiltersStore } from '@/store/useFiltersStore';
 import useGoalsData from '@/hooks/useGoalsData';
 import { useInsightsStore } from '@/store/useInsightsStore';
 import { useDate } from '@/store/useDateStore';
-import Tooltip from '@/components/Common/Tooltip';
+import HelpTooltip from '@/components/Common/HelpTooltip';
 import Icon from '@/utils/Icon';
 import { __ } from '@wordpress/i18n';
 import { toast } from 'react-toastify';
@@ -199,25 +199,25 @@ const ClickToFilter = ({
       {/* Icons that appear on hover to the right */}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         {/* Filter icon - always show when hoverable */}
-        <Tooltip content={filterTooltip}>
+        <HelpTooltip content={filterTooltip}>
           <div 
             onClick={handleFilterClick}
             className="flex items-center justify-center w-6 h-6 bg-white/90 hover:bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
           >
             <Icon name="filter" size={14} color="black" />
           </div>
-        </Tooltip>
+        </HelpTooltip>
         
         {/* External link icon - only show for URLs */}
         {isExternalLinkable && (
-          <Tooltip content={externalLinkTooltip}>
+          <HelpTooltip content={externalLinkTooltip}>
             <div 
               onClick={handleExternalLinkClick}
               className="flex items-center justify-center w-6 h-6 bg-white/90 hover:bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
             >
               <Icon name="referrers" size={14} color="black" />
             </div>
-          </Tooltip>
+          </HelpTooltip>
         )}
       </div>
     </div>

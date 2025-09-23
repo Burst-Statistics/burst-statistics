@@ -1,5 +1,5 @@
 import Icon from '../../utils/Icon';
-import Tooltip from '@/components/Common/Tooltip';
+import HelpTooltip from '@/components/Common/HelpTooltip';
 
 const ExplanationAndStatsItem = ({
   iconKey,
@@ -19,9 +19,9 @@ const ExplanationAndStatsItem = ({
         <p className="text-sm text-gray">{subtitle}</p>
       </div>
       <div className="text-right">
-        <Tooltip content={tooltipValue} delayDuration={1000}>
+        <HelpTooltip content={tooltipValue} delayDuration={1000}>
           <span className="text-xl font-bold text-black">{value}</span>
-        </Tooltip>
+        </HelpTooltip>
         <p
           className={`text-sm ${'positive' === changeStatus ? 'text-green' : 'text-red'}`}
         >

@@ -178,10 +178,7 @@ const Field = memo(({ setting, control, ...props }) => {
 
     return props.settingsIsUpdating;
   }, [setting.disabled, props.settingsIsUpdating]);
-  // If conditions are not met, don't render the field
-  // if (!conditionsMet) {
-  //   return null;
-  // }
+
   return (
     <ErrorBoundary>
       <Controller

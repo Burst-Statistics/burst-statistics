@@ -1,18 +1,20 @@
 <?php
-defined( 'ABSPATH' ) || die( 'you do not have access to this page!' );
-
-// phpcs:disable
 /**
- * Delete burst_total_pageviews_count meta when duplicating a product
- *
- * @hooked woocommerce_product_duplicate
+ * WooCommerce integration functions.
  */
-function burst_delete_post_pageviews_on_duplicate_product( $duplicate = null ): void {
-	if ( ! $duplicate ) {
-		return;
+
+defined( 'ABSPATH' ) || die();
+
+/**
+ * Add WooCommerce checkout page ID to the burst checkout page ID filter.
+ *
+ * @param int $page_id The current checkout page ID.
+ * @return int The WooCommerce checkout page ID if WooCommerce is active, otherwise the original page ID.
+ */
+function burst_add_woocommerce_checkout_page_id( int $page_id ): int {
+	if ( function_exists( 'wc_get_page_id' ) ) {
+		return wc_get_page_id( 'checkout' );
 	}
-	$id = $duplicate->get_id();
-	delete_post_meta( $id, 'burst_total_pageviews_count' );
+	return $page_id;
 }
-// phpcs:enable
-add_action( 'woocommerce_product_duplicate', 'burst_delete_post_pageviews_on_duplicate_product' );
+add_filter( 'burst_checkout_page_id', 'burst_add_woocommerce_checkout_page_id' );

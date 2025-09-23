@@ -18,6 +18,6 @@ const getLiveGoals = async( args ) => {
   const { data } = await getData( 'live-goals', startDate, endDate, range, {
     goal_id: goal_id
   });
-  return formatNumber( data );
+  return formatNumber( data?.goals_count );
 };
 export default getLiveGoals;

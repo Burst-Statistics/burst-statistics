@@ -138,7 +138,7 @@ export const ToastComponents = function ({ addComponents, theme }) {
 
 		// Toast
 		[`.${ToastNameSpace}__toast`]: {
-			'@apply relative box-border mb-4 p-2 rounded-m border min-h-toastify-toast-min-height border-[#eeeeee] shadow-rsp flex justify-between max-h-toastify-toast-max-height overflow-hidden cursor-default z-0 max-toast-mobile:mb-0 max-toast-mobile:rounded-none': {},
+			'@apply relative box-border mb-4 p-2 rounded-md border min-h-toastify-toast-min-height border-[#eeeeee] shadow-rsp flex justify-between max-h-toastify-toast-max-height overflow-hidden cursor-default z-0 max-toast-mobile:mb-0 max-toast-mobile:rounded-none': {},
 			'direction': 'ltr',
 		},
 

@@ -14,7 +14,7 @@ class Ip {
 	/**
 	 * Get blocked IP addresses.
 	 *
-	 * @return string
+	 * @return string list of blocked ips.
 	 */
 	public static function get_blocked_ips(): string {
 		$options = get_option( 'burst_options_settings', [] );
@@ -24,7 +24,7 @@ class Ip {
 	/**
 	 * Check if IP is blocked.
 	 *
-	 * @return bool
+	 * @return bool if it is blocked.
 	 */
 	public static function is_ip_blocked(): bool {
 		$ip = self::get_ip_address();
@@ -49,7 +49,7 @@ class Ip {
 	 * Get the visitor IP, considering common proxy headers.
 	 * Note: trusting X-Forwarded-For should be limited to trusted proxies.
 	 *
-	 * @return string
+	 * @return string the ip address.
 	 */
 	public static function get_ip_address(): string {
 		$candidates = [];
@@ -125,7 +125,7 @@ class Ip {
 	 *
 	 * @param string $ip    IP address.
 	 * @param string $range Single IP or CIDR range.
-	 * @return bool
+	 * @return bool if the ip is in range.
 	 */
 	public static function ip_in_range( string $ip, string $range ): bool {
 		$ip_bin = self::inet_pton( $ip );
@@ -208,7 +208,6 @@ class Ip {
 	 * If binary is IPv4-mapped IPv6, return 4-byte IPv4 binary; else empty string.
 	 *
 	 * @param string $bin Binary IP.
-	 * @return string
 	 */
 	private static function ipv4_from_mapped( string $bin ): string {
 		if ( strlen( $bin ) === 16 && substr( $bin, 0, 12 ) === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff" ) {

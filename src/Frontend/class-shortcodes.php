@@ -22,8 +22,6 @@ class Shortcodes {
 
 	/**
 	 * Instance of Frontend_Statistics class
-	 *
-	 * @var Frontend_Statistics
 	 */
 	private Frontend_Statistics $statistics;
 
