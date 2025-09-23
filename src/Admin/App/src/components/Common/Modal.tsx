@@ -72,7 +72,7 @@ const Modal: React.FC<ModalProps> = ({
             )}
           </div>
           <Dialog.Description className="text-base text-black mb-6 mt-4 flex-1 overflow-y-auto overflow-x-visible min-h-0">{content}</Dialog.Description>
-          {footer && <div className="flex flex-row justify-end gap-2 flex-shrink-0 bottom-0 bg-gray-100 pt-4 border-t border-gray-200 -mx-4 px-4">{footer}</div>}
+          {footer && <div className="flex flex-row justify-end gap-2 flex-shrink-0 bottom-0 bg-gray-100 pt-4 border-t border-gray-200 mx-4 px-4">{footer}</div>}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

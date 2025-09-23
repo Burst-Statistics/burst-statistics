@@ -19,8 +19,6 @@ class Frontend {
 
 	/**
 	 * Frontend statistics instance
-	 *
-	 * @var Frontend_Statistics
 	 */
 	public Frontend_Statistics $statistics;
 
@@ -211,8 +209,6 @@ class Frontend {
 
 	/**
 	 * Log payload of 400 response errors on tracking requests if BURST_DEBUG is enabled
-	 *
-	 * @return void
 	 */
 	public function log_tracking_error(): void {
 		if ( ! defined( 'BURST_DEBUG' ) || ! BURST_DEBUG ) {

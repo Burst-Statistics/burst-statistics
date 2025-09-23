@@ -15,12 +15,10 @@ import FieldWrapper from '@/components/Fields/FieldWrapper';
  * @returns {JSX.Element}
  */
 const NumberField = forwardRef(
-  ({ field, fieldState, label, help, context, className, ...props }, ref ) => {
+  ({ field, fieldState, label, help, setting, context, className, ...props }, ref ) => {
     const inputId = props.id || field.name;
-
     // Convert empty string to undefined to allow placeholder to show
-    const value = '' === field.value ? undefined : field.value;
-
+      const value = String(field.value) ?? ''; // convert undefined to empty string for controlled input
     return (
       <FieldWrapper
         label={label}
@@ -36,16 +34,17 @@ const NumberField = forwardRef(
       >
         <TextInput
           {...field}
-          value={value}
+          value={value} // leave number intact
           id={inputId}
           type="number"
           aria-invalid={!! fieldState?.error?.message}
           ref={ref}
-          min={props.min}
-          max={props.max}
+          min={setting?.min}
+          max={setting?.max}
           step={props.step}
           placeholder={props.placeholder}
           disabled={props.disabled}
+          onChange={(e) => field.onChange(e.target.value )}
         />
       </FieldWrapper>
     );

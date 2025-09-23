@@ -61,19 +61,19 @@
 	a.burst-button,
 	button.burst-button,
 	input.burst-button {
-		@apply flex items-center gap-xxs text-base leading-[2]
-		tracking-[0.5px] transition-all duration-[300ms] ease-[ease]
-		min-h-[30px] rounded text-center cursor-pointer
-		px-xs py-0 m-0 no-underline;
+		@apply flex items-center gap-1.5 text-base leading-[2]
+		tracking-wide transition-all duration-[300ms] ease-[ease]
+		min-h-8 rounded text-center cursor-pointer
+		px-1.5 py-0 m-0 no-underline;
 	}
 
 	.burst-button-icon {
 		@apply bg-gray-300 text-button-accent border border-none rounded-full
-		w-[1em] h-[1em] p-[10px] m-[5px]
+		w-4 h-4 p-2.5 m-1.5
 		inline-flex items-center justify-center
 		transition-all duration-300 ease-in-out
 		cursor-pointer
-		hover:p-s hover:m-0;;
+		hover:p-2.5 hover:m-0;;
 	}
 
 	.burst-button-icon--delete:hover {
@@ -87,12 +87,12 @@
 	.burst-button--date-range {
 		@apply flex items-center cursor-pointer
 		shadow-rsp
-		gap-xs
+		gap-2.5
 		text-gray
 		bg-white
 		border border-gray-400
 		rounded-xs
-		px-[4.3px] py-[14.4px];
+		px-1 py-3.5;
 	}
 
 	.burst-button--date-range .burst-icon {

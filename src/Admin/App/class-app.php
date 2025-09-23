@@ -573,15 +573,15 @@ class App {
 			#burst-statistics .grid-rows-5 {
 				grid-template-rows: repeat(5, minmax(0, 1fr));
 			}
-			
+
 			#burst-statistics .col-span-6 {
 				grid-column: span 6 / span 6;
 			}
-			
+
 			#burst-statistics .col-span-3 {
 				grid-column: span 3 / span 3;
 			}
-			
+
 			#burst-statistics .row-span-2 {
 				grid-row: span 2 / span 2;
 			}
@@ -704,14 +704,34 @@ class App {
 			#burst-statistics .border-transparent {
 				border-color: transparent;
 			}
+
+			#burst-statistics .overflow-x-hidden {
+				overflow-x: hidden;
+			}
+
+			@media not all and (min-width: 640px) {
+				#burst-statistics .max-sm\:w-32 {
+					width: 8rem;
+				}
+			}
+
+			@media not all and (min-width: 640px) {
+				#burst-statistics .max-sm\:col-span-12 {
+					grid-column: span 12 / span 12;
+				}
+
+				#burst-statistics .max-sm\:row-span-1 {
+					grid-row: span 1 / span 1;
+				}
+			}
 		</style>
 		<div id="burst-statistics" class="burst">
 			<div class="bg-white">
 				<div class="mx-auto flex max-w-screen-2xl items-center gap-5 px-5">
-					<div>
-						<img width="100" src="<?php echo esc_url_raw( BURST_URL ) . 'assets/img/burst-logo.svg'; ?>" alt="Logo Burst" class="h-11 w-auto px-5 py-2">
+					<div class="max-xxs:w-16 max-xxs:h-auto flex-shrink-0">
+						<img width="100" src="<?php echo esc_url_raw( BURST_URL ) . 'assets/img/burst-logo.svg'; ?>" alt="Logo Burst" class="h-11 w-auto px-0 py-2">
 					</div>
-					<div class="flex items-center blur-sm animate-pulse">
+					<div class="flex items-center blur-sm animate-pulse overflow-x-hidden">
 						<div class="py-6 px-5 border-b-4 border-transparent"><?php esc_html_e( 'Dashboard', 'burst-statistics' ); ?></div>
 						<div class="py-6 px-5 border-b-4 border-transparent ml-2"><?php esc_html_e( 'Statistics', 'burst-statistics' ); ?></div>
 						<div class="py-6 px-5 border-b-4 border-transparent ml-2"><?php esc_html_e( 'Settings', 'burst-statistics' ); ?></div>
@@ -723,7 +743,7 @@ class App {
 			<div class="mx-auto flex max-w-screen-2xl">
 				<div class="m-5 grid min-h-full w-full grid-cols-12 grid-rows-5 gap-5">
 					<!-- Left Block -->
-					<div class="col-span-6 row-span-2 bg-white shadow-md rounded-xl p-5">
+					<div class="col-span-6 row-span-2 bg-white shadow-md rounded-xl p-5 max-sm:col-span-12 max-sm:row-span-1">
 						<div class="h-6 w-1/2 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
 						<div class="h-6 w-4/5 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
 						<div class="h-6 w-full px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
@@ -735,7 +755,7 @@ class App {
 					</div>
 
 					<!-- Middle Block -->
-					<div class="col-span-3 row-span-2 bg-white shadow-md rounded-xl p-5">
+					<div class="col-span-3 row-span-2 bg-white shadow-md rounded-xl p-5 max-sm:col-span-12 max-sm:row-span-1">
 						<div class="h-6 w-1/2 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
 						<div class="h-6 w-4/5 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
 						<div class="h-6 w-full px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
@@ -747,7 +767,7 @@ class App {
 					</div>
 
 					<!-- Right Block -->
-					<div class="col-span-3 row-span-2 bg-white shadow-md rounded-xl p-5">
+					<div class="col-span-3 row-span-2 bg-white shadow-md rounded-xl p-5 max-sm:col-span-12 max-sm:row-span-1">
 						<div class="h-6 w-1/2 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
 						<div class="h-6 w-4/5 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
 						<div class="h-6 w-full px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
@@ -771,6 +791,13 @@ class App {
 		if ( defined( 'BURST_FALLBACK_TEST' ) ) {
 			return;
 		}
+
+		if ( get_transient( 'burst_running_upgrade' ) ) {
+			self::error_log( 'Database installation in progress, delaying REST API response with 2 seconds.' );
+			// sleep for 0.5 seconds to allow the database installation to finish.
+			usleep( 500000 );
+		}
+
 		register_rest_route(
 			'burst/v1',
 			'menu',
@@ -962,6 +989,19 @@ class App {
 			case 'tasks':
 				$data = \Burst\burst_loader()->admin->tasks->get();
 				break;
+			case 'fix_task':
+				$task_id   = $data['task_id'];
+				$task      = \Burst\burst_loader()->admin->tasks->get_task_by_id( $task_id );
+				$option_id = sanitize_text_field( $task['fix'] );
+				$task_id   = sanitize_text_field( $task['id'] );
+				// should start with burst_ .
+				if ( strpos( $option_id, 'burst_' ) === 0 ) {
+					update_option( $option_id, true );
+				}
+				wp_schedule_single_event( time(), 'burst_scheduled_task_fix' );
+
+				\Burst\burst_loader()->admin->tasks->dismiss_task( $task_id );
+				break;
 			case 'dismiss_task':
 				if ( isset( $data['id'] ) ) {
 					$id = sanitize_title( $data['id'] );
@@ -1002,7 +1042,7 @@ class App {
 	 * Get advanced filter options.
 	 *
 	 * @param string $data_type The specific data type to return (devices, browsers, platforms, countries, pages, referrers, campaigns).
-	 * @return array
+	 * @return array the filter options.
 	 */
 	private function get_filter_options( string $data_type ): array {
 		if ( ! $this->user_can_view() ) {
@@ -1126,7 +1166,7 @@ class App {
 	/**
 	 * Get referrer options for the advanced filter. The table is cleared weekly, to ensure up to date data.
 	 *
-	 * @return array
+	 * @return array the referrer options.
 	 */
 	private function get_referrer_options(): array {
 		global $wpdb;
@@ -1246,7 +1286,11 @@ class App {
 				if ( $is_onboarding ) {
 					wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'burst_clear_test_visit' );
 				}
-				$data = \Burst\burst_loader()->admin->statistics->get_live_visitors_data();
+				$count = \Burst\burst_loader()->admin->statistics->get_live_visitors_data();
+				$data  = [ 'visitors' => $count ];
+				break;
+			case 'live-traffic':
+				$data = \Burst\burst_loader()->admin->statistics->get_live_traffic_data();
 				break;
 			case 'today':
 				$data = \Burst\burst_loader()->admin->statistics->get_today_data( $args );
@@ -1257,7 +1301,8 @@ class App {
 				break;
 			case 'live-goals':
 				$goal_statistics = new Goal_Statistics();
-				$data            = $goal_statistics->get_live_goals_count( $args );
+				$goals_count     = $goal_statistics->get_live_goals_count( $args );
+				$data            = [ 'goals_count' => $goals_count ];
 				break;
 			case 'insights':
 				$data = \Burst\burst_loader()->admin->statistics->get_insights_data( $args );
@@ -1279,7 +1324,7 @@ class App {
 				$data = \Burst\burst_loader()->admin->statistics->get_datatables_data( $args );
 				break;
 			default:
-				$data = apply_filters( 'burst_get_data', $type, $args, $request );
+				$data = apply_filters( 'burst_get_data', [], $type, $args, $request );
 		}
 
 		return $this->create_rest_response( $data );
@@ -1288,11 +1333,11 @@ class App {
 	/**
 	 * Create standardized REST response
 	 *
-	 * @param mixed $data Response data.
+	 * @param array $data Response data.
 	 * @param int   $status HTTP status code.
 	 * @return \WP_REST_Response The REST response object.
 	 */
-	private function create_rest_response( $data, int $status = 200 ): \WP_REST_Response {
+	private function create_rest_response( array $data, int $status = 200 ): \WP_REST_Response {
 		if ( ob_get_length() ) {
 			ob_clean();
 		}
@@ -1427,7 +1472,6 @@ class App {
 			// Track which fields were actually updated.
 			$updated_fields = [];
 			foreach ( $data['fields'] as $field_id => $value ) {
-
 				// Validate field exists in config.
 				if ( ! isset( $config_fields[ $field_id ] ) ) {
 					continue;
@@ -1529,7 +1573,6 @@ class App {
 			$menu_group['menu_items'] = $this->drop_empty_menu_items( $menu_group['menu_items'], $fields );
 			$menu[ $key ]             = $menu_group;
 		}
-
 		$output['fields']          = $fields;
 		$output['request_success'] = true;
 		$output['progress']        = \Burst\burst_loader()->admin->tasks->get();

@@ -9,7 +9,7 @@ const Popover = ({ title, children, footer, isOpen, setIsOpen, showFilterIcon=tr
                 onClick={() => setIsOpen( ! isOpen )}
               >
                 {showFilterIcon &&
-                <div className={`${isOpen ? 'bg-gray-400 shadow-lg' : 'bg-gray-300'} focus:ring-blue-500 cursor-pointer rounded-full p-3 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2`}>
+                <div className={`${isOpen ? 'bg-gray-300 shadow-lg' : 'bg-gray-200 shadow-sm'} border border-gray-300 focus:ring-blue-500 cursor-pointer rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2`}>
                     <Icon name="filter" />
                 </div>}
             </ReactPopover.Trigger>

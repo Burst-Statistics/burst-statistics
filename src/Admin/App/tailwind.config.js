@@ -34,9 +34,11 @@ const goldColor = {
 };
 
 const blueColor = {
+	lighter: '#ECF8FE',
 	light: '#ebf2f9',
 	DEFAULT: '#1D3C8F',
 	dark: '#142963',
+	darker: '#1E73BE'
 };
 
 const redColor = {
@@ -106,20 +108,9 @@ module.exports = {
 			screens: {
 				'toast-mobile': '480px',
 				xxs: '576px',
-				xs: '768px',
-				s: '1080px',
-				m: '1280px',
-				l: '1366px',
-				xl: '1440px',
 				'2xl': '1600px',
 			},
 			spacing: {
-				xxs: '5px',
-				xs: '10px',
-				s: '15px',
-				m: '20px',
-				l: '25px',
-				xl: '30px',
 				'toastify-toast-width': '320px',
 				'toastify-toast-min-height': '42px',
 				'toastify-toast-max-height': '800px',
@@ -130,12 +121,6 @@ module.exports = {
 			borderColor: {
 				'toastify-spinner': '#616161',
 				'toastify-spinner-empty': '#e0e0e0',
-			},
-			borderRadius: {
-				xs: '5px',
-				s: '8px',
-				DEFAULT: '4px',
-				m: '12px',
 			},
 			boxShadow: {
 				rsp: 'rgba(0,0,0,0.1) 0 4px 6px -1px, rgba(0,0,0,0.06) 0 2px 4px -1px',

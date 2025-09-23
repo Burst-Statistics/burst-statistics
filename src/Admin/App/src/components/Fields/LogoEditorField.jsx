@@ -19,7 +19,7 @@ import { useQuery } from '@tanstack/react-query';
  * @returns {JSX.Element}
  */
 const LogoEditorField = forwardRef(
-  ({ field, fieldState, label, help, className, ...props }) => {
+  ({ field, fieldState, label, help, className, ...props }, ref) => {
     const defaultLogoUrl = burst_settings.plugin_url + 'assets/img/burst-email-logo.png';
 
     // onChange to update the field value (attachment ID)

@@ -54,7 +54,7 @@ const DataTableSelect = ({ value, onChange, options }) => {
           border border-gray-400
           rounded
           flex flex-col flex-wrap
-          gap-s
+          gap-4
           left-0 right-0
           shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px]
           [animation-duration:600ms]
@@ -73,8 +73,8 @@ const DataTableSelect = ({ value, onChange, options }) => {
                 cursor-pointer
                 text-black
                 text-md
-                px-s py-xs
-                rounded-[3px]
+                px-3 py-2.5
+                rounded
                 flex items-center
                 data-[disabled]:text-gray
                 data-[disabled]:bg-gray-100

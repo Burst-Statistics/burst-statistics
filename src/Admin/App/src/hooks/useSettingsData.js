@@ -60,7 +60,6 @@ const useSettingsData = () => {
   const { mutateAsync: saveSettings, isLoading: isSavingSettings } =
     useMutation({
       mutationFn: async( data ) => {
-
         // Simulate async operation (e.g., API call to save settings)
         await setFields( data );
 

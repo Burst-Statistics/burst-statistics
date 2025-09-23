@@ -58,7 +58,7 @@ const GoalsSettings = () => {
               'burst-statistics'
             )}
       </p>
-      <div className="flex flex-wrap flex-col gap-s mt-s">
+      <div className="flex flex-wrap flex-col gap-4 mt-4">
         {0 < goals.length &&
           goals.map( ( goal, index ) => {
             return (
@@ -155,7 +155,7 @@ const GoalsSettings = () => {
           </div>
         )}
         {! isLicenseValid() && (
-          <div className="flex gap-s p-s bg-gray-200 rounded-m mt-s justify-start items-center border-2 border-gray-300">
+          <div className="flex gap-4 p-4 bg-gray-200 rounded-md mt-4 justify-start items-center border-2 border-gray-300">
             <Icon name={'goals'} size={24} color="gray" />
             <h4>{__( 'Want more goals?', 'burst-statistics' )}</h4>
             <div className="burst-divider" />

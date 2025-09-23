@@ -13,8 +13,6 @@ class Dashboard_Widget {
 	use Helper;
 	use Admin_Helper;
 
-	public $error_message = '';
-
 	/**
 	 * Dashboard_Widget constructor.
 	 */

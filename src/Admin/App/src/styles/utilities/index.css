@@ -1,6 +1,15 @@
 @tailwind utilities;
 
 @layer utilities {
+	.scrollbar-hide {
+		-ms-overflow-style: none; /* IE and Edge */
+		scrollbar-width: none; /* Firefox */
+	}
+
+	.scrollbar-hide::-webkit-scrollbar {
+		display: none; /* Chrome, Safari, Opera*/
+	}
+
 	.burst-scroll {
 		/* Track */
 		&::-webkit-scrollbar-track {
@@ -68,5 +77,45 @@
 	/* Used in License block */
 	&.burst-skeleton{
 		@apply bg-gray-400 text-white;
+	}
+
+	/* Live Traffic Animations */
+	@keyframes fadeInDown {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes fadeOutUp {
+		from {
+			opacity: 1;
+			transform: translateY(0);
+			max-height: 60px;
+			margin-bottom: 12px;
+		}
+		to {
+			opacity: 0;
+			transform: translateY(-10px);
+			max-height: 0;
+			margin-bottom: 0;
+		}
+	}
+
+	.animate-fade-in-down {
+		animation: fadeInDown 0.4s ease-out;
+	}
+
+	.animate-fade-out-up {
+		animation: fadeOutUp 0.3s ease-in forwards;
+	}
+
+	/* Smooth transitions for list items - this creates natural push-down effect */
+	.live-traffic-item {
+		transition: all 0.3s ease-out;
 	}
 }

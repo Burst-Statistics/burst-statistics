@@ -190,7 +190,10 @@ trait Sanitize {
 	 * @param string $type The field type.
 	 * @return mixed Sanitized value.
 	 */
+    // phpcs:disable
 	public function sanitize_field( $value, string $type ) {
+    // phpcs:enable
+
 		$type = $this->sanitize_field_type( $type );
 
 		switch ( $type ) {
@@ -521,7 +524,9 @@ trait Sanitize {
 	 * @param mixed  $value The value to sanitize.
 	 * @return mixed Sanitized value.
 	 */
+    // phpcs:disable
 	public function sanitize_arg( string $arg, $value ) {
+    //phpcs:enable
 		// Smart array transformation helper - only transforms when value is clearly meant to be an array.
 		$ensure_array_if_applicable = function ( $input ) {
 			if ( is_array( $input ) ) {

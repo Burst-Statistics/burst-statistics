@@ -77,7 +77,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
               <label 
                 htmlFor={optionId}
                 className={clsx(
-                  'flex gap-xs m-[1px] items-start space-x-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer',
+                  'flex gap-2.5 m-[1px] items-start space-x-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer',
                   'focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2',
                   {
                     'border-primary bg-primary-light': isSelected,

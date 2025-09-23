@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import {useEffect, useMemo} from 'react';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import useGoalsData from '@/hooks/useGoalsData';
 import SettingsGroupBlock from './SettingsGroupBlock';
@@ -17,23 +17,23 @@ const Settings = ({ currentSettingPage }) => {
   const settingsId = currentSettingPage.id;
   const currentFormDefaultValues = useMemo(
     () => extractFormValuesPerMenuId( settings, settingsId ),
-    [ settings, settingsId ]
-  );
-
-  const currentFormValues = useMemo(
-    () => extractFormValuesPerMenuId( settings, settingsId, 'value' ),
-    [ settings, settingsId ]
+    [ settings ]
   );
 
   // Initialize useForm with default values from the fetched settings data
   const {
     handleSubmit,
     control,
-    formState: { dirtyFields }
+    formState: { dirtyFields },
+      reset
   } = useForm({
     defaultValues: currentFormDefaultValues,
-    values: currentFormValues
   });
+
+// reset form state to match defaultValues exactly
+  useEffect(() => {
+    reset(currentFormDefaultValues);
+  }, [currentFormDefaultValues, reset]);
 
   const watchedValues = useWatch({ control });
   const filteredGroups = useMemo(() => {
@@ -93,15 +93,13 @@ const Settings = ({ currentSettingPage }) => {
 };
 export default Settings;
 
-const extractFormValuesPerMenuId = (settings, menuId, key = 'default') => {
-
-  // Extract default values from settings data where menu_id ===  settingsId
+const extractFormValuesPerMenuId = (settings, menuId) => {
   const formValues = {};
-  settings.forEach((setting) => {
-    if (setting.menu_id === menuId) {
-      formValues[setting.id] = setting[key];
-    }
+  settings.forEach(setting => {
+    //if (setting.menu_id === menuId) {
+      const hasValue = setting.value !== undefined && setting.value !== '';
+      formValues[setting.id] = hasValue ? setting.value : setting.default;
+    //}
   });
-
-  return formValues;
+  return { ...formValues }; // <- force new object reference
 };

@@ -28,28 +28,28 @@ class Frontend_Statistics {
 	 *
 	 * @var array<string>
 	 */
-	private $allowed_metrics;
+	private array $allowed_metrics;
 
 	/**
 	 * Store allowed filter keys for reuse across methods
 	 *
 	 * @var array<string>
 	 */
-	private $allowed_filter_keys;
+	private array $allowed_filter_keys;
 
 	/**
 	 * Store allowed group_by values
 	 *
 	 * @var array<string>
 	 */
-	private $allowed_group_by;
+	private array $allowed_group_by;
 
 	/**
 	 * Store allowed order_by values
 	 *
 	 * @var array<string>
 	 */
-	private $allowed_order_by;
+	private array $allowed_order_by;
 
 	/**
 	 * Constructor to initialize class properties
@@ -711,13 +711,13 @@ class Frontend_Statistics {
 		global $wpdb;
 		// Get posts sorted by pageviews.
 		$sql = $wpdb->prepare(
-			"SELECT s.page_id, COUNT(*) as pageview_count
+			"SELECT page_id, COUNT(*) as pageview_count
              FROM {$wpdb->prefix}burst_statistics
              WHERE page_id > 0
                AND time >= %d
                AND time <= %d
                AND page_type = %s
-             GROUP BY s.page_id
+             GROUP BY page_id
              ORDER BY pageview_count DESC
              LIMIT %d",
 			$start_time,

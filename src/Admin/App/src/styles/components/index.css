@@ -19,15 +19,15 @@
 	}
 
 	.burst-block-padding {
-		@apply px-l py-m max-m:px-s max-m:py-xs;
+		@apply px-6 max-m:px-2.5;
 	}
 
 	.burst-block-block-padding {
-		@apply py-m max-m:py-xs;
+		@apply px-4 max-xl:px-2.5;
 	}
 
 	.burst-inline-block-padding {
-		@apply px-l max-m:px-s;
+		@apply px-6 max-xl:px-2.5;
 	}
 
 	.rdt_TableHeadRow,

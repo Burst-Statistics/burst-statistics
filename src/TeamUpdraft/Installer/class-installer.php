@@ -16,8 +16,6 @@ class Installer {
 	/**
 	 * The slug of the plugin that is calling this class.
 	 * It is used to remove the calling plugin from the recommended list.
-	 *
-	 * @var string
 	 */
 	private string $caller_slug = '';
 	private array $plugins      = [];

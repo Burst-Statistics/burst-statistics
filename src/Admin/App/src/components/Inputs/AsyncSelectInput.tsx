@@ -140,7 +140,6 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
             !currentSelectedItems.some(selected => selected.value === item.value)
         );
 
-        console.log("inputValue ", inputValue, items );
         // Add custom option if allowed and input doesn't match any existing option
         const canAddCustom =
             allowCustomValue &&

@@ -2,7 +2,6 @@
 namespace Burst\Admin;
 
 // don't remove, it is used in the Tasks code.
-use Burst\Admin\Statistics\Summary;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 
@@ -69,6 +68,7 @@ class Tasks {
 	public function dismiss_task( string $task_id ): void {
 		$current_tasks = get_option( 'burst_tasks', [] );
 		if ( in_array( sanitize_title( $task_id ), $current_tasks, true ) ) {
+			do_action( 'burst_dismiss_task', $task_id );
 			$current_tasks = array_diff( $current_tasks, [ $task_id ] );
 			update_option( 'burst_tasks', $current_tasks, false );
 		}
@@ -82,7 +82,6 @@ class Tasks {
 		$current_tasks = get_option( 'burst_tasks', [] );
 		return in_array( sanitize_title( $task_id ), $current_tasks, true );
 	}
-
 
 	/**
 	 * Validate tasks
@@ -183,6 +182,10 @@ class Tasks {
 			// get the translated label.
 			$tasks[ $index ]['label'] = $this->get_label( $task['icon'] );
 
+			if ( isset( $task['condition']['type'] ) && $task['condition']['type'] === 'clientside' ) {
+				continue;
+			}
+
 			// remove this option if it's dismissed.
 			if ( ! $this->has_task( $task['id'] ) ) {
 				unset( $tasks[ $index ] );
@@ -225,6 +228,8 @@ class Tasks {
 			'pro'       => __( 'Pro', 'burst-statistics' ),
 			'sale'      => __( 'Sale', 'burst-statistics' ),
 			'offer'     => __( 'Offer', 'burst-statistics' ),
+			'milestone' => __( 'Milestone', 'burst-statistics' ),
+			'insight'   => __( 'Update', 'burst-statistics' ),
 		];
 		return $icon_labels[ $icon ];
 	}
@@ -248,6 +253,19 @@ class Tasks {
 			}
 		}
 		return $unique_tasks;
+	}
+
+	/**
+	 * Get a task by ID.
+	 */
+	public function get_task_by_id( string $task_id ): ?array {
+		$tasks = $this->get_raw_tasks();
+		foreach ( $tasks as $task ) {
+			if ( $task['id'] === $task_id ) {
+				return $task;
+			}
+		}
+		return null;
 	}
 
 

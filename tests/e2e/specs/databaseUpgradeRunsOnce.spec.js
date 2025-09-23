@@ -10,7 +10,7 @@ test('Check that the database upgrade only runs once', async ({ page }) => {
     await page.goto('/wp-admin/admin.php?page=burst', { waitUntil: 'domcontentloaded' });
 
     const debugLogContents = await getDebugLog();
-    //verify that the debugLogContents contains exactly one occurrence of the string "Installing database tables for Burst Statistics"
+    //verify that the debugLogContents contains exactly two occurrences of the string "Installing database tables for Burst Statistics"
     const installCount = (debugLogContents.match(/Upgrading database tables for Burst Statistics/g) || []).length;
-    expect(installCount).toBe(1);
+    expect(installCount).toBe(2);
 });

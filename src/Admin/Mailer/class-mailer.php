@@ -16,26 +16,25 @@ if ( ! class_exists( 'mailer' ) ) {
 		use Helper;
 		use Admin_Helper;
 
-		public $logo;
-		public $to;
-		public $pretty_domain;
-		public $domain;
-		public $title;
-		public $subtitle;
-		public $headers;
-		public $message;
-		public $subject;
-		public $read_more;
-		public $button_text;
-		public $change_text;
-		public $sent_to_text;
-		public $what_now_text;
-		public $sent_by_text;
-		public $blocks;
-		public $error = '';
-		public $template_filename;
-		public $block_template_filename;
-		public $read_more_template_filename;
+		public string $logo;
+		public array $to = [];
+		public string $pretty_domain;
+		public string $domain;
+		public string $title;
+		public string $subtitle;
+		public string $message;
+		public string $subject;
+		public string $read_more;
+		public string $button_text;
+		public string $change_text;
+		public string $sent_to_text;
+		public string $what_now_text;
+		public string $sent_by_text;
+		public array $blocks = [];
+		public string $error = '';
+		public string $template_filename;
+		public string $block_template_filename;
+		public string $read_more_template_filename;
 		/**
 		 * Constructor
 		 */
@@ -91,9 +90,6 @@ if ( ! class_exists( 'mailer' ) ) {
 		 */
 		public function send_mail_queue(): void {
 			$to = $this->to;
-			if ( ! is_array( $to ) ) {
-				$to = [ $to ];
-			}
 			// max 10.
 			$to = array_slice( $to, 0, 10 );
 
@@ -120,7 +116,7 @@ if ( ! class_exists( 'mailer' ) ) {
 
 			$template   = file_get_contents( $this->template_filename ); // phpcs:ignore
 			$block_html = '';
-			if ( is_array( $this->blocks ) && count( $this->blocks ) > 0 ) {
+			if ( count( $this->blocks ) > 0 ) {
 				$block_template = file_get_contents( $this->block_template_filename ); // phpcs:ignore
 				foreach ( $this->blocks as $block ) {
 					// make sure all values are set.

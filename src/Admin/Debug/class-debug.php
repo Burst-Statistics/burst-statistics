@@ -14,7 +14,7 @@ class Debug {
 	/**
 	 * Initialize the debug class.
 	 */
-	public function init() {
+	public function init(): void {
 		add_filter( 'debug_information', [ $this, 'add_site_health_info' ] );
 	}
 
@@ -22,7 +22,7 @@ class Debug {
 	 * Add Burst debug info to Site Health → Info tab.
 	 *
 	 * @param array $info Existing debug info.
-	 * @return array
+	 * @return array the updated info.
 	 */
 	public function add_site_health_info( array $info ): array {
 		if ( ! $this->user_can_manage() ) {
@@ -91,6 +91,15 @@ class Debug {
 		$wp_options = $this->format_array_as_string( $wp_options );
 		unset( $wp_options['burst_options_settings'] );
 
+		// Burst transients.
+		$burst_transients_sql = $wpdb->prepare(
+			"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s",
+			$wpdb->esc_like( '_transient_burst_' ) . '%'
+		);
+		$burst_transients     = $wpdb->get_results( $burst_transients_sql );
+		$burst_transients     = wp_list_pluck( $burst_transients, 'option_value', 'option_name' );
+		$burst_transients     = $this->format_array_as_string( $burst_transients );
+
 		$debug_log_lines = $this->get_burst_debug_log_lines();
 		if ( empty( $debug_log_lines ) ) {
 			$debug_log_lines = [ __( 'No debug log entries found.', 'burst-statistics' ) ];
@@ -108,41 +117,46 @@ class Debug {
 		];
 
 		$fields = [
-			'geo_ip'           => [
+			'geo_ip'              => [
 				'label' => __( 'Geo IP File', 'burst-statistics' ),
 				'value' => [ 'Premium' => 'Pro version required' ],
 
 			],
-			'detected_ip'      => [
+			'detected_ip'         => [
 				'label' => __( 'Detected Geo IP', 'burst-statistics' ),
 				'value' => $ip,
 			],
-			'location_data'    => [
+			'location_data'       => [
 				'label' => __( 'Location Data', 'burst-statistics' ),
 				'value' => [ 'Premium' => 'Pro version required' ],
 			],
-			'burst_tables'     => [
+			'burst_tables'        => [
 				'label' => __( 'Burst Database Tables', 'burst-statistics' ),
 				'value' => $tables ?: 'No burst_ tables found',
 			],
-			'burst_settings'   => [
+			'burst_settings'      => [
 				'label' => __( 'Burst Settings', 'burst-statistics' ),
 				'value' => $settings,
 			],
-			'burst_wp_options' => [
+			'burst_wp_options'    => [
 				'label' => __( 'Burst WordPress options', 'burst-statistics' ),
 				'value' => "available in 'Copy site info to clipboard'",
 				'debug' => $wp_options,
 			],
-			'server_data'      => [
+			'burst_wp_transients' => [
+				'label' => __( 'Burst WordPress transients', 'burst-statistics' ),
+				'value' => "available in 'Copy site info to clipboard'",
+				'debug' => $burst_transients,
+			],
+			'server_data'         => [
 				'label' => '$_SERVER',
 				'value' => $server_data,
 			],
-			'burst_debug_log'  => [
+			'burst_debug_log'     => [
 				'label' => __( 'Debug Log', 'burst-statistics' ),
 				'value' => $debug_log_lines,
 			],
-			'used_constants'   => [
+			'used_constants'      => [
 				'label' => __( 'Used Constants', 'burst-statistics' ),
 				'value' => $constants,
 			],

@@ -104,7 +104,7 @@ const GoalField = ({ field = {}, fields, goal, value, setGoalValue }) => {
 
   if ( 'hook' === field.type ) {
     return (
-      <div className="flex flex-wrap align-content-stretch gap-xl [&>*]: w-full [&>input[type='text']]:w-full [&>input[type='text']]:box-border">
+      <div className="flex flex-wrap align-content-stretch gap-8 [&>*]: w-full [&>input[type='text']]:w-full [&>input[type='text']]:box-border">
         <TextField
           disabled={disabled}
           field={field}

@@ -162,7 +162,7 @@ const OtherPluginsBlock = () => {
         [&_a]:flex
         [&_a]:items-center
         [&_a]:min-w-0
-        [&_a]:gap-xs
+        [&_a]:gap-2.5
         [&_a]:no-underline
         [&_a:hover]:underline
         [&_a:hover]:text-${defaultColorClass}
@@ -174,7 +174,7 @@ const OtherPluginsBlock = () => {
           title={plugin.title}
         >
           
-          <div className={['installed', 'upgrade-to-pro'].includes(plugin.action) ? 'bg-green rounded-full m-0.5' : ''}>
+          <div className={['installed', 'upgrade-to-pro'].includes(plugin.action) ? 'bg-green rounded-full' : ''}>
             <Icon strokeWidth={3} name={iconName} color={iconColor} size={14} /></div>
           <div className="truncate">{plugin.title}</div>
         </a>
@@ -213,7 +213,7 @@ const OtherPluginsBlock = () => {
           controls={<UpdraftPlusLogo size={24} color="gray"/> }
         />
         <BlockContent className={'px-6 py-0'}>
-          <div className="!flex flex-row flex-wrap mb-[10px] text-base gap-xxs max-[992px]:flex-row max-[992px]:overflow-hidden">
+          <div className="!flex flex-row flex-wrap mb-[10px] text-base gap-1.5 max-[992px]:flex-row max-[992px]:overflow-hidden">
             {[ ...Array( n ) ].map( ( e, i ) => (
               <div key={i}>
                 <a>
@@ -238,7 +238,7 @@ const OtherPluginsBlock = () => {
                     controls={<UpdraftPlusLogo size={24} color="gray"/>}
       />
       <BlockContent className={'px-6 py-0'}>
-        <div className="!flex flex-row flex-wrap mb-[10px] text-base gap-xxs max-[992px]:flex-row max-[992px]:overflow-hidden">
+        <div className="!flex flex-row flex-wrap mb-[10px] text-base gap-1.5 max-[992px]:flex-row max-[992px]:overflow-hidden">
           {pluginData.map( ( plugin ) => otherPluginElement( plugin ) )}
         </div>
       </BlockContent>

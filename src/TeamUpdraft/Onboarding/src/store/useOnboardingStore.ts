@@ -209,11 +209,11 @@ const useOnboardingStore = create<OnboardingState>((set) => ({
         const plugins = useOnboardingStore.getState().getValue('plugins')
         const currentStep = useOnboardingStore.getState().getCurrentStep();
         set({isInstalling: true} );
-        const pluginData = currentStep.fields;
+        const pluginData = currentStep.fields.find((field) => field.id === 'plugins');
         // Loop through the plugins and install each one
         for (const plugin of plugins) {
             //from pluginData, get the field with the same id as the plugin, and retrieve the action
-            const field = pluginData.find((field) => field.id === plugin);
+            const field = pluginData?.options.find((field) => field.id === plugin);
             let next_action = field?.action || 'download';
             let previous_action = null;
             while (true) {

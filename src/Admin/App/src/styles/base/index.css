@@ -43,7 +43,7 @@
 
 	/* Burst base styles */
 	.burst {
-		@apply font-normal leading-[1.5] box-border m-0 -ml-5 text-base text-black max-xs:-ml-[9px];;
+		@apply font-normal leading-[1.5] box-border m-0 -ml-5 text-base text-black max-md:-ml-[9px];;
 		font-variant-numeric: tabular-nums;
 
 		*,

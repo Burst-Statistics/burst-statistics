@@ -40,6 +40,7 @@ return [
 				'description' => __( 'Track execution of a WordPress hook', 'burst-statistics' ),
 				'type'        => 'hook',
 				'icon'        => 'hook',
+				'server_side' => true,
 			],
 		],
 		'disabled' => false,

@@ -96,7 +96,7 @@ const PendingComponent = () => {
   return (
     <>
       {/* Left Block */}
-      <div className="col-span-6 row-span-2 bg-white shadow-sm rounded-xl p-5">
+      <div className="col-span-6 row-span-2 bg-white shadow-sm rounded-xl p-5 max-sm:col-span-12 max-sm:row-span-1">
         <div className="h-6 w-1/2 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
         <div className="h-6 w-4/5 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
         <div className="h-6 w-full px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
@@ -108,7 +108,7 @@ const PendingComponent = () => {
       </div>
 
       {/* Middle Block */}
-      <div className="col-span-3 row-span-2 bg-white shadow-sm rounded-xl p-5">
+      <div className="col-span-3 row-span-2 bg-white shadow-sm rounded-xl p-5 max-sm:col-span-12 max-sm:row-span-1">
         <div className="h-6 w-1/2 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
         <div className="h-6 w-4/5 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
         <div className="h-6 w-full px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
@@ -120,7 +120,7 @@ const PendingComponent = () => {
       </div>
 
       {/* Right Block */}
-      <div className="col-span-3 row-span-2 bg-white shadow-sm rounded-xl p-5">
+      <div className="col-span-3 row-span-2 bg-white shadow-sm rounded-xl p-5 max-sm:col-span-12 max-sm:row-span-1">
         <div className="h-6 w-1/2 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
         <div className="h-6 w-4/5 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
         <div className="h-6 w-full px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
@@ -140,10 +140,10 @@ const LoadingState = () => (
     {/* Header */}
     <div className="bg-white">
       <div className="mx-auto flex max-w-screen-2xl items-center px-5">
-        <div>
-          <img width="100" src={`${window.burst_settings?.plugin_url}assets/img/burst-logo.svg`} alt="Logo Burst" className="h-12 w-40 px-5 py-2" />
+        <div className="max-xxs:w-16 max-xxs:h-auto flex-shrink-0">
+          <img width="100" src={`${window.burst_settings?.plugin_url}assets/img/burst-logo.svg`} alt="Logo Burst" className="h-11 w-auto px-0 py-2" />
         </div>
-        <div className="flex items-center blur-sm animate-pulse">
+        <div className="flex items-center blur-sm animate-pulse overflow-x-hidden">
           <div className="py-6 px-5 border-b-4 border-transparent">Dashboard</div>
           <div className="py-6 px-5 border-b-4 border-transparent ml-2">Statistics</div>
           <div className="py-6 px-5 border-b-4 border-transparent ml-2">Settings</div>

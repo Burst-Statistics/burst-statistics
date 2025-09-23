@@ -6,7 +6,7 @@ import useSettingsData from '@/hooks/useSettingsData';
 import DataTable from 'react-data-table-component';
 
 const RestoreArchivesField = forwardRef(
-    ({ ...props }) => {
+    ({ ...props }, ref) => {
   const [ searchValue, setSearchValue ] = useState( '' );
   const [ selectedArchives, setSelectedArchives ] = useState([]);
   const [ downloading, setDownloading ] = useState( false );
@@ -285,7 +285,7 @@ const RestoreArchivesField = forwardRef(
 
   return (
     <div className="w-full p-6">
-      <div className="py-xs px-l">
+      <div className="py-2.5 px-6">
         <div>
           <input
             type="text"
@@ -297,8 +297,8 @@ const RestoreArchivesField = forwardRef(
       </div>
 
       {0 < selectedArchives.length && (
-          <div className="mt-[10px] mb-[10px] items-center bg-blue-light py-xs px-l flex space-y-2">
-            <div className="ml-auto flex gap-xs mb-4 mt-4 items-center">
+          <div className="mt-[10px] mb-[10px] items-center bg-blue-light py-2.5 px-6 flex space-y-2">
+            <div className="ml-auto flex gap-2.5 mb-4 mt-4 items-center">
               {showDownloadButton && (
                   <>
                     <button
@@ -340,7 +340,7 @@ const RestoreArchivesField = forwardRef(
           </div>
       )}
       {0 < progress && 100 > progress && (
-          <div className="mt-[10px] mb-[10px] items-center bg-blue-light py-xs px-l flex space-y-2">
+          <div className="my-2.5 items-center bg-blue-light py-2.5 px-l flex space-y-2">
             {__('Restore in progress, %s complete', 'burst-statistics').replace(
                 '%s',
                 progress + '%'
@@ -368,7 +368,7 @@ const RestoreArchivesField = forwardRef(
             selectAllRowsItemText: __( 'All', 'burst-statistics' )
           }}
           noDataComponent={
-            <div className="p-xl">
+            <div className="p-8">
               {__( 'No archives', 'burst-statistics' )}
             </div>
           }

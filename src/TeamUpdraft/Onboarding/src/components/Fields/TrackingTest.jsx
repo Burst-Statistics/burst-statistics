@@ -21,7 +21,7 @@ const getLiveVisitors = async(nonce) => {
         },
     };
     let response = await handleRequest( args );
-    return response.data;
+    return response.data?.visitors;
 };
 
 const ConnectionAnimation = ({ isRunning, isSuccess, testCompleted, isFailed, retryCount, isPro, handleManualRetry }) => {

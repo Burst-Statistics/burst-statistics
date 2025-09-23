@@ -30,7 +30,7 @@
 	}
 
 	.rdrMonthAndYearWrapper {
-		@apply flex items-center h-[60px] pt-xxs;
+		@apply flex items-center h-[60px] pt-1.5;
 	}
 
 	.rdrMonthAndYearPickers {
@@ -47,7 +47,7 @@
 	}
 
 	.rdrMonthPicker, .rdrYearPicker {
-		@apply my-0 mx-xxs;
+		@apply my-0 mx-1.5;
 	}
 
 	.rdrNextPrevButton {
@@ -134,7 +134,7 @@
 	}
 
 	.rdrSelected, .rdrInRange, .rdrStartEdge, .rdrEndEdge {
-		@apply bg-current absolute top-xxs left-0 right-0 bottom-xxs;
+		@apply bg-current absolute top-1.5 left-0 right-0 bottom-1.5;
 	}
 
 	.rdrSelected {
@@ -217,19 +217,19 @@
 	}
 
 	.rdrStaticRangeLabel {
-		@apply block overflow-hidden outline-none leading-[18px] px-5 py-xs text-left font-light;
+		@apply block overflow-hidden outline-none leading-[18px] px-5 py-2.5 text-left font-light;
 	}
 
 	.rdrInputRanges {
-		@apply py-xs;
+		@apply py-2.5;
 	}
 
 	.rdrInputRange {
-		@apply flex items-center px-m py-xxs;
+		@apply flex items-center px-2.5 py-1.5;
 	}
 
 	.rdrInputRangeInput {
-		@apply w-[30px] h-[30px] leading-[30px] rounded text-center border border-[#dee7eb] mr-xs text-[#6c767a];
+		@apply w-[30px] h-[30px] leading-[30px] rounded text-center border border-[#dee7eb] mr-2.5 text-[#6c767a];
 	}
 
 	.rdrInputRangeInput:focus,
@@ -279,7 +279,7 @@
 	}
 
 	.rdrMonthName {
-		@apply text-left font-semibold text-[#849095] p-xxs;
+		@apply text-left font-semibold text-[#849095] p-0.5;
 	}
 
 	/* Calendar container */
