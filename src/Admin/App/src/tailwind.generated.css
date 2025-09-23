@@ -1042,6 +1042,10 @@ video {
   margin-bottom: 1.5rem;
 }
 
+#burst-statistics .mb-8 {
+  margin-bottom: 2rem;
+}
+
 #burst-statistics .mb-\[10px\] {
   margin-bottom: 10px;
 }
@@ -1060,6 +1064,10 @@ video {
 
 #burst-statistics .ml-4 {
   margin-left: 1rem;
+}
+
+#burst-statistics .ml-6 {
+  margin-left: 1.5rem;
 }
 
 #burst-statistics .ml-auto {
@@ -1112,6 +1120,10 @@ video {
 
 #burst-statistics .mt-6 {
   margin-top: 1.5rem;
+}
+
+#burst-statistics .mt-8 {
+  margin-top: 2rem;
 }
 
 #burst-statistics .mt-\[10px\] {
@@ -1226,6 +1238,10 @@ video {
   height: 18px;
 }
 
+#burst-statistics .h-\[300px\] {
+  height: 300px;
+}
+
 #burst-statistics .h-\[305px\] {
   height: 305px;
 }
@@ -1260,6 +1276,10 @@ video {
 
 #burst-statistics .max-h-\[80vh\] {
   max-height: 80vh;
+}
+
+#burst-statistics .max-h-\[85vh\] {
+  max-height: 85vh;
 }
 
 #burst-statistics .max-h-\[90vh\] {
@@ -1366,6 +1386,10 @@ video {
   width: 90%;
 }
 
+#burst-statistics .w-\[90vw\] {
+  width: 90vw;
+}
+
 #burst-statistics .w-\[calc\(50\%-4px\)\] {
   width: calc(50% - 4px);
 }
@@ -1432,6 +1456,10 @@ video {
   min-width: 320px;
 }
 
+#burst-statistics .min-w-\[96px\] {
+  min-width: 96px;
+}
+
 #burst-statistics .min-w-\[min\(100vw\2c 150px\)\] {
   min-width: min(100vw,150px);
 }
@@ -1443,6 +1471,10 @@ video {
 
 #burst-statistics .max-w-3xl {
   max-width: 48rem;
+}
+
+#burst-statistics .max-w-4xl {
+  max-width: 56rem;
 }
 
 #burst-statistics .max-w-64 {
@@ -1463,6 +1495,10 @@ video {
 
 #burst-statistics .max-w-\[40ch\] {
   max-width: 40ch;
+}
+
+#burst-statistics .max-w-\[500px\] {
+  max-width: 500px;
 }
 
 #burst-statistics .max-w-\[600px\] {
@@ -2078,6 +2114,10 @@ video {
   list-style-type: decimal;
 }
 
+#burst-statistics .list-disc {
+  list-style-type: disc;
+}
+
 #burst-statistics .list-none {
   list-style-type: none;
 }
@@ -2317,6 +2357,10 @@ video {
   align-self: flex-start;
 }
 
+#burst-statistics .overflow-auto {
+  overflow: auto;
+}
+
 #burst-statistics .overflow-hidden {
   overflow: hidden;
 }
@@ -2369,6 +2413,10 @@ video {
 
 #burst-statistics .rounded-2xl {
   border-radius: 1rem;
+}
+
+#burst-statistics .rounded-\[15px\] {
+  border-radius: 15px;
 }
 
 #burst-statistics .rounded-\[9px\] {
@@ -2894,6 +2942,11 @@ video {
   background-color: rgb(29 60 143 / var(--tw-bg-opacity, 1));
 }
 
+#burst-statistics .bg-blue-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(239 246 255 / var(--tw-bg-opacity, 1));
+}
+
 #burst-statistics .bg-blue-500 {
   --tw-bg-opacity: 1;
   background-color: rgb(59 130 246 / var(--tw-bg-opacity, 1));
@@ -3088,6 +3141,10 @@ video {
   --tw-bg-opacity: 0.05;
 }
 
+#burst-statistics .bg-gradient-to-r {
+  background-image: linear-gradient(to right, var(--tw-gradient-stops));
+}
+
 #burst-statistics .bg-toastify-progress-light {
   background-image: linear-gradient(to right, #4cd964, #5ac8fa, #007aff, #34aadc, #5856d6, #ff2d55);
 }
@@ -3101,6 +3158,12 @@ video {
 #burst-statistics .from-blue {
   --tw-gradient-from: #1D3C8F var(--tw-gradient-from-position);
   --tw-gradient-to: rgb(29 60 143 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+#burst-statistics .from-blue-600 {
+  --tw-gradient-from: #2563eb var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(37 99 235 / 0) var(--tw-gradient-to-position);
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
 }
 
@@ -3185,6 +3248,10 @@ video {
   --tw-gradient-to: #2B8133 var(--tw-gradient-to-position);
 }
 
+#burst-statistics .to-purple-600 {
+  --tw-gradient-to: #9333ea var(--tw-gradient-to-position);
+}
+
 #burst-statistics .to-wp-black {
   --tw-gradient-to: #1d2327 var(--tw-gradient-to-position);
 }
@@ -3195,6 +3262,11 @@ video {
 
 #burst-statistics .to-yellow {
   --tw-gradient-to: #FFDA4A var(--tw-gradient-to-position);
+}
+
+#burst-statistics .bg-clip-text {
+  -webkit-background-clip: text;
+          background-clip: text;
 }
 
 #burst-statistics .fill-black {
@@ -3501,6 +3573,11 @@ video {
   line-height: 1.75rem;
 }
 
+#burst-statistics .text-3xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
 #burst-statistics .text-\[1\.5em\] {
   font-size: 1.5em;
 }
@@ -3533,6 +3610,11 @@ video {
 #burst-statistics .text-xs {
   font-size: 0.625rem;
   line-height: 0.875rem;
+}
+
+#burst-statistics .text-xxs {
+  font-size: 0.6875rem;
+  line-height: 1rem;
 }
 
 #burst-statistics .font-black {
@@ -3681,6 +3763,10 @@ video {
 #burst-statistics .text-toastify-warning {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+
+#burst-statistics .text-transparent {
+  color: transparent;
 }
 
 #burst-statistics .text-white {
@@ -4239,6 +4325,13 @@ video {
 		display: none;
 	}
 
+#burst-statistics  .burst-completed,:is(
+	#burst-statistics .burst-success) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(43 129 51 / var(--tw-bg-opacity, 1));
+  color: #ffffffe5;
+}
+
 #burst-statistics  .burst-error {
   --tw-bg-opacity: 1;
   background-color: rgb(198 39 59 / var(--tw-bg-opacity, 1));
@@ -4294,6 +4387,26 @@ video {
 
 #burst-statistics .\[animation-timing-function\:cubic-bezier\(0\.16\2c 1\2c 0\.3\2c 1\)\] {
   animation-timing-function: cubic-bezier(0.16,1,0.3,1);
+}
+
+#burst-statistics .\[background-attachment\:local\2c local\2c scroll\2c scroll\] {
+  background-attachment: local,local,scroll,scroll;
+}
+
+#burst-statistics .\[background-image\:linear-gradient\(to_top\2c theme\(colors\.blue\.light\)\2c theme\(colors\.blue\.light\)\)\2c linear-gradient\(to_top\2c theme\(colors\.blue\.light\)\2c theme\(colors\.blue\.light\)\)\2c linear-gradient\(to_top\2c rgba\(0\2c 0\2c 0\2c 0\.15\)\2c rgba\(255\2c 255\2c 255\2c 0\)\)\2c linear-gradient\(to_bottom\2c rgba\(0\2c 0\2c 0\2c 0\.15\)\2c rgba\(255\2c 255\2c 255\2c 0\)\)\] {
+  background-image: linear-gradient(to top,#ebf2f9,#ebf2f9),linear-gradient(to top,#ebf2f9,#ebf2f9),linear-gradient(to top,rgba(0,0,0,0.15),rgba(255,255,255,0)),linear-gradient(to bottom,rgba(0,0,0,0.15),rgba(255,255,255,0));
+}
+
+#burst-statistics .\[background-position\:bottom_center\2c top_center\2c bottom_center\2c top_center\] {
+  background-position: bottom center,top center,bottom center,top center;
+}
+
+#burst-statistics .\[background-repeat\:no-repeat\] {
+  background-repeat: no-repeat;
+}
+
+#burst-statistics .\[background-size\:100\%_25px\2c 100\%_25px\2c 100\%_15px\2c 100\%_15px\] {
+  background-size: 100% 25px,100% 25px,100% 15px,100% 15px;
 }
 
 #burst-statistics .\[grid-template-columns\:26px_1fr_auto_auto_auto\] {
