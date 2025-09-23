@@ -134,6 +134,9 @@ create_rc_zip() {
     "--exclude=/src/TeamUpdraft/vendor/"
     "--exclude=/mailer/maizzle/node_modules/"
     "--exclude=/docker-compose-bitnami.yml"
+    "--exclude=/dist-build/"
+    "--exclude=/dist/"
+    "--exclude=/.idea/"
   )
 
     EXCLUDES+=("--exclude=languages/*.po")
