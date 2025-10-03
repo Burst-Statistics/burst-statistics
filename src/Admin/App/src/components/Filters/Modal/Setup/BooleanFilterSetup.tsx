@@ -83,8 +83,25 @@ const BooleanFilterSetup: React.FC<BooleanFilterSetupProps> = ({
           label: __('Returning visitors', 'burst-statistics'),
         }
       };
-    }
-
+    } else if (filterKey === 'entry_exit_pages') {
+    return {
+      '': {
+        type: '',
+        icon: 'user',
+        label: __('All pages', 'burst-statistics'),
+      },
+      'entry': {
+        type: 'entry',
+        icon: 'user-plus',
+        label: __('Entry pages', 'burst-statistics'),
+      },
+      'exit': {
+        type: 'exit',
+        icon: 'user-check',
+        label: __('Exit pages', 'burst-statistics'),
+      }
+    };
+  }
     // Fallback for any other boolean filters
     return {
       '': {

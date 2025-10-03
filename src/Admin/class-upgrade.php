@@ -22,6 +22,26 @@ class Upgrade {
 	 */
 	public function init(): void {
 		add_action( 'init', [ $this, 'check_upgrade' ], 10, 2 );
+		add_action( 'burst_daily', [ $this, 'check_upgrade_done' ] );
+	}
+
+	/**
+	 * On a daily basis, check if the last upgrade has been completed.
+	 */
+	public function check_upgrade_done(): void {
+		$plugin_activated_time = get_option( 'burst_activation_time', 0 );
+		$one_hour_ago          = time() - HOUR_IN_SECONDS;
+		if ( $plugin_activated_time === 0 || $one_hour_ago < $plugin_activated_time ) {
+			return;
+		}
+		$last_upgrade_started  = get_option( 'burst_last_upgrade_started_time', 0 );
+		$last_upgrade_finished = get_option( 'burst_last_db_upgrade_finished_time', 0 );
+		if ( $last_upgrade_started < $last_upgrade_finished ) {
+			return;
+		}
+		$this::error_log( "running fallback db upgrade, activation time $plugin_activated_time upgrade started $last_upgrade_started upgrade finished $last_upgrade_finished" );
+		// the last db upgrade did not run after the last plugin upgraded, so run it now.
+		wp_schedule_single_event( time() + 60, 'burst_cron_table_upgrade' );
 	}
 
 	/**
@@ -43,6 +63,8 @@ class Upgrade {
 		if ( $prev_version === $new_version ) {
 			return;
 		}
+
+		update_option( 'burst_last_upgrade_started_time', time(), false );
 
 		// install the tables, so we can access new columns below if necessary.
 		do_action( 'burst_upgrade_before', $prev_version );
@@ -215,12 +237,6 @@ class Upgrade {
 		}
 
 		do_action( 'burst_upgrade_after', $prev_version );
-
-		// ensure that we schedule at least one database upgrade.
-		$admin = new Admin();
-		$admin->run_table_init_hook();
-		$admin->create_js_file();
-
 		update_option( 'burst-current-version', $new_version );
 	}
 

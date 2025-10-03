@@ -1247,18 +1247,19 @@ class Statistics {
 		$possible_filters_with_prefix = apply_filters(
 			'burst_possible_filters_with_prefix',
 			[
-				'bounces'     => 'session_bounces.bounce',
-				'new_visitor' => 'statistics.first_time_visit',
-				'page_url'    => 'statistics.page_url',
-				'referrer'    => 'statistics.referrer',
-				'device'      => 'statistics.device_id',
-				'browser'     => 'statistics.browser_id',
-				'platform'    => 'statistics.platform_id',
-				'platform_id' => 'statistics.platform_id',
-				'browser_id'  => 'statistics.browser_id',
-				'device_id'   => 'statistics.device_id',
+				'bounces'          => 'session_bounces.bounce',
+				'new_visitor'      => 'statistics.first_time_visit',
+				'page_url'         => 'statistics.page_url',
+				'referrer'         => 'statistics.referrer',
+				'device'           => 'statistics.device_id',
+				'browser'          => 'statistics.browser_id',
+				'platform'         => 'statistics.platform_id',
+				'platform_id'      => 'statistics.platform_id',
+				'browser_id'       => 'statistics.browser_id',
+				'device_id'        => 'statistics.device_id',
+				'entry_exit_pages' => 'entry_exit_pages',
 				// only needed for pages datatable.
-				'goal_id'     => 'goals.goal_id',
+				'goal_id'          => 'goals.goal_id',
 			]
 		);
 
@@ -1285,7 +1286,11 @@ class Statistics {
 			if ( array_key_exists( $filter, $possible_filters_with_prefix ) ) {
 				$qualified_name = $possible_filters_with_prefix[ $filter ];
 				// Special handling for include/exclude values.
-				if ( $value === 'include' ) {
+				if ( $filter === 'entry_exit_pages' && $value !== '' ) {
+					$where_clauses[] = $value === 'entry' ?
+						'statistics.first_time_visit = 1 ' :
+						"statistics.ID IN ( SELECT MAX(ID) FROM {$wpdb->prefix}burst_statistics GROUP BY session_id)";
+				} elseif ( $value === 'include' ) {
 					$where_clauses[] = "{$qualified_name} = 1";
 				} elseif ( $value === 'exclude' ) {
 					$where_clauses[] = "{$qualified_name} = 0";
@@ -1613,7 +1618,7 @@ class Statistics {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		global $wpdb;
 		$charset_collate = $wpdb->get_charset_collate();
-
+		update_option( 'burst_last_db_upgrade_finished_time', time(), false );
 		// Create tables without indexes first.
 		$tables = [
 			'burst_statistics'       => "CREATE TABLE {$wpdb->prefix}burst_statistics (

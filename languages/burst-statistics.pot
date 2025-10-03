@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Burst Pro plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: Burst Pro 2.2.7\n"
+"Project-Id-Version: Burst Pro 2.2.8\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/burst-pro\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2025-09-17T10:34:21+00:00\n"
+"POT-Creation-Date: 2025-09-25T11:11:31+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: burst-statistics\n"
@@ -40,76 +40,76 @@ msgid "https://burst-statistics.com"
 msgstr ""
 
 #: src/Admin/App/class-app.php:164
-#: src/Admin/App/class-app.php:716
+#: src/Admin/App/class-app.php:736
 #: src/Frontend/class-frontend-admin.php:44
 msgid "Statistics"
 msgstr ""
 
 #: src/Admin/App/class-app.php:261
-#: src/Admin/class-admin.php:604
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
-#: src/Admin/App/src/components/Common/Header.jsx:106
+#: src/Admin/class-admin.php:691
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
+#: src/Admin/App/src/components/Common/Header.jsx:171
 #: src/Admin/App/src/components/Common/ProPopover.js:66
 #: src/Admin/App/src/components/Goals/GoalsSettings.js:171
 #: src/Admin/App/src/components/Settings/SettingsGroupBlock.jsx:34
 msgid "Upgrade to Pro"
 msgstr ""
 
-#: src/Admin/App/class-app.php:715
+#: src/Admin/App/class-app.php:735
 #: src/Admin/App/config/menu.php:8
 msgid "Dashboard"
 msgstr ""
 
-#: src/Admin/App/class-app.php:717
+#: src/Admin/App/class-app.php:737
 #: src/Admin/App/config/menu.php:37
 msgid "Settings"
 msgstr ""
 
-#: src/Admin/App/class-app.php:1092
+#: src/Admin/App/class-app.php:1125
 #: src/Admin/Statistics/class-goal-statistics.php:251
 #: src/Frontend/class-shortcodes.php:465
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/api/getDevicesData.js:12
 #: src/Admin/App/src/components/Statistics/DevicesBlock.js:46
 msgid "Desktop"
 msgstr ""
 
-#: src/Admin/App/class-app.php:1095
+#: src/Admin/App/class-app.php:1128
 #: src/Admin/Statistics/class-goal-statistics.php:254
 #: src/Frontend/class-shortcodes.php:467
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/api/getDevicesData.js:14
 #: src/Admin/App/src/components/Statistics/DevicesBlock.js:48
 msgid "Mobile"
 msgstr ""
 
-#: src/Admin/App/class-app.php:1098
+#: src/Admin/App/class-app.php:1131
 #: src/Admin/Statistics/class-goal-statistics.php:257
 #: src/Frontend/class-shortcodes.php:466
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/api/getDevicesData.js:13
 #: src/Admin/App/src/components/Statistics/DevicesBlock.js:47
 msgid "Tablet"
 msgstr ""
 
-#: src/Admin/App/class-app.php:1101
+#: src/Admin/App/class-app.php:1134
 #: src/Admin/Statistics/class-goal-statistics.php:261
 #: src/Frontend/class-shortcodes.php:468
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/api/getDevicesData.js:15
 #: src/Admin/App/src/components/Statistics/DevicesBlock.js:49
 msgid "Other"
 msgstr ""
 
-#: src/Admin/App/class-app.php:1491
+#: src/Admin/App/class-app.php:1524
 msgid "Settings saved successfully"
 msgstr ""
 
-#: src/Admin/App/class-app.php:1492
+#: src/Admin/App/class-app.php:1525
 msgid "No changes were made"
 msgstr ""
 
@@ -169,9 +169,9 @@ msgstr ""
 #: src/Admin/App/config/fields.php:124
 #: src/Admin/App/config/menu.php:62
 #: src/Admin/App/config/menu.php:66
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:245
-#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:273
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:236
+#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:264
 msgid "Goals"
 msgstr ""
 
@@ -381,8 +381,8 @@ msgstr ""
 #: src/Admin/Statistics/class-goal-statistics.php:150
 #: src/Frontend/class-frontend-statistics.php:636
 #: src/Traits/trait-sanitize.php:620
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/api/getCompareData.js:14
 #: src/Admin/App/src/api/getCompareData.js:22
 #: src/Admin/App/src/api/getCompareData.js:46
@@ -399,8 +399,8 @@ msgstr ""
 #: src/Admin/Statistics/class-goal-statistics.php:140
 #: src/Frontend/class-frontend-statistics.php:637
 #: src/Traits/trait-sanitize.php:619
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/api/getCompareData.js:13
 #: src/Admin/App/src/api/getCompareData.js:21
 #: src/Admin/App/src/api/getCompareData.js:37
@@ -418,12 +418,12 @@ msgstr ""
 #: src/Admin/Mailer/class-mail-reports.php:363
 #: src/Admin/Posts/class-posts.php:80
 #: src/Admin/Statistics/class-goal-statistics.php:132
-#: src/Frontend/class-frontend-admin.php:78
+#: src/Frontend/class-frontend-admin.php:82
 #: src/Frontend/class-frontend-statistics.php:635
 #: src/Pro/class-pro.php:150
 #: src/Traits/trait-sanitize.php:618
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/api/getCompareData.js:12
 #: src/Admin/App/src/api/getCompareData.js:20
 #: src/Admin/App/src/api/getCompareData.js:28
@@ -435,15 +435,15 @@ msgid "Pageviews"
 msgstr ""
 
 #: src/Admin/App/config/menu.php:18
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/components/Statistics/InsightsBlock.js:47
 msgid "Insights"
 msgstr ""
 
 #: src/Admin/App/config/menu.php:27
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useFiltersStore.js:15
 msgid "Sources"
 msgstr ""
@@ -493,78 +493,74 @@ msgstr ""
 msgid "Secret Settings"
 msgstr ""
 
-#: src/Admin/App/config/tasks.php:18
-msgid "Please check if your REST API is loading correctly. Your site currently is using the slower Ajax fallback method to load the settings."
-msgstr ""
-
-#: src/Admin/App/config/tasks.php:31
+#: src/Admin/App/config/tasks.php:19
 msgid "Due to your server or website configuration it is not possible to track statistics."
 msgstr ""
 
-#: src/Admin/App/config/tasks.php:44
+#: src/Admin/App/config/tasks.php:32
 #: src/Pro/class-pro.php:203
 msgid "Black Friday"
 msgstr ""
 
+#: src/Admin/App/config/tasks.php:32
 #: src/Admin/App/config/tasks.php:44
-#: src/Admin/App/config/tasks.php:56
 msgid "Get 40% Off Burst Pro!"
 msgstr ""
 
-#: src/Admin/App/config/tasks.php:44
+#: src/Admin/App/config/tasks.php:32
 #: src/Pro/class-pro.php:203
 msgid "Limited time offer!"
 msgstr ""
 
-#: src/Admin/App/config/tasks.php:56
+#: src/Admin/App/config/tasks.php:44
 #: src/Pro/class-pro.php:215
 msgid "Cyber Monday"
 msgstr ""
 
-#: src/Admin/App/config/tasks.php:56
+#: src/Admin/App/config/tasks.php:44
 #: src/Pro/class-pro.php:215
 msgid "Last chance!"
 msgstr ""
 
 #. translators: 1: opening anchor tag to support thread, 2: closing anchor tag.
-#: src/Admin/App/config/tasks.php:70
+#: src/Admin/App/config/tasks.php:58
 msgid "If you have any suggestions to improve our plugin, feel free to %sopen a support thread%s."
 msgstr ""
 
-#: src/Admin/App/config/tasks.php:79
+#: src/Admin/App/config/tasks.php:67
 msgid "Statistics are now shown including bounces. Your data has not changed, only the bounces are now included in what you see."
 msgstr ""
 
-#: src/Admin/App/config/tasks.php:91
+#: src/Admin/App/config/tasks.php:79
 msgid "Because your cron has not been triggered more than 24 hours, some functionality might not work as expected, like updating the page views counter in a post."
 msgstr ""
 
 #. translators: %d is the number of visits detected from a single user in 24 hours.
-#: src/Admin/App/config/tasks.php:103
-msgid "Burst has detected an anomalous number of visits (%d in 24 hours) from one user. As these visits distort your statistics, these have been removed."
+#: src/Admin/App/config/tasks.php:91
+msgid "Burst has detected an anomalous number of visits (%d in 24 hours) from one user with UID %s. You can consider removing these hits by using the \"fix\" button, but if you're sure these are valid visits, you can dismiss this notice."
 msgstr ""
 
-#: src/Admin/App/config/tasks.php:110
+#: src/Admin/App/config/tasks.php:99
 msgid "Thanks for using Burst for over a year! To show our appreciation, enjoy 3 months of Burst Pro for free."
 msgstr ""
 
 #. translators: %d: error count, %s time of error.
-#: src/Admin/App/config/tasks.php:123
+#: src/Admin/App/config/tasks.php:112
 msgid "Burst has detected %d PHP errors, the last one on %s. Detected errors:"
 msgstr ""
 
 #. translators: %d: error count, %s time of error.
-#: src/Admin/App/config/tasks.php:135
+#: src/Admin/App/config/tasks.php:124
 msgid "Burst has detecting missing database tables: %s."
 msgstr ""
 
 #. translators: %d: error count, %s time of error.
-#: src/Admin/App/config/tasks.php:135
+#: src/Admin/App/config/tasks.php:124
 msgid "Please deactivate Burst (keep the data!), then activate again, to trigger a database upgrade."
 msgstr ""
 
 #. translators: %s is the milestone number (compact, e.g. 1k, 10k, 1M).
-#: src/Admin/App/config/tasks.php:147
+#: src/Admin/App/config/tasks.php:136
 msgid "You’ve hit %s pageviews this month!"
 msgstr ""
 
@@ -581,7 +577,7 @@ msgid "Track all hits networkwide, and view them on the dashboard of your main s
 msgstr ""
 
 #: src/Admin/AutoInstaller/class-auto-installer.php:92
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OtherPluginsBlock.js:15
 #: src/TeamUpdraft/Other_Plugins/build/index.js:1
 #: src/TeamUpdraft/Other_Plugins/src/components/OtherPluginElement.js:15
@@ -589,7 +585,7 @@ msgid "Install"
 msgstr ""
 
 #: src/Admin/AutoInstaller/class-auto-installer.php:96
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OtherPluginsBlock.js:199
 #: src/TeamUpdraft/Other_Plugins/build/index.js:1
 #: src/TeamUpdraft/Other_Plugins/src/components/OtherPluginElement.js:62
@@ -687,9 +683,9 @@ msgid "Visit Dashboard"
 msgstr ""
 
 #: src/Admin/AutoInstaller/class-auto-installer.php:481
-#: src/Admin/class-admin.php:878
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
+#: src/Admin/class-admin.php:965
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
 #: src/Admin/App/src/components/Goals/DeleteGoalModal.js:32
 msgid "Cancel"
 msgstr ""
@@ -747,7 +743,7 @@ msgstr ""
 msgid "Your license key has reached its activation limit."
 msgstr ""
 
-#: src/Admin/AutoInstaller/class-auto-installer.php:839
+#: src/Admin/AutoInstaller/class-auto-installer.php:840
 msgid "An error occurred while installing the plugin."
 msgstr ""
 
@@ -785,14 +781,14 @@ msgid "Activate your license to get access to all features, and easy plugin upda
 msgstr ""
 
 #: src/Admin/Burst_Onboarding/steps.php:34
-#: src/Pro/Licensing/class-licensing.php:267
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
+#: src/Pro/Licensing/class-licensing.php:282
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
 #: src/Admin/App/src/components/Fields/LicenseField.jsx:47
 msgid "Enter your license key"
 msgstr ""
 
 #: src/Admin/Burst_Onboarding/steps.php:52
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OtherPluginsBlock.js:16
 #: src/Admin/App/src/components/Dashboard/OtherPluginsBlock.js:226
 #: src/TeamUpdraft/Other_Plugins/build/index.js:1
@@ -886,45 +882,45 @@ msgid "Go to the dashboard and explore Burst!"
 msgstr ""
 
 #. translators: 1: opening anchor tag to the privacy statement, 2: closing anchor tag.
-#: src/Admin/class-admin.php:556
+#: src/Admin/class-admin.php:643
 msgid "This website uses Burst Statistics, a Privacy-Friendly Statistics Tool to analyze visitor behavior. For this functionality we (this website) collect anonymized data, stored locally without sharing it with other parties. For more information, please read the %s Privacy Statement %s from Burst."
 msgstr ""
 
-#: src/Admin/class-admin.php:585
+#: src/Admin/class-admin.php:672
 msgid "Default goal"
 msgstr ""
 
-#: src/Admin/class-admin.php:625
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
-#: src/Admin/App/src/components/Common/Header.jsx:102
+#: src/Admin/class-admin.php:712
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
+#: src/Admin/App/src/components/Common/Header.jsx:166
 msgid "Support"
 msgstr ""
 
-#: src/Admin/class-admin.php:857
+#: src/Admin/class-admin.php:944
 msgid "Are you sure? With Burst Statistics active:"
 msgstr ""
 
-#: src/Admin/class-admin.php:859
+#: src/Admin/class-admin.php:946
 msgid "You have access to your analytical data"
 msgstr ""
 
-#: src/Admin/class-admin.php:860
+#: src/Admin/class-admin.php:947
 msgid "Asking consent for statistics often not required."
 msgstr ""
 
-#: src/Admin/class-admin.php:861
+#: src/Admin/class-admin.php:948
 msgid "Your data securely on your own server."
 msgstr ""
 
-#: src/Admin/class-admin.php:880
+#: src/Admin/class-admin.php:967
 msgid "Deactivate"
 msgstr ""
 
-#: src/Admin/class-admin.php:882
+#: src/Admin/class-admin.php:969
 msgid "Deactivate and delete all data"
 msgstr ""
 
-#: src/Admin/class-admin.php:953
+#: src/Admin/class-admin.php:1040
 msgid "Successfully cleared data."
 msgstr ""
 
@@ -958,50 +954,52 @@ msgstr ""
 msgid "Don't show again"
 msgstr ""
 
-#: src/Admin/class-tasks.php:224
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/class-tasks.php:223
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 msgid "Completed"
 msgstr ""
 
-#: src/Admin/class-tasks.php:225
+#: src/Admin/class-tasks.php:224
 msgid "New!"
 msgstr ""
 
-#: src/Admin/class-tasks.php:226
-#: src/Pro/Licensing/class-licensing.php:871
+#: src/Admin/class-tasks.php:225
+#: src/Pro/Licensing/class-licensing.php:897
 msgid "Warning"
 msgstr ""
 
-#: src/Admin/class-tasks.php:227
+#: src/Admin/class-tasks.php:226
 msgid "Error"
 msgstr ""
 
-#: src/Admin/class-tasks.php:228
-#: src/Pro/Licensing/class-licensing.php:872
+#: src/Admin/class-tasks.php:227
+#: src/Pro/Licensing/class-licensing.php:898
 msgid "Open"
 msgstr ""
 
-#: src/Admin/class-tasks.php:229
-#: src/Pro/Licensing/class-licensing.php:874
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/class-tasks.php:228
+#: src/Pro/Licensing/class-licensing.php:900
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
+#: src/Admin/App/src/components/Common/Header.jsx:153
 #: src/Admin/App/src/components/Common/Pro.js:20
 msgid "Pro"
 msgstr ""
 
-#: src/Admin/class-tasks.php:230
+#: src/Admin/class-tasks.php:229
 msgid "Sale"
 msgstr ""
 
-#: src/Admin/class-tasks.php:231
+#: src/Admin/class-tasks.php:230
 msgid "Offer"
 msgstr ""
 
-#: src/Admin/class-tasks.php:232
+#: src/Admin/class-tasks.php:231
 msgid "Milestone"
 msgstr ""
 
-#: src/Admin/class-tasks.php:233
+#: src/Admin/class-tasks.php:232
 msgid "Update"
 msgstr ""
 
@@ -1014,43 +1012,47 @@ msgstr ""
 msgid "For large databases this process may take a while. Your data will be tracked as usual."
 msgstr ""
 
-#: src/Admin/Debug/class-debug.php:96
+#: src/Admin/Debug/class-debug.php:105
 msgid "No debug log entries found."
 msgstr ""
 
-#: src/Admin/Debug/class-debug.php:112
+#: src/Admin/Debug/class-debug.php:121
 msgid "Geo IP File"
 msgstr ""
 
-#: src/Admin/Debug/class-debug.php:117
+#: src/Admin/Debug/class-debug.php:126
 msgid "Detected Geo IP"
 msgstr ""
 
-#: src/Admin/Debug/class-debug.php:121
+#: src/Admin/Debug/class-debug.php:130
 msgid "Location Data"
 msgstr ""
 
-#: src/Admin/Debug/class-debug.php:125
+#: src/Admin/Debug/class-debug.php:134
 msgid "Burst Database Tables"
 msgstr ""
 
-#: src/Admin/Debug/class-debug.php:129
+#: src/Admin/Debug/class-debug.php:138
 msgid "Burst Settings"
 msgstr ""
 
-#: src/Admin/Debug/class-debug.php:133
+#: src/Admin/Debug/class-debug.php:142
 msgid "Burst WordPress options"
 msgstr ""
 
-#: src/Admin/Debug/class-debug.php:142
+#: src/Admin/Debug/class-debug.php:147
+msgid "Burst WordPress transients"
+msgstr ""
+
+#: src/Admin/Debug/class-debug.php:156
 msgid "Debug Log"
 msgstr ""
 
-#: src/Admin/Debug/class-debug.php:146
+#: src/Admin/Debug/class-debug.php:160
 msgid "Used Constants"
 msgstr ""
 
-#: src/Admin/Debug/class-debug.php:152
+#: src/Admin/Debug/class-debug.php:166
 msgid "Burst Debug Information"
 msgstr ""
 
@@ -1084,7 +1086,7 @@ msgid "Your weekly insights for %s are here!"
 msgstr ""
 
 #: src/Admin/Mailer/class-mail-reports.php:197
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/components/Statistics/CompareBlock.js:56
 msgid "Compare"
 msgstr ""
@@ -1099,9 +1101,9 @@ msgstr ""
 
 #: src/Admin/Mailer/class-mail-reports.php:257
 #: src/Pro/class-pro-statistics.php:161
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:133
 #: src/Admin/App/src/store/useFiltersStore.js:107
 msgid "Campaign"
@@ -1113,8 +1115,8 @@ msgid "Conversion rate"
 msgstr ""
 
 #: src/Admin/Mailer/class-mail-reports.php:261
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:77
 msgid "Referrers"
 msgstr ""
@@ -1122,8 +1124,8 @@ msgstr ""
 #: src/Admin/Mailer/class-mail-reports.php:372
 #: src/Frontend/class-frontend-statistics.php:638
 #: src/Traits/trait-sanitize.php:627
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:47
 msgid "Bounce rate"
 msgstr ""
@@ -1133,9 +1135,9 @@ msgstr ""
 #: src/Admin/Statistics/class-statistics.php:1307
 #: src/Frontend/class-frontend-statistics.php:596
 #: src/Frontend/class-shortcodes.php:446
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:19
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:26
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:20
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:27
 msgid "Direct"
 msgstr ""
 
@@ -1152,8 +1154,8 @@ msgid "See full report"
 msgstr ""
 
 #: src/Admin/Mailer/class-mailer.php:52
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:4
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:4
 #: src/Admin/App/src/components/Settings/SettingsNotices.jsx:74
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:403
 msgid "Learn more"
@@ -1253,14 +1255,14 @@ msgstr ""
 msgid "No pageviews"
 msgstr ""
 
-#: src/Frontend/class-frontend-admin.php:86
+#: src/Frontend/class-frontend-admin.php:90
 msgid "Go to dashboard"
 msgstr ""
 
 #: src/Frontend/class-frontend-statistics.php:640
 #: src/Traits/trait-sanitize.php:624
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/hooks/useFilterDisplay.js:87
 msgid "New visitors"
 msgstr ""
@@ -1293,7 +1295,7 @@ msgstr ""
 
 #: src/Frontend/Goals/class-goal.php:77
 #: src/Frontend/Goals/class-goal.php:117
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
 #: src/Admin/App/src/components/Goals/GoalSetup.js:54
 msgid "New goal"
 msgstr ""
@@ -1440,85 +1442,85 @@ msgstr ""
 
 #: src/Pro/class-pro-statistics.php:155
 #: src/Pro/class-pro.php:150
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:98
 #: src/Admin/App/src/store/useFiltersStore.js:147
 msgid "Country"
 msgstr ""
 
 #: src/Pro/class-pro-statistics.php:156
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:111
 #: src/Admin/App/src/store/useFiltersStore.js:163
 msgid "City"
 msgstr ""
 
 #: src/Pro/class-pro-statistics.php:157
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:105
 #: src/Admin/App/src/store/useFiltersStore.js:155
 msgid "State"
 msgstr ""
 
 #: src/Pro/class-pro-statistics.php:158
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:117
 msgid "Continent"
 msgstr ""
 
 #: src/Pro/class-pro-statistics.php:159
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:140
 #: src/Admin/App/src/store/useFiltersStore.js:115
 msgid "Source"
 msgstr ""
 
 #: src/Pro/class-pro-statistics.php:160
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:146
 #: src/Admin/App/src/store/useFiltersStore.js:123
 msgid "Medium"
 msgstr ""
 
 #: src/Pro/class-pro-statistics.php:162
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:152
 #: src/Admin/App/src/store/useFiltersStore.js:131
 msgid "Term"
 msgstr ""
 
 #: src/Pro/class-pro-statistics.php:163
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:158
 #: src/Admin/App/src/store/useFiltersStore.js:139
 msgid "Content"
 msgstr ""
 
 #: src/Pro/class-pro-statistics.php:164
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:173
 msgid "Parameter"
 msgstr ""
 
 #: src/Pro/class-pro-statistics.php:165
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:167
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:180
 msgid "Parameters"
@@ -1528,14 +1530,14 @@ msgstr ""
 #: src/Pro/class-pro-statistics.php:324
 #: src/Pro/class-pro-statistics.php:333
 #: src/Pro/class-pro-statistics.php:336
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:3
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:3
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Dashboard/GoalStatus.js:23
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:121
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:122
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:214
 #: src/Admin/App/src/components/Statistics/Flag.js:28
 #: src/Admin/App/src/utils/formatting.js:261
@@ -2581,7 +2583,7 @@ msgid "South America"
 msgstr ""
 
 #: src/Pro/class-pro.php:77
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
 #: src/Admin/App/src/components/Fields/LicenseField.jsx:146
 msgid "License status"
 msgstr ""
@@ -2599,112 +2601,112 @@ msgstr ""
 msgid "40% Off Extra Websites! Expand to more sites"
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:62
+#: src/Pro/Licensing/class-licensing.php:77
 msgid "Activate your license for automatic updates."
 msgstr ""
 
 #. translators: 1: opening anchor tag to the license input, 2: closing anchor tag.
-#: src/Pro/Licensing/class-licensing.php:193
+#: src/Pro/Licensing/class-licensing.php:208
 msgid "Please %senter your license key%s to activate your license."
 msgstr ""
 
 #. translators: 1: opening anchor tag to the license page, 2: closing anchor tag.
-#: src/Pro/Licensing/class-licensing.php:204
+#: src/Pro/Licensing/class-licensing.php:219
 msgid "Please check your %slicense status%s."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:224
-#: src/Pro/Licensing/class-licensing.php:229
+#: src/Pro/Licensing/class-licensing.php:239
+#: src/Pro/Licensing/class-licensing.php:244
 msgid "License"
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:276
+#: src/Pro/Licensing/class-licensing.php:291
 msgid "Get early access to the latest features by enabling  beta releases"
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:278
+#: src/Pro/Licensing/class-licensing.php:293
 msgid "Beta releases are tested in the automated testing queue, but contain major new features that may not yet be stable. Not recommended on production."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:680
+#: src/Pro/Licensing/class-licensing.php:706
 msgid "Not available"
 msgstr ""
 
 #. translators: %s is the license expiration date.
-#: src/Pro/Licensing/class-licensing.php:683
+#: src/Pro/Licensing/class-licensing.php:709
 msgid "You have a lifetime license."
 msgstr ""
 
 #. translators: %s is the license expiration date.
-#: src/Pro/Licensing/class-licensing.php:683
+#: src/Pro/Licensing/class-licensing.php:709
 msgid "Valid until %s."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:688
+#: src/Pro/Licensing/class-licensing.php:714
 msgid "Upgrade your license for more site activations"
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:690
+#: src/Pro/Licensing/class-licensing.php:716
 msgid "You can renew your license on your account."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:694
+#: src/Pro/Licensing/class-licensing.php:720
 msgid "Unlimited activations available."
 msgstr ""
 
 #. translators: 1: number of remaining activations, 2: total number of activations allowed.
 #. translators: 1: number of used activations, 2: total number of allowed activations.
-#: src/Pro/Licensing/class-licensing.php:698
-#: src/Pro/Licensing/class-licensing.php:844
+#: src/Pro/Licensing/class-licensing.php:724
+#: src/Pro/Licensing/class-licensing.php:870
 msgid "%s/%s activations available."
 msgstr ""
 
 #. translators: %s is the product name and version, e.g., "Burst Pro 1.2.3".
-#: src/Pro/Licensing/class-licensing.php:715
+#: src/Pro/Licensing/class-licensing.php:741
 msgid "Valid license for %s."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:746
+#: src/Pro/Licensing/class-licensing.php:772
 msgid "The license information could not be retrieved at this moment. Please try again at a later time."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:760
+#: src/Pro/Licensing/class-licensing.php:786
 msgid "Please enter your license key. Available in your account."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:775
+#: src/Pro/Licensing/class-licensing.php:801
 msgid "Please activate your license key."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:788
+#: src/Pro/Licensing/class-licensing.php:814
 msgid "Your license has been revoked. Please contact support."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:801
+#: src/Pro/Licensing/class-licensing.php:827
 msgid "Your license could not be found in our system. Please contact support."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:815
+#: src/Pro/Licensing/class-licensing.php:841
 msgid "This license is not valid. Find out why on your account."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:829
+#: src/Pro/Licensing/class-licensing.php:855
 msgid "This license is not valid for this product. Find out why on your account."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:858
+#: src/Pro/Licensing/class-licensing.php:884
 msgid "Your license key has expired. Please renew your license key on your account."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:873
+#: src/Pro/Licensing/class-licensing.php:899
 msgid "Success"
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:906
+#: src/Pro/Licensing/class-licensing.php:932
 msgid "Your Burst Statistics Pro license hasn't been activated."
 msgstr ""
 
-#: src/Pro/Licensing/class-licensing.php:907
+#: src/Pro/Licensing/class-licensing.php:933
 msgid "Your Burst Statistics Pro license is not valid."
 msgstr ""
 
@@ -2728,40 +2730,40 @@ msgid "Action could not be completed"
 msgstr ""
 
 #: src/Traits/trait-sanitize.php:616
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:67
 #: src/Admin/App/src/store/useFiltersStore.js:35
 msgid "Page URL"
 msgstr ""
 
 #: src/Traits/trait-sanitize.php:617
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:82
 #: src/Admin/App/src/store/useFiltersStore.js:43
 msgid "Referrer"
 msgstr ""
 
 #: src/Traits/trait-sanitize.php:621
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:53
 msgid "Time on page"
 msgstr ""
 
 #: src/Traits/trait-sanitize.php:622
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useGeoStore.js:49
 msgid "Avg. Session Duration"
 msgstr ""
 
 #: src/Traits/trait-sanitize.php:623
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:41
 #: src/Admin/App/src/store/useFiltersStore.js:91
 #: src/Admin/App/src/store/useGeoStore.js:59
@@ -2769,8 +2771,8 @@ msgid "Conversion Rate"
 msgstr ""
 
 #: src/Traits/trait-sanitize.php:625
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/api/getCompareData.js:19
 #: src/Admin/App/src/api/getCompareData.js:66
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:36
@@ -2779,26 +2781,26 @@ msgid "Conversions"
 msgstr ""
 
 #: src/Traits/trait-sanitize.php:626
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/hooks/useFilterDisplay.js:82
 msgid "Bounced visitors"
 msgstr ""
 
 #: src/Traits/trait-sanitize.php:628
 #: src/Traits/trait-sanitize.php:631
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useFiltersStore.js:66
 msgid "Device"
 msgstr ""
 
 #: src/Traits/trait-sanitize.php:629
 #: src/Traits/trait-sanitize.php:632
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useFiltersStore.js:187
 msgid "Browser"
 msgstr ""
@@ -2808,260 +2810,993 @@ msgstr ""
 msgid "Platform"
 msgstr ""
 
-#: src/Admin/App/build/258.df7e096fe424cde82270.js:1
-#: src/Admin/App/src/routes/settings.$settingsId.jsx:46
-msgid "An error occurred loading settings"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/components/Common/ClickToFilter.js:91
-msgid "Click to filter by:"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/components/Common/ClickToFilter.js:92
-msgid "Click to filter"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/components/Common/ClickToFilter.js:97
-msgid "Open in new tab"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/components/Common/ClickToFilter.js:146
-msgid "Filtering by goal & goal specific page"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/components/Common/ClickToFilter.js:149
-msgid "Filtering by goal"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/utils/api.js:33
 #: src/Admin/Dashboard_Widget/build/index.js:1
 msgid "Server error"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/utils/api.js:42
 #: src/Admin/Dashboard_Widget/build/index.js:1
 msgid "Server error in"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/utils/api.js:61
 #: src/Admin/Dashboard_Widget/build/index.js:1
 msgid "Click to copy"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/utils/api.js:64
 #: src/Admin/Dashboard_Widget/build/index.js:1
 msgid "Error copied to clipboard"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Help information"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/src/components/Dashboard/TaskElement.js:24
-msgid "Get 40% Off"
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/hooks/useGoalsData.js:108
+msgid "Failed to save goals"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/src/components/Dashboard/TaskElement.js:25
-msgid "Get 3 months free!"
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/hooks/useGoalsData.js:120
+msgid "Failed to save goal title"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Dashboard/TaskElement.js:26
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/hooks/useGoalsData.js:140
+msgid "Goal added successfully!"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/hooks/useGoalsData.js:144
+msgid "Failed to add goal"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/hooks/useGoalsData.js:176
+msgid "Goal deleted successfully!"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/hooks/useGoalsData.js:181
+msgid "Failed to delete goal"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/hooks/useGoalsData.js:190
+msgid "Predefined goals are a premium feature."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/hooks/useGoalsData.js:206
+msgid "Successfully added predefined goal!"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/hooks/useGoalsData.js:210
+msgid "Failed to add predefined goal"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/components/Common/RecommendBadge.jsx:17
+msgid "Recommended"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/src/api/getDataTableData.js:152
+#: src/Admin/App/src/api/getDataTableData.js:213
+#: src/Admin/App/src/utils/formatting.js:259
+#: src/Admin/App/src/utils/formatting.js:266
+msgid "Not set"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/src/api/getGoalsData.js:106
+#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:50
+#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:117
+#: src/Admin/App/src/components/Dashboard/TodayBlock.js:88
+#: src/Admin/App/src/utils/formatting.js:295
+#: src/Admin/Dashboard_Widget/build/index.js:1
+#: src/Admin/Dashboard_Widget/src/components/DashboardWidget/DashboardWidget.js:159
+msgid "Today"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/src/utils/formatting.js:302
+#: src/Admin/Dashboard_Widget/build/index.js:1
+msgid "Yesterday"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/src/utils/formatting.js:309
+#: src/Admin/Dashboard_Widget/build/index.js:1
+msgid "Last 7 days"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/src/utils/formatting.js:316
+#: src/Admin/Dashboard_Widget/build/index.js:1
+msgid "Last 30 days"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/src/utils/formatting.js:323
+#: src/Admin/Dashboard_Widget/build/index.js:1
+msgid "Last 90 days"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/src/utils/formatting.js:330
+#: src/Admin/Dashboard_Widget/build/index.js:1
+msgid "Last month"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/src/utils/formatting.js:337
+#: src/Admin/Dashboard_Widget/build/index.js:1
+msgid "Week to date"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/src/utils/formatting.js:344
+#: src/Admin/Dashboard_Widget/build/index.js:1
+msgid "Month to date"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/src/utils/formatting.js:351
+#: src/Admin/Dashboard_Widget/build/index.js:1
+msgid "Year to date"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/src/utils/formatting.js:358
+#: src/Admin/Dashboard_Widget/build/index.js:1
+msgid "Last year"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Common/DisabledBadge.jsx:17
+msgid "Disabled"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/TeamUpdraft/Onboarding/build/index.js:1
+msgid "Required"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/src/components/Dashboard/TaskElement.js:21
 #: src/Admin/App/src/components/Fields/LicenseField.jsx:182
 #: src/TeamUpdraft/Onboarding/build/index.js:1
 msgid "More info"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:1
-#: src/Admin/App/src/components/Dashboard/TaskElement.js:30
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/IpBlockField.jsx:105
+msgid "Add current IP address"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+msgid "Action completed successfully"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+msgid "Action failed"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+msgid "An error occurred while executing the action"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+msgid "Processing..."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+msgid "Confirm"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:38
+msgid "Weekly"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:39
+msgid "Monthly"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:49
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:68
+msgid "Invalid email address"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:72
+msgid "Maximum 10 emails allowed"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:76
+msgid "Email address already added"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:64
+msgid "Email address is required"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:108
+msgid "Email"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:112
+msgid "Frequency"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:125
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:131
+msgid "Remove"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:152
+msgid "Recipients will receive weekly or monthly reports with statistics about your website. Add or remove email addresses in the list below."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:159
+msgid "No emails added yet"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:191
+msgid "Enter email address"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:200
+msgid "Add to list"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/TeamUpdraft/Onboarding/build/index.js:1
+#: src/TeamUpdraft/Onboarding/src/components/Fields/Plugins.jsx:45
+msgid "No options found"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+msgid "Show more"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+msgid "Show less"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/store/usePostsStore.js:65
+msgid "Untitled"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:127
+msgid "Warning: The current element is hidden via CSS."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:1
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:209
+msgid "Warning: this element might be hidden via CSS."
+msgstr ""
+
+#. translators: 1: number of elements found 2: the URL of the preview 3: logged in/out status
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:233
+msgid "Found %1$d element on %2$s %3$s"
+msgid_plural "Found %1$d elements on %2$s %3$s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:241
+msgid "(Logged out)"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:241
+msgid "(Logged in)"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:248
+msgid "Selector Examples:"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:254
+msgid "Selects all elements with class \"class-name\"."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:259
+msgid "Selects the element with ID \"element-id\"."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:264
+msgid "Selects all <button> elements."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:269
+msgid "Selects links whose href starts with \"https\"."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:274
+msgid "Selects .nav-item elements that do not have the \"active\" class."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:337
+msgid "Preview panel, use arrow keys to navigate"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:350
+msgid "Step through matches"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:357
+msgid "Previous match"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:368
+msgid "Next match"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:378
+msgid "Set logged in mode"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:378
+msgid "Set logged out mode"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/SelectorField.jsx:406
+msgid "%s elements match your selector. Use arrow keys to cycle through matches."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/EditableTextField.jsx:63
+msgid "Click to edit"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/GoalsHeader.js:35
+#: src/Admin/App/src/components/Fields/EditableTextField.jsx:73
+msgid "Untitled goal"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:10
+msgid "Are you sure you want to delete this goal?"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:12
+msgid "This action cannot be undone."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:15
+msgid "Goal name"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:17
+msgid "Status"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:19
+msgid "Date created"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:40
+#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:69
+msgid "Delete goal"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/GoalStatus.js:19
+#: src/Admin/App/src/components/Goals/GoalSetup.js:64
+msgid "Active"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/GoalStatus.js:21
+#: src/Admin/App/src/components/Goals/GoalSetup.js:64
+msgid "Inactive"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/GoalSetup.js:75
+msgid "Click to de-activate"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/GoalSetup.js:75
+msgid "Click to activate"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/GoalsSettings.js:37
+msgid "Click"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Goals/GoalsSettings.js:39
+msgid "View"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/GoalsSettings.js:50
+msgid "Goals are a great way to track your progress and keep you motivated."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/GoalsSettings.js:56
+msgid "While free users can create one goal, Burst Pro lets you set unlimited goals to plan, measure, and achieve more."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/GoalsSettings.js:84
+msgid "Add goal"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/GoalsSettings.js:103
+msgid "Add predefined goal"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/GoalsSettings.js:129
+msgid "Plug-in you're looking for not listed?"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/GoalsSettings.js:139
+msgid "Request it here!"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/GoalsSettings.js:160
+msgid "Want more goals?"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Goals/GoalsSettings.js:162
+msgid "Upgrade to Burst Pro"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/LicenseField.jsx:80
+msgid "Activating your license gives you automatic updates and support."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/LicenseField.jsx:86
+msgid "Having trouble? %sCheck our installation guide%s."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/LicenseField.jsx:93
+msgid "If that does not help, please %sopen a support ticket%s so we can help you out!"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/LicenseField.jsx:114
+msgid "Enter your license key here."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/LicenseField.jsx:126
+msgid "Deactivate License"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
+#: src/Admin/App/src/components/Fields/LicenseField.jsx:135
+#: src/Admin/App/src/routes/sources.jsx:66
+msgid "Activate License"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/LogoEditorField.jsx:54
+msgid "Select a logo"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/LogoEditorField.jsx:56
+msgid "Set logo"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/LogoEditorField.jsx:110
+msgid "Reset to Default"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/store/useArchivesStore.js:27
+msgid "Deleting..."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/store/useArchivesStore.js:28
+msgid "Archives deleted successfully!"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/store/useArchivesStore.js:29
+msgid "Failed to delete archive"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/store/useArchivesStore.js:71
+msgid "Starting restore..."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/store/useArchivesStore.js:72
+msgid "Restore successfully started!"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/store/useArchivesStore.js:73
+msgid "Failed to start restore process."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:246
+msgid "Archive"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:252
+msgid "Size"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/components/Common/SearchButton.js:18
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:292
+msgid "Search"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:309
+msgid "Download"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:67
+msgid "Because restoring files can conflict with the archiving functionality, archiving has been disabled."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:68
+msgid "Archiving disabled"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:319
+msgid "Restore"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:327
+msgid "Delete"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:331
+msgid "%s items selected"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:336
+msgid "1 item selected"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:344
+msgid "Restore in progress, %s complete"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:365
+#: src/Admin/App/src/components/Statistics/DataTableBlock.js:396
+msgid "of"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:368
+#: src/Admin/App/src/components/Statistics/DataTableBlock.js:399
+msgid "All"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:372
+msgid "No archives"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/Field.jsx:151
+msgid "This field is required"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/Field.jsx:160
+msgid "Invalid format"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/Field.jsx:107
+msgid "Invalid IP address format: "
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Fields/Field.jsx:132
+msgid "Duplicate IP addresses found: "
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Settings/SettingsGroupBlock.jsx:28
+msgid "Unlock Advanced Features with Burst Pro"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Settings/SettingsGroupBlock.jsx:30
+msgid "This setting is exclusive to Pro users."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Settings/SettingsFooter.jsx:14
+msgid "Saving..."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Settings/SettingsFooter.jsx:19
+msgid "Validating..."
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Settings/SettingsFooter.jsx:24
+msgid "You have unsaved changes"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Settings/SettingsFooter.jsx:39
+msgid "Save"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Settings/SettingsNotices.jsx:38
+msgid "Collapse all"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Settings/SettingsNotices.jsx:39
+msgid "Expand all"
+msgstr ""
+
+#: src/Admin/App/build/178.b5fde9cde4dc2fce2de9.js:10
+#: src/Admin/App/src/components/Settings/SettingsNotices.jsx:45
+msgid "Notifications"
+msgstr ""
+
+#: src/Admin/App/build/258.df7e096fe424cde82270.js:1
+#: src/Admin/App/src/routes/settings.$settingsId.jsx:46
+msgid "An error occurred loading settings"
+msgstr ""
+
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/components/Common/ClickToFilter.js:91
+msgid "Click to filter by:"
+msgstr ""
+
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/components/Common/ClickToFilter.js:92
+msgid "Click to filter"
+msgstr ""
+
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/components/Common/ClickToFilter.js:97
+msgid "Open in new tab"
+msgstr ""
+
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/components/Common/ClickToFilter.js:146
+msgid "Filtering by goal & goal specific page"
+msgstr ""
+
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/src/components/Common/ClickToFilter.js:149
+msgid "Filtering by goal"
+msgstr ""
+
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/src/components/Dashboard/TaskElement.js:19
+msgid "Get 40% Off"
+msgstr ""
+
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/src/components/Dashboard/TaskElement.js:20
+msgid "Get 3 months free!"
+msgstr ""
+
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:1
+#: src/Admin/App/src/components/Dashboard/TaskElement.js:27
 msgid "Fix"
 msgstr ""
 
 #. Translators: %d is the number of live visitors.
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 msgid "%d person is exploring your site right now"
 msgid_plural "%d people are exploring your site right now"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/GoalsSettings.js:39
-msgid "View"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:280
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:250
 msgid "Loading..."
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 msgid "Loading tasks..."
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 msgid "No remaining tasks to show"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OverviewFooter.js:31
 msgid "Just now"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OverviewFooter.js:42
 msgid "Last checked:"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OverviewFooter.js:47
 msgid "Loading tracking status..."
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OverviewFooter.js:48
 msgid "Error checking tracking status"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OverviewFooter.js:49
 msgid "Tracking with REST API"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OverviewFooter.js:50
 msgid "Tracking with an endpoint"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OverviewFooter.js:51
 #: src/Admin/App/src/components/Dashboard/OverviewFooter.js:67
 msgid "Tracking is disabled"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OverviewFooter.js:55
 msgid "Tracking does not seem to work. Check manually or contact support."
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OverviewFooter.js:59
 msgid "Tracking is working. You are using the REST API to collect statistics."
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OverviewFooter.js:63
 msgid "Tracking is working. You are using the Burst endpoint to collect statistics. This type of tracking is accurate and lightweight."
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OverviewFooter.js:100
 msgid "View my statistics"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:49
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:50
 msgid "%s second ago"
 msgid_plural "%s seconds ago"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:59
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:60
 msgid "%s minute ago"
 msgid_plural "%s minutes ago"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:140
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:141
 msgid "User is checking out"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:142
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:143
 msgid "User just entered the site"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:144
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:145
 msgid "User just left the site"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:146
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:147
 msgid "User is actively browsing"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:157
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:158
 msgid "User ID:"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:302
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:276
 msgid "No live visitors right now"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:304
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:278
 msgid "When someone visits your site, you’ll see them here instantly. "
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/OverviewBlock.js:34
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/OverviewBlock.js:65
 msgid "Activity"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/OverviewBlock.js:38
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/OverviewBlock.js:69
 msgid "Live visitors"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/OverviewBlock.js:45
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/OverviewBlock.js:76
 msgid "Overview"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/TodayBlock.js:38
 #: src/Admin/App/src/components/Dashboard/TodayBlock.js:101
 #: src/Admin/Dashboard_Widget/build/index.js:1
@@ -3070,11 +3805,11 @@ msgstr ""
 msgid "Live"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/api/getGoalsData.js:33
 #: src/Admin/App/src/api/getGoalsData.js:110
 #: src/Admin/App/src/components/Dashboard/GoalsBlock.js:69
-#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:130
+#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:121
 #: src/Admin/App/src/components/Dashboard/TodayBlock.js:42
 #: src/Admin/App/src/components/Dashboard/TodayBlock.js:111
 #: src/Admin/Dashboard_Widget/build/index.js:1
@@ -3083,124 +3818,89 @@ msgstr ""
 msgid "Total"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/src/api/getGoalsData.js:106
-#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:50
-#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:126
-#: src/Admin/App/src/components/Dashboard/TodayBlock.js:88
-#: src/Admin/App/src/utils/formatting.js:295
-#: src/Admin/Dashboard_Widget/build/index.js:1
-#: src/Admin/Dashboard_Widget/src/components/DashboardWidget/DashboardWidget.js:159
-msgid "Today"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/GoalStatus.js:32
 msgid "Started"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/GoalStatus.js:33
 msgid "Created"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Dashboard/GoalStatus.js:19
-#: src/Admin/App/src/components/Goals/GoalSetup.js:64
-msgid "Active"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Dashboard/GoalStatus.js:21
-#: src/Admin/App/src/components/Goals/GoalSetup.js:64
-msgid "Inactive"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Dashboard/GoalsHeader.js:29
-#: src/Admin/App/src/components/Fields/EditableTextField.jsx:73
-msgid "Untitled goal"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/api/getGoalsData.js:84
 msgid "Calculated by:"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/api/getGoalsData.js:86
 msgid "Total amount of goals reached "
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/api/getGoalsData.js:88
 msgid "Total amount of"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/api/getGoalsData.js:98
 msgid "No data available yet"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:224
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:215
 msgid "Goal and today"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:233
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:224
 msgid "Goal and the start date"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:247
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:238
 msgid "Keep track of customizable goals and get valuable insights. Add your first goal!"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:259
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:250
 msgid "Learn how to set your first goal"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:267
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:258
 msgid "Create my first goal"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:280
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:271
 msgid "Error loading goals data. Please try again later."
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:344
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/src/components/Dashboard/GoalsBlock.js:335
 msgid "View setup"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/TipsTricksBlock.js:37
 msgid "Tips & Tricks"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/TipsTricksBlock.js:65
 msgid "View all"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OtherPluginsBlock.js:17
 #: src/TeamUpdraft/Other_Plugins/build/index.js:1
 #: src/TeamUpdraft/Other_Plugins/src/components/OtherPluginElement.js:17
 msgid "Activating..."
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OtherPluginsBlock.js:18
 #: src/Admin/App/src/components/Dashboard/OtherPluginsBlock.js:19
 #: src/TeamUpdraft/Other_Plugins/build/index.js:1
@@ -3209,7 +3909,7 @@ msgstr ""
 msgid "Downloading..."
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OtherPluginsBlock.js:212
 #: src/Admin/App/src/components/Dashboard/OtherPluginsBlock.js:237
 #: src/TeamUpdraft/Other_Plugins/build/index.js:1
@@ -3217,135 +3917,63 @@ msgstr ""
 msgid "Other plugins"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OtherPluginsBlock.js:222
 msgid "Loading.."
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
 #: src/Admin/App/src/components/Dashboard/OtherPluginsBlock.js:184
 #: src/TeamUpdraft/Other_Plugins/build/index.js:1
 #: src/TeamUpdraft/Other_Plugins/src/components/OtherPluginElement.js:48
 msgid "Upgrade"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/hooks/useGoalsData.js:108
-msgid "Failed to save goals"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/hooks/useGoalsData.js:120
-msgid "Failed to save goal title"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/hooks/useGoalsData.js:140
-msgid "Goal added successfully!"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/hooks/useGoalsData.js:144
-msgid "Failed to add goal"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/hooks/useGoalsData.js:176
-msgid "Goal deleted successfully!"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/hooks/useGoalsData.js:181
-msgid "Failed to delete goal"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/hooks/useGoalsData.js:190
-msgid "Predefined goals are a premium feature."
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/hooks/useGoalsData.js:206
-msgid "Successfully added predefined goal!"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/hooks/useGoalsData.js:210
-msgid "Failed to add predefined goal"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useFiltersStore.js:10
 msgid "Context"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useFiltersStore.js:20
 msgid "Behavior"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useFiltersStore.js:25
 msgid "Location"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useFiltersStore.js:51
 msgid "Goal"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useFiltersStore.js:59
 msgid "Bounced Visitors"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useFiltersStore.js:76
 msgid "New Visitors"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/api/getCompareData.js:15
 #: src/Admin/App/src/api/getCompareData.js:55
 #: src/Admin/App/src/components/Statistics/CompareBlock.js:22
@@ -3354,1200 +3982,573 @@ msgstr ""
 msgid "Bounce Rate"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useFiltersStore.js:99
 msgid "URL Parameter"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useFiltersStore.js:171
 msgid "Time per Session"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/371.da836d0476deec9ae1a8.js:3
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useFiltersStore.js:179
 msgid "Operating System"
 msgstr ""
 
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/src/api/getDataTableData.js:152
-#: src/Admin/App/src/api/getDataTableData.js:213
-#: src/Admin/App/src/utils/formatting.js:259
-#: src/Admin/App/src/utils/formatting.js:266
-msgid "Not set"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/src/utils/formatting.js:302
-#: src/Admin/Dashboard_Widget/build/index.js:1
-msgid "Yesterday"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/src/utils/formatting.js:309
-#: src/Admin/Dashboard_Widget/build/index.js:1
-msgid "Last 7 days"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/src/utils/formatting.js:316
-#: src/Admin/Dashboard_Widget/build/index.js:1
-msgid "Last 30 days"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/src/utils/formatting.js:323
-#: src/Admin/Dashboard_Widget/build/index.js:1
-msgid "Last 90 days"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/src/utils/formatting.js:330
-#: src/Admin/Dashboard_Widget/build/index.js:1
-msgid "Last month"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/src/utils/formatting.js:337
-#: src/Admin/Dashboard_Widget/build/index.js:1
-msgid "Week to date"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/src/utils/formatting.js:344
-#: src/Admin/Dashboard_Widget/build/index.js:1
-msgid "Month to date"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/src/utils/formatting.js:351
-#: src/Admin/Dashboard_Widget/build/index.js:1
-msgid "Year to date"
-msgstr ""
-
-#: src/Admin/App/build/371.fd02c8d211c9ec27dc5e.js:3
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/src/utils/formatting.js:358
-#: src/Admin/Dashboard_Widget/build/index.js:1
-msgid "Last year"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/components/Common/RecommendBadge.jsx:17
-msgid "Recommended"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Common/DisabledBadge.jsx:17
-msgid "Disabled"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/TeamUpdraft/Onboarding/build/index.js:1
-msgid "Required"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/IpBlockField.jsx:105
-msgid "Add current IP address"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-msgid "Action completed successfully"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-msgid "Action failed"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-msgid "An error occurred while executing the action"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-msgid "Processing..."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-msgid "Confirm"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:38
-msgid "Weekly"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:39
-msgid "Monthly"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:49
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:68
-msgid "Invalid email address"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:72
-msgid "Maximum 10 emails allowed"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:76
-msgid "Email address already added"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:64
-msgid "Email address is required"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:108
-msgid "Email"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:112
-msgid "Frequency"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:125
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:131
-msgid "Remove"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:152
-msgid "Recipients will receive weekly or monthly reports with statistics about your website. Add or remove email addresses in the list below."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:159
-msgid "No emails added yet"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:191
-msgid "Enter email address"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/EmailReportsField.jsx:200
-msgid "Add to list"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/TeamUpdraft/Onboarding/build/index.js:1
-#: src/TeamUpdraft/Onboarding/src/components/Fields/Plugins.jsx:45
-msgid "No options found"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-msgid "Show more"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-msgid "Show less"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/store/usePostsStore.js:65
-msgid "Untitled"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:127
-msgid "Warning: The current element is hidden via CSS."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:1
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:209
-msgid "Warning: this element might be hidden via CSS."
-msgstr ""
-
-#. translators: 1: number of elements found 2: the URL of the preview 3: logged in/out status
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:233
-msgid "Found %1$d element on %2$s %3$s"
-msgid_plural "Found %1$d elements on %2$s %3$s"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:241
-msgid "(Logged out)"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:241
-msgid "(Logged in)"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:248
-msgid "Selector Examples:"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:254
-msgid "Selects all elements with class \"class-name\"."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:259
-msgid "Selects the element with ID \"element-id\"."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:264
-msgid "Selects all <button> elements."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:269
-msgid "Selects links whose href starts with \"https\"."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:274
-msgid "Selects .nav-item elements that do not have the \"active\" class."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:337
-msgid "Preview panel, use arrow keys to navigate"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:350
-msgid "Step through matches"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:357
-msgid "Previous match"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:368
-msgid "Next match"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:378
-msgid "Set logged in mode"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:378
-msgid "Set logged out mode"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/SelectorField.jsx:406
-msgid "%s elements match your selector. Use arrow keys to cycle through matches."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/EditableTextField.jsx:63
-msgid "Click to edit"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:10
-msgid "Are you sure you want to delete this goal?"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:12
-msgid "This action cannot be undone."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:15
-msgid "Goal name"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:17
-msgid "Status"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:19
-msgid "Date created"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:40
-#: src/Admin/App/src/components/Goals/DeleteGoalModal.js:69
-msgid "Delete goal"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/GoalSetup.js:75
-msgid "Click to de-activate"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/GoalSetup.js:75
-msgid "Click to activate"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/GoalsSettings.js:37
-msgid "Click"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/GoalsSettings.js:50
-msgid "Goals are a great way to track your progress and keep you motivated."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/GoalsSettings.js:56
-msgid "While free users can create one goal, Burst Pro lets you set unlimited goals to plan, measure, and achieve more."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/GoalsSettings.js:84
-msgid "Add goal"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/GoalsSettings.js:103
-msgid "Add predefined goal"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/GoalsSettings.js:129
-msgid "Plug-in you're looking for not listed?"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/GoalsSettings.js:139
-msgid "Request it here!"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/GoalsSettings.js:160
-msgid "Want more goals?"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Goals/GoalsSettings.js:162
-msgid "Upgrade to Burst Pro"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/LicenseField.jsx:80
-msgid "Activating your license gives you automatic updates and support."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/LicenseField.jsx:86
-msgid "Having trouble? %sCheck our installation guide%s."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/LicenseField.jsx:93
-msgid "If that does not help, please %sopen a support ticket%s so we can help you out!"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/LicenseField.jsx:114
-msgid "Enter your license key here."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/LicenseField.jsx:126
-msgid "Deactivate License"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
-#: src/Admin/App/src/components/Fields/LicenseField.jsx:135
-#: src/Admin/App/src/routes/sources.jsx:66
-msgid "Activate License"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/LogoEditorField.jsx:54
-msgid "Select a logo"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/LogoEditorField.jsx:56
-msgid "Set logo"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/LogoEditorField.jsx:110
-msgid "Reset to Default"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/store/useArchivesStore.js:27
-msgid "Deleting..."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/store/useArchivesStore.js:28
-msgid "Archives deleted successfully!"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/store/useArchivesStore.js:29
-msgid "Failed to delete archive"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/store/useArchivesStore.js:71
-msgid "Starting restore..."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/store/useArchivesStore.js:72
-msgid "Restore successfully started!"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/store/useArchivesStore.js:73
-msgid "Failed to start restore process."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:246
-msgid "Archive"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:252
-msgid "Size"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/components/Common/SearchButton.js:18
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:292
-msgid "Search"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:309
-msgid "Download"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:67
-msgid "Because restoring files can conflict with the archiving functionality, archiving has been disabled."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:68
-msgid "Archiving disabled"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:319
-msgid "Restore"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:327
-msgid "Delete"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:331
-msgid "%s items selected"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:336
-msgid "1 item selected"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:344
-msgid "Restore in progress, %s complete"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:365
-#: src/Admin/App/src/components/Statistics/DataTableBlock.js:396
-msgid "of"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:368
-#: src/Admin/App/src/components/Statistics/DataTableBlock.js:399
-msgid "All"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/RestoreArchivesField.jsx:372
-msgid "No archives"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/Field.jsx:151
-msgid "This field is required"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/Field.jsx:160
-msgid "Invalid format"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/Field.jsx:107
-msgid "Invalid IP address format: "
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Fields/Field.jsx:132
-msgid "Duplicate IP addresses found: "
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Settings/SettingsGroupBlock.jsx:28
-msgid "Unlock Advanced Features with Burst Pro"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Settings/SettingsGroupBlock.jsx:30
-msgid "This setting is exclusive to Pro users."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Settings/SettingsFooter.jsx:14
-msgid "Saving..."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Settings/SettingsFooter.jsx:19
-msgid "Validating..."
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Settings/SettingsFooter.jsx:24
-msgid "You have unsaved changes"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Settings/SettingsFooter.jsx:39
-msgid "Save"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Settings/SettingsNotices.jsx:38
-msgid "Collapse all"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Settings/SettingsNotices.jsx:39
-msgid "Expand all"
-msgstr ""
-
-#: src/Admin/App/build/446.675810a0f88848baa4a1.js:10
-#: src/Admin/App/src/components/Settings/SettingsNotices.jsx:45
-msgid "Notifications"
-msgstr ""
-
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Common/SearchButton.js:104
 msgid "Clear search"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Common/ProPopover.js:46
 msgid "Pro features include:"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Common/ProPopover.js:74
 msgid "Learn More"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/EmptyDataTable.js:26
 msgid "Loading data..."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/EmptyDataTable.js:35
 msgid "Error:"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/EmptyDataTable.js:44
 msgid "No data available in table"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/EmptyDataTable.js:52
 msgid "Unexpected error"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/api/getDataTableData.js:263
 msgid "The test resulted in a tie. More hits might still result in a winner, but the difference will probably be very small."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/api/getDataTableData.js:267
 msgid "Not enough data yet to declare a winner or tie."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/api/getDataTableData.js:271
 msgid "Winner of the A/B test with a probability of >95%."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/api/getDataTableData.js:272
 msgid "Least performant version of the A/B test with a probability of >95%."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:62
 msgid "Pages"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:92
 msgid "Locations"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:127
 msgid "Campaigns"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Statistics/DataTableBlock.js:189
 msgid "Dummy"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/hooks/useFilterDisplay.js:83
 msgid "Active visitors"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/hooks/useFilterDisplay.js:88
 msgid "Returning visitors"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Filters/Display/FilterChip.js:61
 msgid "Edit %s filter"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Filters/Display/FilterChip.js:62
 msgid "Click to edit filter"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Filters/Display/FilterChip.js:81
 #: src/Admin/App/src/components/Filters/Display/FilterChip.js:82
 msgid "Remove filter"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Filters/Display/AddFilterButton.js:16
 msgid "Add filter"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "currently active"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Pro feature"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "coming soon"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "disabled"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Remove %s from favorites"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Add %s to favorites"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Coming soon"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Favorites"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "No filters match your search."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "No favorite filters yet. Pin filters to add them here."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "No filters available."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "No filters in this category."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "No results found in current tab. Showing results from all filters."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Available filters"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Search filters"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Search filters..."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Filter categories"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Showing %d search results"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Search or select an option..."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Enter page URL (e.g., /about)"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Enter referrer URL (e.g., google.com)"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Enter campaign name"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Enter traffic source"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Enter traffic medium"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Enter search term"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Enter content identifier"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Enter URL parameter (e.g., utm_campaign)"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Enter filter value..."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Filter value"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "All visitors (default)"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Show all visitors without filtering"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Include"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Include visitors matching this criteria"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Exclude"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Exclude visitors matching this criteria"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Filter option"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Minimum value"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Maximum value"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Filter range"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Exact range values"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Min value..."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Max value..."
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Clear"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Clear to remove this filter"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "selected"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "not selected"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Device selection options"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Select a filter"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Setup Filter"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Choose a filter to apply to your analytics data"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Setup filter"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Back to filters"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Start typing to search or select from available options"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Enter the value you want to filter by"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Set the range for this filter"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Select the option you want to filter by"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Reset all active filters to default settings"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Reset all filters"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Apply %s filter"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Apply filter"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Apply Filter"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Apply %s filter and continue adding more filters"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Apply filter and add more"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 msgid "Apply & Add More"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Common/AdvancedFilter.js:78
 #: src/Admin/App/src/components/Common/PopoverFilter.js:104
 #: src/Admin/App/src/components/Sources/WorldMap/MapSettingsPopover.jsx:271
 msgid "Apply"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Common/AdvancedFilter.js:86
 #: src/Admin/App/src/components/Common/PopoverFilter.js:112
 #: src/Admin/App/src/components/Sources/WorldMap/MapSettingsPopover.jsx:279
 msgid "Reset to defaults"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Common/PopoverFilter.js:122
 #: src/Admin/App/src/components/Sources/WorldMap/MapSettingsPopover.jsx:155
 msgid "Select metric"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Common/PopoverFilter.js:123
 msgid "Select metrics"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Common/PopoverFilter.js:163
 msgid "Change metrics"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/components/Statistics/InsightsHeader.js:21
 msgid "Bounces"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/components/Statistics/CompareFooter.js:7
 msgid "No data available for comparison"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/components/Statistics/CompareFooter.js:14
 msgid "vs. previous day"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/components/Statistics/CompareFooter.js:14
 msgid "vs. previous %s days"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/api/getCompareData.js:29
 msgid "%s pageviews per session"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/api/getCompareData.js:38
 msgid "%s per session"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/api/getCompareData.js:47
 msgid "%s are new visitors"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/api/getCompareData.js:56
 msgid "%s visitors bounced"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/api/getCompareData.js:67
 msgid "%s of pageviews converted"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/api/getCompareData.js:76
 msgid "%s pageviews per conversion"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/api/getCompareData.js:85
 msgid "%s sessions per conversion"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/api/getCompareData.js:94
 msgid "%s visitors per conversion"
 msgstr ""
 
-#: src/Admin/App/build/447.a57519e5cd30cf586b7a.js:1
+#: src/Admin/App/build/447.38e93d2567294cdd923a.js:1
 #: src/Admin/App/src/components/Statistics/DevicesBlock.js:115
 msgid "Devices"
 msgstr ""
@@ -4559,379 +4560,379 @@ msgstr ""
 msgid "An error occurred loading statistics"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useGeoStore.js:71
 msgid "Natural Breaks (Jenks)"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useGeoStore.js:72
 msgid "Finds patterns in the data to create categories with minimal variation within groups. Works well for all metrics, especially Pageviews and Conversion Rate."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useGeoStore.js:79
 msgid "Equal Interval"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useGeoStore.js:80
 msgid "Splits the data range into equal-sized intervals. Ideal for percentage-based metrics like Bounce Rate or Conversion Rate."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useGeoStore.js:86
 msgid "Standard Deviation"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useGeoStore.js:87
 msgid "Groups data based on how far values deviate from the average. Highlights outliers in metrics like Bounce Rate or Avg. Session Duration."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useGeoStore.js:93
 msgid "Quantile"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/store/useGeoStore.js:94
 msgid "Divides data into equal-sized groups, ensuring each category has the same number of regions. Best for evenly distributed metrics like Pageviews or Visitors."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:1
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:1
 #: src/Admin/App/src/components/Sources/WorldMap/ChoroplethTooltip.js:29
 msgid "Unknown location"
 msgstr ""
 
 #. translators: %s: Percentage value
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:2
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:2
 #: src/Admin/App/src/components/Sources/WorldMap/ChoroplethTooltip.js:103
 msgid "%s of total"
 msgstr ""
 
 #. translators: 1: Population number, 2: Year
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:3
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:3
 #: src/Admin/App/src/components/Sources/WorldMap/ChoroplethTooltip.js:117
 msgid "Population: %1$s (%2$s)"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:3
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:3
 #: src/Admin/App/src/components/Sources/WorldMap/ChoroplethTooltip.js:137
 msgid "Click to see country specific data"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:3
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:3
 #: src/Admin/App/src/components/Sources/WorldMap/MapBreadcrumbs.jsx:26
 msgctxt "navigation item"
 msgid "World"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:3
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:3
 #: src/Admin/App/src/components/Sources/WorldMap/MapBreadcrumbs.jsx:59
 msgctxt "button title"
 msgid "Go back"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:3
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:3
 #: src/Admin/App/src/components/Sources/WorldMap/MapBreadcrumbs.jsx:60
 msgctxt "button title"
 msgid "No previous page"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:3
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:3
 #: src/Admin/App/src/components/Sources/WorldMap/MapBreadcrumbs.jsx:75
 msgctxt "aria label"
 msgid "Map navigation"
 msgstr ""
 
 #. translators: %s: Error message
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:4
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:4
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:306
 msgid "Error: %s"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:4
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:4
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:318
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:343
 msgid "Loading map data..."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:4
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:4
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:344
 msgid "Loading analytics..."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:4
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:4
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:374
 msgid "Region-level data is available for visits after %s."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:4
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:4
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:384
 msgid "Region tracking is a new feature, so this data is only available for visits recorded after it was enabled."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:4
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:4
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:408
 msgid "Dismiss for 30 days"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:4
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:4
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:410
 msgid "Dismiss"
 msgstr ""
 
 #. translators: 1: Metric name (e.g., "Pageviews", "Visitors"), 2: Location type (e.g., "Country" or "Region")
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:5
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:5
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:430
 msgctxt "metric by location"
 msgid "%1$s per %2$s"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:5
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:5
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:433
 msgctxt "location type"
 msgid "country"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:5
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:5
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:434
 msgctxt "location type"
 msgid "region"
 msgstr ""
 
 #. translators: %d: Number of locations that have data
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:6
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:6
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:444
 msgid "%d country with data"
 msgid_plural "%d countries with data"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:6
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:6
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:450
 msgid "%d region with data"
 msgid_plural "%d regions with data"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:6
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:6
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:461
 msgid "Patterns enabled"
 msgstr ""
 
 #. translators: %d: Number of visitors with unknown region, %s: metric label
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:470
 msgid "%d %s with unknown region"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:485
 msgctxt "statistic label"
 msgid "Range"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:494
 msgctxt "statistic label"
 msgid "Average"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:500
 msgctxt "statistic label"
 msgid "Median"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:506
 msgctxt "statistic label"
 msgid "Total"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:514
 msgctxt "statistic label"
 msgid "Method"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/WorldMap.jsx:326
 msgid "No metrics available for display."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/MapSettingsPopover.jsx:147
 msgid "Metrics & options"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/MapSettingsPopover.jsx:177
 msgid "Classification method"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/MapSettingsPopover.jsx:185
 msgid "A classification method determines how data values are grouped into ranges or categories to color regions on a choropleth map. The recommended method is based on the selected metric. For more information for each method, see the help icon next to each method."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/MapSettingsPopover.jsx:194
 msgid "Auto-select"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/MapSettingsPopover.jsx:239
 msgid "Accessibility"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/MapSettingsPopover.jsx:244
 msgid "Colorblind Patterns"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMap/MapSettingsPopover.jsx:247
 msgid "Add patterns for colorblind accessibility"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/components/Sources/WorldMapBlock.jsx:20
 #: src/Admin/App/src/components/Upsell/GhostWorldMapBlock.jsx:20
 msgid "World View"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 msgid "Are you just guessing with your marketing?"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 msgid "You spend time and money creating campaigns, but can't see what's actually working. Are your newsletters driving traffic or just getting opened? Is your social media budget paying off? Without clear tracking, you're making decisions in the dark, which is inefficient and frustrating."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 msgid "Stop guessing: Track UTM campaigns to see which channels deliver real visitors."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 msgid "Optimize with confidence: Refine on-site promotions by analyzing custom URL parameters."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 msgid "Go beyond numbers: Visualize exactly where your visitors are with an interactive world map."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 msgid "Turn your traffic into targeted growth."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 msgid "Effective growth comes from understanding your audience on a deeper level. Burst Pro provides the tools to see not just how many people visit, but who they are and what brought them to you, so you can focus your efforts where they matter most."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 msgid "Measure the success of your marketing with automatic UTM campaign tracking."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 msgid "Optimize your website by tracking how visitors interact with specific parameters."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 msgid "Tailor your content by identifying key visitor locations, from country down to the city."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 msgid "Learn about all features"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/routes/sources.jsx:52
 msgid "Unlock Source Insights"
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/routes/sources.jsx:55
 msgid "Get detailed insights into where your traffic comes from."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/routes/sources.jsx:58
 msgid "Already have a license? Activate it to access these features."
 msgstr ""
 
-#: src/Admin/App/build/744.00c9993abc1577d2f8e7.js:7
+#: src/Admin/App/build/744.affd5d33a651fb0f2e10.js:7
 #: src/Admin/App/src/routes/sources.jsx:75
 msgid "Upgrade Plan"
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/components/Common/ErrorBoundary.jsx:44
 msgid "Uh-oh! We stumbled upon an error."
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/components/Common/ErrorBoundary.jsx:59
 msgid "Copied"
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/components/Common/ErrorBoundary.jsx:60
 msgid "Copy Error"
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/components/Common/ErrorBoundary.jsx:64
 msgid "We're sorry for the trouble. Please take a moment to report this issue on the WordPress forums so we can work on fixing it. Here’s how you can report the issue:"
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/components/Common/ErrorBoundary.jsx:72
 msgid "Copy the error details by clicking the %s button above."
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/components/Common/ErrorBoundary.jsx:84
 msgid "Navigate to the Support Forum."
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/components/Common/ErrorBoundary.jsx:88
 msgid "If you haven’t already, log in to your WordPress.org account or create a new account."
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/components/Common/ErrorBoundary.jsx:95
 msgid "Once logged in, click on %s under the Burst Statistics forum."
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/components/Common/ErrorBoundary.jsx:104
 msgid "Title: Mention %s along with a brief hint of the error."
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/components/Common/ErrorBoundary.jsx:112
 msgid "Description: Paste the copied error details and explain what you were doing when the error occurred."
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/components/Common/ErrorBoundary.jsx:119
 msgid "Click %s to post your topic. Our team will look into the issue and provide assistance."
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 msgid "Unlock this feature with Pro. Upgrade for more insights and control."
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/routes/settings.$settingsId.jsx:13
 msgid "Settings section not found"
 msgstr ""
 
-#: src/Admin/App/build/index.0e82fdaa19ec1c3ef7ff.js:1
+#: src/Admin/App/build/index.c1b38a4ba84b23323daa.js:1
 #: src/Admin/App/src/routes/settings.$settingsId.jsx:19
 msgid "Settings page not found"
 msgstr ""
@@ -4948,23 +4949,23 @@ msgstr ""
 msgid "(premium)"
 msgstr ""
 
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:114
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:115
 msgid "Red"
 msgstr ""
 
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:115
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:116
 msgid "Blue"
 msgstr ""
 
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:116
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:117
 msgid "Orange"
 msgstr ""
 
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:117
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:118
 msgid "Yellow"
 msgstr ""
 
-#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:118
+#: src/Admin/App/src/components/Dashboard/LiveTraffic.js:119
 msgid "Green"
 msgstr ""
 

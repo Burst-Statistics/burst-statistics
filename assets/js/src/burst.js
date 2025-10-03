@@ -143,17 +143,77 @@ const burst_generate_uid = () => {
   return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join(''); // nosemgrep
 };
 
-
 const burst_fingerprint = () => {
   if (burst.cache.fingerprint !== null) return Promise.resolve(burst.cache.fingerprint);
-  const tests = [
-    'availableScreenResolution', 'canvas', 'colorDepth', 'cookies', 'cpuClass', 'deviceDpi', 'doNotTrack',
-    'indexedDb', 'language', 'localStorage', 'pixelRatio', 'platform', 'plugins', 'processorCores',
-    'screenResolution', 'sessionStorage', 'timezoneOffset', 'touchSupport', 'userAgent', 'webGl'
-  ];
-  return imprint.test(tests).then(fingerprint => {
-    burst.cache.fingerprint = fingerprint;
-    return fingerprint;
+  const tm = new ThumbmarkJS.Thumbmark({
+    exclude: [],
+
+    permissions_to_check: [
+      'geolocation',
+      'notifications',
+      'camera',
+      'microphone',
+      'gyroscope',
+      'accelerometer',
+      'magnetometer',
+      'ambient-light-sensor',
+      'background-sync',
+      'persistent-storage'
+    ]
+  });
+
+  return tm.get().then(result => {
+    let baseFingerprint = result.thumbmark;
+
+    const extraEntropy = [
+      // Screen details
+      screen.availWidth + 'x' + screen.availHeight,
+      screen.width + 'x' + screen.height,
+      screen.colorDepth,
+      window.devicePixelRatio || 1,
+
+      // System info
+      navigator.hardwareConcurrency || 0,
+      navigator.deviceMemory || 0,
+      navigator.maxTouchPoints || 0,
+      new Date().getTimezoneOffset(),
+
+      // Browser capabilities
+      navigator.cookieEnabled ? '1' : '0',
+      typeof(Storage) !== 'undefined' ? '1' : '0',
+      typeof(indexedDB) !== 'undefined' ? '1' : '0',
+      navigator.onLine ? '1' : '0',
+      navigator.languages ? navigator.languages.slice(0, 3).join(',') : navigator.language,
+
+      // Platform details
+      navigator.platform,
+      navigator.oscpu || '',
+
+      navigator.connection ? navigator.connection.effectiveType || '' : '',
+
+      'ontouchstart' in window ? '1' : '0',
+      typeof window.orientation !== 'undefined' ? '1' : '0',
+      window.screen.orientation ? window.screen.orientation.type || '' : ''
+    ].filter(item => item !== '').join('|');
+
+    const combinedData = baseFingerprint + '|' + extraEntropy;
+
+    let hash = 0;
+    for (let i = 0; i < combinedData.length; i++) {
+      const char = combinedData.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+
+    const hashHex = Math.abs(hash).toString(16).padStart(8, '0');
+    const finalFingerprint = hashHex + baseFingerprint.substring(8);
+
+    burst.cache.fingerprint = finalFingerprint;
+    return finalFingerprint;
+
+  }).catch(error => {
+    console.error(error);
+    return null;
   });
 };
 
