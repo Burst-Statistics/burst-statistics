@@ -90,7 +90,6 @@ class Tracking {
 		$sanitized_data = apply_filters( 'burst_before_track_hit', $sanitized_data, $hit_type, $filtered_previous_hit );
 		$session_arr    = [
 			'last_visited_url' => $this->create_path( $sanitized_data ),
-			'goal_id'          => false,
 			'city_code'        => $sanitized_data['city_code'] ?? '',
 		];
 		unset( $sanitized_data['city_code'] );
@@ -903,7 +902,6 @@ class Tracking {
 
 		// Remove empty values from the data array.
 		$data = $this->remove_empty_values( $data );
-
 		// Perform the update operation.
 		$result = $wpdb->update(
 			$wpdb->prefix . 'burst_sessions',

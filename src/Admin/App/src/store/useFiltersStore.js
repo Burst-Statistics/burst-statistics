@@ -87,6 +87,13 @@ const FILTER_CONFIG = {
         category: 'behavior',
         coming_soon: true,
     },
+    entry_exit_pages: {
+        label: __('Entry or exit page', 'burst-statistics'),
+        icon: 'bounce',
+        type: 'boolean',
+        pro: true,
+        category: 'behavior',
+    },
     conversion_rate: {
         label: __('Conversion Rate', 'burst-statistics'),
         icon: 'conversion',

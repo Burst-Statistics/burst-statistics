@@ -10,18 +10,6 @@ defined( 'ABSPATH' ) || die();
  */
 return [
 	[
-		'id'          => 'ajax_fallback',
-		'condition'   => [
-			'type'     => 'serverside',
-			'function' => 'wp_option_burst_ajax_fallback_active',
-		],
-		'msg'         => __( 'Please check if your REST API is loading correctly. Your site currently is using the slower Ajax fallback method to load the settings.', 'burst-statistics' ),
-		'icon'        => 'warning',
-		'url'         => 'instructions/rest-api-error/',
-		'dismissible' => true,
-		'plusone'     => false,
-	],
-	[
 		'id'          => 'tracking-error',
 		'condition'   => [
 			'type'     => 'serverside',
@@ -94,7 +82,7 @@ return [
 		'dismissible' => true,
 	],
 	[
-		'id'          => 'malicous_data_removal',
+		'id'          => 'malicious_data_removal',
 		'condition'   => [
 			'type'     => 'serverside',
 			'function' => 'wp_option_burst_cleanup_uid_visits',

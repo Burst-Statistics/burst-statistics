@@ -59,6 +59,8 @@ class Admin {
 		add_action( 'burst_after_saved_fields', [ $this, 'create_js_file' ], 10, 1 );
 		add_action( 'burst_daily', [ $this, 'create_js_file' ] );
 		add_action( 'burst_daily', [ $this, 'detect_malicious_data' ] );
+		add_action( 'burst_dismiss_task', [ $this, 'dismiss_malicious_data_notice' ], 10, 1 );
+		add_action( 'burst_dismiss_task', [ $this, 'dismiss_php_error_notice' ], 10, 1 );
 		add_action( 'wp_initialize_site', [ $this, 'create_js_file' ], 10, 1 );
 		add_action( 'admin_init', [ $this, 'activation' ] );
 		add_action( 'burst_run_database_upgrade_single_event', [ $this, 'run_table_init_hook' ], 10, 1 );
@@ -68,6 +70,7 @@ class Admin {
 		add_action( 'upgrader_process_complete', [ $this, 'after_plugin_upgrade' ], 10, 2 );
 		add_action( 'wp_initialize_site', [ $this, 'run_table_init_hook' ], 10, 1 );
 		add_action( 'burst_upgrade_before', [ $this, 'run_table_init_hook' ], 10, 1 );
+		add_action( 'burst_cron_table_upgrade', [ $this, 'run_table_init_hook' ], 10, 1 );
 		add_action( 'burst_daily', [ $this, 'validate_tasks' ] );
 		add_action( 'burst_validate_tasks', [ $this, 'validate_tasks' ] );
 		add_action( 'plugins_loaded', [ $this, 'init_wpcli' ] );
@@ -227,6 +230,18 @@ class Admin {
 	}
 
 	/**
+	 * Clean up the notification data when the task has been dismissed instead of fixed.
+	 */
+	public function dismiss_malicious_data_notice( string $task_id ): void {
+		if ( $task_id === 'malicious_data_removal' ) {
+			delete_option( 'burst_cleanup_data_detected_time' );
+			delete_option( 'burst_clean_data' );
+			delete_option( 'burst_cleanup_uid' );
+			delete_option( 'burst_cleanup_uid_visits' );
+		}
+	}
+
+	/**
 	 * On a daily basis, cleanup suspiciously high amounts of data.
 	 *
 	 * @hooked burst_daily
@@ -368,6 +383,17 @@ class Admin {
 
 		$x_days_ago = time() - 7 * DAY_IN_SECONDS;
 		if ( $last_detected < $x_days_ago ) {
+			delete_option( 'burst_php_error_time' );
+			delete_option( 'burst_php_error_detected' );
+			delete_option( 'burst_php_error_count' );
+		}
+	}
+
+	/**
+	 * Clean up the notification data when the task has been dismissed instead of fixed.
+	 */
+	public function dismiss_php_error_notice( string $task_id ): void {
+		if ( $task_id === 'php_error_detected' ) {
 			delete_option( 'burst_php_error_time' );
 			delete_option( 'burst_php_error_detected' );
 			delete_option( 'burst_php_error_count' );
@@ -590,7 +616,6 @@ class Admin {
 		if ( ! isset( $upgrader_object->new_plugin_data ) || $upgrader_object->new_plugin_data['TextDomain'] !== 'burst-statistics' ) {
 			return;
 		}
-
 		$this->run_table_init_hook();
 		$this->create_js_file();
 	}
@@ -613,7 +638,6 @@ class Admin {
 		if ( defined( 'BURST_UNINSTALLING' ) ) {
 			return;
 		}
-
 		set_transient( 'burst_running_upgrade_process', true, 30 );
 		do_action( 'burst_install_tables' );
 		// we need to run table creation across subsites as well.
