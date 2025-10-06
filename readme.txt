@@ -101,6 +101,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * New: improved library for cookieless tracking.
 * New: entry/exit pages filter
 * Improvement: added fallback database upgrade mechanism in case the normal upgrade didn't fire.
+* Improvement: dismissal of PHP notice.
 
 = 2.2.7 =
 * New: Detailed live visitors tab
