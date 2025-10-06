@@ -63,6 +63,36 @@ class Tasks {
 	}
 
 	/**
+	 * Check if this task is permanently dismissed.
+	 */
+	private function is_dismissed_permanently( string $task_id ): bool {
+		$task = $this->get_task_by_id( $task_id );
+		if ( isset( $task['dismiss_permanently'] ) && $task['dismiss_permanently'] ) {
+			$permanently_dismissed = get_option( 'burst_tasks_permanently_dismissed', [] );
+			if ( in_array( $task_id, $permanently_dismissed, true ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Remove a task from the permanently dismissed list.
+	 */
+	public function undismiss_task( string $task_id ): bool {
+		$permanently_dismissed = get_option( 'burst_tasks_permanently_dismissed', [] );
+		$key                   = array_search( $task_id, $permanently_dismissed, true );
+		if ( $key !== false ) {
+			unset( $permanently_dismissed[ $key ] );
+			$permanently_dismissed = array_values( $permanently_dismissed );
+			update_option( 'burst_tasks_permanently_dismissed', $permanently_dismissed, false );
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Dismiss a task
 	 */
 	public function dismiss_task( string $task_id ): void {
@@ -72,7 +102,22 @@ class Tasks {
 			$current_tasks = array_diff( $current_tasks, [ $task_id ] );
 			update_option( 'burst_tasks', $current_tasks, false );
 		}
+		$this->maybe_dismiss_permanently( $task_id );
 		delete_transient( 'burst_plusone_count' );
+	}
+
+	/**
+	 * Store task as dismissed permanently
+	 */
+	private function maybe_dismiss_permanently( string $task_id ): void {
+		$task = $this->get_task_by_id( $task_id );
+		if ( isset( $task['dismiss_permanently'] ) && $task['dismiss_permanently'] ) {
+			$permanently_dismissed = get_option( 'burst_tasks_permanently_dismissed', [] );
+			if ( ! in_array( $task_id, $permanently_dismissed, true ) ) {
+				$permanently_dismissed[] = $task_id;
+			}
+			update_option( 'burst_tasks_permanently_dismissed', $permanently_dismissed, false );
+		}
 	}
 
 	/**
