@@ -97,6 +97,9 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 2.2.8.1 =
+* Limit time range for pages overview counts
+
 = 2.2.8 =
 * New: improved library for cookieless tracking.
 * New: entry/exit pages filter
