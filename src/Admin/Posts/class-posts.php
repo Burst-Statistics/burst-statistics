@@ -77,7 +77,7 @@ class Posts {
 		foreach ( $burst_column_post_types as $post_type ) {
 			$this->add_admin_column(
 				'pageviews',
-				__( 'Pageviews', 'burst-statistics' ),
+				'<span title="' . esc_attr__( 'Total pageviews for the last 30 days.', 'burst-statistics' ) . '">' . __( 'Pageviews', 'burst-statistics' ) . '</span>',
 				$post_type,
 				true,
 				function ( $post_id ): void {

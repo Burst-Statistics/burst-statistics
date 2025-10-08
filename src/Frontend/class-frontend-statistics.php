@@ -645,50 +645,6 @@ class Frontend_Statistics {
 	}
 
 	/**
-	 * Get post view count
-	 *
-	 * @param int $post_id The post ID.
-	 * @param int $start_time Start timestamp (default: 0 for all time).
-	 * @param int $end_time End timestamp (default: current time).
-	 * @return int Number of pageviews.
-	 */
-	public function get_post_views( int $post_id, int $start_time = 0, int $end_time = 0 ): int {
-		if ( $end_time === 0 ) {
-			$end_time = time();
-		}
-
-		$qd  = new Query_Data(
-			[
-				'date_start' => $start_time,
-				'date_end'   => $end_time,
-				'filters'    => [
-					'page_id'   => $post_id,
-					'page_type' => get_post_type( $post_id ),
-				],
-				'select'     =>
-					[
-						'pageviews',
-					],
-			]
-		);
-		$sql = $this->generate_statistics_query( $qd );
-
-		global $wpdb;
-
-		// Execute query with error handling.
-		$result = $wpdb->get_var( $sql );
-		// Check for database errors.
-		if ( $wpdb->last_error ) {
-			// Log the error for debugging.
-			self::error_log( 'DB Error in get_post_views(): ' . $wpdb->last_error );
-			// Return safe default.
-			return 0;
-		}
-
-		return $result ? (int) $result : 0;
-	}
-
-	/**
 	 * Get most viewed posts
 	 *
 	 * @param int    $count Number of posts to retrieve.

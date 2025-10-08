@@ -69,9 +69,9 @@ class Frontend_Admin {
 			if ( ! in_array( $post->post_type, $burst_top_bar_post_types, true ) ) {
 				return;
 			}
-			$statistics = new Frontend_Statistics();
-			$count      = $statistics->get_post_views( $post->ID, 0, time() );
-			$count      = $this->format_number_short( $count );
+			$frontend = new Frontend();
+			$count    = $frontend->get_post_pageviews( $post->ID );
+			$count    = $this->format_number_short( $count );
 		} else {
 			return;
 		}
@@ -79,7 +79,12 @@ class Frontend_Admin {
 		$wp_admin_bar->add_menu(
 			[
 				'id'    => 'burst-front-end',
-				'title' => $count . ' ' . __( 'Pageviews', 'burst-statistics' ),
+				// Translators: %d is the number of visitors.
+				'title' => sprintf( __( '%d Pageviews', 'burst-statistics' ), $count ),
+				// add tooltip.
+				'meta'  => [
+					'title' => __( 'Total pageviews for the last 30 days.', 'burst-statistics' ),
+				],
 			]
 		);
 

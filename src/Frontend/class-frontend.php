@@ -423,11 +423,13 @@ class Frontend {
 		}
 
 		global $wpdb;
-		$sql = $wpdb->prepare(
+		$date_start = apply_filters( 'burst_pageviews_date_start', strtotime( '-30 days' ) );
+		$sql        = $wpdb->prepare(
 			"SELECT COUNT(*) as total_views
          FROM {$wpdb->prefix}burst_statistics
-         WHERE page_id = %d",
-			$post_id
+         WHERE page_id = %d AND time > %d",
+			$post_id,
+			$date_start
 		);
 
 		$views = (int) $wpdb->get_var( $sql );
