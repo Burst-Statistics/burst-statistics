@@ -6,7 +6,7 @@ Requires at least: 6.2
 License: GPL2
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 2.2.8
+Stable tag: 2.2.9
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 
@@ -97,6 +97,9 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 2.2.9 =
+* Fix: move the code directory from /src to /includes, because otherwise javascript files are not scanned for translations by WordPress
+
 = 2.2.8 =
 * New: improved library for cookieless tracking.
 * New: entry/exit pages filter
