@@ -1,0 +1,7 @@
+.burst-dashboard {
+	margin:{customer_id}px;
+	width: 200px;
+	height: 200px;
+	background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="rgb(255, 255, 255)"/><text x="50%" y="50%" font-size="20" text-anchor="middle" fill="rgb(0, 0, 0)">Burst</text></svg>');
+	background-size: cover;
+}

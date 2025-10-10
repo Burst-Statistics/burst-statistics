@@ -1,0 +1,6 @@
+@import './globals.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for the onboarding component */

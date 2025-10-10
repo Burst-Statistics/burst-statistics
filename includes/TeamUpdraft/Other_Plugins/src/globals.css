@@ -1,0 +1,14 @@
+:root {
+	--teamupdraft-black: #333;
+	--teamupdraft-white: #fff;
+	--teamupdraft-yellow: #FFDA4A;
+	--teamupdraft-blue: #1D3C8F;
+	--teamupdraft-dark-blue: #1D3C8F;
+	--teamupdraft-green: #2B8133;
+	--teamupdraft-red: #c6273b;
+	--teamupdraft-orange: #ef8a09;
+
+	--teamupdraft-grey-300: #ededed;
+	--teamupdraft-grey-400: #c6c6c6;
+	--teamupdraft-fs-600: 1.125rem;
+}

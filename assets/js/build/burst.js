@@ -442,11 +442,21 @@ function burst_init_events() {
   const handleExternalLinkClick = (e) => {
     const target = e.target.closest('a');
     if (!target) return;
-    
+
     // Check if this element is part of a goal
     const isGoalElement = burst.goals?.active?.some(goal => {
       if (goal.type !== 'clicks') return false;
-      return target.closest(goal.selector);
+      if (!goal.selector || goal.selector.trim() === '') {
+        console.warn(goal.selector, "does not exist");
+        return false;
+      }
+
+      try {
+        return target.closest(goal.selector);
+      } catch (error) {
+        console.warn('Invalid selector for goal:', goal.selector, error);
+        return false;
+      }
     });
 
     // Only update hit if it's not a goal element, as the goal will be tracked by the goal tracker
