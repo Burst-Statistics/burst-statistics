@@ -101,10 +101,11 @@ class Frontend {
 	private function get_current_page_identifier(): array {
 		// All post types with ID (posts, pages, custom post types).
 		if ( is_singular() || ( is_front_page() && is_page() ) ) {
-			return [
-				'ID'   => get_the_ID(),
-				'type' => get_post_type( get_the_ID() ),
-			];
+            $post_id = get_queried_object_id();
+            return [
+                'ID'   => $post_id,
+                'type' => get_post_type( $post_id ),
+            ];
 		}
 
 		// Homepage (posts page, not a static page).
