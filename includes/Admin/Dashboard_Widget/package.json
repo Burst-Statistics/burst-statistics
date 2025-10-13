@@ -11,7 +11,7 @@
   "author": "Rogier Lankhorst & Hessel de Jong",
   "license": "GPL-2.0-only",
   "devDependencies": {
-    "@wordpress/scripts": "^25.3.6",
+    "@wordpress/scripts": "^30.25.0",
     "sass": "^1.68.0",
     "sass-loader": "^13.3.2",
     "webpack": "^5.88.2",
