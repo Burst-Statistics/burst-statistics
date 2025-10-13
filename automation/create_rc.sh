@@ -35,7 +35,7 @@ cd "$PLUGIN_DIR" || { echo "Failed to change directory"; exit 1; }
 rm -rf "settings"
 rm -rf "dashboard-widget"
 echo "Remove existing build directory"
-cd "$PLUGIN_DIR/src/Admin/App" || { echo "Failed to change directory"; exit 1; }
+cd "$PLUGIN_DIR/includes/Admin/App" || { echo "Failed to change directory"; exit 1; }
 rm -rf "build"
 echo "Run react build for App"
 npm install --force
@@ -44,7 +44,7 @@ npm run build:css
 chown -R $(whoami):staff build/
 chmod -R u+rwX,go+rX build/
 
-cd "$PLUGIN_DIR/src/Admin/Dashboard_Widget" || { echo "Failed to change directory"; exit 1; }
+cd "$PLUGIN_DIR/includes/Admin/Dashboard_Widget" || { echo "Failed to change directory"; exit 1; }
 rm -rf "build";
 echo "Run react build for the dashboard widget"
 npm install --force
@@ -125,13 +125,15 @@ create_rc_zip() {
     "--exclude=/node_modules/"
     "--exclude=/dashboard-widget/"
     "--exclude=/settings/"
-    "--exclude=/src/Admin/App/node_modules/"
-    "--exclude=/src/Admin/App/.tanstack"
-    "--exclude=/src/Admin/Dashboard_Widget/node_modules/"
-    "--exclude=/src/TeamUpdraft/SharedComponents/node_modules/"
-    "--exclude=/src/TeamUpdraft/Onboarding/node_modules/"
-    "--exclude=/src/TeamUpdraft/Other_Plugins/node_modules/"
-    "--exclude=/src/TeamUpdraft/vendor/"
+    "--exclude=/includes/Admin/App/node_modules/"
+    "--exclude=/includes/Admin/App/.tanstack"
+    "--exclude=/includes/Admin/Dashboard_Widget/node_modules/"
+    "--exclude=/includes/TeamUpdraft/SharedComponents/node_modules/"
+    "--exclude=/includes/TeamUpdraft/Onboarding/node_modules/"
+    "--exclude=/includes/TeamUpdraft/Other_Plugins/node_modules/"
+    "--exclude=/includes/TeamUpdraft/vendor/"
+    "--exclude=/src/Admin/App/"
+    "--exclude=/src/Admin/Dashboard_Widget/"
     "--exclude=/mailer/maizzle/node_modules/"
     "--exclude=/docker-compose-bitnami.yml"
     "--exclude=/dist-build/"
