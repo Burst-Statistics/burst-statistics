@@ -45,7 +45,7 @@ module.exports = {
       // Add rule for processing CSS with PostCSS loader (for Tailwind)
       {
         test: /\.css$/,
-        include: path.resolve(__dirname, "includes"), // Adjust path as needed
+        include: path.resolve(__dirname, "src"), // Adjust path as needed
         use: [
           "style-loader", // Injects styles into DOM
           {
