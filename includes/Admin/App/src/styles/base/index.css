@@ -1,0 +1,124 @@
+@tailwind base;
+
+@layer base {
+	/* Still need to override this so toast svgs pickup the right colors. */
+	:root {
+		--toastify-color-light: theme(colors.toastify.light);
+		--toastify-color-dark: theme(colors.toastify.dark);
+		--toastify-color-info: theme(colors.toastify.info);
+		--toastify-color-success: theme(colors.toastify.success);
+		--toastify-color-warning: theme(colors.toastify.warning);
+		--toastify-color-error: theme(colors.toastify.error);
+		--toastify-color-transparent: theme(colors.toastify.transparent);
+
+		--toastify-icon-color-info: var(--toastify-color-info);
+		--toastify-icon-color-success: var(--toastify-color-success);
+		--toastify-icon-color-warning: var(--toastify-color-warning);
+		--toastify-icon-color-error: var(--toastify-color-error);
+
+		--toastify-toast-width: theme(spacing.toastify-toast-width);
+		--toastify-toast-background: theme(colors.toastify.light);
+		--toastify-toast-min-height: theme(spacing.toastify-toast-min-height);
+		--toastify-toast-max-height: theme(spacing.toastify-toast-max-height);
+		--toastify-font-family: theme(fontFamily.sans);
+		--toastify-z-index: theme(zIndex.toastify);
+
+		--toastify-text-color-light: theme(textColor.toastify.light);
+		--toastify-text-color-dark: theme(textColor.toastify.dark);
+		--toastify-text-color-info: theme(textColor.toastify.info);
+		--toastify-text-color-success: theme(textColor.toastify.success);
+		--toastify-text-color-warning: theme(textColor.toastify.warning);
+		--toastify-text-color-error: theme(textColor.toastify.error);
+
+		--toastify-spinner-color: theme(borderColor.toastify-spinner);
+		--toastify-spinner-color-empty-area: theme(borderColor.toastify-spinner-empty);
+
+		--toastify-color-progress-light: theme(backgroundImage.toastify-progress-light);
+		--toastify-color-progress-dark: theme(backgroundColor.toastify-progress-dark);
+		--toastify-color-progress-info: theme(backgroundColor.toastify-progress-info);
+		--toastify-color-progress-success: theme(backgroundColor.toastify-progress-success);
+		--toastify-color-progress-warning: theme(backgroundColor.toastify-progress-warning);
+		--toastify-color-progress-error: theme(backgroundColor.toastify-progress-error);
+	}
+
+	/* Burst base styles */
+	.burst {
+		@apply font-normal leading-[1.5] box-border m-0 -ml-5 text-base text-black max-md:-ml-[9px];;
+		font-variant-numeric: tabular-nums;
+
+		*,
+		*::before,
+		*::after {
+			/* Tailwind does not have box-sizing: inherit class */
+			box-sizing: inherit;
+		}
+
+		body, h1, h2, h3, h4, h5, h6, p, ol, ul {
+			@apply m-0 p-0 text-base;
+		}
+
+		img {
+			@apply max-w-full h-auto;
+		}
+
+		h1, h2, h3, h4, h5, h6 {
+			@apply leading-[1.5] text-black;
+		}
+
+		.burst-h0 {
+			@apply font-bold tracking-[0.025rem] text-5xl;
+		}
+
+		h1, .burst-h1 {
+			@apply text-4xl font-medium leading-[1.5] tracking-[0.025rem];
+		}
+
+		h2, .burst-h2 {
+			@apply text-2xl font-bold tracking-[0.025rem];
+		}
+
+		h3, .burst-h3 {
+			@apply text-xl font-semibold tracking-[0.0125rem];
+		}
+
+		h4, .burst-h4 {
+			@apply text-lg font-semibold tracking-[0.0125rem];
+		}
+
+		h5, .burst-h5 {
+			@apply text-base font-semibold tracking-[0.1px];
+		}
+
+		h6, .burst-h6 {
+			@apply text-base font-normal tracking-[0.1px];
+		}
+
+		p {
+			@apply text-base font-normal leading-[1.5] text-black;
+		}
+
+		a {
+			@apply text-base;
+		}
+
+		.burst-notice-hook-element {
+			@apply hidden !important;
+		}
+
+		.burst-divider {
+			@apply w-px h-[1.3rem] bg-divider;
+		}
+	}
+
+	/* Responsive adjustment */
+
+	/* Hide nags from other plugins */
+	.error, .notice, .update-nag, .notice-info {
+		&:not(.burst-review) {
+			@apply hidden !important;
+		}
+		&.burst-review {
+			margin: var(--rsp-grid-gap);
+		}
+	}
+}

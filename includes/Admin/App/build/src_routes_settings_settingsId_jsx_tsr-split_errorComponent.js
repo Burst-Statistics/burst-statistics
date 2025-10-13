@@ -1,0 +1,22 @@
+"use strict";
+/*
+ * ATTENTION: An "eval-source-map" devtool has been used.
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file with attached SourceMaps in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+(self["webpackChunk_burst_statistics_burst_statistics"] = self["webpackChunk_burst_statistics_burst_statistics"] || []).push([["src_routes_settings_settingsId_jsx_tsr-split_errorComponent"],{
+
+/***/ "./src/routes/settings.$settingsId.jsx?tsr-split=errorComponent":
+/*!**********************************************************************!*\
+  !*** ./src/routes/settings.$settingsId.jsx?tsr-split=errorComponent ***!
+  \**********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   errorComponent: () => (/* binding */ SplitErrorComponent)\n/* harmony export */ });\n/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react/jsx-runtime */ \"./node_modules/react/jsx-runtime.js\");\n/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/i18n */ \"@wordpress/i18n\");\n/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__);\n/* harmony import */ var _Users_rlankhorst_LocalSites_burst_app_public_wp_content_plugins_burst_pro_src_Admin_App_src_routes_settings_$settingsId_jsx__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./src/routes/settings.$settingsId.jsx */ \"./src/routes/settings.$settingsId.jsx\");\n\n\n// Create the Settings component\n// Export the Route object directly\n\nvar SplitErrorComponent = function (_a) {\n  var error = _a.error;\n  return (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(\"div\", {\n    className: \"p-4 text-red-500\",\n    children: error.message || (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('An error occurred loading settings', 'burst-statistics')\n  });\n};\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiLi9zcmMvcm91dGVzL3NldHRpbmdzLiRzZXR0aW5nc0lkLmpzeD90c3Itc3BsaXQ9ZXJyb3JDb21wb25lbnQiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7QUFBZ0Q7QUFDWDtBQUNyQztBQUNBO0FBQ3FKO0FBQ3JKLElBQUlJLG1CQUFtQixHQUFHLFNBQUFBLENBQVVDLEVBQUUsRUFBRTtFQUNwQyxJQUFJQyxLQUFLLEdBQUdELEVBQUUsQ0FBQ0MsS0FBSztFQUNwQixPQUFPTCxzREFBSSxDQUFDLEtBQUssRUFBRTtJQUFFTSxTQUFTLEVBQUUsa0JBQWtCO0lBQUVDLFFBQVEsRUFBRUYsS0FBSyxDQUFDRyxPQUFPLElBQUlQLG1EQUFFLENBQUMsb0NBQW9DLEVBQUUsa0JBQWtCO0VBQUUsQ0FBQyxDQUFDO0FBQ2xKLENBQUMiLCJzb3VyY2VzIjpbIndlYnBhY2s6Ly9AYnVyc3Qtc3RhdGlzdGljcy9idXJzdC1zdGF0aXN0aWNzLy4vc3JjL3JvdXRlcy9zZXR0aW5ncy4kc2V0dGluZ3NJZC5qc3g/ZTI2MyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBqc3ggYXMgX2pzeCB9IGZyb20gXCJyZWFjdC9qc3gtcnVudGltZVwiO1xuaW1wb3J0IHsgX18gfSBmcm9tICdAd29yZHByZXNzL2kxOG4nO1xuLy8gQ3JlYXRlIHRoZSBTZXR0aW5ncyBjb21wb25lbnRcbi8vIEV4cG9ydCB0aGUgUm91dGUgb2JqZWN0IGRpcmVjdGx5XG5pbXBvcnQgeyBSb3V0ZSB9IGZyb20gXCIvVXNlcnMvcmxhbmtob3JzdC9Mb2NhbFNpdGVzL2J1cnN0L2FwcC9wdWJsaWMvd3AtY29udGVudC9wbHVnaW5zL2J1cnN0LXByby9zcmMvQWRtaW4vQXBwL3NyYy9yb3V0ZXMvc2V0dGluZ3MuJHNldHRpbmdzSWQuanN4XCI7XG52YXIgU3BsaXRFcnJvckNvbXBvbmVudCA9IGZ1bmN0aW9uIChfYSkge1xuICAgIHZhciBlcnJvciA9IF9hLmVycm9yO1xuICAgIHJldHVybiBfanN4KFwiZGl2XCIsIHsgY2xhc3NOYW1lOiBcInAtNCB0ZXh0LXJlZC01MDBcIiwgY2hpbGRyZW46IGVycm9yLm1lc3NhZ2UgfHwgX18oJ0FuIGVycm9yIG9jY3VycmVkIGxvYWRpbmcgc2V0dGluZ3MnLCAnYnVyc3Qtc3RhdGlzdGljcycpIH0pO1xufTtcbmV4cG9ydCB7IFNwbGl0RXJyb3JDb21wb25lbnQgYXMgZXJyb3JDb21wb25lbnQgfTtcbiJdLCJuYW1lcyI6WyJqc3giLCJfanN4IiwiX18iLCJSb3V0ZSIsIlNwbGl0RXJyb3JDb21wb25lbnQiLCJfYSIsImVycm9yIiwiY2xhc3NOYW1lIiwiY2hpbGRyZW4iLCJtZXNzYWdlIiwiZXJyb3JDb21wb25lbnQiXSwic291cmNlUm9vdCI6IiJ9\n//# sourceURL=webpack-internal:///./src/routes/settings.$settingsId.jsx?tsr-split=errorComponent\n\n}");
+
+/***/ })
+
+}]);

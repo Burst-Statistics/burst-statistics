@@ -59,10 +59,10 @@ if ( isset( $burst_plugins[ $burst_dir ] ) && ! in_array( $burst_plugins[ $burst
 	return;
 }
 
-require_once __DIR__ . '/src/autoload.php';
+require_once __DIR__ . '/includes/autoload.php';
 require_once __DIR__ . '/helpers/php-user-agent/UserAgentParser.php';
-if ( file_exists( __DIR__ . '/src/Pro/Tracking/tracking.php' ) ) {
-	require_once __DIR__ . '/src/Pro/Tracking/tracking.php';
+if ( file_exists( __DIR__ . '/includes/Pro/Tracking/tracking.php' ) ) {
+	require_once __DIR__ . '/includes/Pro/Tracking/tracking.php';
 }
 
 ( new Tracking() )->beacon_track_hit();
