@@ -8,14 +8,14 @@ const TaskElement = ( props ) => {
 	const fixTask = useTasks( ( state ) => state.fixTask );
 
 	return (
-		<div className="flex items-center justify-center gap-5 pb-2.5">
+		<div className="flex items-center justify-center gap-1 pb-2.5">
 			<TaskStatusIcon task={task} />
 
 			{/*sanitized input in task.msg*/}
-			{ 'skeleton' !== task.icon && <p className="flex-1" dangerouslySetInnerHTML={ { __html: task.msg } }></p> } {/* nosemgrep */}
-			{ 'skeleton' === task.icon && <div className="flex-1" ><Icon name="loading" /></div> }
+			{ task.msg && <p className="flex-1 text-base text-black" dangerouslySetInnerHTML={ { __html: task.msg } }></p> } {/* nosemgrep */}
+	
 			{ task.url && (
-				<a target={ task.url.startsWith( '#' ) ? '_self' : '_blank' } href={ task.url } className="text-blue underline hover:text-blue-800 hover:no-underline">
+				<a target={ task.url.startsWith( '#' ) ? '_self' : '_blank' } href={ task.url } className="text-blue underline cursor-pointer">
 					{ 'sale' === task.icon && __( 'Get 40% Off', 'burst-statistics' ) }
 					{ 'offer' === task.icon && __( 'Get 3 months free!', 'burst-statistics' ) }
 					{ ( 'offer' !== task.icon && 'sale' !== task.icon ) && __( 'More info', 'burst-statistics' ) }
@@ -75,7 +75,7 @@ const TaskStatusIcon = ( props ) => {
 		},
 		new: {
 			icon: 'campaign',
-			color: 'bg-blue text-white'
+			color: 'blue'
 		},
 		insight: {
 			icon: 'line-squiggle',
@@ -83,7 +83,7 @@ const TaskStatusIcon = ( props ) => {
 		},
 		skeleton: {
 			icon: 'loading',
-			color: 'yellow'
+			color: 'blue'
 		},
 		default: {
 			icon: 'line-squiggle',
@@ -93,8 +93,8 @@ const TaskStatusIcon = ( props ) => {
 	const iconConfig = iconMapping[props.task.icon] ?? iconMapping['default'];
 	return (
 		<HelpTooltip content={ props.task.label } delayDuration={ 300 }>
-			<div className='bg-white rounded-full p-1 border border-gray-100'>
-				<Icon color={ iconConfig.color } name={ iconConfig.icon } />
+			<div className='bg-white rounded-full p-1.5 mr-2 border border-gray-100 shadow-sm'>
+				<Icon color={ iconConfig.color } name={ iconConfig.icon } size={ 16 } strokeWidth={ 1.5 }/>
 			</div>
 		</HelpTooltip>
 	)

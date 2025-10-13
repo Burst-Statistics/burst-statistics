@@ -54,7 +54,7 @@
 		}
 
 		body, h1, h2, h3, h4, h5, h6, p, ol, ul {
-			@apply m-0 p-0;
+			@apply m-0 p-0 text-base;
 		}
 
 		img {
@@ -98,7 +98,7 @@
 		}
 
 		a {
-			@apply text-[1em];
+			@apply text-base;
 		}
 
 		.burst-notice-hook-element {
@@ -114,10 +114,10 @@
 
 	/* Hide nags from other plugins */
 	.error, .notice, .update-nag, .notice-info {
-		&:not(.really-simple-plugins) {
+		&:not(.burst-review) {
 			@apply hidden !important;
 		}
-		&.really-simple-plugins {
+		&.burst-review {
 			margin: var(--rsp-grid-gap);
 		}
 	}

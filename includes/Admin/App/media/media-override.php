@@ -52,14 +52,12 @@
  * @global int       $content_width
  * @global wpdb      $wpdb
  * @global WP_Locale $wp_locale
- *
  * @param array $args {
  *     Arguments for enqueuing media scripts.
- *
- *     @type int|WP_Post A post object or ID.
+ * @type int|WP_Post A post object or ID.
  * }
  */
-function burst_wp_enqueue_media( $args = array() ) {
+function burst_wp_enqueue_media( $args = [] ) {
 	// Enqueue me just once per page, please.
 	if ( did_action( 'wp_enqueue_media' ) ) {
 		return;
@@ -67,34 +65,37 @@ function burst_wp_enqueue_media( $args = array() ) {
 
 	global $content_width, $wpdb, $wp_locale;
 
-	$defaults = array(
+	$defaults = [
 		'post' => null,
-	);
+	];
 	$args     = wp_parse_args( $args, $defaults );
 
 	// We're going to pass the old thickbox media tabs to `media_upload_tabs`.
 	// to ensure plugins will work. We will then unset those tabs.
-	$tabs = array(
+	$tabs = [
 		// handler action suffix => tab label.
 		'type'     => '',
 		'type_url' => '',
 		'gallery'  => '',
 		'library'  => '',
-	);
+	];
 
 	/** This filter is documented in wp-admin/includes/media.php */
 	$tabs = apply_filters( 'media_upload_tabs', $tabs );
 	unset( $tabs['type'], $tabs['type_url'], $tabs['gallery'], $tabs['library'] );
 
-	$props = array(
-		'link'  => get_option( 'image_default_link_type' ), // db default is 'file'.
-		'align' => get_option( 'image_default_align' ), // empty default.
-		'size'  => get_option( 'image_default_size' ),  // empty default.
-	);
+	$props = [
+		// db default is 'file'.
+		'link'  => get_option( 'image_default_link_type' ),
+		// empty default.
+		'align' => get_option( 'image_default_align' ),
+		// empty default.
+		'size'  => get_option( 'image_default_size' ),
+	];
 
 	$exts      = array_merge( wp_get_audio_extensions(), wp_get_video_extensions() );
 	$mimes     = get_allowed_mime_types();
-	$ext_mimes = array();
+	$ext_mimes = [];
 	foreach ( $exts as $ext ) {
 		foreach ( $mimes as $ext_preg => $mime_match ) {
 			if ( preg_match( '#' . $ext . '#i', $ext_preg ) ) {
@@ -108,38 +109,38 @@ function burst_wp_enqueue_media( $args = array() ) {
 	$has_audio = false;
 	$has_video = false;
 
-	$settings = array(
+	$settings = [
 		'tabs'             => $tabs,
-		'tabUrl'           => add_query_arg( array( 'chromeless' => true ), admin_url( 'media-upload.php' ) ),
+		'tabUrl'           => add_query_arg( [ 'chromeless' => true ], admin_url( 'media-upload.php' ) ),
 		'mimeTypes'        => wp_list_pluck( get_post_mime_types(), 0 ),
 		/** This filter is documented in wp-admin/includes/media.php */
 		'captions'         => ! apply_filters( 'disable_captions', '' ),
-		'nonce'            => array(
+		'nonce'            => [
 			'sendToEditor' => wp_create_nonce( 'media-send-to-editor' ),
-		),
-		'post'             => array(
+		],
+		'post'             => [
 			'id' => 0,
-		),
+		],
 		'defaultProps'     => $props,
-		'attachmentCounts' => array(
+		'attachmentCounts' => [
 			'audio' => intval( $has_audio ),
 			'video' => intval( $has_video ),
-		),
+		],
 		'embedExts'        => $exts,
 		'embedMimes'       => $ext_mimes,
 		'contentWidth'     => $content_width,
 		'months'           => burst_get_media_months(),
-        // @phpstan-ignore-next-line
+		// @phpstan-ignore-next-line
 		'mediaTrash'       => MEDIA_TRASH ? 1 : 0,
-	);
+	];
 
 	$post = null;
 	if ( isset( $args['post'] ) ) {
 		$post             = get_post( $args['post'] );
-		$settings['post'] = array(
+		$settings['post'] = [
 			'id'    => $post->ID,
 			'nonce' => wp_create_nonce( 'update-post_' . $post->ID ),
-		);
+		];
 
 		$thumbnail_support = current_theme_supports( 'post-thumbnails', $post->post_type ) && post_type_supports( $post->post_type, 'thumbnail' );
 		if ( ! $thumbnail_support && 'attachment' === $post->post_type && $post->post_mime_type ) {
@@ -158,7 +159,7 @@ function burst_wp_enqueue_media( $args = array() ) {
 
 	$hier = $post && is_post_type_hierarchical( $post->post_type );
 
-	$strings = array(
+	$strings = [
 		// Generic.
 		'url'                         => __( 'URL' ),
 		'addMedia'                    => __( 'Add Media' ),
@@ -279,13 +280,12 @@ function burst_wp_enqueue_media( $args = array() ) {
 		'updateVideoPlaylist'         => __( 'Update video playlist' ),
 		'addToVideoPlaylist'          => __( 'Add to video playlist' ),
 		'addToVideoPlaylistTitle'     => __( 'Add to Video Playlist' ),
-	);
+	];
 
 	/**
 	 * Filter the media view settings.
 	 *
 	 * @since 3.5.0
-	 *
 	 * @param array   $settings List of media view settings.
 	 * @param WP_Post $post     Post object.
 	 */
@@ -295,7 +295,6 @@ function burst_wp_enqueue_media( $args = array() ) {
 	 * Filter the media view strings.
 	 *
 	 * @since 3.5.0
-	 *
 	 * @param array   $strings List of media view strings.
 	 * @param WP_Post $post    Post object.
 	 */

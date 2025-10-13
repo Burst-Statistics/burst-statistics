@@ -249,6 +249,11 @@ const Icon = memo( ( { style = {}, name = 'bullet', color = 'black', size = 18, 
 			return <Star {...iconProps} className={ colorVal && `fill-${colorVal}`} />;
 		}
 
+		// Special handling for loading icon - should spin
+		if ( name === 'loading' && IconComponent === Loader ) {
+			return <Loader {...iconProps} className={ clsx( className, 'animate-spin [animation-duration:2s]', colorVal && `text-${colorVal}` ) } />;
+		}
+
 		return <IconComponent className={ clsx( className, colorVal && `text-${colorVal}` ) } { ...iconProps } />;
 	};
 

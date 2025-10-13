@@ -3,8 +3,6 @@ import { __ } from "@wordpress/i18n";
 import useTasks from "@/store/useTasksStore";
 import { useEffect } from "react";
 import { LiveVisitorTaskElement } from "@/components/Dashboard/LiveVisitorTaskElement";
-import Icon from "@/utils/Icon";
-import HelpTooltip from "@/components/Common/HelpTooltip";
 import {AnimatePresence, motion, Variants} from "framer-motion";
 import { listSlideAnimation } from './OverviewBlock';
 
@@ -13,38 +11,44 @@ import { listSlideAnimation } from './OverviewBlock';
  *
  * @return { React.ReactElement } Loading component
  */
-const LoadingComponent = (): React.ReactElement => (
-	<div className="flex items-center justify-center gap-5 pb-2.5">
-		<HelpTooltip content={ __( 'Loading...', 'burst-statistics' ) } delayDuration={ 300 }>
-			<div className='bg-white rounded-full p-1 border border-gray-100'>
-				<Icon name='loading' />
-			</div>
-		</HelpTooltip>
+const LoadingComponent = (): React.ReactElement => {
+	const loadingTask: TaskProp = {
+		id: 'loading',
+		condition: {
+			type: 'system',
+			function: 'loading'
+		},
+		msg: __( 'Loading tasks...', 'burst-statistics' ),
+		icon: 'skeleton',
+		dismissible: false,
+		plusone: false,
+		label: __( 'Loading...', 'burst-statistics' )
+	};
 
-		<p className="flex-1">
-			{ __( 'Loading tasks...', 'burst-statistics' ) }
-		</p>
-	</div>
-);
+	return <TaskElement task={ loadingTask } onCloseTaskHandler={ () => {} } />;
+};
 
 /**
  * No tasks component to show when there are no tasks to display
  *
  * @return { React.ReactElement } No tasks component
  */
-const NoTasksComponent = (): React.ReactElement => (
-	<div className="flex items-center justify-center gap-5 pb-2.5">
-		<HelpTooltip content={ __( 'Completed', 'burst-statistics' ) } delayDuration={ 300 }>
-			<div className='bg-white rounded-full p-1 border border-gray-100'>
-				<Icon name='check' />
-			</div>
-		</HelpTooltip>
+const NoTasksComponent = (): React.ReactElement => {
+	const completedTask: TaskProp = {
+		id: 'no-tasks',
+		condition: {
+			type: 'system',
+			function: 'completed'
+		},
+		msg: __( 'No remaining tasks to show', 'burst-statistics' ),
+		icon: 'completed',
+		dismissible: false,
+		plusone: false,
+		label: __( 'Completed', 'burst-statistics' )
+	};
 
-		<p className="flex-1">
-			{ __( 'No remaining tasks to show', 'burst-statistics' ) }
-		</p>
-	</div>
-);
+	return <TaskElement task={ completedTask } onCloseTaskHandler={ () => {} } />;
+};
 
 export type TaskProp = {
 	id: string;
@@ -56,6 +60,10 @@ export type TaskProp = {
 	icon: string,
 	dismissible: boolean;
 	plusone: boolean;
+	label?: string;
+	status?: string;
+	url?: string;
+	fix?: string;
 }
 
 /**

@@ -39,7 +39,7 @@ const ButtonInput: React.FC<ButtonInputProps> = ({
 }) => {
   const classes = clsx(
     // Base styles for all button variants
-    "rounded transition-all duration-200",
+    "rounded text-center transition-all duration-200",
     // Variant-specific styles
     {
       "bg-primary text-white hover:bg-primary hover:[box-shadow:0_0_0_3px_rgba(43,129,51,0.5)]": btnVariant === "primary",

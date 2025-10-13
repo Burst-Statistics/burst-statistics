@@ -16,7 +16,7 @@ spl_autoload_register(
 			$namespace = '';
 		} elseif ( strpos( $burst_class, $team_updraft_prefix ) === 0 ) {
 			$strlen    = strlen( $team_updraft_prefix );
-			$namespace = 'TeamUpdraft/src/';
+			$namespace = 'TeamUpdraft/';
 		} else {
 			return;
 		}
@@ -31,6 +31,7 @@ spl_autoload_register(
 		} else {
 			$dir .= '/';
 		}
+
 		$plugin_path = dirname( __DIR__, 1 ) . '/';
 		// Build the class file path.
 		$file = $plugin_path . "includes/{$dir}class-" . str_replace( '_', '-', strtolower( $class_name ) ) . '.php';
@@ -42,6 +43,13 @@ spl_autoload_register(
 		$trait_file = $plugin_path . "includes/{$dir}trait-" . str_replace( '_', '-', strtolower( $class_name ) ) . '.php';
 		if ( file_exists( $trait_file ) ) {
 			require_once $trait_file;
+			return;
+		}
+
+		// temporary fallback during upgrade.
+		$file = $plugin_path . "src/{$dir}class-" . str_replace( '_', '-', strtolower( $class_name ) ) . '.php';
+		if ( file_exists( $file ) ) {
+			require_once $file;
 			return;
 		}
 

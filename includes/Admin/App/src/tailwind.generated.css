@@ -574,6 +574,11 @@ video {
     padding: 0px;
   }
 
+		body, h1, h2, h3, h4, h5, h6, p, ol, ul {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+  }
+
 		img {
     height: auto;
   }
@@ -703,7 +708,8 @@ video {
   }
 
 		a {
-    font-size: 1em;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
   }
 
 		.burst-notice-hook-element {
@@ -736,10 +742,10 @@ video {
 		}
 	}
 	.error, .notice, .update-nag, .notice-info {
-		&:not(.really-simple-plugins) {
+		&:not(.burst-review) {
     display: none !important;
   }
-		&.really-simple-plugins {
+		&.burst-review {
 			margin: var(--rsp-grid-gap);
 		}
 	}
@@ -4286,6 +4292,10 @@ video {
 
 #burst-statistics .\[all\:initial\] {
   all: initial;
+}
+
+#burst-statistics .\[animation-duration\:2s\] {
+  animation-duration: 2s;
 }
 
 #burst-statistics .\[animation-duration\:600ms\] {
