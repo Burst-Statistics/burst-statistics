@@ -29,7 +29,7 @@ const Flag = ({country, countryNiceName = '', iconOnly=false}) => {
   }
 
   country = country.toLowerCase();
-  const src = `${burst_settings.plugin_url}src/Pro/assets/flags/4x3/${country}.svg`;
+  const src = `${burst_settings.plugin_url}includes/Pro/assets/flags/4x3/${country}.svg`;
   if ( iconOnly ) {
     return (
         <ReactSVG src={src} className={`burst-flag [&_svg]:h-[13px] [&_svg]:w-auto [&_div]:flex burst-flag-${country}`} title={countryNiceName}/>

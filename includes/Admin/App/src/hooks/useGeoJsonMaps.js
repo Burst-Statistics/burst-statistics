@@ -4,7 +4,7 @@ import { feature } from 'topojson-client';
 import { getJsonData } from '../utils/api';
 
 // Constants
-const MAPS_BASE_PATH = burst_settings.plugin_url + 'src/Pro/assets/maps';
+const MAPS_BASE_PATH = burst_settings.plugin_url + 'includes/Pro/assets/maps';
 const WORLD_GEO_URL = `${MAPS_BASE_PATH}/world`;
 const COUNTRY_GEO_URL = `${MAPS_BASE_PATH}/countries`;
 

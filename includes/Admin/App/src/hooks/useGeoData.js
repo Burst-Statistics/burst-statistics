@@ -7,7 +7,7 @@ import { getJsonData } from '@/utils/api'; // Your existing API util
 import useLicenseStore from '@/store/useLicenseStore';
 
 // Assuming burst_settings is globally available in your WP environment
-const MAPS_BASE_PATH = burst_settings.plugin_url + 'src/Pro/assets/maps';
+const MAPS_BASE_PATH = burst_settings.plugin_url + 'includes/Pro/assets/maps';
 const SIMPLIFIED_WORLD_GEO_URL =
   burst_settings.plugin_url + 'assets/maps/world/world_loading.json';
 
