@@ -149,7 +149,7 @@ const useOnboardingStore = create<OnboardingState>((set) => ({
     },
     setValue: async (id: string, value: string | boolean) => {
         const state = useOnboardingStore.getState();
-        let settings = await state.getSettings();
+        let settings = state.getSettings();
 
         const updated = settings.map((field) =>
             field.id === id ? { ...field, value, edited: true } : field
@@ -163,15 +163,16 @@ const useOnboardingStore = create<OnboardingState>((set) => ({
             step:currentStep.id,
             settings:settings,
         }
-
         await updateAction( data, 'update_settings' );
         set({ isUpdating: false, settings: settings });
     },
     updateEmail: async () => {
         set({ isUpdating: true });
-        const currentStep = useOnboardingStore.getState().getCurrentStep();
-        const email = currentStep?.fields?.find(f => f.type === 'email')?.value ?? null;
-        const tipsTricks = currentStep?.fields?.find(f => f.type === 'checkbox')?.value ?? null;
+        const state = useOnboardingStore.getState();
+        const currentStep = state.getCurrentStep();
+        let settings = state.getSettings();
+        const email = settings.find(f => f.type === 'email')?.value ?? null;
+        const tipsTricks = settings.find(f => f.type === 'checkbox')?.value ?? null;
         let data = {
                 step:currentStep.id,
                 email:email,
