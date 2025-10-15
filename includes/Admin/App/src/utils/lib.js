@@ -2,7 +2,6 @@ import { addQueryArgs, buildQueryString, safeDecodeURI as wpSafeDecodeURI } from
 
 export const burst_get_website_url = ( url = '/', params = {}) => {
   const baseUrl = 'https://burst-statistics.com/';
-  
   // Remove leading slash if present
   url = url.replace( /^\//, '' );
 
@@ -10,7 +9,7 @@ export const burst_get_website_url = ( url = '/', params = {}) => {
   url = url.replace( /\/?$/, '/' );
   const version = burst_settings.is_pro ? 'pro' : 'free';
   const versionNr = burst_settings.burst_version.replace( /#.*$/, '' );
-  
+
   const defaultParams = {
     utm_campaign: `burst-${version}-${versionNr}`
   };
@@ -18,7 +17,10 @@ export const burst_get_website_url = ( url = '/', params = {}) => {
   // Merge default params with provided params, but force our default utm_campaign with the version.
   const { utm_campaign, ...cleanParams } = params;
   const mergedParams = { ...defaultParams, ...cleanParams };
-  
+  // Add or override utm_source if burst_settings.installed_by is not empty
+  if ( burst_settings.installed_by.length>0 ) {
+    mergedParams.utm_source = 'onboarding-'+burst_settings.installed_by;
+  }
   // Use WordPress addQueryArgs utility to handle URL parameters properly
   return addQueryArgs(baseUrl + url, mergedParams);
 };

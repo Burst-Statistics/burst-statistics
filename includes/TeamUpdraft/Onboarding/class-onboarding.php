@@ -385,15 +385,16 @@ class Onboarding {
 				$step_fields = isset( $data['step'] ) ? $this->extract_fields_from_step( $data['step'] ) : [];
 				if ( isset( $data['email'] ) && is_email( $data['email'] ) ) {
 					$email = sanitize_email( $data['email'] );
+
 					if ( ! empty( $email ) ) {
-						$reporting_email_field_name   = '';
-						$mailinglist_email_field_name = '';
+						$reporting_email_field_name    = '';
+						$mailinglist_signup_field_name = '';
 						foreach ( $step_fields as $field ) {
 							if ( isset( $field['type'] ) && $field['type'] === 'email' ) {
 								$reporting_email_field_name = $field['id'] ?? '';
 							}
 							if ( isset( $field['type'] ) && $field['type'] === 'checkbox' ) {
-								$mailinglist_email_field_name = $field['id'] ?? '';
+								$mailinglist_signup_field_name = $field['id'] ?? '';
 							}
 						}
 
@@ -402,7 +403,7 @@ class Onboarding {
                             // phpcs:ignore
 							do_action( $this->prefix . '_onboarding_update_single_option', $reporting_email_field_name, $email );
 						}
-						if ( ! empty( $mailinglist_email_field_name ) ) {
+						if ( ! empty( $mailinglist_signup_field_name ) ) {
 							$include_tips = isset( $data['tips_tricks'] ) && (bool) $data['tips_tricks'];
 							// using prefixed hook.
                             // phpcs:ignore

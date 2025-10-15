@@ -415,22 +415,24 @@ class Frontend {
 	/**
 	 * Get the pageviews all time for a post.
 	 */
-	public function get_post_pageviews( int $post_id ): int {
+	public function get_post_pageviews( int $post_id, int $start = 0, int $end = 0 ): int {
 		$cache_key    = 'burst_post_views_' . $post_id;
 		$cached_views = wp_cache_get( $cache_key, 'burst' );
+		$end          = $end === 0 ? time() : $end;
+		$start        = $start === 0 ? strtotime( '-30 days' ) : $start;
 
 		if ( $cached_views !== false ) {
 			return (int) $cached_views;
 		}
 
 		global $wpdb;
-		$date_start = apply_filters( 'burst_pageviews_date_start', strtotime( '-30 days' ) );
-		$sql        = $wpdb->prepare(
+		$sql = $wpdb->prepare(
 			"SELECT COUNT(*) as total_views
          FROM {$wpdb->prefix}burst_statistics
-         WHERE page_id = %d AND time > %d",
+         WHERE page_id = %d AND time > %d and time < %d",
 			$post_id,
-			$date_start
+			$start,
+			$end
 		);
 
 		$views = (int) $wpdb->get_var( $sql );

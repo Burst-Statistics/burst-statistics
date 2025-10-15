@@ -6,7 +6,7 @@ Requires at least: 6.2
 License: GPL2
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 2.2.9
+Stable tag: 2.2.9.1
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 
@@ -97,6 +97,10 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 2.2.9.1 =
+* Improvement: Date range selection option in pages and posts overview screen options.
+* Fix: issue in onboarding wizard data storing.
+
 = 2.2.9 =
 * Fix: move the code directory from /src to /includes, because otherwise javascript files are not scanned for translations by WordPress
 
@@ -187,19 +191,6 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Improvement: optimized database upgrade.
 * New: rewritten plugin for even better performance
 * New: extended range of automated tests to increase reliability
-
-= 1.8.0.1 =
-* Fix: Goals block details not showing correct data.
-* Fix: Click goals not always tracking correctly.
-
-= 1.8.0 =
-* Improvement: add a fallback to allow for servers with a very small bytes limit on indexes.
-* Improvement: restructured the way tasks are stored.
-* Improvement: dropped load_plugin_textdomain, as it is not necessary anymore.
-* Improvement: the way the visits count on the pages and posts overview is tracked is changed, to better stay in sync with the page visits within Burst itself.
-* Fix: A dismissible task like the new email reports upgrade notice stayed in the “remaining tasks” section.
-* Fix: predefined goals were not loading due to changes in translation structure within WordPress.
-* Fix: on track_updates, empty values were not cleaned up correctly, possibly leading to rows with empty devices and browsers.
 
 == Upgrade notice ==
 * Please backup before upgrading.
