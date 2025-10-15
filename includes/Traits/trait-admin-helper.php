@@ -90,7 +90,12 @@ trait Admin_Helper {
 			'utm_campaign' => 'burst-' . $version . '-' . $version_nr,
 		];
 
-		$params = wp_parse_args( $params, $default_params );
+		$params              = wp_parse_args( $params, $default_params );
+		$plugin_installed_by = get_option( 'teamupdraft_installation_source_burst-statistics', '' );
+		if ( ! empty( $plugin_installed_by ) ) {
+			$params['utm_source'] = 'onboarding-' . $plugin_installed_by;
+		}
+
 		// remove slash prepending the $url.
 		$url = ltrim( $url, '/' );
 
@@ -146,7 +151,7 @@ trait Admin_Helper {
 	 *     gmt_offset: mixed,
 	 *     goals_information_shown: int,
 	 *     burst_version: string,
-	 *     burst_pro: bool
+	 *     installed_by: string
 	 * }
 	 */
 	public function localized_settings( array $js_data ): array {
@@ -170,6 +175,7 @@ trait Admin_Helper {
 				'tour_shown'        => $this->get_option_int( 'burst_tour_shown_once' ),
 				'gmt_offset'        => get_option( 'gmt_offset' ),
 				'burst_version'     => BURST_VERSION,
+				'installed_by'      => get_option( 'teamupdraft_installation_source_burst-statistics', '' ),
 			]
 		);
 	}

@@ -170,9 +170,11 @@ const useOnboardingStore = create<OnboardingState>((set) => ({
         set({ isUpdating: true });
         const state = useOnboardingStore.getState();
         const currentStep = state.getCurrentStep();
+        const tipsTricksField = currentStep?.fields.find(field => field.type === 'checkbox');
+        const emailField = currentStep?.fields.find(field => field.type === 'email');
         let settings = state.getSettings();
-        const email = settings.find(f => f.type === 'email')?.value ?? null;
-        const tipsTricks = settings.find(f => f.type === 'checkbox')?.value ?? null;
+        const email = settings.find(f => f.id === emailField.id)?.value ?? null;
+        const tipsTricks = settings.find(f => f.id === tipsTricksField.id)?.value ?? null;
         let data = {
                 step:currentStep.id,
                 email:email,
