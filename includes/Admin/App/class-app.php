@@ -281,11 +281,7 @@ class App {
 			return;
 		}
 
-		// Add cache busting only in development. Check for WP_DEBUG.
-		// @phpstan-ignore-next-line.
-		$dev_mode = defined( 'WP_DEBUG' ) && WP_DEBUG;
-		$version  = $dev_mode ? time() : $js_data['version'];
-
+		$version = $js_data['version'];
 		wp_enqueue_style(
 			'burst-tailwind',
 			plugins_url( '/src/tailwind.generated.css', __FILE__ ),
@@ -326,20 +322,6 @@ class App {
 			3
 		);
 
-		// In development mode, force no caching for our scripts.
-		if ( $dev_mode ) {
-			add_filter(
-				'script_loader_src',
-				function ( $src, $handle ) {
-					if ( $handle === 'burst-settings' ) {
-						return add_query_arg( 'ver', time(), $src );
-					}
-					return $src;
-				},
-				10,
-				2
-			);
-		}
 		$path = defined( 'BURST_PRO' ) ? BURST_PATH . 'languages' : false;
 		wp_set_script_translations( 'burst-settings', 'burst-statistics', $path );
 
