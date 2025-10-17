@@ -916,7 +916,6 @@ class Statistics {
 				'pageviews',
 			];
 		}
-
 		foreach ( $metrics as $metric ) {
 			$metric = $this->sanitize_metric( $metric );
 
@@ -1248,6 +1247,7 @@ class Statistics {
 			'burst_possible_filters_with_prefix',
 			[
 				'bounces'          => 'session_bounces.bounce',
+				'host'             => 'sessions.host',
 				'new_visitor'      => 'statistics.first_time_visit',
 				'page_url'         => 'statistics.page_url',
 				'referrer'         => 'statistics.referrer',
@@ -1380,6 +1380,9 @@ class Statistics {
 				break;
 			case 'page_url':
 				$sql = 'statistics.page_url';
+				break;
+			case 'host':
+				$sql = 'sessions.host';
 				break;
 			case 'referrer':
 				$remove   = [ 'http://www.', 'https://www.', 'http://', 'https://' ];

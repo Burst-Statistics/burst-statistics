@@ -236,6 +236,10 @@ class Upgrade {
 			delete_post_meta_by_key( 'burst_total_pageviews_count' );
 		}
 
+		$admin = new Admin();
+		$admin->run_table_init_hook();
+		$admin->create_js_file();
+
 		do_action( 'burst_upgrade_after', $prev_version );
 		update_option( 'burst-current-version', $new_version );
 	}

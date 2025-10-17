@@ -27,6 +27,9 @@ trait Helper {
 	 * Get an option from the burst settings
 	 */
 	public function get_option( string $option, $default = false ) {
+        if ( !function_exists( 'burst_get_option' ) ) {
+            require_once BURST_PATH . 'includes/functions.php';
+        }
 		return burst_get_option( $option, $default );
 	}
     // phpcs:enable

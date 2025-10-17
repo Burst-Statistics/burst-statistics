@@ -10,11 +10,11 @@ import { useDate } from '@/store/useDateStore';
 import { useFiltersStore } from '@/store/useFiltersStore';
 import { useQuery } from '@tanstack/react-query';
 import getDataTableData from '@/api/getDataTableData';
-import { burst_get_website_url } from '../../utils/lib';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
-import Icon from "@/utils/Icon";
+import useSettingsData from "@/hooks/useSettingsData";
+
 
 const defaultColumnsOptions = {
   pageviews: {
@@ -57,143 +57,6 @@ const defaultColumnsOptions = {
   }
 };
 
-const config = {
-  pages: {
-    label: __( 'Pages', 'burst-statistics' ),
-    searchable: true,
-    defaultColumns: [ 'page_url', 'pageviews' ],
-    columnsOptions: {
-      page_url: {
-        label: __( 'Page URL', 'burst-statistics' ),
-        default: true,
-        format: 'url',
-        align: 'left',
-        group_by: true
-      },
-      ...defaultColumnsOptions
-    },
-  },
-  referrers: {
-    label: __( 'Referrers', 'burst-statistics' ),
-    searchable: true,
-    defaultColumns: [ 'referrer', 'pageviews' ],
-    columnsOptions: {
-      referrer: {
-        label: __( 'Referrer', 'burst-statistics' ),
-        default: true,
-        format: 'referrer',
-        align: 'left',
-        group_by: true
-      },
-      ...defaultColumnsOptions
-    },
-  },
-  countries: {
-    label: __( 'Locations', 'burst-statistics' ),
-    pro: true,
-    searchable: true,
-    defaultColumns: [ 'country_code', 'state', 'city', 'pageviews' ],
-    columnsOptions: {
-      country_code: {
-        label: __( 'Country', 'burst-statistics' ),
-        default: true,
-        format: 'country',
-        align: 'left',
-        group_by: true
-      },
-      state: {
-        label: __( 'State', 'burst-statistics' ),
-        format: 'text',
-        align: 'left',
-        group_by: true
-      },
-      city: {
-        label: __( 'City', 'burst-statistics' ),
-        format: 'text',
-        align: 'left',
-        group_by: true
-      },
-      continent: {
-        label: __( 'Continent', 'burst-statistics' ),
-        format: 'continent',
-        align: 'left',
-        group_by: true
-      },
-
-      ...defaultColumnsOptions
-    }
-  },
-  campaigns: {
-    label: __( 'Campaigns', 'burst-statistics' ),
-    pro: true,
-    searchable: true,
-    defaultColumns: [ 'source', 'pageviews' ],
-    columnsOptions: {
-      campaign: {
-        label: __( 'Campaign', 'burst-statistics' ),
-        default: true,
-        format: 'text',
-        align: 'left',
-        group_by: true
-      },
-      source: {
-        label: __( 'Source', 'burst-statistics' ),
-        format: 'text',
-        align: 'left',
-        group_by: true
-      },
-      medium: {
-        label: __( 'Medium', 'burst-statistics' ),
-        format: 'text',
-        align: 'left',
-        group_by: true
-      },
-      term: {
-        label: __( 'Term', 'burst-statistics' ),
-        format: 'text',
-        align: 'left',
-        group_by: true
-      },
-      content: {
-        label: __( 'Content', 'burst-statistics' ),
-        format: 'text',
-        align: 'left',
-        group_by: true
-      },
-      ...defaultColumnsOptions
-    }
-  },
-  parameters: {
-    label: __( 'Parameters', 'burst-statistics' ),
-    searchable: true,
-    pro: true,
-    defaultColumns: [ 'parameter', 'pageviews' ],
-    columnsOptions: {
-      parameter: {
-        label: __( 'Parameter', 'burst-statistics' ),
-        default: true,
-        format: 'text',
-        align: 'left',
-        group_by: true
-      },
-      parameters: {
-        label: __( 'Parameters', 'burst-statistics' ),
-        format: 'text',
-        align: 'left',
-        group_by: true
-      },
-      ...defaultColumnsOptions
-    }
-  },
-  ghost: {
-    label: __( 'Dummy', 'burst-statistics' ),
-    searchable: true,
-    defaultColumns: [ 'pageviews' ],
-    columnsOptions: {
-      ...defaultColumnsOptions
-    }
-  }
-};
 
 /**
  * DataTableBlock component for displaying a block with a datatable. This
@@ -207,6 +70,155 @@ const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id }) => {
   const { startDate, endDate, range } = useDate( ( state ) => state );
   const filters = useFiltersStore( ( state ) => state.filters );
   const defaultConfig = allowedConfigs[0];
+  const { getValue } = useSettingsData();
+  const filterByDomain = getValue('filtering_by_domain');
+
+  const config = {
+    pages: {
+      label: __( 'Pages', 'burst-statistics' ),
+      searchable: true,
+      defaultColumns: [ 'page_url', 'pageviews' ],
+      columnsOptions: {
+        ...(filterByDomain && {
+          host: {
+            label: __( 'Domain', 'burst-statistics' ),
+            default: false,
+            format: 'url',
+            align: 'left',
+            group_by: false
+          }
+        }),
+        page_url: {
+          label: __( 'Page URL', 'burst-statistics' ),
+          default: true,
+          format: 'url',
+          align: 'left',
+          group_by: true
+        },
+        ...defaultColumnsOptions
+      },
+    },
+    referrers: {
+      label: __( 'Referrers', 'burst-statistics' ),
+      searchable: true,
+      defaultColumns: [ 'referrer', 'pageviews' ],
+      columnsOptions: {
+        referrer: {
+          label: __( 'Referrer', 'burst-statistics' ),
+          default: true,
+          format: 'referrer',
+          align: 'left',
+          group_by: true
+        },
+        ...defaultColumnsOptions
+      },
+    },
+    countries: {
+      label: __( 'Locations', 'burst-statistics' ),
+      pro: true,
+      searchable: true,
+      defaultColumns: [ 'country_code', 'state', 'city', 'pageviews' ],
+      columnsOptions: {
+        country_code: {
+          label: __( 'Country', 'burst-statistics' ),
+          default: true,
+          format: 'country',
+          align: 'left',
+          group_by: true
+        },
+        state: {
+          label: __( 'State', 'burst-statistics' ),
+          format: 'text',
+          align: 'left',
+          group_by: true
+        },
+        city: {
+          label: __( 'City', 'burst-statistics' ),
+          format: 'text',
+          align: 'left',
+          group_by: true
+        },
+        continent: {
+          label: __( 'Continent', 'burst-statistics' ),
+          format: 'continent',
+          align: 'left',
+          group_by: true
+        },
+
+        ...defaultColumnsOptions
+      }
+    },
+    campaigns: {
+      label: __( 'Campaigns', 'burst-statistics' ),
+      pro: true,
+      searchable: true,
+      defaultColumns: [ 'source', 'pageviews' ],
+      columnsOptions: {
+        campaign: {
+          label: __( 'Campaign', 'burst-statistics' ),
+          default: true,
+          format: 'text',
+          align: 'left',
+          group_by: true
+        },
+        source: {
+          label: __( 'Source', 'burst-statistics' ),
+          format: 'text',
+          align: 'left',
+          group_by: true
+        },
+        medium: {
+          label: __( 'Medium', 'burst-statistics' ),
+          format: 'text',
+          align: 'left',
+          group_by: true
+        },
+        term: {
+          label: __( 'Term', 'burst-statistics' ),
+          format: 'text',
+          align: 'left',
+          group_by: true
+        },
+        content: {
+          label: __( 'Content', 'burst-statistics' ),
+          format: 'text',
+          align: 'left',
+          group_by: true
+        },
+        ...defaultColumnsOptions
+      }
+    },
+    parameters: {
+      label: __( 'Parameters', 'burst-statistics' ),
+      searchable: true,
+      pro: true,
+      defaultColumns: [ 'parameter', 'pageviews' ],
+      columnsOptions: {
+        parameter: {
+          label: __( 'Parameter', 'burst-statistics' ),
+          default: true,
+          format: 'text',
+          align: 'left',
+          group_by: true
+        },
+        parameters: {
+          label: __( 'Parameters', 'burst-statistics' ),
+          format: 'text',
+          align: 'left',
+          group_by: true
+        },
+        ...defaultColumnsOptions
+      }
+    },
+    ghost: {
+      label: __( 'Dummy', 'burst-statistics' ),
+      searchable: true,
+      defaultColumns: [ 'pageviews' ],
+      columnsOptions: {
+        ...defaultColumnsOptions
+      }
+    }
+  };
 
   // Use the DataTable store
   const {

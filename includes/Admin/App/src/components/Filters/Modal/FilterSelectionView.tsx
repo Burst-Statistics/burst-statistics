@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import FilterCard from './FilterCard';
 import { useFiltersStore } from '@/store/useFiltersStore';
 import Icon from '@/utils/Icon';
+import useSettingsData from "@/hooks/useSettingsData";
 
 interface FilterConfig {
     label: string;
@@ -23,7 +24,8 @@ interface FilterSelectionViewProps {
 }
 
 const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({ onSelectFilter }) => {
-    const filtersConf = useFiltersStore(state => state.filtersConf) as FiltersConf;
+    const filtersConfInitial = useFiltersStore(state => state.filtersConf) as FiltersConf;
+    const { getValue } = useSettingsData();
     const filterCategories = useFiltersStore(state => state.filterCategories);
     const getActiveFilters = useFiltersStore(state => state.getActiveFilters);
     const getFiltersByCategory = useFiltersStore(state => state.getFiltersByCategory);
@@ -31,11 +33,25 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({ onSelectFilte
     
     const [activeTab, setActiveTab] = useState<string>('favorites');
     const [searchQuery, setSearchQuery] = useState<string>('');
+    const [filtersConf, setFiltersConf] = useState<object>({});
     const searchInputRef = useRef<HTMLInputElement>(null);
     
     const activeFilters = getActiveFilters();
     const categorizedFilters = getFiltersByCategory();
     const favoriteFilters = getFavoriteFilters();
+    const filterByDomain = getValue('filtering_by_domain');
+
+    useEffect(() => {
+        if (filterByDomain) {
+            setFiltersConf( filtersConfInitial );
+        } else{
+            const filtered = Object.fromEntries(
+                Object.entries(filtersConfInitial).filter(([key]) => key !== 'host')
+            );
+            setFiltersConf(filtered);
+        }
+
+    }, [filtersConfInitial, filterByDomain]);
 
     // Auto-focus search input on render
     useEffect(() => {
@@ -62,7 +78,7 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({ onSelectFilte
         if (!query.trim()) return null;
         
         const searchTerm = query.toLowerCase();
-        const allFilters = Object.entries(filtersConf)
+         const allFilters = Object.entries(filtersConf)
             .filter(([_, config]) => config.type)
             .map(([key, config]) => ({ key, ...config }));
         
@@ -156,7 +172,6 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({ onSelectFilte
             </div>
         );
     };
-
     return (
         <div className="flex flex-col">
             {/* Search Input */}

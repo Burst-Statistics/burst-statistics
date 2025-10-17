@@ -613,6 +613,7 @@ trait Sanitize {
 		return apply_filters(
 			'burst_allowed_metrics',
 			[
+				'host'                 => __( 'Domain', 'burst-statistics' ),
 				'page_url'             => __( 'Page URL', 'burst-statistics' ),
 				'referrer'             => __( 'Referrer', 'burst-statistics' ),
 				'pageviews'            => __( 'Pageviews', 'burst-statistics' ),

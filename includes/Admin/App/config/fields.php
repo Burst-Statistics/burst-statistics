@@ -190,6 +190,20 @@ return [
 		'default'  => 1751328000,
 	],
 	[
+		'id'       => 'filtering_by_domain',
+		'menu_id'  => 'advanced',
+		'group_id' => 'data_collection',
+		'type'     => (bool) get_option( 'burst_is_multi_domain' ) ? 'checkbox' : 'hidden',
+		'label'    => __( 'Enable filtering by domain', 'burst-statistics' ),
+		'context'  => __( 'If you use multiple domains on your website, you can enable this to start storing the domain, so you can filter your data by domain.', 'burst-statistics' ),
+		'disabled' => true,
+		'default'  => false,
+		'pro'      => [
+			'url'      => 'filtering-by-domain',
+			'disabled' => false,
+		],
+	],
+	[
 		'id'       => 'track_url_change',
 		'menu_id'  => 'advanced',
 		'group_id' => 'data_collection',

@@ -1,4 +1,4 @@
-*, ::before, ::after {
+#burst-statistics *, #burst-statistics ::before, #burst-statistics ::after {
   --tw-border-spacing-x: 0;
   --tw-border-spacing-y: 0;
   --tw-translate-x: 0;
@@ -52,7 +52,7 @@
   --tw-contain-style:  ;
 }
 
-::backdrop {
+#burst-statistics ::backdrop {
   --tw-border-spacing-x: 0;
   --tw-border-spacing-y: 0;
   --tw-translate-x: 0;
@@ -105,23 +105,23 @@
   --tw-contain-paint:  ;
   --tw-contain-style:  ;
 }/*
-! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com
+! tailwindcss v3.4.18 | MIT License | https://tailwindcss.com
 *//*
 1. Prevent padding and border from affecting element width. (https://github.com/mozdevs/cssremedy/issues/4)
 2. Allow adding a border to an element by just adding a border-width. (https://github.com/tailwindcss/tailwindcss/pull/116)
 */
 
-*,
-::before,
-::after {
+#burst-statistics *,
+#burst-statistics ::before,
+#burst-statistics ::after {
   box-sizing: border-box; /* 1 */
   border-width: 0; /* 2 */
   border-style: solid; /* 2 */
   border-color: #e9ecef; /* 2 */
 }
 
-::before,
-::after {
+#burst-statistics ::before,
+#burst-statistics ::after {
   --tw-content: '';
 }
 
@@ -136,7 +136,7 @@
 */
 
 html,
-:host {
+#burst-statistics :host {
   line-height: 1.5; /* 1 */
   -webkit-text-size-adjust: 100%; /* 2 */
   -moz-tab-size: 4; /* 3 */
@@ -153,7 +153,7 @@ html,
 2. Inherit line-height from `html` so users can set them as a class directly on the `html` element.
 */
 
-body {
+#burst-statistics body {
   margin: 0; /* 1 */
   line-height: inherit; /* 2 */
 }
@@ -164,7 +164,7 @@ body {
 3. Ensure horizontal rules are visible by default.
 */
 
-hr {
+#burst-statistics hr {
   height: 0; /* 1 */
   color: inherit; /* 2 */
   border-top-width: 1px; /* 3 */
@@ -174,7 +174,7 @@ hr {
 Add the correct text decoration in Chrome, Edge, and Safari.
 */
 
-abbr:where([title]) {
+#burst-statistics abbr:where([title]) {
   -webkit-text-decoration: underline dotted;
           text-decoration: underline dotted;
 }
@@ -183,12 +183,12 @@ abbr:where([title]) {
 Remove the default font size and weight for headings.
 */
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+#burst-statistics h1,
+#burst-statistics h2,
+#burst-statistics h3,
+#burst-statistics h4,
+#burst-statistics h5,
+#burst-statistics h6 {
   font-size: inherit;
   font-weight: inherit;
 }
@@ -197,7 +197,7 @@ h6 {
 Reset links to optimize for opt-in styling instead of opt-out.
 */
 
-a {
+#burst-statistics a {
   color: inherit;
   text-decoration: inherit;
 }
@@ -206,8 +206,8 @@ a {
 Add the correct font weight in Edge and Safari.
 */
 
-b,
-strong {
+#burst-statistics b,
+#burst-statistics strong {
   font-weight: bolder;
 }
 
@@ -218,10 +218,10 @@ strong {
 4. Correct the odd `em` font sizing in all browsers.
 */
 
-code,
-kbd,
-samp,
-pre {
+#burst-statistics code,
+#burst-statistics kbd,
+#burst-statistics samp,
+#burst-statistics pre {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; /* 1 */
   font-feature-settings: normal; /* 2 */
   font-variation-settings: normal; /* 3 */
@@ -232,7 +232,7 @@ pre {
 Add the correct font size in all browsers.
 */
 
-small {
+#burst-statistics small {
   font-size: 80%;
 }
 
@@ -240,19 +240,19 @@ small {
 Prevent `sub` and `sup` elements from affecting the line height in all browsers.
 */
 
-sub,
-sup {
+#burst-statistics sub,
+#burst-statistics sup {
   font-size: 75%;
   line-height: 0;
   position: relative;
   vertical-align: baseline;
 }
 
-sub {
+#burst-statistics sub {
   bottom: -0.25em;
 }
 
-sup {
+#burst-statistics sup {
   top: -0.5em;
 }
 
@@ -262,7 +262,7 @@ sup {
 3. Remove gaps between table borders by default.
 */
 
-table {
+#burst-statistics table {
   text-indent: 0; /* 1 */
   border-color: inherit; /* 2 */
   border-collapse: collapse; /* 3 */
@@ -274,11 +274,11 @@ table {
 3. Remove default padding in all browsers.
 */
 
-button,
-input,
-optgroup,
-select,
-textarea {
+#burst-statistics button,
+#burst-statistics input,
+#burst-statistics optgroup,
+#burst-statistics select,
+#burst-statistics textarea {
   font-family: inherit; /* 1 */
   font-feature-settings: inherit; /* 1 */
   font-variation-settings: inherit; /* 1 */
@@ -295,8 +295,8 @@ textarea {
 Remove the inheritance of text transform in Edge and Firefox.
 */
 
-button,
-select {
+#burst-statistics button,
+#burst-statistics select {
   text-transform: none;
 }
 
@@ -305,10 +305,10 @@ select {
 2. Remove default button styles.
 */
 
-button,
-input:where([type='button']),
-input:where([type='reset']),
-input:where([type='submit']) {
+#burst-statistics button,
+#burst-statistics input:where([type='button']),
+#burst-statistics input:where([type='reset']),
+#burst-statistics input:where([type='submit']) {
   -webkit-appearance: button; /* 1 */
   background-color: transparent; /* 2 */
   background-image: none; /* 2 */
@@ -318,7 +318,7 @@ input:where([type='submit']) {
 Use the modern Firefox focus style for all focusable elements.
 */
 
-:-moz-focusring {
+#burst-statistics :-moz-focusring {
   outline: auto;
 }
 
@@ -326,7 +326,7 @@ Use the modern Firefox focus style for all focusable elements.
 Remove the additional `:invalid` styles in Firefox. (https://github.com/mozilla/gecko-dev/blob/2f9eacd9d3d995c937b4251a5557d95d494c9be1/layout/style/res/forms.css#L728-L737)
 */
 
-:-moz-ui-invalid {
+#burst-statistics :-moz-ui-invalid {
   box-shadow: none;
 }
 
@@ -334,7 +334,7 @@ Remove the additional `:invalid` styles in Firefox. (https://github.com/mozilla/
 Add the correct vertical alignment in Chrome and Firefox.
 */
 
-progress {
+#burst-statistics progress {
   vertical-align: baseline;
 }
 
@@ -342,8 +342,8 @@ progress {
 Correct the cursor style of increment and decrement buttons in Safari.
 */
 
-::-webkit-inner-spin-button,
-::-webkit-outer-spin-button {
+#burst-statistics ::-webkit-inner-spin-button,
+#burst-statistics ::-webkit-outer-spin-button {
   height: auto;
 }
 
@@ -352,7 +352,7 @@ Correct the cursor style of increment and decrement buttons in Safari.
 2. Correct the outline style in Safari.
 */
 
-[type='search'] {
+#burst-statistics [type='search'] {
   -webkit-appearance: textfield; /* 1 */
   outline-offset: -2px; /* 2 */
 }
@@ -361,7 +361,7 @@ Correct the cursor style of increment and decrement buttons in Safari.
 Remove the inner padding in Chrome and Safari on macOS.
 */
 
-::-webkit-search-decoration {
+#burst-statistics ::-webkit-search-decoration {
   -webkit-appearance: none;
 }
 
@@ -370,7 +370,7 @@ Remove the inner padding in Chrome and Safari on macOS.
 2. Change font properties to `inherit` in Safari.
 */
 
-::-webkit-file-upload-button {
+#burst-statistics ::-webkit-file-upload-button {
   -webkit-appearance: button; /* 1 */
   font: inherit; /* 2 */
 }
@@ -379,7 +379,7 @@ Remove the inner padding in Chrome and Safari on macOS.
 Add the correct display in Chrome and Safari.
 */
 
-summary {
+#burst-statistics summary {
   display: list-item;
 }
 
@@ -387,34 +387,34 @@ summary {
 Removes the default spacing and border for appropriate elements.
 */
 
-blockquote,
-dl,
-dd,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-hr,
-figure,
-p,
-pre {
+#burst-statistics blockquote,
+#burst-statistics dl,
+#burst-statistics dd,
+#burst-statistics h1,
+#burst-statistics h2,
+#burst-statistics h3,
+#burst-statistics h4,
+#burst-statistics h5,
+#burst-statistics h6,
+#burst-statistics hr,
+#burst-statistics figure,
+#burst-statistics p,
+#burst-statistics pre {
   margin: 0;
 }
 
-fieldset {
+#burst-statistics fieldset {
   margin: 0;
   padding: 0;
 }
 
-legend {
+#burst-statistics legend {
   padding: 0;
 }
 
-ol,
-ul,
-menu {
+#burst-statistics ol,
+#burst-statistics ul,
+#burst-statistics menu {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -423,7 +423,7 @@ menu {
 /*
 Reset default styling for dialogs.
 */
-dialog {
+#burst-statistics dialog {
   padding: 0;
 }
 
@@ -431,7 +431,7 @@ dialog {
 Prevent resizing textareas horizontally by default.
 */
 
-textarea {
+#burst-statistics textarea {
   resize: vertical;
 }
 
@@ -440,13 +440,13 @@ textarea {
 2. Set the default placeholder color to the user's configured gray 400 color.
 */
 
-input::-moz-placeholder, textarea::-moz-placeholder {
+#burst-statistics input::-moz-placeholder, #burst-statistics textarea::-moz-placeholder {
   opacity: 1; /* 1 */
   color: #ced4da; /* 2 */
 }
 
-input::placeholder,
-textarea::placeholder {
+#burst-statistics input::placeholder,
+#burst-statistics textarea::placeholder {
   opacity: 1; /* 1 */
   color: #ced4da; /* 2 */
 }
@@ -455,15 +455,15 @@ textarea::placeholder {
 Set the default cursor for buttons.
 */
 
-button,
-[role="button"] {
+#burst-statistics button,
+#burst-statistics [role="button"] {
   cursor: pointer;
 }
 
 /*
 Make sure disabled buttons don't get the pointer cursor.
 */
-:disabled {
+#burst-statistics :disabled {
   cursor: default;
 }
 
@@ -473,14 +473,14 @@ Make sure disabled buttons don't get the pointer cursor.
    This can trigger a poorly considered lint error in some tools but is included by design.
 */
 
-img,
-svg,
-video,
-canvas,
-audio,
-iframe,
-embed,
-object {
+#burst-statistics img,
+#burst-statistics svg,
+#burst-statistics video,
+#burst-statistics canvas,
+#burst-statistics audio,
+#burst-statistics iframe,
+#burst-statistics embed,
+#burst-statistics object {
   display: block; /* 1 */
   vertical-align: middle; /* 2 */
 }
@@ -489,14 +489,14 @@ object {
 Constrain images and videos to the parent width and preserve their intrinsic aspect ratio. (https://github.com/mozdevs/cssremedy/issues/14)
 */
 
-img,
-video {
+#burst-statistics img,
+#burst-statistics video {
   max-width: 100%;
   height: auto;
 }
 
 /* Make elements with the HTML hidden attribute stay hidden by default */
-[hidden]:where(:not([hidden="until-found"])) {
+#burst-statistics [hidden]:where(:not([hidden="until-found"])) {
   display: none;
 }
 	/* Still need to override this so toast svgs pickup the right colors. */
@@ -540,7 +540,7 @@ video {
 	}
 
 	/* Burst base styles */
-	.burst {
+	#burst-statistics .burst {
   margin: 0px;
   margin-left: -1.25rem;
   box-sizing: border-box;
@@ -552,179 +552,179 @@ video {
 }
 	@media not all and (min-width: 768px) {
 
-  .burst {
+  #burst-statistics .burst {
     margin-left: -9px;
   }
 }
-	.burst {;
+	#burst-statistics .burst {;
 		font-variant-numeric: tabular-nums;
 
-		*,
-		*::before,
-		*::after {
+		#burst-statistics *,
+		#burst-statistics *::before,
+		#burst-statistics *::after {
 			/* Tailwind does not have box-sizing: inherit class */
 			box-sizing: inherit;
 		}
 
-		body, h1, h2, h3, h4, h5, h6, p, ol, ul {
+		#burst-statistics body, #burst-statistics h1, #burst-statistics h2, #burst-statistics h3, #burst-statistics h4, #burst-statistics h5, #burst-statistics h6, #burst-statistics p, #burst-statistics ol, #burst-statistics ul {
     margin: 0px;
   }
 
-		body, h1, h2, h3, h4, h5, h6, p, ol, ul {
+		#burst-statistics body, #burst-statistics h1, #burst-statistics h2, #burst-statistics h3, #burst-statistics h4, #burst-statistics h5, #burst-statistics h6, #burst-statistics p, #burst-statistics ol, #burst-statistics ul {
     padding: 0px;
   }
 
-		body, h1, h2, h3, h4, h5, h6, p, ol, ul {
+		#burst-statistics body, #burst-statistics h1, #burst-statistics h2, #burst-statistics h3, #burst-statistics h4, #burst-statistics h5, #burst-statistics h6, #burst-statistics p, #burst-statistics ol, #burst-statistics ul {
     font-size: 0.8125rem;
     line-height: 1.25rem;
   }
 
-		img {
+		#burst-statistics img {
     height: auto;
   }
 
-		img {
+		#burst-statistics img {
     max-width: 100%;
   }
 
-		h1, h2, h3, h4, h5, h6 {
+		#burst-statistics h1, #burst-statistics h2, #burst-statistics h3, #burst-statistics h4, #burst-statistics h5, #burst-statistics h6 {
     line-height: 1.5;
   }
 
-		h1, h2, h3, h4, h5, h6 {
+		#burst-statistics h1, #burst-statistics h2, #burst-statistics h3, #burst-statistics h4, #burst-statistics h5, #burst-statistics h6 {
     color: #1a1a1ae5;
   }
 
-		.burst-h0 {
+		#burst-statistics .burst-h0 {
     font-size: 3.5rem;
     line-height: 1;
   }
 
-		.burst-h0 {
+		#burst-statistics .burst-h0 {
     font-weight: 700;
   }
 
-		.burst-h0 {
+		#burst-statistics .burst-h0 {
     letter-spacing: 0.025rem;
   }
 
-		h1, .burst-h1 {
+		#burst-statistics h1, #burst-statistics .burst-h1 {
     font-size: 1.875rem;
     line-height: 2.25rem;
   }
 
-		h1, .burst-h1 {
+		#burst-statistics h1, #burst-statistics .burst-h1 {
     font-weight: 500;
   }
 
-		h1, .burst-h1 {
+		#burst-statistics h1, #burst-statistics .burst-h1 {
     line-height: 1.5;
   }
 
-		h1, .burst-h1 {
+		#burst-statistics h1, #burst-statistics .burst-h1 {
     letter-spacing: 0.025rem;
   }
 
-		h2, .burst-h2 {
+		#burst-statistics h2, #burst-statistics .burst-h2 {
     font-size: 1.25rem;
     line-height: 1.75rem;
   }
 
-		h2, .burst-h2 {
+		#burst-statistics h2, #burst-statistics .burst-h2 {
     font-weight: 700;
   }
 
-		h2, .burst-h2 {
+		#burst-statistics h2, #burst-statistics .burst-h2 {
     letter-spacing: 0.025rem;
   }
 
-		h3, .burst-h3 {
+		#burst-statistics h3, #burst-statistics .burst-h3 {
     font-size: 1.125rem;
     line-height: 1.625rem;
   }
 
-		h3, .burst-h3 {
+		#burst-statistics h3, #burst-statistics .burst-h3 {
     font-weight: 600;
   }
 
-		h3, .burst-h3 {
+		#burst-statistics h3, #burst-statistics .burst-h3 {
     letter-spacing: 0.0125rem;
   }
 
-		h4, .burst-h4 {
+		#burst-statistics h4, #burst-statistics .burst-h4 {
     font-size: 1rem;
     line-height: 1.625rem;
   }
 
-		h4, .burst-h4 {
+		#burst-statistics h4, #burst-statistics .burst-h4 {
     font-weight: 600;
   }
 
-		h4, .burst-h4 {
+		#burst-statistics h4, #burst-statistics .burst-h4 {
     letter-spacing: 0.0125rem;
   }
 
-		h5, .burst-h5 {
+		#burst-statistics h5, #burst-statistics .burst-h5 {
     font-size: 0.8125rem;
     line-height: 1.25rem;
   }
 
-		h5, .burst-h5 {
+		#burst-statistics h5, #burst-statistics .burst-h5 {
     font-weight: 600;
   }
 
-		h5, .burst-h5 {
+		#burst-statistics h5, #burst-statistics .burst-h5 {
     letter-spacing: 0.1px;
   }
 
-		h6, .burst-h6 {
+		#burst-statistics h6, #burst-statistics .burst-h6 {
     font-size: 0.8125rem;
     line-height: 1.25rem;
   }
 
-		h6, .burst-h6 {
+		#burst-statistics h6, #burst-statistics .burst-h6 {
     font-weight: 400;
   }
 
-		h6, .burst-h6 {
+		#burst-statistics h6, #burst-statistics .burst-h6 {
     letter-spacing: 0.1px;
   }
 
-		p {
+		#burst-statistics p {
     font-size: 0.8125rem;
     line-height: 1.25rem;
   }
 
-		p {
+		#burst-statistics p {
     font-weight: 400;
   }
 
-		p {
+		#burst-statistics p {
     line-height: 1.5;
   }
 
-		p {
+		#burst-statistics p {
     color: #1a1a1ae5;
   }
 
-		a {
+		#burst-statistics a {
     font-size: 0.8125rem;
     line-height: 1.25rem;
   }
 
-		.burst-notice-hook-element {
+		#burst-statistics .burst-notice-hook-element {
     display: none !important;
   }
 
-		.burst-divider {
+		#burst-statistics .burst-divider {
     height: 1.3rem;
   }
 
-		.burst-divider {
+		#burst-statistics .burst-divider {
     width: 1px;
   }
 
-		.burst-divider {
+		#burst-statistics .burst-divider {
     --tw-bg-opacity: 1;
     background-color: rgb(204 204 204 / var(--tw-bg-opacity, 1));
   }
@@ -733,19 +733,13 @@ video {
 	/* Responsive adjustment */
 
 	/* Hide nags from other plugins */
-	.\!error {
-		 {
-    display: none !important;
-  }
-		 {
-			margin: var(--rsp-grid-gap) !important;
-		}
+	#burst-statistics .\!error {
 	}
-	.error, .notice, .update-nag, .notice-info {
-		&:not(.burst-review) {
+	#burst-statistics .error, #burst-statistics .notice, #burst-statistics .update-nag, #burst-statistics .notice-info {
+		#burst-statistics &:not(.burst-review) {
     display: none !important;
   }
-		&.burst-review {
+		#burst-statistics &.burst-review {
 			margin: var(--rsp-grid-gap);
 		}
 	}
@@ -4316,87 +4310,87 @@ video {
 
 @tailwind components;
 
-.\!container {
+#burst-statistics .\!container {
   width: 100% !important;
 }
 
-.container {
+#burst-statistics .container {
   width: 100%;
 }
 
 @media (min-width: 480px) {
 
-  .\!container {
+  #burst-statistics .\!container {
     max-width: 480px !important;
   }
 
-  .container {
+  #burst-statistics .container {
     max-width: 480px;
   }
 }
 
 @media (min-width: 576px) {
 
-  .\!container {
+  #burst-statistics .\!container {
     max-width: 576px !important;
   }
 
-  .container {
+  #burst-statistics .container {
     max-width: 576px;
   }
 }
 
 @media (min-width: 640px) {
 
-  .\!container {
+  #burst-statistics .\!container {
     max-width: 640px !important;
   }
 
-  .container {
+  #burst-statistics .container {
     max-width: 640px;
   }
 }
 
 @media (min-width: 768px) {
 
-  .\!container {
+  #burst-statistics .\!container {
     max-width: 768px !important;
   }
 
-  .container {
+  #burst-statistics .container {
     max-width: 768px;
   }
 }
 
 @media (min-width: 1024px) {
 
-  .\!container {
+  #burst-statistics .\!container {
     max-width: 1024px !important;
   }
 
-  .container {
+  #burst-statistics .container {
     max-width: 1024px;
   }
 }
 
 @media (min-width: 1280px) {
 
-  .\!container {
+  #burst-statistics .\!container {
     max-width: 1280px !important;
   }
 
-  .container {
+  #burst-statistics .container {
     max-width: 1280px;
   }
 }
 
 @media (min-width: 1600px) {
 
-  .\!container {
+  #burst-statistics .\!container {
     max-width: 1600px !important;
   }
 
-  .container {
+  #burst-statistics .container {
     max-width: 1600px;
   }
 }
@@ -4428,7 +4422,7 @@ video {
   }
 }
 
-.Toastify__bounce-enter--top-left, .Toastify__bounce-enter--bottom-left {
+#burst-statistics .Toastify__bounce-enter--top-left, #burst-statistics .Toastify__bounce-enter--bottom-left {
   animation: toastBounceInLeft 1s both;
 }
 
@@ -4459,7 +4453,7 @@ video {
   }
 }
 
-.Toastify__bounce-enter--top-right, .Toastify__bounce-enter--bottom-right {
+#burst-statistics .Toastify__bounce-enter--top-right, #burst-statistics .Toastify__bounce-enter--bottom-right {
   animation: toastBounceInRight 1s both;
 }
 
@@ -4489,7 +4483,7 @@ video {
   }
 }
 
-.Toastify__bounce-enter--top-center {
+#burst-statistics .Toastify__bounce-enter--top-center {
   animation: toastBounceInDown 1s both;
 }
 
@@ -4519,7 +4513,7 @@ video {
   }
 }
 
-.Toastify__bounce-enter--bottom-center {
+#burst-statistics .Toastify__bounce-enter--bottom-center {
   animation: toastBounceInUp 1s both;
 }
 
@@ -4536,7 +4530,7 @@ video {
   }
 }
 
-.Toastify__bounce-exit--top-left, .Toastify__bounce-exit--bottom-left {
+#burst-statistics .Toastify__bounce-exit--top-left, #burst-statistics .Toastify__bounce-exit--bottom-left {
   animation: toastBounceOutLeft 1s both;
 }
 
@@ -4553,7 +4547,7 @@ video {
   }
 }
 
-.Toastify__bounce-exit--top-right, .Toastify__bounce-exit--bottom-right {
+#burst-statistics .Toastify__bounce-exit--top-right, #burst-statistics .Toastify__bounce-exit--bottom-right {
   animation: toastBounceOutRight 1s both;
 }
 
@@ -4579,7 +4573,7 @@ video {
   }
 }
 
-.Toastify__bounce-exit--top-center {
+#burst-statistics .Toastify__bounce-exit--top-center {
   animation: toastBounceOutUp 1s both;
 }
 
@@ -4605,7 +4599,7 @@ video {
   }
 }
 
-.Toastify__bounce-exit--bottom-center {
+#burst-statistics .Toastify__bounce-exit--bottom-center {
   animation: toastBounceOutDown 1s both;
 }
 
@@ -4636,7 +4630,7 @@ video {
   }
 }
 
-.Toastify__flip-enter {
+#burst-statistics .Toastify__flip-enter {
   animation: toastFlipIn 0.75s both;
 }
 
@@ -4657,7 +4651,7 @@ video {
   }
 }
 
-.Toastify__flip-exit {
+#burst-statistics .Toastify__flip-exit {
   animation: toastFlipOut 0.75s both;
 }
 
@@ -4673,7 +4667,7 @@ video {
   }
 }
 
-.Toastify__slide-enter--top-left, .Toastify__slide-enter--bottom-left {
+#burst-statistics .Toastify__slide-enter--top-left, #burst-statistics .Toastify__slide-enter--bottom-left {
   animation: toastSlideInLeft 0.75s both;
 }
 
@@ -4689,7 +4683,7 @@ video {
   }
 }
 
-.Toastify__slide-enter--top-right, .Toastify__slide-enter--bottom-right {
+#burst-statistics .Toastify__slide-enter--top-right, #burst-statistics .Toastify__slide-enter--bottom-right {
   animation: toastSlideInRight 0.75s both;
 }
 
@@ -4705,7 +4699,7 @@ video {
   }
 }
 
-.Toastify__slide-enter--top-center {
+#burst-statistics .Toastify__slide-enter--top-center {
   animation: toastSlideInDown 0.75s both;
 }
 
@@ -4721,7 +4715,7 @@ video {
   }
 }
 
-.Toastify__slide-enter--bottom-center {
+#burst-statistics .Toastify__slide-enter--bottom-center {
   animation: toastSlideInUp 0.75s both;
 }
 
@@ -4737,7 +4731,7 @@ video {
   }
 }
 
-.Toastify__slide-exit--top-left, .Toastify__slide-exit--bottom-left {
+#burst-statistics .Toastify__slide-exit--top-left, #burst-statistics .Toastify__slide-exit--bottom-left {
   animation: toastSlideOutLeft 0.75s both;
 }
 
@@ -4753,7 +4747,7 @@ video {
   }
 }
 
-.Toastify__slide-exit--top-right, .Toastify__slide-exit--bottom-right {
+#burst-statistics .Toastify__slide-exit--top-right, #burst-statistics .Toastify__slide-exit--bottom-right {
   animation: toastSlideOutRight 0.75s both;
 }
 
@@ -4769,7 +4763,7 @@ video {
   }
 }
 
-.Toastify__slide-exit--top-center {
+#burst-statistics .Toastify__slide-exit--top-center {
   animation: toastSlideOutUp 0.75s both;
 }
 
@@ -4785,7 +4779,7 @@ video {
   }
 }
 
-.Toastify__slide-exit--bottom-center {
+#burst-statistics .Toastify__slide-exit--bottom-center {
   animation: toastSlideOutDown 0.75s both;
 }
 
@@ -4800,7 +4794,7 @@ video {
   }
 }
 
-.Toastify__spin {
+#burst-statistics .Toastify__spin {
   animation: toastSpin 1s linear infinite;
 }
 
@@ -4816,7 +4810,7 @@ video {
   }
 }
 
-.Toastify__zoom-enter {
+#burst-statistics .Toastify__zoom-enter {
   animation: toastZoomIn 0.5s ease both;
 }
 
@@ -4836,11 +4830,11 @@ video {
   }
 }
 
-.Toastify__zoom-exit {
+#burst-statistics .Toastify__zoom-exit {
   animation: toastZoomOut 0.5s ease both;
 }
 
-.Toastify__progress-bar {
+#burst-statistics .Toastify__progress-bar {
   position: absolute;
   bottom: 0px;
   left: 0px;
@@ -4851,7 +4845,7 @@ video {
   opacity: 0.7;
 }
 
-.Toastify__toast-container {
+#burst-statistics .Toastify__toast-container {
   position: fixed;
   z-index: 9999;
   box-sizing: border-box;
@@ -4862,7 +4856,7 @@ video {
 
 @media not all and (min-width: 480px) {
 
-  .Toastify__toast-container {
+  #burst-statistics .Toastify__toast-container {
     left: 0px;
     margin: 0px;
     width: 100vw;
@@ -4870,25 +4864,25 @@ video {
   }
 }
 
-.Toastify__toast-container {
+#burst-statistics .Toastify__toast-container {
   transform: translate3d(0, 0, 9999px);
 }
 
-.Toastify__toast-container--top-left {
+#burst-statistics .Toastify__toast-container--top-left {
   top: 1rem;
   left: 1rem;
 }
 
 @media not all and (min-width: 480px) {
 
-  .Toastify__toast-container--top-left {
+  #burst-statistics .Toastify__toast-container--top-left {
     top: 0px;
     --tw-translate-x: 0px;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 }
 
-.Toastify__toast-container--top-center {
+#burst-statistics .Toastify__toast-container--top-center {
   top: 3rem;
   left: 50%;
   --tw-translate-x: -50%;
@@ -4897,42 +4891,42 @@ video {
 
 @media not all and (min-width: 480px) {
 
-  .Toastify__toast-container--top-center {
+  #burst-statistics .Toastify__toast-container--top-center {
     top: 0px;
     --tw-translate-x: 0px;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 }
 
-.Toastify__toast-container--top-right {
+#burst-statistics .Toastify__toast-container--top-right {
   top: 1rem;
   right: 1rem;
 }
 
 @media not all and (min-width: 480px) {
 
-  .Toastify__toast-container--top-right {
+  #burst-statistics .Toastify__toast-container--top-right {
     top: 0px;
     --tw-translate-x: 0px;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 }
 
-.Toastify__toast-container--bottom-left {
+#burst-statistics .Toastify__toast-container--bottom-left {
   bottom: 1rem;
   left: 1rem;
 }
 
 @media not all and (min-width: 480px) {
 
-  .Toastify__toast-container--bottom-left {
+  #burst-statistics .Toastify__toast-container--bottom-left {
     bottom: 0px;
     --tw-translate-x: 0px;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 }
 
-.Toastify__toast-container--bottom-center {
+#burst-statistics .Toastify__toast-container--bottom-center {
   bottom: 1rem;
   left: 50%;
   --tw-translate-x: -50%;
@@ -4941,33 +4935,33 @@ video {
 
 @media not all and (min-width: 480px) {
 
-  .Toastify__toast-container--bottom-center {
+  #burst-statistics .Toastify__toast-container--bottom-center {
     bottom: 0px;
     --tw-translate-x: 0px;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 }
 
-.Toastify__toast-container--bottom-right {
+#burst-statistics .Toastify__toast-container--bottom-right {
   bottom: 1rem;
   right: 1rem;
 }
 
 @media not all and (min-width: 480px) {
 
-  .Toastify__toast-container--bottom-right {
+  #burst-statistics .Toastify__toast-container--bottom-right {
     bottom: 0px;
     --tw-translate-x: 0px;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 
-  .Toastify__toast-container--rtl {
+  #burst-statistics .Toastify__toast-container--rtl {
     right: 0px;
     left: auto;
   }
 }
 
-.Toastify__close-button {
+#burst-statistics .Toastify__close-button {
   cursor: pointer;
   align-self: flex-start;
   border-style: none;
@@ -4982,22 +4976,22 @@ video {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.Toastify__close-button:hover, .Toastify__close-button:focus {
+#burst-statistics .Toastify__close-button:hover, #burst-statistics .Toastify__close-button:focus {
   opacity: 1;
 }
 
-.Toastify__close-button > svg {
+#burst-statistics .Toastify__close-button > svg {
   height: 1rem;
   width: 14px;
   fill: currentColor;
 }
 
-.Toastify__close-button--light {
+#burst-statistics .Toastify__close-button--light {
   color: #1a1a1ae5;
   opacity: 0.3;
 }
 
-.Toastify__toast {
+#burst-statistics .Toastify__toast {
   position: relative;
   z-index: 0;
   margin-bottom: 1rem;
@@ -5020,25 +5014,25 @@ video {
 
 @media not all and (min-width: 480px) {
 
-  .Toastify__toast {
+  #burst-statistics .Toastify__toast {
     margin-bottom: 0px;
     border-radius: 0px;
   }
 }
 
-.Toastify__toast {
+#burst-statistics .Toastify__toast {
   direction: ltr;
 }
 
-.Toastify__toast--rtl {
+#burst-statistics .Toastify__toast--rtl {
   direction: rtl;
 }
 
-.Toastify__toast--close-on-click {
+#burst-statistics .Toastify__toast--close-on-click {
   cursor: pointer;
 }
 
-.Toastify__toast-body {
+#burst-statistics .Toastify__toast-body {
   margin-top: auto;
   margin-bottom: auto;
   display: flex;
@@ -5047,121 +5041,121 @@ video {
   padding: 6px;
 }
 
-.Toastify__toast-body > div:last-child {
+#burst-statistics .Toastify__toast-body > div:last-child {
   flex: 1 1 0%;
   overflow-wrap: break-word;
 }
 
-.Toastify__toast-icon {
+#burst-statistics .Toastify__toast-icon {
   margin-inline-end: 10px;
   display: flex;
   width: 1.25rem;
   flex-shrink: 0;
 }
 
-.Toastify--animate {
+#burst-statistics .Toastify--animate {
   animation-duration: 700ms;
   animation-fill-mode: both;
 }
 
-.Toastify--animate-icon {
+#burst-statistics .Toastify--animate-icon {
   animation-duration: 300ms;
   animation-fill-mode: both;
 }
 
-.Toastify__toast-theme--dark {
+#burst-statistics .Toastify__toast-theme--dark {
   --tw-bg-opacity: 1;
   background-color: rgb(51 51 51 / var(--tw-bg-opacity, 1));
   color: #FFFFFFE5;
 }
 
-.Toastify__toast-theme--light {
+#burst-statistics .Toastify__toast-theme--light {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
   color: #1A1A1AE5;
 }
 
-.Toastify__toast-theme--colored.Toastify__toast--default {
+#burst-statistics .Toastify__toast-theme--colored.Toastify__toast--default {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
   color: #1A1A1AE5;
 }
 
-.Toastify__toast-theme--colored.Toastify__toast--info {
+#burst-statistics .Toastify__toast-theme--colored.Toastify__toast--info {
   --tw-bg-opacity: 1;
   background-color: rgb(255 218 74 / var(--tw-bg-opacity, 1));
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
-.Toastify__toast-theme--colored.Toastify__toast--success {
+#burst-statistics .Toastify__toast-theme--colored.Toastify__toast--success {
   --tw-bg-opacity: 1;
   background-color: rgb(43 129 51 / var(--tw-bg-opacity, 1));
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
-.Toastify__toast-theme--colored.Toastify__toast--warning {
+#burst-statistics .Toastify__toast-theme--colored.Toastify__toast--warning {
   --tw-bg-opacity: 1;
   background-color: rgb(239 138 9 / var(--tw-bg-opacity, 1));
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
-.Toastify__toast-theme--colored.Toastify__toast--error {
+#burst-statistics .Toastify__toast-theme--colored.Toastify__toast--error {
   --tw-bg-opacity: 1;
   background-color: rgb(198 39 59 / var(--tw-bg-opacity, 1));
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
-.Toastify__progress-bar-theme--light {
+#burst-statistics .Toastify__progress-bar-theme--light {
   background-image: linear-gradient(to right, #4cd964, #5ac8fa, #007aff, #34aadc, #5856d6, #ff2d55);
 }
 
-.Toastify__progress-bar-theme--dark {
+#burst-statistics .Toastify__progress-bar-theme--dark {
   --tw-bg-opacity: 1;
   background-color: rgb(187 134 252 / var(--tw-bg-opacity, 1));
 }
 
-.Toastify__progress-bar--info {
+#burst-statistics .Toastify__progress-bar--info {
   background-color: var(--toastify-color-info);
 }
 
-.Toastify__progress-bar--success {
+#burst-statistics .Toastify__progress-bar--success {
   background-color: var(--toastify-color-success);
 }
 
-.Toastify__progress-bar--warning {
+#burst-statistics .Toastify__progress-bar--warning {
   background-color: var(--toastify-color-warning);
 }
 
-.Toastify__progress-bar--error {
+#burst-statistics .Toastify__progress-bar--error {
   background-color: var(--toastify-color-error);
 }
 
-.Toastify__progress-bar-theme--colored.Toastify__progress-bar--info,
-		.Toastify__progress-bar-theme--colored.Toastify__progress-bar--success,
-		.Toastify__progress-bar-theme--colored.Toastify__progress-bar--warning,
-		.Toastify__progress-bar-theme--colored.Toastify__progress-bar--error {
+#burst-statistics .Toastify__progress-bar-theme--colored.Toastify__progress-bar--info,
+		#burst-statistics .Toastify__progress-bar-theme--colored.Toastify__progress-bar--success,
+		#burst-statistics .Toastify__progress-bar-theme--colored.Toastify__progress-bar--warning,
+		#burst-statistics .Toastify__progress-bar-theme--colored.Toastify__progress-bar--error {
   background-color: rgba(255, 255, 255, 0.7);
 }
 
-.Toastify__progress-bar--animated {
+#burst-statistics .Toastify__progress-bar--animated {
   animation: Toastify__trackProgress linear 1 forwards;
 }
 
-.Toastify__progress-bar--controlled {
+#burst-statistics .Toastify__progress-bar--controlled {
   transition: transform 0.2s;
 }
 
-.Toastify__progress-bar--rtl {
+#burst-statistics .Toastify__progress-bar--rtl {
   right: 0px;
   transform-origin: right;
   left: initial;
 }
 
-.Toastify__spinner {
+#burst-statistics .Toastify__spinner {
   box-sizing: border-box;
   height: 1.25rem;
   width: 1.25rem;
@@ -5178,7 +5172,7 @@ video {
   }
 }
 
-.Toastify__spinner {
+#burst-statistics .Toastify__spinner {
   animation: toastSpin 1s linear infinite;
   border-radius: 9999px;
   border-width: 2px;
@@ -5189,9 +5183,9 @@ video {
 
 /* Primary */
 
-a.burst-button--primary,
-	button.burst-button--primary,
-	input.burst-button--primary {
+#burst-statistics a.burst-button--primary,
+	#burst-statistics button.burst-button--primary,
+	#burst-statistics input.burst-button--primary {
   border-width: 1px;
   --tw-border-opacity: 1;
   border-color: rgb(34 113 177 / var(--tw-border-opacity, 1));
@@ -5201,9 +5195,9 @@ a.burst-button--primary,
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
-a.burst-button--primary:hover,
-	button.burst-button--primary:hover,
-	input.burst-button--primary:hover {
+#burst-statistics a.burst-button--primary:hover,
+	#burst-statistics button.burst-button--primary:hover,
+	#burst-statistics input.burst-button--primary:hover {
   --tw-border-opacity: 1;
   border-color: rgb(34 113 177 / var(--tw-border-opacity, 1));
   --tw-bg-opacity: 1;
@@ -5217,9 +5211,9 @@ a.burst-button--primary:hover,
 
 /* Secondary */
 
-a.burst-button--secondary,
-	button.burst-button--secondary,
-	input.burst-button--secondary {
+#burst-statistics a.burst-button--secondary,
+	#burst-statistics button.burst-button--secondary,
+	#burst-statistics input.burst-button--secondary {
   border-width: 1px;
   --tw-border-opacity: 1;
   border-color: rgb(206 212 218 / var(--tw-border-opacity, 1));
@@ -5228,9 +5222,9 @@ a.burst-button--secondary,
   color: #454552e5;
 }
 
-a.burst-button--secondary:hover,
-	button.burst-button--secondary:hover,
-	input.burst-button--secondary:hover {
+#burst-statistics a.burst-button--secondary:hover,
+	#burst-statistics button.burst-button--secondary:hover,
+	#burst-statistics input.burst-button--secondary:hover {
   --tw-border-opacity: 1;
   border-color: rgb(206 212 218 / var(--tw-border-opacity, 1));
   --tw-bg-opacity: 1;
@@ -5243,9 +5237,9 @@ a.burst-button--secondary:hover,
 
 /* Tertiary (red button) */
 
-a.burst-button--tertiary,
-	button.burst-button--tertiary,
-	input.burst-button--tertiary {
+#burst-statistics a.burst-button--tertiary,
+	#burst-statistics button.burst-button--tertiary,
+	#burst-statistics input.burst-button--tertiary {
   border-width: 1px;
   --tw-border-opacity: 1;
   border-color: rgb(198 39 59 / var(--tw-border-opacity, 1));
@@ -5254,9 +5248,9 @@ a.burst-button--tertiary,
   color: #ffffffe5;
 }
 
-a.burst-button--tertiary:hover,
-	button.burst-button--tertiary:hover,
-	input.burst-button--tertiary:hover {
+#burst-statistics a.burst-button--tertiary:hover,
+	#burst-statistics button.burst-button--tertiary:hover,
+	#burst-statistics input.burst-button--tertiary:hover {
   --tw-border-opacity: 1;
   border-color: rgb(198 39 59 / var(--tw-border-opacity, 1));
   --tw-bg-opacity: 1;
@@ -5270,9 +5264,9 @@ a.burst-button--tertiary:hover,
 
 /* Pro */
 
-a.burst-button--pro,
-	button.burst-button--pro,
-	input.burst-button--pro {
+#burst-statistics a.burst-button--pro,
+	#burst-statistics button.burst-button--pro,
+	#burst-statistics input.burst-button--pro {
   border-width: 1px;
   --tw-border-opacity: 1;
   border-color: rgb(30 126 30 / var(--tw-border-opacity, 1));
@@ -5281,9 +5275,9 @@ a.burst-button--pro,
   color: #ffffffe5;
 }
 
-a.burst-button--pro:hover,
-	button.burst-button--pro:hover,
-	input.burst-button--pro:hover {
+#burst-statistics a.burst-button--pro:hover,
+	#burst-statistics button.burst-button--pro:hover,
+	#burst-statistics input.burst-button--pro:hover {
   --tw-border-opacity: 1;
   border-color: rgb(26 108 26 / var(--tw-border-opacity, 1));
   --tw-bg-opacity: 1;
@@ -5297,9 +5291,9 @@ a.burst-button--pro:hover,
 
 /* Base button preset */
 
-a.burst-button,
-	button.burst-button,
-	input.burst-button {
+#burst-statistics a.burst-button,
+	#burst-statistics button.burst-button,
+	#burst-statistics input.burst-button {
   margin: 0px;
   display: flex;
   min-height: 2rem;
@@ -5323,7 +5317,7 @@ a.burst-button,
   transition-timing-function: ease;
 }
 
-.burst-button-icon {
+#burst-statistics .burst-button-icon {
   margin: 0.375rem;
   display: inline-flex;
   height: 1rem;
@@ -5344,36 +5338,36 @@ a.burst-button,
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.burst-button-icon:hover {
+#burst-statistics .burst-button-icon:hover {
   margin: 0px;
   padding: 0.625rem;
 }
 
-.burst-button-icon--delete:hover {
+#burst-statistics .burst-button-icon--delete:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(251 235 237 / var(--tw-bg-opacity, 1));
 }
 
-.burst-button-icon--delete:hover svg path {
+#burst-statistics .burst-button-icon--delete:hover svg path {
   fill: #c6273b;
 }
 
-.rdrCalendarWrapper {
+#burst-statistics .rdrCalendarWrapper {
   font-size: 0.875rem;
   line-height: 1.375rem;
   color: #1a1a1ae5;
 }
 
-.rdrDateDisplayWrapper {
+#burst-statistics .rdrDateDisplayWrapper {
   --tw-bg-opacity: 1;
   background-color: rgb(236 244 237 / var(--tw-bg-opacity, 1));
 }
 
-.rdrDateDisplay {
+#burst-statistics .rdrDateDisplay {
   margin: 0.75rem;
 }
 
-.rdrDateDisplayItem {
+#burst-statistics .rdrDateDisplayItem {
   border-radius: 0.25rem;
   border-width: 1px;
   border-color: transparent;
@@ -5384,7 +5378,7 @@ a.burst-button,
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 
-.rdrDateDisplayItem input {
+#burst-statistics .rdrDateDisplayItem input {
   height: 2.5em;
   width: 100%;
   cursor: pointer;
@@ -5395,27 +5389,27 @@ a.burst-button,
   color: rgb(132 144 149 / var(--tw-text-opacity, 1));
 }
 
-.rdrDateDisplayItemActive {
+#burst-statistics .rdrDateDisplayItemActive {
   border-color: currentColor;
 }
 
-.rdrDateDisplayItemActive input {
+#burst-statistics .rdrDateDisplayItemActive input {
   --tw-text-opacity: 1;
   color: rgb(125 136 141 / var(--tw-text-opacity, 1));
 }
 
-.rdrMonthAndYearWrapper {
+#burst-statistics .rdrMonthAndYearWrapper {
   display: flex;
   height: 60px;
   align-items: center;
   padding-top: 0.375rem;
 }
 
-.rdrMonthAndYearPickers {
+#burst-statistics .rdrMonthAndYearPickers {
   font-weight: 600;
 }
 
-.rdrMonthAndYearPickers select {
+#burst-statistics .rdrMonthAndYearPickers select {
   cursor: pointer;
   -webkit-appearance: none;
      -moz-appearance: none;
@@ -5431,18 +5425,18 @@ a.burst-button,
 		background: url("data:image/svg+xml;utf8,<svg width='9px' height='6px' viewBox='0 0 9 6' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><g id='Artboard' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' transform='translate(-636.000000, -171.000000)' fill-opacity='0.368716033'><g id='input' transform='translate(172.000000, 37.000000)' fill='%230E242F' fill-rule='nonzero'><g id='Group-9' transform='translate(323.000000, 127.000000)'><path d='M142.280245,7.23952813 C141.987305,6.92353472 141.512432,6.92361662 141.219585,7.23971106 C140.926739,7.5558055 140.926815,8.06821394 141.219755,8.38420735 L145.498801,13 L149.780245,8.38162071 C150.073185,8.0656273 150.073261,7.55321886 149.780415,7.23712442 C149.487568,6.92102998 149.012695,6.92094808 148.719755,7.23694149 L145.498801,10.7113732 L142.280245,7.23952813 Z' id='arrow'></path></g></g></g></svg>") no-repeat right 8px center;
 }
 
-.rdrMonthAndYearPickers select:hover {
+#burst-statistics .rdrMonthAndYearPickers select:hover {
   background-color: rgb(21 22 21 / 0.1);
 }
 
-.rdrMonthPicker, .rdrYearPicker {
+#burst-statistics .rdrMonthPicker, #burst-statistics .rdrYearPicker {
   margin-top: 0px;
   margin-bottom: 0px;
   margin-left: 0.375rem;
   margin-right: 0.375rem;
 }
 
-.rdrNextPrevButton {
+#burst-statistics .rdrNextPrevButton {
   margin-left: 0.75rem;
   margin-right: 0.75rem;
   display: block;
@@ -5455,12 +5449,12 @@ a.burst-button,
   padding: 0px;
 }
 
-.rdrNextPrevButton:hover {
+#burst-statistics .rdrNextPrevButton:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(225 231 240 / var(--tw-bg-opacity, 1));
 }
 
-.rdrNextPrevButton i {
+#burst-statistics .rdrNextPrevButton i {
   margin: auto;
   display: block;
   height: 0px;
@@ -5471,45 +5465,45 @@ a.burst-button,
 		transform: translate(-3px, 0);
 }
 
-.rdrPprevButton i {
+#burst-statistics .rdrPprevButton i {
 		border-width: 4px 6px 4px 4px;
 		border-color: transparent rgb(52,73,94) transparent transparent;
 	}
 
-.rdrNextButton i {
+#burst-statistics .rdrNextButton i {
   margin-left: 0.5rem;
 		border-width: 4px 4px 4px 6px;
 		border-color: transparent transparent transparent rgb(52,73,94);
 		transform: translate(3px, 0);
 }
 
-.rdrWeekDays {
+#burst-statistics .rdrWeekDays {
   padding-left: 0.75rem;
   padding-right: 0.75rem;
 }
 
-.rdrMonth {
+#burst-statistics .rdrMonth {
   padding-left: 0.75rem;
   padding-right: 0.75rem;
   padding-bottom: 1.5rem;
 }
 
-.rdrMonth .rdrWeekDays {
+#burst-statistics .rdrMonth .rdrWeekDays {
   padding: 0px;
 }
 
-.rdrMonths.rdrMonthsVertical .rdrMonth:first-child .rdrMonthName {
+#burst-statistics .rdrMonths.rdrMonthsVertical .rdrMonth:first-child .rdrMonthName {
   display: none;
 }
 
-.rdrWeekDay {
+#burst-statistics .rdrWeekDay {
   font-weight: 400;
   line-height: 2.667em;
   --tw-text-opacity: 1;
   color: rgb(132 144 149 / var(--tw-text-opacity, 1));
 }
 
-.rdrDay {
+#burst-statistics .rdrDay {
   -webkit-user-select: none;
      -moz-user-select: none;
           user-select: none;
@@ -5522,12 +5516,12 @@ a.burst-button,
 		aspect-ratio: 1.2 / 1;
 }
 
-.rdrDay:focus {
+#burst-statistics .rdrDay:focus {
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
 
-.rdrDayNumber {
+#burst-statistics .rdrDayNumber {
   position: absolute;
   display: flex;
   align-items: center;
@@ -5537,12 +5531,12 @@ a.burst-button,
   outline-offset: 2px;
 }
 
-.rdrDayToday .rdrDayNumber span {
+#burst-statistics .rdrDayToday .rdrDayNumber span {
   position: relative;
   font-weight: 500;
 }
 
-.rdrDayToday .rdrDayNumber span:after {
+#burst-statistics .rdrDayToday .rdrDayNumber span:after {
 		content: '';
 		position: absolute;
 		bottom: -4px;
@@ -5555,22 +5549,22 @@ a.burst-button,
 		transform: translate(-50%, 0);
 	}
 
-.rdrDayToday:not(.rdrDayPassive) .rdrInRange ~ .rdrDayNumber span:after,
-	.rdrDayToday:not(.rdrDayPassive) .rdrStartEdge ~ .rdrDayNumber span:after,
-	.rdrDayToday:not(.rdrDayPassive) .rdrEndEdge ~ .rdrDayNumber span:after,
-	.rdrDayToday:not(.rdrDayPassive) .rdrSelected ~ .rdrDayNumber span:after {
+#burst-statistics .rdrDayToday:not(.rdrDayPassive) .rdrInRange ~ .rdrDayNumber span:after,
+	#burst-statistics .rdrDayToday:not(.rdrDayPassive) .rdrStartEdge ~ .rdrDayNumber span:after,
+	#burst-statistics .rdrDayToday:not(.rdrDayPassive) .rdrEndEdge ~ .rdrDayNumber span:after,
+	#burst-statistics .rdrDayToday:not(.rdrDayPassive) .rdrSelected ~ .rdrDayNumber span:after {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
 }
 
-.rdrDay:not(.rdrDayPassive) .rdrInRange ~ .rdrDayNumber span,
-	.rdrDay:not(.rdrDayPassive) .rdrStartEdge ~ .rdrDayNumber span,
-	.rdrDay:not(.rdrDayPassive) .rdrEndEdge ~ .rdrDayNumber span,
-	.rdrDay:not(.rdrDayPassive) .rdrSelected ~ .rdrDayNumber span {
+#burst-statistics .rdrDay:not(.rdrDayPassive) .rdrInRange ~ .rdrDayNumber span,
+	#burst-statistics .rdrDay:not(.rdrDayPassive) .rdrStartEdge ~ .rdrDayNumber span,
+	#burst-statistics .rdrDay:not(.rdrDayPassive) .rdrEndEdge ~ .rdrDayNumber span,
+	#burst-statistics .rdrDay:not(.rdrDayPassive) .rdrSelected ~ .rdrDayNumber span {
   color: rgb(255 255 255 / 0.85);
 }
 
-.rdrSelected, .rdrInRange, .rdrStartEdge, .rdrEndEdge {
+#burst-statistics .rdrSelected, #burst-statistics .rdrInRange, #burst-statistics .rdrStartEdge, #burst-statistics .rdrEndEdge {
   position: absolute;
   top: 0.375rem;
   left: 0px;
@@ -5579,65 +5573,65 @@ a.burst-button,
   background-color: currentColor;
 }
 
-.rdrSelected {
+#burst-statistics .rdrSelected {
   left: 2px;
   right: 2px;
   border-radius: 0.25rem;
 }
 
-.rdrStartEdge {
+#burst-statistics .rdrStartEdge {
   left: 2px;
   border-top-left-radius: 0.25rem;
   border-bottom-left-radius: 0.25rem;
 }
 
-.rdrEndEdge {
+#burst-statistics .rdrEndEdge {
   right: 2px;
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
 }
 
-.rdrDayStartOfMonth .rdrInRange,
-	.rdrDayStartOfWeek .rdrInRange,
-	.rdrDayStartOfMonth .rdrEndEdge,
-	.rdrDayStartOfWeek .rdrEndEdge {
+#burst-statistics .rdrDayStartOfMonth .rdrInRange,
+	#burst-statistics .rdrDayStartOfWeek .rdrInRange,
+	#burst-statistics .rdrDayStartOfMonth .rdrEndEdge,
+	#burst-statistics .rdrDayStartOfWeek .rdrEndEdge {
   left: 2px;
   border-top-left-radius: 0.25rem;
   border-bottom-left-radius: 0.25rem;
 }
 
-.rdrDayEndOfMonth .rdrInRange,
-	.rdrDayEndOfWeek .rdrInRange,
-	.rdrDayEndOfMonth .rdrStartEdge,
-	.rdrDayEndOfWeek .rdrStartEdge {
+#burst-statistics .rdrDayEndOfMonth .rdrInRange,
+	#burst-statistics .rdrDayEndOfWeek .rdrInRange,
+	#burst-statistics .rdrDayEndOfMonth .rdrStartEdge,
+	#burst-statistics .rdrDayEndOfWeek .rdrStartEdge {
   right: 2px;
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
 }
 
-.rdrDayStartOfMonth .rdrDayInPreview,
-	.rdrDayStartOfWeek .rdrDayInPreview,
-	.rdrDayStartOfMonth .rdrDayEndPreview,
-	.rdrDayStartOfWeek .rdrDayEndPreview {
+#burst-statistics .rdrDayStartOfMonth .rdrDayInPreview,
+	#burst-statistics .rdrDayStartOfWeek .rdrDayInPreview,
+	#burst-statistics .rdrDayStartOfMonth .rdrDayEndPreview,
+	#burst-statistics .rdrDayStartOfWeek .rdrDayEndPreview {
   border-top-left-radius: 0.25rem;
   border-bottom-left-radius: 0.25rem;
   border-left-width: 2px;
 		left: 0;
 }
 
-.rdrDayEndOfMonth .rdrDayInPreview,
-	.rdrDayEndOfWeek .rdrDayInPreview,
-	.rdrDayEndOfMonth .rdrDayStartPreview,
-	.rdrDayEndOfWeek .rdrDayStartPreview {
+#burst-statistics .rdrDayEndOfMonth .rdrDayInPreview,
+	#burst-statistics .rdrDayEndOfWeek .rdrDayInPreview,
+	#burst-statistics .rdrDayEndOfMonth .rdrDayStartPreview,
+	#burst-statistics .rdrDayEndOfWeek .rdrDayStartPreview {
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
   border-right-width: 2px;
 		right: 0;
 }
 
-.rdrDayStartPreview,
-	.rdrDayInPreview,
-	.rdrDayEndPreview {
+#burst-statistics .rdrDayStartPreview,
+	#burst-statistics .rdrDayInPreview,
+	#burst-statistics .rdrDayEndPreview {
   pointer-events: none;
   position: absolute;
   top: 3px;
@@ -5650,7 +5644,7 @@ a.burst-button,
 		border-color: currentColor;
 }
 
-.rdrDayStartPreview {
+#burst-statistics .rdrDayStartPreview {
   left: 0px;
   border-top-left-radius: 0.25rem;
   border-bottom-left-radius: 0.25rem;
@@ -5659,12 +5653,12 @@ a.burst-button,
   border-bottom-width: 2px;
 }
 
-.rdrDayInPreview {
+#burst-statistics .rdrDayInPreview {
   border-top-width: 2px;
   border-bottom-width: 2px;
 }
 
-.rdrDayEndPreview {
+#burst-statistics .rdrDayEndPreview {
   right: 0px;
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
@@ -5673,7 +5667,7 @@ a.burst-button,
   border-bottom-width: 2px;
 }
 
-.rdrDefinedRangesWrapper {
+#burst-statistics .rdrDefinedRangesWrapper {
   width: -moz-max-content;
   width: max-content;
   min-width: 160px;
@@ -5686,12 +5680,12 @@ a.burst-button,
   line-height: 1.125rem;
 }
 
-.rdrDefinedRangesWrapper .rdrStaticRangeSelected {
+#burst-statistics .rdrDefinedRangesWrapper .rdrStaticRangeSelected {
   font-weight: 600;
   color: currentColor;
 }
 
-.rdrStaticRange {
+#burst-statistics .rdrStaticRange {
   display: block;
   cursor: pointer;
   border-width: 0px;
@@ -5705,13 +5699,13 @@ a.burst-button,
   outline-offset: 2px;
 }
 
-.rdrStaticRange:hover .rdrStaticRangeLabel,
-	.rdrStaticRange:focus .rdrStaticRangeLabel {
+#burst-statistics .rdrStaticRange:hover .rdrStaticRangeLabel,
+	#burst-statistics .rdrStaticRange:focus .rdrStaticRangeLabel {
   --tw-bg-opacity: 1;
   background-color: rgb(239 242 247 / var(--tw-bg-opacity, 1));
 }
 
-.rdrStaticRangeLabel {
+#burst-statistics .rdrStaticRangeLabel {
   display: block;
   overflow: hidden;
   padding-left: 1.25rem;
@@ -5725,12 +5719,12 @@ a.burst-button,
   outline-offset: 2px;
 }
 
-.rdrInputRanges {
+#burst-statistics .rdrInputRanges {
   padding-top: 0.625rem;
   padding-bottom: 0.625rem;
 }
 
-.rdrInputRange {
+#burst-statistics .rdrInputRange {
   display: flex;
   align-items: center;
   padding-left: 0.625rem;
@@ -5739,7 +5733,7 @@ a.burst-button,
   padding-bottom: 0.375rem;
 }
 
-.rdrInputRangeInput {
+#burst-statistics .rdrInputRangeInput {
   margin-right: 0.625rem;
   height: 30px;
   width: 30px;
@@ -5753,8 +5747,8 @@ a.burst-button,
   color: rgb(108 118 122 / var(--tw-text-opacity, 1));
 }
 
-.rdrInputRangeInput:focus,
-	.rdrInputRangeInput:hover {
+#burst-statistics .rdrInputRangeInput:focus,
+	#burst-statistics .rdrInputRangeInput:hover {
   --tw-border-opacity: 1;
   border-color: rgb(180 191 196 / var(--tw-border-opacity, 1));
   --tw-text-opacity: 1;
@@ -5763,7 +5757,7 @@ a.burst-button,
   outline-offset: 2px;
 }
 
-.rdrCalendarWrapper:not(.rdrDateRangeWrapper) .rdrDayHovered .rdrDayNumber:after {
+#burst-statistics .rdrCalendarWrapper:not(.rdrDateRangeWrapper) .rdrDayHovered .rdrDayNumber:after {
 		content: '';
 		position: absolute;
 		top: -2px;
@@ -5776,47 +5770,47 @@ a.burst-button,
 		background-color: transparent;
 	}
 
-.rdrDayPassive {
+#burst-statistics .rdrDayPassive {
   pointer-events: none;
 }
 
-.rdrDayPassive .rdrDayNumber span {
+#burst-statistics .rdrDayPassive .rdrDayNumber span {
   --tw-text-opacity: 1;
   color: rgb(213 220 224 / var(--tw-text-opacity, 1));
 }
 
-.rdrDayPassive .rdrInRange,
-	.rdrDayPassive .rdrStartEdge,
-	.rdrDayPassive .rdrEndEdge,
-	.rdrDayPassive .rdrSelected,
-	.rdrDayPassive .rdrDayStartPreview,
-	.rdrDayPassive .rdrDayInPreview,
-	.rdrDayPassive .rdrDayEndPreview {
+#burst-statistics .rdrDayPassive .rdrInRange,
+	#burst-statistics .rdrDayPassive .rdrStartEdge,
+	#burst-statistics .rdrDayPassive .rdrEndEdge,
+	#burst-statistics .rdrDayPassive .rdrSelected,
+	#burst-statistics .rdrDayPassive .rdrDayStartPreview,
+	#burst-statistics .rdrDayPassive .rdrDayInPreview,
+	#burst-statistics .rdrDayPassive .rdrDayEndPreview {
   display: none;
 }
 
-.rdrDayDisabled {
+#burst-statistics .rdrDayDisabled {
   cursor: not-allowed;
   --tw-bg-opacity: 1;
   background-color: rgb(248 248 248 / var(--tw-bg-opacity, 1));
 }
 
-.rdrDayDisabled .rdrDayNumber span {
+#burst-statistics .rdrDayDisabled .rdrDayNumber span {
   --tw-text-opacity: 1;
   color: rgb(174 185 191 / var(--tw-text-opacity, 1));
 }
 
-.rdrDayDisabled .rdrInRange,
-	.rdrDayDisabled .rdrStartEdge,
-	.rdrDayDisabled .rdrEndEdge,
-	.rdrDayDisabled .rdrSelected,
-	.rdrDayDisabled .rdrDayStartPreview,
-	.rdrDayDisabled .rdrDayInPreview,
-	.rdrDayDisabled .rdrDayEndPreview {
+#burst-statistics .rdrDayDisabled .rdrInRange,
+	#burst-statistics .rdrDayDisabled .rdrStartEdge,
+	#burst-statistics .rdrDayDisabled .rdrEndEdge,
+	#burst-statistics .rdrDayDisabled .rdrSelected,
+	#burst-statistics .rdrDayDisabled .rdrDayStartPreview,
+	#burst-statistics .rdrDayDisabled .rdrDayInPreview,
+	#burst-statistics .rdrDayDisabled .rdrDayEndPreview {
 		filter: grayscale(100%) opacity(60%);
 	}
 
-.rdrMonthName {
+#burst-statistics .rdrMonthName {
   padding: 0.125rem;
   text-align: left;
   font-weight: 600;
@@ -5826,7 +5820,7 @@ a.burst-button,
 
 /* Calendar container */
 
-.rdrCalendarWrapper {
+#burst-statistics .rdrCalendarWrapper {
   box-sizing: border-box;
   display: inline-flex;
   -webkit-user-select: none;
@@ -5837,90 +5831,90 @@ a.burst-button,
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
 }
 
-.rdrDateDisplay {
+#burst-statistics .rdrDateDisplay {
   display: flex;
   justify-content: space-between;
 }
 
-.rdrDateDisplayItem {
+#burst-statistics .rdrDateDisplayItem {
   flex: 1 1 0%;
   flex-basis: 0px;
   text-align: center;
   color: inherit;
 }
 
-.rdrDateDisplayItem + .rdrDateDisplayItem {
+#burst-statistics .rdrDateDisplayItem + .rdrDateDisplayItem {
   margin-left: 0.833em;
 }
 
-.rdrDateDisplayItem input {
+#burst-statistics .rdrDateDisplayItem input {
   text-align: center;
   color: #454552e5;
 }
 
-.rdrDateDisplayItem input:disabled {
+#burst-statistics .rdrDateDisplayItem input:disabled {
   cursor: default;
 }
 
-.rdrMonthAndYearWrapper {
+#burst-statistics .rdrMonthAndYearWrapper {
   box-sizing: border-box;
   display: flex;
   justify-content: space-between;
 }
 
-.rdrMonthAndYearPickers {
+#burst-statistics .rdrMonthAndYearPickers {
   display: flex;
   flex: 1 1 0%;
   align-items: center;
   justify-content: center;
 }
 
-.rdrNextPrevButton {
+#burst-statistics .rdrNextPrevButton {
   box-sizing: border-box;
   cursor: pointer;
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
 
-.rdrMonths {
+#burst-statistics .rdrMonths {
   display: flex;
 }
 
-.rdrMonthsVertical {
+#burst-statistics .rdrMonthsVertical {
   flex-direction: column;
 }
 
-.rdrMonthsHorizontal > div > div > div {
+#burst-statistics .rdrMonthsHorizontal > div > div > div {
   display: flex;
   flex-direction: row;
 }
 
-.rdrMonth {
+#burst-statistics .rdrMonth {
   width: 300px;
 }
 
-.rdrWeekDays {
+#burst-statistics .rdrWeekDays {
   display: flex;
 }
 
-.rdrWeekDay {
+#burst-statistics .rdrWeekDay {
   box-sizing: border-box;
   flex: 0 0 calc(100% / 7);
   text-align: center;
 }
 
-.rdrDays {
+#burst-statistics .rdrDays {
   display: flex;
   flex-wrap: wrap;
 }
 
-.rdrInfiniteMonths {
+#burst-statistics .rdrInfiniteMonths {
   overflow: auto;
 }
 
 /* DateRangePicker wrapper */
 
-.rdrDateRangeWrapper {
+#burst-statistics .rdrDateRangeWrapper {
   -webkit-user-select: none;
      -moz-user-select: none;
           user-select: none;
@@ -5928,16 +5922,16 @@ a.burst-button,
 
 /* DateInput */
 
-.rdrDateInput {
+#burst-statistics .rdrDateInput {
   position: relative;
 }
 
-.rdrDateInput input {
+#burst-statistics .rdrDateInput input {
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
 
-.rdrDateInput .rdrWarning {
+#burst-statistics .rdrDateInput .rdrWarning {
   position: absolute;
   top: 0px;
   right: 0.25rem;
@@ -5949,45 +5943,45 @@ a.burst-button,
 
 /* DayCell */
 
-.rdrDay {
+#burst-statistics .rdrDay {
   position: relative;
   box-sizing: border-box;
   width: calc(100% / 7);
   cursor: pointer;
 }
 
-.rdrDayNumber {
+#burst-statistics .rdrDayNumber {
   position: relative;
   display: block;
 }
 
-.rdrDayNumber span {
+#burst-statistics .rdrDayNumber span {
   --tw-text-opacity: 1;
   color: rgb(29 36 41 / var(--tw-text-opacity, 1));
 }
 
 @supports (-ms-ime-align: auto) {
-		.rdrDay {
+		#burst-statistics .rdrDay {
 			flex-basis: 14.285% !important;
 		}
 	}
 
-.rdrSelected,
-	.rdrInRange,
-	.rdrStartEdge,
-	.rdrEndEdge {
+#burst-statistics .rdrSelected,
+	#burst-statistics .rdrInRange,
+	#burst-statistics .rdrStartEdge,
+	#burst-statistics .rdrEndEdge {
   pointer-events: none;
 }
 
-.rdrDayStartPreview,
-	.rdrDayInPreview,
-	.rdrDayEndPreview {
+#burst-statistics .rdrDayStartPreview,
+	#burst-statistics .rdrDayInPreview,
+	#burst-statistics .rdrDayEndPreview {
   pointer-events: none;
 }
 
 /* DateRangePicker wrapper */
 
-.rdrDateRangePickerWrapper {
+#burst-statistics .rdrDateRangePickerWrapper {
   display: inline-flex;
   -webkit-user-select: none;
      -moz-user-select: none;
@@ -5996,16 +5990,16 @@ a.burst-button,
 
 /* DefinedRange */
 
-.rdrStaticRanges {
+#burst-statistics .rdrStaticRanges {
   display: flex;
   flex-direction: column;
 }
 
-.rdrStaticRange {
+#burst-statistics .rdrStaticRange {
   color: inherit;
 }
 
-.burst-indeterminate {
+#burst-statistics .burst-indeterminate {
   position: relative;
   -webkit-appearance: none;
      -moz-appearance: none;
@@ -6017,7 +6011,7 @@ a.burst-button,
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
 }
 
-.burst-indeterminate::after {
+#burst-statistics .burst-indeterminate::after {
 		content: '';
 		position: absolute;
 		top: 50%;
@@ -6029,28 +6023,28 @@ a.burst-button,
 		transform: translate(-50%, -50%); /* keep as raw CSS */
 	}
 
-.rdt_TableHeadRow,
-	.rdt_TableRow {
+#burst-statistics .rdt_TableHeadRow,
+	#burst-statistics .rdt_TableRow {
   padding-left: 1.5rem;
   padding-right: 1.5rem;
 }
 
 @media not all and (min-width: 1280px) {
 
-  .rdt_TableHeadRow,
-	.rdt_TableRow {
+  #burst-statistics .rdt_TableHeadRow,
+	#burst-statistics .rdt_TableRow {
     padding-left: 0.625rem;
     padding-right: 0.625rem;
   }
 }
 
-.rdt_TableCol,
-	.rdt_TableCell {
+#burst-statistics .rdt_TableCol,
+	#burst-statistics .rdt_TableCell {
   padding-left: 0px;
   padding-right: 0px;
 }
 
-.rdt_Pagination select + svg {
+#burst-statistics .rdt_Pagination select + svg {
   display: none;
 }
 

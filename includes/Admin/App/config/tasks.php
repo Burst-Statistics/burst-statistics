@@ -151,4 +151,17 @@ return [
 		'dismissible' => false,
 		'plusone'     => false,
 	],
+	[
+		'id'                  => 'multi_domain_setup_detected',
+		'condition'           => [
+			'type'     => 'serverside',
+			'function' => 'wp_option_burst_is_multi_domain',
+		],
+		'msg'                 => __( 'Burst detected multiple domains being used to visit the website. If you want to be able to differentiate between domains, you can enable filtering by domain in the settings.', 'burst-statistics' ),
+		'icon'                => 'warning',
+		'dismissible'         => true,
+		'plusone'             => false,
+		'url'                 => 'filtering-by-domain/',
+		'dismiss_permanently' => true,
+	],
 ];

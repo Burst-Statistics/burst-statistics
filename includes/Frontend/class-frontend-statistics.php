@@ -476,7 +476,7 @@ class Frontend_Statistics {
 						$sanitized_value = absint( $value );
 						break;
 					case 'page_type':
-						$allowed_page_types = apply_filters( 'burst_allowed_post_types', [ 'post', 'page' ] );
+						$allowed_page_types = apply_filters( 'burst_allowed_post_types', get_post_types( [ 'public' => true ] ) );
 						$sanitized_value    = in_array( $value, $allowed_page_types, true ) ? $value : 'post';
 						break;
 					case 'device':

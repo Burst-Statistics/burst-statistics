@@ -28,7 +28,8 @@ export const useFiltersData = () => {
             staleTime: 5 * 60 * 1000,
             cacheTime: 30 * 60 * 1000,
         });
-        return (data || []).map((opt) => ({
+        const items = Array.isArray(data) ? data : Object.values(data || {});
+        return items.map((opt) => ({
             id: opt.ID,
             title: opt.name,
             key: opt.key || opt.ID,

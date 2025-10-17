@@ -63,7 +63,7 @@ class Frontend_Admin {
 		global $post;
 		$burst_top_bar_post_types = apply_filters(
 			'burst_top_bar_post_types',
-			[ 'post', 'page' ]
+			get_post_types( [ 'public' => true ] )
 		);
 		if ( $post && is_object( $post ) ) {
 			if ( ! in_array( $post->post_type, $burst_top_bar_post_types, true ) ) {

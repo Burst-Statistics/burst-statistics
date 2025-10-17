@@ -6,7 +6,6 @@ import GoalSetup from './GoalSetup';
 import { useState } from 'react';
 import { burst_get_website_url } from '../../utils/lib';
 import * as Popover from '@radix-ui/react-popover';
-import useSettingsData from '@/hooks/useSettingsData';
 
 const GoalsSettings = () => {
   const {
@@ -22,7 +21,6 @@ const GoalsSettings = () => {
   } = useGoalsData();
   const { isLicenseValid } = useLicenseStore();
   const [ predefinedGoalsVisible, setPredefinedGoalsVisible ] = useState( false );
-  const { getValue } = useSettingsData();
 
   const handleAddPredefinedGoal = async ( goal ) => {
     setPredefinedGoalsVisible( false );

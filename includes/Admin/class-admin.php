@@ -67,7 +67,6 @@ class Admin {
 		add_action( 'burst_activation', [ $this, 'run_table_init_hook' ], 10, 1 );
 		add_action( 'burst_activation', [ $this, 'setup_defaults' ], 20, 1 );
 		add_action( 'after_reset_stats', [ $this, 'run_table_init_hook' ], 10, 1 );
-		add_action( 'upgrader_process_complete', [ $this, 'after_plugin_upgrade' ], 10, 2 );
 		add_action( 'wp_initialize_site', [ $this, 'run_table_init_hook' ], 10, 1 );
 		add_action( 'burst_upgrade_before', [ $this, 'run_table_init_hook' ], 10, 1 );
 		add_action( 'burst_cron_table_upgrade', [ $this, 'run_table_init_hook' ], 10, 1 );
@@ -610,27 +609,6 @@ class Admin {
 	}
 
 	/**
-	 * If this is a plugin upgrade or installation, check if this is coming from Burst.
-	 * If so, run some updates within the plugin.
-	 */
-	public function after_plugin_upgrade( ?object $upgrader_object = null, array $options = [] ): void {
-		// only if regarding plugins, install or update.
-		if ( isset( $options['type'] ) && $options['type'] !== 'plugin'
-		) {
-			return;
-		}
-
-		if ( $options['action'] !== 'install' && $options['action'] !== 'update' ) {
-			return;
-		}
-
-		if ( ! isset( $upgrader_object->new_plugin_data ) || $upgrader_object->new_plugin_data['TextDomain'] !== 'burst-statistics' ) {
-			return;
-		}
-		$this->run_table_init_hook();
-		$this->create_js_file();
-	}
-	/**
 	 * On Multisite site creation, run table init hook as well.
 	 */
 	public function run_table_init_hook(): void {
@@ -1155,6 +1133,7 @@ class Admin {
 				'burst_tasks',
 				'burst_onboarding_free_completed',
 				'burst_missing_tables',
+				'burst_tasks_permanently_dismissed',
 			],
 		);
 
@@ -1212,6 +1191,7 @@ class Admin {
 			'burst_tasks',
 			'burst_demo_data_installed',
 			'burst_trial_offered',
+			'burst_tasks_permanently_dismissed',
 		];
 		// delete options.
 		foreach ( $options as $option_name ) {
