@@ -157,7 +157,7 @@ class Posts {
 	private function get_burst_column_post_types(): array {
 		return apply_filters(
 			'burst_column_post_types',
-			[ 'post', 'page' ]
+			get_post_types( [ 'public' => true ] )
 		);
 	}
 
@@ -174,6 +174,19 @@ class Posts {
 				$columns[ $column_name ] = $column_title;
 
 				return $columns;
+			}
+		);
+
+		add_action(
+			'admin_head',
+			function (): void {
+				if ( get_current_screen()->post_type === 'product' ) {
+					echo '<style>
+			.wp-list-table .column-pageviews {
+				width: 14%;
+			}
+		</style>';
+				}
 			}
 		);
 

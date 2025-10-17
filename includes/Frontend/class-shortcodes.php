@@ -221,7 +221,7 @@ class Shortcodes {
 		$atts['show_count'] = rest_sanitize_boolean( $atts['show_count'] );
 
 		// Validate post type.
-		if ( ! in_array( $atts['post_type'], get_post_types(), true ) ) {
+		if ( ! in_array( $atts['post_type'], get_post_types( [ 'public' => true ] ), true ) ) {
 			$atts['post_type'] = 'post';
 		}
 

@@ -31,6 +31,7 @@ class Sessions {
             `ID` int NOT NULL AUTO_INCREMENT,
             `first_visited_url` TEXT NOT NULL,
             `last_visited_url` TEXT NOT NULL,
+            `host` varchar(255) NOT NULL,
             `goal_id` int,
             `city_code` int DEFAULT 0,
             PRIMARY KEY (ID)

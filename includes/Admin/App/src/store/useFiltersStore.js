@@ -70,8 +70,15 @@ const FILTER_CONFIG = {
         pro: false,
         category: 'content',
     },
-    
     // Pro Filters
+    host: {
+        label: __('Domain', 'burst-statistics'),
+        icon: 'browser',
+        type: 'string',
+        options: 'hosts',
+        pro: true,
+        category: 'sources',
+    },
     new_visitor: {
         label: __('New Visitors', 'burst-statistics'),
         icon: 'user',
@@ -215,6 +222,7 @@ const INITIAL_FILTERS = Object.keys(FILTER_CONFIG).reduce((acc, key) => {
 export const useFiltersStore = create(
     persist(
         (set, get) => ({
+
             // Current filter values
             filters: INITIAL_FILTERS,
 

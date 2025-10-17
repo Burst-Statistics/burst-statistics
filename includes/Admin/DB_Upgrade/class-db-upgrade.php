@@ -773,7 +773,7 @@ class DB_Upgrade {
 		}
 
 		// get all posts of type post or page that do not have the meta yet.
-		$post_types = apply_filters( 'burst_column_post_types', [ 'post', 'page' ] );
+		$post_types = apply_filters( 'burst_column_post_types', get_post_types( [ 'public' => true ] ) );
 		$posts      = get_posts(
 			[
 				'post_type'   => $post_types,

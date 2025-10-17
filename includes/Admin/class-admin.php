@@ -1133,6 +1133,7 @@ class Admin {
 				'burst_tasks',
 				'burst_onboarding_free_completed',
 				'burst_missing_tables',
+				'burst_tasks_permanently_dismissed',
 			],
 		);
 
@@ -1190,6 +1191,7 @@ class Admin {
 			'burst_tasks',
 			'burst_demo_data_installed',
 			'burst_trial_offered',
+			'burst_tasks_permanently_dismissed',
 		];
 		// delete options.
 		foreach ( $options as $option_name ) {

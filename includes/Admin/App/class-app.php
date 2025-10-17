@@ -1032,29 +1032,30 @@ class App {
 		}
 
 		global $wpdb;
-		$valid_types = [ 'devices', 'browsers', 'platforms', 'countries', 'states', 'cities', 'pages', 'referrers', 'campaigns', 'sources', 'mediums', 'contents', 'terms' ];
+		$valid_types = [ 'hosts', 'devices', 'browsers', 'platforms', 'countries', 'states', 'cities', 'pages', 'referrers', 'campaigns', 'sources', 'mediums', 'contents', 'terms' ];
 
 		// Return invalid data type error.
 		if ( empty( $data_type ) || ! in_array( $data_type, $valid_types, true ) ) {
 			return [
 				'success' => false,
-				'message' => 'Invalid data type. Valid types are: ' . implode( ', ', $valid_types ),
+				'message' => 'Invalid data type',
 			];
 		}
 
 		// Define data type queries.
 		$queries = [
-			'devices'   => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_devices GROUP BY name",
-			'browsers'  => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_browsers GROUP BY name",
-			'platforms' => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_platforms GROUP BY name",
-			'states'    => "SELECT DISTINCT state AS name FROM {$wpdb->prefix}burst_locations",
-			'cities'    => "SELECT DISTINCT city AS name FROM {$wpdb->prefix}burst_locations",
+			'devices'   => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_devices GROUP BY name ORDER BY name ASC",
+			'browsers'  => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_browsers GROUP BY name ORDER BY name ASC",
+			'platforms' => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_platforms GROUP BY name ORDER BY name ASC",
+			'states'    => "SELECT DISTINCT state AS name FROM {$wpdb->prefix}burst_locations ORDER BY name ASC",
+			'cities'    => "SELECT DISTINCT city AS name FROM {$wpdb->prefix}burst_locations ORDER BY name ASC",
 			'pages'     => "SELECT page_url as name FROM {$wpdb->prefix}burst_statistics GROUP BY page_url ORDER BY COUNT(*) DESC",
-			'campaigns' => "SELECT DISTINCT campaign AS name FROM {$wpdb->prefix}burst_campaigns",
-			'sources'   => "SELECT DISTINCT source AS name FROM {$wpdb->prefix}burst_campaigns",
-			'mediums'   => "SELECT DISTINCT medium AS name FROM {$wpdb->prefix}burst_campaigns",
-			'contents'  => "SELECT DISTINCT content AS name FROM {$wpdb->prefix}burst_campaigns",
-			'terms'     => "SELECT DISTINCT term AS name FROM {$wpdb->prefix}burst_campaigns",
+			'campaigns' => "SELECT DISTINCT campaign AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
+			'sources'   => "SELECT DISTINCT source AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
+			'mediums'   => "SELECT DISTINCT medium AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
+			'contents'  => "SELECT DISTINCT content AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
+			'terms'     => "SELECT DISTINCT term AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
+			'hosts'     => "SELECT DISTINCT host as name FROM {$wpdb->prefix}burst_sessions ORDER BY name ASC",
 		];
 
 		// Get raw data based on data type.
@@ -1080,7 +1081,17 @@ class App {
 				array_values( $raw_data )
 			);
 		} else {
-			$raw_data = $wpdb->get_results( $queries[ $data_type ], ARRAY_A );
+			$cache_key   = $data_type;
+			$cache_group = 'burst';
+			$raw_data    = wp_cache_get( $cache_key, $cache_group );
+
+			if ( false === $raw_data ) {
+				// Cache miss - get from database.
+				$raw_data = $wpdb->get_results( $queries[ $data_type ], ARRAY_A );
+
+				// Store in cache.
+				wp_cache_set( $cache_key, $raw_data, $cache_group );
+			}
 			$raw_data = array_filter(
 				$raw_data,
 				function ( $item ) {

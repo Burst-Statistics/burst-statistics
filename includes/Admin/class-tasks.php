@@ -55,7 +55,12 @@ class Tasks {
 	 * Insert a task
 	 */
 	public function add_task( string $task_id ): void {
-		$current_tasks = get_option( 'burst_tasks', [] );
+		$current_tasks         = get_option( 'burst_tasks', [] );
+		$permanently_dismissed = $this->is_dismissed_permanently( $task_id );
+		if ( $permanently_dismissed ) {
+			return;
+		}
+
 		if ( ! in_array( $task_id, $current_tasks, true ) ) {
 			$current_tasks[] = sanitize_title( $task_id );
 			update_option( 'burst_tasks', $current_tasks, false );
@@ -136,9 +141,16 @@ class Tasks {
 		$tasks = $this->get_raw_tasks();
 		foreach ( $tasks as $task ) {
 			if ( isset( $task['condition']['type'] ) && $task['condition']['type'] === 'serverside' ) {
-				$invert   = str_contains( $task['condition']['function'], '!' );
-				$function = $invert ? substr( $task['condition']['function'], 1 ) : $task['condition']['function'];
-				$is_valid = $this->validate_function( $function );
+				if ( isset( $task['condition']['constant'] ) ) {
+					$invert   = str_contains( $task['condition']['constant'], '!' );
+					$constant = $invert ? substr( $task['condition']['constant'], 1 ) : $task['condition']['constant'];
+					$is_valid = defined( $constant );
+				} else {
+					$invert   = str_contains( $task['condition']['function'], '!' );
+					$function = $invert ? substr( $task['condition']['function'], 1 ) : $task['condition']['function'];
+					$is_valid = $this->validate_function( $function );
+				}
+
 				if ( $invert ) {
 					$is_valid = ! $is_valid;
 				}

@@ -93,10 +93,29 @@ class Tracking {
 			'city_code'        => $sanitized_data['city_code'] ?? '',
 		];
 		unset( $sanitized_data['city_code'] );
+
+		// keep track of the hosts, to check if this is a multi domain setup.
+		$destructured    = $this->sanitize_url( $sanitized_data['host'] );
+		$host            = $destructured['host'] ?? '';
+		$is_multi_domain = get_option( 'burst_is_multi_domain' );
+		if ( ! $is_multi_domain ) {
+			$first_domain = get_option( 'burst_first_domain' );
+			// only update this once, on the first used domain.
+			if ( empty( $first_domain ) ) {
+				update_option( 'burst_is_multi_domain', false );
+				update_option( 'burst_first_domain', $host );
+			} elseif ( $first_domain !== $host ) {
+				// if it's different of the first used, it is multi domain.
+				update_option( 'burst_is_multi_domain', true );
+			}
+		}
+
+		if ( $this->get_option_bool( 'filtering_by_domain' ) ) {
+			$session_arr['host'] = $host;
+		}
+
 		// update burst_sessions table.
 		// Get the last record with the same uid within 30 minutes. If it exists, use session_id. If not, create a new session.
-
-		// Improved clarity and error handling for session management.
 		if ( isset( $previous_hit ) && $previous_hit['session_id'] > 0 ) {
 			// Existing session found, reuse the session ID.
 			$sanitized_data['session_id'] = $previous_hit['session_id'];
@@ -294,7 +313,6 @@ class Tracking {
 		$sanitized_data['bounce']             = 1;
 		$sanitized_data['page_id']            = (int) $data['page_id'];
 		$sanitized_data['page_type']          = $this->sanitize_page_identifier( $data['page_type'] );
-
 		return $sanitized_data;
 	}
 
@@ -314,6 +332,7 @@ class Tracking {
 		}
 
 		$page_identifier = trim( $page_identifier );
+		$post_types      = get_post_types( [ 'public' => true ] );
 		$fixed_values    = [
 			'front-page',
 			'blog-index',
@@ -326,10 +345,8 @@ class Tracking {
 			'author',
 			'search',
 			'category',
-			'page',
-			'post',
 		];
-
+		$fixed_values    = array_unique( array_merge( $fixed_values, array_keys( $post_types ) ) );
 		if ( in_array( $page_identifier, $fixed_values, true ) ) {
 			return $page_identifier;
 		}
@@ -415,9 +432,10 @@ class Tracking {
 		}
 		$url = wp_parse_url( esc_url_raw( $sanitized_url ) );
 		if ( isset( $url['host'] ) ) {
+			$path                            = $url['path'] ?? '';
 			$url_destructured['host']        = $url['host'];
 			$url_destructured['scheme']      = $url['scheme'];
-			$url_destructured['path']        = trailingslashit( $url['path'] );
+			$url_destructured['path']        = trailingslashit( $path );
 			$url_destructured['parameters']  = $url['query'] ?? '';
 			$url_destructured['parameters'] .= $url['fragment'] ?? '';
 		}
@@ -920,6 +938,7 @@ class Tracking {
 	 */
 	public function create_statistic( array $data ): int {
 		global $wpdb;
+		unset( $data['host'] );
 		$data = $this->remove_empty_values( $data );
 
 		if ( ! $this->required_values_set( $data ) ) {
@@ -946,6 +965,7 @@ class Tracking {
 	 */
 	public function update_statistic( array $data ): bool {
 		global $wpdb;
+		unset( $data['host'] );
 		$data = $this->remove_empty_values( $data );
 
 		// Ensure 'ID' is present for update.
@@ -1028,7 +1048,7 @@ class Tracking {
 	/**
 	 * Remove null, empty, and specific values from an array.
 	 *
-	 * Skips removal for the 'parameters' key. Also unsets 'host' and 'completed_goals'.
+	 * Skips removal for the 'parameters' key. Also unsets 'completed_goals'.
 	 *
 	 * @param array<string, mixed> $data Input associative array of values.
 	 * @return array<string, mixed> Filtered associative array.
@@ -1047,7 +1067,7 @@ class Tracking {
 				unset( $data[ $key ] );
 			}
 		}
-		unset( $data['host'] );
+
 		unset( $data['completed_goals'] );
 		return $data;
 	}
