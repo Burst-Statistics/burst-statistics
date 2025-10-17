@@ -1,4 +1,4 @@
-#burst-statistics *, #burst-statistics ::before, #burst-statistics ::after {
+*, ::before, ::after {
   --tw-border-spacing-x: 0;
   --tw-border-spacing-y: 0;
   --tw-translate-x: 0;
@@ -52,7 +52,7 @@
   --tw-contain-style:  ;
 }
 
-#burst-statistics ::backdrop {
+::backdrop {
   --tw-border-spacing-x: 0;
   --tw-border-spacing-y: 0;
   --tw-translate-x: 0;
@@ -111,17 +111,17 @@
 2. Allow adding a border to an element by just adding a border-width. (https://github.com/tailwindcss/tailwindcss/pull/116)
 */
 
-#burst-statistics *,
-#burst-statistics ::before,
-#burst-statistics ::after {
+*,
+::before,
+::after {
   box-sizing: border-box; /* 1 */
   border-width: 0; /* 2 */
   border-style: solid; /* 2 */
   border-color: #e9ecef; /* 2 */
 }
 
-#burst-statistics ::before,
-#burst-statistics ::after {
+::before,
+::after {
   --tw-content: '';
 }
 
@@ -136,7 +136,7 @@
 */
 
 html,
-#burst-statistics :host {
+:host {
   line-height: 1.5; /* 1 */
   -webkit-text-size-adjust: 100%; /* 2 */
   -moz-tab-size: 4; /* 3 */
@@ -153,7 +153,7 @@ html,
 2. Inherit line-height from `html` so users can set them as a class directly on the `html` element.
 */
 
-#burst-statistics body {
+body {
   margin: 0; /* 1 */
   line-height: inherit; /* 2 */
 }
@@ -164,7 +164,7 @@ html,
 3. Ensure horizontal rules are visible by default.
 */
 
-#burst-statistics hr {
+hr {
   height: 0; /* 1 */
   color: inherit; /* 2 */
   border-top-width: 1px; /* 3 */
@@ -174,7 +174,7 @@ html,
 Add the correct text decoration in Chrome, Edge, and Safari.
 */
 
-#burst-statistics abbr:where([title]) {
+abbr:where([title]) {
   -webkit-text-decoration: underline dotted;
           text-decoration: underline dotted;
 }
@@ -183,12 +183,12 @@ Add the correct text decoration in Chrome, Edge, and Safari.
 Remove the default font size and weight for headings.
 */
 
-#burst-statistics h1,
-#burst-statistics h2,
-#burst-statistics h3,
-#burst-statistics h4,
-#burst-statistics h5,
-#burst-statistics h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-size: inherit;
   font-weight: inherit;
 }
@@ -197,7 +197,7 @@ Remove the default font size and weight for headings.
 Reset links to optimize for opt-in styling instead of opt-out.
 */
 
-#burst-statistics a {
+a {
   color: inherit;
   text-decoration: inherit;
 }
@@ -206,8 +206,8 @@ Reset links to optimize for opt-in styling instead of opt-out.
 Add the correct font weight in Edge and Safari.
 */
 
-#burst-statistics b,
-#burst-statistics strong {
+b,
+strong {
   font-weight: bolder;
 }
 
@@ -218,10 +218,10 @@ Add the correct font weight in Edge and Safari.
 4. Correct the odd `em` font sizing in all browsers.
 */
 
-#burst-statistics code,
-#burst-statistics kbd,
-#burst-statistics samp,
-#burst-statistics pre {
+code,
+kbd,
+samp,
+pre {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; /* 1 */
   font-feature-settings: normal; /* 2 */
   font-variation-settings: normal; /* 3 */
@@ -232,7 +232,7 @@ Add the correct font weight in Edge and Safari.
 Add the correct font size in all browsers.
 */
 
-#burst-statistics small {
+small {
   font-size: 80%;
 }
 
@@ -240,19 +240,19 @@ Add the correct font size in all browsers.
 Prevent `sub` and `sup` elements from affecting the line height in all browsers.
 */
 
-#burst-statistics sub,
-#burst-statistics sup {
+sub,
+sup {
   font-size: 75%;
   line-height: 0;
   position: relative;
   vertical-align: baseline;
 }
 
-#burst-statistics sub {
+sub {
   bottom: -0.25em;
 }
 
-#burst-statistics sup {
+sup {
   top: -0.5em;
 }
 
@@ -262,7 +262,7 @@ Prevent `sub` and `sup` elements from affecting the line height in all browsers.
 3. Remove gaps between table borders by default.
 */
 
-#burst-statistics table {
+table {
   text-indent: 0; /* 1 */
   border-color: inherit; /* 2 */
   border-collapse: collapse; /* 3 */
@@ -274,11 +274,11 @@ Prevent `sub` and `sup` elements from affecting the line height in all browsers.
 3. Remove default padding in all browsers.
 */
 
-#burst-statistics button,
-#burst-statistics input,
-#burst-statistics optgroup,
-#burst-statistics select,
-#burst-statistics textarea {
+button,
+input,
+optgroup,
+select,
+textarea {
   font-family: inherit; /* 1 */
   font-feature-settings: inherit; /* 1 */
   font-variation-settings: inherit; /* 1 */
@@ -295,8 +295,8 @@ Prevent `sub` and `sup` elements from affecting the line height in all browsers.
 Remove the inheritance of text transform in Edge and Firefox.
 */
 
-#burst-statistics button,
-#burst-statistics select {
+button,
+select {
   text-transform: none;
 }
 
@@ -305,10 +305,10 @@ Remove the inheritance of text transform in Edge and Firefox.
 2. Remove default button styles.
 */
 
-#burst-statistics button,
-#burst-statistics input:where([type='button']),
-#burst-statistics input:where([type='reset']),
-#burst-statistics input:where([type='submit']) {
+button,
+input:where([type='button']),
+input:where([type='reset']),
+input:where([type='submit']) {
   -webkit-appearance: button; /* 1 */
   background-color: transparent; /* 2 */
   background-image: none; /* 2 */
@@ -318,7 +318,7 @@ Remove the inheritance of text transform in Edge and Firefox.
 Use the modern Firefox focus style for all focusable elements.
 */
 
-#burst-statistics :-moz-focusring {
+:-moz-focusring {
   outline: auto;
 }
 
@@ -326,7 +326,7 @@ Use the modern Firefox focus style for all focusable elements.
 Remove the additional `:invalid` styles in Firefox. (https://github.com/mozilla/gecko-dev/blob/2f9eacd9d3d995c937b4251a5557d95d494c9be1/layout/style/res/forms.css#L728-L737)
 */
 
-#burst-statistics :-moz-ui-invalid {
+:-moz-ui-invalid {
   box-shadow: none;
 }
 
@@ -334,7 +334,7 @@ Remove the additional `:invalid` styles in Firefox. (https://github.com/mozilla/
 Add the correct vertical alignment in Chrome and Firefox.
 */
 
-#burst-statistics progress {
+progress {
   vertical-align: baseline;
 }
 
@@ -342,8 +342,8 @@ Add the correct vertical alignment in Chrome and Firefox.
 Correct the cursor style of increment and decrement buttons in Safari.
 */
 
-#burst-statistics ::-webkit-inner-spin-button,
-#burst-statistics ::-webkit-outer-spin-button {
+::-webkit-inner-spin-button,
+::-webkit-outer-spin-button {
   height: auto;
 }
 
@@ -352,7 +352,7 @@ Correct the cursor style of increment and decrement buttons in Safari.
 2. Correct the outline style in Safari.
 */
 
-#burst-statistics [type='search'] {
+[type='search'] {
   -webkit-appearance: textfield; /* 1 */
   outline-offset: -2px; /* 2 */
 }
@@ -361,7 +361,7 @@ Correct the cursor style of increment and decrement buttons in Safari.
 Remove the inner padding in Chrome and Safari on macOS.
 */
 
-#burst-statistics ::-webkit-search-decoration {
+::-webkit-search-decoration {
   -webkit-appearance: none;
 }
 
@@ -370,7 +370,7 @@ Remove the inner padding in Chrome and Safari on macOS.
 2. Change font properties to `inherit` in Safari.
 */
 
-#burst-statistics ::-webkit-file-upload-button {
+::-webkit-file-upload-button {
   -webkit-appearance: button; /* 1 */
   font: inherit; /* 2 */
 }
@@ -379,7 +379,7 @@ Remove the inner padding in Chrome and Safari on macOS.
 Add the correct display in Chrome and Safari.
 */
 
-#burst-statistics summary {
+summary {
   display: list-item;
 }
 
@@ -387,34 +387,34 @@ Add the correct display in Chrome and Safari.
 Removes the default spacing and border for appropriate elements.
 */
 
-#burst-statistics blockquote,
-#burst-statistics dl,
-#burst-statistics dd,
-#burst-statistics h1,
-#burst-statistics h2,
-#burst-statistics h3,
-#burst-statistics h4,
-#burst-statistics h5,
-#burst-statistics h6,
-#burst-statistics hr,
-#burst-statistics figure,
-#burst-statistics p,
-#burst-statistics pre {
+blockquote,
+dl,
+dd,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+hr,
+figure,
+p,
+pre {
   margin: 0;
 }
 
-#burst-statistics fieldset {
+fieldset {
   margin: 0;
   padding: 0;
 }
 
-#burst-statistics legend {
+legend {
   padding: 0;
 }
 
-#burst-statistics ol,
-#burst-statistics ul,
-#burst-statistics menu {
+ol,
+ul,
+menu {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -423,7 +423,7 @@ Removes the default spacing and border for appropriate elements.
 /*
 Reset default styling for dialogs.
 */
-#burst-statistics dialog {
+dialog {
   padding: 0;
 }
 
@@ -431,7 +431,7 @@ Reset default styling for dialogs.
 Prevent resizing textareas horizontally by default.
 */
 
-#burst-statistics textarea {
+textarea {
   resize: vertical;
 }
 
@@ -440,13 +440,13 @@ Prevent resizing textareas horizontally by default.
 2. Set the default placeholder color to the user's configured gray 400 color.
 */
 
-#burst-statistics input::-moz-placeholder, #burst-statistics textarea::-moz-placeholder {
+input::-moz-placeholder, textarea::-moz-placeholder {
   opacity: 1; /* 1 */
   color: #ced4da; /* 2 */
 }
 
-#burst-statistics input::placeholder,
-#burst-statistics textarea::placeholder {
+input::placeholder,
+textarea::placeholder {
   opacity: 1; /* 1 */
   color: #ced4da; /* 2 */
 }
@@ -455,15 +455,15 @@ Prevent resizing textareas horizontally by default.
 Set the default cursor for buttons.
 */
 
-#burst-statistics button,
-#burst-statistics [role="button"] {
+button,
+[role="button"] {
   cursor: pointer;
 }
 
 /*
 Make sure disabled buttons don't get the pointer cursor.
 */
-#burst-statistics :disabled {
+:disabled {
   cursor: default;
 }
 
@@ -473,14 +473,14 @@ Make sure disabled buttons don't get the pointer cursor.
    This can trigger a poorly considered lint error in some tools but is included by design.
 */
 
-#burst-statistics img,
-#burst-statistics svg,
-#burst-statistics video,
-#burst-statistics canvas,
-#burst-statistics audio,
-#burst-statistics iframe,
-#burst-statistics embed,
-#burst-statistics object {
+img,
+svg,
+video,
+canvas,
+audio,
+iframe,
+embed,
+object {
   display: block; /* 1 */
   vertical-align: middle; /* 2 */
 }
@@ -489,14 +489,14 @@ Make sure disabled buttons don't get the pointer cursor.
 Constrain images and videos to the parent width and preserve their intrinsic aspect ratio. (https://github.com/mozdevs/cssremedy/issues/14)
 */
 
-#burst-statistics img,
-#burst-statistics video {
+img,
+video {
   max-width: 100%;
   height: auto;
 }
 
 /* Make elements with the HTML hidden attribute stay hidden by default */
-#burst-statistics [hidden]:where(:not([hidden="until-found"])) {
+[hidden]:where(:not([hidden="until-found"])) {
   display: none;
 }
 	/* Still need to override this so toast svgs pickup the right colors. */
@@ -540,7 +540,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 	}
 
 	/* Burst base styles */
-	#burst-statistics .burst {
+	.burst {
   margin: 0px;
   margin-left: -1.25rem;
   box-sizing: border-box;
@@ -552,179 +552,179 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 }
 	@media not all and (min-width: 768px) {
 
-  #burst-statistics .burst {
+  .burst {
     margin-left: -9px;
   }
 }
-	#burst-statistics .burst {;
+	.burst {;
 		font-variant-numeric: tabular-nums;
 
-		#burst-statistics *,
-		#burst-statistics *::before,
-		#burst-statistics *::after {
+		*,
+		*::before,
+		*::after {
 			/* Tailwind does not have box-sizing: inherit class */
 			box-sizing: inherit;
 		}
 
-		#burst-statistics body, #burst-statistics h1, #burst-statistics h2, #burst-statistics h3, #burst-statistics h4, #burst-statistics h5, #burst-statistics h6, #burst-statistics p, #burst-statistics ol, #burst-statistics ul {
+		body, h1, h2, h3, h4, h5, h6, p, ol, ul {
     margin: 0px;
   }
 
-		#burst-statistics body, #burst-statistics h1, #burst-statistics h2, #burst-statistics h3, #burst-statistics h4, #burst-statistics h5, #burst-statistics h6, #burst-statistics p, #burst-statistics ol, #burst-statistics ul {
+		body, h1, h2, h3, h4, h5, h6, p, ol, ul {
     padding: 0px;
   }
 
-		#burst-statistics body, #burst-statistics h1, #burst-statistics h2, #burst-statistics h3, #burst-statistics h4, #burst-statistics h5, #burst-statistics h6, #burst-statistics p, #burst-statistics ol, #burst-statistics ul {
+		body, h1, h2, h3, h4, h5, h6, p, ol, ul {
     font-size: 0.8125rem;
     line-height: 1.25rem;
   }
 
-		#burst-statistics img {
+		img {
     height: auto;
   }
 
-		#burst-statistics img {
+		img {
     max-width: 100%;
   }
 
-		#burst-statistics h1, #burst-statistics h2, #burst-statistics h3, #burst-statistics h4, #burst-statistics h5, #burst-statistics h6 {
+		h1, h2, h3, h4, h5, h6 {
     line-height: 1.5;
   }
 
-		#burst-statistics h1, #burst-statistics h2, #burst-statistics h3, #burst-statistics h4, #burst-statistics h5, #burst-statistics h6 {
+		h1, h2, h3, h4, h5, h6 {
     color: #1a1a1ae5;
   }
 
-		#burst-statistics .burst-h0 {
+		.burst-h0 {
     font-size: 3.5rem;
     line-height: 1;
   }
 
-		#burst-statistics .burst-h0 {
+		.burst-h0 {
     font-weight: 700;
   }
 
-		#burst-statistics .burst-h0 {
+		.burst-h0 {
     letter-spacing: 0.025rem;
   }
 
-		#burst-statistics h1, #burst-statistics .burst-h1 {
+		h1, .burst-h1 {
     font-size: 1.875rem;
     line-height: 2.25rem;
   }
 
-		#burst-statistics h1, #burst-statistics .burst-h1 {
+		h1, .burst-h1 {
     font-weight: 500;
   }
 
-		#burst-statistics h1, #burst-statistics .burst-h1 {
+		h1, .burst-h1 {
     line-height: 1.5;
   }
 
-		#burst-statistics h1, #burst-statistics .burst-h1 {
+		h1, .burst-h1 {
     letter-spacing: 0.025rem;
   }
 
-		#burst-statistics h2, #burst-statistics .burst-h2 {
+		h2, .burst-h2 {
     font-size: 1.25rem;
     line-height: 1.75rem;
   }
 
-		#burst-statistics h2, #burst-statistics .burst-h2 {
+		h2, .burst-h2 {
     font-weight: 700;
   }
 
-		#burst-statistics h2, #burst-statistics .burst-h2 {
+		h2, .burst-h2 {
     letter-spacing: 0.025rem;
   }
 
-		#burst-statistics h3, #burst-statistics .burst-h3 {
+		h3, .burst-h3 {
     font-size: 1.125rem;
     line-height: 1.625rem;
   }
 
-		#burst-statistics h3, #burst-statistics .burst-h3 {
+		h3, .burst-h3 {
     font-weight: 600;
   }
 
-		#burst-statistics h3, #burst-statistics .burst-h3 {
+		h3, .burst-h3 {
     letter-spacing: 0.0125rem;
   }
 
-		#burst-statistics h4, #burst-statistics .burst-h4 {
+		h4, .burst-h4 {
     font-size: 1rem;
     line-height: 1.625rem;
   }
 
-		#burst-statistics h4, #burst-statistics .burst-h4 {
+		h4, .burst-h4 {
     font-weight: 600;
   }
 
-		#burst-statistics h4, #burst-statistics .burst-h4 {
+		h4, .burst-h4 {
     letter-spacing: 0.0125rem;
   }
 
-		#burst-statistics h5, #burst-statistics .burst-h5 {
+		h5, .burst-h5 {
     font-size: 0.8125rem;
     line-height: 1.25rem;
   }
 
-		#burst-statistics h5, #burst-statistics .burst-h5 {
+		h5, .burst-h5 {
     font-weight: 600;
   }
 
-		#burst-statistics h5, #burst-statistics .burst-h5 {
+		h5, .burst-h5 {
     letter-spacing: 0.1px;
   }
 
-		#burst-statistics h6, #burst-statistics .burst-h6 {
+		h6, .burst-h6 {
     font-size: 0.8125rem;
     line-height: 1.25rem;
   }
 
-		#burst-statistics h6, #burst-statistics .burst-h6 {
+		h6, .burst-h6 {
     font-weight: 400;
   }
 
-		#burst-statistics h6, #burst-statistics .burst-h6 {
+		h6, .burst-h6 {
     letter-spacing: 0.1px;
   }
 
-		#burst-statistics p {
+		p {
     font-size: 0.8125rem;
     line-height: 1.25rem;
   }
 
-		#burst-statistics p {
+		p {
     font-weight: 400;
   }
 
-		#burst-statistics p {
+		p {
     line-height: 1.5;
   }
 
-		#burst-statistics p {
+		p {
     color: #1a1a1ae5;
   }
 
-		#burst-statistics a {
+		a {
     font-size: 0.8125rem;
     line-height: 1.25rem;
   }
 
-		#burst-statistics .burst-notice-hook-element {
+		.burst-notice-hook-element {
     display: none !important;
   }
 
-		#burst-statistics .burst-divider {
+		.burst-divider {
     height: 1.3rem;
   }
 
-		#burst-statistics .burst-divider {
+		.burst-divider {
     width: 1px;
   }
 
-		#burst-statistics .burst-divider {
+		.burst-divider {
     --tw-bg-opacity: 1;
     background-color: rgb(204 204 204 / var(--tw-bg-opacity, 1));
   }
@@ -733,13 +733,13 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 	/* Responsive adjustment */
 
 	/* Hide nags from other plugins */
-	#burst-statistics .\!error {
+	.\!error {
 	}
-	#burst-statistics .error, #burst-statistics .notice, #burst-statistics .update-nag, #burst-statistics .notice-info {
-		#burst-statistics &:not(.burst-review) {
+	.error, .notice, .update-nag, .notice-info {
+		&:not(.burst-review) {
     display: none !important;
   }
-		#burst-statistics &.burst-review {
+		&.burst-review {
 			margin: var(--rsp-grid-gap);
 		}
 	}
@@ -4310,87 +4310,87 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 @tailwind components;
 
-#burst-statistics .\!container {
+.\!container {
   width: 100% !important;
 }
 
-#burst-statistics .container {
+.container {
   width: 100%;
 }
 
 @media (min-width: 480px) {
 
-  #burst-statistics .\!container {
+  .\!container {
     max-width: 480px !important;
   }
 
-  #burst-statistics .container {
+  .container {
     max-width: 480px;
   }
 }
 
 @media (min-width: 576px) {
 
-  #burst-statistics .\!container {
+  .\!container {
     max-width: 576px !important;
   }
 
-  #burst-statistics .container {
+  .container {
     max-width: 576px;
   }
 }
 
 @media (min-width: 640px) {
 
-  #burst-statistics .\!container {
+  .\!container {
     max-width: 640px !important;
   }
 
-  #burst-statistics .container {
+  .container {
     max-width: 640px;
   }
 }
 
 @media (min-width: 768px) {
 
-  #burst-statistics .\!container {
+  .\!container {
     max-width: 768px !important;
   }
 
-  #burst-statistics .container {
+  .container {
     max-width: 768px;
   }
 }
 
 @media (min-width: 1024px) {
 
-  #burst-statistics .\!container {
+  .\!container {
     max-width: 1024px !important;
   }
 
-  #burst-statistics .container {
+  .container {
     max-width: 1024px;
   }
 }
 
 @media (min-width: 1280px) {
 
-  #burst-statistics .\!container {
+  .\!container {
     max-width: 1280px !important;
   }
 
-  #burst-statistics .container {
+  .container {
     max-width: 1280px;
   }
 }
 
 @media (min-width: 1600px) {
 
-  #burst-statistics .\!container {
+  .\!container {
     max-width: 1600px !important;
   }
 
-  #burst-statistics .container {
+  .container {
     max-width: 1600px;
   }
 }
@@ -4422,7 +4422,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__bounce-enter--top-left, #burst-statistics .Toastify__bounce-enter--bottom-left {
+.Toastify__bounce-enter--top-left, .Toastify__bounce-enter--bottom-left {
   animation: toastBounceInLeft 1s both;
 }
 
@@ -4453,7 +4453,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__bounce-enter--top-right, #burst-statistics .Toastify__bounce-enter--bottom-right {
+.Toastify__bounce-enter--top-right, .Toastify__bounce-enter--bottom-right {
   animation: toastBounceInRight 1s both;
 }
 
@@ -4483,7 +4483,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__bounce-enter--top-center {
+.Toastify__bounce-enter--top-center {
   animation: toastBounceInDown 1s both;
 }
 
@@ -4513,7 +4513,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__bounce-enter--bottom-center {
+.Toastify__bounce-enter--bottom-center {
   animation: toastBounceInUp 1s both;
 }
 
@@ -4530,7 +4530,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__bounce-exit--top-left, #burst-statistics .Toastify__bounce-exit--bottom-left {
+.Toastify__bounce-exit--top-left, .Toastify__bounce-exit--bottom-left {
   animation: toastBounceOutLeft 1s both;
 }
 
@@ -4547,7 +4547,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__bounce-exit--top-right, #burst-statistics .Toastify__bounce-exit--bottom-right {
+.Toastify__bounce-exit--top-right, .Toastify__bounce-exit--bottom-right {
   animation: toastBounceOutRight 1s both;
 }
 
@@ -4573,7 +4573,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__bounce-exit--top-center {
+.Toastify__bounce-exit--top-center {
   animation: toastBounceOutUp 1s both;
 }
 
@@ -4599,7 +4599,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__bounce-exit--bottom-center {
+.Toastify__bounce-exit--bottom-center {
   animation: toastBounceOutDown 1s both;
 }
 
@@ -4630,7 +4630,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__flip-enter {
+.Toastify__flip-enter {
   animation: toastFlipIn 0.75s both;
 }
 
@@ -4651,7 +4651,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__flip-exit {
+.Toastify__flip-exit {
   animation: toastFlipOut 0.75s both;
 }
 
@@ -4667,7 +4667,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__slide-enter--top-left, #burst-statistics .Toastify__slide-enter--bottom-left {
+.Toastify__slide-enter--top-left, .Toastify__slide-enter--bottom-left {
   animation: toastSlideInLeft 0.75s both;
 }
 
@@ -4683,7 +4683,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__slide-enter--top-right, #burst-statistics .Toastify__slide-enter--bottom-right {
+.Toastify__slide-enter--top-right, .Toastify__slide-enter--bottom-right {
   animation: toastSlideInRight 0.75s both;
 }
 
@@ -4699,7 +4699,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__slide-enter--top-center {
+.Toastify__slide-enter--top-center {
   animation: toastSlideInDown 0.75s both;
 }
 
@@ -4715,7 +4715,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__slide-enter--bottom-center {
+.Toastify__slide-enter--bottom-center {
   animation: toastSlideInUp 0.75s both;
 }
 
@@ -4731,7 +4731,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__slide-exit--top-left, #burst-statistics .Toastify__slide-exit--bottom-left {
+.Toastify__slide-exit--top-left, .Toastify__slide-exit--bottom-left {
   animation: toastSlideOutLeft 0.75s both;
 }
 
@@ -4747,7 +4747,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__slide-exit--top-right, #burst-statistics .Toastify__slide-exit--bottom-right {
+.Toastify__slide-exit--top-right, .Toastify__slide-exit--bottom-right {
   animation: toastSlideOutRight 0.75s both;
 }
 
@@ -4763,7 +4763,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__slide-exit--top-center {
+.Toastify__slide-exit--top-center {
   animation: toastSlideOutUp 0.75s both;
 }
 
@@ -4779,7 +4779,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__slide-exit--bottom-center {
+.Toastify__slide-exit--bottom-center {
   animation: toastSlideOutDown 0.75s both;
 }
 
@@ -4794,7 +4794,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__spin {
+.Toastify__spin {
   animation: toastSpin 1s linear infinite;
 }
 
@@ -4810,7 +4810,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__zoom-enter {
+.Toastify__zoom-enter {
   animation: toastZoomIn 0.5s ease both;
 }
 
@@ -4830,11 +4830,11 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__zoom-exit {
+.Toastify__zoom-exit {
   animation: toastZoomOut 0.5s ease both;
 }
 
-#burst-statistics .Toastify__progress-bar {
+.Toastify__progress-bar {
   position: absolute;
   bottom: 0px;
   left: 0px;
@@ -4845,7 +4845,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   opacity: 0.7;
 }
 
-#burst-statistics .Toastify__toast-container {
+.Toastify__toast-container {
   position: fixed;
   z-index: 9999;
   box-sizing: border-box;
@@ -4856,7 +4856,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 @media not all and (min-width: 480px) {
 
-  #burst-statistics .Toastify__toast-container {
+  .Toastify__toast-container {
     left: 0px;
     margin: 0px;
     width: 100vw;
@@ -4864,25 +4864,25 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__toast-container {
+.Toastify__toast-container {
   transform: translate3d(0, 0, 9999px);
 }
 
-#burst-statistics .Toastify__toast-container--top-left {
+.Toastify__toast-container--top-left {
   top: 1rem;
   left: 1rem;
 }
 
 @media not all and (min-width: 480px) {
 
-  #burst-statistics .Toastify__toast-container--top-left {
+  .Toastify__toast-container--top-left {
     top: 0px;
     --tw-translate-x: 0px;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 }
 
-#burst-statistics .Toastify__toast-container--top-center {
+.Toastify__toast-container--top-center {
   top: 3rem;
   left: 50%;
   --tw-translate-x: -50%;
@@ -4891,42 +4891,42 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 @media not all and (min-width: 480px) {
 
-  #burst-statistics .Toastify__toast-container--top-center {
+  .Toastify__toast-container--top-center {
     top: 0px;
     --tw-translate-x: 0px;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 }
 
-#burst-statistics .Toastify__toast-container--top-right {
+.Toastify__toast-container--top-right {
   top: 1rem;
   right: 1rem;
 }
 
 @media not all and (min-width: 480px) {
 
-  #burst-statistics .Toastify__toast-container--top-right {
+  .Toastify__toast-container--top-right {
     top: 0px;
     --tw-translate-x: 0px;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 }
 
-#burst-statistics .Toastify__toast-container--bottom-left {
+.Toastify__toast-container--bottom-left {
   bottom: 1rem;
   left: 1rem;
 }
 
 @media not all and (min-width: 480px) {
 
-  #burst-statistics .Toastify__toast-container--bottom-left {
+  .Toastify__toast-container--bottom-left {
     bottom: 0px;
     --tw-translate-x: 0px;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 }
 
-#burst-statistics .Toastify__toast-container--bottom-center {
+.Toastify__toast-container--bottom-center {
   bottom: 1rem;
   left: 50%;
   --tw-translate-x: -50%;
@@ -4935,33 +4935,33 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 @media not all and (min-width: 480px) {
 
-  #burst-statistics .Toastify__toast-container--bottom-center {
+  .Toastify__toast-container--bottom-center {
     bottom: 0px;
     --tw-translate-x: 0px;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 }
 
-#burst-statistics .Toastify__toast-container--bottom-right {
+.Toastify__toast-container--bottom-right {
   bottom: 1rem;
   right: 1rem;
 }
 
 @media not all and (min-width: 480px) {
 
-  #burst-statistics .Toastify__toast-container--bottom-right {
+  .Toastify__toast-container--bottom-right {
     bottom: 0px;
     --tw-translate-x: 0px;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 
-  #burst-statistics .Toastify__toast-container--rtl {
+  .Toastify__toast-container--rtl {
     right: 0px;
     left: auto;
   }
 }
 
-#burst-statistics .Toastify__close-button {
+.Toastify__close-button {
   cursor: pointer;
   align-self: flex-start;
   border-style: none;
@@ -4976,22 +4976,22 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-#burst-statistics .Toastify__close-button:hover, #burst-statistics .Toastify__close-button:focus {
+.Toastify__close-button:hover, .Toastify__close-button:focus {
   opacity: 1;
 }
 
-#burst-statistics .Toastify__close-button > svg {
+.Toastify__close-button > svg {
   height: 1rem;
   width: 14px;
   fill: currentColor;
 }
 
-#burst-statistics .Toastify__close-button--light {
+.Toastify__close-button--light {
   color: #1a1a1ae5;
   opacity: 0.3;
 }
 
-#burst-statistics .Toastify__toast {
+.Toastify__toast {
   position: relative;
   z-index: 0;
   margin-bottom: 1rem;
@@ -5014,25 +5014,25 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 @media not all and (min-width: 480px) {
 
-  #burst-statistics .Toastify__toast {
+  .Toastify__toast {
     margin-bottom: 0px;
     border-radius: 0px;
   }
 }
 
-#burst-statistics .Toastify__toast {
+.Toastify__toast {
   direction: ltr;
 }
 
-#burst-statistics .Toastify__toast--rtl {
+.Toastify__toast--rtl {
   direction: rtl;
 }
 
-#burst-statistics .Toastify__toast--close-on-click {
+.Toastify__toast--close-on-click {
   cursor: pointer;
 }
 
-#burst-statistics .Toastify__toast-body {
+.Toastify__toast-body {
   margin-top: auto;
   margin-bottom: auto;
   display: flex;
@@ -5041,121 +5041,121 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   padding: 6px;
 }
 
-#burst-statistics .Toastify__toast-body > div:last-child {
+.Toastify__toast-body > div:last-child {
   flex: 1 1 0%;
   overflow-wrap: break-word;
 }
 
-#burst-statistics .Toastify__toast-icon {
+.Toastify__toast-icon {
   margin-inline-end: 10px;
   display: flex;
   width: 1.25rem;
   flex-shrink: 0;
 }
 
-#burst-statistics .Toastify--animate {
+.Toastify--animate {
   animation-duration: 700ms;
   animation-fill-mode: both;
 }
 
-#burst-statistics .Toastify--animate-icon {
+.Toastify--animate-icon {
   animation-duration: 300ms;
   animation-fill-mode: both;
 }
 
-#burst-statistics .Toastify__toast-theme--dark {
+.Toastify__toast-theme--dark {
   --tw-bg-opacity: 1;
   background-color: rgb(51 51 51 / var(--tw-bg-opacity, 1));
   color: #FFFFFFE5;
 }
 
-#burst-statistics .Toastify__toast-theme--light {
+.Toastify__toast-theme--light {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
   color: #1A1A1AE5;
 }
 
-#burst-statistics .Toastify__toast-theme--colored.Toastify__toast--default {
+.Toastify__toast-theme--colored.Toastify__toast--default {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
   color: #1A1A1AE5;
 }
 
-#burst-statistics .Toastify__toast-theme--colored.Toastify__toast--info {
+.Toastify__toast-theme--colored.Toastify__toast--info {
   --tw-bg-opacity: 1;
   background-color: rgb(255 218 74 / var(--tw-bg-opacity, 1));
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
-#burst-statistics .Toastify__toast-theme--colored.Toastify__toast--success {
+.Toastify__toast-theme--colored.Toastify__toast--success {
   --tw-bg-opacity: 1;
   background-color: rgb(43 129 51 / var(--tw-bg-opacity, 1));
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
-#burst-statistics .Toastify__toast-theme--colored.Toastify__toast--warning {
+.Toastify__toast-theme--colored.Toastify__toast--warning {
   --tw-bg-opacity: 1;
   background-color: rgb(239 138 9 / var(--tw-bg-opacity, 1));
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
-#burst-statistics .Toastify__toast-theme--colored.Toastify__toast--error {
+.Toastify__toast-theme--colored.Toastify__toast--error {
   --tw-bg-opacity: 1;
   background-color: rgb(198 39 59 / var(--tw-bg-opacity, 1));
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
-#burst-statistics .Toastify__progress-bar-theme--light {
+.Toastify__progress-bar-theme--light {
   background-image: linear-gradient(to right, #4cd964, #5ac8fa, #007aff, #34aadc, #5856d6, #ff2d55);
 }
 
-#burst-statistics .Toastify__progress-bar-theme--dark {
+.Toastify__progress-bar-theme--dark {
   --tw-bg-opacity: 1;
   background-color: rgb(187 134 252 / var(--tw-bg-opacity, 1));
 }
 
-#burst-statistics .Toastify__progress-bar--info {
+.Toastify__progress-bar--info {
   background-color: var(--toastify-color-info);
 }
 
-#burst-statistics .Toastify__progress-bar--success {
+.Toastify__progress-bar--success {
   background-color: var(--toastify-color-success);
 }
 
-#burst-statistics .Toastify__progress-bar--warning {
+.Toastify__progress-bar--warning {
   background-color: var(--toastify-color-warning);
 }
 
-#burst-statistics .Toastify__progress-bar--error {
+.Toastify__progress-bar--error {
   background-color: var(--toastify-color-error);
 }
 
-#burst-statistics .Toastify__progress-bar-theme--colored.Toastify__progress-bar--info,
-		#burst-statistics .Toastify__progress-bar-theme--colored.Toastify__progress-bar--success,
-		#burst-statistics .Toastify__progress-bar-theme--colored.Toastify__progress-bar--warning,
-		#burst-statistics .Toastify__progress-bar-theme--colored.Toastify__progress-bar--error {
+.Toastify__progress-bar-theme--colored.Toastify__progress-bar--info,
+		.Toastify__progress-bar-theme--colored.Toastify__progress-bar--success,
+		.Toastify__progress-bar-theme--colored.Toastify__progress-bar--warning,
+		.Toastify__progress-bar-theme--colored.Toastify__progress-bar--error {
   background-color: rgba(255, 255, 255, 0.7);
 }
 
-#burst-statistics .Toastify__progress-bar--animated {
+.Toastify__progress-bar--animated {
   animation: Toastify__trackProgress linear 1 forwards;
 }
 
-#burst-statistics .Toastify__progress-bar--controlled {
+.Toastify__progress-bar--controlled {
   transition: transform 0.2s;
 }
 
-#burst-statistics .Toastify__progress-bar--rtl {
+.Toastify__progress-bar--rtl {
   right: 0px;
   transform-origin: right;
   left: initial;
 }
 
-#burst-statistics .Toastify__spinner {
+.Toastify__spinner {
   box-sizing: border-box;
   height: 1.25rem;
   width: 1.25rem;
@@ -5172,7 +5172,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   }
 }
 
-#burst-statistics .Toastify__spinner {
+.Toastify__spinner {
   animation: toastSpin 1s linear infinite;
   border-radius: 9999px;
   border-width: 2px;
@@ -5183,9 +5183,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 /* Primary */
 
-#burst-statistics a.burst-button--primary,
-	#burst-statistics button.burst-button--primary,
-	#burst-statistics input.burst-button--primary {
+a.burst-button--primary,
+	button.burst-button--primary,
+	input.burst-button--primary {
   border-width: 1px;
   --tw-border-opacity: 1;
   border-color: rgb(34 113 177 / var(--tw-border-opacity, 1));
@@ -5195,9 +5195,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
-#burst-statistics a.burst-button--primary:hover,
-	#burst-statistics button.burst-button--primary:hover,
-	#burst-statistics input.burst-button--primary:hover {
+a.burst-button--primary:hover,
+	button.burst-button--primary:hover,
+	input.burst-button--primary:hover {
   --tw-border-opacity: 1;
   border-color: rgb(34 113 177 / var(--tw-border-opacity, 1));
   --tw-bg-opacity: 1;
@@ -5211,9 +5211,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 /* Secondary */
 
-#burst-statistics a.burst-button--secondary,
-	#burst-statistics button.burst-button--secondary,
-	#burst-statistics input.burst-button--secondary {
+a.burst-button--secondary,
+	button.burst-button--secondary,
+	input.burst-button--secondary {
   border-width: 1px;
   --tw-border-opacity: 1;
   border-color: rgb(206 212 218 / var(--tw-border-opacity, 1));
@@ -5222,9 +5222,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   color: #454552e5;
 }
 
-#burst-statistics a.burst-button--secondary:hover,
-	#burst-statistics button.burst-button--secondary:hover,
-	#burst-statistics input.burst-button--secondary:hover {
+a.burst-button--secondary:hover,
+	button.burst-button--secondary:hover,
+	input.burst-button--secondary:hover {
   --tw-border-opacity: 1;
   border-color: rgb(206 212 218 / var(--tw-border-opacity, 1));
   --tw-bg-opacity: 1;
@@ -5237,9 +5237,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 /* Tertiary (red button) */
 
-#burst-statistics a.burst-button--tertiary,
-	#burst-statistics button.burst-button--tertiary,
-	#burst-statistics input.burst-button--tertiary {
+a.burst-button--tertiary,
+	button.burst-button--tertiary,
+	input.burst-button--tertiary {
   border-width: 1px;
   --tw-border-opacity: 1;
   border-color: rgb(198 39 59 / var(--tw-border-opacity, 1));
@@ -5248,9 +5248,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   color: #ffffffe5;
 }
 
-#burst-statistics a.burst-button--tertiary:hover,
-	#burst-statistics button.burst-button--tertiary:hover,
-	#burst-statistics input.burst-button--tertiary:hover {
+a.burst-button--tertiary:hover,
+	button.burst-button--tertiary:hover,
+	input.burst-button--tertiary:hover {
   --tw-border-opacity: 1;
   border-color: rgb(198 39 59 / var(--tw-border-opacity, 1));
   --tw-bg-opacity: 1;
@@ -5264,9 +5264,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 /* Pro */
 
-#burst-statistics a.burst-button--pro,
-	#burst-statistics button.burst-button--pro,
-	#burst-statistics input.burst-button--pro {
+a.burst-button--pro,
+	button.burst-button--pro,
+	input.burst-button--pro {
   border-width: 1px;
   --tw-border-opacity: 1;
   border-color: rgb(30 126 30 / var(--tw-border-opacity, 1));
@@ -5275,9 +5275,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   color: #ffffffe5;
 }
 
-#burst-statistics a.burst-button--pro:hover,
-	#burst-statistics button.burst-button--pro:hover,
-	#burst-statistics input.burst-button--pro:hover {
+a.burst-button--pro:hover,
+	button.burst-button--pro:hover,
+	input.burst-button--pro:hover {
   --tw-border-opacity: 1;
   border-color: rgb(26 108 26 / var(--tw-border-opacity, 1));
   --tw-bg-opacity: 1;
@@ -5291,9 +5291,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 /* Base button preset */
 
-#burst-statistics a.burst-button,
-	#burst-statistics button.burst-button,
-	#burst-statistics input.burst-button {
+a.burst-button,
+	button.burst-button,
+	input.burst-button {
   margin: 0px;
   display: flex;
   min-height: 2rem;
@@ -5317,7 +5317,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   transition-timing-function: ease;
 }
 
-#burst-statistics .burst-button-icon {
+.burst-button-icon {
   margin: 0.375rem;
   display: inline-flex;
   height: 1rem;
@@ -5338,36 +5338,36 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-#burst-statistics .burst-button-icon:hover {
+.burst-button-icon:hover {
   margin: 0px;
   padding: 0.625rem;
 }
 
-#burst-statistics .burst-button-icon--delete:hover {
+.burst-button-icon--delete:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(251 235 237 / var(--tw-bg-opacity, 1));
 }
 
-#burst-statistics .burst-button-icon--delete:hover svg path {
+.burst-button-icon--delete:hover svg path {
   fill: #c6273b;
 }
 
-#burst-statistics .rdrCalendarWrapper {
+.rdrCalendarWrapper {
   font-size: 0.875rem;
   line-height: 1.375rem;
   color: #1a1a1ae5;
 }
 
-#burst-statistics .rdrDateDisplayWrapper {
+.rdrDateDisplayWrapper {
   --tw-bg-opacity: 1;
   background-color: rgb(236 244 237 / var(--tw-bg-opacity, 1));
 }
 
-#burst-statistics .rdrDateDisplay {
+.rdrDateDisplay {
   margin: 0.75rem;
 }
 
-#burst-statistics .rdrDateDisplayItem {
+.rdrDateDisplayItem {
   border-radius: 0.25rem;
   border-width: 1px;
   border-color: transparent;
@@ -5378,7 +5378,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 
-#burst-statistics .rdrDateDisplayItem input {
+.rdrDateDisplayItem input {
   height: 2.5em;
   width: 100%;
   cursor: pointer;
@@ -5389,27 +5389,27 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   color: rgb(132 144 149 / var(--tw-text-opacity, 1));
 }
 
-#burst-statistics .rdrDateDisplayItemActive {
+.rdrDateDisplayItemActive {
   border-color: currentColor;
 }
 
-#burst-statistics .rdrDateDisplayItemActive input {
+.rdrDateDisplayItemActive input {
   --tw-text-opacity: 1;
   color: rgb(125 136 141 / var(--tw-text-opacity, 1));
 }
 
-#burst-statistics .rdrMonthAndYearWrapper {
+.rdrMonthAndYearWrapper {
   display: flex;
   height: 60px;
   align-items: center;
   padding-top: 0.375rem;
 }
 
-#burst-statistics .rdrMonthAndYearPickers {
+.rdrMonthAndYearPickers {
   font-weight: 600;
 }
 
-#burst-statistics .rdrMonthAndYearPickers select {
+.rdrMonthAndYearPickers select {
   cursor: pointer;
   -webkit-appearance: none;
      -moz-appearance: none;
@@ -5425,18 +5425,18 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 		background: url("data:image/svg+xml;utf8,<svg width='9px' height='6px' viewBox='0 0 9 6' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><g id='Artboard' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' transform='translate(-636.000000, -171.000000)' fill-opacity='0.368716033'><g id='input' transform='translate(172.000000, 37.000000)' fill='%230E242F' fill-rule='nonzero'><g id='Group-9' transform='translate(323.000000, 127.000000)'><path d='M142.280245,7.23952813 C141.987305,6.92353472 141.512432,6.92361662 141.219585,7.23971106 C140.926739,7.5558055 140.926815,8.06821394 141.219755,8.38420735 L145.498801,13 L149.780245,8.38162071 C150.073185,8.0656273 150.073261,7.55321886 149.780415,7.23712442 C149.487568,6.92102998 149.012695,6.92094808 148.719755,7.23694149 L145.498801,10.7113732 L142.280245,7.23952813 Z' id='arrow'></path></g></g></g></svg>") no-repeat right 8px center;
 }
 
-#burst-statistics .rdrMonthAndYearPickers select:hover {
+.rdrMonthAndYearPickers select:hover {
   background-color: rgb(21 22 21 / 0.1);
 }
 
-#burst-statistics .rdrMonthPicker, #burst-statistics .rdrYearPicker {
+.rdrMonthPicker, .rdrYearPicker {
   margin-top: 0px;
   margin-bottom: 0px;
   margin-left: 0.375rem;
   margin-right: 0.375rem;
 }
 
-#burst-statistics .rdrNextPrevButton {
+.rdrNextPrevButton {
   margin-left: 0.75rem;
   margin-right: 0.75rem;
   display: block;
@@ -5449,12 +5449,12 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   padding: 0px;
 }
 
-#burst-statistics .rdrNextPrevButton:hover {
+.rdrNextPrevButton:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(225 231 240 / var(--tw-bg-opacity, 1));
 }
 
-#burst-statistics .rdrNextPrevButton i {
+.rdrNextPrevButton i {
   margin: auto;
   display: block;
   height: 0px;
@@ -5465,45 +5465,45 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 		transform: translate(-3px, 0);
 }
 
-#burst-statistics .rdrPprevButton i {
+.rdrPprevButton i {
 		border-width: 4px 6px 4px 4px;
 		border-color: transparent rgb(52,73,94) transparent transparent;
 	}
 
-#burst-statistics .rdrNextButton i {
+.rdrNextButton i {
   margin-left: 0.5rem;
 		border-width: 4px 4px 4px 6px;
 		border-color: transparent transparent transparent rgb(52,73,94);
 		transform: translate(3px, 0);
 }
 
-#burst-statistics .rdrWeekDays {
+.rdrWeekDays {
   padding-left: 0.75rem;
   padding-right: 0.75rem;
 }
 
-#burst-statistics .rdrMonth {
+.rdrMonth {
   padding-left: 0.75rem;
   padding-right: 0.75rem;
   padding-bottom: 1.5rem;
 }
 
-#burst-statistics .rdrMonth .rdrWeekDays {
+.rdrMonth .rdrWeekDays {
   padding: 0px;
 }
 
-#burst-statistics .rdrMonths.rdrMonthsVertical .rdrMonth:first-child .rdrMonthName {
+.rdrMonths.rdrMonthsVertical .rdrMonth:first-child .rdrMonthName {
   display: none;
 }
 
-#burst-statistics .rdrWeekDay {
+.rdrWeekDay {
   font-weight: 400;
   line-height: 2.667em;
   --tw-text-opacity: 1;
   color: rgb(132 144 149 / var(--tw-text-opacity, 1));
 }
 
-#burst-statistics .rdrDay {
+.rdrDay {
   -webkit-user-select: none;
      -moz-user-select: none;
           user-select: none;
@@ -5516,12 +5516,12 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 		aspect-ratio: 1.2 / 1;
 }
 
-#burst-statistics .rdrDay:focus {
+.rdrDay:focus {
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
 
-#burst-statistics .rdrDayNumber {
+.rdrDayNumber {
   position: absolute;
   display: flex;
   align-items: center;
@@ -5531,12 +5531,12 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   outline-offset: 2px;
 }
 
-#burst-statistics .rdrDayToday .rdrDayNumber span {
+.rdrDayToday .rdrDayNumber span {
   position: relative;
   font-weight: 500;
 }
 
-#burst-statistics .rdrDayToday .rdrDayNumber span:after {
+.rdrDayToday .rdrDayNumber span:after {
 		content: '';
 		position: absolute;
 		bottom: -4px;
@@ -5549,22 +5549,22 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 		transform: translate(-50%, 0);
 	}
 
-#burst-statistics .rdrDayToday:not(.rdrDayPassive) .rdrInRange ~ .rdrDayNumber span:after,
-	#burst-statistics .rdrDayToday:not(.rdrDayPassive) .rdrStartEdge ~ .rdrDayNumber span:after,
-	#burst-statistics .rdrDayToday:not(.rdrDayPassive) .rdrEndEdge ~ .rdrDayNumber span:after,
-	#burst-statistics .rdrDayToday:not(.rdrDayPassive) .rdrSelected ~ .rdrDayNumber span:after {
+.rdrDayToday:not(.rdrDayPassive) .rdrInRange ~ .rdrDayNumber span:after,
+	.rdrDayToday:not(.rdrDayPassive) .rdrStartEdge ~ .rdrDayNumber span:after,
+	.rdrDayToday:not(.rdrDayPassive) .rdrEndEdge ~ .rdrDayNumber span:after,
+	.rdrDayToday:not(.rdrDayPassive) .rdrSelected ~ .rdrDayNumber span:after {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
 }
 
-#burst-statistics .rdrDay:not(.rdrDayPassive) .rdrInRange ~ .rdrDayNumber span,
-	#burst-statistics .rdrDay:not(.rdrDayPassive) .rdrStartEdge ~ .rdrDayNumber span,
-	#burst-statistics .rdrDay:not(.rdrDayPassive) .rdrEndEdge ~ .rdrDayNumber span,
-	#burst-statistics .rdrDay:not(.rdrDayPassive) .rdrSelected ~ .rdrDayNumber span {
+.rdrDay:not(.rdrDayPassive) .rdrInRange ~ .rdrDayNumber span,
+	.rdrDay:not(.rdrDayPassive) .rdrStartEdge ~ .rdrDayNumber span,
+	.rdrDay:not(.rdrDayPassive) .rdrEndEdge ~ .rdrDayNumber span,
+	.rdrDay:not(.rdrDayPassive) .rdrSelected ~ .rdrDayNumber span {
   color: rgb(255 255 255 / 0.85);
 }
 
-#burst-statistics .rdrSelected, #burst-statistics .rdrInRange, #burst-statistics .rdrStartEdge, #burst-statistics .rdrEndEdge {
+.rdrSelected, .rdrInRange, .rdrStartEdge, .rdrEndEdge {
   position: absolute;
   top: 0.375rem;
   left: 0px;
@@ -5573,65 +5573,65 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   background-color: currentColor;
 }
 
-#burst-statistics .rdrSelected {
+.rdrSelected {
   left: 2px;
   right: 2px;
   border-radius: 0.25rem;
 }
 
-#burst-statistics .rdrStartEdge {
+.rdrStartEdge {
   left: 2px;
   border-top-left-radius: 0.25rem;
   border-bottom-left-radius: 0.25rem;
 }
 
-#burst-statistics .rdrEndEdge {
+.rdrEndEdge {
   right: 2px;
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
 }
 
-#burst-statistics .rdrDayStartOfMonth .rdrInRange,
-	#burst-statistics .rdrDayStartOfWeek .rdrInRange,
-	#burst-statistics .rdrDayStartOfMonth .rdrEndEdge,
-	#burst-statistics .rdrDayStartOfWeek .rdrEndEdge {
+.rdrDayStartOfMonth .rdrInRange,
+	.rdrDayStartOfWeek .rdrInRange,
+	.rdrDayStartOfMonth .rdrEndEdge,
+	.rdrDayStartOfWeek .rdrEndEdge {
   left: 2px;
   border-top-left-radius: 0.25rem;
   border-bottom-left-radius: 0.25rem;
 }
 
-#burst-statistics .rdrDayEndOfMonth .rdrInRange,
-	#burst-statistics .rdrDayEndOfWeek .rdrInRange,
-	#burst-statistics .rdrDayEndOfMonth .rdrStartEdge,
-	#burst-statistics .rdrDayEndOfWeek .rdrStartEdge {
+.rdrDayEndOfMonth .rdrInRange,
+	.rdrDayEndOfWeek .rdrInRange,
+	.rdrDayEndOfMonth .rdrStartEdge,
+	.rdrDayEndOfWeek .rdrStartEdge {
   right: 2px;
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
 }
 
-#burst-statistics .rdrDayStartOfMonth .rdrDayInPreview,
-	#burst-statistics .rdrDayStartOfWeek .rdrDayInPreview,
-	#burst-statistics .rdrDayStartOfMonth .rdrDayEndPreview,
-	#burst-statistics .rdrDayStartOfWeek .rdrDayEndPreview {
+.rdrDayStartOfMonth .rdrDayInPreview,
+	.rdrDayStartOfWeek .rdrDayInPreview,
+	.rdrDayStartOfMonth .rdrDayEndPreview,
+	.rdrDayStartOfWeek .rdrDayEndPreview {
   border-top-left-radius: 0.25rem;
   border-bottom-left-radius: 0.25rem;
   border-left-width: 2px;
 		left: 0;
 }
 
-#burst-statistics .rdrDayEndOfMonth .rdrDayInPreview,
-	#burst-statistics .rdrDayEndOfWeek .rdrDayInPreview,
-	#burst-statistics .rdrDayEndOfMonth .rdrDayStartPreview,
-	#burst-statistics .rdrDayEndOfWeek .rdrDayStartPreview {
+.rdrDayEndOfMonth .rdrDayInPreview,
+	.rdrDayEndOfWeek .rdrDayInPreview,
+	.rdrDayEndOfMonth .rdrDayStartPreview,
+	.rdrDayEndOfWeek .rdrDayStartPreview {
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
   border-right-width: 2px;
 		right: 0;
 }
 
-#burst-statistics .rdrDayStartPreview,
-	#burst-statistics .rdrDayInPreview,
-	#burst-statistics .rdrDayEndPreview {
+.rdrDayStartPreview,
+	.rdrDayInPreview,
+	.rdrDayEndPreview {
   pointer-events: none;
   position: absolute;
   top: 3px;
@@ -5644,7 +5644,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 		border-color: currentColor;
 }
 
-#burst-statistics .rdrDayStartPreview {
+.rdrDayStartPreview {
   left: 0px;
   border-top-left-radius: 0.25rem;
   border-bottom-left-radius: 0.25rem;
@@ -5653,12 +5653,12 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   border-bottom-width: 2px;
 }
 
-#burst-statistics .rdrDayInPreview {
+.rdrDayInPreview {
   border-top-width: 2px;
   border-bottom-width: 2px;
 }
 
-#burst-statistics .rdrDayEndPreview {
+.rdrDayEndPreview {
   right: 0px;
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
@@ -5667,7 +5667,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   border-bottom-width: 2px;
 }
 
-#burst-statistics .rdrDefinedRangesWrapper {
+.rdrDefinedRangesWrapper {
   width: -moz-max-content;
   width: max-content;
   min-width: 160px;
@@ -5680,12 +5680,12 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   line-height: 1.125rem;
 }
 
-#burst-statistics .rdrDefinedRangesWrapper .rdrStaticRangeSelected {
+.rdrDefinedRangesWrapper .rdrStaticRangeSelected {
   font-weight: 600;
   color: currentColor;
 }
 
-#burst-statistics .rdrStaticRange {
+.rdrStaticRange {
   display: block;
   cursor: pointer;
   border-width: 0px;
@@ -5699,13 +5699,13 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   outline-offset: 2px;
 }
 
-#burst-statistics .rdrStaticRange:hover .rdrStaticRangeLabel,
-	#burst-statistics .rdrStaticRange:focus .rdrStaticRangeLabel {
+.rdrStaticRange:hover .rdrStaticRangeLabel,
+	.rdrStaticRange:focus .rdrStaticRangeLabel {
   --tw-bg-opacity: 1;
   background-color: rgb(239 242 247 / var(--tw-bg-opacity, 1));
 }
 
-#burst-statistics .rdrStaticRangeLabel {
+.rdrStaticRangeLabel {
   display: block;
   overflow: hidden;
   padding-left: 1.25rem;
@@ -5719,12 +5719,12 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   outline-offset: 2px;
 }
 
-#burst-statistics .rdrInputRanges {
+.rdrInputRanges {
   padding-top: 0.625rem;
   padding-bottom: 0.625rem;
 }
 
-#burst-statistics .rdrInputRange {
+.rdrInputRange {
   display: flex;
   align-items: center;
   padding-left: 0.625rem;
@@ -5733,7 +5733,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   padding-bottom: 0.375rem;
 }
 
-#burst-statistics .rdrInputRangeInput {
+.rdrInputRangeInput {
   margin-right: 0.625rem;
   height: 30px;
   width: 30px;
@@ -5747,8 +5747,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   color: rgb(108 118 122 / var(--tw-text-opacity, 1));
 }
 
-#burst-statistics .rdrInputRangeInput:focus,
-	#burst-statistics .rdrInputRangeInput:hover {
+.rdrInputRangeInput:focus,
+	.rdrInputRangeInput:hover {
   --tw-border-opacity: 1;
   border-color: rgb(180 191 196 / var(--tw-border-opacity, 1));
   --tw-text-opacity: 1;
@@ -5757,7 +5757,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   outline-offset: 2px;
 }
 
-#burst-statistics .rdrCalendarWrapper:not(.rdrDateRangeWrapper) .rdrDayHovered .rdrDayNumber:after {
+.rdrCalendarWrapper:not(.rdrDateRangeWrapper) .rdrDayHovered .rdrDayNumber:after {
 		content: '';
 		position: absolute;
 		top: -2px;
@@ -5770,47 +5770,47 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 		background-color: transparent;
 	}
 
-#burst-statistics .rdrDayPassive {
+.rdrDayPassive {
   pointer-events: none;
 }
 
-#burst-statistics .rdrDayPassive .rdrDayNumber span {
+.rdrDayPassive .rdrDayNumber span {
   --tw-text-opacity: 1;
   color: rgb(213 220 224 / var(--tw-text-opacity, 1));
 }
 
-#burst-statistics .rdrDayPassive .rdrInRange,
-	#burst-statistics .rdrDayPassive .rdrStartEdge,
-	#burst-statistics .rdrDayPassive .rdrEndEdge,
-	#burst-statistics .rdrDayPassive .rdrSelected,
-	#burst-statistics .rdrDayPassive .rdrDayStartPreview,
-	#burst-statistics .rdrDayPassive .rdrDayInPreview,
-	#burst-statistics .rdrDayPassive .rdrDayEndPreview {
+.rdrDayPassive .rdrInRange,
+	.rdrDayPassive .rdrStartEdge,
+	.rdrDayPassive .rdrEndEdge,
+	.rdrDayPassive .rdrSelected,
+	.rdrDayPassive .rdrDayStartPreview,
+	.rdrDayPassive .rdrDayInPreview,
+	.rdrDayPassive .rdrDayEndPreview {
   display: none;
 }
 
-#burst-statistics .rdrDayDisabled {
+.rdrDayDisabled {
   cursor: not-allowed;
   --tw-bg-opacity: 1;
   background-color: rgb(248 248 248 / var(--tw-bg-opacity, 1));
 }
 
-#burst-statistics .rdrDayDisabled .rdrDayNumber span {
+.rdrDayDisabled .rdrDayNumber span {
   --tw-text-opacity: 1;
   color: rgb(174 185 191 / var(--tw-text-opacity, 1));
 }
 
-#burst-statistics .rdrDayDisabled .rdrInRange,
-	#burst-statistics .rdrDayDisabled .rdrStartEdge,
-	#burst-statistics .rdrDayDisabled .rdrEndEdge,
-	#burst-statistics .rdrDayDisabled .rdrSelected,
-	#burst-statistics .rdrDayDisabled .rdrDayStartPreview,
-	#burst-statistics .rdrDayDisabled .rdrDayInPreview,
-	#burst-statistics .rdrDayDisabled .rdrDayEndPreview {
+.rdrDayDisabled .rdrInRange,
+	.rdrDayDisabled .rdrStartEdge,
+	.rdrDayDisabled .rdrEndEdge,
+	.rdrDayDisabled .rdrSelected,
+	.rdrDayDisabled .rdrDayStartPreview,
+	.rdrDayDisabled .rdrDayInPreview,
+	.rdrDayDisabled .rdrDayEndPreview {
 		filter: grayscale(100%) opacity(60%);
 	}
 
-#burst-statistics .rdrMonthName {
+.rdrMonthName {
   padding: 0.125rem;
   text-align: left;
   font-weight: 600;
@@ -5820,7 +5820,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 /* Calendar container */
 
-#burst-statistics .rdrCalendarWrapper {
+.rdrCalendarWrapper {
   box-sizing: border-box;
   display: inline-flex;
   -webkit-user-select: none;
@@ -5831,90 +5831,90 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
 }
 
-#burst-statistics .rdrDateDisplay {
+.rdrDateDisplay {
   display: flex;
   justify-content: space-between;
 }
 
-#burst-statistics .rdrDateDisplayItem {
+.rdrDateDisplayItem {
   flex: 1 1 0%;
   flex-basis: 0px;
   text-align: center;
   color: inherit;
 }
 
-#burst-statistics .rdrDateDisplayItem + .rdrDateDisplayItem {
+.rdrDateDisplayItem + .rdrDateDisplayItem {
   margin-left: 0.833em;
 }
 
-#burst-statistics .rdrDateDisplayItem input {
+.rdrDateDisplayItem input {
   text-align: center;
   color: #454552e5;
 }
 
-#burst-statistics .rdrDateDisplayItem input:disabled {
+.rdrDateDisplayItem input:disabled {
   cursor: default;
 }
 
-#burst-statistics .rdrMonthAndYearWrapper {
+.rdrMonthAndYearWrapper {
   box-sizing: border-box;
   display: flex;
   justify-content: space-between;
 }
 
-#burst-statistics .rdrMonthAndYearPickers {
+.rdrMonthAndYearPickers {
   display: flex;
   flex: 1 1 0%;
   align-items: center;
   justify-content: center;
 }
 
-#burst-statistics .rdrNextPrevButton {
+.rdrNextPrevButton {
   box-sizing: border-box;
   cursor: pointer;
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
 
-#burst-statistics .rdrMonths {
+.rdrMonths {
   display: flex;
 }
 
-#burst-statistics .rdrMonthsVertical {
+.rdrMonthsVertical {
   flex-direction: column;
 }
 
-#burst-statistics .rdrMonthsHorizontal > div > div > div {
+.rdrMonthsHorizontal > div > div > div {
   display: flex;
   flex-direction: row;
 }
 
-#burst-statistics .rdrMonth {
+.rdrMonth {
   width: 300px;
 }
 
-#burst-statistics .rdrWeekDays {
+.rdrWeekDays {
   display: flex;
 }
 
-#burst-statistics .rdrWeekDay {
+.rdrWeekDay {
   box-sizing: border-box;
   flex: 0 0 calc(100% / 7);
   text-align: center;
 }
 
-#burst-statistics .rdrDays {
+.rdrDays {
   display: flex;
   flex-wrap: wrap;
 }
 
-#burst-statistics .rdrInfiniteMonths {
+.rdrInfiniteMonths {
   overflow: auto;
 }
 
 /* DateRangePicker wrapper */
 
-#burst-statistics .rdrDateRangeWrapper {
+.rdrDateRangeWrapper {
   -webkit-user-select: none;
      -moz-user-select: none;
           user-select: none;
@@ -5922,16 +5922,16 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 /* DateInput */
 
-#burst-statistics .rdrDateInput {
+.rdrDateInput {
   position: relative;
 }
 
-#burst-statistics .rdrDateInput input {
+.rdrDateInput input {
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
 
-#burst-statistics .rdrDateInput .rdrWarning {
+.rdrDateInput .rdrWarning {
   position: absolute;
   top: 0px;
   right: 0.25rem;
@@ -5943,45 +5943,45 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 /* DayCell */
 
-#burst-statistics .rdrDay {
+.rdrDay {
   position: relative;
   box-sizing: border-box;
   width: calc(100% / 7);
   cursor: pointer;
 }
 
-#burst-statistics .rdrDayNumber {
+.rdrDayNumber {
   position: relative;
   display: block;
 }
 
-#burst-statistics .rdrDayNumber span {
+.rdrDayNumber span {
   --tw-text-opacity: 1;
   color: rgb(29 36 41 / var(--tw-text-opacity, 1));
 }
 
 @supports (-ms-ime-align: auto) {
-		#burst-statistics .rdrDay {
+		.rdrDay {
 			flex-basis: 14.285% !important;
 		}
 	}
 
-#burst-statistics .rdrSelected,
-	#burst-statistics .rdrInRange,
-	#burst-statistics .rdrStartEdge,
-	#burst-statistics .rdrEndEdge {
+.rdrSelected,
+	.rdrInRange,
+	.rdrStartEdge,
+	.rdrEndEdge {
   pointer-events: none;
 }
 
-#burst-statistics .rdrDayStartPreview,
-	#burst-statistics .rdrDayInPreview,
-	#burst-statistics .rdrDayEndPreview {
+.rdrDayStartPreview,
+	.rdrDayInPreview,
+	.rdrDayEndPreview {
   pointer-events: none;
 }
 
 /* DateRangePicker wrapper */
 
-#burst-statistics .rdrDateRangePickerWrapper {
+.rdrDateRangePickerWrapper {
   display: inline-flex;
   -webkit-user-select: none;
      -moz-user-select: none;
@@ -5990,16 +5990,16 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
 /* DefinedRange */
 
-#burst-statistics .rdrStaticRanges {
+.rdrStaticRanges {
   display: flex;
   flex-direction: column;
 }
 
-#burst-statistics .rdrStaticRange {
+.rdrStaticRange {
   color: inherit;
 }
 
-#burst-statistics .burst-indeterminate {
+.burst-indeterminate {
   position: relative;
   -webkit-appearance: none;
      -moz-appearance: none;
@@ -6011,7 +6011,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
 }
 
-#burst-statistics .burst-indeterminate::after {
+.burst-indeterminate::after {
 		content: '';
 		position: absolute;
 		top: 50%;
@@ -6023,28 +6023,28 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 		transform: translate(-50%, -50%); /* keep as raw CSS */
 	}
 
-#burst-statistics .rdt_TableHeadRow,
-	#burst-statistics .rdt_TableRow {
+.rdt_TableHeadRow,
+	.rdt_TableRow {
   padding-left: 1.5rem;
   padding-right: 1.5rem;
 }
 
 @media not all and (min-width: 1280px) {
 
-  #burst-statistics .rdt_TableHeadRow,
-	#burst-statistics .rdt_TableRow {
+  .rdt_TableHeadRow,
+	.rdt_TableRow {
     padding-left: 0.625rem;
     padding-right: 0.625rem;
   }
 }
 
-#burst-statistics .rdt_TableCol,
-	#burst-statistics .rdt_TableCell {
+.rdt_TableCol,
+	.rdt_TableCell {
   padding-left: 0px;
   padding-right: 0px;
 }
 
-#burst-statistics .rdt_Pagination select + svg {
+.rdt_Pagination select + svg {
   display: none;
 }
 

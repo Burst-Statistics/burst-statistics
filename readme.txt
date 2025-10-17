@@ -6,7 +6,7 @@ Requires at least: 6.2
 License: GPL2
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 2.2.9.2
+Stable tag: 2.2.9.3
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 
@@ -97,6 +97,9 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 2.2.9.3 =
+* Fix: some css styling fixed.
+
 = 2.2.9.2 =
 * Improvement: css change to ensure Burst icon aligned correctly in menu
 * Improvement: remove obsolete log line
