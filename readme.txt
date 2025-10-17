@@ -97,6 +97,12 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 2.2.9.2 =
+* Improvement: css change to ensure Burst icon aligned correctly in menu
+* Improvement: remove obsolete log line
+* Improvement: remove upgrader_process_complete hook to handle upgrades
+* Improvement: removed some obsolete files
+
 = 2.2.9.1 =
 * Improvement: Date range selection option in pages and posts overview screen options.
 * Fix: issue in onboarding wizard data storing.
