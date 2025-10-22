@@ -6,6 +6,8 @@ test('admin can access Burst Dashboard and see its contents', async ({ page }) =
   // await checkIfTrackingTestIsDone();
   console.log("start dashboard test ")
   await login(page);
+  await page.goto('/wp-admin/plugins.php');
+  await page.screenshot({ path: 'screenshots/plugins.php.png' });
 
   let iteration = 0;
   async function loadDashboard(iteration) {
