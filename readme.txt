@@ -2,9 +2,9 @@
 Contributors: hesseldejong, RogierLankhorst
 Donate link: paypal.me/Burststatistics
 Tags: statistics, analytics, stats, analytics alternative
-Requires at least: 6.2
+Requires at least: 6.8
 License: GPL2
-Requires PHP: 7.4
+Requires PHP: 8.0
 Tested up to: 6.8
 Stable tag: 2.2.9.3
 
