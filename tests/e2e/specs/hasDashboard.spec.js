@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../helpers/auth');
 const { wpCli } = require('../helpers/wpCli');
-
+const { dismissOnboarding } = require('../helpers/dismissOnboarding');
 test('admin can access Burst Dashboard and see its contents', async ({ page }) => {
   // await checkIfTrackingTestIsDone();
   console.log("start dashboard test ")
@@ -16,6 +16,7 @@ test('admin can access Burst Dashboard and see its contents', async ({ page }) =
     // await wpCli('rewrite flush --hard');
     await page.goto('/wp-admin/admin.php?page=burst', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(500); // allow DOM to settle
+    await dismissOnboarding(page);
   }
 
   async function checkDashboardContent() {
