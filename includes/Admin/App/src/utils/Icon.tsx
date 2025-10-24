@@ -78,7 +78,8 @@ import {
 	Hourglass,
 	Scale,
 	LineSquiggle,
-	PartyPopper
+	PartyPopper,
+	Sprout,
 } from 'lucide-react';
 import { clsx } from "clsx";
 
@@ -199,7 +200,8 @@ const iconComponents = {
 	'party-popper': PartyPopper,
 	'error-octagon': OctagonAlert,
 	'warning-triangle': TriangleAlert,
-	'percent': Percent
+	'percent': Percent,
+	'sprout' : Sprout,
 };
 
 // Define types for icon names and colors

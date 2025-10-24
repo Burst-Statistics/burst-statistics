@@ -64,7 +64,7 @@ if ( ! class_exists( 'summary' ) ) {
 			}
 
 			// if end is today, we can't be sure that the data is complete, so we don't use summary data.
-			$today_end = Statistics::convert_date_to_unix( gmdate( 'Y-m-d' ) . ' 23:59:59' );
+			$today_end = self::convert_date_to_unix( gmdate( 'Y-m-d' ) . ' 23:59:59' );
 			if ( $end === $today_end ) {
 				return false;
 			}
@@ -171,10 +171,10 @@ if ( ! class_exists( 'summary' ) ) {
 			$first_statistics_date_unix = (int) $wpdb->get_var( "select min(time) from {$wpdb->prefix}burst_statistics" );
 			// convert unix to date and back to unix, to ensure that the date is at the start of the day, for comparison purposes.
 			// 2022-02-07.
-			$first_statistics_date = Statistics::convert_unix_to_date( $first_statistics_date_unix );
+			$first_statistics_date = self::convert_unix_to_date( $first_statistics_date_unix );
 			// calculate days offset from first_statistics_date to today.
 			$first_statistics_date_unix = strtotime( $first_statistics_date );
-			$today                      = Statistics::convert_unix_to_date( strtotime( 'today' ) );
+			$today                      = self::convert_unix_to_date( strtotime( 'today' ) );
 			$max_days_offset            = ( strtotime( $today ) - $first_statistics_date_unix ) / DAY_IN_SECONDS;
 			// round to integer.
 			$max_days_offset = round( $max_days_offset, 0 );
@@ -226,7 +226,7 @@ if ( ! class_exists( 'summary' ) ) {
 		 */
 		private function summary_table_updated_yesterday(): bool {
 			global $wpdb;
-			$yesterday = Statistics::convert_unix_to_date( strtotime( 'yesterday' ) );
+			$yesterday = self::convert_unix_to_date( strtotime( 'yesterday' ) );
 			$completed = $wpdb->get_var( $wpdb->prepare( "select completed from {$wpdb->prefix}burst_summary where date = %s", $yesterday ) );
 			return (bool) $completed;
 		}
@@ -247,8 +247,8 @@ if ( ! class_exists( 'summary' ) ) {
 		 * @return string
 		 */
 		public function summary_sql( int $date_start, int $date_end, array $select_array, string $group_by = '', string $order_by = '', int $limit = 0, $date_modifiers = false ): string {
-			$date_start = Statistics::convert_unix_to_date( $date_start );
-			$date_end   = Statistics::convert_unix_to_date( $date_end );
+			$date_start = self::convert_unix_to_date( $date_start );
+			$date_end   = self::convert_unix_to_date( $date_end );
 
 			global $wpdb;
 
@@ -306,15 +306,15 @@ if ( ! class_exists( 'summary' ) ) {
 			}
 			set_transient( 'burst_updating_summary_table', 5 * MINUTE_IN_SECONDS );
 			global $wpdb;
-			$today = Statistics::convert_unix_to_date( strtotime( 'today' ) );
+			$today = self::convert_unix_to_date( strtotime( 'today' ) );
 			// deduct days offset in days.
 			if ( $days_offset > 0 ) {
-				$today = Statistics::convert_unix_to_date( strtotime( $today . ' -' . $days_offset . ' days' ) );
+				$today = self::convert_unix_to_date( strtotime( $today . ' -' . $days_offset . ' days' ) );
 			}
 			// get start of today in unix.
-			$date_start = Statistics::convert_date_to_unix( $today . ' 00:00:00' );
+			$date_start = self::convert_date_to_unix( $today . ' 00:00:00' );
 			// get end of today in unix.
-			$date_end = Statistics::convert_date_to_unix( $today . ' 23:59:59' );
+			$date_end = self::convert_date_to_unix( $today . ' 23:59:59' );
 			// get today's date.
 			// get the summary from the statistics table.
 			$args       = [

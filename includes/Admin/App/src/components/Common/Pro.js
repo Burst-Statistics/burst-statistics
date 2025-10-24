@@ -1,12 +1,14 @@
 import {__} from '@wordpress/i18n';
 import {burst_get_website_url} from '../../utils/lib';
-import useLicenseStore from '../../store/useLicenseStore';
+import useLicenseData from "@/hooks/useLicenseData";
 
 /**
  * Render a premium tag
  */
 const Pro = ({pro, id}) => {
-  const { isPro } = useLicenseStore();
+  const {
+    isPro,
+  } = useLicenseData();
   if ( isPro || ! pro ) {
     return null;
   }

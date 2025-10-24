@@ -24,28 +24,6 @@ const FORMATS = {
   REFERRER: 'referrer'
 };
 
-// Create memoized version of ClickToFilter to prevent unnecessary re-renders
-const MemoizedClickToFilter = memo( ClickToFilter );
-
-// Memoized filter components to prevent unnecessary recreations
-const CountryFilter = memo( ({ value }) => (
-  <MemoizedClickToFilter filter="country_code" filterValue={value}>
-    <Flag country={value} countryNiceName={getCountryName( value )} />
-  </MemoizedClickToFilter>
-) );
-
-const UrlFilter = memo( ({ value }) => (
-  <MemoizedClickToFilter filter="page_url" filterValue={value}>
-    {safeDecodeURI( value )}
-  </MemoizedClickToFilter>
-) );
-
-const ReferrerFilter = memo( ({ value }) => (
-    <MemoizedClickToFilter filter="referrer" filterValue={value}>
-      {safeDecodeURI( value )}
-    </MemoizedClickToFilter>
-) );
-
 // Cache for format cell functions to avoid recreating them for every cell
 const formatFunctionCache = new Map();
 
@@ -140,6 +118,7 @@ return -1;
       // Define a cell rendering function based on the format
       formatFunctionCache.set( cacheKey, ( row ) => {
         const value = row[column.id];
+        console.log(column, row);
 
         switch ( format ) {
           case 'percentage':
@@ -153,7 +132,7 @@ return -1;
             }
             return <CountryFilter value={value} />;
           case 'url':
-            return <UrlFilter value={value} />;
+            return <UrlFilter value={value}  row={row}/>;
           case 'referrer':
             return <ReferrerFilter value={value} />;
           case 'text':
@@ -188,17 +167,23 @@ const ContinentFilter = memo(({ value }) => (
   </MemoizedClickToFilter>
 ));
 
-const UrlFilter = memo(({ filter, value }) => (
-  <MemoizedClickToFilter filter={filter} filterValue={value}>
-    {safeDecodeURI(value)}
-  </MemoizedClickToFilter>
-));
+const UrlFilter = memo( ({ value, row }) => (
+    <MemoizedClickToFilter filter="page_url" filterValue={value} row={row}>
+      {safeDecodeURI( value )}
+    </MemoizedClickToFilter>
+) );
 
 const TextFilter = memo(({ filter, value }) => (
   <MemoizedClickToFilter filter={filter} filterValue={value}>
     {value}
   </MemoizedClickToFilter>
 ));
+
+const ReferrerFilter = memo( ({ value }) => (
+    <MemoizedClickToFilter filter="referrer" filterValue={value}>
+      {safeDecodeURI( value )}
+    </MemoizedClickToFilter>
+) );
 
 /**
  * Registry of column formatters - easily extensible
@@ -215,9 +200,9 @@ const COLUMN_FORMATTERS = {
     return <CountryFilter value={value} />;
   },
   [FORMATS.CONTINENT]: (value) => <ContinentFilter value={value} />,
-  [FORMATS.URL]: (value, columnId) => <UrlFilter filter={columnId} value={value} />,
+  [FORMATS.URL]: (value, columnId, row) => <UrlFilter filter={columnId} value={value} row={row} />,
   [FORMATS.TEXT]: (value, columnId) => <TextFilter filter={columnId} value={value} />,
-  [FORMATS.REFERRER]: (value, columnId) => <ReferrerFilter value={value} />,
+  [FORMATS.REFERRER]: (value) => <ReferrerFilter value={value} />,
 };
 
 /**
@@ -299,7 +284,7 @@ const createCellFormatter = (format, columnId) => {
   return (row) => {
     try {
       const value = row[columnId] ?? '';
-      const formatted = formatter(value, columnId);
+      const formatted = formatter(value, columnId, row);
       //add a-b test icon when conversion_rate or conversions column are present, but not both.
       if (
           (columnId === 'conversion_rate') ||

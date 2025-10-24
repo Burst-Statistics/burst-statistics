@@ -1,11 +1,11 @@
 import useGoalsData from '@/hooks/useGoalsData';
-import useLicenseStore from '../../store/useLicenseStore';
 import { __ } from '@wordpress/i18n';
 import Icon from '../../utils/Icon';
 import GoalSetup from './GoalSetup';
 import { useState } from 'react';
 import { burst_get_website_url } from '../../utils/lib';
 import * as Popover from '@radix-ui/react-popover';
+import useLicenseData from "@/hooks/useLicenseData";
 
 const GoalsSettings = () => {
   const {
@@ -19,7 +19,10 @@ const GoalsSettings = () => {
     setGoalValue,
     saveGoalTitle
   } = useGoalsData();
-  const { isLicenseValid } = useLicenseStore();
+  const {
+    isLicenseValid,
+    isPro,
+  } = useLicenseData();
   const [ predefinedGoalsVisible, setPredefinedGoalsVisible ] = useState( false );
 
   const handleAddPredefinedGoal = async ( goal ) => {
@@ -49,7 +52,7 @@ const GoalsSettings = () => {
           'Goals are a great way to track your progress and keep you motivated.',
           'burst-statistics'
         )}
-        {! isLicenseValid() &&
+        {! isLicenseValid &&
           ' ' +
             __(
               'While free users can create one goal, Burst Pro lets you set unlimited goals to plan, measure, and achieve more.',
@@ -72,7 +75,7 @@ const GoalsSettings = () => {
             );
           })}
 
-        {( isLicenseValid() || 0 === goals.length ) && (
+        {( isLicenseValid || 0 === goals.length ) && (
           <div className="flex items-center gap-2">
             <button
               className="burst-button burst-button--secondary"
@@ -143,7 +146,7 @@ const GoalsSettings = () => {
               <p
                 className="rounded-lg bg-gray-300 p-1 px-3 text-sm text-gray"
               >
-                {isLicenseValid() ? (
+                {isLicenseValid ? (
                   <> {goals.length} / &#8734; </>
                 ) : (
                   <>{goals.length} / 1</>
@@ -152,7 +155,7 @@ const GoalsSettings = () => {
             </div>
           </div>
         )}
-        {! isLicenseValid() && (
+        {! isLicenseValid && (
           <div className="flex gap-4 p-4 bg-gray-200 rounded-md mt-4 justify-start items-center border-2 border-gray-300">
             <Icon name={'goals'} size={24} color="gray" />
             <h4>{__( 'Want more goals?', 'burst-statistics' )}</h4>

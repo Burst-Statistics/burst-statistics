@@ -289,4 +289,46 @@ trait Helper {
 		return (int) $page_id;
 	}
     // phpcs:enable
+
+
+	/**
+	 * Get the offset in seconds from the selected timezone in WP.
+	 *
+	 * @throws \Exception //exception.
+	 */
+	private static function get_wp_timezone_offset(): int {
+		$timezone = wp_timezone();
+		$datetime = new \DateTime( 'now', $timezone );
+		return $timezone->getOffset( $datetime );
+	}
+
+	/**
+	 * Convert date string to unix timestamp (UTC) by correcting it with WordPress timezone offset
+	 *
+	 * @param string $time_string date string in format Y-m-d H:i:s.
+	 * @throws \Exception //exception.
+	 */
+	public static function convert_date_to_unix(
+		string $time_string
+	): int {
+		$time               = \DateTime::createFromFormat( 'Y-m-d H:i:s', $time_string );
+		$utc_time           = $time ? $time->format( 'U' ) : strtotime( $time_string );
+		$gmt_offset_seconds = self::get_wp_timezone_offset();
+
+		return $utc_time - $gmt_offset_seconds;
+	}
+
+	/**
+	 * Convert unix timestamp to date string by gmt offset.
+	 */
+	public static function convert_unix_to_date( int $unix_timestamp ): string {
+		$adjusted_timestamp = $unix_timestamp + self::get_wp_timezone_offset();
+
+		// Convert the adjusted timestamp to a DateTime object.
+		$time = new \DateTime();
+		$time->setTimestamp( $adjusted_timestamp );
+
+		// Format the DateTime object to 'Y-m-d' format.
+		return $time->format( 'Y-m-d' );
+	}
 }

@@ -7,11 +7,13 @@ import Field from '@/components/Fields/Field';
 import Overlay from '@/components/Common/Overlay';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import { __ } from '@wordpress/i18n';
-import useLicenseStore from '@/store/useLicenseStore';
+import useLicenseData from "@/hooks/useLicenseData";
 
 const SettingsGroupBlock = memo(
   ({ group, fields, control, isLastGroup }) => {
-      const { isLicenseValid } = useLicenseStore();
+      const {
+          isLicenseValid,
+      } = useLicenseData();
 
       const className = isLastGroup ? 'rounded-b-none' : 'mb-5';
 
@@ -22,7 +24,7 @@ const SettingsGroupBlock = memo(
 
     return (
       <Block key={group.id} className={className}>
-        {group.pro && !isLicenseValid() && (
+        {group.pro && !isLicenseValid  && (
           <Overlay className='backdrop-blur-sm'>
             <div className='flex flex-col gap-4'>
               <h4>{__( 'Unlock Advanced Features with Burst Pro', 'burst-statistics' )}</h4>

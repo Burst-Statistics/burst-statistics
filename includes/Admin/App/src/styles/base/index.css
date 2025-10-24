@@ -41,6 +41,10 @@
 		--toastify-color-progress-error: theme(backgroundColor.toastify-progress-error);
 	}
 
+	img[src*="burst-wink.svg"]{
+		display: inline !important;
+	}
+
 	/* Burst base styles */
 	.burst {
 		@apply font-normal leading-[1.5] box-border m-0 -ml-5 text-base text-black max-md:-ml-[9px];;
@@ -60,6 +64,7 @@
 		img {
 			@apply max-w-full h-auto;
 		}
+
 
 		h1, h2, h3, h4, h5, h6 {
 			@apply leading-[1.5] text-black;

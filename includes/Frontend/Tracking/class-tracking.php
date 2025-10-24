@@ -624,7 +624,7 @@ class Tracking {
 				],
 				'goals'    => [
 					'completed' => [],
-					'scriptUrl' => apply_filters( 'burst_goals_script_url', BURST_URL . '/assets/js/build/burst-goals.js?v=' . $script_version ),
+					'scriptUrl' => apply_filters( 'burst_goals_script_url', BURST_URL . 'assets/js/build/burst-goals.js?v=' . $script_version ),
 					'active'    => $this->get_active_goals( false ),
 				],
 				'cache'    => [

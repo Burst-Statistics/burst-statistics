@@ -1001,7 +1001,8 @@ class App {
 				break;
 			case 'get_filter_options':
 				$data_type = isset( $data['data_type'] ) ? sanitize_title( $data['data_type'] ) : '';
-				$data      = $this->get_filter_options( $data_type );
+				$search    = isset( $data['search'] ) ? sanitize_text_field( $data['search'] ) : '';
+				$data      = $this->get_filter_options( $data_type, $search );
 				break;
 			default:
 				$data = apply_filters( 'burst_do_action', [], $action, $data );
@@ -1024,9 +1025,10 @@ class App {
 	 * Get advanced filter options.
 	 *
 	 * @param string $data_type The specific data type to return (devices, browsers, platforms, countries, pages, referrers, campaigns).
+	 * @param string $search The search string, optional.
 	 * @return array the filter options.
 	 */
-	private function get_filter_options( string $data_type ): array {
+	private function get_filter_options( string $data_type, string $search = '' ): array {
 		if ( ! $this->user_can_view() ) {
 			return [];
 		}
@@ -1041,7 +1043,16 @@ class App {
 				'message' => 'Invalid data type',
 			];
 		}
+		$where_queries = [];
+		$search        = sanitize_text_field( $search );
+		if ( strlen( $search ) > 0 ) {
+			$like          = '%' . $wpdb->esc_like( $search ) . '%';
+			$where_queries = [
+				'pages' => $wpdb->prepare( 'WHERE page_url LIKE %s ', $like ),
+			];
+		}
 
+		$where = $where_queries[ $data_type ] ?? '';
 		// Define data type queries.
 		$queries = [
 			'devices'   => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_devices GROUP BY name ORDER BY name ASC",
@@ -1049,7 +1060,7 @@ class App {
 			'platforms' => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_platforms GROUP BY name ORDER BY name ASC",
 			'states'    => "SELECT DISTINCT state AS name FROM {$wpdb->prefix}burst_locations ORDER BY name ASC",
 			'cities'    => "SELECT DISTINCT city AS name FROM {$wpdb->prefix}burst_locations ORDER BY name ASC",
-			'pages'     => "SELECT page_url as name FROM {$wpdb->prefix}burst_statistics GROUP BY page_url ORDER BY COUNT(*) DESC",
+			'pages'     => "SELECT page_url as name FROM {$wpdb->prefix}burst_statistics $where GROUP BY page_url HAVING COUNT(*) > 1 ORDER BY COUNT(*) DESC limit 1000",
 			'campaigns' => "SELECT DISTINCT campaign AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
 			'sources'   => "SELECT DISTINCT source AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
 			'mediums'   => "SELECT DISTINCT medium AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
@@ -1072,7 +1083,7 @@ class App {
 				$raw_data
 			);
 		} elseif ( $data_type === 'referrers' ) {
-			$raw_data = $this->get_referrer_options();
+			$raw_data = $this->get_referrer_options( $search );
 			$raw_data = array_map(
 				fn( $value ) => [
 					'ID'   => $value['name'],
@@ -1159,11 +1170,16 @@ class App {
 	/**
 	 * Get referrer options for the advanced filter. The table is cleared weekly, to ensure up to date data.
 	 *
+	 * @param string $search the optional search string.
 	 * @return array the referrer options.
 	 */
-	private function get_referrer_options(): array {
+	private function get_referrer_options( string $search = '' ): array {
 		global $wpdb;
-		$referrers = $wpdb->get_results( "SELECT name FROM {$wpdb->prefix}burst_referrers ORDER BY ID ASC", ARRAY_A );
+
+		$search    = sanitize_text_field( $search );
+		$like      = '%' . $wpdb->esc_like( $search ) . '%';
+		$where     = strlen( $search ) > 0 ? $wpdb->prepare( 'WHERE name LIKE %s ', $like ) : '';
+		$referrers = $wpdb->get_results( "SELECT name FROM {$wpdb->prefix}burst_referrers $where ORDER BY ID ASC limit 1000", ARRAY_A );
 		if ( empty( $referrers ) ) {
 			$sql = "INSERT IGNORE INTO {$wpdb->prefix}burst_referrers (name)
                     SELECT domain

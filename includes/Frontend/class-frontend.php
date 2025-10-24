@@ -418,8 +418,12 @@ class Frontend {
 	public function get_post_pageviews( int $post_id, int $start = 0, int $end = 0 ): int {
 		$cache_key    = 'burst_post_views_' . $post_id;
 		$cached_views = wp_cache_get( $cache_key, 'burst' );
-		$end          = $end === 0 ? time() : $end;
-		$start        = $start === 0 ? strtotime( '-30 days' ) : $start;
+
+		// Get last midnight (start of today).
+		$end_default   = self::convert_date_to_unix( gmdate( 'Y-m-d', strtotime( 'today' ) ) . ' 00:00:00' );
+		$start_default = $end_default - 30 * DAY_IN_SECONDS;
+		$end           = $end === 0 ? $end_default : $end;
+		$start         = $start === 0 ? $start_default : $start;
 
 		if ( $cached_views !== false ) {
 			return (int) $cached_views;

@@ -7,7 +7,7 @@ import DevicesBlock from '@/components/Statistics/DevicesBlock';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import {__} from '@wordpress/i18n';
-import useLicenseStore from '@/store/useLicenseStore';
+import useLicenseData from "@/hooks/useLicenseData";
 
 export const Route = createFileRoute( '/statistics' )({
   component: Statistics,
@@ -20,7 +20,9 @@ export const Route = createFileRoute( '/statistics' )({
 });
 
 function Statistics() {
-  const { isPro } = useLicenseStore();
+    const {
+        isPro,
+    } = useLicenseData();
   const blockOneItems = ['pages'];
   const blockTwoItems = isPro ? ['parameters'] : ['referrers'];
   return (
