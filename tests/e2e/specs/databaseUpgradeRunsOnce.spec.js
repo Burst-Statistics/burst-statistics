@@ -13,5 +13,5 @@ test('Check that the database upgrade only runs once', async ({ page }) => {
     //verify that the debugLogContents contains max two occurences of the string "Installing database tables for Burst Statistics"
     // on the latest PHP/WP versions, it contains 1, on the lowest versions test it contains 2.
     const installCount = (debugLogContents.match(/Upgrading database tables for Burst Statistics/g) || []).length;
-    expect(installCount).toBeLessThanOrEqual(2);
+    expect([1, 2]).toContain(parseInt(installCount));
 });
