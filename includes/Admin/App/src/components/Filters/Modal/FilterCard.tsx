@@ -2,9 +2,9 @@ import React from 'react';
 import { __ } from '@wordpress/i18n';
 import clsx from 'clsx';
 import Icon from '@/utils/Icon';
-import useLicenseStore from '@/store/useLicenseStore';
 import ProBadge from '@/components/Common/ProBadge';
 import { useFiltersStore } from '@/store/useFiltersStore';
+import useLicenseData from "@/hooks/useLicenseData";
 
 interface FilterConfig {
     label: string;
@@ -32,9 +32,11 @@ const FilterCard: React.FC<FilterCardProps> = ({
     onClick,
     gridPosition
 }) => {
-    const { isLicenseValid } = useLicenseStore();
+    const {
+        isLicenseValid,
+    } = useLicenseData();
     const { isFavorite, toggleFavorite } = useFiltersStore();
-    const isDisabled = config.pro && !isLicenseValid() || config.coming_soon;
+    const isDisabled = config.pro && !isLicenseValid || config.coming_soon;
     const isFav = isFavorite(filterKey);
 
     const handleFavoriteClick = (e: React.MouseEvent | React.KeyboardEvent) => {

@@ -98,9 +98,9 @@ return [
 	],
 	[
 		'id'          => 'trial_offer_loyal_users',
-		'msg'         => __( 'Thanks for using Burst for over a year! To show our appreciation, enjoy 3 months of Burst Pro for free.', 'burst-statistics' ),
+		'msg'         => __( 'Thanks for using Burst for over a year! To show our appreciation, we have a surprise for you as a loyal user!', 'burst-statistics' ),
 		'icon'        => 'sale',
-		'url'         => 'checkout/?edd_action=add_to_cart&download_id=889&edd_options[price_id]=102',
+		'url'         => 'thanks-for-using-burst/',
 		'dismissible' => true,
 		'plusone'     => true,
 	],

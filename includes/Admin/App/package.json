@@ -89,6 +89,7 @@
     "@wordpress/babel-plugin-import-jsx-pragma": "^4.9.2",
     "@wordpress/core-data": "^6.3.4",
     "@wordpress/date": "^4.26.3",
+    "@wordpress/element": "^6.33.0",
     "@wordpress/i18n": "^4.26.2",
     "@wordpress/url": "^3.27.2",
     "chart.js": "^3.9.1",

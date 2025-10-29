@@ -60,7 +60,7 @@ class Milestones {
 
 		// Determine next milestone.
 		$next_milestone = self::get_next_milestone( $current_pv );
-		if ( $next_milestone >= $last_milestone ) {
+		if ( $next_milestone > 0 && $next_milestone > $last_milestone ) {
 			update_option( 'burst_current_pageviews_milestone', $next_milestone, false );
 			return true;
 		}
@@ -99,35 +99,21 @@ class Milestones {
 	 * @return int The next milestone.
 	 */
 	private static function get_next_milestone( int $current_pageviews ): int {
-		// First, find the milestone that's closest below current_pv.
-		if ( $current_pageviews < 1000 ) {
-			// Find the highest 100-step milestone below current_pv.
-			$milestone_below_current = floor( $current_pageviews / 100 ) * 100;
+		// Determine which milestone was just reached.
+		if ( $current_pageviews < 100 ) {
+			// No milestone reached yet.
+			return 0;
+		} elseif ( $current_pageviews < 1000 ) {
+			$reached = floor( $current_pageviews / 100 ) * 100;
 		} elseif ( $current_pageviews < 10000 ) {
-			// Find the highest 1000-step milestone below current_pv.
-			$milestone_below_current = floor( $current_pageviews / 1000 ) * 1000;
+			$reached = floor( $current_pageviews / 1000 ) * 1000;
 		} elseif ( $current_pageviews < 100000 ) {
-			// Find the highest 10000-step milestone below current_pv.
-			$milestone_below_current = floor( $current_pageviews / 10000 ) * 10000;
+			$reached = floor( $current_pageviews / 10000 ) * 10000;
 		} else {
-			// Find the highest 100000-step milestone below current_pv.
-			$milestone_below_current = floor( $current_pageviews / 100000 ) * 100000;
-		}
-		$milestone_below_current = (int) round( $milestone_below_current, 0 );
-		// Now calculate the next milestone from that point.
-		if ( $milestone_below_current < 1000 ) {
-			return $milestone_below_current + 100;
+			$reached = floor( $current_pageviews / 100000 ) * 100000;
 		}
 
-		if ( $milestone_below_current < 10000 ) {
-			return $milestone_below_current + 1000;
-		}
-
-		if ( $milestone_below_current < 100000 ) {
-			return $milestone_below_current + 10000;
-		}
-
-		return $milestone_below_current + 100000;
+		return (int) $reached;
 	}
 
 	/**

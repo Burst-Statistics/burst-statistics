@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, {useState, useRef, useEffect, useCallback} from 'react';
 import { __ } from '@wordpress/i18n';
 import AsyncSelectInput from '@/components/Inputs/AsyncSelectInput';
 import TextInput from '@/components/Inputs/TextInput';
 import useFiltersData from '@/hooks/useFiltersData';
+import debounce from "lodash/debounce";
 
 interface FilterConfig {
     label: string;
@@ -10,17 +11,12 @@ interface FilterConfig {
     type: string;
     options?: string;
     pro?: boolean;
+    reloadOnSearch?: boolean;
 }
 
 interface FilterOption {
     id: string;
     title: string;
-}
-
-interface FilterDataResult {
-    getFilterOptions: () => FilterOption[] | false;
-    isLoading: boolean;
-    isError: boolean;
 }
 
 interface SelectOption {
@@ -35,41 +31,79 @@ interface StringFilterSetupProps {
     onChange: (value: string) => void;
 }
 
-const StringFilterSetup: React.FC<StringFilterSetupProps> = ({ 
-    filterKey, 
-    config, 
-    initialValue = '', 
-    onChange 
-}) => {
+const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
+                                                                 filterKey,
+                                                                 config,
+                                                                 initialValue = '',
+                                                                 onChange
+                                                             }) => {
     const [value, setValue] = useState<string>(initialValue);
     const selectInputRef = useRef<any>(null);
     const textInputRef = useRef<HTMLInputElement>(null);
     const [availableOptions, setAvailableOptions] = useState<SelectOption[]>([]);
+    const [searchTerm, setSearchTerm] = useState<string>('');
+    const [hasFullDataset, setHasFullDataset] = useState<boolean>(false);
     const { getFilterOptions, isLoading, isError } = useFiltersData();
 
     useEffect(() => {
         setValue(initialValue);
     }, [initialValue]);
 
+    // Initial load - fetch first 1000 options
     useEffect(() => {
         const fetchOptions = async () => {
-            const opts = config.options ? await getFilterOptions(config.options) : [];
-            // Transform options from {id, title} to {value, label} format for AsyncSelectInput
-            const transformedOptions: SelectOption[] = Array.isArray( opts ) ? opts.map((option: FilterOption) => ({
+            if (!config.options) return;
+
+            const opts = await getFilterOptions(config.options, '');
+            const transformedOptions: SelectOption[] = Array.isArray(opts) ? opts.map((option: FilterOption) => ({
                 value: option.id || option.title,
                 label: option.title
             })) : [];
 
             setAvailableOptions(transformedOptions);
+            // If we got less than 1000 options, we have the full dataset
+            setHasFullDataset(transformedOptions.length < 1000);
         }
         fetchOptions();
     }, [config.options, getFilterOptions]);
+
+    // Debounced fetch function
+    const debouncedFetchOptions = useCallback(
+        debounce(async (search: string) => {
+            if (!config.options) return;
+
+            const opts = await getFilterOptions(config.options, search);
+            const transformedOptions: SelectOption[] = Array.isArray(opts) ? opts.map((option: FilterOption) => ({
+                value: option.id || option.title,
+                label: option.title
+            })) : [];
+
+            setAvailableOptions(transformedOptions);
+        }, 300),
+        [config.options, getFilterOptions]
+    );
+
+    // Reload options when search term changes (if reloadOnSearch is enabled)
+    useEffect(() => {
+        // Skip if reloadOnSearch is disabled
+        if (!config.reloadOnSearch || !config.options) return;
+        // Skip if search term is too short
+        if (searchTerm.length < 3) return;
+        // Skip if we already have the full dataset (< 1000 items)
+        if (hasFullDataset) return;
+
+        debouncedFetchOptions(searchTerm);
+
+        // Cleanup: cancel debounced function on unmount
+        return () => {
+            debouncedFetchOptions.cancel();
+        };
+    }, [searchTerm, config.reloadOnSearch, hasFullDataset, debouncedFetchOptions]);
 
     // Focus the appropriate input on mount
     useEffect(() => {
         const timer = setTimeout(() => {
             if (config.options && selectInputRef.current) {
-                // For AsyncSelectInput, focus the internal input
                 if (selectInputRef.current.focus) {
                     selectInputRef.current.focus();
                 } else if (selectInputRef.current.select?.inputRef?.current) {
@@ -78,14 +112,16 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
             } else if (!config.options && textInputRef.current) {
                 textInputRef.current.focus();
             }
-        }, 100); // Small delay to ensure DOM is ready
+        }, 100);
 
         return () => clearTimeout(timer);
     }, [config.options]);
 
-
     // Load options function for AsyncSelectInput
     const loadOptions = (inputValue: string, callback: (options: SelectOption[]) => void) => {
+        // Update search term for reloadOnSearch functionality
+        setSearchTerm(inputValue);
+
         // If still loading, return empty array
         if (isLoading) {
             callback([]);
@@ -103,17 +139,23 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
             return;
         }
 
-        // Filter options based on input value
-        var filteredOptions = availableOptions.filter(function (option) {
-            const label = (option.label ?? '').toLowerCase();
-            const value = (option.value ?? '').toLowerCase();
-            const input = inputValue.toLowerCase();
+        // If reloadOnSearch is enabled, we have the full dataset, or search < 3 chars
+        // do client-side filtering
+        if (hasFullDataset || !config.reloadOnSearch || inputValue.length < 3) {
+            const filteredOptions = availableOptions.filter(function (option) {
+                const label = (option.label ?? '').toLowerCase();
+                const value = (option.value ?? '').toLowerCase();
+                const input = inputValue.toLowerCase();
 
-            return label.includes(input) || value.includes(input);
-        });
+                return label.includes(input) || value.includes(input);
+            });
+            callback(filteredOptions);
+            return;
+        }
 
-
-        callback(filteredOptions);
+        // For server-side filtering (reloadOnSearch enabled, 3+ chars, large dataset)
+        // the options are already being fetched via useEffect
+        callback(availableOptions);
     };
 
     const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,11 +173,11 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
     // Create option object for AsyncSelectInput current value
     const getSelectValue = (): SelectOption | null => {
         if (!value) return null;
-        
+
         // Try to find the option in available options
         const foundOption = availableOptions.find((option: SelectOption) => option.value === value);
         if (foundOption) return foundOption;
-        
+
         // If not found but we have a value, create a custom option
         return {
             value: value,
@@ -147,7 +189,7 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
         if (config.options) {
             return __('Search or select an option...', 'burst-statistics');
         }
-        
+
         // Custom placeholders based on filter type
         switch (filterKey) {
             case 'page_url':
@@ -178,7 +220,7 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
                 <label className="block text-sm font-medium text-gray-700">
                     {__('Filter value', 'burst-statistics')}
                 </label>
-                
+
                 {/* Always render the same input type based on config.options */}
                 {config.options ? (
                     <AsyncSelectInput
@@ -207,4 +249,4 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
     );
 };
 
-export default StringFilterSetup; 
+export default StringFilterSetup;

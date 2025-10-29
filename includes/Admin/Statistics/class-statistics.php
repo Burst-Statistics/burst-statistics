@@ -956,22 +956,6 @@ class Statistics {
 	}
 
 	/**
-	 * Convert date string to unix timestamp (UTC) by correcting it with WordPress timezone offset
-	 *
-	 * @param string $time_string date string in format Y-m-d H:i:s.
-	 * @throws \Exception //exception.
-	 */
-	public static function convert_date_to_unix(
-		string $time_string
-	): int {
-		$time               = \DateTime::createFromFormat( 'Y-m-d H:i:s', $time_string );
-		$utc_time           = $time ? $time->format( 'U' ) : strtotime( $time_string );
-		$gmt_offset_seconds = self::get_wp_timezone_offset();
-
-		return $utc_time - $gmt_offset_seconds;
-	}
-
-	/**
 	 * The FROM_UNIXTIME takes into account the timezone offset from the mysql timezone settings. These can differ from the server settings.
 	 *
 	 * @throws \Exception //exception.
@@ -986,31 +970,6 @@ class Statistics {
 		$wp_timezone_offset_hours    = round( $wp_timezone_offset / ( HOUR_IN_SECONDS / 2 ), 0 ) * 0.5;
 		$offset                      = $wp_timezone_offset_hours - $mysql_timezone_offset_hours;
 		return (int) $offset * HOUR_IN_SECONDS;
-	}
-
-	/**
-	 * Get the offset in seconds from the selected timezone in WP.
-	 *
-	 * @throws \Exception //exception.
-	 */
-	private static function get_wp_timezone_offset(): int {
-		$timezone = wp_timezone();
-		$datetime = new \DateTime( 'now', $timezone );
-		return $timezone->getOffset( $datetime );
-	}
-
-	/**
-	 * Convert unix timestamp to date string by gmt offset.
-	 */
-	public static function convert_unix_to_date( int $unix_timestamp ): string {
-		$adjusted_timestamp = $unix_timestamp + self::get_wp_timezone_offset();
-
-		// Convert the adjusted timestamp to a DateTime object.
-		$time = new \DateTime();
-		$time->setTimestamp( $adjusted_timestamp );
-
-		// Format the DateTime object to 'Y-m-d' format.
-		return $time->format( 'Y-m-d' );
 	}
 
 	/**

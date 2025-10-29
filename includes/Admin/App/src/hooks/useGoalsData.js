@@ -3,7 +3,7 @@ import {getGoals, setGoals, addGoal, deleteGoal, addPredefinedGoal} from '@/util
 import {toast} from 'react-toastify';
 import {__} from '@wordpress/i18n';
 import {produce} from 'immer';
-import useLicenseStore from '@/store/useLicenseStore';
+import useLicenseData from "@/hooks/useLicenseData";
 
 /**
  * Custom hook for managing goals data using TanStack Query.
@@ -185,7 +185,10 @@ const useGoalsData = () => {
     // Mutation to add a predefined goal
     const addPredefinedGoalMutation = useMutation({
         mutationFn: async ({predefinedGoalId}) => {
-            const {isPro} = useLicenseStore.getState();
+            const {
+                isPro,
+            } = useLicenseData();
+
             if (!isPro) {
                 throw new Error(__('Predefined goals are a premium feature.', 'burst-statistics'));
             }

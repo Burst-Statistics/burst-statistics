@@ -6,7 +6,7 @@ import Icon from '../../utils/Icon';
 import { __ } from '@wordpress/i18n';
 import ProBadge from './ProBadge';
 import Popover from './Popover';
-import useLicenseStore from '../../store/useLicenseStore';
+import useLicenseData from "@/hooks/useLicenseData";
 
 const PopoverFilter = ({
   onApply,
@@ -23,8 +23,9 @@ const PopoverFilter = ({
     setPendingMetrics( selectedOptions );
   }, [ selectedOptions ]);
 
-  const { isLicenseValid } = useLicenseStore();
-
+  const {
+    isLicenseValid,
+  } = useLicenseData();
   const onCheckboxChange = ( value ) => {
     if ( 'single' === selectionMode ) {
 
@@ -139,11 +140,11 @@ const PopoverFilter = ({
                 checked={pendingMetrics[0] === value}
                 disabled={
                   true === options[value].disabled ||
-                  ( options[value].pro && ! isLicenseValid() )
+                  ( options[value].pro && ! isLicenseValid )
                 }
                 onChange={( selectedValue ) => setPendingMetrics([ selectedValue ])}
               >
-                {options[value].pro && ! isLicenseValid() && (
+                {options[value].pro && ! isLicenseValid && (
                   <ProBadge label={'Pro'} />
                 )}
               </RadioInput>
@@ -163,7 +164,7 @@ const PopoverFilter = ({
                 aria-label={__( 'Change metrics', 'burst-statistics' )}
                 disabled={
                   true === options[value].disabled ||
-                  ( options[value].pro && ! isLicenseValid() )
+                  ( options[value].pro && ! isLicenseValid  )
                 }
                 onCheckedChange={() => onCheckboxChange( value )}
               >
@@ -183,7 +184,7 @@ const PopoverFilter = ({
                 {options[value].label}
               </label>
               <div className="flex-shrink-0">
-                {options[value].pro && ! isLicenseValid() && (
+                {options[value].pro && ! isLicenseValid  && (
                   <ProBadge label={'Pro'} />
                 )}
               </div>

@@ -212,13 +212,9 @@ class Onboarding {
 	 * Check if the onboarding is active
 	 */
 	public static function is_onboarding_active( string $prefix, string $caller_slug ): bool {
+		// fix phpcs warning about unused prop.
+		unset( $caller_slug );
 		if ( ! self::is_compatible() ) {
-			return false;
-		}
-
-		// if this option is set, the plugin was installed through the onboarding or other plugins block.
-		// In that case, we skip the onboarding, to prevent an overload of onboardings.
-		if ( get_option( "teamupdraft_installation_source_$caller_slug" ) ) {
 			return false;
 		}
 
