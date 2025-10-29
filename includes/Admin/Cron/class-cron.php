@@ -9,7 +9,7 @@ class Cron {
 	 * Constructor
 	 */
 	public function init(): void {
-		add_action( 'plugins_loaded', [ $this, 'schedule_cron' ], 10, 2 );
+		add_action( 'init', [ $this, 'schedule_cron' ], 10, 2 );
 		add_action( 'cron_schedules', [ $this, 'filter_cron_schedules' ], 10, 2 );
 		add_action( 'burst_every_hour', [ $this, 'test_hourly_cron' ] );
 	}

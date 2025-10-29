@@ -1,7 +1,7 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {getFields, setFields} from '@/utils/api';
 import {toast} from 'react-toastify';
-import useLicenseStore from "@/store/useLicenseStore";
+import useLicenseData from "@/hooks/useLicenseData";
 
 interface SettingField {
     id: string;
@@ -26,8 +26,9 @@ interface UseSettingsDataResult {
  */
 const useSettingsData = (): UseSettingsDataResult => {
     const queryClient = useQueryClient();
-    const {isLicenseValid} = useLicenseStore();
-
+    const {
+        isLicenseValid,
+    } = useLicenseData();
     // Query for fetching settings from server
     const query = useQuery<SettingField[]>({
         queryKey: ['settings_fields'],
@@ -92,7 +93,7 @@ const useSettingsData = (): UseSettingsDataResult => {
         }
         //parse the fields list. Any blocked pro features get unblocked here.
         settings.forEach((field) => {
-            if (field.pro && isLicenseValid()) {
+            if (field.pro && isLicenseValid ) {
                 Object.assign(field, field.pro);
             }
         });

@@ -7,8 +7,8 @@ export const useFiltersData = () => {
     const queryClient = useQueryClient();
     const { goals, getGoalAsync } = useGoalsData();
 
-    const fetchFilterData = async (type) => {
-        const response = await doAction('get_filter_options', { data_type: type });
+    const fetchFilterData = async (type, search ) => {
+        const response = await doAction('get_filter_options', { data_type: type, search: search });
         return response.data?.[type] || [];
     };
 
@@ -19,12 +19,12 @@ export const useFiltersData = () => {
         cacheTime: 30 * 60 * 1000,
     });
 
-    const getFilterOptions = useCallback(async (type) => {
+    const getFilterOptions = useCallback(async (type, search) => {
         if (type === 'goals') return goals;
 
         const data = await queryClient.fetchQuery({
-            queryKey: ['filters_data', type],
-            queryFn: () => fetchFilterData(type),
+            queryKey: ['filters_data', type, search ],
+            queryFn: () => fetchFilterData(type, search),
             staleTime: 5 * 60 * 1000,
             cacheTime: 30 * 60 * 1000,
         });

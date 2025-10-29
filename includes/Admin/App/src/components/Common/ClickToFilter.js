@@ -8,6 +8,7 @@ import Icon from '@/utils/Icon';
 import { __ } from '@wordpress/i18n';
 import { toast } from 'react-toastify';
 import { isValidDate } from '@/utils/formatting';
+import useSettingsData from "@/hooks/useSettingsData";
 
 /**
  * ClickToFilter component - makes any child element clickable to apply filters
@@ -18,6 +19,7 @@ import { isValidDate } from '@/utils/formatting';
  * @param {React.ReactNode} children - The wrapped content that becomes clickable
  * @param {string} startDate - Optional start date to set when filtering
  * @param {string} endDate - Optional end date to set when filtering
+ * @param {object} row - Optional end date to set when filtering
  * @return {React.ReactElement}
  */
 const ClickToFilter = ({
@@ -26,7 +28,8 @@ const ClickToFilter = ({
   label,
   children,
   startDate,
-  endDate
+  endDate,
+    row,
 }) => {
   // Store actions
   const setFilters = useFiltersStore(state => state.setFilters);
@@ -37,7 +40,10 @@ const ClickToFilter = ({
   const setStartDate = useDate(state => state.setStartDate);
   const setEndDate = useDate(state => state.setEndDate);
   const setRange = useDate(state => state.setRange);
+  const getActiveFilters = useFiltersStore(state => state.getActiveFilters);
 
+  const { getValue } = useSettingsData();
+  const filterByDomain = getValue('filtering_by_domain');
   // Check if the filter is allowed
   const isValidFilter = useMemo(() => {
     return filter && filtersConf && Object.prototype.hasOwnProperty.call(filtersConf, filter);
@@ -69,11 +75,21 @@ const ClickToFilter = ({
     e.stopPropagation();
     
     let url = filterValue;
-    
+
     // For page_url filters, construct the full URL if it's a relative path
     if (filter === 'page_url' && !filterValue.startsWith('http')) {
       // Get the site URL from window.burst_admin if available, otherwise use current origin
-      const siteUrl = window.burst_admin?.site_url || window.location.origin;
+      let siteUrl = window.burst_admin?.site_url || window.location.origin;
+      //if filterBydomain is active, check if we have the domain in the row dataset. If not, we try the domain filter, if used.
+      if ( filterByDomain ) {
+        const activeFilters = getActiveFilters();
+        const protocol = siteUrl.indexOf('https:') !==-1 ? 'https://' : 'http://';
+        if ( row.hasOwnProperty('host') ) {
+          siteUrl = `${protocol}${row.host}`
+        } else if (activeFilters.hasOwnProperty('host')) {
+          siteUrl = `${protocol}${activeFilters.host}`
+        }
+      }
       url = `${siteUrl}${filterValue.startsWith('/') ? '' : '/'}${filterValue}`;
     }
 

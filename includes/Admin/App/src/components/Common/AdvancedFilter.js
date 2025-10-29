@@ -5,7 +5,7 @@ import Popover from './Popover';
 import {useFiltersStore} from "@/store/useFiltersStore";
 import useFiltersData from "@/hooks/useFiltersData";
 import SelectPageField from "@/components/Fields/SelectPageField";
-import useLicenseStore from "@/store/useLicenseStore";
+import useLicenseData from "@/hooks/useLicenseData";
 
 const AdvancedFilter = ({
                             isOpen,
@@ -18,8 +18,9 @@ const AdvancedFilter = ({
     const [tempFilters, setTempFilters] = useState({});
     const filtersConf = useFiltersStore(state => state.filtersConf);
     const { getFilterOptions } = useFiltersData();
-
-    const { isLicenseValid } = useLicenseStore();
+    const {
+        isLicenseValid,
+    } = useLicenseData();
 
     useEffect(() => {
         for ( const key in filtersConf ) {
@@ -37,7 +38,7 @@ const AdvancedFilter = ({
 
     const getOptions = async (conf) => {
         const options = conf.options || [];
-        if ( conf.pro && !isLicenseValid() ) {
+        if ( conf.pro && !isLicenseValid ) {
             return [];
         }
 
@@ -133,14 +134,14 @@ const AdvancedFilter = ({
                             <div className="basis-1/2 max-w-[200px]" key={key}>
                                 <label key={key} className="flex flex-col">{conf.label}</label>
                                 <select
-                                    disabled={conf.pro && !isLicenseValid()}
+                                    disabled={conf.pro && !isLicenseValid }
                                     key={key}
                                     value={tempFilters[key] || -1}
                                     onChange={(e) => updateTempFilters(key, e.target.value)}
                                 >
                                     <option value="-1">
                                         {__('None selected', 'burst-statistics') + ' ' }
-                                        {conf.pro && !isLicenseValid() ? __('(premium)', 'burst-statistics') : ''}
+                                        {conf.pro && !isLicenseValid ? __('(premium)', 'burst-statistics') : ''}
                                     </option>
                                     {options.map((option) => (
                                         <option key={option.id} value={option.id}>

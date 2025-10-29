@@ -17,8 +17,7 @@ import NumberField from './NumberField';
 import LogoEditorField from './LogoEditorField';
 import RestoreArchivesField from './RestoreArchivesField';
 import RadioField from './RadioField';
-import { useFormContext } from 'react-hook-form';
-import useLicenseStore from '@/store/useLicenseStore';
+import useLicenseData from "@/hooks/useLicenseData";
 
 const fieldComponents = {
   text: TextField,
@@ -40,8 +39,9 @@ const fieldComponents = {
 };
 
 const Field = memo(({ setting, control, ...props }) => {
-  // const { isLicenseValid } = useLicenseStore();
-  const { isLicenseValid } = useLicenseStore();
+  const {
+    isLicenseValid,
+  } = useLicenseData();
   // Special handling for goal(s) type that should not be wrapped in a controller.
   if ('goals' === setting.type) {
     return (
@@ -172,7 +172,7 @@ const Field = memo(({ setting, control, ...props }) => {
       return true;
     }
     // if has anything (true|array|object|etc) in setting.pro and is not valid license
-    if ( setting.pro && !isLicenseValid() ) {
+    if ( setting.pro && !isLicenseValid  ) {
       return true;
     }
 

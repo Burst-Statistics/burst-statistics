@@ -134,8 +134,8 @@ class Frontend_Statistics {
 		// Handle custom date ranges first.
 		if ( ! empty( $start_date ) && ! empty( $end_date ) ) {
 			// Use convert_date_to_unix for proper timezone handling.
-			$start = Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
-			$end   = Statistics::convert_date_to_unix( $end_date . ' 23:59:59' );
+			$start = self::convert_date_to_unix( $start_date . ' 00:00:00' );
+			$end   = self::convert_date_to_unix( $end_date . ' 23:59:59' );
 			return [
 				'start' => $start,
 				'end'   => $end,
@@ -148,74 +148,74 @@ class Frontend_Statistics {
 		// Process predefined periods with timezone-aware calculations and normalization.
 		switch ( $period ) {
 			case 'today':
-				$start = Statistics::convert_date_to_unix( gmdate( 'Y-m-d' ) . ' 00:00:00' );
+				$start = self::convert_date_to_unix( gmdate( 'Y-m-d' ) . ' 00:00:00' );
 				// Normalize to nearest hour for consistent caching.
 				$end = (int) ( floor( $now / HOUR_IN_SECONDS ) * HOUR_IN_SECONDS );
 				break;
 			case 'yesterday':
 				$yesterday = gmdate( 'Y-m-d', strtotime( '-1 day' ) );
-				$start     = Statistics::convert_date_to_unix( $yesterday . ' 00:00:00' );
-				$end       = Statistics::convert_date_to_unix( $yesterday . ' 23:59:59' );
+				$start     = self::convert_date_to_unix( $yesterday . ' 00:00:00' );
+				$end       = self::convert_date_to_unix( $yesterday . ' 23:59:59' );
 				break;
 			case '7days':
 				$start_date = gmdate( 'Y-m-d', strtotime( '-7 days' ) );
-				$start      = Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+				$start      = self::convert_date_to_unix( $start_date . ' 00:00:00' );
 				// Normalize to nearest 6 hours for consistent caching.
 				$end = (int) ( floor( $now / ( 6 * HOUR_IN_SECONDS ) ) * ( 6 * HOUR_IN_SECONDS ) );
 				break;
 			case '14days':
 				$start_date = gmdate( 'Y-m-d', strtotime( '-14 days' ) );
-				$start      = Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+				$start      = self::convert_date_to_unix( $start_date . ' 00:00:00' );
 				// Normalize to nearest 6 hours for consistent caching.
 				$end = (int) ( floor( $now / ( 6 * HOUR_IN_SECONDS ) ) * ( 6 * HOUR_IN_SECONDS ) );
 				break;
 			case '30days':
 				$start_date = gmdate( 'Y-m-d', strtotime( '-30 days' ) );
-				$start      = Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+				$start      = self::convert_date_to_unix( $start_date . ' 00:00:00' );
 				// Normalize to nearest 6 hours for consistent caching.
 				$end = (int) ( floor( $now / ( 6 * HOUR_IN_SECONDS ) ) * ( 6 * HOUR_IN_SECONDS ) );
 				break;
 			case '90days':
 				$start_date = gmdate( 'Y-m-d', strtotime( '-90 days' ) );
-				$start      = Statistics::convert_date_to_unix( $start_date . ' 00:00:00' );
+				$start      = self::convert_date_to_unix( $start_date . ' 00:00:00' );
 				// Normalize to nearest day for consistent caching.
 				$end = (int) ( floor( $now / DAY_IN_SECONDS ) * DAY_IN_SECONDS );
 				break;
 			case 'this_week':
 				$monday = gmdate( 'Y-m-d', strtotime( 'monday this week' ) );
-				$start  = Statistics::convert_date_to_unix( $monday . ' 00:00:00' );
+				$start  = self::convert_date_to_unix( $monday . ' 00:00:00' );
 				// Normalize to nearest 6 hours for consistent caching.
 				$end = (int) ( floor( $now / ( 6 * HOUR_IN_SECONDS ) ) * ( 6 * HOUR_IN_SECONDS ) );
 				break;
 			case 'last_week':
 				$monday_last = gmdate( 'Y-m-d', strtotime( 'monday last week' ) );
 				$sunday_last = gmdate( 'Y-m-d', strtotime( 'sunday last week' ) );
-				$start       = Statistics::convert_date_to_unix( $monday_last . ' 00:00:00' );
-				$end         = Statistics::convert_date_to_unix( $sunday_last . ' 23:59:59' );
+				$start       = self::convert_date_to_unix( $monday_last . ' 00:00:00' );
+				$end         = self::convert_date_to_unix( $sunday_last . ' 23:59:59' );
 				break;
 			case 'this_month':
 				$first_day = gmdate( 'Y-m-01' );
-				$start     = Statistics::convert_date_to_unix( $first_day . ' 00:00:00' );
+				$start     = self::convert_date_to_unix( $first_day . ' 00:00:00' );
 				// Normalize to nearest day for consistent caching.
 				$end = (int) ( floor( $now / DAY_IN_SECONDS ) * DAY_IN_SECONDS );
 				break;
 			case 'last_month':
 				$first_day_last = gmdate( 'Y-m-01', strtotime( 'first day of last month' ) );
 				$last_day_last  = gmdate( 'Y-m-t', strtotime( 'last day of last month' ) );
-				$start          = Statistics::convert_date_to_unix( $first_day_last . ' 00:00:00' );
-				$end            = Statistics::convert_date_to_unix( $last_day_last . ' 23:59:59' );
+				$start          = self::convert_date_to_unix( $first_day_last . ' 00:00:00' );
+				$end            = self::convert_date_to_unix( $last_day_last . ' 23:59:59' );
 				break;
 			case 'this_year':
 				$first_day = gmdate( 'Y-01-01' );
-				$start     = Statistics::convert_date_to_unix( $first_day . ' 00:00:00' );
+				$start     = self::convert_date_to_unix( $first_day . ' 00:00:00' );
 				// Normalize to nearest day for consistent caching.
 				$end = (int) ( floor( $now / DAY_IN_SECONDS ) * DAY_IN_SECONDS );
 				break;
 			case 'last_year':
 				$first_day_last = gmdate( 'Y-01-01', strtotime( 'first day of last year' ) );
 				$last_day_last  = gmdate( 'Y-12-31', strtotime( 'last day of last year' ) );
-				$start          = Statistics::convert_date_to_unix( $first_day_last . ' 00:00:00' );
-				$end            = Statistics::convert_date_to_unix( $last_day_last . ' 23:59:59' );
+				$start          = self::convert_date_to_unix( $first_day_last . ' 00:00:00' );
+				$end            = self::convert_date_to_unix( $last_day_last . ' 23:59:59' );
 				break;
 			case 'all_time':
 			default:

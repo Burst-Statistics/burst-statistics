@@ -38,6 +38,7 @@ const FILTER_CONFIG = {
         options: 'pages',
         pro: false,
         category: 'content',
+        reloadOnSearch: true,
     },
     referrer: {
         label: __('Referrer', 'burst-statistics'),
@@ -46,6 +47,7 @@ const FILTER_CONFIG = {
         options: 'referrers',
         pro: false,
         category: 'sources',
+        reloadOnSearch: true,
     },
     goal_id: {
         label: __('Goal', 'burst-statistics'),

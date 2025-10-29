@@ -5,6 +5,7 @@ namespace Burst\Traits;
  * Trait containing sanitization methods for consistent data cleaning throughout the application.
  */
 trait Sanitize {
+	use Helper;
 
 	/**
 	 * Sanitize filters for statistics queries.
@@ -514,7 +515,7 @@ trait Sanitize {
 		}
 
 		// Return the unix timestamp as string instead of int.
-		return (string) \Burst\Admin\Statistics\Statistics::convert_date_to_unix( $datetime->format( 'Y-m-d H:i:s' ) );
+		return (string) self::convert_date_to_unix( $datetime->format( 'Y-m-d H:i:s' ) );
 	}
 
 	/**

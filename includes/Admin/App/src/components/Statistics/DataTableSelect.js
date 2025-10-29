@@ -1,16 +1,19 @@
 import * as Select from '@radix-ui/react-select';
 import Icon from '@/utils/Icon';
 import ProPopover from '../Common/ProPopover';
-import useLicenseStore from '@/store/useLicenseStore';
 import { memo, useCallback, useMemo } from 'react';
+import useLicenseData from "@/hooks/useLicenseData";
 
 const DataTableSelect = ({ value, onChange, options }) => {
   const handleValueChange = useCallback( ( newValue ) => {
     onChange( newValue );
   }, [ onChange ]);
 
-  const { isLicenseValid, isPro } = useLicenseStore();
-  const isProActive = isPro && isLicenseValid();
+  const {
+    isLicenseValid,
+    isPro,
+  } = useLicenseData();
+  const isProActive = isPro && isLicenseValid ;
 
   // Memoize expensive calculations
   const { hasProOptions, firstOption } = useMemo( () => {

@@ -5,11 +5,10 @@ import ButtonInput from '../Inputs/ButtonInput';
 import { burst_get_website_url } from '@/utils/lib';
 import { useEffect } from '@wordpress/element';
 import ProBadge from '@/components/Common/ProBadge';
-import useLicenseStore from '@/store/useLicenseStore';
 import clsx from 'clsx';
 import { useRef } from 'react';
-
-/* global burst_settings */
+import useLicenseData from "@/hooks/useLicenseData";
+import SubscriptionHeader from '../Common/Pro/SubscriptionHeader'
 
 /**
  * Generates the URL for a given menu item.
@@ -44,7 +43,11 @@ const getMenuItemUrl = ( menuItem ) => {
  */
 const Header = () => {
 	const menu = burst_settings.menu;
-	const { isLicenseValid, isPro } = useLicenseStore();
+	const {
+		isPro,
+		isLicenseValid,
+		isTrial,
+	} = useLicenseData();
 	const activeClassName = 'border-primary font-bold text-primary hover:border-primary hover:bg-primary-light';
 	const linkClassName = clsx(
 		'py-6 px-5',
@@ -95,82 +98,83 @@ const Header = () => {
 
 	return (
 		<div className="bg-white shadow-sm">
+			<SubscriptionHeader />
 			<div className="mx-auto flex max-w-screen-2xl items-center gap-5 px-5 max-xxs:gap-0">
 				<div className='max-xxs:w-16 max-xxs:h-auto max-xxs:hidden'>
 					<Link className='flex gap-3 align-middle' from="/" to="/">
-						<Logo className="h-11 w-auto px-0 py-2" />
+						<Logo className="h-11 w-auto px-0 py-2"/>
 					</Link>
 				</div>
 
-				<div className="flex items-center flex-1 max-xxs:animate-scrollIndicator overflow-x-auto scrollbar-hide">
+				<div
+					className="flex items-center flex-1 max-xxs:animate-scrollIndicator overflow-x-auto scrollbar-hide">
 					{
-						menu.map( ( menuItem ) => {
+						menu.map((menuItem) => {
 							const linkRef = useRef();
 							return (
 								<Link
-									key = { menuItem.id }
-									from = '/'
-									ref = { linkRef }
-									onClick = { ( event ) => {
+									key={menuItem.id}
+									from='/'
+									ref={linkRef}
+									onClick={(event) => {
 										// When link is clicked scroll that into view.
 										const link = event.currentTarget;
 										link.scrollIntoView({
 											behavior: "smooth",
 											inline: "center"
-										} )
-									} }
-									to = { getMenuItemUrl( menuItem ) }
-									params = { { settingsId: menuItem.menu_items?.[0]?.id } }
-									className = { linkClassName }
-									activeOptions = { {
+										})
+									}}
+									to={getMenuItemUrl(menuItem)}
+									params={{settingsId: menuItem.menu_items?.[0]?.id}}
+									className={linkClassName}
+									activeOptions={{
 										// default options, maybe modify to fit our needs.
 										exact: false,
 										includeHash: false,
 										includeSearch: true,
 										explicitUndefined: false
-								} }
-									activeProps = { { className: activeClassName } }
+									}}
+									activeProps={{className: activeClassName}}
 								>
 									{
-										( { isActive } ) => {
+										({isActive}) => {
 											// Scroll the active link into view on initial render.
-											useEffect( () => {
-												if ( isActive && linkRef.current ) {
+											useEffect(() => {
+												if (isActive && linkRef.current) {
 													// Scroll into view after some seconds.
-													setTimeout( () => {
-														linkRef.current.scrollIntoView( {
+													setTimeout(() => {
+														linkRef.current.scrollIntoView({
 															behavior: "smooth",
 															inline: "center"
-														} )
-													}, 1500 );
+														})
+													}, 1500);
 												}
-											}, [] );
+											}, []);
 
 											return (
 												<>
-													{ menuItem.title }
-
-													{ ( menuItem.pro && ! isLicenseValid() ) && <ProBadge className = 'ml-1' label = { __('Pro', 'burst-statistics') } /> }
+												{ menuItem.title + ' '} 
+												{ menuItem.pro && <ProBadge type={isTrial ? 'icon' : 'badge'} label={__("Pro", "burst-statistics")} id={menuItem.id} /> }
 												</>
 											);
 										}
 									}
 								</Link>
 							);
-						} )
+						})
 					}
 				</div>
 
 				<div className="flex items-center gap-5">
-					<ButtonInput className='max-xxs:hidden' link={ { to: supportUrl } } btnVariant="tertiary">
-						{ __( 'Support', 'burst-statistics' ) }
+					<ButtonInput className='max-xxs:hidden' link={{to: supportUrl}} btnVariant="tertiary">
+						{__('Support', 'burst-statistics')}
 					</ButtonInput>
 
-					{ upgradeUrl && (
-						<ButtonInput className='max-xxs:ml-4' link={ { to: upgradeUrl } } btnVariant="primary">
-							{ __( 'Upgrade to Pro', 'burst-statistics' ) }
+					{upgradeUrl && (
+						<ButtonInput className='max-xxs:ml-4' link={{to: upgradeUrl}} btnVariant="primary">
+							{__('Upgrade to Pro', 'burst-statistics')}
 						</ButtonInput>
-					)  }
+					)}
 				</div>
 			</div>
 		</div>

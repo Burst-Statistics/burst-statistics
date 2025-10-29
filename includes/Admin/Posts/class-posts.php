@@ -30,6 +30,7 @@ class Posts {
 	 */
 	public function load_screen_options(): void {
 		$this->time_range_options = [
+			'today'    => __( 'Today', 'burst-statistics' ),
 			'7_days'   => __( '7 days', 'burst-statistics' ),
 			'30_days'  => __( '30 days', 'burst-statistics' ),
 			'3_months' => __( '3 months', 'burst-statistics' ),
@@ -92,11 +93,11 @@ class Posts {
 	/**
 	 * Add time range dropdown to screen options.
 	 *
-	 * @param string     $settings Screen settings HTML.
-	 * @param \WP_Screen $screen Current screen object.
+	 * @param string|null $settings Screen settings HTML.
+	 * @param \WP_Screen  $screen Current screen object.
 	 * @return string Modified screen settings HTML.
 	 */
-	public function add_timerange_dropdown( string $settings, \WP_Screen $screen ): string {
+	public function add_timerange_dropdown( ?string $settings, \WP_Screen $screen ): string {
 		if ( ! in_array( $screen->post_type, $this->get_burst_column_post_types(), true ) ) {
 			return $settings;
 		}
@@ -137,17 +138,37 @@ class Posts {
 	 * Get start timestamp based on timerange
 	 */
 	private function get_start_timestamp( string $time_range ): int {
+		$start_of_today = self::convert_date_to_unix( gmdate( 'Y-m-d', strtotime( 'today' ) ) . ' 00:00:00' );
 		switch ( $time_range ) {
+			case 'today':
+				return $start_of_today;
 			case '7_days':
-				return strtotime( '-7 days' );
+				return $start_of_today - WEEK_IN_SECONDS;
 			case '3_months':
-				return strtotime( '-3 months' );
+				return $start_of_today - 3 * MONTH_IN_SECONDS;
 			case '1_year':
-				return strtotime( '-1 year' );
+				return $start_of_today - YEAR_IN_SECONDS;
 			case 'all_time':
 				return 0;
 			default:
-				return strtotime( '-30 days' );
+				return $start_of_today - 30 * DAY_IN_SECONDS;
+		}
+	}
+
+	/**
+	 * Get start timestamp based on timerange
+	 */
+	private function get_end_timestamp( string $time_range ): int {
+		$start_of_today = self::convert_date_to_unix( gmdate( 'Y-m-d', strtotime( 'today' ) ) . ' 00:00:00' );
+		switch ( $time_range ) {
+			case 'today':
+				return time();
+			case '7_days':
+			case '3_months':
+			case '1_year':
+			case 'all_time':
+			default:
+				return $start_of_today;
 		}
 	}
 
@@ -228,15 +249,17 @@ class Posts {
 		$burst_column_post_types = $this->get_burst_column_post_types();
 		$time_range              = $this->get_selected_timerange();
 		$start                   = $this->get_start_timestamp( $time_range );
-		$time_range_label        = $this->time_range_options[ $time_range ];
+		$end                     = $this->get_end_timestamp( $time_range );
+
+		$time_range_label = $this->time_range_options[ $time_range ];
 		foreach ( $burst_column_post_types as $post_type ) {
 			$this->add_admin_column(
 				'pageviews',
 				'<span title="' . esc_attr( $this->get_column_title( $time_range ) ) . '">' . __( 'Pageviews', 'burst-statistics' ) . ' </span>',
 				$post_type,
 				true,
-				function ( $post_id ) use ( $start ): void {
-					$page_views = \Burst\burst_loader()->frontend->get_post_pageviews( $post_id, $start, time() );
+				function ( $post_id ) use ( $start, $end ): void {
+					$page_views = \Burst\burst_loader()->frontend->get_post_pageviews( $post_id, $start, $end );
 					echo esc_html( $this->format_number_short( $page_views ) );
 				}
 			);
@@ -248,6 +271,8 @@ class Posts {
 	 */
 	private function get_column_title( string $time_range ): string {
 		switch ( $time_range ) {
+			case 'today':
+				return __( 'Total number of pageviews for today.', 'burst-statistics' );
 			case '7_days':
 				return __( 'Total number of pageviews of the past 7 days.', 'burst-statistics' );
 			case '3_months':
@@ -292,17 +317,18 @@ class Posts {
 
 		$timerange = $this->get_selected_timerange();
 		$start     = $this->get_start_timestamp( $timerange );
-
+		$end       = $this->get_end_timestamp( $timerange );
 		if ( $start > 0 ) {
 			$join .= $wpdb->prepare(
 				" LEFT JOIN (
 	            SELECT page_id, COUNT(*) as pageview_count
 	            FROM {$wpdb->prefix}burst_statistics
-	            WHERE page_id > 0 AND page_type = %s AND time >= %d
+	            WHERE page_id > 0 AND page_type = %s AND time >= %d AND time <= %d
 	            GROUP BY page_id
 	        ) burst_stats ON {$wpdb->posts}.ID = burst_stats.page_id",
 				$current_post_type,
-				$start
+				$start,
+				$end
 			);
 		} else {
 			// All time - no time restriction.

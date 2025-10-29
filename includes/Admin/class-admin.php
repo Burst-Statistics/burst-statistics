@@ -487,7 +487,7 @@ class Admin {
 		for ( $i = 0; $i < $total_days; $i++ ) {
 			$stats_date_unix = $start_date_unix - ( $i * DAY_IN_SECONDS );
 			// 2022-02-07.
-			$stats_date        = Statistics::convert_unix_to_date( $stats_date_unix );
+			$stats_date        = self::convert_unix_to_date( $stats_date_unix );
 			$total_entry_added = false;
 			$max_views        -= $i * 2;
 			$min_views         = 10;
@@ -1192,6 +1192,10 @@ class Admin {
 			'burst_demo_data_installed',
 			'burst_trial_offered',
 			'burst_tasks_permanently_dismissed',
+			'burst_license_activation_limit',
+			'burst_license_activations_left',
+			'burst_license_expires',
+			'burst_transients',
 		];
 		// delete options.
 		foreach ( $options as $option_name ) {

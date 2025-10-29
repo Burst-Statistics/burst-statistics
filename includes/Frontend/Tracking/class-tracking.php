@@ -95,18 +95,20 @@ class Tracking {
 		unset( $sanitized_data['city_code'] );
 
 		// keep track of the hosts, to check if this is a multi domain setup.
-		$destructured    = $this->sanitize_url( $sanitized_data['host'] );
-		$host            = $destructured['host'] ?? '';
+		$destructured = $this->sanitize_url( $sanitized_data['host'] );
+		$host         = $destructured['host'] ?? '';
+		// Normalize host by removing www. prefix for comparison.
+		$normalized_host = preg_replace( '/^www\./i', '', $host );
 		$is_multi_domain = get_option( 'burst_is_multi_domain' );
 		if ( ! $is_multi_domain ) {
 			$first_domain = get_option( 'burst_first_domain' );
 			// only update this once, on the first used domain.
 			if ( empty( $first_domain ) ) {
 				update_option( 'burst_is_multi_domain', false );
-				update_option( 'burst_first_domain', $host );
-			} elseif ( $first_domain !== $host ) {
-				// if it's different of the first used, it is multi domain.
-				update_option( 'burst_is_multi_domain', true );
+				update_option( 'burst_first_domain', $normalized_host );
+			} elseif ( $first_domain !== $normalized_host ) {
+					// if it's different from the first used, it is multi domain.
+					update_option( 'burst_is_multi_domain', true );
 			}
 		}
 
@@ -624,7 +626,7 @@ class Tracking {
 				],
 				'goals'    => [
 					'completed' => [],
-					'scriptUrl' => apply_filters( 'burst_goals_script_url', BURST_URL . '/assets/js/build/burst-goals.js?v=' . $script_version ),
+					'scriptUrl' => apply_filters( 'burst_goals_script_url', BURST_URL . 'assets/js/build/burst-goals.js?v=' . $script_version ),
 					'active'    => $this->get_active_goals( false ),
 				],
 				'cache'    => [

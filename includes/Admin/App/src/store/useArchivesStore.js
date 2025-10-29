@@ -2,7 +2,7 @@ import {create} from 'zustand';
 import {doAction} from '../utils/api';
 import {toast} from 'react-toastify';
 import {__} from '@wordpress/i18n';
-import useLicenseStore from './useLicenseStore';
+import useLicenseData from "@/hooks/useLicenseData";
 const useArchiveStore = create( ( set, get ) => ({
     archivesLoaded: false,
     fetching: false,
@@ -30,7 +30,9 @@ const useArchiveStore = create( ( set, get ) => ({
         });
     },
     fetchData: async( ) => {
-        const { isPro } = useLicenseStore.getState();
+        const {
+            isPro,
+        } = useLicenseData();
         if ( !isPro ) {
             return;
         }
