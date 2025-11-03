@@ -21,6 +21,23 @@ class Integrations {
 	}
 
 	/**
+	 * Determine if ecommerce features should be loaded based on active integrations.
+	 *
+	 * @return bool True if any active integration requires ecommerce features.
+	 */
+	public function should_load_ecommerce(): bool {
+		$should_load = false;
+		foreach ( $this->integrations as $plugin => $details ) {
+			if ( isset( $details['load_ecommerce_integration'] ) && $details['load_ecommerce_integration'] && $this->plugin_is_active( $plugin ) ) {
+				$should_load = true;
+				break;
+			}
+		}
+
+		return apply_filters( 'burst_load_ecommerce_integration', $should_load );
+	}
+
+	/**
 	 * Register the plugin for the consent API
 	 */
 	public function register_for_consent_api(): void {
@@ -43,6 +60,22 @@ class Integrations {
 	public function load_integrations(): void {
 		foreach ( $this->integrations as $plugin => $details ) {
 			if ( $this->plugin_is_active( $plugin ) ) {
+
+				if ( isset( $details['required_plugins'] ) ) {
+					$all_required_active = true;
+
+					foreach ( $details['required_plugins'] as $required_plugin ) {
+						if ( ! $this->plugin_is_active( $required_plugin ) ) {
+							$all_required_active = false;
+							break;
+						}
+					}
+
+					if ( ! $all_required_active ) {
+						continue;
+					}
+				}
+
 				$file          = apply_filters( 'burst_integration_path', BURST_PATH . "includes/Integrations/plugins/$plugin.php", $plugin );
 				$is_admin_only = $details['admin_only'] ?? false;
 				$can_load      = ( $is_admin_only && $this->has_admin_access() ) || ! $is_admin_only;
@@ -69,9 +102,9 @@ class Integrations {
 		$theme    = wp_get_theme();
 
 		return defined( $constant )
-			|| function_exists( $constant )
-			|| class_exists( $constant )
-			|| ( isset( $theme->name ) && $theme->name === $constant );
+				|| function_exists( $constant )
+				|| class_exists( $constant )
+				|| ( isset( $theme->name ) && $theme->name === $constant );
 	}
 
 	/**

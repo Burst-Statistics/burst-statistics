@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef, useRef, useCallback } from 'react';
+import React, { useState, useEffect, forwardRef, useCallback } from 'react';
 import { useCombobox, useMultipleSelection } from 'downshift';
 import { debounce } from 'lodash';
 
@@ -65,6 +65,10 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
         // Initialize input value - should be empty if there are already selected items
         const [inputValue, setInputValue] = useState('');
         const [loading, setLoading] = useState(isLoading);
+
+        useEffect(() => {
+            setLoading(isLoading);
+        }, [isLoading]);
 
         // Create debounced search function
         const debouncedLoadOptions = useCallback(

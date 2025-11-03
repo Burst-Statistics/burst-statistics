@@ -63,10 +63,11 @@ const defaultColumnsOptions = {
  * component is used in the StatisticsPage.
  * @param allowedConfigs
  * @param id
+ * @param isEcommerce
  * @return {JSX.Element}
  * @constructor
  */
-const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id }) => {
+const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id, isEcommerce = false }) => {
   const { startDate, endDate, range } = useDate( ( state ) => state );
   const filters = useFiltersStore( ( state ) => state.filters );
   const defaultConfig = allowedConfigs[0];
@@ -217,8 +218,35 @@ const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id }) => {
       columnsOptions: {
         ...defaultColumnsOptions
       }
-    }
-  };
+    },
+  products: {
+	  label: __( 'Products', 'burst-statistics' ),
+	  pro: true,
+	  searchable: true,
+	  defaultColumns: [ 'product', 'sales' ],
+	  columnsOptions: {
+		  product: {
+			  label: __( 'Product', 'burst-statistics' ),
+			  default: true,
+			  format: 'text',
+			  align: 'left',
+			  group_by: true
+		  },
+		  revenue: {
+			  label: __( 'Revenue', 'burst-statistics' ),
+			  default: true,
+			  format: 'currency',
+			  align: 'right',
+		  },
+		  sales: {
+			  label: __( 'Sales', 'burst-statistics' ),
+			  format: 'integer',
+			  align: 'right',
+		  }
+	  }
+  }
+};
+
 
   // Use the DataTable store
   const {
@@ -316,7 +344,7 @@ const DataTableBlock = ({ allowedConfigs = [ 'pages', 'referrers' ], id }) => {
     queryKey: [ selectedConfig, startDate, endDate, args ],
     queryFn: () =>
       getDataTableData({
-        type: 'datatable',
+        type: isEcommerce ? 'ecommerce-datatable' : 'datatable',
         startDate,
         endDate,
         range,

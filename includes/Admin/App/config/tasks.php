@@ -65,10 +65,10 @@ return [
 		'dismissible' => true,
 	],
 	[
-		'id'          => 'including_bounces',
-		'msg'         => __( 'Statistics are now shown including bounces. Your data has not changed, only the bounces are now included in what you see.', 'burst-statistics' ),
+		'id'          => 'ecommerce_integration',
+		'msg'         => __( 'New in Burst Pro: dedicated sales dashboard for WooCommerce and Easy Digital Downloads.', 'burst-statistics' ),
 		'icon'        => 'new',
-		'url'         => 'statistics-including-bounces/',
+		'url'         => 'new-feature-woocommerce-insights/',
 		'dismissible' => true,
 		'plusone'     => false,
 	],

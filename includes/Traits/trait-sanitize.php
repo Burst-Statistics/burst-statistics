@@ -164,10 +164,6 @@ trait Sanitize {
 	 * @return string Sanitized IP field.
 	 */
 	public function sanitize_ip_field( string $value ): string {
-		if ( ! $this->user_can_manage() ) {
-			return '';
-		}
-
 		$ips = explode( PHP_EOL, $value );
 		// Remove whitespace.
 		$ips = array_map( 'trim', $ips );
@@ -191,9 +187,9 @@ trait Sanitize {
 	 * @param string $type The field type.
 	 * @return mixed Sanitized value.
 	 */
-    // phpcs:disable
+	// phpcs:disable
 	public function sanitize_field( $value, string $type ) {
-    // phpcs:enable
+		// phpcs:enable
 
 		$type = $this->sanitize_field_type( $type );
 
@@ -216,7 +212,7 @@ trait Sanitize {
 			case 'email_reports':
 				return $this->sanitize_email_reports( $value );
 			case 'license':
-				return defined( 'BURST_PRO' ) && class_exists( '\\Burst\\Pro\\Licensing\\Licensing' ) ? ( new \Burst\Pro\Licensing\Licensing() )->sanitize_license( $value ) : '';
+				return defined( 'BURST_PRO' ) && class_exists( '\\Burst\\Pro\\Admin\\Licensing\\Licensing' ) ? ( new \Burst\Pro\Admin\Licensing\Licensing() )->sanitize_license( $value ) : '';
 			default:
 				return sanitize_text_field( $value );
 		}
@@ -331,10 +327,6 @@ trait Sanitize {
 	 * @return array<array<string, mixed>> Sanitized email reports.
 	 */
 	public function sanitize_email_reports( array $email_reports ): array {
-		if ( ! $this->user_can_manage() ) {
-			return [];
-		}
-
 		$sanitized_email_reports = [];
 		foreach ( $email_reports as $report ) {
 			if ( ! isset( $report['email'] ) ) {
@@ -353,10 +345,17 @@ trait Sanitize {
 	}
 
 	/**
-	 * Sanitize URL components for tracking.
+	 * Sanitize and destructure a URL.
 	 *
-	 * @param string|null $url URL to sanitize.
-	 * @return array<string, string> Sanitized URL components.
+	 * Ensures the URL is safe and valid, then extracts its components.
+	 *
+	 * @param string|null $url The input URL.
+	 * @return array{
+	 *     scheme: string,
+	 *     host: string,
+	 *     path: string,
+	 *     parameters: string
+	 * }
 	 */
 	public function sanitize_url( ?string $url ): array {
 		$url_destructured = [
@@ -380,16 +379,18 @@ trait Sanitize {
 			return $url_destructured;
 		}
 
-		// We don't use wp_parse_url so we don't need to load an additional wp file.
+		if ( ! function_exists( 'wp_parse_url' ) ) {
+			require_once ABSPATH . '/wp-includes/http.php';
+		}
 		$url = wp_parse_url( esc_url_raw( $sanitized_url ) );
 		if ( isset( $url['host'] ) ) {
+			$path                            = $url['path'] ?? '';
 			$url_destructured['host']        = $url['host'];
 			$url_destructured['scheme']      = $url['scheme'];
-			$url_destructured['path']        = trailingslashit( $url['path'] );
+			$url_destructured['path']        = trailingslashit( $path );
 			$url_destructured['parameters']  = $url['query'] ?? '';
 			$url_destructured['parameters'] .= $url['fragment'] ?? '';
 		}
-
 		return $url_destructured;
 	}
 
@@ -418,7 +419,7 @@ trait Sanitize {
 			return '';
 		}
 
-		return 'f-' . $fingerprint;
+		return str_starts_with( $fingerprint, 'f-' ) ? $fingerprint : 'f-' . $fingerprint;
 	}
 
 	/**
@@ -438,14 +439,13 @@ trait Sanitize {
 			$dir     = $src_pos !== false ? substr( $dir, 0, $src_pos + 1 ) : $dir;
 			define( 'BURST_PATH', $dir );
 		}
-
 		$referrer = filter_var( $referrer, FILTER_SANITIZE_URL );
-		// We use wp_parse_url so we don't need to load a wp file here.
-		$referrer_host = wp_parse_url( $referrer, PHP_URL_HOST );
+		// we use wp_parse_url so we don't need to load a wp file here.
+        //phpcs:ignore
+        $referrer_host = parse_url( $referrer, PHP_URL_HOST );
 		$current_host  = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'];
-
-		// Don't track if referrer is the same as current host.
-		// If referrer_url starts with current_host, then it is not a referrer.
+		// don't track if referrer is the same as current host.
+		// if referrer_url starts with current_host, then it is not a referrer.
 		if ( empty( $referrer_host ) || strpos( $referrer_host, $current_host ) === 0 ) {
 			return '';
 		}
@@ -455,7 +455,6 @@ trait Sanitize {
 		if ( array_search( $referrer_host, $ref_spam_list, true ) ) {
 			return 'spammer';
 		}
-
 		if ( ! function_exists( 'wp_kses_bad_protocol' ) ) {
 			require_once ABSPATH . '/wp-includes/kses.php';
 		}
@@ -471,26 +470,6 @@ trait Sanitize {
 	 */
 	public function sanitize_time_on_page( ?string $time_on_page ): int {
 		return (int) $time_on_page;
-	}
-
-	/**
-	 * Sanitize completed goal IDs.
-	 *
-	 * @param array $completed_goals Array of completed goal IDs.
-	 * @return array<int> Sanitized array of completed goal IDs.
-	 */
-	public function sanitize_completed_goal_ids( array $completed_goals ): array {
-		if ( ! method_exists( $this, 'get_active_goals_ids' ) ) {
-			// If method doesn't exist in this context, sanitize to integers only.
-			return array_map( 'absint', array_filter( $completed_goals, 'is_numeric' ) );
-		}
-
-		// Only keep active goals ids.
-		$completed_goals = array_intersect( $completed_goals, $this->get_active_goals_ids() );
-		// Remove duplicates.
-		$completed_goals = array_unique( $completed_goals );
-		// Make sure all values are integers.
-		return array_map( 'absint', $completed_goals );
 	}
 
 	/**
@@ -525,9 +504,9 @@ trait Sanitize {
 	 * @param mixed  $value The value to sanitize.
 	 * @return mixed Sanitized value.
 	 */
-    // phpcs:disable
+	// phpcs:disable
 	public function sanitize_arg( string $arg, $value ) {
-    //phpcs:enable
+		//phpcs:enable
 		// Smart array transformation helper - only transforms when value is clearly meant to be an array.
 		$ensure_array_if_applicable = function ( $input ) {
 			if ( is_array( $input ) ) {

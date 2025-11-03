@@ -35,9 +35,10 @@ return [
 	],
 	// eCommerce plugins.
 	'woocommerce'                      => [
-		'constant_or_function' => 'WC_VERSION',
-		'label'                => 'WooCommerce',
-		'goals'                =>
+		'constant_or_function'       => 'WC_VERSION',
+		'label'                      => 'WooCommerce',
+		'load_ecommerce_integration' => true,
+		'goals'                      =>
 			[
 				[
 					'id'   => 'woocommerce_add_to_cart',
@@ -66,10 +67,18 @@ return [
 				],
 			],
 	],
+	'woocommerce-payments'             => [
+		'constant_or_function' => 'WCPAY_PLUGIN_FILE',
+		'label'                => 'WooCommerce Payments',
+		'required_plugins'     => [
+			'woocommerce',
+		],
+	],
 	'easy-digital-downloads'           => [
-		'constant_or_function' => 'EDD_PLUGIN_FILE',
-		'label'                => 'Easy Digital Downloads',
-		'goals'                =>
+		'constant_or_function'       => 'EDD_PLUGIN_FILE',
+		'label'                      => 'Easy Digital Downloads',
+		'load_ecommerce_integration' => true,
+		'goals'                      =>
 			[
 				[
 					'id'   => 'edd_complete_purchase',
@@ -92,6 +101,41 @@ return [
 					'selector' => '#edd-purchase-button',
 				],
 			],
+	],
+	'easy-digital-downloads-pro'       => [
+		'constant_or_function'       => 'EDD_PLUGIN_FILE',
+		'label'                      => 'Easy Digital Downloads',
+		'load_ecommerce_integration' => true,
+		'goals'                      =>
+			[
+				[
+					'id'   => 'edd_complete_purchase',
+					'type' => 'hook',
+					'hook' => 'edd_complete_purchase',
+				],
+				[
+					'id'       => 'edd_add_to_cart',
+					'type'     => 'clicks',
+					'selector' => '.edd-add-to-cart',
+				],
+				[
+					'id'       => 'edd_go_to_checkout',
+					'type'     => 'clicks',
+					'selector' => '.edd_go_to_checkout',
+				],
+				[
+					'id'       => 'edd_click_purchase',
+					'type'     => 'clicks',
+					'selector' => '#edd-purchase-button',
+				],
+			],
+	],
+	'edd-multi-currency'               => [
+		'constant_or_function' => 'EDD_MULTI_CURRENCY_FILE',
+		'label'                => 'Easy Digital Downloads - Multi Currency',
+		'required_plugins'     => [
+			'easy-digital-downloads',
+		],
 	],
 	'easy-digital-downloads-recurring' => [
 		'constant_or_function' => 'EDD_RECURRING_VERSION',

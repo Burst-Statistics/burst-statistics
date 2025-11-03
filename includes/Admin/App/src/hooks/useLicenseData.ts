@@ -35,12 +35,13 @@ interface UseLicenseDataReturn {
     licenseStatus: string;
     hasSubscriptionInfo: boolean;
     subscriptionStatus: string;
-    isLoading: boolean;
+    isFetching: boolean;
     isLicenseMutationPending: boolean;
     isLicenseValid: boolean;
     isPro: boolean;
     activateLicense: (fieldName: string, fieldValue: string) => void;
     deactivateLicense: () => void;
+    isLicenseValidFor: ( id:string ) => boolean;
     isTrial: boolean;
     trialRemainingDays: number;
     trialExpired: boolean;
@@ -48,7 +49,7 @@ interface UseLicenseDataReturn {
     licenseExpirationRemainingDays: number;
     licenseExpiresTwoWeeks: boolean;
     licenseInactive: boolean;
-
+    licenseActivated: boolean;
 }
 
 /**
@@ -70,7 +71,7 @@ const useLicenseData = (): UseLicenseDataReturn => {
     const isPro = window.burst_settings?.is_pro === '1';
 
     // Fetch license notices and status
-    const { data, isLoading } = useQuery<LicenseData>({
+    const { data, isFetching } = useQuery<LicenseData>({
         queryKey: ['licenseNotices'],
         queryFn: () => doAction('license_notices', {}),
         enabled: isPro,
@@ -82,7 +83,7 @@ const useLicenseData = (): UseLicenseDataReturn => {
             subscriptionExpiration: 0,
             subscriptionStatus: '',
             licenseExpiration:0,
-            tier:'',
+            tier:window.burst_settings?.tier || '',
             trialEndTime:0,
             isTrial:false,
         }),
@@ -113,7 +114,7 @@ const useLicenseData = (): UseLicenseDataReturn => {
     // Determine license notices to display
     let licenseNotices: LicenseNotice[];
 
-    if (isLoading || isLicenseMutationPending) {
+    if ( isFetching || isLicenseMutationPending) {
         licenseNotices = [
             {
                 icon: 'loading',
@@ -165,10 +166,12 @@ const useLicenseData = (): UseLicenseDataReturn => {
         && licenseExpirationRemainingDays <= 14
         && licenseExpirationRemainingDays > 0;
 
-    const licenseInactive = licenseStatus === 'deactivated' || 
+    const licenseInactive =
+        isPro && (
+        licenseStatus === 'deactivated' ||
         licenseStatus === 'site_inactive' ||
-        licenseStatus === 'inactive';
-
+        licenseStatus === 'inactive');
+    const licenseActivated = !licenseInactive;
     // Compute if currently in trial (based on remaining days)
     const isTrial = trialRemainingDays > 0;
 
@@ -177,6 +180,31 @@ const useLicenseData = (): UseLicenseDataReturn => {
         mutateLicense({ action: 'activate', fieldName, fieldValue });
     };
 
+    const isLicenseValidFor = ( id:string ): boolean => {
+        if ( ! licenseActivated ) {
+            return false;
+        }
+
+        if ( isTrial ) {
+            return true;
+        }
+
+        if ( ! isLicenseValid ) {
+            return false;
+        }
+
+        if ( id === 'sources') {
+            return isLicenseValid;
+        }
+
+        if ( id === 'sales' ) {
+            return tier === 'agency' || tier === 'business';
+        }
+
+        //all other options when license is valid.
+        return true;
+    }
+
     const deactivateLicense = () => {
         mutateLicense({ action: 'deactivate' });
     };
@@ -184,7 +212,7 @@ const useLicenseData = (): UseLicenseDataReturn => {
     return {
         licenseNotices,
         licenseStatus,
-        isLoading,
+        isFetching,
         isLicenseMutationPending,
         isLicenseValid,
         isPro,
@@ -199,6 +227,8 @@ const useLicenseData = (): UseLicenseDataReturn => {
         licenseExpirationRemainingDays,
         licenseExpiresTwoWeeks,
         licenseInactive,
+        licenseActivated,
+        isLicenseValidFor,
     };
 };
 

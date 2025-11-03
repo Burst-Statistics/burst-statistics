@@ -2,11 +2,11 @@
 Contributors: hesseldejong, RogierLankhorst
 Donate link: paypal.me/Burststatistics
 Tags: statistics, analytics, stats, analytics alternative
-Requires at least: 6.8
+Requires at least: 6.4
 License: GPL2
 Requires PHP: 8.0
-Tested up to: 6.4
-Stable tag: 2.2.9.3
+Tested up to: 6.8
+Stable tag: 3.0.0
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 

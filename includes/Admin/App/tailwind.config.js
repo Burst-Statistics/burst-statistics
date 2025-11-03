@@ -34,6 +34,7 @@ const goldColor = {
 };
 
 const blueColor = {
+	lightest: '#21468B0F',
 	lighter: '#ECF8FE',
 	light: '#ebf2f9',
 	DEFAULT: '#1D3C8F',
@@ -189,6 +190,7 @@ module.exports = {
 			},
 			textColor: (theme) => ({
 				black: '#1a1a1ae5',
+				'black-light': '#1A1A1AB2',
 				white: '#ffffffe5',
 				gray: '#454552e5',
 
@@ -204,11 +206,23 @@ module.exports = {
 				'button-contrast': '#000',
 				'button-secondary': '#fff',
 				'button-accent': theme('colors.button-accent'),
-				'gray-400': '#c6c6c6',
+				gray: {
+					DEFAULT: '#454552e5',
+					50: '#f9f9f9',
+					100: '#f8f9fa',
+					200: '#e9ecef',
+					300: '#dee2e6',
+					400: '#ced4da',
+					500: '#adb5bd',
+					600: '#6c757d',
+					700: '#495057',
+					800: '#343a40',
+					900: '#212529',
+				},
 			}),
 		},
 		fontSize: {
-			xxs: ['0.6875rem', '1rem'], // 11px / ~16px
+			xxs: ['0.5625rem', '0.8125rem'], // 9px with ~13px line-height
 			xs: ['0.625rem', '0.875rem'], // 10px with 14px line-height
 			sm: ['0.75rem', '1.125rem'], // 12px with 18px line-height
 			base: ['0.8125rem', '1.25rem'], // 13px with 20px line-height

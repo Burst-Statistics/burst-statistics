@@ -20,7 +20,7 @@ require_once BASE_PATH . 'wp-load.php';
 if ( defined( 'BURST_ALLOWED_ORIGINS' ) ) {
 	$burst_allowed_origins = explode( ',', BURST_ALLOWED_ORIGINS );
 	$burst_origin          = $_SERVER['HTTP_ORIGIN'] ?? '';
-    // phpcs:ignore
+	// phpcs:ignore
 	$burst_origin_host     = parse_url( $burst_origin, PHP_URL_HOST );
 	if ( in_array( $burst_origin_host, $burst_allowed_origins, true ) ) {
 		header( 'Access-Control-Allow-Origin: ' . $burst_origin );
@@ -61,8 +61,8 @@ if ( isset( $burst_plugins[ $burst_dir ] ) && ! in_array( $burst_plugins[ $burst
 
 require_once __DIR__ . '/includes/autoload.php';
 require_once __DIR__ . '/helpers/php-user-agent/UserAgentParser.php';
-if ( file_exists( __DIR__ . '/includes/Pro/Tracking/tracking.php' ) ) {
-	require_once __DIR__ . '/includes/Pro/Tracking/tracking.php';
+if ( file_exists( __DIR__ . '/includes/Pro/Frontend/Tracking/tracking.php' ) ) {
+	require_once __DIR__ . '/includes/Pro/Frontend/Tracking/tracking.php';
 }
 
 ( new Tracking() )->beacon_track_hit();
@@ -111,7 +111,7 @@ function burst_find_wordpress_base_path(): string {
  */
 function burst_has_open_basedir_restriction( string $path ): bool {
 	// Default error handler is required.
-    //phpcs:ignore
+	//phpcs:ignore
 	set_error_handler( null );
 	// Clean last error info.
 	error_clear_last();
@@ -119,7 +119,7 @@ function burst_has_open_basedir_restriction( string $path ): bool {
 	// @phpstan-ignore-next-line.
 	@file_exists( $path ); //phpcs:ignore
 	// Restore previous error handler.
-    // phpcs:ignore
+	// phpcs:ignore
 	restore_error_handler();
 	// Return `true` if error has occurred.
 	$error = error_get_last();

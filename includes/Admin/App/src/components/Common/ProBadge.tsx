@@ -26,7 +26,7 @@ interface ProBadgeProps {
  * @returns JSX.Element
  */
 const ProBadge: React.FC<ProBadgeProps> = ({
-  id,
+  id='',
   className = "",
   url,
   label,
@@ -36,9 +36,14 @@ const ProBadge: React.FC<ProBadgeProps> = ({
   const {
     isTrial,
     licenseInactive,
+      isLicenseValidFor,
   } = useLicenseData();
 
   if ( licenseInactive && !isTrial ) {
+    // return null;
+  }
+
+  if ( !isTrial && isLicenseValidFor(id)) {
     return null;
   }
 
