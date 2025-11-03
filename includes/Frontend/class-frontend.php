@@ -47,11 +47,6 @@ class Frontend {
 		$goals_tracker = new Goals_Tracker();
 		$goals_tracker->init();
 
-		if ( burst_loader()->integrations->should_load_ecommerce() && class_exists( '\Burst\Pro\Frontend\Ecommerce\Frontend' ) ) {
-			$ecommerce_frontend = new \Burst\Pro\Frontend\Ecommerce\Frontend();
-			$ecommerce_frontend->init();
-		}
-
 		// Check if shortcodes option is enabled.
 		if ( $this->get_option_bool( 'enable_shortcodes' ) ) {
 			$shortcodes = new Shortcodes();

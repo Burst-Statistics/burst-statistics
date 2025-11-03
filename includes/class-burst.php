@@ -102,12 +102,13 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 			$this->admin->init();
 			$capability = new Capability();
 			$capability->init();
-
-			if ( defined( 'BURST_PRO_FILE' ) ) {
-				$this->pro = new Pro();
-				$this->pro->init();
-			}
 		}
+
+		if ( defined( 'BURST_PRO_FILE' ) ) {
+			$this->pro = new Pro();
+			$this->pro->init();
+		}
+
 		$this->frontend = new Frontend();
 		$this->frontend->init();
 	}
