@@ -33,16 +33,6 @@ return [
 		'pro'            => true,
 	],
 	[
-		'id'             => 'sales',
-		'title'          => __( 'Sales', 'burst-statistics' ),
-		'default_hidden' => false,
-		'menu_items'     => [],
-		'capabilities'   => 'view_burst_statistics',
-		'menu_slug'      => 'burst#/sales',
-		'show_in_admin'  => true,
-		'pro'            => true,
-	],
-	[
 		'id'                      => 'settings',
 		'title'                   => __( 'Settings', 'burst-statistics' ),
 		'default_hidden'          => false,

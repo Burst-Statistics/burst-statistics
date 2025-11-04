@@ -79,6 +79,7 @@ class Admin {
 		add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
 		add_action( 'burst_weekly', [ $this, 'cleanup_bf_dismissed_tasks' ] );
 		add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
+		add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
 
 		$upgrade = new Upgrade();
 		$upgrade->init();
@@ -117,6 +118,48 @@ class Admin {
 			add_action( 'init', [ $this, 'install_demo_data' ] );
 			update_option( 'burst_demo_data_installed', true, false );
 		}
+	}
+
+	/**
+	 * Add ecommerce menu item to the admin menu
+	 *
+	 * @param array $menu_items The existing menu items.
+	 * @return array The modified menu items including the ecommerce menu item.
+	 */
+	public function add_ecommerce_menu_item( array $menu_items ): array {
+		$should_load_ecommerce = \Burst\burst_loader()->integrations->should_load_ecommerce();
+
+		if ( ! $should_load_ecommerce ) {
+			return $menu_items;
+		}
+
+		$ecommerce_menu_item = [
+			'id'             => 'sales',
+			'title'          => __( 'Sales', 'burst-statistics' ),
+			'default_hidden' => false,
+			'menu_items'     => [],
+			'capabilities'   => 'view_burst_statistics',
+			'menu_slug'      => 'burst#/sales',
+			'show_in_admin'  => true,
+			'pro'            => true,
+		];
+
+		// Put ecommerce menu item before the id: settings menu item.
+		$settings_index = null;
+		foreach ( $menu_items as $index => $item ) {
+			if ( isset( $item['id'] ) && 'settings' === $item['id'] ) {
+				$settings_index = $index;
+				break;
+			}
+		}
+
+		if ( null !== $settings_index ) {
+			array_splice( $menu_items, $settings_index, 0, [ $ecommerce_menu_item ] );
+		} else {
+			$menu_items[] = $ecommerce_menu_item;
+		}
+
+		return $menu_items;
 	}
 
 	/**

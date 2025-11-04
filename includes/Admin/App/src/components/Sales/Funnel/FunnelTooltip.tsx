@@ -39,7 +39,13 @@ export const FunnelTooltip: React.FC<FunnelTooltipProps> = ({ data }) => {
             {/* Header */}
             <div className="mb-3 flex flex-col gap-1">
                 <p className="text-sm font-light text-gray-600">
-                    {sprintf(__("%s visitors (%s%%)", "burst-statistics"), sessionCount.toLocaleString(), sessionPercentage.toFixed(sessionPercentage>0 && sessionPercentage<10?1:0))}
+                    {
+                        sprintf(
+                            __("%s visitors (%s%%)", "burst-statistics"),
+                            sessionCount.toLocaleString(),
+                            sessionPercentage.toFixed(sessionPercentage > 0 && sessionPercentage < 10 ? 1 : 0)
+                        )
+                    }
                 </p>
                 <h3 className="text-md font-semibold text-gray-900">
                     {stepTitle}
