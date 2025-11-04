@@ -1,10 +1,11 @@
 import { getData } from '@/utils/api';
 import {
-  formatPercentage,
-  formatTime,
-  getCountryName,
-  getContinentName
-} from '@/utils/formatting';
+	formatPercentage,
+	formatTime,
+	getCountryName,
+	getContinentName,
+	formatCurrency
+} from '@/utils/formatting'
 import Flag from '@/components/Statistics/Flag';
 import ClickToFilter from '@/components/Common/ClickToFilter';
 import { memo } from 'react';
@@ -21,7 +22,9 @@ const FORMATS = {
   URL: 'url',
   TEXT: 'text',
   INTEGER: 'integer',
-  REFERRER: 'referrer'
+  REFERRER: 'referrer',
+  FLOAT: 'float',
+  CURRENCY: 'currency',
 };
 
 // Cache for format cell functions to avoid recreating them for every cell
@@ -203,7 +206,25 @@ const COLUMN_FORMATTERS = {
   [FORMATS.URL]: (value, columnId, row) => <UrlFilter filter={columnId} value={value} row={row} />,
   [FORMATS.TEXT]: (value, columnId) => <TextFilter filter={columnId} value={value} />,
   [FORMATS.REFERRER]: (value) => <ReferrerFilter value={value} />,
+  [FORMATS.FLOAT]: (value) => parseFloat(value),
+  [FORMATS.CURRENCY]: (value) => dataFormatCurrency(value),
 };
+
+/**
+ * Formats currency values
+ *
+ * @param {Object} value - Currency value object
+ * @param {number} value.value - Numeric amount
+ * @param {string} value.currency - Currency code (e.g., 'USD')
+ * @returns {string} Formatted currency string
+ */
+const dataFormatCurrency = ( value ) => {
+	if ( ! value || ! value?.currency || ! value?.value ) {
+		return '';
+	}
+
+	return formatCurrency( value.currency, value.value );
+}
 
 /**
  * Unified sorting function that handles all data types
@@ -212,32 +233,52 @@ const COLUMN_FORMATTERS = {
  * @returns {function} Sort comparison function
  */
 const createSortFunction = (columnId, format) => {
-  const isNumeric = [FORMATS.PERCENTAGE, FORMATS.TIME, FORMATS.INTEGER].includes(format);
-  
-  return (rowA, rowB) => {
-    const valueA = rowA[columnId];
-    const valueB = rowB[columnId];
+	const isNumeric = [
+		FORMATS.PERCENTAGE,
+		FORMATS.TIME,
+		FORMATS.INTEGER,
+		FORMATS.FLOAT,
+	].includes(format);
 
-    // Handle null/undefined values consistently
-    if (valueA == null && valueB == null) return 0;
-    if (valueA == null) return 1;
-    if (valueB == null) return -1;
+	const isCurrency = format === FORMATS.CURRENCY;
 
-    if (isNumeric) {
-      const numA = parseFloat(valueA);
-      const numB = parseFloat(valueB);
-      
-      if (isNaN(numA) && isNaN(numB)) return 0;
-      if (isNaN(numA)) return 1;
-      if (isNaN(numB)) return -1;
-      
-      return numA - numB;
-    } else {
-      // String comparison for text-based columns
-      return String(valueA).toLowerCase().localeCompare(String(valueB).toLowerCase());
-    }
-  };
+	return (rowA, rowB) => {
+		const valueA = rowA[columnId];
+		const valueB = rowB[columnId];
+
+		// Handle null/undefined values consistently
+		if (valueA == null && valueB == null) return 0;
+		if (valueA == null) return 1;
+		if (valueB == null) return -1;
+
+		// --- CURRENCY SORTING ---
+		if (isCurrency) {
+			const amountA = typeof valueA === 'object' ? parseFloat(valueA.value) : parseFloat(valueA);
+			const amountB = typeof valueB === 'object' ? parseFloat(valueB.value) : parseFloat(valueB);
+
+			if (isNaN(amountA) && isNaN(amountB)) return 0;
+			if (isNaN(amountA)) return 1;
+			if (isNaN(amountB)) return -1;
+
+			return amountA - amountB;
+		}
+
+		// --- NUMERIC SORTING ---
+		if (isNumeric) {
+			const numA = parseFloat(valueA);
+			const numB = parseFloat(valueB);
+
+			if (isNaN(numA) && isNaN(numB)) return 0;
+			if (isNaN(numA)) return 1;
+			if (isNaN(numB)) return -1;
+
+			return numA - numB;
+		}
+
+		return String(valueA).toLowerCase().localeCompare(String(valueB).toLowerCase());
+	};
 };
+
 const addABTestIcon = (content, row) => {
   if (!row.is_ab_test) return content;
 
@@ -400,10 +441,12 @@ const getDataTableData = async (params) => {
   try {
     validateParams(params);
 
-    const { startDate, endDate, range, args, columnsOptions } = params;
+    const { startDate, endDate, range, args, columnsOptions, type } = params;
 
+	const endpoint = 'ecommerce-datatable' === type ? 'ecommerce/datatable' : 'datatable';
+
+	const { data } = await getData(endpoint, startDate, endDate, range, args);
     // Fetch data from API
-    const { data } = await getData('datatable', startDate, endDate, range, args);
 
     if (!data) {
       throw new Error('No data received from API');

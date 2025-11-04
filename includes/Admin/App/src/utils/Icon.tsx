@@ -1,6 +1,15 @@
 import { memo } from 'react';
 import Tooltip from '../components/Common/Tooltip';
-import { LucideProps, OctagonAlert, Percent, ShoppingCart, UserRoundCheck, UserRoundPlus, TriangleAlert } from 'lucide-react';
+import {
+    LucideProps,
+    OctagonAlert,
+    Percent,
+    ShoppingCart,
+    UserRoundCheck,
+    UserRoundPlus,
+    TriangleAlert,
+    Zap, Lightbulb, MoveRight, Ellipsis
+} from 'lucide-react';
 import {
 	AlertCircle,
 	AlertOctagon,
@@ -85,6 +94,7 @@ import { clsx } from "clsx";
 
 // Color mapping from our custom colors to CSS variables
 const iconColors = {
+    'black-light': 'black-light',
 	black: 'black',
 	green: 'green',
 	yellow: 'yellow',
@@ -202,6 +212,10 @@ const iconComponents = {
 	'warning-triangle': TriangleAlert,
 	'percent': Percent,
 	'sprout' : Sprout,
+    zap: Zap,
+    bulb: Lightbulb,
+    'right-arrow': MoveRight,
+    ellipsis: Ellipsis
 };
 
 // Define types for icon names and colors

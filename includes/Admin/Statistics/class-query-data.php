@@ -1,11 +1,9 @@
 <?php
 namespace Burst\Admin\Statistics;
 
-use Burst\Frontend\Tracking\Tracking;
 use Burst\Traits\Admin_Helper;
-use Burst\Traits\Database_Helper;
-use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
+
 defined( 'ABSPATH' ) || die();
 
 class Query_Data {
@@ -42,7 +40,11 @@ class Query_Data {
 				} elseif ( is_array( $value ) ) {
 					$this->$key = array_map( 'esc_sql', $value );
 				} elseif ( is_string( $value ) ) {
-					$this->$key = esc_sql( $value );
+					if ( $key === 'custom_where' ) {
+						$this->$key = $value;
+					} else {
+						$this->$key = esc_sql( $value );
+					}
 				} elseif ( is_bool( $value ) || is_int( $value ) || is_float( $value ) ) {
 					$this->$key = $value;
 				}

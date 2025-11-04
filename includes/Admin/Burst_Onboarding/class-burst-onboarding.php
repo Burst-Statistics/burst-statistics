@@ -2,7 +2,7 @@
 namespace Burst\Admin\Burst_Onboarding;
 
 use Burst\Frontend\Ip\Ip;
-use Burst\Pro\Licensing\Licensing;
+use Burst\Pro\Admin\Licensing\Licensing;
 use Burst\TeamUpdraft\Onboarding\Onboarding;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Save;
@@ -78,22 +78,22 @@ class Burst_Onboarding {
 		}
 	}
 
-    //phpcs:disable
-    /**
-     * Wrapper for plugin specific option retrieval.
-     */
-    public function get_plugin_option( string $id ) {
-        //return the option value for the given id.
-        return $this->get_option( $id );
-    }
+	//phpcs:disable
+	/**
+	 * Wrapper for plugin specific option retrieval.
+	 */
+	public function get_plugin_option( string $id ) {
+		//return the option value for the given id.
+		return $this->get_option( $id );
+	}
 
-    /**
-     * Wrapper for plugin specific option update.
-     */
-    public function update_plugin_option( string $id, $value ): void {
-        $this->update_option( $id, $this->maybe_transform( $id, $value ) );
-    }
-    //phpcs:enable
+	/**
+	 * Wrapper for plugin specific option update.
+	 */
+	public function update_plugin_option( string $id, $value ): void {
+		$this->update_option( $id, $this->maybe_transform( $id, $value ) );
+	}
+	//phpcs:enable
 
 	/**
 	 * Update the plugin settings for a specific step. Some settings may need to be transformed.
@@ -112,81 +112,81 @@ class Burst_Onboarding {
 		}
 	}
 
-    //phpcs:disable
-    /**
-     * In some cases we need to transform the value before saving it
-     */
-    public function maybe_transform( string $id, $value ) {
-        if ( $id === 'user_role_blocklist' ) {
-            $current_block_list = $this->get_option( $id );
-            if ( ! is_array( $current_block_list ) ) {
-                $current_block_list = [];
-            }
-            if ( (bool) $value === true && ! in_array( 'administrator', $current_block_list, true ) ) {
-                $current_block_list[] = 'administrator';
-                $value                = $current_block_list;
-            }
-            if ( (bool) $value === false && in_array( 'administrator', $current_block_list, true ) ) {
-                // remove administrator from block list.
-                $key = array_search( 'administrator', $current_block_list, true );
-                if ( $key !== false ) {
-                    unset( $current_block_list[ $key ] );
-                }
+	//phpcs:disable
+	/**
+	 * In some cases we need to transform the value before saving it
+	 */
+	public function maybe_transform( string $id, $value ) {
+		if ( $id === 'user_role_blocklist' ) {
+			$current_block_list = $this->get_option( $id );
+			if ( ! is_array( $current_block_list ) ) {
+				$current_block_list = [];
+			}
+			if ( (bool) $value === true && ! in_array( 'administrator', $current_block_list, true ) ) {
+				$current_block_list[] = 'administrator';
+				$value                = $current_block_list;
+			}
+			if ( (bool) $value === false && in_array( 'administrator', $current_block_list, true ) ) {
+				// remove administrator from block list.
+				$key = array_search( 'administrator', $current_block_list, true );
+				if ( $key !== false ) {
+					unset( $current_block_list[ $key ] );
+				}
 
-                $value = $current_block_list;
-            }
+				$value = $current_block_list;
+			}
 
-            if ( !is_array($value) ) {
-                $value = [];
-            }
-            // remove empty values from the array.
-            $value = array_filter(
-                $value,
-                function ( $item ) {
-                    return ! empty( $item );
-                }
-            );
-            // reindex the array.
-            $value = array_values( $value );
-        }
+			if ( !is_array($value) ) {
+				$value = [];
+			}
+			// remove empty values from the array.
+			$value = array_filter(
+				$value,
+				function ( $item ) {
+					return ! empty( $item );
+				}
+			);
+			// reindex the array.
+			$value = array_values( $value );
+		}
 
-        if ( $id === 'ip_blocklist' && (bool) $value === true ) {
-            $current_block_list = $this->get_plugin_option( 'ip_blocklist' );
-            $blocked_ips        = preg_split( '/\r\n|\r|\n/', $current_block_list );
-            $current_ip         = IP::get_ip_address();
-            // check if the current IP is already in the block list.
-            foreach ( $blocked_ips as $blocked_ip ) {
-                if ( $current_ip === trim( $blocked_ip ) ) {
-                    return $value;
-                }
-            }
-            $value = $current_block_list . "\n" . $current_ip;
-        }
+		if ( $id === 'ip_blocklist' && (bool) $value === true ) {
+			$current_block_list = $this->get_plugin_option( 'ip_blocklist' );
+			$blocked_ips        = preg_split( '/\r\n|\r|\n/', $current_block_list );
+			$current_ip         = IP::get_ip_address();
+			// check if the current IP is already in the block list.
+			foreach ( $blocked_ips as $blocked_ip ) {
+				if ( $current_ip === trim( $blocked_ip ) ) {
+					return $value;
+				}
+			}
+			$value = $current_block_list . "\n" . $current_ip;
+		}
 
-        if ( $id === 'email_reports_mailinglist' ) {
-            $value = sanitize_email( $value );
-            $current_report_array = $this->get_plugin_option( 'email_reports_mailinglist' );
-            if ( ! is_array( $current_report_array ) ) {
-                $current_report_array = [];
-            }
-            $mail_found           = false;
-            foreach ( $current_report_array as $mailing_preferences ) {
-                if ( $mailing_preferences['email'] === $value ) {
-                    $mail_found = true;
-                }
-            }
-            if ( ! $mail_found ) {
-                $current_report_array[] = [
-                    'email'     => $value,
-                    'frequency' => 'weekly',
-                ];
-            }
+		if ( $id === 'email_reports_mailinglist' ) {
+			$value = sanitize_email( $value );
+			$current_report_array = $this->get_plugin_option( 'email_reports_mailinglist' );
+			if ( ! is_array( $current_report_array ) ) {
+				$current_report_array = [];
+			}
+			$mail_found           = false;
+			foreach ( $current_report_array as $mailing_preferences ) {
+				if ( $mailing_preferences['email'] === $value ) {
+					$mail_found = true;
+				}
+			}
+			if ( ! $mail_found ) {
+				$current_report_array[] = [
+					'email'     => $value,
+					'frequency' => 'weekly',
+				];
+			}
 
-            $value = $current_report_array;
-        }
-        return $value;
-    }
-    //phpcs:enable
+			$value = $current_report_array;
+		}
+		return $value;
+	}
+	//phpcs:enable
 
 	/**
 	 * Check if the license for this user is valid.
@@ -211,9 +211,6 @@ class Burst_Onboarding {
 	 * } Result of activation, including success status and message.
 	 */
 	public function activate_license( array $response, array $data ): array {
-		// here in case email/password activation is required.
-		$email   = isset( $data['email'] ) ? sanitize_email( $data['email'] ) : false;
-		$pw      = isset( $data['password'] ) ? sanitize_text_field( $data['password'] ) : false;
 		$license = isset( $data['license'] ) ? sanitize_text_field( $data['license'] ) : false;
 
 		$this->update_option( 'license', $license );

@@ -201,10 +201,6 @@ class Upgrade {
 			wp_schedule_single_event( time() + 300, 'burst_upgrade_iteration' );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '1.8.1', '<' ) ) {
-			\Burst\burst_loader()->admin->tasks->add_task( 'including_bounces' );
-		}
-
 		if ( $prev_version && version_compare( $prev_version, '2.0.0', '<' ) ) {
 			add_action( 'plugins_loaded', [ $this, 'upgrade_goals' ], 30 );
 		}
@@ -234,6 +230,15 @@ class Upgrade {
 		if ( $prev_version && version_compare( $prev_version, '2.2.6', '<' ) ) {
 			update_option( 'burst_db_upgrade_add_page_ids', true, false );
 			delete_post_meta_by_key( 'burst_total_pageviews_count' );
+		}
+
+		if ( $prev_version && version_compare( $prev_version, '3.0.0', '<' ) ) {
+			\Burst\burst_loader()->admin->tasks->add_task( 'ecommerce_integration' );
+			burst_reinstall_rest_api_optimizer();
+		}
+
+		if ( $prev_version && version_compare( $prev_version, '3.0.1', '<' ) ) {
+			update_option( 'burst_is_multi_domain', false );
 		}
 
 		$admin = new Admin();
@@ -268,8 +273,8 @@ class Upgrade {
 		$columns = $wpdb->get_results( "SHOW COLUMNS FROM {$table_name}" );
 
 		foreach ( $columns as $column ) {
-            //phpcs:ignore
-            if ( $column->Field === 'setup' || $column->Field === 'attribute' || $column->Field === 'attribute_value' ) {
+			//phpcs:ignore
+			if ( $column->Field === 'setup' || $column->Field === 'attribute' || $column->Field === 'attribute_value' ) {
 				$wpdb->query( "ALTER TABLE {$table_name} DROP COLUMN {$column->Field}" );
 			}
 		}

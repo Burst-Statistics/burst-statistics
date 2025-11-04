@@ -3,7 +3,7 @@ namespace Burst\Admin\Burst_Wp_Cli;
 
 use Burst\Admin\Admin;
 use Burst\Frontend\Goals\Goal;
-use Burst\Pro\Licensing\Licensing;
+use Burst\Pro\Admin\Licensing\Licensing;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Save;
@@ -87,8 +87,8 @@ class Burst_Wp_Cli {
 				continue;
 			}
 
-            //phpcs:ignore
-            $contents = ( file_exists( $path_name ) && is_readable( $path_name ) ) ? file_get_contents( $path_name ) : '';
+			//phpcs:ignore
+			$contents = ( file_exists( $path_name ) && is_readable( $path_name ) ) ? file_get_contents( $path_name ) : '';
 
 			// Match 'url' and ->admin_url.
 			if ( preg_match_all(

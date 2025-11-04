@@ -4,7 +4,6 @@ import Icon from '../../utils/Icon';
 import { formatNumber } from '../../utils/formatting';
 import debounce from 'lodash/debounce';
 import usePostsStore from '../../store/usePostsStore';
-import {useEffect} from 'react';
 
 import { forwardRef } from 'react';
 import AsyncSelectInput from '@/components/Inputs/AsyncSelectInput';
@@ -25,11 +24,12 @@ import FieldWrapper from '@/components/Fields/FieldWrapper';
 const SelectPageField = forwardRef(
   ({ field, fieldState, label, help, context, className, ...props }, ref ) => {
     const inputId = props.id || field?.name;
-;
+
     const {
         fetchPosts
     } = usePostsStore();
   const [ search, setSearch ] = useState( '' );
+  const maxSelections = props.maxSelections || 1;
 
   const posts = useQuery({
       queryKey: [ 'defaultPosts', search ],
@@ -59,11 +59,21 @@ const SelectPageField = forwardRef(
     >
         <AsyncSelectInput
             onChange={( e ) => {
-              props.onChange( e.value );
+				if ( maxSelections === 1 ) {
+					if ( ! e?.value ) {
+						props.onChange('');
+					} else {
+						props.onChange(e.value);
+					}
+				} else {
+					const values = e ? e.map( item => item.value ) : [];
+					props.onChange( values );
+				}
             }}
-            isLoading={posts.isLoading}
+            isLoading={posts.isFetching}
             name="selectPage"
             value={field?.value}
+			maxSelections={ maxSelections }
             defaultInputValue={field?.value}
             defaultOptions={posts.data || []}
             loadOptions={loadOptions}

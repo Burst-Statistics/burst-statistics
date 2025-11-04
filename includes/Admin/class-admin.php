@@ -63,9 +63,9 @@ class Admin {
 		add_action( 'burst_dismiss_task', [ $this, 'dismiss_php_error_notice' ], 10, 1 );
 		add_action( 'wp_initialize_site', [ $this, 'create_js_file' ], 10, 1 );
 		add_action( 'admin_init', [ $this, 'activation' ] );
-		add_action( 'burst_run_database_upgrade_single_event', [ $this, 'run_table_init_hook' ], 10, 1 );
-		add_action( 'burst_activation', [ $this, 'run_table_init_hook' ], 10, 1 );
 		add_action( 'burst_activation', [ $this, 'setup_defaults' ], 20, 1 );
+
+		add_action( 'burst_activation', [ $this, 'run_table_init_hook' ], 10, 1 );
 		add_action( 'after_reset_stats', [ $this, 'run_table_init_hook' ], 10, 1 );
 		add_action( 'wp_initialize_site', [ $this, 'run_table_init_hook' ], 10, 1 );
 		add_action( 'burst_upgrade_before', [ $this, 'run_table_init_hook' ], 10, 1 );
@@ -79,6 +79,7 @@ class Admin {
 		add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
 		add_action( 'burst_weekly', [ $this, 'cleanup_bf_dismissed_tasks' ] );
 		add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
+		add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
 
 		$upgrade = new Upgrade();
 		$upgrade->init();
@@ -120,6 +121,48 @@ class Admin {
 	}
 
 	/**
+	 * Add ecommerce menu item to the admin menu
+	 *
+	 * @param array $menu_items The existing menu items.
+	 * @return array The modified menu items including the ecommerce menu item.
+	 */
+	public function add_ecommerce_menu_item( array $menu_items ): array {
+		$should_load_ecommerce = \Burst\burst_loader()->integrations->should_load_ecommerce();
+
+		if ( ! $should_load_ecommerce ) {
+			return $menu_items;
+		}
+
+		$ecommerce_menu_item = [
+			'id'             => 'sales',
+			'title'          => __( 'Sales', 'burst-statistics' ),
+			'default_hidden' => false,
+			'menu_items'     => [],
+			'capabilities'   => 'view_burst_statistics',
+			'menu_slug'      => 'burst#/sales',
+			'show_in_admin'  => true,
+			'pro'            => true,
+		];
+
+		// Put ecommerce menu item before the id: settings menu item.
+		$settings_index = null;
+		foreach ( $menu_items as $index => $item ) {
+			if ( isset( $item['id'] ) && 'settings' === $item['id'] ) {
+				$settings_index = $index;
+				break;
+			}
+		}
+
+		if ( null !== $settings_index ) {
+			array_splice( $menu_items, $settings_index, 0, [ $ecommerce_menu_item ] );
+		} else {
+			$menu_items[] = $ecommerce_menu_item;
+		}
+
+		return $menu_items;
+	}
+
+	/**
 	 * Remove CM and BF tasks from the permanently dismissed array if it is february.
 	 */
 	public function cleanup_bf_dismissed_tasks(): void {
@@ -133,6 +176,13 @@ class Admin {
 	 * Run a daily check if all database tables exist.
 	 */
 	public function test_database_tables(): void {
+		// do not run if the plugin is just activated.
+		$plugin_activated_time = get_option( 'burst_activation_time', 0 );
+		$one_hour_ago          = time() - HOUR_IN_SECONDS;
+		if ( $plugin_activated_time === 0 || $one_hour_ago < $plugin_activated_time ) {
+			return;
+		}
+
 		$table_names    = $this->get_table_list();
 		$missing_tables = [];
 		foreach ( $table_names as $table_name ) {
@@ -591,7 +641,7 @@ class Admin {
 
 		$js = 'let burst = ' . wp_json_encode( $localize_args ) . ';';
 
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		$js .= file_get_contents( BURST_PATH . "assets/js/build/burst$cookieless_text.min.js" );
 
 		$upload_dir = $this->upload_dir( 'js' );
@@ -700,7 +750,7 @@ class Admin {
 		if ( ! defined( 'BURST_PRO' ) ) {
 			$upgrade_link
 				= '<a style="color:#2e8a37;font-weight:bold" target="_blank" href="' . $this->get_website_url( 'pricing', [ 'utm_source' => 'plugin-overview' ] ) . '">'
-				. __( 'Upgrade to Pro', 'burst-statistics' ) . '</a>';
+					. __( 'Upgrade to Pro', 'burst-statistics' ) . '</a>';
 			array_unshift( $links, $upgrade_link );
 		}
 
@@ -721,7 +771,7 @@ class Admin {
 				]
 			);
 		$faq_link     = '<a target="_blank" href="' . $support_link . '">'
-			. __( 'Support', 'burst-statistics' ) . '</a>';
+						. __( 'Support', 'burst-statistics' ) . '</a>';
 		array_push( $links, $faq_link );
 
 		return $links;
@@ -753,9 +803,9 @@ class Admin {
 			$css_class = 'burst-' . ( $menu_item['id'] ?? 'menu' ) . '-link';
 
 			$menu_links[] = '<a href="'
-				. admin_url( 'admin.php?page=' . $menu_slug )
-				. '" class="' . esc_attr( $css_class ) . '">'
-				. esc_html( $title ) . '</a>';
+							. admin_url( 'admin.php?page=' . $menu_slug )
+							. '" class="' . esc_attr( $css_class ) . '">'
+							. esc_html( $title ) . '</a>';
 		}
 
 		return $menu_links;
@@ -767,13 +817,7 @@ class Admin {
 	 * @return array<int, array<string, mixed>> Menu configuration array
 	 */
 	private function get_menu_config(): array {
-		$config_file = BURST_PATH . 'includes/Admin/App/config/menu.php';
-		if ( ! file_exists( $config_file ) ) {
-			return [];
-		}
-
-		$menu_config = include $config_file;
-		return is_array( $menu_config ) ? $menu_config : [];
+		return $this->app->menu->get();
 	}
 
 	/**
@@ -939,17 +983,17 @@ class Admin {
 		<script>
 			jQuery(document).ready(function($) {
 				$('#burst_close_tb_window').click(tb_remove);
-                <?php //phpcs:ignore ?>
-                $(document).on('click', '#deactivate-<?php echo $slug; ?>', function(e) {
+				<?php //phpcs:ignore ?>
+				$(document).on('click', '#deactivate-<?php echo $slug; ?>', function(e) {
 					e.preventDefault();
 					tb_show('', '#TB_inline?height=420&inlineId=deactivate_and_delete_data', 'null');
 					$('#TB_window').addClass('burst-deactivation-popup');
 
 				});
-                <?php //phpcs:ignore ?>
-                if ($('#deactivate-<?php echo $slug; ?>').length) {
-                    <?php //phpcs:ignore ?>
-                    $('.burst-button-deactivate').attr('href', $('#deactivate-<?php echo $slug; ?>').attr('href'));
+				<?php //phpcs:ignore ?>
+				if ($('#deactivate-<?php echo $slug; ?>').length) {
+					<?php //phpcs:ignore ?>
+					$('.burst-button-deactivate').attr('href', $('#deactivate-<?php echo $slug; ?>').attr('href'));
 				}
 
 			});
@@ -999,20 +1043,20 @@ class Admin {
 		}
 
 		// check nonce. ignore phpcs: no data is stored here. only verified.
-        //phpcs:ignore
-        if ( ! isset( $_GET['token'] ) || ( ! $this->verify_nonce( $_GET['token'], 'burst_deactivate_plugin' ) ) ) {
+		//phpcs:ignore
+		if ( ! isset( $_GET['token'] ) || ( ! $this->verify_nonce( $_GET['token'], 'burst_deactivate_plugin' ) ) ) {
 			return;
 		}
 
 		// check for action.
-        //phpcs:ignore
-        if ( isset( $_GET['action'] ) && $_GET['action'] === 'uninstall_delete_all_data' ) {
+		//phpcs:ignore
+		if ( isset( $_GET['action'] ) && $_GET['action'] === 'uninstall_delete_all_data' ) {
 			define( 'BURST_NO_UPGRADE', true );
 			define( 'BURST_UNINSTALLING', true );
 			\Burst\burst_clear_scheduled_hooks();
 
-            //phpcs:ignore
-            $networkwide = isset( $_GET['networkwide'] ) && $_GET['networkwide'] === '1';
+			//phpcs:ignore
+			$networkwide = isset( $_GET['networkwide'] ) && $_GET['networkwide'] === '1';
 			if ( $networkwide && is_multisite() ) {
 				$sites = get_sites();
 				if ( count( $sites ) > 0 ) {
@@ -1191,11 +1235,15 @@ class Admin {
 			'burst_tasks',
 			'burst_demo_data_installed',
 			'burst_trial_offered',
+			'burst_quick_win_dismissed_wins',
+			'burst_quick_win_dismissed_wins',
+			'burst_plugin_path',
 			'burst_tasks_permanently_dismissed',
 			'burst_license_activation_limit',
 			'burst_license_activations_left',
 			'burst_license_expires',
 			'burst_transients',
+			'burst_ecommerce_activated_time',
 		];
 		// delete options.
 		foreach ( $options as $option_name ) {

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StatisticsRouteImport } from './routes/statistics'
 import { Route as SourcesRouteImport } from './routes/sources'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SalesRouteImport } from './routes/sales'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsSettingsIdRouteImport } from './routes/settings.$settingsId'
 
@@ -30,6 +31,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalesRoute = SalesRouteImport.update({
+  id: '/sales',
+  path: '/sales',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +49,7 @@ const SettingsSettingsIdRoute = SettingsSettingsIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/sales': typeof SalesRoute
   '/settings': typeof SettingsRouteWithChildren
   '/sources': typeof SourcesRoute
   '/statistics': typeof StatisticsRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/sales': typeof SalesRoute
   '/settings': typeof SettingsRouteWithChildren
   '/sources': typeof SourcesRoute
   '/statistics': typeof StatisticsRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/sales': typeof SalesRoute
   '/settings': typeof SettingsRouteWithChildren
   '/sources': typeof SourcesRoute
   '/statistics': typeof StatisticsRoute
@@ -67,15 +76,23 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/sales'
     | '/settings'
     | '/sources'
     | '/statistics'
     | '/settings/$settingsId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/sources' | '/statistics' | '/settings/$settingsId'
+  to:
+    | '/'
+    | '/sales'
+    | '/settings'
+    | '/sources'
+    | '/statistics'
+    | '/settings/$settingsId'
   id:
     | '__root__'
     | '/'
+    | '/sales'
     | '/settings'
     | '/sources'
     | '/statistics'
@@ -84,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SalesRoute: typeof SalesRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   SourcesRoute: typeof SourcesRoute
   StatisticsRoute: typeof StatisticsRoute
@@ -110,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sales': {
+      id: '/sales'
+      path: '/sales'
+      fullPath: '/sales'
+      preLoaderRoute: typeof SalesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -143,6 +168,7 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SalesRoute: SalesRoute,
   SettingsRoute: SettingsRouteWithChildren,
   SourcesRoute: SourcesRoute,
   StatisticsRoute: StatisticsRoute,

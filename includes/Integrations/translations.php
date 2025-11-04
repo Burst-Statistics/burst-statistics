@@ -60,6 +60,27 @@ return [
 				],
 			],
 	],
+	'easy-digital-downloads-pro'       => [
+		'goals' =>
+			[
+				[
+					'id'    => 'edd_complete_purchase',
+					'title' => 'Easy Digital Downloads - ' . __( 'Purchase', 'burst-statistics' ),
+				],
+				[
+					'id'    => 'edd_add_to_cart',
+					'title' => 'Easy Digital Downloads - ' . __( 'Add to cart', 'burst-statistics' ),
+				],
+				[
+					'id'    => 'edd_go_to_checkout',
+					'title' => 'Easy Digital Downloads - ' . __( 'Go to checkout', 'burst-statistics' ),
+				],
+				[
+					'id'    => 'edd_click_purchase',
+					'title' => 'Easy Digital Downloads - ' . __( 'Purchase button', 'burst-statistics' ),
+				],
+			],
+	],
 	'easy-digital-downloads-recurring' => [
 		'goals' => [
 			[

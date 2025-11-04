@@ -6,6 +6,7 @@ use Burst\Frontend\Goals\Goals_Tracker;
 use Burst\Frontend\Tracking\Tracking;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
+use function Burst\burst_loader;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -45,6 +46,7 @@ class Frontend {
 		$goals->init();
 		$goals_tracker = new Goals_Tracker();
 		$goals_tracker->init();
+
 		// Check if shortcodes option is enabled.
 		if ( $this->get_option_bool( 'enable_shortcodes' ) ) {
 			$shortcodes = new Shortcodes();
@@ -218,17 +220,17 @@ class Frontend {
 		}
 
 		// No form data processed, only exit if not present.
-        // phpcs:ignore
+		// phpcs:ignore
 		if ( ! isset( $_POST['status'] ) || ! isset( $_POST['data'] ) || ! isset( $_POST['error'] ) ) {
 			$this::error_log( 'Posted log error, but missing required POST parameters.' );
 			return;
 		}
 
 		// no nonce verification, as we are logging public 400 response errors.
-        // phpcs:ignore
+		// phpcs:ignore
 		$status = (int) ( $_POST['status'] );
-        // phpcs:ignore
-        $raw_data = stripslashes( $_POST['data'] );
+		// phpcs:ignore
+		$raw_data = stripslashes( $_POST['data'] );
 		$data     = json_decode( $raw_data, true );
 		if ( ! is_array( $data ) ) {
 			$data = [];
@@ -247,10 +249,10 @@ class Frontend {
 				: [],
 		];
 		// no nonce verification, as we are logging public 400 response errors.
-        // phpcs:ignore
+		// phpcs:ignore
 		$error = sanitize_text_field( $_POST['error'] );
 		// usage of print_r is intentional here, as this is a debug log.
-        // phpcs:ignore
+		// phpcs:ignore
 		$this::error_log( "Burst tracking error: status=$status, error=$error, data=" . print_r( $data, true ) );
 	}
 
@@ -278,7 +280,7 @@ class Frontend {
 	 */
 	public function use_logged_out_state_for_tests(): void {
 		// No form data processed, no action connected, only not showing logged in state for testing purposes.
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['burst_test_hit'] ) || isset( $_GET['burst_nextpage'] ) || ( isset( $_GET['burst_force_logged_out'] ) && $_GET['burst_force_logged_out'] === '1' ) ) {
 			add_filter( 'determine_current_user', '__return_null', 100 );
 			wp_set_current_user( 0 );
@@ -361,7 +363,7 @@ class Frontend {
 	 */
 	public function exclude_from_tracking(): bool {
 		// no form data processed, only excluding from tracking.
-        // phpcs:ignore
+		// phpcs:ignore
 		if ( isset( $_GET['burst_force_logged_out'] ) ) {
 			return true;
 		}

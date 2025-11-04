@@ -17,6 +17,7 @@ const SubscriptionHeader = (props: any) => {
         licenseExpirationRemainingDays,
         licenseExpiresTwoWeeks,
         licenseInactive,
+        isTrial,
     } = useLicenseData();
 
     if (!isPro) {
@@ -46,19 +47,17 @@ const SubscriptionHeader = (props: any) => {
         }
     );
 
-    if (subscriptionStatus === 'trialling') {
+    if (isTrial) {
         iconColor = 'green';
         bgColor = 'bg-green-light';
         icon = 'sprout';
         showSubscriptionHeader = true;
-    }
-
+    } else
     //no subscription, and expiring within 2 weeks.
     if (subscriptionStatus === 'cancelled' && trialExpired) {
         text = __('Your trial has ended. Upgrade now to reactivate premium features.', 'burst-statistics')
         showSubscriptionHeader = true;
-    }
-
+    } else
     //no subscription, and expiring within 2 weeks.
     if (subscriptionStatus === 'cancelled' && licenseExpiresTwoWeeks) {
         text = createInterpolateElement(
@@ -71,8 +70,7 @@ const SubscriptionHeader = (props: any) => {
             }
         );
         showSubscriptionHeader = true;
-    }
-
+    } else
     //no subscription, and expired license.
     if (subscriptionStatus !== 'active' && !isLicenseValid) {
         text = __('Your license has expired. Upgrade now to reactivate premium features.', 'burst-statistics')

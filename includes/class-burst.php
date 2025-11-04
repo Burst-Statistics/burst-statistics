@@ -65,7 +65,7 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 		define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 		define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 		define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
-		define( 'BURST_VERSION', '2.2.9.3' );
+		define( 'BURST_VERSION', '3.0.0' );
 		// deprecated constant.
         //phpcs:ignore
         define( 'burst_version', BURST_VERSION );
@@ -102,12 +102,13 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 			$this->admin->init();
 			$capability = new Capability();
 			$capability->init();
-
-			if ( defined( 'BURST_PRO_FILE' ) ) {
-				$this->pro = new Pro();
-				$this->pro->init();
-			}
 		}
+
+		if ( defined( 'BURST_PRO_FILE' ) ) {
+			$this->pro = new Pro();
+			$this->pro->init();
+		}
+
 		$this->frontend = new Frontend();
 		$this->frontend->init();
 	}

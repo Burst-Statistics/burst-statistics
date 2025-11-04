@@ -17,9 +17,12 @@ use Burst\Frontend\Ip\Ip;
 use Burst\Traits\Helper;
 
 require_once BURST_PATH . 'helpers/php-user-agent/UserAgentParser.php';
+
+use Burst\Traits\Sanitize;
 use function Burst\UserAgent\parse_user_agent;
 class Tracking {
 	use Helper;
+	use Sanitize;
 
 	public string $beacon_enabled;
 	public array $look_up_table_ids = [];
@@ -370,13 +373,14 @@ class Tracking {
 		$is_update_hit = $data['browser_id'] === 0 && $data['browser_version_id'] === 0 && $data['platform_id'] === 0 && $data['device_id'] === 0;
 
 		// Attempt to get the last user statistic based on the presence or absence of certain conditions.
+		$uid = $data['fingerprint'] ?: $data['uid'];
 		if ( $is_update_hit ) {
 			// For an update hit, require matching uid, fingerprint, and parameters.
 			$page_url = $data['host'] . $this->create_path( $data );
-			$last_row = $this->get_last_user_statistic( $data['uid'], $data['fingerprint'], $page_url );
+			$last_row = $this->get_last_user_statistic( $uid, $page_url );
 		} else {
 			// For a potential create hit, uid and fingerprint are sufficient.
-			$last_row = $this->get_last_user_statistic( $data['uid'], $data['fingerprint'] );
+			$last_row = $this->get_last_user_statistic( $uid );
 		}
 
 		// Determine the appropriate action based on the result.
@@ -398,112 +402,6 @@ class Tracking {
 				'last_row' => null,
 			];
 		}
-	}
-
-	/**
-	 * Sanitize and destructure a URL.
-	 *
-	 * Ensures the URL is safe and valid, then extracts its components.
-	 *
-	 * @param string $url The input URL.
-	 * @return array{
-	 *     scheme: string,
-	 *     host: string,
-	 *     path: string,
-	 *     parameters: string
-	 * }
-	 */
-	public function sanitize_url( ?string $url ): array {
-		$url_destructured = [
-			'scheme'     => 'https',
-			'host'       => '',
-			'path'       => '',
-			'parameters' => '',
-		];
-		if ( ! function_exists( 'wp_kses_bad_protocol' ) ) {
-			require_once ABSPATH . '/wp-includes/kses.php';
-		}
-		$sanitized_url = filter_var( $url, FILTER_SANITIZE_URL );
-		// Validate the URL.
-		if ( ! filter_var( $sanitized_url, FILTER_VALIDATE_URL ) ) {
-			return $url_destructured;
-		}
-
-		if ( ! function_exists( 'wp_parse_url' ) ) {
-			require_once ABSPATH . '/wp-includes/http.php';
-		}
-		$url = wp_parse_url( esc_url_raw( $sanitized_url ) );
-		if ( isset( $url['host'] ) ) {
-			$path                            = $url['path'] ?? '';
-			$url_destructured['host']        = $url['host'];
-			$url_destructured['scheme']      = $url['scheme'];
-			$url_destructured['path']        = trailingslashit( $path );
-			$url_destructured['parameters']  = $url['query'] ?? '';
-			$url_destructured['parameters'] .= $url['fragment'] ?? '';
-		}
-		return $url_destructured;
-	}
-
-	/**
-	 * Sanitize uid
-	 */
-	public function sanitize_uid( ?string $uid ): string {
-		if ( $uid === null || strlen( $uid ) === 0 || ! preg_match( '/^[a-z0-9-]*/', $uid ) ) {
-			return '';
-		}
-
-		return $uid;
-	}
-
-	/**
-	 * Sanitize fingerprint
-	 */
-	public function sanitize_fingerprint( ?string $fingerprint ): string {
-		if ( $fingerprint === null || strlen( $fingerprint ) === 0 || ! preg_match( '/^[a-z0-9-]*/', $fingerprint ) ) {
-			return '';
-		}
-
-		return 'f-' . $fingerprint;
-	}
-
-	/**
-	 * Sanitize referrer
-	 */
-	public function sanitize_referrer( ?string $referrer ): string {
-		if ( ! defined( 'BURST_PATH' ) ) {
-			$dir     = plugin_dir_path( __FILE__ );
-			$src_pos = strpos( $dir, '/includes/' );
-			$dir     = $src_pos !== false ? substr( $dir, 0, $src_pos + 1 ) : $dir;
-			define( 'BURST_PATH', $dir );
-		}
-		$referrer = filter_var( $referrer, FILTER_SANITIZE_URL );
-		// we use wp_parse_url so we don't need to load a wp file here.
-        //phpcs:ignore
-		$referrer_host = parse_url( $referrer, PHP_URL_HOST );
-		$current_host  = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'];
-		// don't track if referrer is the same as current host.
-		// if referrer_url starts with current_host, then it is not a referrer.
-		if ( empty( $referrer_host ) || strpos( $referrer_host, $current_host ) === 0 ) {
-			return '';
-		}
-
-		$ref_spam_list = file( BURST_PATH . 'helpers/referrer-spam-list/spammers.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
-		$ref_spam_list = apply_filters( 'burst_referrer_spam_list', $ref_spam_list );
-		if ( array_search( $referrer_host, $ref_spam_list, true ) ) {
-			return 'spammer';
-		}
-		if ( ! function_exists( 'wp_kses_bad_protocol' ) ) {
-			require_once ABSPATH . '/wp-includes/kses.php';
-		}
-
-		return $referrer ? trailingslashit( esc_url_raw( $referrer ) ) : '';
-	}
-
-	/**
-	 * Sanitize time on page
-	 */
-	public function sanitize_time_on_page( ?string $time_on_page ): int {
-		return (int) $time_on_page;
 	}
 
 	/**
@@ -853,8 +751,7 @@ class Tracking {
 	/**
 	 * Get last user statistic from the burst_statistics table.
 	 *
-	 * @param string $uid         The user identifier.
-	 * @param string $fingerprint A unique browser/device fingerprint.
+	 * @param string $uid         The user identifier or fingerprint.
 	 * @param string $page_url    Optional. Specific page URL to narrow down the result.
 	 * @return array{
 	 *     ID?: int,
@@ -865,11 +762,10 @@ class Tracking {
 	 *     page_url?: string
 	 * } Associative array of the last user statistic, or empty array if none found.
 	 */
-	public function get_last_user_statistic( string $uid, string $fingerprint, string $page_url = '' ): array {
+	public function get_last_user_statistic( string $uid, string $page_url = '' ): array {
 		global $wpdb;
 		// if fingerprint is send get the last user statistic with the same fingerprint.
-		$search_uid = $fingerprint ?: $uid;
-		if ( strlen( $search_uid ) === 0 ) {
+		if ( strlen( $uid ) === 0 ) {
 			return [];
 		}
 		$where = '';
@@ -879,15 +775,17 @@ class Tracking {
 			$where            = ! empty( $parameters ) ? $wpdb->prepare( ' AND parameters = %s', $parameters ) : '';
 		}
 
+		$where .= $wpdb->prepare( ' AND time > %d', strtotime( '-30 minutes' ) );
+
 		$data = $wpdb->get_row(
 			$wpdb->prepare(
 				"select ID, session_id, parameters, time_on_page, bounce, page_url
-      from {$wpdb->prefix}burst_statistics
-                     where uid = %s AND time > %s {$where} ORDER BY ID DESC limit 1",
-				$search_uid,
-				strtotime( '-30 minutes' )
+				from {$wpdb->prefix}burst_statistics
+				where uid = %s $where ORDER BY ID DESC limit 1",
+				$uid,
 			)
 		);
+
 		return $data ? (array) $data : [];
 	}
 
@@ -944,7 +842,7 @@ class Tracking {
 		$data = $this->remove_empty_values( $data );
 
 		if ( ! $this->required_values_set( $data ) ) {
-            // phpcs:ignore
+			// phpcs:ignore
 			self::error_log( 'Missing required values for statistic creation. Data: ' . print_r( $data, true ) );
 			return 0;
 		}
@@ -972,7 +870,7 @@ class Tracking {
 
 		// Ensure 'ID' is present for update.
 		if ( ! isset( $data['ID'] ) ) {
-            // phpcs:ignore
+			// phpcs:ignore
 			self::error_log( 'Missing ID for statistic update. Data: ' . print_r( $data, true ) );
 			return false;
 		}
@@ -1074,21 +972,23 @@ class Tracking {
 		return $data;
 	}
 
-
 	/**
 	 * Store fingerprint in PHP session.
 	 *
 	 * @param string $fingerprint The fingerprint to store.
-	 * @return bool True on success, false on failure.
 	 */
-	public function store_fingerprint_in_session( string $fingerprint ): bool {
-		if ( session_status() === PHP_SESSION_NONE ) {
-			session_start();
+	public function store_fingerprint_in_session( string $fingerprint ): void {
+		$serverside_goals = $this->get_active_goals( true );
+		// no need for session without serverside goals.
+		if ( empty( $serverside_goals ) ) {
+			return;
+		}
+
+		if ( ! $this->start_session_safely() ) {
+			return;
 		}
 
 		$_SESSION['burst_fingerprint'] = $this->sanitize_fingerprint( $fingerprint );
-
-		return true;
 	}
 
 	/**
@@ -1097,11 +997,50 @@ class Tracking {
 	 * @return string The stored fingerprint or empty string if not found.
 	 */
 	public function get_fingerprint_from_session(): string {
-		if ( session_status() === PHP_SESSION_NONE ) {
-			session_start();
+		if ( ! $this->start_session_safely() ) {
+			return '';
 		}
+
 		$fingerprint = $_SESSION['burst_fingerprint'] ?? '';
 		return $this->sanitize_fingerprint( $fingerprint );
+	}
+
+	/**
+	 * Safely start a PHP session with error handling.
+	 *
+	 * @return bool True if session started successfully, false otherwise.
+	 */
+	private function start_session_safely(): bool {
+		if ( session_status() === PHP_SESSION_ACTIVE ) {
+			return true;
+		}
+
+		// Check if session save path exists and is writable.
+		$save_path = session_save_path();
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
+		if ( empty( $save_path ) || ! is_dir( $save_path ) || ! is_writable( $save_path ) ) {
+			// Try to use WordPress uploads directory as fallback.
+			$upload_dir          = wp_upload_dir();
+			$custom_session_path = $upload_dir['basedir'] . '/burst-sessions';
+
+			if ( ! file_exists( $custom_session_path ) ) {
+				wp_mkdir_p( $custom_session_path );
+			}
+
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
+			if ( is_dir( $custom_session_path ) && is_writable( $custom_session_path ) ) {
+				session_save_path( $custom_session_path );
+			}
+		}
+
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Suppressing session warnings as we handle errors gracefully.
+		$result = @session_start();
+
+		if ( ! $result ) {
+			self::error_log( 'Burst: Session start failed' );
+		}
+
+		return $result;
 	}
 
 	/**

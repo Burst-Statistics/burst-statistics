@@ -22,7 +22,7 @@ trait Helper {
 		return defined( 'BURST_PRO' );
 	}
 
-    // phpcs:disable
+	// phpcs:disable
 	/**
 	 * Get an option from the burst settings
 	 */
@@ -32,7 +32,7 @@ trait Helper {
         }
 		return burst_get_option( $option, $default );
 	}
-    // phpcs:enable
+	// phpcs:enable
 
 	/**
 	 * Get an option from the burst settings and cast it to a boolean
@@ -66,16 +66,16 @@ trait Helper {
 	 */
 	public function has_open_basedir_restriction( string $path ): bool {
 		// Default error handler is required.
-        // phpcs:ignore
+		// phpcs:ignore
 		set_error_handler( null );
 		// Clean last error info.
 
 		error_clear_last();
 		// Testing...
-        // phpcs:disable
+		// phpcs:disable
 		// @phpstan-ignore-next-line.
 		@file_exists( $path );
-        // phpcs:enable
+		// phpcs:enable
 		// Restore previous error handler.
 		restore_error_handler();
 		// Return `true` if error has occurred.
@@ -139,7 +139,7 @@ trait Helper {
 		$preview = false;
 		global $wp_customize;
 		// these are all only exists checks, no data is processed.
-        // phpcs:disable
+		// phpcs:disable
 		if ( isset( $wp_customize ) || isset( $_GET['fb-edit'] )
 			|| isset( $_GET['et_pb_preview'] )
 			|| isset( $_GET['et_fb'] )
@@ -152,7 +152,7 @@ trait Helper {
 		) {
 			$preview = true;
 		}
-        // phpcs:enable
+		// phpcs:enable
 
 		return apply_filters( 'burst_is_preview', $preview );
 	}
@@ -171,7 +171,7 @@ trait Helper {
 	 */
 	public static function remote_file_exists( string $url ): bool {
 		// used to encode the url for the option name, not for security purposes.
-        // phpcs:ignore
+		// phpcs:ignore
 		// nosemgrep
 		$hash        = md5( $url );
 		$file_exists = get_option( "burst_remote_file_exists_$hash" );
@@ -207,21 +207,21 @@ trait Helper {
 		return getenv( 'BURST_CI_ACTIVE' ) !== false || ( defined( 'BURST_CI_ACTIVE' ) );
 	}
 
-    // phpcs:disable
-    /**
-     * Log a message only when in test mode
-     *
-     * @param $message
-     * @return void
-     */
-    public static function error_log_test( $message ): void {
-        if ( self::is_test() ) {
-            self::error_log( $message );
-        }
-    }
-    // phpcs:enable
+	// phpcs:disable
+	/**
+	 * Log a message only when in test mode
+	 *
+	 * @param $message
+	 * @return void
+	 */
+	public static function error_log_test( $message ): void {
+		if ( self::is_test() ) {
+			self::error_log( $message );
+		}
+	}
+	// phpcs:enable
 
-    // phpcs:disable
+	// phpcs:disable
 	/**
 	 * Log error to error_log
 	 */
@@ -250,24 +250,24 @@ trait Helper {
 		}
 	}
 
-    /**
-     * Format number to a short version (e.g., 1.2M, 3.4B)
-     *
-     * @param int $n The number to format.
-     * @return string The formatted number.
-     */
-    private function format_number_short( int $n ): string {
-        if ( $n >= 1_000_000_000 ) {
-            return round( $n / 1_000_000_000, 1 ) . 'B';
-        }
-        if ( $n >= 1_000_000 ) {
-            return round( $n / 1_000_000, 1 ) . 'M';
-        }
-        if ( $n >= 1_000 ) {
-            return round( $n / 1_000, 1 ) . 'k';
-        }
-        return (string) $n;
-    }
+	/**
+	 * Format number to a short version (e.g., 1.2M, 3.4B)
+	 *
+	 * @param int $n The number to format.
+	 * @return string The formatted number.
+	 */
+	private function format_number_short( int $n ): string {
+		if ( $n >= 1_000_000_000 ) {
+			return round( $n / 1_000_000_000, 1 ) . 'B';
+		}
+		if ( $n >= 1_000_000 ) {
+			return round( $n / 1_000_000, 1 ) . 'M';
+		}
+		if ( $n >= 1_000 ) {
+			return round( $n / 1_000, 1 ) . 'k';
+		}
+		return (string) $n;
+	}
 
 	/**
 	 * Get the checkout page ID, with caching
@@ -287,6 +287,89 @@ trait Helper {
 		}
 
 		return (int) $page_id;
+	}
+
+	/**
+	 * Get the products page ID, with caching
+	 *
+	 * @return int The checkout page ID.
+	 */
+	public function burst_products_page_id(): int {
+		$cache_key = 'burst_products_page_id';
+		$page_id   = get_transient( $cache_key );
+
+		if ( false === $page_id ) {
+			// Default to -1, allow plugins to filter this
+			$page_id = apply_filters( 'burst_products_page_id', -1 );
+
+			// Cache for 24 hours
+			set_transient( $cache_key, $page_id, DAY_IN_SECONDS );
+		}
+
+		return (int) $page_id;
+	}
+
+	/**
+	 * Get the burst uid from cookie or session.
+	 *
+	 * @return string The burst uid.
+	 */
+	public function get_burst_uid(): string {
+		$burst_uid = isset( $_COOKIE['burst_uid'] ) ? \Burst\burst_loader()->frontend->tracking->sanitize_uid( $_COOKIE['burst_uid'] ) : false;
+		if ( ! $burst_uid ) {
+			// try fingerprint from session.
+			$burst_uid = \Burst\burst_loader()->frontend->tracking->get_fingerprint_from_session();
+		}
+
+		return $burst_uid ?: '';
+	}
+
+	/**
+	 * Get base currency.
+	 *
+	 * @return string The base currency.
+	 */
+	public function get_base_currency(): string {
+		$cache_key     = 'burst_base_currency';
+		$base_currency = get_transient( $cache_key );
+
+		if ( false === $base_currency ) {
+			$base_currency = apply_filters( 'burst_base_currency', 'USD' );
+
+			// Cache for 24 hours
+			set_transient( $cache_key, $base_currency, DAY_IN_SECONDS );
+		}
+
+		return (string) $base_currency;
+	}
+
+	/**
+	 * Get ecommerce cutoff time.
+	 *
+	 * @return int The ecommerce cutoff time in seconds.
+	 */
+	public function get_ecommerce_activation_time(): int {
+		$cutoff_time = (int) get_option( 'burst_ecommerce_activated_time' );
+
+		if ( empty( $cutoff_time ) ) {
+			return (int) get_option( 'burst_activation_time_pro' );
+		}
+
+		return $cutoff_time;
+	}
+
+	/**
+	 * Calculate percentage change between two values
+	 *
+	 * @param float $previous The previous value.
+	 * @param float $current  The current value.
+	 * @return float|null The percentage change, or null if previous value is zero.
+	 */
+	public static function calculate_percentage_change( float $previous, float $current ): ?float {
+		if ( $previous === 0.0 ) {
+			return null;
+		}
+		return round( ( ( $current - $previous ) / $previous ) * 100, 2 );
 	}
     // phpcs:enable
 

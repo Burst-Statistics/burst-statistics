@@ -79,8 +79,8 @@ class Frontend_Admin {
 		$wp_admin_bar->add_menu(
 			[
 				'id'    => 'burst-front-end',
-				// Translators: %d is the number of visitors.
-				'title' => sprintf( __( '%d Pageviews', 'burst-statistics' ), $count ),
+				// Translators: %d is the number of visitors, human-readable, e.g. 2.2k, or 1M.
+				'title' => sprintf( __( '%s Pageviews', 'burst-statistics' ), $count ),
 				// add tooltip.
 				'meta'  => [
 					'title' => __( 'Total pageviews for the last 30 days.', 'burst-statistics' ),

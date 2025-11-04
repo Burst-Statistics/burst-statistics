@@ -279,7 +279,7 @@ const buildQueryString = ( params ) => {
 export const getData = async( type, startDate, endDate, range, args = {}) => {
 
   // Extract filters and metrics from args if they exist
-  const { filters, metrics, group_by, currentView } = args;
+  const { filters, metrics, group_by, currentView, selectedPages } = args;
 
   // Combine all query parameters
   const queryParams = {
@@ -292,6 +292,7 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
       .toString( 36 )
       .replace( /[^a-z]+/g, '' )
       .substr( 0, 5 ),
+	...( selectedPages && { selected_pages: selectedPages } ), // type is string
     ...( filters && { filters }), // type is object
     ...( metrics && { metrics }), // type is array
     ...( group_by && { group_by }), // type is array
