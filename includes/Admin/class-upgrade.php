@@ -7,7 +7,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Burst\Admin\Capability\Capability;
 use Burst\Admin\DB_Upgrade\DB_Upgrade;
-use Burst\Admin\Statistics\Summary;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Save;
 use Burst\Frontend\Goals\Goals;
@@ -127,10 +126,6 @@ class Upgrade {
 		}
 
 		if ( $prev_version
-			&& version_compare( $prev_version, '1.6.0', '<' ) ) {
-			( new Summary() )->restart_update_summary_table_alltime();
-		}
-		if ( $prev_version
 			&& version_compare( $prev_version, '1.6.1', '<' ) ) {
 			// add the admin to the email reports mailing list.
 			$mailinglist = burst_get_option( 'email_reports_mailinglist' );
@@ -240,6 +235,13 @@ class Upgrade {
 		if ( $prev_version && version_compare( $prev_version, '3.0.1', '<' ) ) {
 			update_option( 'burst_is_multi_domain', false );
 		}
+// phpcs:disable
+//        if ( $prev_version && version_compare( $prev_version, '3.1.0', '<' ) ) {
+//            global $wpdb;
+//            $sql = "DROP TABLE IF EXISTS {$wpdb->prefix}burst_summary";
+//            $wpdb->query( $sql );
+//        }
+        //phpcs:enable
 
 		$admin = new Admin();
 		$admin->run_table_init_hook();

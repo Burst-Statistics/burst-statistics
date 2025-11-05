@@ -895,6 +895,14 @@ video {
   z-index: 50;
 }
 
+#burst-statistics .z-\[1\] {
+  z-index: 1;
+}
+
+#burst-statistics .z-\[2\] {
+  z-index: 2;
+}
+
 #burst-statistics .z-\[3\] {
   z-index: 3;
 }
@@ -2345,6 +2353,10 @@ video {
 
 #burst-statistics .self-start {
   align-self: flex-start;
+}
+
+#burst-statistics .self-end {
+  align-self: flex-end;
 }
 
 #burst-statistics .overflow-hidden {

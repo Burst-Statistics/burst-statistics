@@ -15,7 +15,6 @@ use Burst\Admin\Mailer\Mail_Reports;
 use Burst\Admin\Posts\Posts;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
-use Burst\Admin\Statistics\Summary;
 use Burst\Frontend\Goals\Goal;
 use Burst\Frontend\Goals\Goals;
 use Burst\Traits\Admin_Helper;
@@ -32,7 +31,6 @@ class Admin {
 
 	public Tasks $tasks;
 	public Statistics $statistics;
-	public Summary $summary;
 	public App $app;
 
 	/**
@@ -79,6 +77,8 @@ class Admin {
 		add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
 		add_action( 'burst_weekly', [ $this, 'cleanup_bf_dismissed_tasks' ] );
 		add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
+		add_action( 'burst_every_ten_minutes', [ $this, 'recalculate_bounces' ] );
+		add_action( 'burst_every_ten_minutes', [ $this, 'recalculate_first_time_visits' ] );
 		add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
 
 		$upgrade = new Upgrade();
@@ -94,8 +94,6 @@ class Admin {
 		$this->statistics->init();
 		$reports = new Mail_Reports();
 		$reports->init();
-		$this->summary = new Summary();
-		$this->summary->init();
 		$this->app = new App();
 		$this->app->init();
 
@@ -118,6 +116,107 @@ class Admin {
 			add_action( 'init', [ $this, 'install_demo_data' ] );
 			update_option( 'burst_demo_data_installed', true, false );
 		}
+	}
+
+	/**
+	 * Recalculate first_time_visit flags
+	 *
+	 * Marks the earliest statistic for each UID as first_time_visit = 1
+	 * Runs daily to keep data accurate without impacting real-time performance
+	 *
+	 * @hooked burst_ten_minutes
+	 */
+	public function recalculate_first_time_visits(): void {
+		global $wpdb;
+
+		// Get cutoff
+		$last_update    = get_option( 'burst_last_first_time_visit_update', time() - HOUR_IN_SECONDS );
+		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', HOUR_IN_SECONDS );
+		$time_cutoff    = ( $last_update < $default_cutoff ) ? $last_update : $default_cutoff;
+
+		// Detect window function support once per day.
+		$supports_window_function = get_transient( 'burst_supports_windows' );
+		if ( $supports_window_function === false ) {
+			try {
+				$wpdb->get_results( "SELECT ROW_NUMBER() OVER (ORDER BY ID) AS rn FROM {$wpdb->prefix}burst_statistics LIMIT 1" );
+				set_transient( 'burst_supports_windows', 1, DAY_IN_SECONDS );
+				$supports_window_function = 1;
+			} catch ( \Throwable $e ) {
+				set_transient( 'burst_supports_windows', 0, DAY_IN_SECONDS );
+				$supports_window_function = 0;
+			}
+		}
+
+		$table = "{$wpdb->prefix}burst_statistics";
+		if ( $supports_window_function ) {
+			// Fast version using window functions.
+			$sql = "
+            UPDATE $table bs
+            JOIN (
+                SELECT ID
+                FROM (
+                    SELECT ID, uid,
+                           ROW_NUMBER() OVER (PARTITION BY uid ORDER BY ID ASC) AS rn
+                    FROM $table
+                    WHERE time >= UNIX_TIMESTAMP(NOW() - INTERVAL 1 MONTH)  -- lookback window
+                      AND first_time_visit = 0
+                ) t
+                WHERE rn = 1
+            ) x ON bs.ID = x.ID
+            SET bs.first_time_visit = 1
+            WHERE bs.time >= %d                                          -- update cutoff
+        ";
+			$wpdb->query( $wpdb->prepare( $sql, $time_cutoff ) );
+		} else {
+			// Fallback for servers without window functions.
+			$sql = "
+            UPDATE $table bs
+            INNER JOIN (
+                SELECT bs_inner.ID
+                FROM $table bs_inner
+                INNER JOIN (
+                    SELECT uid, MIN(ID) AS first_id
+                    FROM $table
+                    WHERE time >= UNIX_TIMESTAMP(NOW() - INTERVAL 1 MONTH)  -- lookback window
+                    GROUP BY uid
+                ) first_month ON bs_inner.uid = first_month.uid
+                WHERE bs_inner.first_time_visit = 0
+                  AND bs_inner.time >= %d                                    -- update cutoff
+                  AND bs_inner.ID = first_month.first_id
+            ) new_rows ON bs.ID = new_rows.ID
+            SET bs.first_time_visit = 1
+        ";
+			$wpdb->query( $wpdb->prepare( $sql, $time_cutoff ) );
+		}
+
+		update_option( 'burst_last_first_time_visit_update', time(), false );
+	}
+
+	/**
+	 * Recalculate bounces using until last non-bounce
+	 */
+	public function recalculate_bounces(): void {
+		$last_update    = get_option( 'burst_last_bounces_update', time() - HOUR_IN_SECONDS );
+		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', HOUR_IN_SECONDS );
+		$time_cutoff    = ( $last_update < $default_cutoff ) ? $last_update : $default_cutoff;
+		global $wpdb;
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}burst_statistics bs
+        INNER JOIN (
+            SELECT session_id
+            FROM {$wpdb->prefix}burst_statistics
+            WHERE time > %d
+            GROUP BY session_id
+            HAVING COUNT(*) > 1
+                OR MAX(time_on_page) > 5000 -- long page time means engaged
+        ) nb ON bs.session_id = nb.session_id
+        SET bs.bounce = 0
+        WHERE bs.bounce = 1",
+				$time_cutoff
+			)
+		);
+		update_option( 'burst_last_bounces_update', time(), false );
 	}
 
 	/**
@@ -589,24 +688,6 @@ class Admin {
                     (time, page_url, uid, first_time_visit, bounce, browser_id, device_id, platform_id, time_on_page, referrer)
                     VALUES " . implode( ', ', $placeholders );
 				$wpdb->query( $wpdb->prepare( $query, ...$values ) );
-
-				if ( ! $total_entry_added ) {
-					$wpdb->insert(
-						"{$wpdb->prefix}burst_summary",
-						[
-							'date'                => $stats_date,
-							'page_url'            => 'burst_day_total',
-							'sessions'            => $sessions,
-							'pageviews'           => $page_views,
-							'visitors'            => $first_time_visitors,
-							'first_time_visitors' => $first_time_visitors,
-							'bounces'             => $bounces,
-							'avg_time_on_page'    => wp_rand( 20, 3 * MINUTE_IN_SECONDS ),
-							'completed'           => 1,
-						]
-					);
-					$total_entry_added = true;
-				}
 			}
 		}
 	}
@@ -1134,7 +1215,6 @@ class Admin {
 				'burst_sessions',
 				'burst_goals',
 				'burst_goal_statistics',
-				'burst_summary',
 				'burst_browsers',
 				'burst_browser_versions',
 				'burst_platforms',

@@ -18,7 +18,7 @@ export const FunnelStepStatistics: React.FC<{
     const lastStep = steps[steps.length - 1];
     
     return (
-        <div className="grid gap-[1px] z-2 items-end" style={{ gridTemplateColumns: `repeat(${steps.length}, 1fr)` }}>
+        <div className="grid gap-[1px] z-2 items-start" style={{ gridTemplateColumns: `repeat(${steps.length}, 1fr)` }}>
             {displaySteps.map((step, index) => (
                 <div
                     key={index}
@@ -52,7 +52,7 @@ export const FunnelStepStatistics: React.FC<{
             
             {/* Last step: Purchased summary card */}
             {lastStep && (
-                <div className="flex flex-col gap-2 px-2 py-3">
+                <div className="flex flex-col gap-2 px-2 py-3 self-end">
                       <div className="flex flex-col gap-1">
                         <div className="relative z-2 w-12 h-12 mx-auto rounded-full flex flex-col items-center justify-center gap-0.5 shadow-sm bg-green-light">
                             <Icon name="check" color='green' size={24} />
