@@ -77,8 +77,12 @@ class Admin {
 		add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
 		add_action( 'burst_weekly', [ $this, 'cleanup_bf_dismissed_tasks' ] );
 		add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
-		add_action( 'burst_every_ten_minutes', [ $this, 'recalculate_bounces' ] );
-		add_action( 'burst_every_ten_minutes', [ $this, 'recalculate_first_time_visits' ] );
+		$recalculate_cron_interval = apply_filters( 'burst_recalculate_cron_interval', 'burst_every_ten_minutes' );
+		add_action( $recalculate_cron_interval, [ $this, 'update_last_statistic_data' ] );
+		add_action( 'recalculate_known_uids_cron', [ $this, 'update_known_uids_table' ] );
+		add_action( 'recalculate_bounces_cron', [ $this, 'recalculate_bounces' ] );
+		add_action( 'recalculate_first_time_visits_cron', [ $this, 'recalculate_first_time_visits' ] );
+
 		add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
 
 		$upgrade = new Upgrade();
@@ -119,85 +123,118 @@ class Admin {
 	}
 
 	/**
+	 * Cron to update the last 10 minutes of user data for bounces and first_time_visits.
+	 */
+	public function update_last_statistic_data(): void {
+		if ( ! wp_next_scheduled( 'recalculate_known_uids_cron' ) ) {
+			wp_schedule_single_event( time() + 10, 'recalculate_known_uids_cron' );
+		}
+
+		if ( ! wp_next_scheduled( 'recalculate_bounces_cron' ) ) {
+			wp_schedule_single_event( time() + 60, 'recalculate_bounces_cron' );
+		}
+
+		if ( ! wp_next_scheduled( 'recalculate_first_time_visits_cron' ) ) {
+			wp_schedule_single_event( time() + 120, 'recalculate_first_time_visits_cron' );
+		}
+	}
+
+	/**
 	 * Recalculate first_time_visit flags
 	 *
 	 * Marks the earliest statistic for each UID as first_time_visit = 1
 	 * Runs daily to keep data accurate without impacting real-time performance
 	 *
-	 * @hooked burst_ten_minutes
+	 * @hooked recalculate_first_time_visits_cron
 	 */
 	public function recalculate_first_time_visits(): void {
 		global $wpdb;
 
-		// Get cutoff
-		$last_update    = get_option( 'burst_last_first_time_visit_update', time() - HOUR_IN_SECONDS );
-		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', HOUR_IN_SECONDS );
+		$last_update    = get_option( 'burst_last_first_time_visit_update', time() - 15 * MINUTE_IN_SECONDS );
+		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', 15 * MINUTE_IN_SECONDS );
 		$time_cutoff    = ( $last_update < $default_cutoff ) ? $last_update : $default_cutoff;
 
-		// Detect window function support once per day.
-		$supports_window_function = get_transient( 'burst_supports_windows' );
-		if ( $supports_window_function === false ) {
-			try {
-				$wpdb->get_results( "SELECT ROW_NUMBER() OVER (ORDER BY ID) AS rn FROM {$wpdb->prefix}burst_statistics LIMIT 1" );
-				set_transient( 'burst_supports_windows', 1, DAY_IN_SECONDS );
-				$supports_window_function = 1;
-			} catch ( \Throwable $e ) {
-				set_transient( 'burst_supports_windows', 0, DAY_IN_SECONDS );
-				$supports_window_function = 0;
-			}
-		}
+		$stats_table = "{$wpdb->prefix}burst_statistics";
+		$known_table = "{$wpdb->prefix}burst_known_uids";
 
-		$table = "{$wpdb->prefix}burst_statistics";
-		if ( $supports_window_function ) {
-			// Fast version using window functions.
-			$sql = "
-            UPDATE $table bs
-            JOIN (
-                SELECT ID
-                FROM (
-                    SELECT ID, uid,
-                           ROW_NUMBER() OVER (PARTITION BY uid ORDER BY ID ASC) AS rn
-                    FROM $table
-                    WHERE time >= UNIX_TIMESTAMP(NOW() - INTERVAL 1 MONTH)  -- lookback window
-                      AND first_time_visit = 0
-                ) t
-                WHERE rn = 1
-            ) x ON bs.ID = x.ID
-            SET bs.first_time_visit = 1
-            WHERE bs.time >= %d                                          -- update cutoff
-        ";
-			$wpdb->query( $wpdb->prepare( $sql, $time_cutoff ) );
-		} else {
-			// Fallback for servers without window functions.
-			$sql = "
-            UPDATE $table bs
-            INNER JOIN (
-                SELECT bs_inner.ID
-                FROM $table bs_inner
-                INNER JOIN (
-                    SELECT uid, MIN(ID) AS first_id
-                    FROM $table
-                    WHERE time >= UNIX_TIMESTAMP(NOW() - INTERVAL 1 MONTH)  -- lookback window
-                    GROUP BY uid
-                ) first_month ON bs_inner.uid = first_month.uid
-                WHERE bs_inner.first_time_visit = 0
-                  AND bs_inner.time >= %d                                    -- update cutoff
-                  AND bs_inner.ID = first_month.first_id
-            ) new_rows ON bs.ID = new_rows.ID
-            SET bs.first_time_visit = 1
-        ";
-			$wpdb->query( $wpdb->prepare( $sql, $time_cutoff ) );
-		}
+		// Mark as first-time visit if:
+		// 1. UID is NOT in known_uids, OR.
+		// 2. UID's first_seen timestamp is >= time_cutoff (meaning they're new in this batch).
+		$sql = "
+        UPDATE $stats_table bs
+        INNER JOIN (
+            SELECT curr.uid, MIN(curr.time) AS first_time
+            FROM $stats_table curr
+            LEFT JOIN $known_table known ON curr.uid = known.uid
+            WHERE curr.time >= %d
+              AND curr.first_time_visit = 0
+              AND (known.uid IS NULL OR known.first_seen >= %d)
+            GROUP BY curr.uid
+        ) first_visits ON bs.uid = first_visits.uid 
+                       AND bs.time = first_visits.first_time
+        SET bs.first_time_visit = 1
+        WHERE bs.first_time_visit = 0
+    ";
+
+		$wpdb->query( $wpdb->prepare( $sql, $time_cutoff, $time_cutoff ) );
 
 		update_option( 'burst_last_first_time_visit_update', time(), false );
+	}
+
+	/**
+	 * Update incrementail UIDs table.
+	 */
+	public function update_known_uids_table(): void {
+		global $wpdb;
+
+		$stats_table = "{$wpdb->prefix}burst_statistics";
+		$known_table = "{$wpdb->prefix}burst_known_uids";
+
+		// Get sync cutoff (default: last 10 minutes of new data to process).
+		$last_sync      = get_option( 'burst_last_known_uids_sync', time() - 15 * MINUTE_IN_SECONDS );
+		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', 15 * MINUTE_IN_SECONDS );
+		$sync_cutoff    = ( $last_sync < $default_cutoff ) ? $last_sync : $default_cutoff;
+
+		// Cleanup threshold: remove UIDs not seen in 31+ days.
+		$cleanup_cutoff = time() - ( 31 * DAY_IN_SECONDS );
+
+		// Step 1: Add/update UIDs from recent statistics (last 10-15 minutes).
+		$sql = $wpdb->prepare(
+			"
+        INSERT INTO $known_table (uid, first_seen, last_seen)
+        SELECT uid, MIN(time) as first_seen, MAX(time) as last_seen
+        FROM $stats_table
+        WHERE time >= %d
+        GROUP BY uid
+        ON DUPLICATE KEY UPDATE 
+            first_seen = LEAST(first_seen, VALUES(first_seen)),
+            last_seen = GREATEST(last_seen, VALUES(last_seen))
+    ",
+			$sync_cutoff
+		);
+
+		$wpdb->query( $sql );
+
+		// Step 2: Remove UIDs not seen in 31+ days (cleanup old visitors).
+		$wpdb->query(
+			$wpdb->prepare(
+				"
+        DELETE FROM $known_table
+        WHERE last_seen < %d
+    ",
+				$cleanup_cutoff
+			)
+		);
+
+		update_option( 'burst_last_known_uids_sync', time(), false );
 	}
 
 	/**
 	 * Recalculate bounces using until last non-bounce
 	 */
 	public function recalculate_bounces(): void {
-		$last_update    = get_option( 'burst_last_bounces_update', time() - HOUR_IN_SECONDS );
-		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', HOUR_IN_SECONDS );
+		$last_update    = get_option( 'burst_last_bounces_update', time() - 15 * MINUTE_IN_SECONDS );
+		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', 15 * MINUTE_IN_SECONDS );
 		$time_cutoff    = ( $last_update < $default_cutoff ) ? $last_update : $default_cutoff;
 		global $wpdb;
 		$wpdb->query(

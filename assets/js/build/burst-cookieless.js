@@ -40,6 +40,8 @@ burst.tracking = burst.tracking || {
   ajaxUrl: '',
 };
 
+burst.should_load_ecommerce = burst.should_load_ecommerce || false;
+
 // Cache fallback normalizations
 burst.cache = burst.cache || {
   uid: null,
@@ -370,7 +372,8 @@ async function burst_update_hit(update_uid = false, force = false) {
     uid: update_uid ? id[0] : (burst_use_cookies() ? id : false),
     url: location.href,
     time_on_page: time,
-    completed_goals: burst.goals.completed
+    completed_goals: burst.goals.completed,
+	should_load_ecommerce: burst.should_load_ecommerce,
   };
 
   if (time > 0 || data.uid !== false) {
@@ -411,6 +414,7 @@ async function burst_track_hit() {
     completed_goals: burst.goals.completed,
     page_id: document.body?.dataset?.burst_id || 0,
     page_type: document.body?.dataset?.burst_type || '',
+    should_load_ecommerce: burst.should_load_ecommerce,
   };
 
   document.dispatchEvent(new CustomEvent('burst_track_hit', { detail: data }));

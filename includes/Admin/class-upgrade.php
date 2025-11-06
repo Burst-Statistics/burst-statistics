@@ -234,13 +234,28 @@ class Upgrade {
 
 		if ( $prev_version && version_compare( $prev_version, '3.0.1', '<' ) ) {
 			update_option( 'burst_is_multi_domain', false );
+			burst_reinstall_rest_api_optimizer();
+
 		}
-// phpcs:disable
-//        if ( $prev_version && version_compare( $prev_version, '3.1.0', '<' ) ) {
-//            global $wpdb;
+        // phpcs:disable
+        if ( $prev_version && version_compare( $prev_version, '3.0.1', '<' ) ) {
+            global $wpdb;
+            error_log("upgrade");
 //            $sql = "DROP TABLE IF EXISTS {$wpdb->prefix}burst_summary";
 //            $wpdb->query( $sql );
-//        }
+
+            $stats_table = "{$wpdb->prefix}burst_statistics";
+            $known_table = "{$wpdb->prefix}burst_known_uids";
+
+            // One-time fill from existing data
+            $wpdb->query("
+                INSERT INTO $known_table (uid, first_seen, last_seen)
+                SELECT uid, MIN(time) as first_seen, MAX(time) as last_seen
+                FROM $stats_table
+                WHERE time >= UNIX_TIMESTAMP(NOW() - INTERVAL 1 MONTH)
+                GROUP BY uid
+            ");
+        }
         //phpcs:enable
 
 		$admin = new Admin();

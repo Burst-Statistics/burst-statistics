@@ -119,7 +119,6 @@ const transformSalesData = ( data ) => {
 					transformed[key].subtitle = __('No carts were abandoned', 'burst-statistics');
 				}
 				if ( rate_change > 0 ) {
-					transformed[key].change = `+${transformed[key].change}`;
 					transformed[key].changeStatus = 'negative';
 				} else {
 					transformed[key].changeStatus = 'positive';

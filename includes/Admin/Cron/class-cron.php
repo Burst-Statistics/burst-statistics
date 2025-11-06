@@ -11,6 +11,7 @@ class Cron {
 	public function init(): void {
 		add_action( 'init', [ $this, 'schedule_cron' ], 10, 2 );
 		add_action( 'cron_schedules', [ $this, 'filter_cron_schedules' ], 10, 2 );
+		add_action( 'burst_every_ten_minutes', [ $this, 'test_hourly_cron' ] );
 		add_action( 'burst_every_hour', [ $this, 'test_hourly_cron' ] );
 	}
 
@@ -18,8 +19,6 @@ class Cron {
 	 * Check if the hourly cron is working.
 	 */
 	public function test_hourly_cron(): void {
-		// This is just a test function to check if the hourly cron is working.
-		// You can remove this function once you have verified that the cron is working.
 		update_option( 'burst_last_cron_hit', time(), false );
 	}
 

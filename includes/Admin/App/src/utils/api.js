@@ -2,6 +2,8 @@ import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 import { toast } from 'react-toastify';
 
+/* global burst_settings */
+
 const usesPlainPermalinks = () => {
   return -1 !== burst_settings.site_url.indexOf( '?' );
 };
@@ -223,7 +225,8 @@ const getBlock = ( block ) =>
 
 export const doAction = ( action, data = {}) =>
   makeRequest( `burst/v1/do_action/${action}`, 'POST', {
-    action_data: data
+    action_data: data,
+	should_load_ecommerce: burst_settings.shouldLoadEcommerce || false,
   }).then( ( response ) => {
     return Object.prototype.hasOwnProperty.call( response, 'data' ) ? response.data : [];
   });
@@ -287,6 +290,7 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
     date_end: endDate,
     date_range: range,
     nonce: burst_settings.burst_nonce,
+    should_load_ecommerce: burst_settings.shouldLoadEcommerce || false,
     goal_id: args.goal_id,
     token: Math.random()// nosemgrep
       .toString( 36 )

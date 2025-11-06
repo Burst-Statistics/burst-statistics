@@ -1643,6 +1643,12 @@ class Statistics {
         `hook` varchar(255) NOT NULL,
         PRIMARY KEY (ID)
     ) $charset_collate;",
+			'burst_known_uids'       => "CREATE TABLE {$wpdb->prefix}burst_known_uids (
+            `uid` varchar(255) NOT NULL,
+        `first_seen` INT UNSIGNED NOT NULL,
+        `last_seen` INT UNSIGNED NOT NULL,
+        PRIMARY KEY (uid)
+    ) $charset_collate;",
 		];
 
 		// Create tables.
@@ -1661,10 +1667,20 @@ class Statistics {
 			[ 'time', 'page_url' ],
 			[ 'uid', 'time' ],
 			[ 'page_id', 'page_type' ],
-			[ 'time', 'first_time_visit' ],
+			[ 'first_time_visit', 'time', 'uid' ],
 		];
 
 		$table_name = $wpdb->prefix . 'burst_statistics';
+		foreach ( $indexes as $index ) {
+			$this->add_index( $table_name, $index );
+		}
+
+		$indexes = [
+			[ 'last_seen' ],
+			[ 'uid', 'first_seen' ],
+		];
+
+		$table_name = $wpdb->prefix . 'burst_known_uids';
 		foreach ( $indexes as $index ) {
 			$this->add_index( $table_name, $index );
 		}

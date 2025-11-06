@@ -274,8 +274,8 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 
 			$table_name = $wpdb->prefix . 'burst_goal_statistics';
 
-			// Remove duplicates before dbDelta adds UNIQUE constraint
-			// Keep only the row with the lowest ID for each (goal_id, statistic_id) pair
+			// Remove duplicates before dbDelta adds UNIQUE constraint.
+			// Keep only the row with the lowest ID for each (goal_id, statistic_id) pair.
 			if ( $this->table_exists( 'burst_goal_statistics' ) ) {
 				$wpdb->query(
 					"DELETE gs1 FROM {$table_name} gs1
