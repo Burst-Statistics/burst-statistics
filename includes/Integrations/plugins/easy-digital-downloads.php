@@ -3,6 +3,9 @@
  * Easy Digital Downloads integration functions.
  */
 
+use EDD\Orders\Order;
+use EDD\Orders\Order_Item;
+
 defined( 'ABSPATH' ) || die();
 
 /**
@@ -43,13 +46,63 @@ add_filter( 'burst_products_page_id', 'burst_add_easy_digital_downloads_products
  * @phpstan-ignore-next-line
  */
 function burst_easy_digital_downloads_order_created( int $order_id, \EDD_Payment $payment ): void {
-	$products = [];
+	/* @phpstan-ignore-next-line  */
+	if ( 'stripe' === $payment->gateway ) {
+		// Handled in function burst_easy_digital_downloads_order_completed().
+		return;
+	}
 
 	/* @phpstan-ignore-next-line  */
-	foreach ( edd_get_order_items( [ 'order_id' => $order_id ] ) as $item ) {
+	$order_items = edd_get_order_items( [ 'order_id' => $order_id ] );
+
+	burst_easy_digital_downloads_capture_order( $order_id, $order_items, $payment );
+}
+add_action( 'edd_complete_purchase', 'burst_easy_digital_downloads_order_created', 10, 2 );
+
+/**
+ * Handle actions when an Easy Digital Downloads order is completed.
+ *
+ * @param \EDD\Orders\Order $order The EDD Order object.
+ * @phpstan-ignore-next-line
+ */
+function burst_easy_digital_downloads_order_completed( Order $order ): void {
+	/* @phpstan-ignore-next-line  */
+	$order_id    = $order->id;
+	/* @phpstan-ignore-next-line  */
+	$order_items = $order->get_items();
+	/* @phpstan-ignore-next-line  */
+	$payment_key = $order->payment_key;
+	/* @phpstan-ignore-next-line  */
+	$payment = edd_get_payment_by( 'key', $payment_key );
+
+	if ( empty( $payment ) ) {
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Log error if payment not found.
+		error_log( sprintf( 'Burst EDD Integration: Payment not found for order ID %d and payment key %s', $order_id, $payment_key ) );
+		return;
+	}
+
+	burst_easy_digital_downloads_capture_order( $order_id, $order_items, $payment );
+}
+add_action( 'edds_order_complete', 'burst_easy_digital_downloads_order_completed', 21 );
+
+/**
+ * Capture Easy Digital Downloads order data for Burst.
+ *
+ * @param int          $order_id     Payment ID.
+ * @param Order_Item[] $order_items  Array of order items.
+ * @param \EDD_Payment $payment      object containing all payment data.
+ * @phpstan-ignore-next-line
+ */
+function burst_easy_digital_downloads_capture_order( int $order_id, array $order_items, EDD_Payment $payment ): void {
+	$products = [];
+
+	foreach ( $order_items as $item ) {
 		$products[] = [
+			/* @phpstan-ignore-next-line */
 			'product_id' => $item->product_id,
+			/* @phpstan-ignore-next-line */
 			'amount'     => $item->quantity,
+			/* @phpstan-ignore-next-line */
 			'price'      => $item->amount,
 		];
 	}
@@ -103,7 +156,6 @@ function burst_easy_digital_downloads_order_created( int $order_id, \EDD_Payment
 	 */
 	do_action( 'burst_edd_order_created', $data );
 }
-add_filter( 'edd_complete_purchase', 'burst_easy_digital_downloads_order_created', 10, 2 );
 
 /**
  * Handle actions when the Easy Digital Downloads cart is updated.

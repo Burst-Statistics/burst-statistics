@@ -59,7 +59,40 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 				continue;
 			}
 
-			if ( isset( $_SERVER['REQUEST_URI'] ) && ( strpos( $_SERVER['REQUEST_URI'], 'burst/v1/data/ecommerce' ) !== false || strpos( $_SERVER['REQUEST_URI'], 'burst/v1/do_action/ecommerce' ) !== false ) ) {
+			$should_load_ecommerce = false;
+
+			// Try reading from $_REQUEST (works if form-data).
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This is not a security issue, just checking for a flag.
+			if ( isset( $_REQUEST['should_load_ecommerce'] ) ) {
+				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This is not a security issue, just checking for a flag.
+				$should_load_ecommerce = filter_var( $_REQUEST['should_load_ecommerce'], FILTER_VALIDATE_BOOL );
+			}
+
+			if ( ! $should_load_ecommerce ) {
+				$raw = file_get_contents( 'php://input' );
+				if ( $raw ) {
+					$data = json_decode( $raw, true );
+					if ( isset( $data['should_load_ecommerce'] ) ) {
+						$should_load_ecommerce = filter_var( $data['should_load_ecommerce'], FILTER_VALIDATE_BOOL );
+					}
+
+					// Also support: when wrapped inside { path, data:{} }.
+					if ( isset( $data['data']['should_load_ecommerce'] ) ) {
+						$should_load_ecommerce = filter_var( $data['data']['should_load_ecommerce'], FILTER_VALIDATE_BOOL );
+					}
+				}
+			}
+
+			if (
+				(
+					isset( $_SERVER['REQUEST_URI'] ) &&
+					(
+						strpos( $_SERVER['REQUEST_URI'], 'burst/v1/data/ecommerce' ) !== false ||
+						strpos( $_SERVER['REQUEST_URI'], 'burst/v1/do_action/ecommerce' ) !== false
+					)
+				) ||
+				$should_load_ecommerce
+			) {
 				if ( ! empty( $integrations ) ) {
 					$plugin_slug = dirname( $plugin );
 

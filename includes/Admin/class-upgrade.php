@@ -239,6 +239,7 @@ class Upgrade {
 
 		if ( $prev_version && version_compare( $prev_version, '3.0.1', '<' ) ) {
 			update_option( 'burst_is_multi_domain', false );
+			burst_reinstall_rest_api_optimizer();
 		}
 
 		$admin = new Admin();
