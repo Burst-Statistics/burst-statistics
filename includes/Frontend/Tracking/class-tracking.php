@@ -54,7 +54,11 @@ class Tracking {
 	 */
 	public function track_hit( array $data ): string {
 		// validate & sanitize all data.
-		$sanitized_data = $this->prepare_tracking_data( $data );
+		$sanitized_data        = $this->prepare_tracking_data( $data );
+		$should_load_ecommerce = $sanitized_data['should_load_ecommerce'];
+
+		unset( $sanitized_data['should_load_ecommerce'] );
+
 		if ( $sanitized_data['referrer'] === 'spammer' ) {
 			self::error_log( 'Referrer spam prevented.' );
 			return 'referrer is spam';
@@ -140,9 +144,10 @@ class Tracking {
 
 		// if there is a fingerprint use that instead of uid.
 		if ( $sanitized_data['fingerprint'] && ! $sanitized_data['uid'] ) {
-			$this->store_fingerprint_in_session( $sanitized_data['fingerprint'] );
+			$this->store_fingerprint_in_session( $sanitized_data['fingerprint'], $should_load_ecommerce );
 			$sanitized_data['uid'] = $sanitized_data['fingerprint'];
 		}
+
 		unset( $sanitized_data['fingerprint'] );
 
 		// update burst_statistics table.
@@ -271,7 +276,8 @@ class Tracking {
 	 *     browser?: string,
 	 *     browser_version?: string,
 	 *     platform?: string,
-	 *     device?: string
+	 *     device?: string,
+	 *     should_load_ecommerce?: bool
 	 * }
 	 */
 	public function prepare_tracking_data( array $data ): array {
@@ -283,16 +289,17 @@ class Tracking {
 		];
 
 		$defaults = [
-			'url'             => null,
-			'time'            => null,
-			'uid'             => null,
-			'fingerprint'     => null,
-			'referrer_url'    => null,
-			'user_agent'      => null,
-			'time_on_page'    => null,
-			'completed_goals' => null,
-			'page_id'         => null,
-			'page_type'       => null,
+			'url'                   => null,
+			'time'                  => null,
+			'uid'                   => null,
+			'fingerprint'           => null,
+			'referrer_url'          => null,
+			'user_agent'            => null,
+			'time_on_page'          => null,
+			'completed_goals'       => null,
+			'page_id'               => null,
+			'page_type'             => null,
+			'should_load_ecommerce' => false,
 		];
 		$data     = wp_parse_args( $data, $defaults );
 
@@ -307,17 +314,18 @@ class Tracking {
 		$sanitized_data['page_url'] = $destructured_url['path'];
 		$sanitized_data['host']     = $destructured_url['scheme'] . '://' . $destructured_url['host'];
 		// required.
-		$sanitized_data['uid']                = $this->sanitize_uid( $data['uid'] );
-		$sanitized_data['fingerprint']        = $this->sanitize_fingerprint( $data['fingerprint'] );
-		$sanitized_data['referrer']           = $this->sanitize_referrer( $data['referrer_url'] );
-		$sanitized_data['browser_id']         = self::get_lookup_table_id( 'browser', $user_agent_data['browser'] );
-		$sanitized_data['browser_version_id'] = self::get_lookup_table_id( 'browser_version', $user_agent_data['browser_version'] );
-		$sanitized_data['platform_id']        = self::get_lookup_table_id( 'platform', $user_agent_data['platform'] );
-		$sanitized_data['device_id']          = self::get_lookup_table_id( 'device', $user_agent_data['device'] );
-		$sanitized_data['time_on_page']       = $this->sanitize_time_on_page( $data['time_on_page'] );
-		$sanitized_data['bounce']             = 1;
-		$sanitized_data['page_id']            = (int) $data['page_id'];
-		$sanitized_data['page_type']          = $this->sanitize_page_identifier( $data['page_type'] );
+		$sanitized_data['uid']                   = $this->sanitize_uid( $data['uid'] );
+		$sanitized_data['fingerprint']           = $this->sanitize_fingerprint( $data['fingerprint'] );
+		$sanitized_data['referrer']              = $this->sanitize_referrer( $data['referrer_url'] );
+		$sanitized_data['browser_id']            = self::get_lookup_table_id( 'browser', $user_agent_data['browser'] );
+		$sanitized_data['browser_version_id']    = self::get_lookup_table_id( 'browser_version', $user_agent_data['browser_version'] );
+		$sanitized_data['platform_id']           = self::get_lookup_table_id( 'platform', $user_agent_data['platform'] );
+		$sanitized_data['device_id']             = self::get_lookup_table_id( 'device', $user_agent_data['device'] );
+		$sanitized_data['time_on_page']          = $this->sanitize_time_on_page( $data['time_on_page'] );
+		$sanitized_data['bounce']                = 1;
+		$sanitized_data['page_id']               = (int) $data['page_id'];
+		$sanitized_data['page_type']             = $this->sanitize_page_identifier( $data['page_type'] );
+		$sanitized_data['should_load_ecommerce'] = filter_var( $data['should_load_ecommerce'], FILTER_VALIDATE_BOOLEAN );
 		return $sanitized_data;
 	}
 
@@ -975,12 +983,13 @@ class Tracking {
 	/**
 	 * Store fingerprint in PHP session.
 	 *
-	 * @param string $fingerprint The fingerprint to store.
+	 * @param string $fingerprint           The fingerprint to store.
+	 * @param bool   $should_load_ecommerce Whether to load ecommerce data.
 	 */
-	public function store_fingerprint_in_session( string $fingerprint ): void {
+	public function store_fingerprint_in_session( string $fingerprint, bool $should_load_ecommerce ): void {
 		$serverside_goals = $this->get_active_goals( true );
 		// no need for session without serverside goals.
-		if ( empty( $serverside_goals ) ) {
+		if ( empty( $serverside_goals ) && ! $should_load_ecommerce ) {
 			return;
 		}
 
@@ -1019,6 +1028,11 @@ class Tracking {
 		$save_path = session_save_path();
         // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
 		if ( empty( $save_path ) || ! is_dir( $save_path ) || ! is_writable( $save_path ) ) {
+			// Load WordPress default constants manually.
+			require_once ABSPATH . WPINC . '/default-constants.php';
+			wp_plugin_directory_constants();
+			wp_cookie_constants();
+
 			// Try to use WordPress uploads directory as fallback.
 			$upload_dir          = wp_upload_dir();
 			$custom_session_path = $upload_dir['basedir'] . '/burst-sessions';

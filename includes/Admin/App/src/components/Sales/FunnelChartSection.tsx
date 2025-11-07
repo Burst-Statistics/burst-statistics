@@ -40,7 +40,7 @@ const FunnelChartSection: React.FC = () => {
     };
 
     return (
-        <Block className="row-span-2 xl:col-span-6">
+        <Block className="row-span-2 xl:col-span-6 z-[1]">
             <BlockHeading {...blockHeadingProps} />
 
             <BlockContent {...blockContentProps}>

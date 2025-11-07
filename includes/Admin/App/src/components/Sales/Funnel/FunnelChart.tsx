@@ -85,7 +85,7 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({ data, salesData }) => 
                     style={{ 
                         gridRow: '1 / -1', 
                         gridColumn: '1', 
-                        zIndex: 1,
+                        zIndex: 0,
                         height: '100%'
                     }}
                 >
@@ -162,7 +162,7 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({ data, salesData }) => 
                 </div>
 
                 {/* Step statistics - top layer above funnel */}
-                <div style={{ gridRow: '3', gridColumn: '1', zIndex: 10, pointerEvents: 'none' }}>
+                <div style={{ gridRow: '3', gridColumn: '1', zIndex: 1, pointerEvents: 'none' }}>
                     <FunnelStepStatistics steps={statistics} />
                 </div>
             </div>
