@@ -127,6 +127,7 @@ create_rc_zip() {
     "--exclude=/settings/"
     "--exclude=/includes/Admin/App/node_modules/"
     "--exclude=/includes/Admin/App/.tanstack"
+    "--exclude=/includes/Admin/App/.prettierrc.js"
     "--exclude=/includes/Admin/Dashboard_Widget/node_modules/"
     "--exclude=/includes/TeamUpdraft/SharedComponents/node_modules/"
     "--exclude=/includes/TeamUpdraft/Onboarding/node_modules/"
