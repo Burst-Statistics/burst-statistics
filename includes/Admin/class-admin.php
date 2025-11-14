@@ -15,7 +15,6 @@ use Burst\Admin\Mailer\Mail_Reports;
 use Burst\Admin\Posts\Posts;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
-use Burst\Admin\Statistics\Summary;
 use Burst\Frontend\Goals\Goal;
 use Burst\Frontend\Goals\Goals;
 use Burst\Traits\Admin_Helper;
@@ -32,7 +31,6 @@ class Admin {
 
 	public Tasks $tasks;
 	public Statistics $statistics;
-	public Summary $summary;
 	public App $app;
 
 	/**
@@ -79,6 +77,12 @@ class Admin {
 		add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
 		add_action( 'burst_weekly', [ $this, 'cleanup_bf_dismissed_tasks' ] );
 		add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
+		$recalculate_cron_interval = apply_filters( 'burst_recalculate_cron_interval', 'burst_every_ten_minutes' );
+		add_action( $recalculate_cron_interval, [ $this, 'update_last_statistic_data' ] );
+		add_action( 'recalculate_known_uids_cron', [ $this, 'update_known_uids_table' ] );
+		add_action( 'recalculate_bounces_cron', [ $this, 'recalculate_bounces' ] );
+		add_action( 'recalculate_first_time_visits_cron', [ $this, 'recalculate_first_time_visits' ] );
+
 		add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
 
 		$upgrade = new Upgrade();
@@ -94,8 +98,6 @@ class Admin {
 		$this->statistics->init();
 		$reports = new Mail_Reports();
 		$reports->init();
-		$this->summary = new Summary();
-		$this->summary->init();
 		$this->app = new App();
 		$this->app->init();
 
@@ -121,6 +123,140 @@ class Admin {
 	}
 
 	/**
+	 * Cron to update the last 10 minutes of user data for bounces and first_time_visits.
+	 */
+	public function update_last_statistic_data(): void {
+		if ( ! wp_next_scheduled( 'recalculate_known_uids_cron' ) ) {
+			wp_schedule_single_event( time() + 10, 'recalculate_known_uids_cron' );
+		}
+
+		if ( ! wp_next_scheduled( 'recalculate_bounces_cron' ) ) {
+			wp_schedule_single_event( time() + 60, 'recalculate_bounces_cron' );
+		}
+
+		if ( ! wp_next_scheduled( 'recalculate_first_time_visits_cron' ) ) {
+			wp_schedule_single_event( time() + 120, 'recalculate_first_time_visits_cron' );
+		}
+	}
+
+	/**
+	 * Recalculate first_time_visit flags
+	 *
+	 * Marks the earliest statistic for each UID as first_time_visit = 1
+	 * Runs daily to keep data accurate without impacting real-time performance
+	 *
+	 * @hooked recalculate_first_time_visits_cron
+	 */
+	public function recalculate_first_time_visits(): void {
+		global $wpdb;
+
+		$last_update    = get_option( 'burst_last_first_time_visit_update', time() - 15 * MINUTE_IN_SECONDS );
+		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', 15 * MINUTE_IN_SECONDS );
+		$time_cutoff    = ( $last_update < $default_cutoff ) ? $last_update : $default_cutoff;
+
+		$stats_table = "{$wpdb->prefix}burst_statistics";
+		$known_table = "{$wpdb->prefix}burst_known_uids";
+
+		// Mark as first-time visit if:
+		// 1. UID is NOT in known_uids, OR.
+		// 2. UID's first_seen timestamp is >= time_cutoff (meaning they're new in this batch).
+		$sql = "
+        UPDATE $stats_table bs
+        INNER JOIN (
+            SELECT curr.uid, MIN(curr.time) AS first_time
+            FROM $stats_table curr
+            LEFT JOIN $known_table known ON curr.uid = known.uid
+            WHERE curr.time >= %d
+              AND curr.first_time_visit = 0
+              AND (known.uid IS NULL OR known.first_seen >= %d)
+            GROUP BY curr.uid
+        ) first_visits ON bs.uid = first_visits.uid 
+                       AND bs.time = first_visits.first_time
+        SET bs.first_time_visit = 1
+        WHERE bs.first_time_visit = 0
+    ";
+
+		$wpdb->query( $wpdb->prepare( $sql, $time_cutoff, $time_cutoff ) );
+
+		update_option( 'burst_last_first_time_visit_update', time(), false );
+	}
+
+	/**
+	 * Update incrementail UIDs table.
+	 */
+	public function update_known_uids_table(): void {
+		global $wpdb;
+
+		$stats_table = "{$wpdb->prefix}burst_statistics";
+		$known_table = "{$wpdb->prefix}burst_known_uids";
+
+		// Get sync cutoff (default: last 10 minutes of new data to process).
+		$last_sync      = get_option( 'burst_last_known_uids_sync', time() - 15 * MINUTE_IN_SECONDS );
+		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', 15 * MINUTE_IN_SECONDS );
+		$sync_cutoff    = ( $last_sync < $default_cutoff ) ? $last_sync : $default_cutoff;
+
+		// Cleanup threshold: remove UIDs not seen in 31+ days.
+		$cleanup_cutoff = time() - ( 31 * DAY_IN_SECONDS );
+
+		// Step 1: Add/update UIDs from recent statistics (last 10-15 minutes).
+		$sql = $wpdb->prepare(
+			"
+        INSERT INTO $known_table (uid, first_seen, last_seen)
+        SELECT uid, MIN(time) as first_seen, MAX(time) as last_seen
+        FROM $stats_table
+        WHERE time >= %d
+        GROUP BY uid
+        ON DUPLICATE KEY UPDATE 
+            first_seen = LEAST(first_seen, VALUES(first_seen)),
+            last_seen = GREATEST(last_seen, VALUES(last_seen))
+    ",
+			$sync_cutoff
+		);
+
+		$wpdb->query( $sql );
+
+		// Step 2: Remove UIDs not seen in 31+ days (cleanup old visitors).
+		$wpdb->query(
+			$wpdb->prepare(
+				"
+        DELETE FROM $known_table
+        WHERE last_seen < %d
+    ",
+				$cleanup_cutoff
+			)
+		);
+
+		update_option( 'burst_last_known_uids_sync', time(), false );
+	}
+
+	/**
+	 * Recalculate bounces using until last non-bounce
+	 */
+	public function recalculate_bounces(): void {
+		$last_update    = get_option( 'burst_last_bounces_update', time() - 15 * MINUTE_IN_SECONDS );
+		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', 15 * MINUTE_IN_SECONDS );
+		$time_cutoff    = ( $last_update < $default_cutoff ) ? $last_update : $default_cutoff;
+		global $wpdb;
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}burst_statistics bs
+        INNER JOIN (
+            SELECT session_id
+            FROM {$wpdb->prefix}burst_statistics
+            WHERE time > %d
+            GROUP BY session_id
+            HAVING COUNT(*) > 1
+                OR MAX(time_on_page) > 5000 -- long page time means engaged
+        ) nb ON bs.session_id = nb.session_id
+        SET bs.bounce = 0
+        WHERE bs.bounce = 1",
+				$time_cutoff
+			)
+		);
+		update_option( 'burst_last_bounces_update', time(), false );
+	}
+
+	/**
 	 * Add ecommerce menu item to the admin menu
 	 *
 	 * @param array $menu_items The existing menu items.
@@ -129,7 +265,7 @@ class Admin {
 	public function add_ecommerce_menu_item( array $menu_items ): array {
 		$should_load_ecommerce = \Burst\burst_loader()->integrations->should_load_ecommerce();
 
-		if ( ! $should_load_ecommerce ) {
+		if ( ! $should_load_ecommerce || ! $this->has_admin_access() || ! $this->has_sales_admin_access() ) {
 			return $menu_items;
 		}
 
@@ -138,7 +274,7 @@ class Admin {
 			'title'          => __( 'Sales', 'burst-statistics' ),
 			'default_hidden' => false,
 			'menu_items'     => [],
-			'capabilities'   => 'view_burst_statistics',
+			'capabilities'   => 'view_sales_burst_statistics',
 			'menu_slug'      => 'burst#/sales',
 			'show_in_admin'  => true,
 			'pro'            => true,
@@ -589,24 +725,6 @@ class Admin {
                     (time, page_url, uid, first_time_visit, bounce, browser_id, device_id, platform_id, time_on_page, referrer)
                     VALUES " . implode( ', ', $placeholders );
 				$wpdb->query( $wpdb->prepare( $query, ...$values ) );
-
-				if ( ! $total_entry_added ) {
-					$wpdb->insert(
-						"{$wpdb->prefix}burst_summary",
-						[
-							'date'                => $stats_date,
-							'page_url'            => 'burst_day_total',
-							'sessions'            => $sessions,
-							'pageviews'           => $page_views,
-							'visitors'            => $first_time_visitors,
-							'first_time_visitors' => $first_time_visitors,
-							'bounces'             => $bounces,
-							'avg_time_on_page'    => wp_rand( 20, 3 * MINUTE_IN_SECONDS ),
-							'completed'           => 1,
-						]
-					);
-					$total_entry_added = true;
-				}
 			}
 		}
 	}
@@ -1134,12 +1252,12 @@ class Admin {
 				'burst_sessions',
 				'burst_goals',
 				'burst_goal_statistics',
-				'burst_summary',
 				'burst_browsers',
 				'burst_browser_versions',
 				'burst_platforms',
 				'burst_devices',
 				'burst_referrers',
+				'burst_known_uids',
 			],
 		);
 	}

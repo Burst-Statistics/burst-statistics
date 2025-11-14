@@ -11,6 +11,7 @@ class Cron {
 	public function init(): void {
 		add_action( 'init', [ $this, 'schedule_cron' ], 10, 2 );
 		add_action( 'cron_schedules', [ $this, 'filter_cron_schedules' ], 10, 2 );
+		add_action( 'burst_every_ten_minutes', [ $this, 'test_hourly_cron' ] );
 		add_action( 'burst_every_hour', [ $this, 'test_hourly_cron' ] );
 	}
 
@@ -18,8 +19,6 @@ class Cron {
 	 * Check if the hourly cron is working.
 	 */
 	public function test_hourly_cron(): void {
-		// This is just a test function to check if the hourly cron is working.
-		// You can remove this function once you have verified that the cron is working.
 		update_option( 'burst_last_cron_hit', time(), false );
 	}
 
@@ -29,6 +28,10 @@ class Cron {
 	 * Else start the functions.
 	 */
 	public function schedule_cron(): void {
+		if ( ! wp_next_scheduled( 'burst_every_ten_minutes' ) ) {
+			wp_schedule_event( time(), 'burst_every_ten_minutes', 'burst_every_ten_minutes' );
+		}
+
 		if ( ! wp_next_scheduled( 'burst_every_hour' ) ) {
 			wp_schedule_event( time(), 'burst_every_hour', 'burst_every_hour' );
 		}
@@ -62,15 +65,19 @@ class Cron {
 	 * @return array<string, array{interval: int, display: string}> Modified cron schedules.
 	 */
 	public function filter_cron_schedules( array $schedules ): array {
-		$schedules['burst_daily']      = [
+		$schedules['burst_daily']             = [
 			'interval' => DAY_IN_SECONDS,
 			'display'  => 'Once every day',
 		];
-		$schedules['burst_every_hour'] = [
+		$schedules['burst_every_ten_minutes'] = [
+			'interval' => 10 * MINUTE_IN_SECONDS,
+			'display'  => 'Once every 10 minutes',
+		];
+		$schedules['burst_every_hour']        = [
 			'interval' => HOUR_IN_SECONDS,
 			'display'  => 'Once every hour',
 		];
-		$schedules['burst_weekly']     = [
+		$schedules['burst_weekly']            = [
 			'interval' => WEEK_IN_SECONDS,
 			'display'  => 'Once every week',
 		];

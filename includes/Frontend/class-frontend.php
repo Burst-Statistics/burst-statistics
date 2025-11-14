@@ -262,13 +262,12 @@ class Frontend {
 	public function enqueue_burst_time_tracking_script( string $hook ): void {
 		// fix phpcs warning.
 		unset( $hook );
-		$minified = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
 		if ( ! $this->exclude_from_tracking() ) {
 			wp_enqueue_script(
 				'burst-timeme',
-				BURST_URL . "helpers/timeme/timeme$minified.js",
+				BURST_URL . 'assets/js/timeme/timeme.min.js',
 				[],
-				filemtime( BURST_PATH . "helpers/timeme/timeme$minified.js" ),
+				filemtime( BURST_PATH . 'assets/js/timeme/timeme.min.js' ),
 				false
 			);
 		}
@@ -418,7 +417,7 @@ class Frontend {
 	 * Get the pageviews all time for a post.
 	 */
 	public function get_post_pageviews( int $post_id, int $start = 0, int $end = 0 ): int {
-		$cache_key    = 'burst_post_views_' . $post_id;
+		$cache_key    = 'burst_post_views_' . $post_id . $start . $end;
 		$cached_views = wp_cache_get( $cache_key, 'burst' );
 
 		// Get last midnight (start of today).
@@ -442,7 +441,7 @@ class Frontend {
 		);
 
 		$views = (int) $wpdb->get_var( $sql );
-		wp_cache_set( $cache_key, $views, 'burst' );
+		wp_cache_set( $cache_key, $views, 'burst', HOUR_IN_SECONDS );
 
 		return $views;
 	}

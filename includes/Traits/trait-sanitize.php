@@ -450,7 +450,7 @@ trait Sanitize {
 			return '';
 		}
 
-		$ref_spam_list = file( BURST_PATH . 'helpers/referrer-spam-list/spammers.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
+		$ref_spam_list = file( BURST_PATH . 'lib/vendor/matomo/referrer-spam-list/spammers.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
 		$ref_spam_list = apply_filters( 'burst_referrer_spam_list', $ref_spam_list );
 		if ( array_search( $referrer_host, $ref_spam_list, true ) ) {
 			return 'spammer';

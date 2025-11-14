@@ -13,11 +13,15 @@ class Capability {
 		add_action( 'wp_initialize_site', [ $this, 'add_role_to_subsite' ], 10, 1 );
 	}
 
+	private function get_possible_capabilities(): array {
+		return apply_filters( 'burst_possible_capability_types', [ 'view', 'manage' ] );
+	}
+
 	/**
 	 * Add capability to a user
 	 */
 	public static function add_capability( string $type = 'view', array $roles = [ 'administrator' ], bool $handle_subsites = true ): void {
-		$possible_capabilities = [ 'view', 'manage' ];
+		$possible_capabilities = ( new self() )->get_possible_capabilities();
 		if ( ! in_array( $type, $possible_capabilities, true ) ) {
 			return;
 		}

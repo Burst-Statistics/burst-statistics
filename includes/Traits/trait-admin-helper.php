@@ -130,6 +130,25 @@ trait Admin_Helper {
 	}
 
 	/**
+	 * Checks if user has sales admin access to the Burst plugin.
+	 */
+	public function has_sales_admin_access(): bool {
+		if ( ! $this->has_admin_access() ) {
+			return false;
+		}
+
+		if ( ! is_user_logged_in() ) {
+			return false;
+		}
+
+		if ( ! current_user_can( 'view_sales_burst_statistics' ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Prepare localized settings data to expose to JavaScript.
 	 *
 	 * @param array $js_data Array of loaded translations.

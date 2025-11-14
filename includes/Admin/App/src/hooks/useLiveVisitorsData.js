@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
 import getLiveVisitors from '../api/getLiveVisitors';
 
 /**
@@ -9,6 +9,20 @@ import getLiveVisitors from '../api/getLiveVisitors';
  */
 export const useLiveVisitorsData = () => {
 	const intervalRef = useRef( 5000 );
+	const queryClient = useQueryClient();
+
+	useEffect(
+		() => {
+			const handleBeforeUnload = () => {
+				queryClient.cancelQueries( { queryKey: ['live-visitors'] } );
+				intervalRef.current = 0;
+			};
+
+			window.addEventListener( 'beforeunload', handleBeforeUnload );
+			return () => window.removeEventListener( 'beforeunload', handleBeforeUnload );
+		},
+		[ queryClient ]
+	);
 
 	return useQuery(
 		{
@@ -16,8 +30,9 @@ export const useLiveVisitorsData = () => {
 			queryFn: getLiveVisitors,
 			refetchInterval: intervalRef.current,
 			placeholderData: '-',
+			refetchIntervalInBackground: false,
 			onError: () => {
-				intervalRef.current = 0; // stop refreshing if error
+				intervalRef.current = 0; // Stop refreshing if error.
 			},
 			gcTime: 10000,
 		}

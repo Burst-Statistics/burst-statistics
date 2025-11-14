@@ -20,11 +20,8 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 		 * Add dynamic hooks for goals, to track hooks triggers in other plugins
 		 */
 		public function add_dynamic_hooks(): void {
-			$goals = \Burst\burst_loader()->frontend->tracking->get_active_goals( true );
+			$goals = \Burst\burst_loader()->frontend->tracking->get_active_goals( [ 'hook' ] );
 			foreach ( $goals as $goal ) {
-				if ( $goal['type'] !== 'hook' ) {
-					continue;
-				}
 				$hook = (string) $goal['hook'];
 				if ( strlen( $hook ) > 0 ) {
 					add_action(
@@ -41,14 +38,10 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 		 * Get the goal by hook name
 		 */
 		public function get_goal_by_hook_name( string $find_hook_name ): int {
-			$goals = \Burst\burst_loader()->frontend->tracking->get_active_goals( true );
+			$goals = \Burst\burst_loader()->frontend->tracking->get_active_goals( [ 'hook' ] );
 
 			foreach ( $goals as $goal ) {
 				$goal = new Goal( $goal['ID'] );
-				if ( $goal->type !== 'hook' ) {
-					continue;
-				}
-
 				$hook = $goal->hook;
 				if ( $hook === $find_hook_name ) {
 					return $goal->id;

@@ -5,7 +5,6 @@ use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
-use Burst\Admin\Statistics\Summary;
 
 defined( 'ABSPATH' ) || die();
 class DB_Upgrade {
@@ -179,9 +178,7 @@ class DB_Upgrade {
 		if ( 'strip_domain_names_from_entire_page_url' === $do_upgrade ) {
 			$this->upgrade_strip_domain_names_from_entire_page_url();
 		}
-		if ( 'summary_table' === $do_upgrade ) {
-			( new Summary() )->upgrade_summary_table_alltime();
-		}
+
 		if ( 'create_lookup_tables' === $do_upgrade ) {
 			$this->create_lookup_tables();
 		}
@@ -257,7 +254,6 @@ class DB_Upgrade {
 					'drop_user_agent',
 				],
 				'1.7.0'   => [
-					'summary_table',
 					'create_lookup_tables',
 					'init_lookup_ids',
 					'upgrade_lookup_tables',
@@ -789,7 +785,7 @@ class DB_Upgrade {
 		);
 
 		global $wpdb;
-
+		$post_types   = array_values( $post_types );
 		$placeholders = implode( ',', array_fill( 0, count( $post_types ), '%s' ) );
 		$sql          = "SELECT COUNT(*) FROM {$wpdb->posts} 
                  WHERE post_type IN ($placeholders) 

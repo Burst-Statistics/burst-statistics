@@ -41,6 +41,7 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
     const selectInputRef = useRef<any>(null);
     const textInputRef = useRef<HTMLInputElement>(null);
     const [availableOptions, setAvailableOptions] = useState<SelectOption[]>([]);
+    const [filteredOptions, setFilteredOptions] = useState<SelectOption[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [hasFullDataset, setHasFullDataset] = useState<boolean>(false);
     const { getFilterOptions, isLoading, isError } = useFiltersData();
@@ -118,10 +119,9 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
     }, [config.options]);
 
     // Load options function for AsyncSelectInput
-    const loadOptions = (inputValue: string, callback: (options: SelectOption[]) => void) => {
+    const loadOptions = async(inputValue: string, callback: (options: SelectOption[]) => void) => {
         // Update search term for reloadOnSearch functionality
         setSearchTerm(inputValue);
-
         // If still loading, return empty array
         if (isLoading) {
             callback([]);
@@ -139,23 +139,21 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
             return;
         }
 
-        // If reloadOnSearch is enabled, we have the full dataset, or search < 3 chars
-        // do client-side filtering
-        if (hasFullDataset || !config.reloadOnSearch || inputValue.length < 3) {
-            const filteredOptions = availableOptions.filter(function (option) {
-                const label = (option.label ?? '').toLowerCase();
-                const value = (option.value ?? '').toLowerCase();
-                const input = inputValue.toLowerCase();
+        // Always do client-side filtering on the available options
+        // (which may have been fetched server-side based on reloadOnSearch)
+        const filtered = availableOptions.filter(function (option) {
+            console.log(option);
+            const label = (option.label ?? '').toLowerCase();
+            const value = (option.value ?? '').toLowerCase();
+            const input = inputValue.toLowerCase();
+console.log(label, value, "includes ", input, "test")
+            return label.includes(input) || value.includes(input);
+        });
+        console.log("filteredOptions ", filtered);
 
-                return label.includes(input) || value.includes(input);
-            });
-            callback(filteredOptions);
-            return;
-        }
 
-        // For server-side filtering (reloadOnSearch enabled, 3+ chars, large dataset)
-        // the options are already being fetched via useEffect
-        callback(availableOptions);
+        callback(filtered);
+        setFilteredOptions(filtered);
     };
 
     const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,12 +226,13 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
                         value={getSelectValue()}
                         onChange={handleSelectChange}
                         loadOptions={loadOptions}
-                        defaultOptions={availableOptions}
+                        defaultOptions={filteredOptions}
                         placeholder={getPlaceholder()}
                         isSearchable={true}
                         isLoading={isLoading}
                         disabled={false}
                         insideModal={true}
+                        allowCustomValue={filteredOptions.length===0}
                     />
                 ) : (
                     <TextInput
