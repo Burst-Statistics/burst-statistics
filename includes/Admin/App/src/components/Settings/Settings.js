@@ -15,9 +15,10 @@ const Settings = ({ currentSettingPage }) => {
   const { settings, saveSettings } = useSettingsData();
   const { saveGoals } = useGoalsData();
   const settingsId = currentSettingPage.id;
-  const currentFormDefaultValues = useMemo(
-    () => extractFormValuesPerMenuId( settings, settingsId ),
-    [ settings ]
+
+  const initialDefaultValues = useMemo(
+      () => extractFormValuesPerMenuId(settings, settingsId),
+      []
   );
 
   // Initialize useForm with default values from the fetched settings data
@@ -27,13 +28,8 @@ const Settings = ({ currentSettingPage }) => {
     formState: { dirtyFields },
       reset
   } = useForm({
-    defaultValues: currentFormDefaultValues,
+    defaultValues: initialDefaultValues,
   });
-
-// reset form state to match defaultValues exactly
-  useEffect(() => {
-    reset(currentFormDefaultValues);
-  }, [currentFormDefaultValues, reset]);
 
   const watchedValues = useWatch({ control });
   const filteredGroups = useMemo(() => {
@@ -42,9 +38,21 @@ const Settings = ({ currentSettingPage }) => {
       const groupFields = settings
           .filter((setting) => setting.menu_id === settingsId && setting.group_id === group.id)
           .filter((setting) => {
-            if (!setting.react_conditions) return true;
+            if ( !setting.react_conditions ) {
+                return true;
+            }
             return Object.entries(setting.react_conditions).every(([field, allowedValues]) => {
               const value = watchedValues?.[field];
+              if (!Array.isArray(allowedValues)) {
+                return value === allowedValues;
+              }
+              if (Array.isArray(value)) {
+                return allowedValues.some(allowedValue =>
+                    Array.isArray(allowedValue) &&
+                    value.length === allowedValue.length &&
+                    value.every((val, index) => val === allowedValue[index])
+                );
+              }
               return allowedValues.includes(value);
             });
           });
@@ -81,7 +89,12 @@ const Settings = ({ currentSettingPage }) => {
                       acc[key] = formData[key];
                       return acc;
                     }, {});
-                    saveSettings(changedData);
+                    saveSettings(changedData).then(() => {
+                      reset(formData, {
+                        keepValues: true,
+                        keepDefaultValues: false  // <- Belangrijk! Update de defaultValues
+                      });
+                    });
                     saveGoals();
                   })}
                   control={control}
@@ -96,10 +109,10 @@ export default Settings;
 const extractFormValuesPerMenuId = (settings, menuId) => {
   const formValues = {};
   settings.forEach(setting => {
-    //if (setting.menu_id === menuId) {
+    if (setting.menu_id === menuId) {
       const hasValue = setting.value !== undefined && setting.value !== '';
       formValues[setting.id] = hasValue ? setting.value : setting.default;
-    //}
+    }
   });
   return { ...formValues }; // <- force new object reference
 };

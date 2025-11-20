@@ -67,7 +67,7 @@ add_action( 'edd_complete_purchase', 'burst_easy_digital_downloads_order_created
  */
 function burst_easy_digital_downloads_order_completed( Order $order ): void {
 	/* @phpstan-ignore-next-line  */
-	$order_id    = $order->id;
+	$order_id = $order->id;
 	/* @phpstan-ignore-next-line  */
 	$order_items = $order->get_items();
 	/* @phpstan-ignore-next-line  */

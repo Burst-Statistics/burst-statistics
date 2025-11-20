@@ -14,6 +14,7 @@ use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
 use Burst\Traits\Save;
+use Burst\UserAgentParser\UserAgentParser;
 use function Burst\burst_loader;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -44,7 +45,9 @@ class App {
 		add_action( 'burst_after_save_field', [ $this, 'update_for_multisite' ], 10, 4 );
 		add_action( 'rest_api_init', [ $this, 'settings_rest_route' ], 8 );
 		add_filter( 'burst_localize_script', [ $this, 'extend_localized_settings_for_dashboard' ], 10, 1 );
-		add_action( 'burst_weekly', [ $this, 'weekly_clear_referrers_table' ] );
+		add_action( 'burst_weekly', [ $this, 'init_cleanup' ] );
+		add_action( 'burst_weekly_clear_referrers_cron', [ $this, 'weekly_clear_referrers_table' ] );
+		add_action( 'burst_weekly_clear_spam_browsers_cron', [ $this, 'weekly_clear_spam_browsers' ] );
 		add_action( 'burst_daily', [ $this, 'maybe_update_plugin_path' ] );
 		$this->menu   = new Menu();
 		$this->fields = new Fields();
@@ -1180,6 +1183,19 @@ class App {
 	}
 
 	/**
+	 * Initialize weekly cleanup cron jobs
+	 * Schedules both referrer and browser cleanup if not already scheduled
+	 */
+	public function init_cleanup(): void {
+		if ( ! wp_next_scheduled( 'burst_weekly_clear_referrers_cron' ) ) {
+			wp_schedule_single_event( time() + 60, 'burst_weekly_clear_referrers_cron' );
+		}
+
+		if ( ! wp_next_scheduled( 'burst_weekly_clear_spam_browsers_cron' ) ) {
+			wp_schedule_single_event( time() + 120, 'burst_weekly_clear_spam_browsers_cron' );
+		}
+	}
+	/**
 	 * On a weekly basis, clear the referrers table.
 	 *
 	 * @hooked burst_weekly
@@ -1190,6 +1206,81 @@ class App {
 		}
 		global $wpdb;
 		$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}burst_referrers" );
+	}
+
+	/**
+	 * Weekly cleanup of one spam/invalid browser from the database
+	 * Only removes browsers with limited statistics to keep queries fast
+	 */
+	public function weekly_clear_spam_browsers(): void {
+		if ( ! $this->user_can_manage() ) {
+			return;
+		}
+
+		global $wpdb;
+
+		$browsers = $wpdb->get_results(
+			"SELECT ID, name FROM {$wpdb->prefix}burst_browsers",
+			ARRAY_A
+		);
+
+		if ( empty( $browsers ) ) {
+			return;
+		}
+
+		$parser = new UserAgentParser();
+		// Find the first invalid browser with limited statistics.
+		foreach ( $browsers as $browser ) {
+			$browser_name = $browser['name'];
+			$browser_id   = (int) $browser['ID'];
+
+			// Skip if browser name is valid.
+			if ( ! $parser->is_invalid_browser_name( $browser_name ) ) {
+				continue;
+			}
+
+			// Check how many statistics use this browser.
+			$count = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->prefix}burst_statistics WHERE browser_id = %d",
+					$browser_id
+				)
+			);
+
+			// Only clean up browsers with max 50 statistics to keep it fast.
+			if ( $count > 50 ) {
+				continue;
+			}
+
+			// Delete statistics for this browser.
+			$deleted_stats = $wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->prefix}burst_statistics WHERE browser_id = %d",
+					$browser_id
+				)
+			);
+
+			// Delete the browser entry.
+			$wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->prefix}burst_browsers WHERE ID = %d",
+					$browser_id
+				)
+			);
+
+			self::error_log(
+				sprintf(
+					'Burst: Weekly cleanup removed spam browser "%s" (ID: %d) and %d related statistics.',
+					$browser_name,
+					$browser_id,
+					$deleted_stats
+				)
+			);
+
+			return;
+		}
+
+		self::error_log( 'Burst: No spam browsers found with limited statistics during weekly cleanup.' );
 	}
 
 	/**
@@ -1475,7 +1566,7 @@ class App {
 				return new \WP_REST_Response(
 					[
 						'success' => false,
-						'message' => 'Invalid noce.',
+						'message' => 'Invalid nonce.',
 					]
 				);
 			}

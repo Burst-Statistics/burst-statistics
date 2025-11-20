@@ -75,82 +75,84 @@ const generateError = ( error, path = false ) => {
   });
 };
 
-const makeRequest = async (path, method = 'GET', data = {}) => {
-  let args = { path, method };
+const makeRequest = async ( path, method = 'GET', data = {} ) => {
+	const controller = new AbortController();
+	const signal = controller.signal;
+	let args = { path, method, signal };
 
-  if (method === 'POST') {
-    data.nonce = burst_settings.burst_nonce;
-    args.data = data;
-  }
+	if ( method === 'POST' ) {
+		data.nonce = burst_settings.burst_nonce;
+		args.data = data;
+	}
 
-  try {
-    const response = await apiFetch(args);
+	try {
+		const response = await apiFetch( args );
+		if ( ! response.request_success ) {
+			if ( Object.prototype.hasOwnProperty.call( response, 'message' ) ) {
+				throw new Error( response.message );
+			} else {
+				throw new Error( 'Received unexpected response from server. Please check if the Rest API is enabled.' );
+			}
+		}
 
-    if (!response.request_success) {
-      if (Object.prototype.hasOwnProperty.call(response, 'message')) {
-        throw new Error(response.message);
-      } else {
-        throw new Error('Received unexpected response from server. Please check if the Rest API is enabled.');
-      }
-    }
+		if ( response.code && response.code !== 200 ) {
+			throw new Error( response.message );
+		}
 
-    if (response.code && response.code !== 200) {
-      throw new Error(response.message);
-    }
-
-    delete response.request_success;
-    return response;
-
-  } catch (error) {
-    try {
-      // Wait for ajaxRequest to resolve before continuing
-      return await ajaxRequest(method, path, data);
-    } catch {
-      generateError(error.message, args.path);
-      throw error;
-    }
-  }
+		delete response.request_success;
+		return response;
+	} catch ( error ) {
+		try {
+			// Wait for ajaxRequest to resolve before continuing.
+			return await ajaxRequest( method, path, data );
+		} catch {
+			generateError( error.message, args.path );
+			throw error;
+		}
+	}
 };
+
 const ajaxRequest = async( method, path, requestData = null ) => {
-  const url =
-    'GET' === method ?
-      `${siteUrl( 'ajax' )}&rest_action=${path.replace( '?', '&' )}` :
-      siteUrl( 'ajax' );
+	const url = 'GET' === method ? `${siteUrl( 'ajax' )}&rest_action=${path.replace( '?', '&' )}` : siteUrl( 'ajax' );
 
-  const options = {
-    method,
-    headers: { 'Content-Type': 'application/json; charset=UTF-8' }
-  };
+	const controller = new AbortController();
+	const signal = controller.signal;
 
-  if ( 'POST' === method ) {
-    options.body = JSON.stringify({ path, data: requestData }, stripControls );
-  }
+	const options = {
+		method,
+		headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+		signal
+	};
 
-  try {
-    const response = await fetch( url, options );
-    if ( ! response.ok ) {
-      generateError( false, response.statusText );
-      throw new Error( response.statusText );
-    }
+	if ( 'POST' === method ) {
+		options.body = JSON.stringify( { path, data: requestData }, stripControls );
+	}
 
-    const responseData = await response.json();
+	try {
+		const response = await fetch( url, options );
+		if ( ! response.ok ) {
+			generateError( false, response.statusText );
+			throw new Error( response.statusText );
+		}
 
-    if (
-      ! responseData.data ||
-      ! Object.prototype.hasOwnProperty.call( responseData.data, 'request_success' )
-    ) {
-      //log for automted fallback test. Do not remove.
-      console.log("Ajax fallback request failed.");
-      throw new Error( 'Invalid data error' );
-    }
+		const responseData = await response.json();
 
-    delete responseData.data.request_success;
+		if (
+		  ! responseData.data ||
+		  ! Object.prototype.hasOwnProperty.call( responseData.data, 'request_success' )
+		) {
+			//log for automated fallback test. Do not remove.
+			console.log( "Ajax fallback request failed." );
+			throw new Error( 'Invalid data error' );
+		}
 
-    // return promise with the data object
-    return Promise.resolve( responseData.data );
-  } catch ( error ) {
-    return Promise.reject( new Error( 'AJAX request failed' ) );
-  }
+		delete responseData.data.request_success;
+
+		// return promise with the data object
+		return Promise.resolve( responseData.data );
+	} catch ( error ) {
+		return Promise.reject( new Error( 'AJAX request failed' ) );
+	}
 };
 
 /**
@@ -279,34 +281,34 @@ const buildQueryString = ( params ) => {
  * @param {Object} args - Additional query parameters
  * @returns {Promise}
  */
-export const getData = async( type, startDate, endDate, range, args = {}) => {
+export const getData = async( type, startDate, endDate, range, args = {} ) => {
 
-  // Extract filters and metrics from args if they exist
-  const { filters, metrics, group_by, currentView, selectedPages } = args;
+	// Extract filters and metrics from args if they exist.
+	const { filters, metrics, group_by, currentView, selectedPages } = args;
 
-  // Combine all query parameters
-  const queryParams = {
-    date_start: startDate,
-    date_end: endDate,
-    date_range: range,
-    nonce: burst_settings.burst_nonce,
-    should_load_ecommerce: burst_settings.shouldLoadEcommerce || false,
-    goal_id: args.goal_id,
-    token: Math.random()// nosemgrep
-      .toString( 36 )
-      .replace( /[^a-z]+/g, '' )
-      .substr( 0, 5 ),
-	...( selectedPages && { selected_pages: selectedPages } ), // type is string
-    ...( filters && { filters }), // type is object
-    ...( metrics && { metrics }), // type is array
-    ...( group_by && { group_by }), // type is array
-    ...( currentView && { currentView }) // type is object
-  };
+	// Combine all query parameters.
+	const queryParams = {
+		date_start: startDate,
+		date_end: endDate,
+		date_range: range,
+		nonce: burst_settings.burst_nonce,
+		should_load_ecommerce: burst_settings.shouldLoadEcommerce || false,
+		goal_id: args.goal_id,
+		token: Math.random() // nosemgrep
+		  .toString( 36 )
+		  .replace( /[^a-z]+/g, '' )
+		  .substr( 0, 5 ),
+		...( selectedPages && { selected_pages: selectedPages } ), // type is string
+		...( filters && { filters }), // type is object
+		...( metrics && { metrics }), // type is array
+		...( group_by && { group_by }), // type is array
+		...( currentView && { currentView }) // type is object
+	};
 
-  const queryString = buildQueryString( queryParams );
-  const path = `burst/v1/data/${type}${glue()}${queryString}`;
+	const queryString = buildQueryString( queryParams );
+	const path = `burst/v1/data/${type}${glue()}${queryString}`;
 
-  return await makeRequest( path, 'GET' );
+	return await makeRequest( path, 'GET' );
 };
 
 const getMenu = () =>

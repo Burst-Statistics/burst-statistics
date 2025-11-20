@@ -2,11 +2,12 @@ import HelpTooltip from '@/components/Common/HelpTooltip';
 
 interface TopPerformersProps {
     title: string;
-    subtitle: string;
+    subtitle: string | null;
     value: string | number;
-    exactValue: number;
-    change: string;
-    changeStatus: string;
+    exactValue: number | null;
+    change: string | null;
+    changeStatus: string | null;
+    className?: string;
 }
 
 /**
@@ -14,11 +15,12 @@ interface TopPerformersProps {
  *
  * @param {Object} props Component props.
  * @param {string} props.title Title of the item.
- * @param {string} props.subtitle Subtitle of the item.
+ * @param {string|null} props.subtitle Subtitle of the item.
  * @param {string|number} props.value Display value of the item.
- * @param {number} props.exactValue Exact numeric value for tooltip (if > 1000).
- * @param {string} props.change Change value to display.
- * @param {string} props.changeStatus Status of the change ('positive' or 'negative').
+ * @param {number|null} props.exactValue Exact numeric value for tooltip (if > 1000).
+ * @param {string|null} props.change Change value to display.
+ * @param {string|null} props.changeStatus Status of the change ('positive' or 'negative').
+ * @param {string} [props.className] Optional additional class names.
  *
  * @returns {JSX.Element} The rendered component.
  */
@@ -29,11 +31,18 @@ const TopPerformerStats = ( {
     exactValue,
     change,
     changeStatus,
+    className = '',
 }: TopPerformersProps ): JSX.Element => {
-    const tooltipValue = 1000 < exactValue ? exactValue : false;
+    let tooltipValue;
+    if ( ! exactValue || exactValue < 1000 ) {
+        tooltipValue = false;
+    } else {
+        tooltipValue = exactValue;
+    }
+
     return (
-        <div className="flex items-center gap-3 py-2">
-            <div className="flex-1 flex flex-col justify-center">
+        <div className={`flex items-center gap-3 py-2 ${ className }`}>
+            <div className="flex-1 flex flex-col justify-center label">
 				<h3 className="text-sm font-normal text-gray">{ title }</h3>
 
                 {
@@ -46,10 +55,10 @@ const TopPerformerStats = ( {
                     tooltipValue ?
                         (
                             <HelpTooltip content={ tooltipValue } delayDuration={ 1000 }>
-								<span className="text-xl font-bold text-black">{ value }</span>
+								<span className="text-xl font-bold text-black value">{ value }</span>
 							</HelpTooltip>
                         ) :
-                        <span className="text-xl font-bold text-black">{ value }</span>
+                        <span className="text-xl font-bold text-black value">{ value }</span>
                 }
 
                 <p className={`text-sm ${'positive' === changeStatus ? 'text-green' : 'text-red'}`}>

@@ -271,15 +271,31 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 		public function install_goal_statistics_table(): void {
 			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 			global $wpdb;
-			$charset_collate = $wpdb->get_charset_collate();
-			// Create table without indexes first.
+
 			$table_name = $wpdb->prefix . 'burst_goal_statistics';
-			$sql        = "CREATE TABLE $table_name (
-        `ID` int NOT NULL AUTO_INCREMENT,
-        `statistic_id` int NOT NULL,
-        `goal_id` int NOT NULL,
-        PRIMARY KEY (ID)
-    ) $charset_collate;";
+
+			// Remove duplicates before dbDelta adds UNIQUE constraint.
+			// Keep only the row with the lowest ID for each (goal_id, statistic_id) pair.
+			if ( $this->table_exists( 'burst_goal_statistics' ) ) {
+				$wpdb->query(
+					"DELETE gs1 FROM {$table_name} gs1
+                INNER JOIN {$table_name} gs2 
+                WHERE gs1.goal_id = gs2.goal_id 
+                AND gs1.statistic_id = gs2.statistic_id 
+                AND gs1.ID > gs2.ID"
+				);
+			}
+
+			global $wpdb;
+			$charset_collate = $wpdb->get_charset_collate();
+			$table_name      = $wpdb->prefix . 'burst_goal_statistics';
+			$sql             = "CREATE TABLE $table_name (
+                `ID` int NOT NULL AUTO_INCREMENT,
+                `statistic_id` int NOT NULL,
+                `goal_id` int NOT NULL,
+                PRIMARY KEY (ID),
+                UNIQUE KEY goal_statistic_unique (goal_id, statistic_id)
+            ) $charset_collate;";
 
 			dbDelta( $sql );
 			if ( ! empty( $wpdb->last_error ) ) {

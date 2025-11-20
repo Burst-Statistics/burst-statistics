@@ -121,8 +121,6 @@ return -1;
       // Define a cell rendering function based on the format
       formatFunctionCache.set( cacheKey, ( row ) => {
         const value = row[column.id];
-        console.log(column, row);
-
         switch ( format ) {
           case 'percentage':
             return formatPercentage( value );

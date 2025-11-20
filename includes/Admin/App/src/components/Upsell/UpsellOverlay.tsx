@@ -18,7 +18,7 @@ const UpsellOverlay: React.FC<UpsellOverlayProps> = ({
   className = "",
 }) => {
   return (
-    <div className={`absolute inset-0 z-50 ${className}`}>
+    <div className={`burst-upsell-overlay absolute inset-0 z-50 ${className}`}>
       {/* Backdrop with blur effect and lttle darker */}
       <div className="absolute inset-0 backdrop-blur-sm" />
 

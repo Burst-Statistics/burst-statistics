@@ -42,7 +42,8 @@ const getMenuItemUrl = ( menuItem ) => {
  * @returns { JSX.Element } The rendered Header component.
  */
 const Header = () => {
-	const menu = burst_settings.menu;
+	const menu = Array.isArray( burst_settings.menu ) ? burst_settings.menu : Object.values(burst_settings.menu);
+
 	const {
 		isPro,
 		isLicenseValid,

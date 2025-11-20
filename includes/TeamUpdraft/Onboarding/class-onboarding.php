@@ -424,10 +424,14 @@ class Onboarding {
 	 * Signup for Tips & Tricks
 	 */
 	private function signup_for_mailinglist( string $email ): void {
-		$api_params = [
+		$current_user = wp_get_current_user();
+		$first_name   = $current_user->ID !== 0 ? sanitize_text_field( $current_user->first_name ) : '';
+		$last_name    = $current_user->ID !== 0 ? sanitize_text_field( $current_user->last_name ) : '';
+		$api_params   = [
 			'has_premium' => $this->is_pro,
 			'email'       => sanitize_email( $email ),
-			'domain'      => esc_url_raw( site_url() ),
+			'first_name'  => $first_name,
+			'last_name'   => $last_name,
 		];
 		wp_remote_post(
 			$this->mailing_list_endpoint,

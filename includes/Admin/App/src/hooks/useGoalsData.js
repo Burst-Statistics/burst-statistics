@@ -14,7 +14,7 @@ import useLicenseData from "@/hooks/useLicenseData";
  */
 const useGoalsData = () => {
     const queryClient = useQueryClient();
-
+    const { isPro } = useLicenseData();
     // Main query to fetch goals, predefined goals, and goal fields
     const goalsQuery = useQuery({
         queryKey: ['goals_data'],
@@ -185,10 +185,6 @@ const useGoalsData = () => {
     // Mutation to add a predefined goal
     const addPredefinedGoalMutation = useMutation({
         mutationFn: async ({predefinedGoalId}) => {
-            const {
-                isPro,
-            } = useLicenseData();
-
             if (!isPro) {
                 throw new Error(__('Predefined goals are a premium feature.', 'burst-statistics'));
             }

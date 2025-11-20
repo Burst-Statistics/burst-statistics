@@ -141,7 +141,6 @@ const Field = memo(({ setting, control, ...props }) => {
     return setting.validation?.validate ? { validate: setting.validation.validate } : {};
   };
 
-
   const validationRules = {
     ...(setting.required && {
       required: {
@@ -161,8 +160,24 @@ const Field = memo(({ setting, control, ...props }) => {
       }
     }),
     ...getCustomValidation(),
-    ...(setting.min && { min: setting.min }),
-    ...(setting.max && { max: setting.max }),
+    ...(setting.type === 'number' && setting.min !== undefined && {
+		min: {
+			value: setting.min,
+			message: sprintf(
+			  __('Value must be at least %s', 'burst-statistics'),
+			  setting.min
+			)
+		}
+	}),
+    ...(setting.type === 'number' && setting.max !== undefined && {
+		max: {
+			value: setting.max,
+			message: sprintf(
+			  __('Value must be at most %s', 'burst-statistics'),
+			  setting.max
+			)
+		}
+	}),
     ...(setting.minLength && { minLength: setting.minLength }),
     ...(setting.maxLength && { maxLength: setting.maxLength })
   };

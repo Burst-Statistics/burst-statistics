@@ -2,9 +2,7 @@ import {create} from 'zustand';
 import {doAction} from '../utils/api';
 import {toast} from 'react-toastify';
 import {__} from '@wordpress/i18n';
-import useLicenseData from "@/hooks/useLicenseData";
 const useArchiveStore = create( ( set, get ) => ({
-    archivesLoaded: false,
     fetching: false,
     restoring: false,
     progress: false,
@@ -29,28 +27,30 @@ const useArchiveStore = create( ( set, get ) => ({
             error: __( 'Failed to delete archive', 'burst-statistics' )
         });
     },
-    fetchData: async( ) => {
-        const {
-            isPro,
-        } = useLicenseData();
-        if ( !isPro ) {
+    fetchData: async( isPro ) => {
+        if ( ! isPro ) {
             return;
         }
+
         if ( get().fetching ) {
             return;
         }
-        set({fetching: true});
+
+        set( { fetching: true } );
+
         let data = {};
-        const { archives, downloadUrl} = await doAction( 'get_archives', data ).then( ( response ) => {
+
+        const { archives, downloadUrl } = await doAction( 'get_archives', data ).then( ( response ) => {
             return response;
         }).catch( ( error ) => {
             console.error( error );
         });
+
         set( () => ({
-            archivesLoaded: true,
             archives: archives,
             downloadUrl: downloadUrl,
-            fetching: false
+            fetching: false,
+			restoring: archives.some( ( archive ) => archive.restoring === true )
         }) );
     },
     startRestoreArchives: async( selectedArchives ) => {
@@ -59,7 +59,7 @@ const useArchiveStore = create( ( set, get ) => ({
             progress: 0
         });
 
-        //set 'selectedArchives' to 'restoring' status
+        // set 'selectedArchives' to 'restoring' status.
         set( ( state ) => ({
             archives: state.archives.map( ( archive ) => {
                 if ( selectedArchives.includes( archive.id ) ) {
@@ -75,27 +75,31 @@ const useArchiveStore = create( ( set, get ) => ({
             error: __( 'Failed to start restore process.', 'burst-statistics' )
         });
     },
-
     fetchRestoreArchivesProgress: async() => {
-        set({ restoring: true });
-        const {progress, noData} = await doAction( 'get_restore_progress', {}).then( ( response ) => {
+        set( { restoring: true } );
+        const { progress, noData } = await doAction( 'get_restore_progress', {}).then( ( response ) => {
             return response;
         }).catch( ( error ) => {
             console.error( error );
         });
+
         let restoring = false;
+
         if ( 100 > progress ) {
             restoring = true;
         }
-        set({progress: progress, restoring: restoring, noData: noData});
-        if ( 100 === progress ) {
 
-            //exclude all archives where restoring = true
+		set( { progress: progress, restoring: restoring, noData: noData } );
+
+        if ( 100 === progress ) {
+            // exclude all archives where restoring = true.
             let archives = get().archives.filter( ( archive ) => {
                 return ! archive.restoring;
-            });
-            set({archives: archives});
+            } );
+            set( { archives: archives } );
         }
+
+		return { progress, noData, restoring };
     }
 }) );
 

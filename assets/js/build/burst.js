@@ -370,7 +370,7 @@ async function burst_update_hit(update_uid = false, force = false) {
     url: location.href,
     time_on_page: time,
     completed_goals: burst.goals.completed,
-	should_load_ecommerce: burst.should_load_ecommerce,
+    should_load_ecommerce: burst.should_load_ecommerce,
   };
 
   if (time > 0 || data.uid !== false) {

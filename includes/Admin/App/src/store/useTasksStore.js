@@ -41,7 +41,6 @@ const useTasks = create(
             .filter(key => tasks.hasOwnProperty(key) && !isNaN(key))
             .map(key => tasks[key]);
       } else {
-        console.log("tasks array has unexpected format: ", tasks );
         tasksArray = [];
       }
 
