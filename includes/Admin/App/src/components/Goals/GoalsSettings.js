@@ -95,7 +95,7 @@ const GoalsSettings = () => {
                   type={'button'}
                   className={
                     predefinedGoalsButtonClass +
-                    ' burst-button burst-button--secondary'
+                    ' burst-button burst-button--secondary burst-add-predefined-goal'
                   }
                   onClick={() => {
                     setPredefinedGoalsVisible( ! predefinedGoalsVisible );
@@ -113,7 +113,7 @@ const GoalsSettings = () => {
                 <Popover.Content
                   sideOffset={5}
                   align={'end'}
-                  className="z-50 flex flex-col gap-2 rounded-lg border border-gray-400 bg-white p-2"
+                  className="burst-predefined-goals-list z-50 flex flex-col gap-2 rounded-lg border border-gray-400 bg-white p-2"
                 >
                   {predefinedGoals.map( ( goal, index ) => {
                     return (

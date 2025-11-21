@@ -2,6 +2,7 @@
 namespace Burst\Frontend\Goals;
 
 use Burst\Traits\Admin_Helper;
+use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
 
@@ -10,6 +11,7 @@ defined( 'ABSPATH' ) || die( 'you do not have access to this page!' );
 class Goals {
 	use Helper;
 	use Admin_Helper;
+	use Database_Helper;
 	use Sanitize;
 
 	private array $orderby_columns = [];
@@ -27,27 +29,6 @@ class Goals {
 	public function install_goals_table(): void {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-		global $wpdb;
-		// server_side property to be removed after 2.2 update.
-		$charset_collate = $wpdb->get_charset_collate();
-		$table_name      = $wpdb->prefix . 'burst_goals';
-		$sql             = "CREATE TABLE $table_name (
-        `ID` int NOT NULL AUTO_INCREMENT,
-        `title` varchar(255) NOT NULL,
-        `type` varchar(30) NOT NULL,
-        `status` varchar(30) NOT NULL,
-        `url` varchar(255) NOT NULL,
-        `conversion_metric` varchar(255) NOT NULL,
-        `date_created` int NOT NULL,
-        `server_side` int NOT NULL,
-        `date_start` int NOT NULL,
-        `date_end` int NOT NULL,
-        `selector` varchar(255) NOT NULL,
-        `hook` varchar(255) NOT NULL,
-        PRIMARY KEY (ID)
-    ) $charset_collate;";
-
-		dbDelta( $sql );
 		if ( ! empty( $wpdb->last_error ) ) {
 			self::error_log( 'Error creating goals table: ' . $wpdb->last_error );
 		}

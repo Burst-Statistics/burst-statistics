@@ -130,6 +130,25 @@ trait Admin_Helper {
 	}
 
 	/**
+	 * Checks if user has sales admin access to the Burst plugin.
+	 */
+	public function has_sales_admin_access(): bool {
+		if ( ! $this->has_admin_access() ) {
+			return false;
+		}
+
+		if ( ! is_user_logged_in() ) {
+			return false;
+		}
+
+		if ( ! current_user_can( 'view_sales_burst_statistics' ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Prepare localized settings data to expose to JavaScript.
 	 *
 	 * @param array $js_data Array of loaded translations.
@@ -158,24 +177,25 @@ trait Admin_Helper {
 		return apply_filters(
 			'burst_localize_script',
 			[
-				'json_translations' => $js_data['json_translations'],
-				'site_url'          => get_rest_url(),
-				'admin_ajax_url'    => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
-				'dashboard_url'     => $this->admin_url( 'burst' ),
-				'plugin_url'        => BURST_URL,
-				'network_link'      => network_site_url( 'plugins.php' ),
-				'is_pro'            => defined( 'BURST_PRO' ),
+				'json_translations'           => $js_data['json_translations'],
+				'site_url'                    => get_rest_url(),
+				'admin_ajax_url'              => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
+				'dashboard_url'               => $this->admin_url( 'burst' ),
+				'plugin_url'                  => BURST_URL,
+				'network_link'                => network_site_url( 'plugins.php' ),
+				'is_pro'                      => defined( 'BURST_PRO' ),
 				// to authenticate the logged in user.
-				'nonce'             => wp_create_nonce( 'wp_rest' ),
-				'burst_nonce'       => wp_create_nonce( 'burst_nonce' ),
-				'current_ip'        => Ip::get_ip_address(),
-				'user_roles'        => $this->get_user_roles(),
-				'date_ranges'       => $this->get_date_ranges(),
-				'date_format'       => get_option( 'date_format' ),
-				'tour_shown'        => $this->get_option_int( 'burst_tour_shown_once' ),
-				'gmt_offset'        => get_option( 'gmt_offset' ),
-				'burst_version'     => BURST_VERSION,
-				'installed_by'      => get_option( 'teamupdraft_installation_source_burst-statistics', '' ),
+				'nonce'                       => wp_create_nonce( 'wp_rest' ),
+				'burst_nonce'                 => wp_create_nonce( 'burst_nonce' ),
+				'current_ip'                  => Ip::get_ip_address(),
+				'user_roles'                  => $this->get_user_roles(),
+				'date_ranges'                 => $this->get_date_ranges(),
+				'date_format'                 => get_option( 'date_format' ),
+				'tour_shown'                  => $this->get_option_int( 'burst_tour_shown_once' ),
+				'gmt_offset'                  => get_option( 'gmt_offset' ),
+				'burst_version'               => BURST_VERSION,
+				'installed_by'                => get_option( 'teamupdraft_installation_source_burst-statistics', '' ),
+				'view_sales_burst_statistics' => current_user_can( 'view_sales_burst_statistics' ),
 			]
 		);
 	}

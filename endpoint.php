@@ -60,7 +60,6 @@ if ( isset( $burst_plugins[ $burst_dir ] ) && ! in_array( $burst_plugins[ $burst
 }
 
 require_once __DIR__ . '/includes/autoload.php';
-require_once __DIR__ . '/helpers/php-user-agent/UserAgentParser.php';
 if ( file_exists( __DIR__ . '/includes/Pro/Frontend/Tracking/tracking.php' ) ) {
 	require_once __DIR__ . '/includes/Pro/Frontend/Tracking/tracking.php';
 }

@@ -16,9 +16,6 @@ import FieldWrapper from '@/components/Fields/FieldWrapper';
 const TextField = forwardRef(
   ({ field, fieldState, label, help, context, className, ...props }, ref ) => {
     const inputId = props.id || field.name;
-      if (inputId==='archive_after_months'){
-          console.log(field)
-      }
     return (
       <FieldWrapper
         label={label}

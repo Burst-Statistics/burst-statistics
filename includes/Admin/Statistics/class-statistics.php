@@ -1237,7 +1237,7 @@ class Statistics {
 		);
 		foreach ( $filters as $filter_name => $filter_value ) {
 			if ( in_array( $filter_name, $mappable, true ) ) {
-				$filters[ $filter_name ] = \Burst\burst_loader()->frontend->tracking->get_lookup_table_id_cached( $filter_name, $filter_value );
+				$filters[ $filter_name ] = \Burst\burst_loader()->frontend->tracking->get_lookup_table_id( $filter_name, $filter_value );
 			}
 		}
 		global $wpdb;
@@ -1589,7 +1589,7 @@ class Statistics {
         `page_id` int(11) NOT NULL,
         `page_type` varchar(191) NOT NULL,
         `time` int NOT NULL,
-        `uid` varchar(255) NOT NULL,
+        `uid` varchar(64) NOT NULL,
         `time_on_page` int,
         `parameters` TEXT NOT NULL,
         `fragment` varchar(255) NOT NULL,
@@ -1628,18 +1628,26 @@ class Statistics {
         `name` varchar(255) NOT NULL UNIQUE,
         PRIMARY KEY (ID)
     ) $charset_collate;",
-			'burst_summary'          => "CREATE TABLE {$wpdb->prefix}burst_summary (
+			'burst_goals'            => "CREATE TABLE {$wpdb->prefix}burst_goals (
         `ID` int NOT NULL AUTO_INCREMENT,
-        `date` DATE NOT NULL,
-        `page_url` varchar(191) NOT NULL,
-        `sessions` int NOT NULL,
-        `visitors` int NOT NULL,
-        `first_time_visitors` int NOT NULL,
-        `pageviews` int NOT NULL,
-        `bounces` int NOT NULL,
-        `avg_time_on_page` int NOT NULL,
-        `completed` tinyint NOT NULL,
+        `title` varchar(255) NOT NULL,
+        `type` varchar(30) NOT NULL,
+        `status` varchar(30) NOT NULL,
+        `url` varchar(255) NOT NULL,
+        `conversion_metric` varchar(255) NOT NULL,
+        `date_created` int NOT NULL,
+        `server_side` int NOT NULL,
+        `date_start` int NOT NULL,
+        `date_end` int NOT NULL,
+        `selector` varchar(255) NOT NULL,
+        `hook` varchar(255) NOT NULL,
         PRIMARY KEY (ID)
+    ) $charset_collate;",
+			'burst_known_uids'       => "CREATE TABLE {$wpdb->prefix}burst_known_uids (
+            `uid` varchar(64) NOT NULL,
+        `first_seen` INT UNSIGNED NOT NULL,
+        `last_seen` INT UNSIGNED NOT NULL,
+        PRIMARY KEY (uid)
     ) $charset_collate;",
 		];
 
@@ -1659,6 +1667,7 @@ class Statistics {
 			[ 'time', 'page_url' ],
 			[ 'uid', 'time' ],
 			[ 'page_id', 'page_type' ],
+			[ 'first_time_visit', 'time', 'uid' ],
 		];
 
 		$table_name = $wpdb->prefix . 'burst_statistics';
@@ -1667,12 +1676,21 @@ class Statistics {
 		}
 
 		$indexes = [
-			[ 'date', 'page_url' ],
-			[ 'page_url', 'date' ],
-			[ 'date' ],
+			[ 'last_seen' ],
+			[ 'uid', 'first_seen' ],
 		];
 
-		$table_name = $wpdb->prefix . 'burst_summary';
+		$table_name = $wpdb->prefix . 'burst_known_uids';
+		foreach ( $indexes as $index ) {
+			$this->add_index( $table_name, $index );
+		}
+
+		// server_side property to be removed after 2.2 update.
+		$table_name = $wpdb->prefix . 'burst_goals';
+		$indexes    = [
+			[ 'status' ],
+		];
+
 		foreach ( $indexes as $index ) {
 			$this->add_index( $table_name, $index );
 		}
@@ -1685,31 +1703,7 @@ class Statistics {
 	 * @return string Generated SQL query.
 	 */
 	public function get_sql_table( Query_Data $qd ): string {
-
-		// Check if we can use summary tables.
-		$raw = ! empty( $qd->date_modifiers ) && strpos( $qd->date_modifiers['sql_date_format'] ?? '', '%H' ) !== false;
-		if ( ! $raw && $this->can_use_summary_tables( $qd ) ) {
-			return $this->get_summary_sql( $qd );
-		}
-
 		return $this->build_raw_sql( $qd );
-	}
-
-	/**
-	 * Check if we can use summary tables for this query.
-	 */
-	private function can_use_summary_tables( Query_Data $data ): bool {
-		return ! empty( $data->custom_select ) === false &&
-				empty( $data->subquery ) &&
-				empty( $data->union ) &&
-				empty( $data->window ) &&
-				\Burst\burst_loader()->admin->summary->upgrade_completed() &&
-				\Burst\burst_loader()->admin->summary->is_summary_data(
-					$data->select,
-					$data->filters,
-					$data->date_start,
-					$data->date_end
-				);
 	}
 
 	/**
@@ -2146,21 +2140,6 @@ class Statistics {
 		}
 
 		return $join_sql;
-	}
-
-	/**
-	 * Get summary SQL using the enhanced args format
-	 */
-	private function get_summary_sql( Query_Data $data ): string {
-		return \Burst\burst_loader()->admin->summary->summary_sql(
-			$data->date_start,
-			$data->date_end,
-			$data->select,
-			$data->group_by,
-			$data->order_by,
-			$data->limit,
-			$data->date_modifiers
-		);
 	}
 
 	/**

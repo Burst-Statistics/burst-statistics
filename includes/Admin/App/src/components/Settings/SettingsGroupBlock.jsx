@@ -43,10 +43,8 @@ const SettingsGroupBlock = memo(
           {group.description && <h3 className="mb-5 text-sm">{group.description}</h3>}
           <div className="flex flex-wrap">
             {fields.map( ( field, i ) => (
-              <ErrorBoundary key={i} fallback={'Could not load field'}>
+              <ErrorBoundary key={field.id} fallback={'Could not load field'}>
                 <Field
-                  key={i}
-                  index={i}
                   setting={field}
                   control={control}
                 />

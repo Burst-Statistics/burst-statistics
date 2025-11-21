@@ -20,42 +20,40 @@ export const Route = createFileRoute( '/statistics' )({
 });
 
 function Statistics() {
-    const {
-        isPro,
-    } = useLicenseData();
-  const blockOneItems = ['pages'];
-  const blockTwoItems = isPro ? ['parameters'] : ['referrers'];
-  return (
-      <>
-        <div className="col-span-12 flex justify-between items-center">
-          <ErrorBoundary>
-            <PageFilter/>
-          </ErrorBoundary>
-          <ErrorBoundary>
-            <DateRange/>
-          </ErrorBoundary>
-        </div>
-        <ErrorBoundary>
-          <InsightsBlock/>
-        </ErrorBoundary>
-        <ErrorBoundary>
-          <CompareBlock/>
-        </ErrorBoundary>
-        <ErrorBoundary>
-          <DevicesBlock/>
-        </ErrorBoundary>
-        <ErrorBoundary>
-          <DataTableBlock
-              allowedConfigs={blockOneItems}
-              id={1}
-          />
-        </ErrorBoundary>
-        <ErrorBoundary>
-          <DataTableBlock
-              allowedConfigs={blockTwoItems}
-              id={2}
-          />
-        </ErrorBoundary>
-      </>
-  );
+	const { isPro } = useLicenseData();
+	const blockOneItems = ['pages'];
+	const blockTwoItems = isPro ? ['parameters'] : ['referrers'];
+	return (
+		<>
+			<div className="col-span-12 flex justify-between items-center">
+				<ErrorBoundary>
+					<PageFilter/>
+				</ErrorBoundary>
+
+				<ErrorBoundary>
+					<DateRange/>
+				</ErrorBoundary>
+			</div>
+
+			<ErrorBoundary>
+				<InsightsBlock/>
+			</ErrorBoundary>
+
+			<ErrorBoundary>
+				<CompareBlock/>
+			</ErrorBoundary>
+
+			<ErrorBoundary>
+				<DevicesBlock/>
+			</ErrorBoundary>
+
+			<ErrorBoundary>
+				<DataTableBlock allowedConfigs={blockOneItems} id={1} />
+			</ErrorBoundary>
+
+			<ErrorBoundary>
+				<DataTableBlock allowedConfigs={blockTwoItems} id={2} />
+			</ErrorBoundary>
+		</>
+	);
 }

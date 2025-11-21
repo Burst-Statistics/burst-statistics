@@ -19,11 +19,11 @@ import ExplanationAndStatsItem from "@/components/Common/ExplanationAndStatsItem
 interface SalesData {
     [key: string]: {
         title: string;
-        subtitle: string;
+        subtitle: string | null;
         value: string;
-        exactValue: number;
-        change: string;
-        changeStatus: string;
+        exactValue: number | null;
+        change: string | null;
+        changeStatus: string | null;
         icon?: string | null;
     }
 }
@@ -36,12 +36,50 @@ interface SalesData {
 const Sales = (): JSX.Element => {
     const { startDate, endDate, range } = useDate( ( state ) => state );
     const filters = useFiltersStore( ( state ) => state.filters );
+    const placeholderData: SalesData = {
+        "conversion-rate": {
+            title: __( "Conversion Rate", 'burst-statistics' ),
+            value: "-",
+            exactValue: null,
+            subtitle: null,
+            changeStatus: null,
+            change: null,
+            icon: "eye"
+        },
+        "abandonment-rate": {
+            title: __( "Abandoned Carts", 'burst-statistics' ),
+            value: "-",
+            exactValue: null,
+            subtitle: null,
+            changeStatus: null,
+            change: null,
+            icon: "sessions"
+        },
+        "average-order": {
+            title: __( "Average Order Value", 'burst-statistics' ),
+            value: "-",
+            exactValue: null,
+            subtitle: null,
+            changeStatus: null,
+            change: null,
+            icon: "visitors"
+        },
+        "revenue": {
+            title: __( "Revenue", 'burst-statistics' ),
+            value: "-",
+            exactValue: null,
+            subtitle: null,
+            changeStatus: null,
+            change: null,
+            icon: "log-out"
+        }
+    };
 
     const salesQuery = useQuery< SalesData | null >(
         {
             queryKey: [ 'sales', startDate, endDate, range, filters ],
             queryFn: () => getSales( { startDate, endDate, range, filters } ),
-            placeholderData: null,
+            placeholderData: placeholderData,
             gcTime: 10000
         }
     );
@@ -53,7 +91,7 @@ const Sales = (): JSX.Element => {
     }
 
     return (
-        <Block className="row-span-2 lg:col-span-6 xl:col-span-3">
+        <Block className="row-span-2 lg:col-span-6 xl:col-span-3 block-sales">
             <BlockHeading { ...blockHeadingProps } />
 
             <BlockContent>
@@ -69,6 +107,7 @@ const Sales = (): JSX.Element => {
                                 exactValue={ value.exactValue }
                                 change={ value.change }
                                 changeStatus={ value.changeStatus }
+                                className={ key }
                             />
                         );
                     } )

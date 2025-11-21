@@ -20,7 +20,8 @@ import { routeTree } from "./routeTree.gen";
 declare global {
   interface Window {
     burst_settings?: {
-      isPro?: boolean;
+      is_pro?: string;
+      view_sales_burst_statistics?: string;
       [key: string]: any;
     };
   }
@@ -62,7 +63,8 @@ let config: QueryConfig = {
 config = { ...config, ...{ queryCache } };
 
 const queryClient = new QueryClient(config);
-const isPro = window.burst_settings?.isPro;
+const isPro = window.burst_settings?.is_pro;
+const canViewSales = window.burst_settings?.view_sales_burst_statistics;
 
 // Create the router with improved loading state
 const router = createRouter({
@@ -70,6 +72,7 @@ const router = createRouter({
   context: {
     queryClient,
     isPro,
+    canViewSales,
   },
   defaultPendingComponent: () => <PendingComponent />,
   defaultErrorComponent: ({ error }) => (

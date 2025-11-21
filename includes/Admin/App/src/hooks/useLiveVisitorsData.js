@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { useRef } from 'react';
+import { useQuery } from '@tanstack/react-query'
+import { useRef } from 'react'
 import getLiveVisitors from '../api/getLiveVisitors';
 
 /**
@@ -9,7 +9,6 @@ import getLiveVisitors from '../api/getLiveVisitors';
  */
 export const useLiveVisitorsData = () => {
 	const intervalRef = useRef( 5000 );
-
 	return useQuery(
 		{
 			queryKey: [ 'live-visitors' ],
@@ -17,7 +16,7 @@ export const useLiveVisitorsData = () => {
 			refetchInterval: intervalRef.current,
 			placeholderData: '-',
 			onError: () => {
-				intervalRef.current = 0; // stop refreshing if error
+				intervalRef.current = 0; // Stop refreshing if error.
 			},
 			gcTime: 10000,
 		}

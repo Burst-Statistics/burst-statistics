@@ -17,14 +17,42 @@ import TrialPopup from '@/components/Upsell/TrialPopup';
 import SalesUpsellBackground from '@/components/Upsell/Sales/SalesUpsellBackground';
 import { EcommerceNotices } from '@/components/Upsell/Sales/EcommerceNotices';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
+import UnauthorizedModal from '@/components/Common/UnauthorizedModal'
 
 export const Route = createFileRoute( '/sales' )({
+	beforeLoad: ( { context } ) => {
+		let canAccessSales = false;
+
+		if ( context?.canViewSales === '1' ) {
+			canAccessSales = true;
+		}
+
+		if ( ! canAccessSales ) {
+			throw {
+				type: 'UNAUTHORIZED',
+				message: __( 'You do not have permission to view sales data.', 'burst-statistics' ),
+			};
+		}
+	},
 	component: SalesComponent,
-	errorComponent: ( { error } ) => (
-	  <div className="text-red-500 p-4">
-		  { error.message || __( 'An error occurred loading statistics', 'burst-statistics' ) }
-	  </div>
-	)
+	errorComponent: ( { error } ) => {
+		if ( 'UNAUTHORIZED' === error.type ) {
+			return (
+				<UnauthorizedModal
+					header={ __( "Unauthorized Access", "burst-statistics" ) }
+					message={ error.message }
+					actionLabel={ __( "Go Back", "burst-statistics" ) }
+				/>
+			);
+		}
+
+		return (
+			<div className = "text-red-500 p-4">
+				{ error.message || __('An error occurred loading statistics', 'burst-statistics') }
+			</div>
+		);
+	},
+
 });
 
 /**

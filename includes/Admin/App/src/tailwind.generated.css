@@ -1018,11 +1018,6 @@ video {
   margin-bottom: 0.25rem;
 }
 
-#burst-statistics .my-2\.5 {
-  margin-top: 0.625rem;
-  margin-bottom: 0.625rem;
-}
-
 #burst-statistics .my-auto {
   margin-top: auto;
   margin-bottom: auto;
@@ -1058,6 +1053,10 @@ video {
 
 #burst-statistics .mb-6 {
   margin-bottom: 1.5rem;
+}
+
+#burst-statistics .mb-8 {
+  margin-bottom: 2rem;
 }
 
 #burst-statistics .mb-\[10px\] {
@@ -1198,6 +1197,10 @@ video {
 
 #burst-statistics .h-12 {
   height: 3rem;
+}
+
+#burst-statistics .h-14 {
+  height: 3.5rem;
 }
 
 #burst-statistics .h-2 {
@@ -1342,6 +1345,10 @@ video {
 
 #burst-statistics .w-12 {
   width: 3rem;
+}
+
+#burst-statistics .w-14 {
+  width: 3.5rem;
 }
 
 #burst-statistics .w-2 {
@@ -1512,6 +1519,10 @@ video {
   max-width: fit-content;
 }
 
+#burst-statistics .max-w-lg {
+  max-width: 32rem;
+}
+
 #burst-statistics .max-w-md {
   max-width: 28rem;
 }
@@ -1587,6 +1598,12 @@ video {
 
 #burst-statistics .rotate-45 {
   --tw-rotate: 45deg;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+
+#burst-statistics .scale-90 {
+  --tw-scale-x: .9;
+  --tw-scale-y: .9;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
@@ -2397,6 +2414,10 @@ video {
   white-space: nowrap;
 }
 
+#burst-statistics .whitespace-pre-line {
+  white-space: pre-line;
+}
+
 #burst-statistics .break-words {
   overflow-wrap: break-word;
 }
@@ -3018,6 +3039,11 @@ video {
 #burst-statistics .bg-red {
   --tw-bg-opacity: 1;
   background-color: rgb(198 39 59 / var(--tw-bg-opacity, 1));
+}
+
+#burst-statistics .bg-red-100 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 226 226 / var(--tw-bg-opacity, 1));
 }
 
 #burst-statistics .bg-red-50 {
@@ -7351,12 +7377,14 @@ a.burst-button,
   opacity: 1;
 }
 
-#burst-statistics :is(.group:hover .group-hover\:inline-block) {
-  display: inline-block;
-}
-
 #burst-statistics :is(.group:hover .group-hover\:max-h-32) {
   max-height: 8rem;
+}
+
+#burst-statistics :is(.group:hover .group-hover\:scale-100) {
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
 #burst-statistics :is(.group:hover .group-hover\:border-gray-400) {

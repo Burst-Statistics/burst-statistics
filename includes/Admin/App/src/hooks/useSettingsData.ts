@@ -34,7 +34,6 @@ const useSettingsData = (): UseSettingsDataResult => {
         queryKey: ['settings_fields'],
         queryFn: async () => {
             const fields = await getFields();
-            console.log(fields);
             return fields.fields as SettingField[];
         },
         staleTime: 1000 * 60 * 5, // 5 minutes

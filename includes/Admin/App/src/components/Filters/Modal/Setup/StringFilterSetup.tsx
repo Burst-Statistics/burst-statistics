@@ -1,3 +1,4 @@
+// typescript
 import React, {useState, useRef, useEffect, useCallback} from 'react';
 import { __ } from '@wordpress/i18n';
 import AsyncSelectInput from '@/components/Inputs/AsyncSelectInput';
@@ -41,6 +42,7 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
     const selectInputRef = useRef<any>(null);
     const textInputRef = useRef<HTMLInputElement>(null);
     const [availableOptions, setAvailableOptions] = useState<SelectOption[]>([]);
+    const [filteredOptions, setFilteredOptions] = useState<SelectOption[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [hasFullDataset, setHasFullDataset] = useState<boolean>(false);
     const { getFilterOptions, isLoading, isError } = useFiltersData();
@@ -61,6 +63,8 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
             })) : [];
 
             setAvailableOptions(transformedOptions);
+            // ensure dropdown shows all options by default
+            setFilteredOptions(transformedOptions);
             // If we got less than 1000 options, we have the full dataset
             setHasFullDataset(transformedOptions.length < 1000);
         }
@@ -79,6 +83,10 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
             })) : [];
 
             setAvailableOptions(transformedOptions);
+            // if search is empty, mirror into filteredOptions so dropdown shows items
+            if (!search) {
+                setFilteredOptions(transformedOptions);
+            }
         }, 300),
         [config.options, getFilterOptions]
     );
@@ -118,44 +126,40 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
     }, [config.options]);
 
     // Load options function for AsyncSelectInput
-    const loadOptions = (inputValue: string, callback: (options: SelectOption[]) => void) => {
+    const loadOptions = async(inputValue?: string, callback?: (options: SelectOption[]) => void) => {
+        const input = String(inputValue ?? '').toLowerCase();
+
         // Update search term for reloadOnSearch functionality
-        setSearchTerm(inputValue);
+        setSearchTerm(input);
 
-        // If still loading, return empty array
-        if (isLoading) {
-            callback([]);
+        // If still loading or error, return empty array via callback
+        if (isLoading || isError) {
+            callback?.([]);
             return;
         }
 
-        // If error, return empty array
-        if (isError) {
-            callback([]);
-            return;
-        }
-
+        // If no available options yet, return empty array
         if (!availableOptions.length) {
-            callback([]);
+            callback?.([]);
             return;
         }
 
-        // If reloadOnSearch is enabled, we have the full dataset, or search < 3 chars
-        // do client-side filtering
-        if (hasFullDataset || !config.reloadOnSearch || inputValue.length < 3) {
-            const filteredOptions = availableOptions.filter(function (option) {
-                const label = (option.label ?? '').toLowerCase();
-                const value = (option.value ?? '').toLowerCase();
-                const input = inputValue.toLowerCase();
-
-                return label.includes(input) || value.includes(input);
-            });
-            callback(filteredOptions);
+        // If input is empty, return all available options
+        if (input.length === 0) {
+            callback?.(availableOptions);
+            setFilteredOptions(availableOptions);
             return;
         }
 
-        // For server-side filtering (reloadOnSearch enabled, 3+ chars, large dataset)
-        // the options are already being fetched via useEffect
-        callback(availableOptions);
+        // Always do client-side filtering on the available options
+        const filtered = availableOptions.filter(function (option) {
+            const label = String(option.label ?? '').toLowerCase();
+            const value = String(option.value ?? '').toLowerCase();
+            return label.includes(input) || value.includes(input);
+        });
+
+        callback?.(filtered);
+        setFilteredOptions(filtered);
     };
 
     const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,7 +194,6 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
             return __('Search or select an option...', 'burst-statistics');
         }
 
-        // Custom placeholders based on filter type
         switch (filterKey) {
             case 'page_url':
                 return __('Enter page URL (e.g., /about)', 'burst-statistics');
@@ -221,19 +224,19 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
                     {__('Filter value', 'burst-statistics')}
                 </label>
 
-                {/* Always render the same input type based on config.options */}
                 {config.options ? (
                     <AsyncSelectInput
                         ref={selectInputRef}
                         value={getSelectValue()}
                         onChange={handleSelectChange}
                         loadOptions={loadOptions}
-                        defaultOptions={availableOptions}
+                        defaultOptions={filteredOptions}
                         placeholder={getPlaceholder()}
                         isSearchable={true}
                         isLoading={isLoading}
                         disabled={false}
                         insideModal={true}
+                        allowCustomValue={filteredOptions.length===0}
                     />
                 ) : (
                     <TextInput

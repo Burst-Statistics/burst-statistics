@@ -126,7 +126,7 @@ const FieldWrapper = memo(
     );
 
     return (
-      <div className={wrapperClasses}>
+      <div className={wrapperClasses+' burst_field_'+inputId}>
         <div className={containerClasses}>
           <div className={clsx(labelOrderClass)}>{labelBlock}</div>
           <div className={clsx(fieldOrderClass)}>{fieldBlock}</div>

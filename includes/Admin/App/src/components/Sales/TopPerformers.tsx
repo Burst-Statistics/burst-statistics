@@ -49,11 +49,42 @@ const TopPerformers = (): JSX.Element => {
 
     const [ selectedOption, setSelectedOption ] = useState( options[0].value );
 
+    const placeholderData = {
+        "top-product": {
+            title: __( "Top product", 'burst-statistics' ),
+            value: "-",
+            exactValue: "-",
+            change: null,
+            changeStatus: "-"
+        },
+        "top-campaign": {
+            title: __( "Top campaign", 'burst-statistics' ),
+            value: "-",
+            exactValue: "-",
+            change: null,
+            changeStatus: "-"
+        },
+        "top-country": {
+            title: __( "Top country", 'burst-statistics' ),
+            value: "-",
+            exactValue: "-",
+            change: null,
+            changeStatus: "-"
+        },
+        "top-device": {
+            title: __( "Top device", 'burst-statistics' ),
+            value: "-",
+            exactValue: "-",
+            change: null,
+            changeStatus: "-"
+        }
+    }
+
     const { data: rawData } = useQuery(
         {
             queryKey: [ 'top-performers', startDate, endDate, range, filters ],
             queryFn: () => getTopPerformers( { startDate, endDate, range, filters } ),
-            placeholderData: null,
+            placeholderData: placeholderData,
             gcTime: 10000,
         }
     );
@@ -73,7 +104,7 @@ const TopPerformers = (): JSX.Element => {
     }
 
     return (
-        <Block className="row-span-2 lg:col-span-6 xl:col-span-3">
+        <Block className="row-span-2 lg:col-span-6 xl:col-span-3 block-top-performers">
             <BlockHeading { ...blockHeadingProps } />
 
             <BlockContent>
@@ -87,6 +118,7 @@ const TopPerformers = (): JSX.Element => {
                             exactValue={ value.exactValue }
                             change={ value.change }
                             changeStatus={ value.changeStatus }
+                            className={ key }
                         />
                     ) )
                 }

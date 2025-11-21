@@ -42,6 +42,7 @@ class Menu {
 		foreach ( $menu_items as $key => $menu_item ) {
 			if ( ! current_user_can( $menu_item['capabilities'] ) ) {
 				unset( $menu_items[ $key ] );
+				continue;
 			}
 
 			$sub_menu_items = $menu_item['menu_items'] ?: [];

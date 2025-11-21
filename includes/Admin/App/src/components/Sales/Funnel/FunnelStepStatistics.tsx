@@ -29,18 +29,18 @@ export const FunnelStepStatistics: React.FC<{
                             <div className={`relative z-2 w-20 h-20 mx-auto rounded-full flex flex-col items-center justify-center gap-0.5 shadow-sm ${
                                 step.isHighestDropOff ? 'bg-red-light' : 'bg-gray-200'
                             }`}>
-                                <tspan className={`text-xl font-bold text-center ${
+                                <span className={`text-xl font-bold text-center ${
                                     step.isHighestDropOff ? 'text-red' : 'text-gray-700'
                                 }`}>
                                     {step.dropOffPercentage.toFixed(step.dropOffPercentage > 0 && step.dropOffPercentage < 10 ? 1 : 0)}%
-                                </tspan>
-                                <tspan className="text-xxs uppercase tracking-wide text-gray-600">
+                                </span>
+                                <span className="text-xxs uppercase tracking-wide text-gray-600">
                                     drop-off
-                                </tspan>
+                                </span>
                             </div>
                             
                             {/* Secondary Metric: Lost sessions (smaller font) */}
-                            {step.dropOff !== null && step.dropOff > 0 && (
+                            {step.dropOff !== null && step.dropOff >= 0 && (
                                 <span className="text-xs text-center text-gray mt-1">
                                     {sprintf(__("%d lost visitors", "burst-statistics"), step.dropOff)}
                                 </span>
