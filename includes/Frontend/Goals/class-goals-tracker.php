@@ -83,12 +83,7 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 					}
 				}
 
-				$goal_arr = [
-					'goal_id'      => $goal->id,
-					'statistic_id' => $statistic_id,
-				];
-
-				\Burst\burst_loader()->frontend->tracking->create_goal_statistic( $goal_arr );
+				\Burst\burst_loader()->frontend->tracking->create_goal_statistic( $statistic_id, [$goal_id] );
 			} else {
 				self::error_log( 'No burst_uid found in handle_hook' );
 			}

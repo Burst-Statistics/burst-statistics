@@ -870,13 +870,11 @@ class Tracking {
 		}
 
 		$inserted = $wpdb->insert( $wpdb->prefix . 'burst_statistics', $data );
-		if ( $inserted ) {
-			$data['ID'] = $wpdb->insert_id;
-			return $data['ID'];
-		} else {
-			self::error_log( 'Failed to create statistic. Error: ' . $wpdb->last_error );
-			return 0;
-		}
+        if ( $inserted === false ) {
+            self::error_log( 'Failed to create statistic. Error: ' . $wpdb->last_error );
+            return 0;
+        }
+        return $wpdb->insert_id;
 	}
 
 	/**
@@ -909,7 +907,7 @@ class Tracking {
 	/**
 	 * Create goal statistic in {prefix}_burst_goal_statistics
 	 */
-	public function create_goal_statistic( string $statistic_id, array $goal_ids ): void {
+	public function create_goal_statistic( int $statistic_id, array $goal_ids ): void {
 		global $wpdb;
 		$values = [];
 		foreach ( $goal_ids as $goal_id ) {

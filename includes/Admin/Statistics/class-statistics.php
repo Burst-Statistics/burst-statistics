@@ -1589,7 +1589,7 @@ class Statistics {
         `page_id` int(11) NOT NULL,
         `page_type` varchar(191) NOT NULL,
         `time` int NOT NULL,
-        `uid` varchar(255) NOT NULL,
+        `uid` varchar(64) NOT NULL,
         `time_on_page` int,
         `parameters` TEXT NOT NULL,
         `fragment` varchar(255) NOT NULL,
@@ -1644,7 +1644,7 @@ class Statistics {
         PRIMARY KEY (ID)
     ) $charset_collate;",
 			'burst_known_uids'       => "CREATE TABLE {$wpdb->prefix}burst_known_uids (
-            `uid` varchar(255) NOT NULL,
+            `uid` varchar(64) NOT NULL,
         `first_seen` INT UNSIGNED NOT NULL,
         `last_seen` INT UNSIGNED NOT NULL,
         PRIMARY KEY (uid)
