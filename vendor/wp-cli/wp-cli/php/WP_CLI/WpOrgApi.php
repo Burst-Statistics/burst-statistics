@@ -278,7 +278,7 @@ final class WpOrgApi {
 	/**
 	 * Gets a set of salts in the format required by `wp-config.php`.
 	 *
-	 * @return string A string of PHP define() statements.
+	 * @return bool|string False on failure. A string of PHP define() statements on success.
 	 * @throws RuntimeException If the remote request fails.
 	 */
 	public function get_salts() {
@@ -323,7 +323,7 @@ final class WpOrgApi {
 	 * @param string $url     URL to execute the GET request on.
 	 * @param array  $headers Optional. Associative array of headers.
 	 * @param array  $options Optional. Associative array of options.
-	 * @return string Response body.
+	 * @return string|false False on failure. Response body string on success.
 	 * @throws RuntimeException If the remote request fails.
 	 */
 	private function get_request( $url, $headers = [], $options = [] ) {

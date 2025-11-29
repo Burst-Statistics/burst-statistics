@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of sebastian/comparator.
  *
@@ -8,8 +8,6 @@
  * file that was distributed with this source code.
  */
 namespace SebastianBergmann\Comparator;
-
-use function is_resource;
 
 /**
  * Compares resources for equality.
@@ -26,7 +24,7 @@ class ResourceComparator extends Comparator
      */
     public function accepts($expected, $actual)
     {
-        return is_resource($expected) && is_resource($actual);
+        return \is_resource($expected) && \is_resource($actual);
     }
 
     /**
@@ -40,7 +38,7 @@ class ResourceComparator extends Comparator
      *
      * @throws ComparisonFailure
      */
-    public function assertEquals($expected, $actual, $delta = 0.0, $canonicalize = false, $ignoreCase = false)/*: void*/
+    public function assertEquals($expected, $actual, $delta = 0.0, $canonicalize = false, $ignoreCase = false)
     {
         if ($actual != $expected) {
             throw new ComparisonFailure(

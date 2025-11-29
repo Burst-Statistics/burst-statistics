@@ -18,12 +18,16 @@ use function array_merge;
 use function array_pop;
 use function array_slice;
 use function array_values;
+use function constant;
 use function count;
+use function defined;
 use function explode;
 use function file;
 use function implode;
 use function is_array;
 use function is_int;
+use function is_numeric;
+use function is_string;
 use function json_decode;
 use function json_last_error;
 use function json_last_error_msg;
@@ -39,6 +43,7 @@ use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+use function substr_count;
 use function trim;
 use PharIo\Version\VersionConstraintParser;
 use PHPUnit\Framework\InvalidDataProviderException;
@@ -73,6 +78,7 @@ final class DocBlock
     private const REGEX_REQUIRES_SETTING            = '/@requires\s+(?P<name>setting)\s+(?P<setting>([^ ]+?))\s*(?P<value>[\w\.-]+[\w\.]?)?[ \t]*\r?$/m';
     private const REGEX_REQUIRES                    = '/@requires\s+(?P<name>function|extension)\s+(?P<value>([^\s<>=!]+))\s*(?P<operator>[<>=!]{0,2})\s*(?P<version>[\d\.-]+[\d\.]?)?[ \t]*\r?$/m';
     private const REGEX_TEST_WITH                   = '/@testWith\s+/';
+    private const REGEX_EXPECTED_EXCEPTION          = '(@expectedException\s+([:.\w\\\\x7f-\xff]+)(?:[\t ]+(\S*))?(?:[\t ]+(\S*))?\s*$)m';
 
     /** @var string */
     private $docComment;
@@ -128,7 +134,7 @@ final class DocBlock
             $class->getEndLine(),
             $class->getFileName(),
             $className,
-            $className,
+            $className
         );
     }
 
@@ -145,7 +151,7 @@ final class DocBlock
             $method->getEndLine(),
             $method->getFileName(),
             $method->getName(),
-            $classNameInHierarchy,
+            $classNameInHierarchy
         );
     }
 
@@ -227,6 +233,7 @@ final class DocBlock
                     ];
                     $recordedOffsets[$matches['name'] . '_constraint'] = $offset;
                 } catch (\PharIo\Version\Exception $e) {
+                    /* @TODO this catch is currently not valid, see https://github.com/phar-io/version/issues/16 */
                     throw new Warning($e->getMessage(), $e->getCode(), $e);
                 }
             }
@@ -263,8 +270,63 @@ final class DocBlock
             array_filter([
                 'setting'            => $recordedSettings,
                 'extension_versions' => $extensionVersions,
-            ]),
+            ])
         );
+    }
+
+    /**
+     * @return array|bool
+     *
+     * @psalm-return false|array{
+     *   class: class-string,
+     *   code: int|string|null,
+     *   message: string,
+     *   message_regex: string
+     * }
+     */
+    public function expectedException()
+    {
+        $docComment = (string) substr($this->docComment, 3, -2);
+
+        if (1 !== preg_match(self::REGEX_EXPECTED_EXCEPTION, $docComment, $matches)) {
+            return false;
+        }
+
+        /** @psalm-var class-string $class */
+        $class         = $matches[1];
+        $annotations   = $this->symbolAnnotations();
+        $code          = null;
+        $message       = '';
+        $messageRegExp = '';
+
+        if (isset($matches[2])) {
+            $message = trim($matches[2]);
+        } elseif (isset($annotations['expectedExceptionMessage'])) {
+            $message = $this->parseAnnotationContent($annotations['expectedExceptionMessage'][0]);
+        }
+
+        if (isset($annotations['expectedExceptionMessageRegExp'])) {
+            $messageRegExp = $this->parseAnnotationContent($annotations['expectedExceptionMessageRegExp'][0]);
+        }
+
+        if (isset($matches[3])) {
+            $code = $matches[3];
+        } elseif (isset($annotations['expectedExceptionCode'])) {
+            $code = $this->parseAnnotationContent($annotations['expectedExceptionCode'][0]);
+        }
+
+        if (is_numeric($code)) {
+            $code = (int) $code;
+        } elseif (is_string($code) && defined($code)) {
+            $code = (int) constant($code);
+        }
+
+        return [
+            'class'         => $class,
+            'code'          => $code,
+            'message'       => $message,
+            'message_regex' => $messageRegExp,
+        ];
     }
 
     /**
@@ -290,8 +352,8 @@ final class DocBlock
                 throw new InvalidDataSetException(
                     sprintf(
                         'Data set %s is invalid.',
-                        is_int($key) ? '#' . $key : '"' . $key . '"',
-                    ),
+                        is_int($key) ? '#' . $key : '"' . $key . '"'
+                    )
                 );
             }
         }
@@ -352,14 +414,21 @@ final class DocBlock
         return 1 === preg_match('/@after\b/', $this->docComment);
     }
 
-    public function isToBeExecutedAsPreCondition(): bool
+    /**
+     * Parse annotation content to use constant/class constant values.
+     *
+     * Constants are specified using a starting '@'. For example: @ClassName::CONST_NAME
+     *
+     * If the constant is not found the string is used as is to ensure maximum BC.
+     */
+    private function parseAnnotationContent(string $message): string
     {
-        return 1 === preg_match('/@preCondition\b/', $this->docComment);
-    }
+        if (defined($message) &&
+            (strpos($message, '::') !== false && substr_count($message, '::') + 1 === 2)) {
+            return constant($message);
+        }
 
-    public function isToBeExecutedAsPostCondition(): bool
-    {
-        return 1 === preg_match('/@postCondition\b/', $this->docComment);
+        return $message;
     }
 
     private function getDataFromDataProviderAnnotation(string $docComment): ?array
@@ -399,14 +468,14 @@ final class DocBlock
                 $dataProviderClass = new ReflectionClass($dataProviderClassName);
 
                 $dataProviderMethod = $dataProviderClass->getMethod(
-                    $dataProviderMethodName,
+                    $dataProviderMethodName
                 );
                 // @codeCoverageIgnoreStart
             } catch (ReflectionException $e) {
                 throw new Exception(
                     $e->getMessage(),
                     $e->getCode(),
-                    $e,
+                    $e
                 );
                 // @codeCoverageIgnoreEnd
             }
@@ -435,8 +504,8 @@ final class DocBlock
                             sprintf(
                                 'The key "%s" has already been defined in the data provider "%s".',
                                 $key,
-                                $match,
-                            ),
+                                $match
+                            )
                         );
                     } else {
                         $data[$key] = $value;
@@ -478,7 +547,7 @@ final class DocBlock
 
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new Exception(
-                    'The data set for the @testWith annotation cannot be parsed: ' . json_last_error_msg(),
+                    'The data set for the @testWith annotation cannot be parsed: ' . json_last_error_msg()
                 );
             }
 
@@ -533,14 +602,14 @@ final class DocBlock
                     {
                         return self::parseDocBlock((string) $trait->getDocComment());
                     },
-                    array_values($reflector->getTraits()),
-                ),
+                    array_values($reflector->getTraits())
+                )
             );
         }
 
         return array_merge(
             $annotations,
-            self::parseDocBlock((string) $reflector->getDocComment()),
+            self::parseDocBlock((string) $reflector->getDocComment())
         );
     }
 }

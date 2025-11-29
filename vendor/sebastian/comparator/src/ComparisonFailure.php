@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of sebastian/comparator.
  *
@@ -9,14 +9,13 @@
  */
 namespace SebastianBergmann\Comparator;
 
-use RuntimeException;
 use SebastianBergmann\Diff\Differ;
 use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
 
 /**
  * Thrown when an assertion for string equality failed.
  */
-class ComparisonFailure extends RuntimeException
+class ComparisonFailure extends \RuntimeException
 {
     /**
      * Expected value of the retrieval which does not match $actual.
@@ -33,14 +32,14 @@ class ComparisonFailure extends RuntimeException
     protected $actual;
 
     /**
-     * The string representation of the expected value.
+     * The string representation of the expected value
      *
      * @var string
      */
     protected $expectedAsString;
 
     /**
-     * The string representation of the actual value.
+     * The string representation of the actual value
      *
      * @var string
      */

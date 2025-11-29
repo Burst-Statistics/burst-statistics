@@ -105,12 +105,12 @@ Feature: Reset WordPress sidebars
       """
       0
       """
-    When I run `wp widget list sidebar-2 --format=count`
+    And I run `wp widget list sidebar-2 --format=count`
     Then STDOUT should be:
       """
       0
       """
-    When I run `wp widget list sidebar-3 --format=count`
+    And I run `wp widget list sidebar-3 --format=count`
     Then STDOUT should be:
       """
       0
@@ -120,11 +120,11 @@ Feature: Reset WordPress sidebars
       """
       calendar-1
       """
-    And STDOUT should contain:
+    Then STDOUT should contain:
       """
       search-1
       """
-    And STDOUT should contain:
+    Then STDOUT should contain:
       """
       text-1
       """
@@ -132,8 +132,7 @@ Feature: Reset WordPress sidebars
   Scenario: Testing movement of widgets while reset
     When I run `wp widget add calendar sidebar-2 --title="Calendar"`
     Then STDOUT should not be empty
-
-    When I run `wp widget add search sidebar-2 --title="Quick Search"`
+    And I run `wp widget add search sidebar-2 --title="Quick Search"`
     Then STDOUT should not be empty
 
     When I run `wp widget list sidebar-2 --format=ids`
@@ -147,9 +146,8 @@ Feature: Reset WordPress sidebars
     When I run `wp widget reset sidebar-2`
     And I run `wp widget list sidebar-2 --format=ids`
     Then STDOUT should be empty
-
-    When I run `wp widget list wp_inactive_widgets --format=ids`
-    And STDOUT should contain:
+    And I run `wp widget list wp_inactive_widgets --format=ids`
+    Then STDOUT should contain:
       """
       calendar-1 search-1
       """

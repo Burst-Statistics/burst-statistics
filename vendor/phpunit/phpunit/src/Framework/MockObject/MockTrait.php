@@ -22,22 +22,16 @@ final class MockTrait implements MockType
     private $classCode;
 
     /**
-     * @var class-string
+     * @var string
      */
     private $mockName;
 
-    /**
-     * @psalm-param class-string $mockName
-     */
     public function __construct(string $classCode, string $mockName)
     {
         $this->classCode = $classCode;
         $this->mockName  = $mockName;
     }
 
-    /**
-     * @psalm-return class-string
-     */
     public function generate(): string
     {
         if (!class_exists($this->mockName, false)) {

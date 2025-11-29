@@ -41,6 +41,11 @@ workflow:
       when: always
     - when: never
 
+test:phpunit:
+  <<: *e2e_base
+  script:
+    - php vendor/bin/phpunit --debug 2>&1
+
 test:e2e:
   <<: *e2e_base
   script:

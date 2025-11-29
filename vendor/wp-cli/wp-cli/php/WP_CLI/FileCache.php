@@ -328,7 +328,7 @@ class FileCache {
 			if ( ! @mkdir( $dir, 0777, true ) ) {
 				$message = "Failed to create directory '{$dir}'";
 				$error   = error_get_last();
-				if ( is_array( $error ) ) {
+				if ( is_array( $error ) && array_key_exists( 'message', $error ) ) {
 					$message .= ": {$error['message']}";
 				}
 				WP_CLI::warning( "{$message}." );

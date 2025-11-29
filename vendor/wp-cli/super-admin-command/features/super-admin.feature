@@ -143,7 +143,7 @@ Feature: Manage super admins associated with a multisite instance
       superadmin
       """
 
-    When I run `wp super-admin list`
+    And I run `wp super-admin list`
     Then STDOUT should be:
       """
       superadmin
@@ -184,10 +184,10 @@ Feature: Manage super admins associated with a multisite instance
     Given a WP multisite installation
 
     When I run `wp user get admin --field=ID`
-    Then save STDOUT as {USER_1}
+    And save STDOUT as {USER_1}
 
     When I run `wp user create admin2 admin2@example.com --porcelain`
-    Then save STDOUT as {USER_2}
+    And save STDOUT as {USER_2}
 
     When I run `wp super-admin add admin2`
     And I run `wp super-admin list --format=ids`

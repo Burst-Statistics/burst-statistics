@@ -16,6 +16,7 @@ use function fopen;
 use function get_defined_vars;
 use function sprintf;
 use function stream_resolve_include_path;
+use PHPUnit\Framework\Exception;
 
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
@@ -36,13 +37,17 @@ final class FileLoader
     {
         $includePathFilename = stream_resolve_include_path($filename);
 
+        if (!$includePathFilename) {
+            throw new Exception(
+                sprintf('Cannot open file "%s".' . "\n", $filename)
+            );
+        }
+
         $localFile = __DIR__ . DIRECTORY_SEPARATOR . $filename;
 
-        if (!$includePathFilename ||
-            $includePathFilename === $localFile ||
-            !self::isReadable($includePathFilename)) {
+        if ($includePathFilename === $localFile || !self::isReadable($includePathFilename)) {
             throw new Exception(
-                sprintf('Cannot open file "%s".' . "\n", $filename),
+                sprintf('Cannot open file "%s".' . "\n", $filename)
             );
         }
 
@@ -58,11 +63,6 @@ final class FileLoader
     {
         $oldVariableNames = array_keys(get_defined_vars());
 
-        /**
-         * @noinspection PhpIncludeInspection
-         *
-         * @psalm-suppress UnresolvableInclude
-         */
         include_once $filename;
 
         $newVariables = get_defined_vars();

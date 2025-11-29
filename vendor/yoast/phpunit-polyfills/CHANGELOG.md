@@ -9,6 +9,106 @@ This projects adheres to [Keep a CHANGELOG](http://keepachangelog.com/) and uses
 
 _Nothing yet._
 
+## [2.0.4] - 2025-02-09
+
+This is a maintenance release.
+
+### Changed
+* README: updated sub-section about PHPUnit version support with information about the PHPUnit Polyfills 4.x branch. PR [#249]
+* General housekeeping.
+
+<!-- Link to #249 is defined on the 1.1.4 release. -->
+
+
+## [2.0.3] - 2025-01-08
+
+This is a maintenance release.
+
+### Changed
+* README: fixed a few broken badges.
+* General housekeeping.
+
+
+## [2.0.2] - 2024-09-07
+
+This is a maintenance release.
+
+### Changed
+* README: updated sub-section about PHPUnit version support with information about the PHPUnit Polyfills 3.x branch. PR [#188]
+* README: FAQ updated with info about ability to polyfill the removed `expectDeprecation*()` methods et al. PR [#187], props [Tonya Mork].
+* README: links to the PHPUnit manual now point explicitly to the PHPUnit 10.x documentation. PR [#190]
+* General housekeeping.
+
+[#187]: https://github.com/Yoast/PHPUnit-Polyfills/pull/187
+<!-- Link to #188 is defined on the 1.1.2 release. -->
+[#190]: https://github.com/Yoast/PHPUnit-Polyfills/pull/190
+
+
+## [2.0.1] - 2024-04-05
+
+### Added
+* Compatibility fixes for running tests using a PHPUnit PHAR file for PHPUnit 8.5.38+, 9.6.19+ and PHPUnit 10.5.17+. PRs [#161], [#164].
+
+### Changed
+* General housekeeping.
+
+[#164]: https://github.com/Yoast/PHPUnit-Polyfills/pull/164
+
+
+## [2.0.0] - 2023-06-06
+
+### PHPUnit 10 support
+
+This release updates the PHPUnit Polyfills to allow for _"writing your tests for PHPUnit 10 and running them all the way back to PHPUnit 5"_.
+
+Please keep in mind that the PHPUnit Polyfills provide _forward_-compatibility. This means that features which PHPUnit no longer supports in PHPUnit 10.x, like expecting PHP deprecation notices or warnings, are also no longer supported in the 2.0 release of the PHPUnit Polyfills.
+
+Please refer to the [PHPUnit 10 release notification] and [PHPUnit 10 changelog] to inform your decision on whether or not to upgrade (yet).
+
+Projects which don't use any of the new or removed functionality in their test suite, can, of course, use the PHPUnit Polyfills 1.x and 2.x series side-by-side, like so `composer require --dev yoast/phpunit-polyfills:"^1.0 || ^2.0"`.
+
+[PHPUnit 10 release notification]: https://phpunit.de/announcements/phpunit-10.html
+[PHPUnit 10 changelog]:            https://github.com/sebastianbergmann/phpunit/blob/10.0.19/ChangeLog-10.0.md
+
+> :warning: **Important: about the TestListener polyfill** :warning:
+>
+> The TestListener polyfill in PHPUnit Polyfills 2.0 is **[not (yet) compatible with PHPUnit 10.0.0][polyfill-ticket]**.
+>
+> If you need the TestListener polyfill, it is recommended to stay on the PHPUnit Polyfills 1.x series for the time being and to watch the [related ticket][polyfill-ticket].
+
+[polyfill-ticket]: https://github.com/Yoast/PHPUnit-Polyfills/issues/128
+
+
+### Changelog
+
+#### Added
+* `Yoast\PHPUnitPolyfills\Polyfills\AssertIgnoringLineEndings` trait to polyfill the `Assert::assertStringEqualsStringIgnoringLineEndings()` and the `Assert::assertStringContainsStringIgnoringLineEndings()` methods as introduced in PHPUnit 10.0.0. PR [#109].
+* `Yoast\PHPUnitPolyfills\Polyfills\AssertIsList` trait to polyfill the `Assert::assertIsList()` method as introduced in PHPUnit 10.0.0. PR [#110].
+* `Yoast\PHPUnitPolyfills\Polyfills\AssertObjectProperty` trait to polyfill the `Assert::assertObjectHasProperty()` and the `Assert::assertObjectNotHasProperty()` methods as introduced in PHPUnit 10.1.0. PR [#116].
+
+#### Changed
+* Composer: allow for installation of PHPUnit 10.x. PR [#130]
+* Nearly all assertion methods are now `final`. This alignes them with the same change made upstream in PHPUnit 10.0.0. PR [#104].
+* General housekeeping.
+
+#### Removed
+* Support for PHP < 5.6. PR [#102].
+* Support for PHPUnit < 5.7.21. PR [#102].
+* Support for expecting PHP deprecations, notices, warnings and error via the `Yoast\PHPUnitPolyfills\Polyfills\ExpectPHPException` trait. PR [#108].
+    The trait has been removed completely as PHPUnit 10 no longer supports this functionality.
+* The `Yoast\PHPUnitPolyfills\Polyfills\AssertNumericType` trait which is no longer needed now support for PHPUnit < 5.7 has been dropped. PR [#102].
+* The `Yoast\PHPUnitPolyfills\Polyfills\ExpectException` trait which is no longer needed now support for PHPUnit < 5.7 has been dropped. PR [#102].
+* The `Yoast\PHPUnitPolyfills\Polyfills\AssertFileDirectory` trait which is no longer needed now support for PHPUnit < 5.7 has been dropped. PR [#102].
+
+[#102]: https://github.com/Yoast/PHPUnit-Polyfills/pull/102
+[#104]: https://github.com/Yoast/PHPUnit-Polyfills/pull/104
+[#108]: https://github.com/Yoast/PHPUnit-Polyfills/pull/108
+[#109]: https://github.com/Yoast/PHPUnit-Polyfills/pull/109
+[#110]: https://github.com/Yoast/PHPUnit-Polyfills/pull/110
+[#116]: https://github.com/Yoast/PHPUnit-Polyfills/pull/116
+[#130]: https://github.com/Yoast/PHPUnit-Polyfills/pull/130
+
+
 ## [1.1.4] - 2025-02-09
 
 This is a maintenance release.
@@ -65,7 +165,7 @@ This is a maintenance release.
 ## [1.0.5] - 2023-03-31
 
 ### Fixed
-* A custom `$message` parameter passed to an assertion, will no longer overrule an emulated "assertion failed" message, but will be prefixed to it instead. PR [#97]
+* A custom `$message` parameter passed to an assertion, will no longer overrule an emulated "assertion failed" message, but will be prefixed to it instead. PR [#97].
     This applies to the following polyfills:
     - `assertIsClosedResource()`
     - `assertIsNotClosedResource()`
@@ -80,9 +180,9 @@ This is a maintenance release.
 
 ### Changed
 * The `develop` branch has been removed. Development will now take place in the `1.x` and `2.x` branches.
-* README: links to the PHPUnit manual now point explicitly to the PHPUnit 9.x documentation. PR [#94]
-* README: new sub-section about PHPUnit version support. PR [#99]
-* README: various minor improvements. PRs [#92], [#93]
+* README: links to the PHPUnit manual now point explicitly to the PHPUnit 9.x documentation. PR [#94].
+* README: new sub-section about PHPUnit version support. PR [#99].
+* README: various minor improvements. PRs [#92], [#93].
 * General housekeeping.
 
 [#92]: https://github.com/Yoast/PHPUnit-Polyfills/pull/92
@@ -123,14 +223,14 @@ This is a maintenance release.
 As of version 2.15.0 of the `shivammathur/setup-php` action for GitHub Actions, the PHPUnit Polyfills can be installed directly from this action using the `tools` key.
 
 ### Added
-* README: FAQ section about installing and using the library via the `shivammathur/setup-php` action. PR [#52]
+* README: FAQ section about installing and using the library via the `shivammathur/setup-php` action. PR [#52].
 
 ### Changed
 * README: minor textual clarifications and improvements. PRs [#52], [#54], props [Pierre Gordon].
 * General housekeeping.
 
 ### Fixed
-* Autoloader: improved compatibility with packages which create a `class_alias` for the `PHPUnit_Runner_Version` or `PHPUnit\Runner\Version` class. PR [#59]
+* Autoloader: improved compatibility with packages which create a `class_alias` for the `PHPUnit_Runner_Version` or `PHPUnit\Runner\Version` class. PR [#59].
 
 [#52]: https://github.com/Yoast/PHPUnit-Polyfills/pull/52
 [#54]: https://github.com/Yoast/PHPUnit-Polyfills/pull/54
@@ -208,7 +308,12 @@ As of version 2.15.0 of the `shivammathur/setup-php` action for GitHub Actions, 
 Initial release.
 
 
-[Unreleased]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.4...1.x
+[Unreleased]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.4...2.x
+[2.0.4]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.3...2.0.4
+[2.0.3]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.2...2.0.3
+[2.0.2]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.1...2.0.2
+[2.0.1]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.0...2.0.1
+[2.0.0]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.4...2.0.0
 [1.1.4]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.3...1.1.4
 [1.1.3]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.2...1.1.3
 [1.1.2]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.1...1.1.2
@@ -231,3 +336,4 @@ Initial release.
 [Pascal Birchler]: https://github.com/swissspidy
 [Phil E. Taylor]: https://github.com/PhilETaylor
 [Pierre Gordon]: https://github.com/pierlon
+[Tonya Mork]: https://github.com/hellofromtonya

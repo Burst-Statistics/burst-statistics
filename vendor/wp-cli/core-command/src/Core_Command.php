@@ -1013,19 +1013,31 @@ EOT;
 	 * @return string|array String message on failure. An array of checksums on success.
 	 */
 	private static function get_core_checksums( $version, $locale, $insecure ) {
-		$wp_org_api = new WpOrgApi( [ 'insecure' => $insecure ] );
+		$query = http_build_query( compact( 'version', 'locale' ), '', '&' );
+		$url   = "https://api.wordpress.org/core/checksums/1.0/?{$query}";
 
-		try {
-			$checksums = $wp_org_api->get_core_checksums( $version, $locale );
-		} catch ( Exception $exception ) {
-			return $exception->getMessage();
+		$headers = [ 'Accept' => 'application/json' ];
+		$options = [
+			'timeout'  => 30,
+			'insecure' => $insecure,
+		];
+
+		$response = Utils\http_request( 'GET', $url, null, $headers, $options );
+
+		if ( ! $response->success || 200 !== (int) $response->status_code ) {
+			return "Checksum request '{$url}' failed (HTTP {$response->status_code}).";
 		}
 
-		if ( false === $checksums ) {
+		$body = trim( $response->body );
+		$body = json_decode( $body, true );
+
+		if ( ! is_array( $body )
+			|| ! isset( $body['checksums'] )
+			|| ! is_array( $body['checksums'] ) ) {
 			return "Checksums not available for WordPress {$version}/{$locale}.";
 		}
 
-		return $checksums;
+		return $body['checksums'];
 	}
 
 	/**
@@ -1304,7 +1316,7 @@ EOT;
 
 					// WP upgrade expects `$_SERVER['HTTP_HOST']` to be set in `wp_guess_url()`, otherwise get PHP notice.
 					if ( ! isset( $_SERVER['HTTP_HOST'] ) ) {
-						$_SERVER['HTTP_HOST'] = 'example.com';
+						$_SERVER['HTTP_HOST'] = 'http://example.com';
 					}
 
 					wp_upgrade();
@@ -1337,19 +1349,12 @@ EOT;
 
 		$locale_subdomain = 'en_US' === $locale ? '' : substr( $locale, 0, 2 ) . '.';
 		$locale_suffix    = 'en_US' === $locale ? '' : "-{$locale}";
-		// Match 6.7.0 but not 6.0
-		if ( substr_count( $version, '.' ) > 1 && substr( $version, -2 ) === '.0' ) {
-			$version = substr( $version, 0, -2 );
-		}
 
 		return "https://{$locale_subdomain}wordpress.org/wordpress-{$version}{$locale_suffix}.{$file_type}";
 	}
 
 	/**
 	 * Returns update information.
-	 *
-	 * @param array $assoc_args Associative array of arguments.
-	 * @return array List of available updates , or an empty array if no updates are available.
 	 */
 	private function get_updates( $assoc_args ) {
 		$force_check = Utils\get_flag_value( $assoc_args, 'force-check' );
@@ -1400,7 +1405,7 @@ EOT;
 			if ( true === Utils\get_flag_value( $assoc_args, $type ) ) {
 				return ! empty( $updates[ $type ] )
 					? [ $updates[ $type ] ]
-					: [];
+					: false;
 			}
 		}
 		return array_values( $updates );
@@ -1425,11 +1430,9 @@ EOT;
 			WP_CLI::warning( "{$old_checksums} Please cleanup files manually." );
 			return;
 		}
-
 		$new_checksums = self::get_core_checksums( $version_to, $locale ?: 'en_US', $insecure );
 		if ( ! is_array( $new_checksums ) ) {
 			WP_CLI::warning( "{$new_checksums} Please cleanup files manually." );
-
 			return;
 		}
 

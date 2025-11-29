@@ -26,7 +26,7 @@ trait AssertEqualsSpecializations {
 	 *
 	 * @return void
 	 */
-	public static function assertEqualsCanonicalizing( $expected, $actual, $message = '' ) {
+	final public static function assertEqualsCanonicalizing( $expected, $actual, $message = '' ) {
 		static::assertEquals( $expected, $actual, $message, 0.0, 10, true );
 	}
 
@@ -39,7 +39,7 @@ trait AssertEqualsSpecializations {
 	 *
 	 * @return void
 	 */
-	public static function assertEqualsIgnoringCase( $expected, $actual, $message = '' ) {
+	final public static function assertEqualsIgnoringCase( $expected, $actual, $message = '' ) {
 		static::assertEquals( $expected, $actual, $message, 0.0, 10, false, true );
 	}
 
@@ -53,7 +53,7 @@ trait AssertEqualsSpecializations {
 	 *
 	 * @return void
 	 */
-	public static function assertEqualsWithDelta( $expected, $actual, $delta, $message = '' ) {
+	final public static function assertEqualsWithDelta( $expected, $actual, $delta, $message = '' ) {
 		static::assertEquals( $expected, $actual, $message, $delta );
 	}
 
@@ -66,7 +66,7 @@ trait AssertEqualsSpecializations {
 	 *
 	 * @return void
 	 */
-	public static function assertNotEqualsCanonicalizing( $expected, $actual, $message = '' ) {
+	final public static function assertNotEqualsCanonicalizing( $expected, $actual, $message = '' ) {
 		static::assertNotEquals( $expected, $actual, $message, 0.0, 10, true );
 	}
 
@@ -79,7 +79,7 @@ trait AssertEqualsSpecializations {
 	 *
 	 * @return void
 	 */
-	public static function assertNotEqualsIgnoringCase( $expected, $actual, $message = '' ) {
+	final public static function assertNotEqualsIgnoringCase( $expected, $actual, $message = '' ) {
 		static::assertNotEquals( $expected, $actual, $message, 0.0, 10, false, true );
 	}
 
@@ -93,7 +93,7 @@ trait AssertEqualsSpecializations {
 	 *
 	 * @return void
 	 */
-	public static function assertNotEqualsWithDelta( $expected, $actual, $delta, $message = '' ) {
+	final public static function assertNotEqualsWithDelta( $expected, $actual, $delta, $message = '' ) {
 		static::assertNotEquals( $expected, $actual, $message, $delta );
 	}
 }

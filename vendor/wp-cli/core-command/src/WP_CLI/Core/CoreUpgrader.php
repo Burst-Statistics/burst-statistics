@@ -27,7 +27,6 @@ class CoreUpgrader extends DefaultCoreUpgrader {
 	 * CoreUpgrader constructor.
 	 *
 	 * @param \WP_Upgrader_Skin|null $skin
-	 * @param bool                   $insecure
 	 */
 	public function __construct( $skin = null, $insecure = false ) {
 		$this->insecure = $insecure;

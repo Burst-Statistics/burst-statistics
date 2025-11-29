@@ -63,7 +63,6 @@ class REPL {
 				'global',
 				'unset',
 				'function',
-				'do',
 				'while',
 				'for',
 				'foreach',

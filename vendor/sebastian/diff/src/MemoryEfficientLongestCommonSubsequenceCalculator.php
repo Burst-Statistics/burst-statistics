@@ -7,15 +7,8 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace SebastianBergmann\Diff;
 
-use function array_fill;
-use function array_merge;
-use function array_reverse;
-use function array_slice;
-use function count;
-use function in_array;
-use function max;
+namespace SebastianBergmann\Diff;
 
 final class MemoryEfficientLongestCommonSubsequenceCalculator implements LongestCommonSubsequenceCalculator
 {
@@ -24,15 +17,15 @@ final class MemoryEfficientLongestCommonSubsequenceCalculator implements Longest
      */
     public function calculate(array $from, array $to): array
     {
-        $cFrom = count($from);
-        $cTo   = count($to);
+        $cFrom = \count($from);
+        $cTo   = \count($to);
 
         if ($cFrom === 0) {
             return [];
         }
 
         if ($cFrom === 1) {
-            if (in_array($from[0], $to, true)) {
+            if (\in_array($from[0], $to, true)) {
                 return [$from[0]];
             }
 
@@ -40,10 +33,10 @@ final class MemoryEfficientLongestCommonSubsequenceCalculator implements Longest
         }
 
         $i         = (int) ($cFrom / 2);
-        $fromStart = array_slice($from, 0, $i);
-        $fromEnd   = array_slice($from, $i);
+        $fromStart = \array_slice($from, 0, $i);
+        $fromEnd   = \array_slice($from, $i);
         $llB       = $this->length($fromStart, $to);
-        $llE       = $this->length(array_reverse($fromEnd), array_reverse($to));
+        $llE       = $this->length(\array_reverse($fromEnd), \array_reverse($to));
         $jMax      = 0;
         $max       = 0;
 
@@ -56,10 +49,10 @@ final class MemoryEfficientLongestCommonSubsequenceCalculator implements Longest
             }
         }
 
-        $toStart = array_slice($to, 0, $jMax);
-        $toEnd   = array_slice($to, $jMax);
+        $toStart = \array_slice($to, 0, $jMax);
+        $toEnd   = \array_slice($to, $jMax);
 
-        return array_merge(
+        return \array_merge(
             $this->calculate($fromStart, $toStart),
             $this->calculate($fromEnd, $toEnd)
         );
@@ -67,9 +60,9 @@ final class MemoryEfficientLongestCommonSubsequenceCalculator implements Longest
 
     private function length(array $from, array $to): array
     {
-        $current = array_fill(0, count($to) + 1, 0);
-        $cFrom   = count($from);
-        $cTo     = count($to);
+        $current = \array_fill(0, \count($to) + 1, 0);
+        $cFrom   = \count($from);
+        $cTo     = \count($to);
 
         for ($i = 0; $i < $cFrom; $i++) {
             $prev = $current;

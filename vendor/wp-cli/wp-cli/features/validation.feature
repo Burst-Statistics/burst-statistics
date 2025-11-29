@@ -8,7 +8,7 @@ Feature: Argument validation
 
     When I try `wp plugin install`
     Then the return code should be 1
-    And STDOUT should contain:
+    Then STDOUT should contain:
       """
       usage: wp plugin install
       """

@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 /*
- * This file is part of phpunit/php-code-coverage.
+ * This file is part of the php-code-coverage package.
  *
  * (c) Sebastian Bergmann <sebastian@phpunit.de>
  *
@@ -9,8 +9,9 @@
  */
 namespace SebastianBergmann\CodeCoverage;
 
-use Throwable;
-
-interface Exception extends Throwable
+/**
+ * Exception interface for php-code-coverage component.
+ */
+interface Exception
 {
 }

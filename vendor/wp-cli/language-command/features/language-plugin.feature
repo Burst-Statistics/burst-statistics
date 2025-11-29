@@ -1,4 +1,4 @@
-Feature: Manage plugin translation files for a WordPress install
+Feature: Manage translation files for a WordPress install
 
   @require-wp-4.0
   Scenario: Plugin translation CRUD
@@ -320,7 +320,8 @@ Feature: Manage plugin translation files for a WordPress install
 
     When I run `wp plugin install akismet --version=4.0 --force`
     And I run `wp plugin install jetpack --version=6.4 --force`
-    And I run `wp language plugin list --all --fields=plugin,language,update,status`
+
+    When I run `wp language plugin list --all --fields=plugin,language,update,status`
     Then STDOUT should be a table containing rows:
       | plugin   | language     | update    | status    |
       | akismet  | de_DE_formal | available | installed |
@@ -370,7 +371,7 @@ Feature: Manage plugin translation files for a WordPress install
       """
 
     When I run `wp language plugin install jetpack de_DE`
-    Then STDOUT should contain:
+    And STDOUT should contain:
       """
       Downloading translation from https://downloads.wordpress.org/translation/plugin/jetpack/6.0/de_DE.zip
       """
@@ -390,6 +391,7 @@ Feature: Manage plugin translation files for a WordPress install
       | akismet  | de_DE    | available | installed |
       | jetpack  | de_DE    | none      | installed |
     And STDERR should be empty
+
 
   @require-wp-4.0
   Scenario: Install translations for all installed plugins
@@ -436,17 +438,4 @@ Feature: Manage plugin translation files for a WordPress install
       jetpack,de_DE,"already installed"
       jetpack,invalid_lang,"not available"
       """
-    And STDERR should be empty
-
-  @require-wp-4.0
-  Scenario: List languages by multiple statuses
-    Given a WP install
-    And an empty cache
-    And I run `wp language plugin install akismet nl_NL`
-
-    When I run `wp language plugin list --all --fields=plugin,language,status --status=active,installed`
-    Then STDOUT should be a table containing rows:
-      | plugin   | language | status    |
-      | akismet  | en_US    | active    |
-      | akismet  | nl_NL    | installed |
     And STDERR should be empty

@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of sebastian/comparator.
  *
@@ -8,8 +8,6 @@
  * file that was distributed with this source code.
  */
 namespace SebastianBergmann\Comparator;
-
-use Exception;
 
 /**
  * Compares Exception instances for equality.
@@ -26,7 +24,7 @@ class ExceptionComparator extends ObjectComparator
      */
     public function accepts($expected, $actual)
     {
-        return $expected instanceof Exception && $actual instanceof Exception;
+        return $expected instanceof \Exception && $actual instanceof \Exception;
     }
 
     /**

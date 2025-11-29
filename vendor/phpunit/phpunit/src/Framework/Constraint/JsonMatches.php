@@ -18,7 +18,7 @@ use SebastianBergmann\Comparator\ComparisonFailure;
 use SebastianBergmann\RecursionContext\InvalidArgumentException;
 
 /**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+ * Asserts whether or not two JSON objects are equal.
  */
 final class JsonMatches extends Constraint
 {
@@ -39,7 +39,7 @@ final class JsonMatches extends Constraint
     {
         return sprintf(
             'matches JSON string "%s"',
-            $this->value,
+            $this->value
         );
     }
 
@@ -101,7 +101,7 @@ final class JsonMatches extends Constraint
                 Json::prettify($recodedValue),
                 Json::prettify($recodedOther),
                 false,
-                'Failed asserting that two json values are equal.',
+                'Failed asserting that two json values are equal.'
             );
         }
 

@@ -1,4 +1,4 @@
-Feature: Manage core translation files for a WordPress install
+Feature: Manage translation files for a WordPress install
 
   @require-wp-4.0
   Scenario: Core translation CRUD
@@ -178,14 +178,14 @@ Feature: Manage core translation files for a WordPress install
       """
 
     When I run `wp language core uninstall en_CA ja`
-    Then the wp-content/languages/admin-en_CA.po file should not exist
-    And the wp-content/languages/en_CA.po file should not exist
-    And the wp-content/languages/en_CA.l10n.php file should not exist
-    And the wp-content/languages/admin-ja.po file should not exist
-    And the wp-content/languages/ja.po file should not exist
-    And the wp-content/languages/ja.l10n.php file should not exist
-    And STDOUT should be:
-      """
+     Then the wp-content/languages/admin-en_CA.po file should not exist
+     And the wp-content/languages/en_CA.po file should not exist
+     And the wp-content/languages/en_CA.l10n.php file should not exist
+     And the wp-content/languages/admin-ja.po file should not exist
+     And the wp-content/languages/ja.po file should not exist
+     And the wp-content/languages/ja.l10n.php file should not exist
+     And STDOUT should be:
+       """
       Success: Language uninstalled.
       Success: Language uninstalled.
       """
@@ -439,52 +439,52 @@ Feature: Manage core translation files for a WordPress install
       Die aktuelle Version wird installiert
       """
 
-  @require-wp-4.0
-  Scenario: Show correct active language after switching
-    Given a WP install
-    And an empty cache
+    @require-wp-4.0
+    Scenario: Show correct active language after switching
+      Given a WP install
+      And an empty cache
 
-    When I try `wp language core is-installed en_US`
-    Then the return code should be 0
+      When I try `wp language core is-installed en_US`
+      Then the return code should be 0
 
-    When I run `wp language core install de_DE`
-    Then the wp-content/languages/admin-de_DE.po file should exist
-    And the wp-content/languages/de_DE.po file should exist
-    And STDOUT should contain:
+      When I run `wp language core install de_DE`
+      Then the wp-content/languages/admin-de_DE.po file should exist
+      And the wp-content/languages/de_DE.po file should exist
+      And STDOUT should contain:
       """
       Success: Installed 1 of 1 languages.
       """
-    And STDERR should be empty
+      And STDERR should be empty
 
-    When I try `wp language core is-installed de_DE`
-    Then the return code should be 0
+      When I try `wp language core is-installed de_DE`
+      Then the return code should be 0
 
-    When I run `wp language core list --field=language --status=active`
-    Then STDOUT should be:
+      When I run `wp language core list --field=language --status=active`
+      Then STDOUT should be:
       """
       en_US
       """
 
-    When I run `wp site switch-language de_DE`
-    Then STDOUT should be:
+      When I run `wp site switch-language de_DE`
+      Then STDOUT should be:
       """
       Success: Language activated.
       """
 
-    When I run `wp language core list --field=language --status=active`
-    Then STDOUT should be:
+      When I run `wp language core list --field=language --status=active`
+      Then STDOUT should be:
       """
       de_DE
       """
 
-    When I run `wp site switch-language en_US`
-    Then STDOUT should be:
+      When I run `wp site switch-language en_US`
+      Then STDOUT should be:
       """
       Success: Language activated.
       """
 
-    When I run `wp language core list --field=language --status=active`
-    Then STDOUT should be:
+      When I run `wp language core list --field=language --status=active`
+      Then STDOUT should be:
       """
       en_US
       """
@@ -535,16 +535,3 @@ Feature: Manage core translation files for a WordPress install
       """
       en_US
       """
-
-  @require-wp-4.0
-  Scenario: List languages by multiple statuses
-    Given a WP install
-    And an empty cache
-    And I run `wp language core install nl_NL`
-
-    When I run `wp language core list --fields=language,status --status=active,installed`
-    Then STDOUT should be a table containing rows:
-        | language  | status     |
-        | en_US     | active     |
-        | nl_NL     | installed  |
-    And STDERR should be empty

@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 /*
- * This file is part of phpunit/php-code-coverage.
+ * This file is part of the php-code-coverage package.
  *
  * (c) Sebastian Bergmann <sebastian@phpunit.de>
  *
@@ -9,18 +9,11 @@
  */
 namespace SebastianBergmann\CodeCoverage\Report\Xml;
 
-use function basename;
-use function dirname;
-use DOMDocument;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
 final class Report extends File
 {
     public function __construct(string $name)
     {
-        $dom = new DOMDocument;
+        $dom = new \DOMDocument();
         $dom->loadXML('<?xml version="1.0" ?><phpunit xmlns="https://schema.phpunit.de/coverage/1.0"><file /></phpunit>');
 
         $contextNode = $dom->getElementsByTagNameNS(
@@ -33,15 +26,15 @@ final class Report extends File
         $this->setName($name);
     }
 
-    public function asDom(): DOMDocument
+    public function asDom(): \DOMDocument
     {
-        return $this->dom();
+        return $this->getDomDocument();
     }
 
-    public function functionObject($name): Method
+    public function getFunctionObject($name): Method
     {
-        $node = $this->contextNode()->appendChild(
-            $this->dom()->createElementNS(
+        $node = $this->getContextNode()->appendChild(
+            $this->getDomDocument()->createElementNS(
                 'https://schema.phpunit.de/coverage/1.0',
                 'function'
             )
@@ -50,26 +43,26 @@ final class Report extends File
         return new Method($node, $name);
     }
 
-    public function classObject($name): Unit
+    public function getClassObject($name): Unit
     {
-        return $this->unitObject('class', $name);
+        return $this->getUnitObject('class', $name);
     }
 
-    public function traitObject($name): Unit
+    public function getTraitObject($name): Unit
     {
-        return $this->unitObject('trait', $name);
+        return $this->getUnitObject('trait', $name);
     }
 
-    public function source(): Source
+    public function getSource(): Source
     {
-        $source = $this->contextNode()->getElementsByTagNameNS(
+        $source = $this->getContextNode()->getElementsByTagNameNS(
             'https://schema.phpunit.de/coverage/1.0',
             'source'
         )->item(0);
 
         if (!$source) {
-            $source = $this->contextNode()->appendChild(
-                $this->dom()->createElementNS(
+            $source = $this->getContextNode()->appendChild(
+                $this->getDomDocument()->createElementNS(
                     'https://schema.phpunit.de/coverage/1.0',
                     'source'
                 )
@@ -79,16 +72,16 @@ final class Report extends File
         return new Source($source);
     }
 
-    private function setName(string $name): void
+    private function setName($name): void
     {
-        $this->contextNode()->setAttribute('name', basename($name));
-        $this->contextNode()->setAttribute('path', dirname($name));
+        $this->getContextNode()->setAttribute('name', \basename($name));
+        $this->getContextNode()->setAttribute('path', \dirname($name));
     }
 
-    private function unitObject(string $tagName, $name): Unit
+    private function getUnitObject($tagName, $name): Unit
     {
-        $node = $this->contextNode()->appendChild(
-            $this->dom()->createElementNS(
+        $node = $this->getContextNode()->appendChild(
+            $this->getDomDocument()->createElementNS(
                 'https://schema.phpunit.de/coverage/1.0',
                 $tagName
             )

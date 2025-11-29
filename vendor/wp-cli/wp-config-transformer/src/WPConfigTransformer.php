@@ -226,19 +226,8 @@ class WPConfigTransformer {
 			return false;
 		}
 
-		if ( 'constant' === $type ) {
-			$pattern = sprintf(
-				"/\bdefine\s*\(\s*['\"]%s['\"]\s*,\s*(('[^']*'|\"[^\"]*\")|\s*(?:[\s\S]*?))\s*\)\s*;\s*/mi",
-				preg_quote( $name, '/' )
-			);
-		} else {
-			$pattern = sprintf(
-				'/^\s*\$%s\s*=\s*[\s\S]*?;\s*$/mi',
-				preg_quote( $name, '/' )
-			);
-		}
-
-		$contents = preg_replace( $pattern, '', $this->wp_config_src );
+		$pattern  = sprintf( '/(?<=^|;|<\?php\s|<\?\s)%s\s*(\S|$)/m', preg_quote( $this->wp_configs[ $type ][ $name ]['src'], '/' ) );
+		$contents = preg_replace( $pattern, '$1', $this->wp_config_src );
 
 		return $this->save( $contents );
 	}

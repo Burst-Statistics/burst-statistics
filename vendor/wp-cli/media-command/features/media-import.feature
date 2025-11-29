@@ -81,7 +81,7 @@ Feature: Manage WordPress attachments
     When I run `wp media import {CACHE_DIR}/large-image.jpg --post_id=1 --preserve-filetime --porcelain`
     Then save STDOUT as {ATTACH_ID}
 
-    When I run `wp post get {ATTACH_ID} --field=post_date`
+    And I run `wp post get {ATTACH_ID} --field=post_date`
     Then STDOUT should be:
       """
       1980-01-03 08:05:00
@@ -254,7 +254,7 @@ Feature: Manage WordPress attachments
       https://example.com/wp-content/uploads/
       """
 
-    And STDOUT should contain:
+    Then STDOUT should contain:
       """
       /large-image.jpg
       """

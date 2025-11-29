@@ -277,7 +277,7 @@ class CompositeCommand {
 	/**
 	 * Composite commands can only be known by one name.
 	 *
-	 * @return string|false
+	 * @return false
 	 */
 	public function get_alias() {
 		return false;

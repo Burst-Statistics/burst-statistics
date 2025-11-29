@@ -10,9 +10,9 @@
 namespace PHPUnit\Framework\Constraint;
 
 /**
- * @psalm-template CallbackInput of mixed
+ * Constraint that evaluates against a specified closure.
  *
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+ * @psalm-template CallbackInput of mixed
  */
 final class Callback extends Constraint
 {

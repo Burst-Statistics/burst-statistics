@@ -1,4 +1,4 @@
-Feature: Install WordPress plugins from GitHub
+Feature: Install WordPress plugins
 
   Scenario: Verify that providing a plugin releases/latest GitHub URL will get the latest ZIP
     Given a WP install

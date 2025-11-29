@@ -262,7 +262,7 @@ class WP_CLI {
 	 *
 	 * @param string $when Identifier for the hook.
 	 * @param mixed $callback Callback to execute when hook is called.
-	 * @return void
+	 * @return null
 	 */
 	public static function add_hook( $when, $callback ) {
 		if ( array_key_exists( $when, self::$hooks_passed ) ) {
@@ -591,8 +591,6 @@ class WP_CLI {
 			);
 		}
 
-		/** @var Dispatcher\Subcommand $leaf_command */
-
 		if ( isset( $args['shortdesc'] ) ) {
 			$leaf_command->set_shortdesc( $args['shortdesc'] );
 		}
@@ -740,7 +738,7 @@ class WP_CLI {
 	 * @category Output
 	 *
 	 * @param string $message Message to display to the end user.
-	 * @return void
+	 * @return null
 	 */
 	public static function line( $message = '' ) {
 		echo $message . "\n";
@@ -772,7 +770,7 @@ class WP_CLI {
 	/**
 	 * Display success message prefixed with "Success: ".
 	 *
-	 * Success message is written to STDOUT, or discarded when `--quiet` flag is supplied.
+	 * Success message is written to STDOUT.
 	 *
 	 * Typically recommended to inform user of successful script conclusion.
 	 *
@@ -790,7 +788,7 @@ class WP_CLI {
 	 * @category Output
 	 *
 	 * @param string $message Message to write to STDOUT.
-	 * @return void
+	 * @return null
 	 */
 	public static function success( $message ) {
 		if ( null === self::$logger ) {
@@ -828,7 +826,7 @@ class WP_CLI {
 	 * @param string|WP_Error|Exception|Throwable $message Message to write to STDERR.
 	 * @param string|bool $group Organize debug message to a specific group.
 	 * Use `false` to not group the message.
-	 * @return void
+	 * @return null
 	 */
 	public static function debug( $message, $group = false ) {
 		static $storage = [];
@@ -838,7 +836,7 @@ class WP_CLI {
 			return;
 		}
 
-		if ( ! empty( $storage ) ) {
+		if ( ! empty( $storage ) && self::$logger ) {
 			foreach ( $storage as $entry ) {
 				list( $stored_message, $stored_group ) = $entry;
 				self::$logger->debug( self::error_to_string( $stored_message ), $stored_group );
@@ -852,7 +850,7 @@ class WP_CLI {
 	/**
 	 * Display warning message prefixed with "Warning: ".
 	 *
-	 * Warning message is written to STDERR, or discarded when `--quiet` flag is supplied.
+	 * Warning message is written to STDERR.
 	 *
 	 * Use instead of `WP_CLI::debug()` when script execution should be permitted
 	 * to continue.
@@ -871,7 +869,7 @@ class WP_CLI {
 	 * @category Output
 	 *
 	 * @param string|WP_Error|Exception|Throwable $message Message to write to STDERR.
-	 * @return void
+	 * @return null
 	 */
 	public static function warning( $message ) {
 		if ( null === self::$logger ) {
@@ -1291,15 +1289,7 @@ class WP_CLI {
 	 * @category Execution
 	 *
 	 * @param string $command WP-CLI command to run, including arguments.
-	 * @param array  $options {
-	 *     Configuration options for command execution.
-	 *
-	 *     @type bool        $launch     Launches a new process (true) or reuses the existing process (false). Default: true.
-	 *     @type bool        $exit_error Halts the script on error. Default: true.
-	 *     @type bool|string $return     Returns output as an object when set to 'all' (string), return just the 'stdout', 'stderr', or 'return_code' (string) of command, or print directly to stdout/stderr (false). Default: false.
-	 *     @type bool|string $parse      Parse returned output as 'json' (string); otherwise, output is unchanged (false). Default: false.
-	 * @param array $command_args Contains additional command line arguments for the command. Each element represents a single argument. Default: empty array.
-	 * }
+	 * @param array  $options Configuration options for command execution.
 	 * @return mixed
 	 */
 	public static function runcommand( $command, $options = [] ) {
@@ -1358,9 +1348,6 @@ class WP_CLI {
 
 			$pipes = [];
 			$proc  = Utils\proc_open_compat( $runcommand, $descriptors, $pipes, getcwd() );
-
-			$stdout = '';
-			$stderr = '';
 
 			if ( $return ) {
 				$stdout = stream_get_contents( $pipes[1] );

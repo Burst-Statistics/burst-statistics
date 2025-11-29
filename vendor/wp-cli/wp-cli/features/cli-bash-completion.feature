@@ -324,7 +324,7 @@ Feature: `wp cli completions` tasks
       """
       --prompt=
       """
-    And STDOUT should not contain:
+    Then STDOUT should not contain:
       """
       --path
       """

@@ -61,8 +61,7 @@ Feature: Generate new WordPress posts
       Howdy! 3
       """
     And STDERR should be empty
-
-    When I run `wp post list --field=post_name --posts_per_page=4 --orderby=ID --order=asc`
+    And I run `wp post list --field=post_name --posts_per_page=4 --orderby=ID --order=asc`
     Then STDOUT should contain:
       """
       hello-world
@@ -79,8 +78,7 @@ Feature: Generate new WordPress posts
       """
       2018-07-01 00:00:00
       """
-
-    When I run `wp post list --field=post_date_gmt`
+    And I run `wp post list --field=post_date_gmt`
     Then STDOUT should contain:
       """
       2018-07-01 00:00:00
@@ -93,8 +91,7 @@ Feature: Generate new WordPress posts
       """
       2018-07-02 02:21:05
       """
-
-    When I run `wp post list --field=post_date_gmt`
+    And I run `wp post list --field=post_date_gmt`
     Then STDOUT should contain:
       """
       2018-07-02 02:21:05
@@ -107,8 +104,7 @@ Feature: Generate new WordPress posts
       """
       2018-07-03 00:00:00
       """
-
-    When I run `wp post list --field=post_date_gmt`
+    And I run `wp post list --field=post_date_gmt`
     Then STDOUT should contain:
       """
       2018-07-03 00:00:00
@@ -121,8 +117,7 @@ Feature: Generate new WordPress posts
       """
       2018-07-04 12:34:56
       """
-
-    When I run `wp post list --field=post_date_gmt`
+    And I run `wp post list --field=post_date_gmt`
     Then STDOUT should contain:
       """
       2018-07-04 12:34:56
@@ -135,8 +130,7 @@ Feature: Generate new WordPress posts
       """
       2018-07-05 17:17:17
       """
-
-    When I run `wp post list --field=post_date_gmt`
+    And I run `wp post list --field=post_date_gmt`
     Then STDOUT should contain:
       """
       2018-07-05 17:17:17
@@ -149,8 +143,7 @@ Feature: Generate new WordPress posts
       """
       2018-07-06 12:12:12
       """
-
-    When I run `wp post list --field=post_date_gmt`
+    And I run `wp post list --field=post_date_gmt`
     Then STDOUT should contain:
       """
       2018-07-06 12:12:12
@@ -163,22 +156,20 @@ Feature: Generate new WordPress posts
       """
       1999-12-31 00:00:00
       """
-
-    When I run `wp post list --field=post_date_gmt`
+    And I run `wp post list --field=post_date_gmt`
     Then STDOUT should contain:
       """
       2000-01-01 00:00:00
       """
 
-  Scenario: Generating posts with different post_date & post_date_gmt argument with time
+	Scenario: Generating posts with different post_date & post_date_gmt argument with time
     When I run `wp post generate --count=1 --post_date="1999-12-31 11:11:00" --post_date_gmt="2000-01-01 02:11:00"`
     And I run `wp post list --field=post_date`
     Then STDOUT should contain:
       """
       1999-12-31 11:11:00
       """
-
-    When I run `wp post list --field=post_date_gmt`
+    And I run `wp post list --field=post_date_gmt`
     Then STDOUT should contain:
       """
       2000-01-01 02:11:00
@@ -187,9 +178,10 @@ Feature: Generate new WordPress posts
   Scenario: Generating posts when the site timezone is ahead of UTC
     When I run `wp option update timezone_string "Europe/Helsinki"`
     And I run `wp post delete 1 --force`
-    And I run `wp post list --field=post_status`
-    Then STDOUT should be empty
 
+    When I run `wp post list --field=post_status`
+    Then STDOUT should be empty
+    
     When I run `wp post generate --count=1`
     And I run `wp post list --field=post_status`
     Then STDOUT should be:

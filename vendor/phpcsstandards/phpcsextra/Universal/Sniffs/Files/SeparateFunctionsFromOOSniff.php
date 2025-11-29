@@ -81,7 +81,8 @@ final class SeparateFunctionsFromOOSniff implements Sniff
      * @param int                         $stackPtr  The position of the current token
      *                                               in the stack passed in $tokens.
      *
-     * @return int Integer stack pointer to skip forward.
+     * @return int|void Integer stack pointer to skip forward or void to continue
+     *                  normal file processing.
      */
     public function process(File $phpcsFile, $stackPtr)
     {
@@ -184,6 +185,6 @@ final class SeparateFunctionsFromOOSniff implements Sniff
         }
 
         // Ignore the rest of the file.
-        return $phpcsFile->numTokens;
+        return ($phpcsFile->numTokens + 1);
     }
 }

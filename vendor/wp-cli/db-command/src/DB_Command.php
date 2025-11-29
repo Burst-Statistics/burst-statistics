@@ -250,12 +250,7 @@ class DB_Command extends WP_CLI_Command {
 	 */
 	public function check( $_, $assoc_args ) {
 
-		$command = sprintf(
-			'/usr/bin/env %s%s %s',
-			Utils\get_sql_check_command(),
-			$this->get_defaults_flag_string( $assoc_args ),
-			'%s'
-		);
+		$command = sprintf( '/usr/bin/env mysqlcheck%s %s', $this->get_defaults_flag_string( $assoc_args ), '%s' );
 		WP_CLI::debug( "Running shell command: {$command}", 'db' );
 
 		$assoc_args['check'] = true;
@@ -298,12 +293,8 @@ class DB_Command extends WP_CLI_Command {
 	 *     Success: Database optimized.
 	 */
 	public function optimize( $_, $assoc_args ) {
-		$command = sprintf(
-			'/usr/bin/env %s%s %s',
-			Utils\get_sql_check_command(),
-			$this->get_defaults_flag_string( $assoc_args ),
-			'%s'
-		);
+
+		$command = sprintf( '/usr/bin/env mysqlcheck%s %s', $this->get_defaults_flag_string( $assoc_args ), '%s' );
 		WP_CLI::debug( "Running shell command: {$command}", 'db' );
 
 		$assoc_args['optimize'] = true;
@@ -346,12 +337,8 @@ class DB_Command extends WP_CLI_Command {
 	 *     Success: Database repaired.
 	 */
 	public function repair( $_, $assoc_args ) {
-		$command = sprintf(
-			'/usr/bin/env %s%s %s',
-			Utils\get_sql_check_command(),
-			$this->get_defaults_flag_string( $assoc_args ),
-			'%s'
-		);
+
+		$command = sprintf( '/usr/bin/env mysqlcheck%s %s', $this->get_defaults_flag_string( $assoc_args ), '%s' );
 		WP_CLI::debug( "Running shell command: {$command}", 'db' );
 
 		$assoc_args['repair'] = true;
@@ -397,11 +384,7 @@ class DB_Command extends WP_CLI_Command {
 	 */
 	public function cli( $_, $assoc_args ) {
 
-		$command = sprintf(
-			'/usr/bin/env %s%s --no-auto-rehash',
-			$this->get_mysql_command(),
-			$this->get_defaults_flag_string( $assoc_args )
-		);
+		$command = sprintf( '/usr/bin/env mysql%s --no-auto-rehash', $this->get_defaults_flag_string( $assoc_args ) );
 		WP_CLI::debug( "Running shell command: {$command}", 'db' );
 
 		if ( ! isset( $assoc_args['database'] ) ) {
@@ -500,11 +483,7 @@ class DB_Command extends WP_CLI_Command {
 	 */
 	public function query( $args, $assoc_args ) {
 
-		$command = sprintf(
-			'/usr/bin/env %s%s --no-auto-rehash',
-			$this->get_mysql_command(),
-			$this->get_defaults_flag_string( $assoc_args )
-		);
+		$command = sprintf( '/usr/bin/env mysql%s --no-auto-rehash', $this->get_defaults_flag_string( $assoc_args ) );
 		WP_CLI::debug( "Running shell command: {$command}", 'db' );
 
 		$assoc_args['database'] = DB_NAME;
@@ -519,26 +498,8 @@ class DB_Command extends WP_CLI_Command {
 			$assoc_args['execute'] = $this->get_sql_mode_query( $assoc_args ) . $assoc_args['execute'];
 		}
 
-		$is_row_modifying_query = isset( $assoc_args['execute'] ) && preg_match( '/\b(UPDATE|DELETE|INSERT|REPLACE|LOAD DATA)\b/i', $assoc_args['execute'] );
-
-		if ( $is_row_modifying_query ) {
-			$assoc_args['execute'] .= '; SELECT ROW_COUNT();';
-		}
-
 		WP_CLI::debug( 'Associative arguments: ' . json_encode( $assoc_args ), 'db' );
-		list( $stdout, $stderr, $exit_code ) = self::run( $command, $assoc_args, false );
-
-		if ( $exit_code ) {
-			WP_CLI::error( "Query failed: {$stderr}" );
-		}
-
-		if ( $is_row_modifying_query ) {
-			$output_lines  = explode( "\n", trim( $stdout ) );
-			$affected_rows = (int) trim( end( $output_lines ) );
-			WP_CLI::success( "Query succeeded. Rows affected: {$affected_rows}" );
-		} elseif ( ! empty( $stdout ) ) {
-			WP_CLI::line( $stdout );
-		}
+		self::run( $command, $assoc_args );
 	}
 
 	/**
@@ -650,7 +611,7 @@ class DB_Command extends WP_CLI_Command {
 			$assoc_args['result-file'] = $result_file;
 		}
 
-		$mysqldump_binary = Utils\force_env_on_nix_systems( Utils\get_sql_dump_command() );
+		$mysqldump_binary = Utils\force_env_on_nix_systems( 'mysqldump' );
 
 		$support_column_statistics = exec( $mysqldump_binary . ' --help | grep "column-statistics"' );
 
@@ -740,8 +701,7 @@ class DB_Command extends WP_CLI_Command {
 
 		list( $stdout, $stderr, $exit_code ) = self::run(
 			sprintf(
-				'%s%s --no-auto-rehash --batch --skip-column-names',
-				$this->get_mysql_command(),
+				'/usr/bin/env mysql%s --no-auto-rehash --batch --skip-column-names',
 				$this->get_defaults_flag_string( $assoc_args )
 			),
 			[ 'execute' => $query ],
@@ -828,11 +788,7 @@ class DB_Command extends WP_CLI_Command {
 			$result_file = 'STDIN';
 		}
 
-		$command = sprintf(
-			'/usr/bin/env %s%s --no-auto-rehash',
-			$this->get_mysql_command(),
-			$this->get_defaults_flag_string( $assoc_args )
-		);
+		$command = sprintf( '/usr/bin/env mysql%s --no-auto-rehash', $this->get_defaults_flag_string( $assoc_args ) );
 		WP_CLI::debug( "Running shell command: {$command}", 'db' );
 		WP_CLI::debug( 'Associative arguments: ' . json_encode( $assoc_args ), 'db' );
 
@@ -1765,8 +1721,7 @@ class DB_Command extends WP_CLI_Command {
 
 		self::run(
 			sprintf(
-				'%s%s --no-auto-rehash',
-				$this->get_mysql_command(),
+				'/usr/bin/env mysql%s --no-auto-rehash',
 				$this->get_defaults_flag_string( $assoc_args )
 			),
 			array_merge( [ 'execute' => $query ], $mysql_args )
@@ -2166,8 +2121,7 @@ class DB_Command extends WP_CLI_Command {
 
 			list( $stdout, $stderr, $exit_code ) = self::run(
 				sprintf(
-					'%s%s --no-auto-rehash --batch --skip-column-names',
-					$this->get_mysql_command(),
+					'/usr/bin/env mysql%s --no-auto-rehash --batch --skip-column-names',
 					$this->get_defaults_flag_string( $assoc_args )
 				),
 				array_merge( $args, [ 'execute' => 'SELECT @@SESSION.sql_mode' ] ),
@@ -2197,14 +2151,5 @@ class DB_Command extends WP_CLI_Command {
 		}
 
 		return $modes;
-	}
-
-	/**
-	 * Returns the correct `mysql` command based on the detected database type.
-	 *
-	 * @return string The appropriate check command.
-	 */
-	private function get_mysql_command() {
-		return 'mariadb' === Utils\get_db_type() ? 'mariadb' : 'mysql';
 	}
 }

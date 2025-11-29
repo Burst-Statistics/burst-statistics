@@ -18,7 +18,7 @@ class Signup extends Base {
 	 * Get a signup.
 	 *
 	 * @param int|string $signup
-	 * @return object|false
+	 * @return stdClass|false
 	 */
 	public function get( $signup ) {
 		return $this->get_signup( $signup );
@@ -28,7 +28,7 @@ class Signup extends Base {
 	 * Get a signup by one of its identifying attributes.
 	 *
 	 * @param string $arg The raw CLI argument.
-	 * @return object|false The item if found; false otherwise.
+	 * @return stdClass|false The item if found; false otherwise.
 	 */
 	protected function get_signup( $arg ) {
 		global $wpdb;

@@ -4,7 +4,8 @@ Feature: WordPress REPL
     Given a WP install
 
     When I run `wp shell < /dev/null`
-    And I run `wp shell --basic < /dev/null`
+
+    When I run `wp shell --basic < /dev/null`
     Then STDOUT should be empty
 
   Scenario: Persistent environment

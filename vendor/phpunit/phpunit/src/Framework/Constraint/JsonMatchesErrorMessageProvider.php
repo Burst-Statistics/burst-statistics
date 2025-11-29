@@ -18,7 +18,7 @@ use const JSON_ERROR_UTF8;
 use function strtolower;
 
 /**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+ * Provides human readable messages for each JSON error.
  */
 final class JsonMatchesErrorMessageProvider
 {

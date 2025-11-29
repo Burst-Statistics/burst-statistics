@@ -20,6 +20,17 @@ Feature: Validate checksums for WordPress plugins
       """
     And STDERR should be empty
 
+    When I try `wp plugin verify-checksums duplicate-post --format=json --version=3.2.2`
+    Then the return code should be 1
+    And STDOUT should contain:
+      """
+      "plugin_name":"duplicate-post","file":"duplicate-post-jetpack.php","message":"File is missing"
+      """
+    And STDERR should be:
+      """
+      Error: No plugins verified (1 failed).
+      """
+
   Scenario: Modified plugin doesn't verify
     Given a WP install
 
@@ -33,6 +44,19 @@ Feature: Validate checksums for WordPress plugins
     Then STDOUT should contain:
       """
       "plugin_name":"duplicate-post","file":"duplicate-post.php","message":"Checksum does not match"
+      """
+    And STDERR should be:
+      """
+      Error: No plugins verified (1 failed).
+      """
+
+    When I run `rm wp-content/plugins/duplicate-post/duplicate-post.css`
+    Then STDERR should be empty
+
+    When I try `wp plugin verify-checksums duplicate-post --format=json`
+    Then STDOUT should contain:
+      """
+      "plugin_name":"duplicate-post","file":"duplicate-post.css","message":"File is missing"
       """
     And STDERR should be:
       """
@@ -135,7 +159,7 @@ Feature: Validate checksums for WordPress plugins
           unset( $all_plugins['duplicate-post/duplicate-post.php'] );
           return $all_plugins;
        } );
-      """
+       """
     And "Duplicate Post" replaced with "Different Name" in the wp-content/plugins/duplicate-post/duplicate-post.php file
 
     When I run `wp plugin list --fields=name`

@@ -7,12 +7,8 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace SebastianBergmann\Diff;
 
-use function array_reverse;
-use function count;
-use function max;
-use SplFixedArray;
+namespace SebastianBergmann\Diff;
 
 final class TimeEfficientLongestCommonSubsequenceCalculator implements LongestCommonSubsequenceCalculator
 {
@@ -22,10 +18,10 @@ final class TimeEfficientLongestCommonSubsequenceCalculator implements LongestCo
     public function calculate(array $from, array $to): array
     {
         $common     = [];
-        $fromLength = count($from);
-        $toLength   = count($to);
+        $fromLength = \count($from);
+        $toLength   = \count($to);
         $width      = $fromLength + 1;
-        $matrix     = new SplFixedArray($width * ($toLength + 1));
+        $matrix     = new \SplFixedArray($width * ($toLength + 1));
 
         for ($i = 0; $i <= $fromLength; ++$i) {
             $matrix[$i] = 0;
@@ -77,6 +73,6 @@ final class TimeEfficientLongestCommonSubsequenceCalculator implements LongestCo
             }
         }
 
-        return array_reverse($common);
+        return \array_reverse($common);
     }
 }

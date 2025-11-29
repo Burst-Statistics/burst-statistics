@@ -2,6 +2,7 @@
 
 namespace Yoast\PHPUnitPolyfills\Polyfills;
 
+use PHPUnit\Framework\Assert;
 use ReflectionObject;
 use TypeError;
 use Yoast\PHPUnitPolyfills\Autoload;
@@ -18,7 +19,7 @@ use Yoast\PHPUnitPolyfills\Autoload;
  * @link https://github.com/sebastianbergmann/phpunit/pull/5231
  * @link https://github.com/sebastianbergmann/phpunit/issues/5478
  *
- * @since 1.1.0
+ * @since 2.0.0
  */
 trait AssertObjectProperty {
 
@@ -57,7 +58,7 @@ trait AssertObjectProperty {
 			);
 		}
 
-		if ( \method_exists( '\PHPUnit\Framework\Assert', 'assertObjectHasAttribute' )
+		if ( \method_exists( Assert::class, 'assertObjectHasAttribute' )
 			&& \version_compare( Autoload::getPHPUnitVersion(), '9.6.0', '<=' )
 		) {
 			// PHPUnit <= 9.6.0.
@@ -66,8 +67,8 @@ trait AssertObjectProperty {
 		}
 
 		/*
-		 * PHPUnit 9.6.1+.
-		 * Note: letting this polyfill code kick in for PHPUnit 9.6.1+ as well
+		 * PHPUnit 9.6.1 < 9.6.11 and PHPUnit 10.0.x.
+		 * Note: letting this polyfill code kick in for PHPUnit 9.6.1 < 9.6.11 as well
 		 * to prevent the PHPUnit deprecation notice showing.
 		 */
 		$msg  = self::assertObjectHasPropertyFailureDescription( $object );
@@ -115,7 +116,7 @@ trait AssertObjectProperty {
 			);
 		}
 
-		if ( \method_exists( '\PHPUnit\Framework\Assert', 'assertObjectNotHasAttribute' )
+		if ( \method_exists( Assert::class, 'assertObjectNotHasAttribute' )
 			&& \version_compare( Autoload::getPHPUnitVersion(), '9.6.0', '<=' )
 		) {
 			// PHPUnit <= 9.6.0.
@@ -124,8 +125,8 @@ trait AssertObjectProperty {
 		}
 
 		/*
-		 * PHPUnit 9.6.1+.
-		 * Note: letting this polyfill code kick in for PHPUnit 9.6.1+ as well
+		 * PHPUnit 9.6.1 < 9.6.11 and PHPUnit 10.0.x.
+		 * Note: letting this polyfill code kick in for PHPUnit 9.6.1 < 9.6.11 as well
 		 * to prevent the PHPUnit deprecation notice showing.
 		 */
 		$msg  = self::assertObjectHasPropertyFailureDescription( $object );

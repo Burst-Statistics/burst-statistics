@@ -25,7 +25,7 @@ Feature: Manage WordPress users
     And the return code should be 0
 
     When I try `wp user exists 1000`
-    Then STDOUT should be empty
+    And STDOUT should be empty
     And the return code should be 1
 
     When I run `wp user get {USER_ID} --field=user_registered`
@@ -56,7 +56,7 @@ Feature: Manage WordPress users
 
     When I try `wp user create testuser2 testuser2@example.com --role=wrongrole --porcelain`
     Then the return code should be 1
-    And STDOUT should be empty
+    Then STDOUT should be empty
 
     When I run `wp user create testuser testuser@example.com --porcelain`
     Then STDOUT should be a number
@@ -83,9 +83,9 @@ Feature: Manage WordPress users
 
     When I run `wp user create testuser3 testuser3@example.com --user_pass=testuser3pass`
     Then STDOUT should not contain:
-      """
-      Password:
-      """
+       """
+       Password:
+       """
 
     # Check with valid password.
     When I run `wp user check-password testuser3 testuser3pass`
@@ -104,9 +104,9 @@ Feature: Manage WordPress users
 
     When I run `wp user create testuser3b testuser3b@example.com --user_pass="test\"user3b's\pass\!"`
     Then STDOUT should not contain:
-      """
-      Password:
-      """
+       """
+       Password:
+       """
 
     # Check password without the `--escape-chars` option.
     When I try `wp user check-password testuser3b "test\"user3b's\pass\!"`
@@ -128,10 +128,10 @@ Feature: Manage WordPress users
     Given a WP multisite install
 
     When I run `wp user create bobjones bob@example.com --role=author --porcelain`
-    Then save STDOUT as {BOB_ID}
+    And save STDOUT as {BOB_ID}
 
-    When I run `wp user create sally sally@example.com --role=editor --porcelain`
-    Then save STDOUT as {SALLY_ID}
+    And I run `wp user create sally sally@example.com --role=editor --porcelain`
+    And save STDOUT as {SALLY_ID}
 
     When I run `wp post generate --count=3 --post_author=bobjones`
     And I run `wp post list --author={BOB_ID} --format=count`
@@ -147,13 +147,6 @@ Feature: Manage WordPress users
       3
       """
 
-    When I try `wp user update 9999 --user_pass=securepassword`
-    Then the return code should be 1
-    And STDERR should contain:
-      """
-      Error: No valid users found.
-      """
-
   Scenario: Delete user with invalid reassign
     Given a WP install
     And a session_no file:
@@ -166,10 +159,10 @@ Feature: Manage WordPress users
       """
 
     When I run `wp user create bobjones bob@example.com --role=author --porcelain`
-    Then save STDOUT as {BOB_ID}
+    And save STDOUT as {BOB_ID}
 
     When I run `wp post list --format=count`
-    Then save STDOUT as {TOTAL_POSTS}
+    And save STDOUT as {TOTAL_POSTS}
 
     When I run `wp post generate --count=3 --format=ids --post_author=bobjones`
     And I run `wp post list --author={BOB_ID} --format=count`
@@ -201,7 +194,7 @@ Feature: Manage WordPress users
     Given a WP multisite install
 
     When I run `wp user create bobjones bob@example.com --role=author --porcelain`
-    Then save STDOUT as {BOB_ID}
+    And save STDOUT as {BOB_ID}
 
     When I run `wp user get bobjones`
     Then STDOUT should not be empty
@@ -217,7 +210,7 @@ Feature: Manage WordPress users
     Given a WP multisite install
 
     When I run `wp user create bobjones bob@example.com --role=author --url=https://example.com --porcelain`
-    Then save STDOUT as {BOB_ID}
+    And save STDOUT as {BOB_ID}
 
     When I run `wp user delete bobjones --yes`
     Then STDOUT should contain:
@@ -238,7 +231,7 @@ Feature: Manage WordPress users
     Given a WP multisite install
 
     When I run `wp user create bobjones bob@example.com --role=author --porcelain`
-    Then save STDOUT as {BOB_ID}
+    And save STDOUT as {BOB_ID}
 
     When I run `wp super-admin add {BOB_ID}`
     And I try `wp user delete bobjones --network --yes`
@@ -337,24 +330,21 @@ Feature: Manage WordPress users
 
     When I run `wp user set-role 1 author`
     Then STDOUT should not be empty
-
-    When I run `wp user get 1`
+    And I run `wp user get 1`
     Then STDOUT should be a table containing rows:
       | Field | Value  |
       | roles | author |
 
     When I run `wp user remove-role 1 editor`
     Then STDOUT should not be empty
-
-    When I run `wp user get 1`
+    And I run `wp user get 1`
     Then STDOUT should be a table containing rows:
       | Field | Value  |
       | roles | author |
 
     When I run `wp user remove-role 1`
     Then STDOUT should not be empty
-
-    When I run `wp user get 1`
+    And I run `wp user get 1`
     Then STDOUT should be a table containing rows:
       | Field | Value |
       | roles |       |
@@ -388,19 +378,19 @@ Feature: Manage WordPress users
       Success: Added 'edit_vip_product' capability for admin (1).
       """
 
-    When I run `wp user list-caps 1 | tail -n 1`
+    And I run `wp user list-caps 1 | tail -n 1`
     Then STDOUT should be:
       """
       edit_vip_product
       """
 
-    When I run `wp user remove-cap 1 edit_vip_product`
+    And I run `wp user remove-cap 1 edit_vip_product`
     Then STDOUT should be:
       """
       Success: Removed 'edit_vip_product' cap for admin (1).
       """
 
-    When I try the previous command again
+    And I try the previous command again
     Then the return code should be 1
     And STDERR should be:
       """
@@ -426,43 +416,10 @@ Feature: Manage WordPress users
       """
     And STDOUT should be empty
 
-    When I run `wp user list-caps 1`
+    And I run `wp user list-caps 1`
     Then STDOUT should contain:
       """
       publish_posts
-      """
-
-  Scenario: Show error when trying to remove capability same as role
-    Given a WP install
-
-    When I run `wp user create testuser2 testuser2@example.com --first_name=test --last_name=user --role=contributor --porcelain`
-    Then STDOUT should be a number
-    And save STDOUT as {USER_ID}
-
-    When I run `wp user list-caps {USER_ID}`
-    Then STDOUT should contain:
-      """
-      contributor
-      """
-
-    When I run `wp user get {USER_ID} --field=roles`
-    Then STDOUT should contain:
-      """
-      contributor
-      """
-
-    When I try `wp user remove-cap {USER_ID} contributor`
-    Then the return code should be 1
-    And STDERR should be:
-      """
-      Error: Aborting because a role has the same name as 'contributor'. Use `wp user remove-cap {USER_ID} contributor --force` to proceed with the removal.
-      """
-    And STDOUT should be empty
-
-    When I run `wp user remove-cap {USER_ID} contributor --force`
-    Then STDOUT should be:
-      """
-      Success: Removed 'contributor' cap for testuser2 ({USER_ID}).
       """
 
   Scenario: Show password when creating a user
@@ -470,15 +427,15 @@ Feature: Manage WordPress users
 
     When I run `wp user create testrandompass testrandompass@example.com`
     Then STDOUT should contain:
-      """
-      Password:
-      """
+       """
+       Password:
+       """
 
     When I run `wp user create testsuppliedpass testsuppliedpass@example.com --user_pass=suppliedpass`
     Then STDOUT should not contain:
-      """
-      Password:
-      """
+       """
+       Password:
+       """
 
   Scenario: List network users
     Given a WP multisite install
@@ -528,13 +485,13 @@ Feature: Manage WordPress users
       contributor
       """
 
-    When I run `wp user list-caps bob --format=json`
+    And I run `wp user list-caps bob --format=json`
     Then STDOUT should be:
       """
       [{"name":"edit_posts"},{"name":"read"},{"name":"level_1"},{"name":"level_0"},{"name":"delete_posts"},{"name":"contributor"}]
       """
 
-    When I run `wp user list-caps bob --format=count`
+    And I run `wp user list-caps bob --format=count`
     Then STDOUT should be:
       """
       6
@@ -562,7 +519,7 @@ Feature: Manage WordPress users
       contributor
       """
 
-    When I run `wp user list-caps bob --origin=user`
+    And I run `wp user list-caps bob --origin=user`
     Then STDOUT should be:
       """
       newcap
@@ -632,9 +589,9 @@ Feature: Manage WordPress users
     And I run `wp user create oprime oprime@example.com --role=author --porcelain`
     And save STDOUT as {OP_ID}
     And I run `wp user get bumblebee`
-    And STDOUT should not be empty
+    Then STDOUT should not be empty
     And I run `wp user get oprime`
-    And STDOUT should not be empty
+    Then STDOUT should not be empty
 
     When I run `wp site create --slug=foo --porcelain`
     Then save STDOUT as {SPAM_SITE_ID}
@@ -663,14 +620,14 @@ Feature: Manage WordPress users
       """
     And the return code should be 0
 
-    When I run `wp site list --site__in=1 --field=spam`
-    Then STDOUT should be:
+   When I run `wp site list --site__in=1 --field=spam`
+   Then STDOUT should be:
       """
       0
       """
 
-    When I run `wp site list --site__in={SPAM_SITE_ID} --field=spam`
-    Then STDOUT should be:
+   When I run `wp site list --site__in={SPAM_SITE_ID} --field=spam`
+   Then STDOUT should be:
       """
       1
       """
@@ -693,14 +650,14 @@ Feature: Manage WordPress users
       Success:
       """
 
-    When I run `wp site list --site__in=1 --field=spam`
-    Then STDOUT should be:
+   When I run `wp site list --site__in=1 --field=spam`
+   Then STDOUT should be:
       """
       0
       """
 
-    When I run `wp site list --site__in={SPAM_SITE_ID} --field=spam`
-    Then STDOUT should be:
+   When I run `wp site list --site__in={SPAM_SITE_ID} --field=spam`
+   Then STDOUT should be:
       """
       0
       """
@@ -771,3 +728,4 @@ Feature: Manage WordPress users
       """
       newtestuser
       """
+

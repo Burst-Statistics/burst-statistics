@@ -9,6 +9,8 @@
  */
 namespace PHPUnit\Util;
 
+use Throwable;
+
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
@@ -35,5 +37,16 @@ final class Type
             default:
                 return false;
         }
+    }
+
+    public static function isCloneable(object $object): bool
+    {
+        try {
+            $clone = clone $object;
+        } catch (Throwable $t) {
+            return false;
+        }
+
+        return $clone instanceof $object;
     }
 }

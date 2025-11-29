@@ -87,11 +87,11 @@ trait AssertClosedResource {
 	 * @return Exporter|Exporter_In_Phar|Exporter_In_Phar_Old
 	 */
 	private static function getPHPUnitExporterObject() {
-		if ( \class_exists( 'SebastianBergmann\Exporter\Exporter' ) ) {
+		if ( \class_exists( Exporter::class ) ) {
 			// Composer install or really old PHAR files.
 			return new Exporter();
 		}
-		elseif ( \class_exists( 'PHPUnitPHAR\SebastianBergmann\Exporter\Exporter' ) ) {
+		elseif ( \class_exists( Exporter_In_Phar::class ) ) {
 			// PHPUnit PHAR file for 8.5.38+, 9.6.19+, 10.5.17+ and 11.0.10+.
 			return new Exporter_In_Phar();
 		}

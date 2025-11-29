@@ -80,6 +80,9 @@ final class DuplicateArrayKeySniff extends AbstractArrayDeclarationSniff
     /**
      * Process every part of the array declaration.
      *
+     * This contains the default logic for the sniff, but can be overloaded in a concrete child class
+     * if needed.
+     *
      * @since 1.0.0
      *
      * @param \PHP_CodeSniffer\Files\File $phpcsFile The PHP_CodeSniffer file where the

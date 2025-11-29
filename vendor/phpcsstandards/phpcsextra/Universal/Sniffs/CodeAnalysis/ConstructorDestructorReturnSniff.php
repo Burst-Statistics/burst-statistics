@@ -166,7 +166,7 @@ final class ConstructorDestructorReturnSniff implements Sniff
         $current = $tokens[$stackPtr]['scope_opener'];
         $end     = $tokens[$stackPtr]['scope_closer'];
 
-        // Not searching for arrow functions as those have an implicit return, so won't use the `return` keyword.
+        // Not searching for arrow functions as those have an implicit return, so no
         $search            = Collections::functionDeclarationTokens();
         $search[\T_RETURN] = \T_RETURN;
 

@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of sebastian/comparator.
  *
@@ -8,9 +8,6 @@
  * file that was distributed with this source code.
  */
 namespace SebastianBergmann\Comparator;
-
-use function gettype;
-use function sprintf;
 
 /**
  * Compares values for type equality.
@@ -41,9 +38,9 @@ class TypeComparator extends Comparator
      *
      * @throws ComparisonFailure
      */
-    public function assertEquals($expected, $actual, $delta = 0.0, $canonicalize = false, $ignoreCase = false)/*: void*/
+    public function assertEquals($expected, $actual, $delta = 0.0, $canonicalize = false, $ignoreCase = false)
     {
-        if (gettype($expected) != gettype($actual)) {
+        if (\gettype($expected) != \gettype($actual)) {
             throw new ComparisonFailure(
                 $expected,
                 $actual,
@@ -51,10 +48,10 @@ class TypeComparator extends Comparator
                 '',
                 '',
                 false,
-                sprintf(
+                \sprintf(
                     '%s does not match expected type "%s".',
                     $this->exporter->shortenedExport($actual),
-                    gettype($expected)
+                    \gettype($expected)
                 )
             );
         }

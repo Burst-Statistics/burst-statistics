@@ -286,6 +286,7 @@ class Formatter {
 
 			default:
 				WP_CLI::error( 'Invalid format: ' . $format );
+				break;
 
 		}
 	}

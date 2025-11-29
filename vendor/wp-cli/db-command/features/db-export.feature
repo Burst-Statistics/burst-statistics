@@ -82,10 +82,19 @@ Feature: Export a WordPress database
     Given a WP install
 
     When I try `wp db export --defaults --debug`
-    Then STDERR should match #Debug \(db\): Running initial shell command: /usr/bin/env (mysqldump|mariadb-dump)#
+    Then STDERR should contain:
+      """
+      Debug (db): Running initial shell command: /usr/bin/env mysqldump
+      """
 
     When I try `wp db export --debug`
-    Then STDERR should match #Debug \(db\): Running initial shell command: /usr/bin/env (mysqldump|mariadb-dump) --no-defaults#
+    Then STDERR should contain:
+      """
+      Debug (db): Running initial shell command: /usr/bin/env mysqldump --no-defaults
+      """
 
     When I try `wp db export --no-defaults --debug`
-    Then STDERR should match #Debug \(db\): Running initial shell command: /usr/bin/env (mysqldump|mariadb-dump) --no-defaults#
+    Then STDERR should contain:
+      """
+      Debug (db): Running initial shell command: /usr/bin/env mysqldump --no-defaults
+      """

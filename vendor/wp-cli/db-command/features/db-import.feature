@@ -79,7 +79,8 @@ Feature: Import a WordPress database
 
   Scenario: Import database with passed-in options
     Given a WP install
-    And a debug.sql file:
+
+    Given a debug.sql file:
       """
       INSERT INTO `wp_options` (`option_id`, `option_name`, `option_value`, `autoload`) VALUES (999, 'testoption',  'testval',  'yes'),(999, 'testoption',  'testval',  'yes');
       """
@@ -134,13 +135,22 @@ Feature: Import a WordPress database
     Then the wp_cli_test.sql file should exist
 
     When I try `wp db import --defaults --debug`
-    Then STDERR should match #Debug \(db\): Running shell command: /usr/bin/env (mysql|mariadb) --no-auto-rehash#
+    Then STDERR should contain:
+      """
+      Debug (db): Running shell command: /usr/bin/env mysql --no-auto-rehash
+      """
 
     When I try `wp db import --debug`
-    Then STDERR should match #Debug \(db\): Running shell command: /usr/bin/env (mysql|mariadb) --no-defaults --no-auto-rehash#
+    Then STDERR should contain:
+      """
+      Debug (db): Running shell command: /usr/bin/env mysql --no-defaults --no-auto-rehash
+      """
 
     When I try `wp db import --no-defaults --debug`
-    Then STDERR should match #Debug \(db\): Running shell command: /usr/bin/env (mysql|mariadb) --no-defaults --no-auto-rehash#
+    Then STDERR should contain:
+      """
+      Debug (db): Running shell command: /usr/bin/env mysql --no-defaults --no-auto-rehash
+      """
 
   @require-wp-4.2
   Scenario: Import db that has emoji in post

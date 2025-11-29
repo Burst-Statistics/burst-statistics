@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 /*
- * This file is part of phpunit/php-code-coverage.
+ * This file is part of the php-code-coverage package.
  *
  * (c) Sebastian Bergmann <sebastian@phpunit.de>
  *
@@ -9,19 +9,14 @@
  */
 namespace SebastianBergmann\CodeCoverage\Report\Xml;
 
-use DOMElement;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
 final class Method
 {
     /**
-     * @var DOMElement
+     * @var \DOMElement
      */
     private $contextNode;
 
-    public function __construct(DOMElement $context, string $name)
+    public function __construct(\DOMElement $context, string $name)
     {
         $this->contextNode = $context;
 

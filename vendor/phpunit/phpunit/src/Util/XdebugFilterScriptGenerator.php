@@ -16,26 +16,25 @@ use function implode;
 use function is_string;
 use function realpath;
 use function sprintf;
-use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\CodeCoverage as FilterConfiguration;
 
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
- *
- * @deprecated
  */
 final class XdebugFilterScriptGenerator
 {
-    public function generate(FilterConfiguration $filter): string
+    public function generate(array $filterData): string
     {
+        $items = $this->getWhitelistItems($filterData);
+
         $files = array_map(
             static function ($item)
             {
                 return sprintf(
                     "        '%s'",
-                    $item,
+                    $item
                 );
             },
-            $this->getItems($filter),
+            $items
         );
 
         $files = implode(",\n", $files);
@@ -57,23 +56,27 @@ if (!\\function_exists('xdebug_set_filter')) {
 EOF;
     }
 
-    private function getItems(FilterConfiguration $filter): array
+    private function getWhitelistItems(array $filterData): array
     {
         $files = [];
 
-        foreach ($filter->directories() as $directory) {
-            $path = realpath($directory->path());
+        if (isset($filterData['include']['directory'])) {
+            foreach ($filterData['include']['directory'] as $directory) {
+                $path = realpath($directory['path']);
 
-            if (is_string($path)) {
-                $files[] = sprintf(
-                    addslashes('%s' . DIRECTORY_SEPARATOR),
-                    $path,
-                );
+                if (is_string($path)) {
+                    $files[] = sprintf(
+                        addslashes('%s' . DIRECTORY_SEPARATOR),
+                        $path
+                    );
+                }
             }
         }
 
-        foreach ($filter->files() as $file) {
-            $files[] = $file->path();
+        if (isset($filterData['include']['directory'])) {
+            foreach ($filterData['include']['file'] as $file) {
+                $files[] = $file;
+            }
         }
 
         return $files;

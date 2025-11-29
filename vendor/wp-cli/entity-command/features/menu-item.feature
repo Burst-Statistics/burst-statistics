@@ -65,7 +65,7 @@ Feature: Manage WordPress menu items
       Success: Deleted 1 of 1 menu items.
       """
     And I run `wp menu item list sidebar-menu --format=count`
-    And STDOUT should be:
+    Then STDOUT should be:
       """
       2
       """
@@ -76,7 +76,7 @@ Feature: Manage WordPress menu items
       Success: Deleted 2 of 2 menu items.
       """
     And I run `wp menu item list sidebar-menu --format=count`
-    And STDOUT should be:
+    Then STDOUT should be:
       """
       0
       """
@@ -103,7 +103,8 @@ Feature: Manage WordPress menu items
       | Child       | {CHILD_ID}       | {PARENT_ID}      |
 
     When I run `wp menu item delete {PARENT_ID}`
-    And I run `wp menu item list grandparent-test --fields=title,db_id,menu_item_parent`
+
+    When I run `wp menu item list grandparent-test --fields=title,db_id,menu_item_parent`
     Then STDOUT should be a table containing rows:
       | title       | db_id            | menu_item_parent |
       | Grandparent | {GRANDPARENT_ID} | 0                |

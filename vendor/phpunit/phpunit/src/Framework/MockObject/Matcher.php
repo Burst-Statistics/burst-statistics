@@ -12,6 +12,7 @@ namespace PHPUnit\Framework\MockObject;
 use function assert;
 use function implode;
 use function sprintf;
+use Exception;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\MockObject\Rule\AnyInvokedCount;
 use PHPUnit\Framework\MockObject\Rule\AnyParameters;
@@ -105,15 +106,14 @@ final class Matcher
     }
 
     /**
+     * @throws Exception
      * @throws ExpectationFailedException
-     * @throws MatchBuilderNotFoundException
-     * @throws MethodNameNotConfiguredException
      * @throws RuntimeException
      */
     public function invoked(Invocation $invocation)
     {
         if ($this->methodNameRule === null) {
-            throw new MethodNameNotConfiguredException;
+            throw new RuntimeException('No method rule is set');
         }
 
         if ($this->afterMatchBuilderId !== null) {
@@ -122,9 +122,13 @@ final class Matcher
                 ->lookupMatcher($this->afterMatchBuilderId);
 
             if (!$matcher) {
-                throw new MatchBuilderNotFoundException($this->afterMatchBuilderId);
+                throw new RuntimeException(
+                    sprintf(
+                        'No builder found for match builder identification <%s>',
+                        $this->afterMatchBuilderId
+                    )
+                );
             }
-
             assert($matcher instanceof self);
 
             if ($matcher->invocationRule->hasBeenInvoked()) {
@@ -144,9 +148,9 @@ final class Matcher
                     "Expectation failed for %s when %s\n%s",
                     $this->methodNameRule->toString(),
                     $this->invocationRule->toString(),
-                    $e->getMessage(),
+                    $e->getMessage()
                 ),
-                $e->getComparisonFailure(),
+                $e->getComparisonFailure()
             );
         }
 
@@ -160,8 +164,6 @@ final class Matcher
     /**
      * @throws ExpectationFailedException
      * @throws InvalidArgumentException
-     * @throws MatchBuilderNotFoundException
-     * @throws MethodNameNotConfiguredException
      * @throws RuntimeException
      */
     public function matches(Invocation $invocation): bool
@@ -172,9 +174,13 @@ final class Matcher
                 ->lookupMatcher($this->afterMatchBuilderId);
 
             if (!$matcher) {
-                throw new MatchBuilderNotFoundException($this->afterMatchBuilderId);
+                throw new RuntimeException(
+                    sprintf(
+                        'No builder found for match builder identification <%s>',
+                        $this->afterMatchBuilderId
+                    )
+                );
             }
-
             assert($matcher instanceof self);
 
             if (!$matcher->invocationRule->hasBeenInvoked()) {
@@ -183,7 +189,7 @@ final class Matcher
         }
 
         if ($this->methodNameRule === null) {
-            throw new MethodNameNotConfiguredException;
+            throw new RuntimeException('No method rule is set');
         }
 
         if (!$this->invocationRule->matches($invocation)) {
@@ -200,9 +206,9 @@ final class Matcher
                     "Expectation failed for %s when %s\n%s",
                     $this->methodNameRule->toString(),
                     $this->invocationRule->toString(),
-                    $e->getMessage(),
+                    $e->getMessage()
                 ),
-                $e->getComparisonFailure(),
+                $e->getComparisonFailure()
             );
         }
 
@@ -212,12 +218,12 @@ final class Matcher
     /**
      * @throws ExpectationFailedException
      * @throws InvalidArgumentException
-     * @throws MethodNameNotConfiguredException
+     * @throws RuntimeException
      */
     public function verify(): void
     {
         if ($this->methodNameRule === null) {
-            throw new MethodNameNotConfiguredException;
+            throw new RuntimeException('No method rule is set');
         }
 
         try {
@@ -240,8 +246,8 @@ final class Matcher
                     "Expectation failed for %s when %s.\n%s",
                     $this->methodNameRule->toString(),
                     $this->invocationRule->toString(),
-                    TestFailure::exceptionToString($e),
-                ),
+                    TestFailure::exceptionToString($e)
+                )
             );
         }
     }

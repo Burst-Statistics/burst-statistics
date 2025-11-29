@@ -1,8 +1,5 @@
 <?php
 use SebastianBergmann\CodeCoverage\CodeCoverage;
-use SebastianBergmann\CodeCoverage\Driver\Selector;
-use PHPUnit\TextUI\XmlConfiguration\Loader;
-use PHPUnit\TextUI\XmlConfiguration\PhpHandler;
 
 if (!defined('STDOUT')) {
     // php://stdout does not obey output buffering. Any output would break
@@ -36,18 +33,12 @@ function __phpunit_run_isolated_test()
     $result = new PHPUnit\Framework\TestResult;
 
     if ({collectCodeCoverageInformation}) {
-        $filter = unserialize('{codeCoverageFilter}');
-
-        $codeCoverage = new CodeCoverage(
-            (new Selector)->{driverMethod}($filter),
-            $filter
+        $result->setCodeCoverage(
+            new CodeCoverage(
+                null,
+                unserialize('{codeCoverageFilter}')
+            )
         );
-
-        if ({cachesStaticAnalysis}) {
-            $codeCoverage->cacheStaticAnalysis(unserialize('{codeCoverageCacheDirectory}'));
-        }
-
-        $result->setCodeCoverage($codeCoverage);
     }
 
     $result->beStrictAboutTestsThatDoNotTestAnything({isStrictAboutTestsThatDoNotTestAnything});
@@ -95,10 +86,8 @@ function __phpunit_run_isolated_test()
 $configurationFilePath = '{configurationFilePath}';
 
 if ('' !== $configurationFilePath) {
-    $configuration = (new Loader)->load($configurationFilePath);
-
-    (new PhpHandler)->handle($configuration->php());
-
+    $configuration = PHPUnit\Util\Configuration::getInstance($configurationFilePath);
+    $configuration->handlePHPConfiguration();
     unset($configuration);
 }
 

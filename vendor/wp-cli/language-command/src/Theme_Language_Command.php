@@ -160,7 +160,7 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 
 				// Support features like --status=active.
 				foreach ( array_keys( $translation ) as $field ) {
-					if ( isset( $assoc_args[ $field ] ) && ! in_array( $translation[ $field ], array_map( 'trim', explode( ',', $assoc_args[ $field ] ) ), true ) ) {
+					if ( isset( $assoc_args[ $field ] ) && $assoc_args[ $field ] !== $translation[ $field ] ) {
 						continue 2;
 					}
 				}

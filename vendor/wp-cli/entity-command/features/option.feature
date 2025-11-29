@@ -106,6 +106,7 @@ Feature: Manage WordPress options
       0
       """
 
+
     # JSON values
     When I run `wp option set json_opt '[ 1, 2 ]' --format=json`
     Then STDOUT should not be empty
@@ -118,6 +119,7 @@ Feature: Manage WordPress options
       """
       [1,2]
       """
+
 
     # Reading from files
     Given a value.json file:
@@ -179,6 +181,7 @@ Feature: Manage WordPress options
     Then STDOUT should be a table containing rows:
       | option_name  | option_value   | autoload |
       | hello        | island         | on      |
+
 
   @require-wp-4.2
   @less-than-wp-6.6

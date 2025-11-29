@@ -9,8 +9,10 @@
  */
 namespace PHPUnit\Framework\MockObject;
 
+use function sprintf;
 use function strtolower;
 use Exception;
+use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\MockObject\Builder\InvocationMocker;
 use PHPUnit\Framework\MockObject\Rule\InvocationOrder;
 use Throwable;
@@ -83,12 +85,14 @@ final class InvocationHandler
      * @param string  $id      The identification of the matcher
      * @param Matcher $matcher The builder which is being registered
      *
-     * @throws MatcherAlreadyRegisteredException
+     * @throws RuntimeException
      */
     public function registerMatcher(string $id, Matcher $matcher): void
     {
         if (isset($this->matcherMap[$id])) {
-            throw new MatcherAlreadyRegisteredException($id);
+            throw new RuntimeException(
+                'Matcher with id <' . $id . '> is already registered.'
+            );
         }
 
         $this->matcherMap[$id] = $matcher;
@@ -102,13 +106,14 @@ final class InvocationHandler
         return new InvocationMocker(
             $this,
             $matcher,
-            ...$this->configurableMethods,
+            ...$this->configurableMethods
         );
     }
 
     /**
      * @throws Exception
-     * @throws RuntimeException
+     *
+     * @return mixed|void
      */
     public function invoke(Invocation $invocation)
     {
@@ -140,7 +145,13 @@ final class InvocationHandler
         }
 
         if (!$this->returnValueGeneration) {
-            $exception = new ReturnValueNotConfiguredException($invocation);
+            $exception = new ExpectationFailedException(
+                sprintf(
+                    'Return value inference disabled and no expectation set up for %s::%s()',
+                    $invocation->getClassName(),
+                    $invocation->getMethodName()
+                )
+            );
 
             if (strtolower($invocation->getMethodName()) === '__tostring') {
                 $this->deferredError = $exception;
@@ -166,7 +177,7 @@ final class InvocationHandler
     }
 
     /**
-     * @throws Throwable
+     * @throws ExpectationFailedException
      */
     public function verify(): void
     {

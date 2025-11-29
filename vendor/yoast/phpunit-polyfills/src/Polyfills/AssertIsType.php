@@ -27,7 +27,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsArray( $actual, $message = '' ) {
+	final public static function assertIsArray( $actual, $message = '' ) {
 		static::assertInternalType( 'array', $actual, $message );
 	}
 
@@ -39,7 +39,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsBool( $actual, $message = '' ) {
+	final public static function assertIsBool( $actual, $message = '' ) {
 		static::assertInternalType( 'bool', $actual, $message );
 	}
 
@@ -51,7 +51,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsFloat( $actual, $message = '' ) {
+	final public static function assertIsFloat( $actual, $message = '' ) {
 		static::assertInternalType( 'float', $actual, $message );
 	}
 
@@ -63,7 +63,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsInt( $actual, $message = '' ) {
+	final public static function assertIsInt( $actual, $message = '' ) {
 		static::assertInternalType( 'int', $actual, $message );
 	}
 
@@ -75,7 +75,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsNumeric( $actual, $message = '' ) {
+	final public static function assertIsNumeric( $actual, $message = '' ) {
 		static::assertInternalType( 'numeric', $actual, $message );
 	}
 
@@ -87,7 +87,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsObject( $actual, $message = '' ) {
+	final public static function assertIsObject( $actual, $message = '' ) {
 		static::assertInternalType( 'object', $actual, $message );
 	}
 
@@ -99,7 +99,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsResource( $actual, $message = '' ) {
+	final public static function assertIsResource( $actual, $message = '' ) {
 		static::assertInternalType( 'resource', $actual, $message );
 	}
 
@@ -111,7 +111,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsString( $actual, $message = '' ) {
+	final public static function assertIsString( $actual, $message = '' ) {
 		static::assertInternalType( 'string', $actual, $message );
 	}
 
@@ -123,7 +123,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsScalar( $actual, $message = '' ) {
+	final public static function assertIsScalar( $actual, $message = '' ) {
 		static::assertInternalType( 'scalar', $actual, $message );
 	}
 
@@ -135,7 +135,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsCallable( $actual, $message = '' ) {
+	final public static function assertIsCallable( $actual, $message = '' ) {
 		static::assertInternalType( 'callable', $actual, $message );
 	}
 
@@ -154,7 +154,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsIterable( $actual, $message = '' ) {
+	final public static function assertIsIterable( $actual, $message = '' ) {
 		if ( \function_exists( 'is_iterable' ) === true ) {
 			// PHP >= 7.1.
 			// phpcs:ignore PHPCompatibility.FunctionUse.NewFunctions.is_iterableFound
@@ -175,7 +175,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsNotArray( $actual, $message = '' ) {
+	final public static function assertIsNotArray( $actual, $message = '' ) {
 		static::assertNotInternalType( 'array', $actual, $message );
 	}
 
@@ -187,7 +187,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsNotBool( $actual, $message = '' ) {
+	final public static function assertIsNotBool( $actual, $message = '' ) {
 		static::assertNotInternalType( 'bool', $actual, $message );
 	}
 
@@ -199,7 +199,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsNotFloat( $actual, $message = '' ) {
+	final public static function assertIsNotFloat( $actual, $message = '' ) {
 		static::assertNotInternalType( 'float', $actual, $message );
 	}
 
@@ -211,7 +211,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsNotInt( $actual, $message = '' ) {
+	final public static function assertIsNotInt( $actual, $message = '' ) {
 		static::assertNotInternalType( 'int', $actual, $message );
 	}
 
@@ -223,7 +223,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsNotNumeric( $actual, $message = '' ) {
+	final public static function assertIsNotNumeric( $actual, $message = '' ) {
 		static::assertNotInternalType( 'numeric', $actual, $message );
 	}
 
@@ -235,7 +235,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsNotObject( $actual, $message = '' ) {
+	final public static function assertIsNotObject( $actual, $message = '' ) {
 		static::assertNotInternalType( 'object', $actual, $message );
 	}
 
@@ -247,7 +247,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsNotResource( $actual, $message = '' ) {
+	final public static function assertIsNotResource( $actual, $message = '' ) {
 		static::assertNotInternalType( 'resource', $actual, $message );
 	}
 
@@ -259,7 +259,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsNotString( $actual, $message = '' ) {
+	final public static function assertIsNotString( $actual, $message = '' ) {
 		static::assertNotInternalType( 'string', $actual, $message );
 	}
 
@@ -271,7 +271,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsNotScalar( $actual, $message = '' ) {
+	final public static function assertIsNotScalar( $actual, $message = '' ) {
 		static::assertNotInternalType( 'scalar', $actual, $message );
 	}
 
@@ -283,7 +283,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsNotCallable( $actual, $message = '' ) {
+	final public static function assertIsNotCallable( $actual, $message = '' ) {
 		static::assertNotInternalType( 'callable', $actual, $message );
 	}
 
@@ -302,7 +302,7 @@ trait AssertIsType {
 	 *
 	 * @return void
 	 */
-	public static function assertIsNotIterable( $actual, $message = '' ) {
+	final public static function assertIsNotIterable( $actual, $message = '' ) {
 		if ( \function_exists( 'is_iterable' ) === true ) {
 			// PHP >= 7.1.
 			// phpcs:ignore PHPCompatibility.FunctionUse.NewFunctions.is_iterableFound

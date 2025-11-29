@@ -3,7 +3,6 @@
 namespace WP_CLI\Exception;
 
 use OutOfBoundsException;
-use WP_CLI\Traverser\RecursiveDataStructureTraverser;
 
 class NonExistentKeyException extends OutOfBoundsException {
 	/** @var RecursiveDataStructureTraverser */

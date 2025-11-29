@@ -11,8 +11,8 @@ namespace PHPUnit\Runner;
 
 use function is_dir;
 use function is_file;
-use function substr;
 use PHPUnit\Framework\Exception;
+use PHPUnit\Framework\Test;
 use PHPUnit\Framework\TestSuite;
 use ReflectionClass;
 use ReflectionException;
@@ -85,33 +85,27 @@ abstract class BaseTestRunner
      *
      * @throws Exception
      */
-    public function getTest(string $suiteClassFile, $suffixes = ''): ?TestSuite
+    public function getTest(string $suiteClassName, string $suiteClassFile = '', $suffixes = ''): ?Test
     {
-        if (is_dir($suiteClassFile)) {
+        if (empty($suiteClassFile) && is_dir($suiteClassName) && !is_file($suiteClassName . '.php')) {
             /** @var string[] $files */
             $files = (new FileIteratorFacade)->getFilesAsArray(
-                $suiteClassFile,
-                $suffixes,
+                $suiteClassName,
+                $suffixes
             );
 
-            $suite = new TestSuite($suiteClassFile);
+            $suite = new TestSuite($suiteClassName);
             $suite->addTestFiles($files);
-
-            return $suite;
-        }
-
-        if (is_file($suiteClassFile) && substr($suiteClassFile, -5, 5) === '.phpt') {
-            $suite = new TestSuite;
-            $suite->addTestFile($suiteClassFile);
 
             return $suite;
         }
 
         try {
             $testClass = $this->loadSuiteClass(
-                $suiteClassFile,
+                $suiteClassName,
+                $suiteClassFile
             );
-        } catch (\PHPUnit\Exception $e) {
+        } catch (Exception $e) {
             $this->runFailed($e->getMessage());
 
             return null;
@@ -122,7 +116,7 @@ abstract class BaseTestRunner
 
             if (!$suiteMethod->isStatic()) {
                 $this->runFailed(
-                    'suite() method must be static.',
+                    'suite() method must be static.'
                 );
 
                 return null;
@@ -130,7 +124,12 @@ abstract class BaseTestRunner
 
             $test = $suiteMethod->invoke(null, $testClass->getName());
         } catch (ReflectionException $e) {
-            $test = new TestSuite($testClass);
+            try {
+                $test = new TestSuite($testClass);
+            } catch (Exception $e) {
+                $test = new TestSuite;
+                $test->setName($suiteClassName);
+            }
         }
 
         $this->clearStatus();
@@ -141,9 +140,9 @@ abstract class BaseTestRunner
     /**
      * Returns the loaded ReflectionClass for a suite name.
      */
-    protected function loadSuiteClass(string $suiteClassFile): ReflectionClass
+    protected function loadSuiteClass(string $suiteClassName, string $suiteClassFile = ''): ReflectionClass
     {
-        return $this->getLoader()->load($suiteClassFile);
+        return $this->getLoader()->load($suiteClassName, $suiteClassFile);
     }
 
     /**

@@ -147,7 +147,7 @@ Feature: Tests `WP_CLI::add_hook()`
       """
       `add_hook()` to the `custom_hook` is working.
       """
-    And STDOUT should not contain:
+    Then STDOUT should not contain:
       """
       First argument is not being passed in to callback properly
       """
@@ -204,7 +204,7 @@ Feature: Tests `WP_CLI::add_hook()`
       """
       `add_hook()` to the `custom_hook` is working.
       """
-    And STDOUT should not contain:
+    Then STDOUT should not contain:
       """
       First argument is not being passed in to callback properly
       """

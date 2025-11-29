@@ -12,13 +12,11 @@ namespace PHPUnit\Runner;
 use ReflectionClass;
 
 /**
- * @deprecated see https://github.com/sebastianbergmann/phpunit/issues/4039
- *
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+ * An interface to define how a test suite should be loaded.
  */
 interface TestSuiteLoader
 {
-    public function load(string $suiteClassFile): ReflectionClass;
+    public function load(string $suiteClassName, string $suiteClassFile = ''): ReflectionClass;
 
     public function reload(ReflectionClass $aClass): ReflectionClass;
 }

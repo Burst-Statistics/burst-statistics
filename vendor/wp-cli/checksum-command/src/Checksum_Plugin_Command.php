@@ -13,6 +13,13 @@ use WP_CLI\WpOrgApi;
 class Checksum_Plugin_Command extends Checksum_Base_Command {
 
 	/**
+	 * URL template that points to the API endpoint to use.
+	 *
+	 * @var string
+	 */
+	private $url_template = 'https://downloads.wordpress.org/plugin-checksums/{slug}/{version}.json';
+
+	/**
 	 * Cached plugin data for all installed plugins.
 	 *
 	 * @var array|null
@@ -125,6 +132,12 @@ class Checksum_Plugin_Command extends Checksum_Base_Command {
 			}
 
 			$files = $this->get_plugin_files( $plugin->file );
+
+			foreach ( $checksums as $file => $checksum_array ) {
+				if ( ! in_array( $file, $files, true ) ) {
+					$this->add_error( $plugin->name, $file, 'File is missing' );
+				}
+			}
 
 			foreach ( $files as $file ) {
 				if ( ! array_key_exists( $file, $checksums ) ) {

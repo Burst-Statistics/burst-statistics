@@ -12,7 +12,7 @@ Feature: Update WP-CLI packages
       """
       Success: Package installed.
       """
-    And STDERR should be empty
+    Then STDERR should be empty
 
     When I run `wp package update`
     Then STDOUT should contain:

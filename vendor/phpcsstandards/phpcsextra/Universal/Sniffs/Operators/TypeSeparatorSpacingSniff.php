@@ -14,30 +14,14 @@ use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
 use PHP_CodeSniffer\Util\Tokens;
 use PHPCSUtils\Fixers\SpacesFixer;
-use PHPCSUtils\Tokens\Collections;
 
 /**
- * Enforce spacing rules around union, intersection and DNF type separators.
+ * Enforce no space around union type and intersection type separators.
  *
  * @since 1.0.0
- * @since 1.3.0 Support for DNF types.
  */
 final class TypeSeparatorSpacingSniff implements Sniff
 {
-
-    /**
-     * Tokens this sniff targets.
-     *
-     * @since 1.3.0
-     *
-     * @var array<int|string, int|string>
-     */
-    private $targetTokens = [
-        \T_TYPE_UNION             => \T_TYPE_UNION,
-        \T_TYPE_INTERSECTION      => \T_TYPE_INTERSECTION,
-        \T_TYPE_OPEN_PARENTHESIS  => \T_TYPE_OPEN_PARENTHESIS,
-        \T_TYPE_CLOSE_PARENTHESIS => \T_TYPE_CLOSE_PARENTHESIS,
-    ];
 
     /**
      * Returns an array of tokens this test wants to listen for.
@@ -48,7 +32,10 @@ final class TypeSeparatorSpacingSniff implements Sniff
      */
     public function register()
     {
-        return $this->targetTokens;
+        return [
+            \T_TYPE_UNION,
+            \T_TYPE_INTERSECTION,
+        ];
     }
 
     /**
@@ -66,78 +53,28 @@ final class TypeSeparatorSpacingSniff implements Sniff
     {
         $tokens = $phpcsFile->getTokens();
 
-        $type = 'union';
-        $code = 'UnionType';
-        if ($tokens[$stackPtr]['code'] === \T_TYPE_INTERSECTION) {
-            $type = 'intersection';
-            $code = 'IntersectionType';
-        } elseif ($tokens[$stackPtr]['code'] === \T_TYPE_OPEN_PARENTHESIS) {
-            $type = 'DNF parenthesis open';
-            $code = 'DNFOpen';
-        } elseif ($tokens[$stackPtr]['code'] === \T_TYPE_CLOSE_PARENTHESIS) {
-            $type = 'DNF parenthesis close';
-            $code = 'DNFClose';
-        }
+        $type = ($tokens[$stackPtr]['code'] === \T_TYPE_UNION) ? 'union' : 'intersection';
+        $code = \ucfirst($type) . 'Type';
 
-        $expectedSpaces = 0;
-        $prevNonEmpty   = $phpcsFile->findPrevious(Tokens::$emptyTokens, ($stackPtr - 1), null, true);
-        if ($tokens[$stackPtr]['code'] === \T_TYPE_OPEN_PARENTHESIS) {
-            if ($tokens[$prevNonEmpty]['code'] === \T_COLON
-                || $tokens[$prevNonEmpty]['code'] === \T_CONST
-                || isset(Collections::propertyModifierKeywords()[$tokens[$prevNonEmpty]['code']]) === true
-            ) {
-                // Start of return type or property/const type. Always demand 1 space.
-                $expectedSpaces = 1;
-            }
+        $prevNonEmpty = $phpcsFile->findPrevious(Tokens::$emptyTokens, ($stackPtr - 1), null, true);
+        SpacesFixer::checkAndFix(
+            $phpcsFile,
+            $stackPtr,
+            $prevNonEmpty,
+            0, // Expected spaces.
+            'Expected %s before the ' . $type . ' type separator. Found: %s',
+            $code . 'SpacesBefore',
+            'error',
+            0, // Severity.
+            'Space before ' . $type . ' type separator'
+        );
 
-            if ($tokens[$prevNonEmpty]['code'] === \T_OPEN_PARENTHESIS
-                || $tokens[$prevNonEmpty]['code'] === \T_COMMA
-            ) {
-                // Start of parameter type. Allow new line/indent before.
-                if ($tokens[$prevNonEmpty]['line'] === $tokens[$stackPtr]['line']) {
-                    $expectedSpaces = 1;
-                } else {
-                    $expectedSpaces = 'skip';
-                }
-            }
-        }
-
-        if (isset($this->targetTokens[$tokens[$prevNonEmpty]['code']]) === true) {
-            // Prevent duplicate errors when there are two adjacent operators.
-            $expectedSpaces = 'skip';
-        }
-
-        if ($expectedSpaces !== 'skip') {
-            SpacesFixer::checkAndFix(
-                $phpcsFile,
-                $stackPtr,
-                $prevNonEmpty,
-                $expectedSpaces,
-                'Expected %s before the ' . $type . ' type separator. Found: %s',
-                $code . 'SpacesBefore',
-                'error',
-                0, // Severity.
-                'Space before ' . $type . ' type separator'
-            );
-        }
-
-        $expectedSpaces = 0;
-        $nextNonEmpty   = $phpcsFile->findNext(Tokens::$emptyTokens, ($stackPtr + 1), null, true);
-        if ($tokens[$stackPtr]['code'] === \T_TYPE_CLOSE_PARENTHESIS) {
-            if ($tokens[$nextNonEmpty]['code'] === \T_OPEN_CURLY_BRACKET
-                || $tokens[$nextNonEmpty]['code'] === \T_VARIABLE
-                || $tokens[$nextNonEmpty]['code'] === \T_STRING
-            ) {
-                // End of return type, parameter or property/const type. Always demand 1 space.
-                $expectedSpaces = 1;
-            }
-        }
-
+        $nextNonEmpty = $phpcsFile->findNext(Tokens::$emptyTokens, ($stackPtr + 1), null, true);
         SpacesFixer::checkAndFix(
             $phpcsFile,
             $stackPtr,
             $nextNonEmpty,
-            $expectedSpaces,
+            0, // Expected spaces.
             'Expected %s after the ' . $type . ' type separator. Found: %s',
             $code . 'SpacesAfter',
             'error',

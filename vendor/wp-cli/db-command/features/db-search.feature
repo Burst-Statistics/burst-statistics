@@ -265,7 +265,8 @@ Feature: Search through the database
 
     When I run `wp db query "CREATE TABLE no_key ( awesome_stuff TEXT );"`
     And I run `wp db query "CREATE TABLE no_text ( id int(11) unsigned NOT NULL AUTO_INCREMENT, PRIMARY KEY (id) );"`
-    And I try `wp db search example.com no_key --all-tables`
+
+    When I try `wp db search example.com no_key --all-tables`
     Then STDOUT should be empty
     And STDERR should be:
       """

@@ -6,7 +6,6 @@ class WP_Map_Iterator extends IteratorIterator {
 		parent::__construct( $iterator );
 	}
 
-	#[\ReturnTypeWillChange]
 	public function current() {
 		$original_current = parent::current();
 		return call_user_func( $this->callback, $original_current );
