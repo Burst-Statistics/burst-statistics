@@ -146,9 +146,12 @@ class BurstVersionConsistencyTest extends TestCase {
     private function changelog_has_date( string $changelog_entry ): bool {
         // Check for date patterns like "November 25th", "Nov 25", "2024-11-25", etc.
         $date_patterns = [
+            // With asterisk (on its own line or with text)
             '/\*\s*(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(st|nd|rd|th)?/i',
             '/\*\s*\d{4}-\d{2}-\d{2}/',
             '/\*\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/',
+            // Without asterisk (just the month name at start of line)
+            '/^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(st|nd|rd|th)?/im',
         ];
 
         foreach ( $date_patterns as $pattern ) {
