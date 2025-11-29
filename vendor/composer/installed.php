@@ -3,7 +3,7 @@
         'name' => 'burst-statistics/burst-statistics',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => '6b66a5987877ae95602cd7097b0e301ed4533b3a',
+        'reference' => 'da54d430841df266d42a03f0a5b8ccf5013233dc',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'burst-statistics/burst-statistics' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => '6b66a5987877ae95602cd7097b0e301ed4533b3a',
+            'reference' => 'da54d430841df266d42a03f0a5b8ccf5013233dc',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
