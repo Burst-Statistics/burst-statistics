@@ -10,7 +10,7 @@
 /screenshots/*
 ### Composer ###
 composer.phar
-/vendor/*
+/vendor/
 /src/Admin/App/build
 /src/Admin/Dashboard_Widget/build
 # Commit your application's lock file https://getcomposer.org/doc/01-basic-usage.md#commit-your-composer-lock-file-to-version-control
