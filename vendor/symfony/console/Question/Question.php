@@ -21,33 +21,25 @@ use Symfony\Component\Console\Exception\LogicException;
  */
 class Question
 {
+    private string $question;
     private ?int $attempts = null;
     private bool $hidden = false;
     private bool $hiddenFallback = true;
-    /**
-     * @var (\Closure(string):string[])|null
-     */
     private ?\Closure $autocompleterCallback = null;
-    /**
-     * @var (\Closure(mixed):mixed)|null
-     */
     private ?\Closure $validator = null;
-    /**
-     * @var (\Closure(mixed):mixed)|null
-     */
+    private string|int|bool|float|null $default;
     private ?\Closure $normalizer = null;
     private bool $trimmable = true;
     private bool $multiline = false;
-    private ?int $timeout = null;
 
     /**
      * @param string                     $question The question to ask to the user
      * @param string|bool|int|float|null $default  The default answer to return if the user enters nothing
      */
-    public function __construct(
-        private string $question,
-        private string|bool|int|float|null $default = null,
-    ) {
+    public function __construct(string $question, string|bool|int|float|null $default = null)
+    {
+        $this->question = $question;
+        $this->default = $default;
     }
 
     /**
@@ -82,27 +74,6 @@ class Question
     public function setMultiline(bool $multiline): static
     {
         $this->multiline = $multiline;
-
-        return $this;
-    }
-
-    /**
-     * Returns the timeout in seconds.
-     */
-    public function getTimeout(): ?int
-    {
-        return $this->timeout;
-    }
-
-    /**
-     * Sets the maximum time the user has to answer the question.
-     * If the user does not answer within this time, an exception will be thrown.
-     *
-     * @return $this
-     */
-    public function setTimeout(?int $seconds): static
-    {
-        $this->timeout = $seconds;
 
         return $this;
     }
@@ -191,8 +162,6 @@ class Question
 
     /**
      * Gets the callback function used for the autocompleter.
-     *
-     * @return (callable(string):string[])|null
      */
     public function getAutocompleterCallback(): ?callable
     {
@@ -204,12 +173,13 @@ class Question
      *
      * The callback is passed the user input as argument and should return an iterable of corresponding suggestions.
      *
-     * @param (callable(string):string[])|null $callback
-     *
      * @return $this
      */
-    public function setAutocompleterCallback(?callable $callback): static
+    public function setAutocompleterCallback(?callable $callback = null): static
     {
+        if (1 > \func_num_args()) {
+            trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
+        }
         if ($this->hidden && null !== $callback) {
             throw new LogicException('A hidden question cannot use the autocompleter.');
         }
@@ -222,12 +192,13 @@ class Question
     /**
      * Sets a validator for the question.
      *
-     * @param (callable(mixed):mixed)|null $validator
-     *
      * @return $this
      */
-    public function setValidator(?callable $validator): static
+    public function setValidator(?callable $validator = null): static
     {
+        if (1 > \func_num_args()) {
+            trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
+        }
         $this->validator = null === $validator ? null : $validator(...);
 
         return $this;
@@ -235,8 +206,6 @@ class Question
 
     /**
      * Gets the validator for the question.
-     *
-     * @return (callable(mixed):mixed)|null
      */
     public function getValidator(): ?callable
     {
@@ -276,7 +245,7 @@ class Question
     /**
      * Sets a normalizer for the response.
      *
-     * @param callable(mixed):mixed $normalizer
+     * The normalizer can be a callable (a string), a closure or a class implementing __invoke.
      *
      * @return $this
      */
@@ -290,14 +259,17 @@ class Question
     /**
      * Gets the normalizer for the response.
      *
-     * @return (callable(mixed):mixed)|null
+     * The normalizer can ba a callable (a string), a closure or a class implementing __invoke.
      */
     public function getNormalizer(): ?callable
     {
         return $this->normalizer;
     }
 
-    protected function isAssoc(array $array): bool
+    /**
+     * @return bool
+     */
+    protected function isAssoc(array $array)
     {
         return (bool) \count(array_filter(array_keys($array), 'is_string'));
     }
