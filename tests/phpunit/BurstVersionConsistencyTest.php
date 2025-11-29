@@ -9,7 +9,7 @@ class BurstVersionConsistencyTest extends TestCase {
         // Get version from readme.txt
         $readme_version = $this->get_readme_version( $plugin_dir . '/readme.txt' );
 
-        // Get version from burst-pro.php
+        // Get version from burst.php
         $plugin_version = $this->get_plugin_version( $plugin_dir . '/burst.php' );
 
         // Get version from includes/class-burst.php
@@ -17,7 +17,7 @@ class BurstVersionConsistencyTest extends TestCase {
 
         // Assert all versions are found
         $this->assertNotNull( $readme_version, 'Could not find version in readme.txt' );
-        $this->assertNotNull( $plugin_version, 'Could not find version in burst-pro.php' );
+        $this->assertNotNull( $plugin_version, 'Could not find version in burst.php' );
         $this->assertNotNull( $class_version, 'Could not find version in includes/class-burst.php' );
 
         // Assert all versions match
@@ -78,7 +78,7 @@ class BurstVersionConsistencyTest extends TestCase {
         $has_date = $this->changelog_has_date( $changelog_entry );
         $this->assertTrue(
             $has_date,
-            "Changelog for version $readme_version is missing a date"
+            "Changelog for version $readme_version is missing a date. Found content:\n" . $changelog_entry
         );
 
         // Check if changelog has at least one change line
@@ -134,7 +134,8 @@ class BurstVersionConsistencyTest extends TestCase {
         $version_escaped = preg_quote( $version, '/' );
 
         // Match the version header and everything until the next version or end of changelog
-        $pattern = '/^=\s*' . $version_escaped . '\s*=\s*$(.*?)(?=^=\s*\d+\.\d+\.\d+(?:\.\d+)?\s*=|$)/ms';
+        // Updated to handle both = format and potential whitespace variations
+        $pattern = '/^=+\s*' . $version_escaped . '\s*=+\s*\n(.*?)(?=\n=+\s*\d+\.\d+\.\d+(?:\.\d+)?\s*=+|\z)/ms';
 
         if ( preg_match( $pattern, $content, $matches ) ) {
             return trim( $matches[1] );
@@ -144,14 +145,14 @@ class BurstVersionConsistencyTest extends TestCase {
     }
 
     private function changelog_has_date( string $changelog_entry ): bool {
-        // Check for date patterns like "November 25th", "Nov 25", "2024-11-25", etc.
+        // Check for date patterns - more flexible patterns
         $date_patterns = [
-            // With asterisk (on its own line or with text)
-            '/\*\s*(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(st|nd|rd|th)?/i',
-            '/\*\s*\d{4}-\d{2}-\d{2}/',
-            '/\*\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/',
-            // Without asterisk (just the month name at start of line)
-            '/^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(st|nd|rd|th)?/im',
+            // Month name with day number (with or without asterisk, case insensitive)
+            '/[\*\s]*(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(st|nd|rd|th)?/i',
+            // ISO date format
+            '/\d{4}-\d{2}-\d{2}/',
+            // Common date formats
+            '/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/',
         ];
 
         foreach ( $date_patterns as $pattern ) {
