@@ -44,6 +44,7 @@ workflow:
 test:phpunit:
   <<: *e2e_base
   script:
+    - composer install --no-interaction --prefer-dist
     - php vendor/bin/phpunit --debug 2>&1
 
 test:e2e:
