@@ -41,6 +41,20 @@ workflow:
       when: always
     - when: never
 
+test:phpunit:
+  <<: *e2e_base
+  before_script:
+    - npm ci --no-audit --cache .npm --prefer-offline
+    - bash /usr/local/bin/entrypoint.sh
+    - cp -R . /var/www/html/wp-content/plugins/burst-statistics/
+    # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
+    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
+    - wp plugin activate burst-statistics --path=/var/www/html
+    - curl -sS https://getcomposer.org/installer | php
+    - php composer.phar install
+  script:
+    - php vendor/bin/phpunit --debug 2>&1
+
 test:e2e:
   <<: *e2e_base
   script:

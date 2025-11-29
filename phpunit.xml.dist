@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/8.5/phpunit.xsd"
+		 bootstrap="tests/phpunit/bootstrap.php"
+		 colors="true"
+		 stopOnFailure="false"
+		 verbose="true">
+
+	<testsuites>
+		<testsuite name="Burst Tests">
+			<directory>tests/phpunit</directory>
+		</testsuite>
+	</testsuites>
+
+	<php>
+		<env name="WP_PLUGIN_DIR" value="."/>
+		<env name="WP_PLUGIN_FILE" value="burst.php"/>
+	</php>
+</phpunit>
