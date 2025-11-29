@@ -23,6 +23,8 @@ use SebastianBergmann\RecursionContext\InvalidArgumentException;
 
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
+ *
+ * @deprecated
  */
 final class ConsecutiveParameters implements ParametersRule
 {
@@ -47,8 +49,8 @@ final class ConsecutiveParameters implements ParametersRule
                     sprintf(
                         'Parameter group #%d must be an array or Traversable, got %s',
                         $index,
-                        gettype($parameters)
-                    )
+                        gettype($parameters),
+                    ),
                 );
             }
 
@@ -105,20 +107,14 @@ final class ConsecutiveParameters implements ParametersRule
             return;
         }
 
-        if ($invocation === null) {
-            throw new ExpectationFailedException(
-                'Mocked method does not exist.'
-            );
-        }
-
         $parameters = $this->parameterGroups[$callIndex];
 
         if (count($invocation->getParameters()) < count($parameters)) {
             throw new ExpectationFailedException(
                 sprintf(
                     'Parameter count for invocation %s is too low.',
-                    $invocation->toString()
-                )
+                    $invocation->toString(),
+                ),
             );
         }
 
@@ -130,8 +126,8 @@ final class ConsecutiveParameters implements ParametersRule
                     'value.',
                     $i,
                     $callIndex,
-                    $invocation->toString()
-                )
+                    $invocation->toString(),
+                ),
             );
         }
     }

@@ -14,6 +14,7 @@ use function get_class;
 use function method_exists;
 use function sprintf;
 use function str_replace;
+use function trim;
 use DOMDocument;
 use DOMElement;
 use PHPUnit\Framework\AssertionFailedError;
@@ -133,7 +134,7 @@ final class JUnit extends Printer implements TestListener
      */
     public function addError(Test $test, Throwable $t, float $time): void
     {
-        $this->doAddFault($test, $t, $time, 'error');
+        $this->doAddFault($test, $t, 'error');
         $this->testSuiteErrors[$this->testSuiteLevel]++;
     }
 
@@ -142,7 +143,7 @@ final class JUnit extends Printer implements TestListener
      */
     public function addWarning(Test $test, Warning $e, float $time): void
     {
-        $this->doAddFault($test, $e, $time, 'warning');
+        $this->doAddFault($test, $e, 'warning');
         $this->testSuiteWarnings[$this->testSuiteLevel]++;
     }
 
@@ -151,7 +152,7 @@ final class JUnit extends Printer implements TestListener
      */
     public function addFailure(Test $test, AssertionFailedError $e, float $time): void
     {
-        $this->doAddFault($test, $e, $time, 'failure');
+        $this->doAddFault($test, $e, 'failure');
         $this->testSuiteFailures[$this->testSuiteLevel]++;
     }
 
@@ -168,22 +169,11 @@ final class JUnit extends Printer implements TestListener
      */
     public function addRiskyTest(Test $test, Throwable $t, float $time): void
     {
-        if (!$this->reportRiskyTests || $this->currentTestCase === null) {
+        if (!$this->reportRiskyTests) {
             return;
         }
 
-        $error = $this->document->createElement(
-            'error',
-            Xml::prepareString(
-                "Risky Test\n" .
-                Filter::getFilteredStacktrace($t)
-            )
-        );
-
-        $error->setAttribute('type', get_class($t));
-
-        $this->currentTestCase->appendChild($error);
-
+        $this->doAddFault($test, $t, 'error');
         $this->testSuiteErrors[$this->testSuiteLevel]++;
     }
 
@@ -236,37 +226,37 @@ final class JUnit extends Printer implements TestListener
     {
         $this->testSuites[$this->testSuiteLevel]->setAttribute(
             'tests',
-            (string) $this->testSuiteTests[$this->testSuiteLevel]
+            (string) $this->testSuiteTests[$this->testSuiteLevel],
         );
 
         $this->testSuites[$this->testSuiteLevel]->setAttribute(
             'assertions',
-            (string) $this->testSuiteAssertions[$this->testSuiteLevel]
+            (string) $this->testSuiteAssertions[$this->testSuiteLevel],
         );
 
         $this->testSuites[$this->testSuiteLevel]->setAttribute(
             'errors',
-            (string) $this->testSuiteErrors[$this->testSuiteLevel]
+            (string) $this->testSuiteErrors[$this->testSuiteLevel],
         );
 
         $this->testSuites[$this->testSuiteLevel]->setAttribute(
             'warnings',
-            (string) $this->testSuiteWarnings[$this->testSuiteLevel]
+            (string) $this->testSuiteWarnings[$this->testSuiteLevel],
         );
 
         $this->testSuites[$this->testSuiteLevel]->setAttribute(
             'failures',
-            (string) $this->testSuiteFailures[$this->testSuiteLevel]
+            (string) $this->testSuiteFailures[$this->testSuiteLevel],
         );
 
         $this->testSuites[$this->testSuiteLevel]->setAttribute(
             'skipped',
-            (string) $this->testSuiteSkipped[$this->testSuiteLevel]
+            (string) $this->testSuiteSkipped[$this->testSuiteLevel],
         );
 
         $this->testSuites[$this->testSuiteLevel]->setAttribute(
             'time',
-            sprintf('%F', $this->testSuiteTimes[$this->testSuiteLevel])
+            sprintf('%F', $this->testSuiteTimes[$this->testSuiteLevel]),
         );
 
         if ($this->testSuiteLevel > 1) {
@@ -303,7 +293,7 @@ final class JUnit extends Printer implements TestListener
             throw new Exception(
                 $e->getMessage(),
                 $e->getCode(),
-                $e
+                $e,
             );
         }
         // @codeCoverageIgnoreEnd
@@ -318,7 +308,7 @@ final class JUnit extends Printer implements TestListener
                 throw new Exception(
                     $e->getMessage(),
                     $e->getCode(),
-                    $e
+                    $e,
                 );
             }
             // @codeCoverageIgnoreEnd
@@ -347,16 +337,16 @@ final class JUnit extends Printer implements TestListener
 
         $this->currentTestCase->setAttribute(
             'assertions',
-            (string) $numAssertions
+            (string) $numAssertions,
         );
 
         $this->currentTestCase->setAttribute(
             'time',
-            sprintf('%F', $time)
+            sprintf('%F', $time),
         );
 
         $this->testSuites[$this->testSuiteLevel]->appendChild(
-            $this->currentTestCase
+            $this->currentTestCase,
         );
 
         $this->testSuiteTests[$this->testSuiteLevel]++;
@@ -371,7 +361,7 @@ final class JUnit extends Printer implements TestListener
         if (!empty($testOutput)) {
             $systemOut = $this->document->createElement(
                 'system-out',
-                Xml::prepareString($testOutput)
+                Xml::prepareString($testOutput),
             );
 
             $this->currentTestCase->appendChild($systemOut);
@@ -388,7 +378,7 @@ final class JUnit extends Printer implements TestListener
         return $this->document->saveXML();
     }
 
-    private function doAddFault(Test $test, Throwable $t, float $time, $type): void
+    private function doAddFault(Test $test, Throwable $t, string $type): void
     {
         if ($this->currentTestCase === null) {
             return;
@@ -400,12 +390,14 @@ final class JUnit extends Printer implements TestListener
             $buffer = '';
         }
 
-        $buffer .= TestFailure::exceptionToString($t) . "\n" .
-                   Filter::getFilteredStacktrace($t);
+        $buffer .= trim(
+            TestFailure::exceptionToString($t) . "\n" .
+            Filter::getFilteredStacktrace($t),
+        );
 
         $fault = $this->document->createElement(
             $type,
-            Xml::prepareString($buffer)
+            Xml::prepareString($buffer),
         );
 
         if ($t instanceof ExceptionWrapper) {

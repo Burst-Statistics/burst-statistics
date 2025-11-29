@@ -13,10 +13,12 @@ use const PHP_EOL;
 use function array_map;
 use function get_class;
 use function implode;
+use function method_exists;
 use function preg_split;
 use function trim;
 use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\Exception;
+use PHPUnit\Framework\Reorderable;
 use PHPUnit\Framework\Test;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestFailure;
@@ -25,8 +27,7 @@ use PHPUnit\Framework\TestSuite;
 use PHPUnit\Framework\Warning;
 use PHPUnit\Runner\BaseTestRunner;
 use PHPUnit\Runner\PhptTestCase;
-use PHPUnit\Runner\TestSuiteSorter;
-use PHPUnit\TextUI\ResultPrinter;
+use PHPUnit\TextUI\DefaultResultPrinter;
 use PHPUnit\Util\Filter;
 use SebastianBergmann\RecursionContext\InvalidArgumentException;
 use Throwable;
@@ -34,7 +35,7 @@ use Throwable;
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-class TestDoxPrinter extends ResultPrinter
+class TestDoxPrinter extends DefaultResultPrinter
 {
     /**
      * @var NamePrettifier
@@ -83,6 +84,7 @@ class TestDoxPrinter extends ResultPrinter
 
     /**
      * @param null|resource|string $out
+     * @param int|string           $numberOfColumns
      *
      * @throws Exception
      */
@@ -191,7 +193,7 @@ class TestDoxPrinter extends ResultPrinter
      */
     protected function registerTestResult(Test $test, ?Throwable $t, int $status, float $time, bool $verbose): void
     {
-        $testName = TestSuiteSorter::getTestSorterUID($test);
+        $testName = $test instanceof Reorderable ? $test->sortId() : $test->getName();
 
         $result = [
             'className'  => $this->formatClassName($test),
@@ -213,7 +215,7 @@ class TestDoxPrinter extends ResultPrinter
 
     protected function formatTestName(Test $test): string
     {
-        return $test->getName();
+        return method_exists($test, 'getName') ? $test->getName() : '';
     }
 
     protected function formatClassName(Test $test): string
@@ -241,7 +243,8 @@ class TestDoxPrinter extends ResultPrinter
         }
 
         if ($this->testFlushIndex > 0) {
-            if ($this->enableOutputBuffer) {
+            if ($this->enableOutputBuffer &&
+                isset($this->originalExecutionOrder[$this->testFlushIndex - 1])) {
                 $prevResult = $this->getTestResultByName($this->originalExecutionOrder[$this->testFlushIndex - 1]);
             } else {
                 $prevResult = $this->testResults[$this->testFlushIndex - 1];
@@ -382,8 +385,8 @@ class TestDoxPrinter extends ResultPrinter
                 {
                     return '   ' . $prefix . ($text ? ' ' . $text : '');
                 },
-                preg_split('/\r\n|\r|\n/', $message)
-            )
+                preg_split('/\r\n|\r|\n/', $message),
+            ),
         );
     }
 }

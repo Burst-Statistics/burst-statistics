@@ -20,6 +20,7 @@ return array(
     '23c18046f52bef3eea034657bafda50f' => $vendorDir . '/symfony/polyfill-php81/bootstrap.php',
     '6124b4c8570aa390c21fafd04a26c69f' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/deep_copy.php',
     'ac949ce40a981819ba132473518a9a31' => $vendorDir . '/wp-cli/wp-config-transformer/src/WPConfigTransformer.php',
+    'ec07570ca5a812141189b1fa81503674' => $vendorDir . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
     '8a0ad02df6a5087f2c380f8fd52db273' => $vendorDir . '/wp-cli/cache-command/cache-command.php',
     'b66d29757fcb2fb7a9608d068e3716b0' => $vendorDir . '/wp-cli/checksum-command/checksum-command.php',
     '5deaf6ce9c8bbdfb65104c7e938d5875' => $vendorDir . '/wp-cli/config-command/config-command.php',

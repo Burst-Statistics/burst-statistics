@@ -58,8 +58,12 @@ final class MethodName
         return $this->matchesName($invocation->getMethodName());
     }
 
+    /**
+     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
+     * @throws ExpectationFailedException
+     */
     public function matchesName(string $methodName): bool
     {
-        return $this->constraint->evaluate($methodName, '', true);
+        return (bool) $this->constraint->evaluate($methodName, '', true);
     }
 }
