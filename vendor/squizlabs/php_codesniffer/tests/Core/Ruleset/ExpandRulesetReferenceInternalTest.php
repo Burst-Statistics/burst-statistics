@@ -4,7 +4,7 @@
  *
  * @author    Juliette Reinders Folmer <phpcs_nospam@adviesenzo.nl>
  * @copyright 2025 PHPCSStandards and contributors
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Tests\Core\Ruleset;
@@ -51,6 +51,11 @@ final class ExpandRulesetReferenceInternalTest extends AbstractRulesetTestCase
      */
     public function testInternalStandardDoesGetExpanded()
     {
+        $message  = 'DEPRECATED: The name "Internal" is reserved for internal use. A PHP_CodeSniffer standard should not be called "Internal".'.PHP_EOL;
+        $message .= 'Contact the maintainer of the standard to fix this.'.PHP_EOL.PHP_EOL;
+
+        $this->expectOutputString($message);
+
         // Set up the ruleset.
         $standard = __DIR__.'/ExpandRulesetReferenceInternalStandardTest.xml';
         $config   = new ConfigDouble(["--standard=$standard"]);

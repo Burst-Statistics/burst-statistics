@@ -60,6 +60,7 @@ Feature: Manage WordPress transient cache
     # We set `WP_DEVELOPMENT_MODE` to stop WordPress from automatically creating
     # additional transients which cause some steps to fail when testing.
     And I run `wp config set WP_DEVELOPMENT_MODE all`
+
     And I run `wp transient list --format=count`
     And save STDOUT as {EXISTING_TRANSIENTS}
     And I run `expr {EXISTING_TRANSIENTS} + 2`
@@ -75,6 +76,7 @@ Feature: Manage WordPress transient cache
     And I run `wp transient set foo2 bar2 600`
     And I run `wp transient set foo3 bar3 --network`
     And I run `wp transient set foo4 bar4 600 --network`
+
     And I run `wp transient delete --all`
     Then STDOUT should be:
       """
@@ -125,10 +127,10 @@ Feature: Manage WordPress transient cache
 
   Scenario: Deleting expired transients on single site
     Given a WP install
-    And I run `wp transient set foo bar 60`
-    And I run `wp transient set foo2 bar2 60`
-    And I run `wp transient set foo3 bar3 60 --network`
-    And I run `wp transient set foo4 bar4 60 --network`
+    And I run `wp transient set foo bar 600`
+    And I run `wp transient set foo2 bar2 600`
+    And I run `wp transient set foo3 bar3 600 --network`
+    And I run `wp transient set foo4 bar4 600 --network`
     # Change timeout to be in the past.
     And I run `wp option update _transient_timeout_foo 1321009871`
     And I run `wp option update _site_transient_timeout_foo3 1321009871`
@@ -292,12 +294,12 @@ Feature: Manage WordPress transient cache
   Scenario: Deleting expired transients on multisite
     Given a WP multisite install
     And I run `wp site create --slug=foo`
-    And I run `wp transient set foo bar 60`
-    And I run `wp transient set foo2 bar2 60`
-    And I run `wp transient set foo3 bar3 60 --network`
-    And I run `wp transient set foo4 bar4 60 --network`
-    And I run `wp --url=example.com/foo transient set foo5 bar5 60 --network`
-    And I run `wp --url=example.com/foo transient set foo6 bar6 60 --network`
+    And I run `wp transient set foo bar 600`
+    And I run `wp transient set foo2 bar2 600`
+    And I run `wp transient set foo3 bar3 600 --network`
+    And I run `wp transient set foo4 bar4 600 --network`
+    And I run `wp --url=example.com/foo transient set foo5 bar5 600 --network`
+    And I run `wp --url=example.com/foo transient set foo6 bar6 600 --network`
     # Change timeout to be in the past.
     And I run `wp option update _transient_timeout_foo 1321009871`
     And I run `wp site option update _site_transient_timeout_foo3 1321009871`
@@ -405,9 +407,14 @@ Feature: Manage WordPress transient cache
     When I run `wp transient list --format=csv`
     Then STDOUT should contain:
       """
-      name,value,expiration
       foo,bar,false
+      """
+    And STDOUT should contain:
+      """
       foo2,bar2,95649119999
+      """
+    And STDOUT should contain:
+      """
       foo3,bar3,1321009871
       """
 
@@ -458,9 +465,14 @@ Feature: Manage WordPress transient cache
     When I run `wp transient list --format=csv`
     Then STDOUT should contain:
       """
-      name,value,expiration
       foo,bar,false
+      """
+    And STDOUT should contain:
+      """
       foo2,bar2,95649119999
+      """
+    And STDOUT should contain:
+      """
       foo3,bar3,1321009871
       """
 

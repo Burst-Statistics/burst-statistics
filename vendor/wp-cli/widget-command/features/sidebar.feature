@@ -17,12 +17,12 @@ Feature: Manage WordPress sidebars
 
     When I run `wp sidebar list --format=ids`
     Then STDOUT should be:
-    """
-    sidebar-1 sidebar-2 sidebar-3 wp_inactive_widgets
-    """
+      """
+      sidebar-1 sidebar-2 sidebar-3 wp_inactive_widgets
+      """
 
     When I run `wp sidebar list --format=count`
     Then STDOUT should be:
-    """
-    4
-    """
+      """
+      4
+      """

@@ -4,7 +4,7 @@
  *
  * @author    Juliette Reinders Folmer <phpcs_nospam@adviesenzo.nl>
  * @copyright 2023 Juliette Reinders Folmer. All rights reserved.
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Tests\Core\Ruleset;
@@ -200,7 +200,7 @@ final class ExplainTest extends TestCase
         $expected .= '  TestStandard.SetProperty.PropertyTypeHandling'.PHP_EOL;
         $expected .= '  TestStandard.ValidSniffs.RegisterEmptyArray'.PHP_EOL.PHP_EOL;
 
-        $expected .= '* Sniffs marked with an asterix are deprecated.'.PHP_EOL;
+        $expected .= '* Sniffs marked with an asterisk are deprecated.'.PHP_EOL;
 
         $this->expectOutputString($expected);
 

@@ -4,7 +4,7 @@
  *
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @copyright 2006-2015 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Standards\Generic\Sniffs\PHP;
@@ -33,6 +33,9 @@ class LowerCaseKeywordSniff implements Sniff
             T_MATCH_DEFAULT => T_MATCH_DEFAULT,
             T_PARENT        => T_PARENT,
             T_SELF          => T_SELF,
+            T_PUBLIC_SET    => T_PUBLIC_SET,
+            T_PROTECTED_SET => T_PROTECTED_SET,
+            T_PRIVATE_SET   => T_PRIVATE_SET,
         ];
 
         return $targets;

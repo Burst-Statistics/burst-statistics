@@ -9,6 +9,17 @@ This projects adheres to [Keep a CHANGELOG](http://keepachangelog.com/) and uses
 
 _Nothing yet._
 
+## [2.0.5] - 2025-08-10
+
+### Fixed
+* PHP 8.5 deprecation notice when using the `AssertAttributeHelper::getProperty()` and `AssertAttributeHelper::getPropertyValue()` methods. PR [#261]
+
+### Changed
+* General housekeeping.
+
+<!-- Link to #261 is defined on the 1.1.5 release. -->
+
+
 ## [2.0.4] - 2025-02-09
 
 This is a maintenance release.
@@ -107,6 +118,17 @@ Projects which don't use any of the new or removed functionality in their test s
 [#110]: https://github.com/Yoast/PHPUnit-Polyfills/pull/110
 [#116]: https://github.com/Yoast/PHPUnit-Polyfills/pull/116
 [#130]: https://github.com/Yoast/PHPUnit-Polyfills/pull/130
+
+
+## [1.1.5] - 2025-08-10
+
+### Fixed
+* PHP 8.5 deprecation notice when using the `AssertAttributeHelper::getProperty()` and `AssertAttributeHelper::getPropertyValue()` methods. PR [#261]
+
+### Changed
+* General housekeeping.
+
+[#261]: https://github.com/Yoast/PHPUnit-Polyfills/pull/261
 
 
 ## [1.1.4] - 2025-02-09
@@ -308,12 +330,14 @@ As of version 2.15.0 of the `shivammathur/setup-php` action for GitHub Actions, 
 Initial release.
 
 
-[Unreleased]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.4...2.x
+[Unreleased]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.5...2.x
+[2.0.5]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.4...2.0.5
 [2.0.4]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.3...2.0.4
 [2.0.3]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.2...2.0.3
 [2.0.2]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.1...2.0.2
 [2.0.1]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.0...2.0.1
-[2.0.0]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.4...2.0.0
+[2.0.0]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.5...2.0.0
+[1.1.5]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.4...1.1.5
 [1.1.4]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.3...1.1.4
 [1.1.3]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.2...1.1.3
 [1.1.2]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.1...1.1.2

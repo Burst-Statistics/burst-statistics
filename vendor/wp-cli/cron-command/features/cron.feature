@@ -75,7 +75,7 @@ Feature: Manage WP-Cron events and schedules
 
   Scenario: Scheduling, running, and deleting duplicate events
     When I run `wp cron event schedule wp_cli_test_event_5 '+20 minutes' --0=banana`
-    When I run `wp cron event schedule wp_cli_test_event_5 '+20 minutes' --0=bar`
+    And I run `wp cron event schedule wp_cli_test_event_5 '+20 minutes' --0=bar`
     Then STDOUT should not be empty
 
     When I run `wp cron event list --format=csv --fields=hook,recurrence,args`
@@ -111,7 +111,7 @@ Feature: Manage WP-Cron events and schedules
       """
 
     When I run `wp cron event schedule wp_cli_test_event_5 '+20 minutes' --0=banana`
-    When I run `wp cron event schedule wp_cli_test_event_5 '+20 minutes' --0=bar`
+    And I run `wp cron event schedule wp_cli_test_event_5 '+20 minutes' --0=bar`
     Then STDOUT should not be empty
 
     When I run `wp cron event list`
@@ -255,7 +255,13 @@ Feature: Manage WP-Cron events and schedules
       """
       Error:
       """
-    And the {RUN_DIR}/server.log file should not exist
+
+    # Normally we would simply check for the log file to not exist. However, when running with Xdebug for code coverage purposes,
+    # the following warning might be added to the log file:
+    # PHP Warning: JIT is incompatible with third party extensions that override zend_execute_ex(). JIT disabled. in Unknown on line 0
+    # This workaround checks for any other possible entries in the log file.
+    When I run `awk '!/JIT/' {RUN_DIR}/server.log 2>/dev/null || true`
+    Then STDOUT should be empty
 
   Scenario: Run multiple cron events
     When I try `wp cron event run`
@@ -297,6 +303,9 @@ Feature: Manage WP-Cron events and schedules
       Success: Executed a total of
       """
 
+  # Fails on WordPress 4.9 because `wp cron event run --due-now`
+  # executes the "wp_privacy_delete_old_export_files" event there.
+  @require-wp-5.0
   Scenario: Run currently scheduled events
     # WP throws a notice here for older versions of core.
     When I try `wp cron event run --all`

@@ -103,6 +103,9 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 	 *     | az             | Azerbaijani             | uninstalled |
 	 *
 	 * @subcommand list
+	 *
+	 * @param string[] $args Positional arguments.
+	 * @param array{all?: bool, field?: string, format: string, theme?: string, language?: string, english_name?: string, native_name?: string, status?: string, update?: string, updated?: string} $assoc_args Associative arguments.
 	 */
 	public function list_( $args, $assoc_args ) {
 		$all = \WP_CLI\Utils\get_flag_value( $assoc_args, 'all', false );
@@ -160,7 +163,7 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 
 				// Support features like --status=active.
 				foreach ( array_keys( $translation ) as $field ) {
-					if ( isset( $assoc_args[ $field ] ) && $assoc_args[ $field ] !== $translation[ $field ] ) {
+					if ( isset( $assoc_args[ $field ] ) && ! in_array( $translation[ $field ], array_map( 'trim', explode( ',', $assoc_args[ $field ] ) ), true ) ) {
 						continue 2;
 					}
 				}
@@ -194,8 +197,10 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 	 *     1
 	 *
 	 * @subcommand is-installed
+	 *
+	 * @param non-empty-array<string> $args Positional arguments.
 	 */
-	public function is_installed( $args, $assoc_args = array() ) {
+	public function is_installed( $args ) {
 		$theme          = array_shift( $args );
 		$language_codes = (array) $args;
 
@@ -249,6 +254,9 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 	 *     Success: Installed 1 of 1 languages.
 	 *
 	 * @subcommand install
+	 *
+	 * @param string[] $args Positional arguments.
+	 * @param array{all?: bool, format: string} $assoc_args Associative arguments.
 	 */
 	public function install( $args, $assoc_args ) {
 		$all = \WP_CLI\Utils\get_flag_value( $assoc_args, 'all', false );
@@ -272,7 +280,7 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 	 */
 	private function install_one( $args, $assoc_args ) {
 		$theme          = array_shift( $args );
-		$language_codes = (array) $args;
+		$language_codes = $args;
 		$count          = count( $language_codes );
 
 		$available = $this->get_installed_languages( $theme );
@@ -315,7 +323,11 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 	 */
 	private function install_many( $args, $assoc_args ) {
 		$language_codes = (array) $args;
-		$themes         = wp_get_themes();
+
+		/**
+		 * @var \WP_Theme[] $themes
+		 */
+		$themes = wp_get_themes();
 
 		if ( empty( $assoc_args['format'] ) ) {
 			$assoc_args['format'] = 'table';
@@ -343,6 +355,11 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 
 			$available = $this->get_installed_languages( $theme_name );
 
+			/**
+			 * @var string $display_name
+			 */
+			$display_name = $theme_details['Name'];
+
 			foreach ( $language_codes as $language_code ) {
 				$result = [
 					'name'   => $theme_name,
@@ -350,7 +367,7 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 				];
 
 				if ( in_array( $language_code, $available, true ) ) {
-					\WP_CLI::log( "Language '{$language_code}' for '{$theme_details['Name']}' already installed." );
+					\WP_CLI::log( "Language '{$language_code}' for '{$display_name}' already installed." );
 					$result['status'] = 'already installed';
 					++$skips;
 				} else {
@@ -358,7 +375,7 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 
 					if ( is_wp_error( $response ) ) {
 						\WP_CLI::warning( $response );
-						\WP_CLI::log( "Language '{$language_code}' for '{$theme_details['Name']}' not installed." );
+						\WP_CLI::log( "Language '{$language_code}' for '{$display_name}' not installed." );
 
 						if ( 'not_found' === $response->get_error_code() ) {
 							$result['status'] = 'not available';
@@ -368,7 +385,7 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 							++$errors;
 						}
 					} else {
-						\WP_CLI::log( "Language '{$language_code}' for '{$theme_details['Name']}' installed." );
+						\WP_CLI::log( "Language '{$language_code}' for '{$display_name}' installed." );
 						$result['status'] = 'installed';
 						++$successes;
 					}
@@ -423,6 +440,9 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 	 *     Success: Uninstalled 1 of 1 languages.
 	 *
 	 * @subcommand uninstall
+	 *
+	 * @param string[] $args Positional arguments.
+	 * @param array{all?: bool, format: string} $assoc_args Associative arguments.
 	 */
 	public function uninstall( $args, $assoc_args ) {
 		/** @var WP_Filesystem_Base $wp_filesystem */
@@ -481,6 +501,9 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 		// As of WP 4.0, no API for deleting a language pack
 		WP_Filesystem();
 
+		/**
+		 * @var string $theme
+		 */
 		foreach ( $process_themes as $theme ) {
 			$available_languages = $this->get_installed_languages( $theme );
 
@@ -594,6 +617,9 @@ class Theme_Language_Command extends WP_CLI\CommandWithTranslation {
 	 *     Success: Updated 1/1 translation.
 	 *
 	 * @subcommand update
+	 *
+	 *  @param string[] $args Positional arguments.
+	 * @param array{'dry-run'?: bool, all?: bool} $assoc_args Associative arguments.
 	 */
 	public function update( $args, $assoc_args ) {
 		$all = \WP_CLI\Utils\get_flag_value( $assoc_args, 'all', false );

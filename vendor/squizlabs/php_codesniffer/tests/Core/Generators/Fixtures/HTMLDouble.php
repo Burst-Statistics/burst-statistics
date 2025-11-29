@@ -3,7 +3,7 @@
  * Test double for the HTML doc generator.
  *
  * @copyright 2024 PHPCSStandards and contributors
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Tests\Core\Generators\Fixtures;
@@ -20,7 +20,7 @@ class HTMLDouble extends HTML
      */
     protected function getFormattedFooter()
     {
-        $output ='  <div class="tag-line">Documentation generated on #REDACTED# by <a href="https://github.com/PHPCSStandards/PHP_CodeSniffer">PHP_CodeSniffer #VERSION#</a></div>
+        $output = '  <div class="tag-line">Documentation generated on #REDACTED# by <a href="https://github.com/PHPCSStandards/PHP_CodeSniffer">PHP_CodeSniffer #VERSION#</a></div>
  </body>
 </html>';
 
@@ -36,5 +36,35 @@ class HTMLDouble extends HTML
     public function getRealFooter()
     {
         return parent::getFormattedFooter();
+    }
+
+    /**
+     * [VISIBILITY WIDENING ONLY] Print the header of the HTML page.
+     *
+     * @return void
+     */
+    public function printHeader()
+    {
+        parent::printHeader();
+    }
+
+    /**
+     * [VISIBILITY WIDENING ONLY] Print the table of contents for the standard.
+     *
+     * @return void
+     */
+    public function printToc()
+    {
+        parent::printToc();
+    }
+
+    /**
+     * [VISIBILITY WIDENING ONLY] Print the footer of the HTML page.
+     *
+     * @return void
+     */
+    public function printFooter()
+    {
+        parent::printFooter();
     }
 }

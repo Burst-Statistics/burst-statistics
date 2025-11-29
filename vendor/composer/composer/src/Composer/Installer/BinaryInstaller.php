@@ -40,9 +40,6 @@ class BinaryInstaller
     /** @var string|null */
     private $vendorDir;
 
-    /**
-     * @param Filesystem  $filesystem
-     */
     public function __construct(IOInterface $io, string $binDir, string $binCompat, ?Filesystem $filesystem = null, ?string $vendorDir = null)
     {
         $this->binDir = $binDir;
@@ -379,7 +376,7 @@ if [ -z "\$selfArg" ]; then
     selfArg="\$0"
 fi
 
-self=\$(realpath \$selfArg 2> /dev/null)
+self=\$(realpath "\$selfArg" 2> /dev/null)
 if [ -z "\$self" ]; then
     self="\$selfArg"
 fi

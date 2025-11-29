@@ -53,7 +53,7 @@ Feature: Manage WordPress rewrites
     And STDOUT should be empty
 
     When I run `wp rewrite structure /%year%/%monthnum%/%day%/%postname%/`
-    Then I run `wp rewrite flush`
+    And I run `wp rewrite flush`
     Then STDOUT should be:
       """
       Success: Rewrite rules flushed.
@@ -107,14 +107,14 @@ Feature: Manage WordPress rewrites
     When I try `wp --skip-plugins rewrite flush`
     Then STDERR should contain:
       """
-      Warning: Some rewrite rules may be missing because plugins weren't loaded.
+      Warning: Some rewrite rules may be missing because plugins weren't loaded by WP-CLI.
       """
     And the return code should be 0
 
     When I try `wp --skip-plugins --skip-themes rewrite flush`
     Then STDERR should contain:
       """
-      Warning: Some rewrite rules may be missing because plugins and themes weren't loaded.
+      Warning: Some rewrite rules may be missing because plugins and themes weren't loaded by WP-CLI.
       """
     And the return code should be 0
 

@@ -11,6 +11,15 @@ use WP_CLI;
  */
 class LanguagePackUpgrader extends \Language_Pack_Upgrader {
 	/**
+	 * The upgrader skin being used.
+	 *
+	 * @var \Language_Pack_Upgrader_Skin $skin
+	 *
+	 * @phpstan-ignore property.phpDocType
+	 */
+	public $skin = null;
+
+	/**
 	 * Initialize the upgrade strings.
 	 *
 	 * Makes sure that the strings are always in English.
@@ -57,10 +66,10 @@ class LanguagePackUpgrader extends \Language_Pack_Upgrader {
 		 * @since 3.7.0
 		 * @since 5.5.0 Added the `$hook_extra` parameter.
 		 *
-		 * @param bool          $reply      Whether to bail without returning the package. Default is false.
-		 * @param string        $package    The package file name.
-		 * @param \WP_Upgrader  $this       The WP_Upgrader instance.
-		 * @param array         $hook_extra Extra arguments passed to hooked filters.
+		 * @param false|string|\WP_Error $reply      Whether to bail without returning the package. Default is false.
+		 * @param string                 $package    The package file name.
+		 * @param \WP_Upgrader           $upgrader   The WP_Upgrader instance.
+		 * @param array                  $hook_extra Extra arguments passed to hooked filters.
 		 *
 		 * @phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Using WP native hook.
 		 */
@@ -90,8 +99,12 @@ class LanguagePackUpgrader extends \Language_Pack_Upgrader {
 
 		$temp = \WP_CLI\Utils\get_temp_dir() . uniqid( 'wp_' ) . '.' . $ext;
 
-		$cache      = WP_CLI::get_cache();
-		$cache_key  = "translation/{$type}-{$slug}-{$version}-{$language}-{$updated}.{$ext}";
+		$cache     = WP_CLI::get_cache();
+		$cache_key = "translation/{$type}-{$slug}-{$version}-{$language}-{$updated}.{$ext}";
+
+		/**
+		 * @var string|false $cache_file
+		 */
 		$cache_file = $cache->has( $cache_key );
 
 		if ( $cache_file ) {

@@ -15,7 +15,7 @@ use WordPressCS\WordPress\AbstractFunctionParameterSniff;
 /**
  * Warn about __FILE__ for page registration.
  *
- * @link https://vip.wordpress.com/documentation/vip-go/code-review-blockers-warnings-notices/#using-__file__-for-page-registration
+ * @link https://docs.wpvip.com/php_codesniffer/warnings/#h-using-file-for-page-registration
  *
  * @since 0.3.0
  * @since 0.11.0 Refactored to extend the new WordPressCS native
@@ -44,7 +44,7 @@ final class PluginMenuSlugSniff extends AbstractFunctionParameterSniff {
 	 *               array containing parameter positions to an array with the parameter
 	 *               position as the index and the parameter name as value.
 	 *
-	 * @var array<string, array<int, string|array>> Key is the name of the functions being targetted.
+	 * @var array<string, array<int, string|array>> Key is the name of the functions being targeted.
 	 *                                              Value is an array with parameter positions as the
 	 *                                              keys and parameter names as the values
 	 */

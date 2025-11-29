@@ -271,6 +271,8 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 				'file'               => $file,
 				'auto_update'        => false,
 				'tested_up_to'       => '',
+				'requires'           => '',
+				'requires_php'       => '',
 				'wporg_status'       => $wporg_info['status'],
 				'wporg_last_updated' => $wporg_info['last_updated'],
 			);
@@ -293,6 +295,8 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 				'auto_update'        => false,
 				'author'             => $item_data['Author'],
 				'tested_up_to'       => '',
+				'requires'           => '',
+				'requires_php'       => '',
 				'wporg_status'       => '',
 				'wporg_last_updated' => '',
 			];
@@ -582,6 +586,11 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 	}
 
 	protected function install_from_repo( $slug, $assoc_args ) {
+		global $wp_version;
+		// Extract the major WordPress version (e.g., "6.3") from the full version string
+		list($wp_core_version) = explode( '-', $wp_version );
+		$wp_core_version       = implode( '.', array_slice( explode( '.', $wp_core_version ), 0, 2 ) );
+
 		$api = plugins_api( 'plugin_information', array( 'slug' => $slug ) );
 
 		if ( is_wp_error( $api ) ) {
@@ -590,6 +599,20 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 
 		if ( isset( $assoc_args['version'] ) ) {
 			self::alter_api_response( $api, $assoc_args['version'] );
+		} elseif ( ! Utils\get_flag_value( $assoc_args, 'ignore-requirements', false ) ) {
+			$requires_php = isset( $api->requires_php ) ? $api->requires_php : null;
+			$requires_wp  = isset( $api->requires ) ? $api->requires : null;
+
+			$compatible_php = empty( $requires_php ) || version_compare( PHP_VERSION, $requires_php, '>=' );
+			$compatible_wp  = empty( $requires_wp ) || version_compare( $wp_core_version, $requires_wp, '>=' );
+
+			if ( ! $compatible_wp ) {
+				return new WP_Error( 'requirements_not_met', "This plugin does not work with your version of WordPress. Minimum WordPress requirement is $requires_wp" );
+			}
+
+			if ( ! $compatible_php ) {
+				return new WP_Error( 'requirements_not_met', "This plugin does not work with your version of PHP. Minimum PHP required is $compatible_php" );
+			}
 		}
 
 		$status = install_plugin_install_status( $api );
@@ -721,12 +744,14 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 	}
 
 	protected function get_item_list() {
+		global $wp_version;
+
 		$items           = [];
 		$duplicate_names = [];
 
 		$auto_updates = get_site_option( Plugin_AutoUpdates_Command::SITE_OPTION );
 
-		if ( false === $auto_updates ) {
+		if ( ! is_array( $auto_updates ) ) {
 			$auto_updates = [];
 		}
 
@@ -741,29 +766,63 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 			$update_info     = ( isset( $all_update_info->response[ $file ] ) && null !== $all_update_info->response[ $file ] ) ? (array) $all_update_info->response[ $file ] : null;
 			$name            = Utils\get_plugin_name( $file );
 			$wporg_info      = $this->get_wporg_data( $name );
+			$plugin_data     = get_plugin_data( WP_PLUGIN_DIR . '/' . $file, false, false );
 
 			if ( ! isset( $duplicate_names[ $name ] ) ) {
 				$duplicate_names[ $name ] = array();
 			}
 
+			$requires     = isset( $update_info ) && isset( $update_info['requires'] ) ? $update_info['requires'] : null;
+			$requires_php = isset( $update_info ) && isset( $update_info['requires_php'] ) ? $update_info['requires_php'] : null;
+
+			// If an update has requires_php set, check to see if the local version of PHP meets that requirement
+			// The plugins update API already filters out plugins that don't meet WordPress requirements, but does not
+			// filter out plugins based on PHP requirements -- so we must do that here
+			$compatible_php = empty( $requires_php ) || version_compare( PHP_VERSION, $requires_php, '>=' );
+
+			if ( ! $compatible_php ) {
+				$update = 'unavailable';
+
+				$update_unavailable_reason = sprintf(
+					'This update requires PHP version %s, but the version installed is %s.',
+					$requires_php,
+					PHP_VERSION
+				);
+			} else {
+				$update = $update_info ? 'available' : 'none';
+			}
+
+			// requires and requires_php are only provided by the plugins update API in the case of an update available.
+			// For display consistency, get these values from the current plugin file if they aren't in this response
+			if ( null === $requires ) {
+				$requires = ! empty( $plugin_data['RequiresWP'] ) ? $plugin_data['RequiresWP'] : '';
+			}
+
+			if ( null === $requires_php ) {
+					$requires_php = ! empty( $plugin_data['RequiresPHP'] ) ? $plugin_data['RequiresPHP'] : '';
+			}
+
 			$duplicate_names[ $name ][] = $file;
 			$items[ $file ]             = [
-				'name'               => $name,
-				'status'             => $this->get_status( $file ),
-				'update'             => (bool) $update_info,
-				'update_version'     => isset( $update_info ) && isset( $update_info['new_version'] ) ? $update_info['new_version'] : null,
-				'update_package'     => isset( $update_info ) && isset( $update_info['package'] ) ? $update_info['package'] : null,
-				'version'            => $details['Version'],
-				'update_id'          => $file,
-				'title'              => $details['Name'],
-				'description'        => wordwrap( $details['Description'] ),
-				'file'               => $file,
-				'auto_update'        => in_array( $file, $auto_updates, true ),
-				'author'             => $details['Author'],
-				'tested_up_to'       => '',
-				'wporg_status'       => $wporg_info['status'],
-				'wporg_last_updated' => $wporg_info['last_updated'],
-				'recently_active'    => in_array( $file, array_keys( $recently_active ), true ),
+				'name'                      => $name,
+				'status'                    => $this->get_status( $file ),
+				'update'                    => $update,
+				'update_version'            => isset( $update_info ) && isset( $update_info['new_version'] ) ? $update_info['new_version'] : null,
+				'update_package'            => isset( $update_info ) && isset( $update_info['package'] ) ? $update_info['package'] : null,
+				'version'                   => $details['Version'],
+				'update_id'                 => $file,
+				'title'                     => $details['Name'],
+				'description'               => wordwrap( $details['Description'] ),
+				'file'                      => $file,
+				'auto_update'               => in_array( $file, $auto_updates, true ),
+				'author'                    => $details['Author'],
+				'tested_up_to'              => '',
+				'requires'                  => $requires,
+				'requires_php'              => $requires_php,
+				'wporg_status'              => $wporg_info['status'],
+				'wporg_last_updated'        => $wporg_info['last_updated'],
+				'recently_active'           => in_array( $file, array_keys( $recently_active ), true ),
+				'update_unavailable_reason' => isset( $update_unavailable_reason ) ? $update_unavailable_reason : '',
 			];
 
 			if ( $this->check_headers['tested_up_to'] ) {
@@ -798,9 +857,25 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 				// Get info for all plugins that don't have an update.
 				$plugin_update_info = isset( $all_update_info->no_update[ $file ] ) ? $all_update_info->no_update[ $file ] : null;
 
-				// Compare version and update information in plugin list.
+				// Check if local version is newer than what is listed upstream.
 				if ( null !== $plugin_update_info && version_compare( $details['Version'], $plugin_update_info->new_version, '>' ) ) {
-					$items[ $file ]['update'] = static::INVALID_VERSION_MESSAGE;
+					$items[ $file ]['update']       = static::INVALID_VERSION_MESSAGE;
+					$items[ $file ]['requires']     = isset( $plugin_update_info->requires ) ? $plugin_update_info->requires : null;
+					$items[ $file ]['requires_php'] = isset( $plugin_update_info->requires_php ) ? $plugin_update_info->requires_php : null;
+				}
+
+				// If there is a plugin in no_update with a newer version than the local copy, it is because the plugins update api
+				// has already filtered it because the local WordPress version is too low
+				if ( null !== $plugin_update_info && version_compare( $details['Version'], $plugin_update_info->new_version, '<' ) ) {
+					$items[ $file ]['update']         = 'unavailable';
+					$items[ $file ]['update_version'] = $plugin_update_info->new_version;
+					$items[ $file ]['requires']       = isset( $plugin_update_info->requires ) ? $plugin_update_info->requires : null;
+					$items[ $file ]['requires_php']   = isset( $plugin_update_info->requires_php ) ? $plugin_update_info->requires_php : null;
+
+					$reason = "This update requires WordPress version $plugin_update_info->requires, but the version installed is $wp_version.";
+
+					$items[ $file ]['update_unavailable_reason'] = $reason;
+
 				}
 			}
 		}
@@ -895,6 +970,10 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 	 * [--force]
 	 * : If set, the command will overwrite any installed version of the plugin, without prompting
 	 * for confirmation.
+	 *
+	 * [--ignore-requirements]
+	 * :If set, the command will install the plugin while ignoring any WordPress or PHP version requirements
+	 * specified by the plugin authors.
 	 *
 	 * [--activate]
 	 * : If set, the plugin will be activated immediately after install.
@@ -1098,9 +1177,12 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 			return;
 		}
 
-		$successes = 0;
-		$errors    = 0;
-		$plugins   = $this->fetcher->get_many( $args );
+		$successes            = 0;
+		$errors               = 0;
+		$delete_errors        = array();
+		$deleted_plugin_files = array();
+
+		$plugins = $this->fetcher->get_many( $args );
 		if ( count( $plugins ) < count( $args ) ) {
 			$errors = count( $args ) - count( $plugins );
 		}
@@ -1140,6 +1222,7 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 				foreach ( $translations as $translation => $data ) {
 					$wp_filesystem->delete( WP_LANG_DIR . '/plugins/' . $plugin_slug . '-' . $translation . '.po' );
 					$wp_filesystem->delete( WP_LANG_DIR . '/plugins/' . $plugin_slug . '-' . $translation . '.mo' );
+					$wp_filesystem->delete( WP_LANG_DIR . '/plugins/' . $plugin_slug . '-' . $translation . '.l10n.php' );
 
 					$json_translation_files = glob( WP_LANG_DIR . '/plugins/' . $plugin_slug . '-' . $translation . '-*.json' );
 					if ( $json_translation_files ) {
@@ -1148,13 +1231,36 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 				}
 			}
 
-			if ( ! Utils\get_flag_value( $assoc_args, 'skip-delete' ) && $this->delete_plugin( $plugin ) ) {
-				WP_CLI::log( "Uninstalled and deleted '$plugin->name' plugin." );
+			if ( ! Utils\get_flag_value( $assoc_args, 'skip-delete' ) ) {
+				if ( $this->delete_plugin( $plugin ) ) {
+					$deleted_plugin_files[] = $plugin->file;
+					WP_CLI::log( "Uninstalled and deleted '$plugin->name' plugin." );
+				} else {
+					$delete_errors[] = $plugin->file;
+					WP_CLI::log( "Ran uninstall procedure for '$plugin->name' plugin. Deletion of plugin files failed" );
+					++$errors;
+					continue;
+				}
 			} else {
 				WP_CLI::log( "Ran uninstall procedure for '$plugin->name' plugin without deleting." );
 			}
 			++$successes;
 		}
+
+		// Remove deleted plugins from the plugin updates list.
+		$current = get_site_transient( $this->upgrade_transient );
+		if ( $current ) {
+			// Don't remove the plugins that weren't deleted.
+			$deleted = array_diff( $deleted_plugin_files, $delete_errors );
+
+			foreach ( $deleted as $plugin_file ) {
+				unset( $current->response[ $plugin_file ] );
+				unset( $current->checked[ $plugin_file ] );
+			}
+
+			set_site_transient( $this->upgrade_transient, $current );
+		}
+
 		if ( ! $this->chained_command ) {
 			Utils\report_batch_operation_results( 'plugin', 'uninstall', count( $args ), $successes, $errors );
 		}
@@ -1348,6 +1454,8 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 	 * * file
 	 * * author
 	 * * tested_up_to
+	 * * requires
+	 * * requires_php
 	 * * wporg_status
 	 * * wporg_last_updated
 	 *
@@ -1439,7 +1547,6 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 		if ( is_plugin_active_for_network( $file ) ) {
 			return 'active-network';
 		}
-
 		if ( is_plugin_active( $file ) ) {
 			return 'active';
 		}
@@ -1474,7 +1581,16 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 		return $plugin_folder[ $plugin_file ];
 	}
 
+	/**
+	 * Performs deletion of plugin files
+	 *
+	 * @param $plugin - Plugin fetcher object (name, file)
+	 * @return bool - If plugin was deleted
+	 */
 	private function delete_plugin( $plugin ) {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		do_action( 'delete_plugin', $plugin->file );
+
 		$plugin_dir = dirname( $plugin->file );
 		if ( '.' === $plugin_dir ) {
 			$plugin_dir = $plugin->file;
@@ -1495,6 +1611,11 @@ class Plugin_Command extends \WP_CLI\CommandWithUpgrade {
 			$command = 'rm -rf ';
 		}
 
-		return ! WP_CLI::launch( $command . escapeshellarg( $path ), false );
+		$result = ! WP_CLI::launch( $command . escapeshellarg( $path ), false );
+
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		do_action( 'deleted_plugin', $plugin->file, $result );
+
+		return $result;
 	}
 }

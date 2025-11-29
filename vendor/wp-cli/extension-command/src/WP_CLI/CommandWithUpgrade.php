@@ -103,7 +103,7 @@ abstract class CommandWithUpgrade extends \WP_CLI_Command {
 		$padding = $this->get_padding( $items );
 
 		foreach ( $items as $file => $details ) {
-			if ( $details['update'] ) {
+			if ( 'available' === $details['update'] ) {
 				$line = ' %yU%n';
 			} else {
 				$line = '  ';
@@ -150,8 +150,7 @@ abstract class CommandWithUpgrade extends \WP_CLI_Command {
 				$this->map['long'][ $status ]
 			);
 		}
-
-		if ( in_array( true, wp_list_pluck( $items, 'update' ), true ) ) {
+		if ( in_array( 'available', wp_list_pluck( $items, 'update' ), true ) ) {
 			$legend_line[] = '%yU = Update Available%n';
 		}
 
@@ -227,6 +226,9 @@ abstract class CommandWithUpgrade extends \WP_CLI_Command {
 					};
 					add_filter( 'upgrader_source_selection', $filter, 10 );
 				}
+
+				// Add item to cache allowlist if it matches certain URL patterns.
+				self::maybe_cache( $slug, $this->item_type );
 
 				if ( $file_upgrader->install( $slug ) ) {
 					$slug   = $file_upgrader->result['destination_name'];
@@ -375,7 +377,12 @@ abstract class CommandWithUpgrade extends \WP_CLI_Command {
 			$errors = count( $args ) - count( $items );
 		}
 
-		$items_to_update = wp_list_filter( $items, [ 'update' => true ] );
+		$items_to_update = array_filter(
+			$items,
+			function ( $item ) {
+				return isset( $item['update'] ) && 'none' !== $item['update'];
+			}
+		);
 
 		$minor = (bool) Utils\get_flag_value( $assoc_args, 'minor', false );
 		$patch = (bool) Utils\get_flag_value( $assoc_args, 'patch', false );
@@ -414,6 +421,11 @@ abstract class CommandWithUpgrade extends \WP_CLI_Command {
 		foreach ( $items_to_update as $item_key => $item_info ) {
 			if ( static::INVALID_VERSION_MESSAGE === $item_info['update'] ) {
 				WP_CLI::warning( "{$item_info['name']}: " . static::INVALID_VERSION_MESSAGE . '.' );
+				++$skipped;
+				unset( $items_to_update[ $item_key ] );
+			}
+			if ( 'unavailable' === $item_info['update'] ) {
+				WP_CLI::warning( "{$item_info['name']}: {$item_info['update_unavailable_reason']}" );
 				++$skipped;
 				unset( $items_to_update[ $item_key ] );
 			}
@@ -534,6 +546,7 @@ abstract class CommandWithUpgrade extends \WP_CLI_Command {
 
 		// Force WordPress to check for updates if `--skip-update-check` is not passed.
 		if ( false === (bool) Utils\get_flag_value( $assoc_args, 'skip-update-check', false ) ) {
+			delete_site_transient( $this->upgrade_transient );
 			call_user_func( $this->upgrade_refresh );
 		}
 
@@ -564,10 +577,14 @@ abstract class CommandWithUpgrade extends \WP_CLI_Command {
 
 			foreach ( $item as $field => &$value ) {
 				if ( 'update' === $field ) {
-					if ( true === $value ) {
-						$value = 'available';
-					} elseif ( false === $value ) {
-						$value = 'none';
+					// If an update is unavailable, make sure to also show these fields which will explain why
+					if ( 'unavailable' === $value ) {
+						if ( ! in_array( 'requires', $this->obj_fields, true ) ) {
+							array_push( $this->obj_fields, 'requires' );
+						}
+						if ( ! in_array( 'requires_php', $this->obj_fields, true ) ) {
+							array_push( $this->obj_fields, 'requires_php' );
+						}
 					}
 				} elseif ( 'auto_update' === $field ) {
 					if ( true === $value ) {
@@ -828,6 +845,26 @@ abstract class CommandWithUpgrade extends \WP_CLI_Command {
 	}
 
 	/**
+	 * Add versioned GitHub URLs to cache allowlist.
+	 *
+	 * @param string $url The URL to check.
+	 */
+	protected static function maybe_cache( $url, $item_type ) {
+		$matches = [];
+
+		// cache release URLs like `https://github.com/wp-cli-test/generic-example-plugin/releases/download/v0.1.0/generic-example-plugin.0.1.0.zip`
+		if ( preg_match( '#github\.com/[^/]+/([^/]+)/releases/download/v?([^/]+)/.+\.zip#', $url, $matches ) ) {
+			WP_CLI::get_http_cache_manager()->whitelist_package( $url, $item_type, $matches[1], $matches[2] );
+			// cache archive URLs like `https://github.com/wp-cli-test/generic-example-plugin/archive/v0.1.0.zip`
+		} elseif ( preg_match( '#github\.com/[^/]+/([^/]+)/archive/(version/|)v?([^/]+)\.zip#', $url, $matches ) ) {
+			WP_CLI::get_http_cache_manager()->whitelist_package( $url, $item_type, $matches[1], $matches[3] );
+			// cache release URLs like `https://api.github.com/repos/danielbachhuber/one-time-login/zipball/v0.4.0`
+		} elseif ( preg_match( '#api\.github\.com/repos/[^/]+/([^/]+)/zipball/v?([^/]+)#', $url, $matches ) ) {
+			WP_CLI::get_http_cache_manager()->whitelist_package( $url, $item_type, $matches[1], $matches[2] );
+		}
+	}
+
+	/**
 	 * Get the latest package version based on a given repo slug.
 	 *
 	 * @param string $repo_slug
@@ -854,6 +891,13 @@ abstract class CommandWithUpgrade extends \WP_CLI_Command {
 			return new \WP_Error(
 				403,
 				$this->build_rate_limiting_error_message( $decoded_body )
+			);
+		}
+
+		if ( 404 === wp_remote_retrieve_response_code( $response ) ) {
+			return new \WP_Error(
+				$decoded_body->status,
+				$decoded_body->message
 			);
 		}
 

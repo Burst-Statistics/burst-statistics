@@ -2,7 +2,7 @@ Feature: Show the status of auto-updates for WordPress plugins
 
   Background:
     Given a WP install
-    And I run `wp plugin install duplicate-post`
+    And I run `wp plugin install duplicate-post --ignore-requirements`
 
   @require-wp-5.5
   Scenario: Show an error if required params are missing
@@ -114,3 +114,10 @@ Feature: Show the status of auto-updates for WordPress plugins
       hello,disabled
       duplicate-post,disabled
       """
+
+  @require-wp-5.5
+  Scenario: Handle malformed option value
+    When I run `wp option update auto_update_plugins ""`
+    And I try `wp plugin auto-updates status hello`
+    Then the return code should be 0
+    And STDERR should be empty

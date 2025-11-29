@@ -216,7 +216,7 @@ class Role_Command extends WP_CLI_Command {
 	 *     Success: Role with key 'approver' deleted.
 	 *
 	 *     # Delete productadmin role.
-	 *     wp role delete productadmin
+	 *     $ wp role delete productadmin
 	 *     Success: Role with key 'productadmin' deleted.
 	 */
 	public function delete( $args ) {

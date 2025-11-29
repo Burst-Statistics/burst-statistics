@@ -22,21 +22,21 @@ Feature: Install WP-CLI packages
       }
       """
     And a dummy-package/composer.json file:
-	  """
-	  {
-	    "name": "wp-cli/restful",
-	    "description": "This is a dummy package we will install instead of actually installing the real package. This prevents the test from hanging indefinitely for some reason, even though it passes. The 'name' must match a real package as it is checked against the package index."
-	  }
-	  """
+      """
+      {
+        "name": "wp-cli/restful",
+        "description": "This is a dummy package we will install instead of actually installing the real package. This prevents the test from hanging indefinitely for some reason, even though it passes. The 'name' must match a real package as it is checked against the package index."
+      }
+      """
     When I run `WP_CLI_PACKAGES_DIR=. wp package install wp-cli/restful`
     Then STDOUT should contain:
-	  """
-	  Updating package index repository url...
-	  """
+      """
+      Updating package index repository url...
+      """
     And STDOUT should contain:
-	  """
-	  Success: Package installed
-	  """
+      """
+      Success: Package installed
+      """
     And the composer.json file should contain:
       """
       "url": "https://wp-cli.org/package-index/"
@@ -71,7 +71,7 @@ Feature: Install WP-CLI packages
     Given an empty directory
 
     When I run `wp package install yoast/wp-cli-faker`
-    And STDOUT should contain:
+    Then STDOUT should contain:
       """
       Success: Package installed
       """
@@ -178,7 +178,7 @@ Feature: Install WP-CLI packages
       """
       Removing require statement for package 'wp-cli/google-sitemap-generator-cli' from
       """
-    Then STDOUT should contain:
+    And STDOUT should contain:
       """
       Removing repository details from
       """
@@ -1047,10 +1047,10 @@ Feature: Install WP-CLI packages
       Warning: Couldn't download composer.json file from 'https://raw.githubusercontent.com/non-existent-git-user-asdfasdf/non-existent-git-repo-asdfasdf/master/composer.json' (HTTP code 404). Presuming package name is 'non-existent-git-user-asdfasdf/non-existent-git-repo-asdfasdf'.
       """
 
-    When I try `wp package install https://github.com/wp-cli-tests/private-repository.git`
+    When I try `wp package install https://github.com/wp-cli-test/private-repository.git`
     Then STDERR should contain:
       """
-      Warning: Couldn't download composer.json file from 'https://raw.githubusercontent.com/wp-cli-tests/private-repository/master/composer.json' (HTTP code 404). Presuming package name is 'wp-cli-tests/private-repository'.
+      Warning: Couldn't download composer.json file from 'https://raw.githubusercontent.com/wp-cli-test/private-repository/master/composer.json' (HTTP code 404). Presuming package name is 'wp-cli-test/private-repository'.
       """
 
     When I try `wp package install non-existent-git-user-asdfasdf/non-existent-git-repo-asdfasdf`

@@ -4,7 +4,7 @@
  *
  * @author    Juliette Reinders Folmer <phpcs_nospam@adviesenzo.nl>
  * @copyright 2018-2019 Juliette Reinders Folmer. All rights reserved.
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Tests\Core;
@@ -190,8 +190,8 @@ abstract class AbstractMethodUnitTest extends TestCase
      *
      * @return int
      *
-     * @throws Exception When the test delimiter comment is not found.
-     * @throws Exception When the test target token is not found.
+     * @throws \Exception When the test delimiter comment is not found.
+     * @throws \Exception When the test target token is not found.
      */
     public static function getTargetTokenFromFile(File $phpcsFile, $commentString, $tokenType, $tokenContent=null)
     {

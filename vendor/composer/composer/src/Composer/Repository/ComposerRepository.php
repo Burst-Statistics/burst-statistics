@@ -675,7 +675,7 @@ class ComposerRepository extends ArrayRepository implements ConfigurableReposito
 
                 $promises[] = $this->startCachedAsyncDownload($name, $name)
                     ->then(static function (array $spec) use (&$advisories, &$namesFound, &$packageConstraintMap, $name, $create): void {
-                        [$response, ] = $spec;
+                        [$response] = $spec;
 
                         if (!isset($response['security-advisories']) || !is_array($response['security-advisories'])) {
                             return;
@@ -1298,7 +1298,6 @@ class ComposerRepository extends ArrayRepository implements ConfigurableReposito
     }
 
     /**
-     * @param string $url
      * @return non-empty-string
      */
     private function canonicalizeUrl(string $url): string
@@ -1447,7 +1446,7 @@ class ComposerRepository extends ArrayRepository implements ConfigurableReposito
 
             return $packageInstances;
         } catch (\Exception $e) {
-            throw new \RuntimeException('Could not load packages '.($packages[0]['name'] ?? json_encode($packages)).' in '.$this->getRepoName().($source ? ' from '.$source : '').': ['.get_class($e).'] '.$e->getMessage(), 0, $e);
+            throw new \RuntimeException('Could not load packages in '.$this->getRepoName().($source ? ' from '.$source : '').': ['.get_class($e).'] '.$e->getMessage(), 0, $e);
         }
     }
 

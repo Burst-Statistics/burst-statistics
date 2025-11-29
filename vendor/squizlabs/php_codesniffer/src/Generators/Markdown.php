@@ -6,7 +6,7 @@
  * @author    Juliette Reinders Folmer <phpcs_nospam@adviesenzo.nl>
  * @copyright 2014 Arroba IT
  * @copyright 2024 PHPCSStandards and contributors
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Generators;
@@ -57,6 +57,11 @@ class Markdown extends Generator
      */
     protected function printHeader()
     {
+        trigger_error(
+            'The '.__METHOD__.'() method is deprecated. Use "echo '.__CLASS__.'::getFormattedHeader()" instead.',
+            E_USER_DEPRECATED
+        );
+
         echo $this->getFormattedHeader();
 
     }//end printHeader()
@@ -89,6 +94,11 @@ class Markdown extends Generator
      */
     protected function printFooter()
     {
+        trigger_error(
+            'The '.__METHOD__.'() method is deprecated. Use "echo '.__CLASS__.'::getFormattedFooter()" instead.',
+            E_USER_DEPRECATED
+        );
+
         echo $this->getFormattedFooter();
 
     }//end printFooter()
@@ -157,6 +167,11 @@ class Markdown extends Generator
      */
     protected function printTextBlock(DOMNode $node)
     {
+        trigger_error(
+            'The '.__METHOD__.'() method is deprecated. Use "echo '.__CLASS__.'::getFormattedTextBlock()" instead.',
+            E_USER_DEPRECATED
+        );
+
         echo $this->getFormattedTextBlock($node);
 
     }//end printTextBlock()
@@ -225,6 +240,11 @@ class Markdown extends Generator
      */
     protected function printCodeComparisonBlock(DOMNode $node)
     {
+        trigger_error(
+            'The '.__METHOD__.'() method is deprecated. Use "echo '.__CLASS__.'::getFormattedCodeComparisonBlock()" instead.',
+            E_USER_DEPRECATED
+        );
+
         echo $this->getFormattedCodeComparisonBlock($node);
 
     }//end printCodeComparisonBlock()

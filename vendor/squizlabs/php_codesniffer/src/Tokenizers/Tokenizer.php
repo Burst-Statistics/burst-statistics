@@ -4,7 +4,7 @@
  *
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @copyright 2006-2015 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Tokenizers;
@@ -54,7 +54,7 @@ abstract class Tokenizer
     /**
      * A list of tokens that end the scope.
      *
-     * @var array
+     * @var array<int|string, int|string>
      */
     public $endScopeTokens = [];
 
@@ -579,10 +579,10 @@ abstract class Tokenizer
      * is placed into an orig_content index and the new token length is also
      * set in the length index.
      *
-     * @param array  $token    The token to replace tabs inside.
-     * @param string $prefix   The character to use to represent the start of a tab.
-     * @param string $padding  The character to use to represent the end of a tab.
-     * @param int    $tabWidth The number of spaces each tab represents.
+     * @param array    $token    The token to replace tabs inside.
+     * @param string   $prefix   The character to use to represent the start of a tab.
+     * @param string   $padding  The character to use to represent the end of a tab.
+     * @param int|null $tabWidth The number of spaces each tab represents.
      *
      * @return void
      */

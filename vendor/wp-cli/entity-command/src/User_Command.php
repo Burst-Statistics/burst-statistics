@@ -545,6 +545,10 @@ class User_Command extends CommandWithDBObject {
 			$user_ids[] = $user->ID;
 		}
 
+		if ( empty( $user_ids ) ) {
+			WP_CLI::error( 'No valid users found.' );
+		}
+
 		$skip_email = Utils\get_flag_value( $assoc_args, 'skip-email' );
 		if ( $skip_email ) {
 			add_filter( 'send_email_change_email', '__return_false' );
@@ -857,6 +861,9 @@ class User_Command extends CommandWithDBObject {
 	 * <cap>
 	 * : The capability to be removed.
 	 *
+	 * [--force]
+	 * : Forcefully remove a capability.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     $ wp user remove-cap 11 publish_newsletters
@@ -867,6 +874,9 @@ class User_Command extends CommandWithDBObject {
 	 *
 	 *     $ wp user remove-cap 11 nonexistent_cap
 	 *     Error: No such 'nonexistent_cap' cap for supervisor (11).
+	 *
+	 *     $ wp user remove-cap 11 publish_newsletters --force
+	 *     Success: Removed 'publish_newsletters' cap for supervisor (11).
 	 *
 	 * @subcommand remove-cap
 	 */
@@ -879,6 +889,11 @@ class User_Command extends CommandWithDBObject {
 					WP_CLI::error( "The '{$cap}' cap for {$user->user_login} ({$user->ID}) is inherited from a role." );
 				}
 				WP_CLI::error( "No such '{$cap}' cap for {$user->user_login} ({$user->ID})." );
+			}
+
+			$user_roles = $user->roles;
+			if ( ! empty( $user_roles ) && in_array( $cap, $user_roles, true ) && ! Utils\get_flag_value( $assoc_args, 'force' ) ) {
+				WP_CLI::error( "Aborting because a role has the same name as '{$cap}'. Use `wp user remove-cap {$user->ID} {$cap} --force` to proceed with the removal." );
 			}
 			$user->remove_cap( $cap );
 

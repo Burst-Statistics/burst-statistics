@@ -4,7 +4,7 @@
  *
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @copyright 2006-2015 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Standards\Squiz\Tests\WhiteSpace;
@@ -87,6 +87,12 @@ final class MemberVarSpacingUnitTest extends AbstractSniffUnitTest
                 427 => 1,
                 437 => 1,
                 445 => 1,
+                449 => 1,
+                456 => 1,
+                457 => 1,
+                460 => 1,
+                464 => 1,
+                471 => 1,
             ];
 
         default:

@@ -1,4 +1,4 @@
-Feature: Manage oEmbed cache.
+Feature: Manage oEmbed fetch.
 
   Background:
     Given a WP install
@@ -27,11 +27,11 @@ Feature: Manage oEmbed cache.
     And STDOUT should contain:
       """
       LearningApps.org/
-     """
+      """
     And STDOUT should contain:
       """
       <iframe
-     """
+      """
 
     # How unknown provider checked depends on WP version and post_id so recheck with post_id.
     When I run `wp post create --post_title="Foo Bar" --porcelain`
@@ -46,11 +46,11 @@ Feature: Manage oEmbed cache.
     And STDOUT should contain:
       """
       LearningApps.org/
-     """
+      """
     And STDOUT should contain:
       """
       <iframe
-     """
+      """
 
     # Unknown provider requiring discovery but not returning iframe so would be sanitized for WP >= 4.4 without 'skip-sanitization' option.
     # Old versions of WP_oEmbed can trigger PHP "Only variables should be passed by reference" notices on discover so use "try" to cater for these.
@@ -71,11 +71,11 @@ Feature: Manage oEmbed cache.
     And STDOUT should not contain:
       """
       <iframe
-     """
+      """
     And STDOUT should not contain:
       """
       <script
-     """
+      """
 
   # WP 4.9 always returns clickable link even for sanitized oEmbed responses.
   @require-wp-4.9
@@ -164,7 +164,7 @@ Feature: Manage oEmbed cache.
     And STDOUT should contain:
       """
       LearningApps.org
-     """
+      """
 
   @require-wp-4.0
   Scenario: Bails when no oEmbed provider is found for a raw request

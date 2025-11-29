@@ -5,7 +5,7 @@
  * @author    Juliette Reinders Folmer <phpcs_nospam@adviesenzo.nl>
  * @author    Jaroslav Hanslík <kukulich@kukulich.cz>
  * @copyright 2020 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Tests\Core\Tokenizers\PHP;
@@ -126,6 +126,12 @@ final class TypeIntersectionTest extends AbstractTokenizerTestCase
             'type for static readonly property'                           => ['/* testTypeIntersectionPropertyWithStaticKeyword */'],
             'type for final property'                                     => ['/* testTypeIntersectionWithPHP84FinalKeyword */'],
             'type for final property reversed modifier order'             => ['/* testTypeIntersectionWithPHP84FinalKeywordFirst */'],
+            'type for asymmetric visibility (private(set)) property'      => ['/* testTypeIntersectionPropertyWithPrivateSet */'],
+            'type for asymmetric visibility (public private(set)) prop'   => ['/* testTypeIntersectionPropertyWithPublicPrivateSet */'],
+            'type for asymmetric visibility (protected(set)) property'    => ['/* testTypeIntersectionPropertyWithProtectedSet */'],
+            'type for asymmetric visibility (public protected(set)) prop' => ['/* testTypeIntersectionPropertyWithPublicProtectedSet */'],
+            'type for abstract property'                                  => ['/* testTypeIntersectionWithPHP84AbstractKeyword */'],
+            'type for abstract property reversed modifier order'          => ['/* testTypeIntersectionWithPHP84AbstractKeywordFirst */'],
             'type for method parameter'                                   => ['/* testTypeIntersectionParam1 */'],
             'type for method parameter, first in multi-intersect'         => ['/* testTypeIntersectionParam2 */'],
             'type for method parameter, last in multi-intersect'          => ['/* testTypeIntersectionParam3 */'],

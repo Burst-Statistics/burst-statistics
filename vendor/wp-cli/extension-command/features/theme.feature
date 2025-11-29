@@ -182,9 +182,9 @@ Feature: Manage WordPress themes
 
     When I run `wp theme path twentytwelve --dir`
     Then STDOUT should contain:
-       """
-       wp-content/themes/twentytwelve
-       """
+      """
+      wp-content/themes/twentytwelve
+      """
 
   Scenario: Activate an already active theme
     Given a WP install
@@ -207,6 +207,7 @@ Feature: Manage WordPress themes
     And STDOUT should be empty
     And the return code should be 0
 
+  @require-wp-5.3
   Scenario: Flag `--skip-update-check` skips update check when running `wp theme list`
     Given a WP install
 
@@ -218,8 +219,8 @@ Feature: Manage WordPress themes
 
     When I run `wp theme list --fields=name,status,update`
     Then STDOUT should be a table containing rows:
-      | name  | status   | update    |
-      | astra | inactive | available |
+      | name      | status   | update    |
+      | astra     | inactive | available |
 
     When I run `wp transient delete update_themes --network`
     Then STDOUT should be:
@@ -229,8 +230,35 @@ Feature: Manage WordPress themes
 
     When I run `wp theme list --fields=name,status,update --skip-update-check`
     Then STDOUT should be a table containing rows:
-      | name  | status   | update |
-      | astra | inactive | none   |
+      | name      | status   | update |
+      | astra     | inactive | none   |
+
+  Scenario: Doing wp theme list does a force check by default, deleting any existing transient values
+    Given a WP install
+
+    When I run `wp theme list`
+    Then STDOUT should not be empty
+
+    When I run `wp eval 'echo get_site_transient("update_themes")->last_checked;'`
+    Then save STDOUT as {LAST_UPDATED}
+
+    When I run `wp theme list --skip-update-check`
+    Then STDOUT should not be empty
+
+    When I run `wp eval 'echo get_site_transient("update_themes")->last_checked;'`
+    Then STDOUT should be:
+      """
+      {LAST_UPDATED}
+      """
+
+    When I run `wp theme list`
+    Then STDOUT should not be empty
+
+    When I run `wp eval 'echo get_site_transient("update_themes")->last_checked;'`
+    Then STDOUT should not contain:
+      """
+      {LAST_UPDATED}
+      """
 
   Scenario: Install a theme when the theme directory doesn't yet exist
     Given a WP install
@@ -284,8 +312,9 @@ Feature: Manage WordPress themes
       Theme updated successfully.
       """
 
+  @require-wp-5.7
   Scenario: Enabling and disabling a theme
-  	Given a WP multisite install
+    Given a WP multisite install
     And I run `wp theme install moina`
     And I run `wp theme install moina-blog`
 
@@ -296,72 +325,72 @@ Feature: Manage WordPress themes
 
     When I run `wp theme enable moina-blog`
     Then STDOUT should contain:
-       """
-       Success: Enabled the 'Moina Blog' theme.
-       """
+      """
+      Success: Enabled the 'Moina Blog' theme.
+      """
 
     When I run `wp option get allowedthemes`
     Then STDOUT should contain:
-       """
-       'moina-blog' => true
-       """
+      """
+      'moina-blog' => true
+      """
 
     When I run `wp theme disable moina-blog`
     Then STDOUT should contain:
-       """
-       Success: Disabled the 'Moina Blog' theme.
-       """
+      """
+      Success: Disabled the 'Moina Blog' theme.
+      """
 
     When I run `wp option get allowedthemes`
     Then STDOUT should not contain:
-       """
-       'moina-blog' => true
-       """
+      """
+      'moina-blog' => true
+      """
 
     When I run `wp theme enable moina-blog --activate`
     Then STDOUT should contain:
-       """
-       Success: Enabled the 'Moina Blog' theme.
-       Success: Switched to 'Moina Blog' theme.
-       """
+      """
+      Success: Enabled the 'Moina Blog' theme.
+      Success: Switched to 'Moina Blog' theme.
+      """
 
     # Hybrid_Registry throws warning for PHP 8+.
     When I try `wp network-meta get 1 allowedthemes`
     Then STDOUT should not contain:
-       """
-       'moina-blog' => true
-       """
+      """
+      'moina-blog' => true
+      """
 
     # Hybrid_Registry throws warning for PHP 8+.
     When I try `wp theme enable moina-blog --network`
     Then STDOUT should contain:
-       """
-       Success: Network enabled the 'Moina Blog' theme.
-       """
+      """
+      Success: Network enabled the 'Moina Blog' theme.
+      """
 
     # Hybrid_Registry throws warning for PHP 8+.
     When I try `wp network-meta get 1 allowedthemes`
     Then STDOUT should contain:
-       """
-       'moina-blog' => true
-       """
+      """
+      'moina-blog' => true
+      """
 
     # Hybrid_Registry throws warning for PHP 8+.
     When I try `wp theme disable moina-blog --network`
     Then STDOUT should contain:
-       """
-       Success: Network disabled the 'Moina Blog' theme.
-       """
+      """
+      Success: Network disabled the 'Moina Blog' theme.
+      """
 
     # Hybrid_Registry throws warning for PHP 8+.
     When I try `wp network-meta get 1 allowedthemes`
     Then STDOUT should not contain:
-       """
-       'moina-blog' => true
-       """
+      """
+      'moina-blog' => true
+      """
 
   Scenario: Enabling and disabling a theme without multisite
-  	Given a WP install
+    Given a WP install
 
     When I try `wp theme enable twentytwelve`
     Then STDERR should contain:
@@ -379,6 +408,7 @@ Feature: Manage WordPress themes
     And STDOUT should be empty
     And the return code should be 1
 
+  @require-wp-5.7
   Scenario: Install and attempt to activate a child theme without its parent
     Given a WP install
     And I run `wp theme install moina-blog`
@@ -392,6 +422,7 @@ Feature: Manage WordPress themes
     And STDOUT should be empty
     And the return code should be 1
 
+  @require-wp-5.7
   Scenario: List an active theme with its parent
     Given a WP install
     And I run `wp theme install moina`
@@ -412,7 +443,7 @@ Feature: Manage WordPress themes
     Then STDOUT should not be empty
 
     When I run `wp theme list --name=twentytwelve --field=update_version`
-    And save STDOUT as {UPDATE_VERSION}
+    Then save STDOUT as {UPDATE_VERSION}
 
     When I run `wp theme update twentytwelve --format=summary --dry-run`
     Then STDOUT should contain:
@@ -452,7 +483,7 @@ Feature: Manage WordPress themes
     Then STDOUT should not be empty
 
     When I run `wp theme list --name=twentytwelve --field=update_version`
-    And save STDOUT as {UPDATE_VERSION}
+    Then save STDOUT as {UPDATE_VERSION}
 
     When I run `wp theme update twentytwelve --format=json`
     Then STDOUT should contain:
@@ -470,6 +501,7 @@ Feature: Manage WordPress themes
       twentytwelve,1.0,{UPDATE_VERSION},Updated
       """
 
+  @require-wp-5.7
   Scenario: Automatically install parent theme for a child theme
     Given a WP install
 
@@ -508,18 +540,18 @@ Feature: Manage WordPress themes
 
     When I run `wp theme get twentytwelve --field=status`
     Then STDOUT should be:
-       """
-       inactive
-       """
+      """
+      inactive
+      """
 
     When I run `wp theme activate twentytwelve`
     Then STDOUT should not be empty
 
     When I run `wp theme get twentytwelve --field=status`
     Then STDOUT should be:
-       """
-       active
-       """
+      """
+      active
+      """
 
   Scenario: Theme activation fails when slug does not match exactly
     Given a WP install
@@ -579,7 +611,7 @@ Feature: Manage WordPress themes
       Error: Parameter errors:
        Invalid value specified for 'status' (Filter the output by theme status.)
       """
-
+  @require-wp-5.7
   Scenario: Parent theme is active when its child is active
     Given a WP install
     And I run `wp theme delete --all --force`
@@ -620,3 +652,89 @@ Feature: Manage WordPress themes
     Then STDOUT should be a table containing rows:
       | auto_update          |
       | on                   |
+
+  Scenario: Show theme update as unavailable if it doesn't meet WordPress requirements
+    Given a WP install
+    And a wp-content/themes/example/style.css file:
+      """
+      /*
+      Theme Name: example
+      Version: 1.0.0
+      */
+      """
+    And a wp-content/themes/example/index.php file:
+      """
+      <?php
+      // Silence is golden.
+      """
+    And that HTTP requests to https://api.wordpress.org/themes/update-check/1.1/ will respond with:
+      """
+      HTTP/1.1 200 OK
+
+      {
+        "themes": {
+          "example": {
+            "theme": "example",
+            "new_version": "2.0.0",
+            "requires": "100",
+            "requires_php": "5.6"
+          }
+        },
+        "translations": [],
+        "no_update": []
+      }
+      """
+
+    When I run `wp theme list`
+    Then STDOUT should be a table containing rows:
+      | name            | status   | update       | version  | update_version   | auto_update | requires   | requires_php   |
+      | example         | inactive | unavailable  | 1.0.0    | 2.0.0            | off         | 100        | 5.6            |
+
+    When I try `wp theme update example`
+    Then STDERR should contain:
+      """
+      Warning: example: This update requires WordPress version 100
+      """
+
+  Scenario: Show theme update as unavailable if it doesn't meet PHP requirements
+    Given a WP install
+    And a wp-content/themes/example/style.css file:
+      """
+      /*
+      Theme Name: example
+      Version: 1.0.0
+      */
+      """
+    And a wp-content/themes/example/index.php file:
+      """
+      <?php
+      // Silence is golden.
+      """
+    And that HTTP requests to https://api.wordpress.org/themes/update-check/1.1/ will respond with:
+      """
+      HTTP/1.1 200 OK
+
+      {
+        "themes": {
+          "example": {
+            "theme": "example",
+            "new_version": "2.0.0",
+            "requires": "3.7",
+            "requires_php": "100"
+          }
+      },
+        "translations": [],
+        "no_update": []
+      }
+      """
+
+    When I run `wp theme list`
+    Then STDOUT should be a table containing rows:
+      | name            | status   | update       | version  | update_version   | auto_update | requires   | requires_php   |
+      | example         | inactive | unavailable  | 1.0.0    | 2.0.0            | off         | 3.7        | 100            |
+
+    When I try `wp theme update example`
+    Then STDERR should contain:
+      """
+      Warning: example: This update requires PHP version 100
+      """

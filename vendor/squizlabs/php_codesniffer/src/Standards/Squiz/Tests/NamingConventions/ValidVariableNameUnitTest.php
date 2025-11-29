@@ -4,7 +4,7 @@
  *
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @copyright 2006-2015 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Standards\Squiz\Tests\NamingConventions;
@@ -68,6 +68,9 @@ final class ValidVariableNameUnitTest extends AbstractSniffUnitTest
             146 => 1,
             152 => 1,
             155 => 1,
+            162 => 1,
+            165 => 1,
+            170 => 1,
         ];
 
         return $errors;

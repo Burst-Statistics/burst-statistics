@@ -11,7 +11,7 @@
  *
  * @author    Juliette Reinders Folmer <phpcs_nospam@adviesenzo.nl>
  * @copyright 2024 Juliette Reinders Folmer. All rights reserved.
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Util;
@@ -487,8 +487,9 @@ final class Help
 
         $options['Reporting Options'] = [
             'report'             => [
-                'argument'    => '--report=<report>',
-                'description' => 'Print either the "full", "xml", "checkstyle", "csv", "json", "junit", "emacs", "source", "summary", "diff", "svnblame", "gitblame", "hgblame", "notifysend" or "performance" report or specify the path to a custom report class. By default, the "full" report is displayed.',
+                'argument'    => '--report=<report(s)>',
+                'description' => 'A comma-separated list of reports to print. Available reports: "full", "xml", "checkstyle", "csv", "json", "junit", "emacs", "source", "summary", "diff", "svnblame", "gitblame", "hgblame", "notifysend" or "performance".'."\n"
+                    .'Or specify the path to a custom report class. By default, the "full" report is displayed.',
             ],
             'report-file'        => [
                 'argument'    => '--report-file=<reportFile>',

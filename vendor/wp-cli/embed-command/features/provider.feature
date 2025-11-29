@@ -82,7 +82,7 @@ Feature: Manage oEmbed providers.
       """
       http://example.com/api/oembed.{format}
       """
-    Then STDOUT should not contain:
+    And STDOUT should not contain:
       """
       http://example.com/*
       """
@@ -198,7 +198,7 @@ Feature: Manage oEmbed providers.
   @require-wp-4.0
   Scenario: Discover a provider with limited response size
     When I run `wp embed provider match https://audio.com/audio-com/collections/ambient-focus`
-    And save STDOUT as {DEFAULT_STDOUT}
+    Then save STDOUT as {DEFAULT_STDOUT}
 
     # Response limit too small
     When I try `wp embed provider match https://audio.com/audio-com/collections/ambient-focus --limit-response-size=10`

@@ -4,7 +4,7 @@
  *
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @copyright 2006-2015 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Filters;
@@ -247,13 +247,6 @@ class Filter extends RecursiveFilterIterator
         }
 
         foreach ($ignorePatterns as $pattern => $type) {
-            // Maintains backwards compatibility in case the ignore pattern does
-            // not have a relative/absolute value.
-            if (is_int($pattern) === true) {
-                $pattern = $type;
-                $type    = 'absolute';
-            }
-
             $replacements = [
                 '\\,' => ',',
                 '*'   => '.*',

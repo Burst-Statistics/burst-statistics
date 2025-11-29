@@ -12,6 +12,7 @@
 
 namespace Composer\Util;
 
+use Closure;
 use Composer\Config;
 use Composer\Downloader\MaxFileSizeExceededException;
 use Composer\IO\IOInterface;
@@ -71,7 +72,6 @@ class RemoteFilesystem
      * @param IOInterface $io         The IO instance
      * @param Config      $config     The config
      * @param mixed[]     $options    The options
-     * @param AuthHelper  $authHelper
      */
     public function __construct(IOInterface $io, Config $config, array $options = [], bool $disableTls = false, ?AuthHelper $authHelper = null)
     {
@@ -271,7 +271,7 @@ class RemoteFilesystem
             unset($options['max_file_size']);
         }
 
-        $ctx = StreamContextFactory::getContext($fileUrl, $options, ['notification' => [$this, 'callbackGet']]);
+        $ctx = StreamContextFactory::getContext($fileUrl, $options, ['notification' => Closure::fromCallable([$this, 'callbackGet'])]);
 
         $proxy = ProxyManager::getInstance()->getProxyForRequest($fileUrl);
         $usingProxy = $proxy->getStatus(' using proxy (%s)');
@@ -517,6 +517,10 @@ class RemoteFilesystem
     {
         $result = false;
 
+        if (\PHP_VERSION_ID >= 80400) {
+            http_clear_last_response_headers();
+        }
+
         try {
             $e = null;
             if ($maxFileSize !== null) {
@@ -534,7 +538,7 @@ class RemoteFilesystem
 
         // https://www.php.net/manual/en/reserved.variables.httpresponseheader.php
         if (\PHP_VERSION_ID >= 80400) {
-            $responseHeaders = http_get_last_response_headers();
+            $responseHeaders = http_get_last_response_headers() ?? [];
             http_clear_last_response_headers();
         } else {
             $responseHeaders = $http_response_header ?? [];
@@ -632,13 +636,13 @@ class RemoteFilesystem
             $headers[] = 'Connection: close';
         }
 
-        $headers = $this->authHelper->addAuthenticationHeader($headers, $originUrl, $this->fileUrl);
-
-        $options['http']['follow_location'] = 0;
-
         if (isset($options['http']['header']) && !is_array($options['http']['header'])) {
             $options['http']['header'] = explode("\r\n", trim($options['http']['header'], "\r\n"));
         }
+        $options = $this->authHelper->addAuthenticationOptions($options, $originUrl, $this->fileUrl);
+
+        $options['http']['follow_location'] = 0;
+
         foreach ($headers as $header) {
             $options['http']['header'][] = $header;
         }
@@ -647,15 +651,15 @@ class RemoteFilesystem
     }
 
     /**
-     * @param string[]     $http_response_header
+     * @param string[]     $responseHeaders
      * @param mixed[]      $additionalOptions
      * @param string|false $result
      *
      * @return bool|string
      */
-    private function handleRedirect(array $http_response_header, array $additionalOptions, $result)
+    private function handleRedirect(array $responseHeaders, array $additionalOptions, $result)
     {
-        if ($locationHeader = Response::findHeaderValue($http_response_header, 'location')) {
+        if ($locationHeader = Response::findHeaderValue($responseHeaders, 'location')) {
             if (parse_url($locationHeader, PHP_URL_SCHEME)) {
                 // Absolute URL; e.g. https://example.com/composer
                 $targetUrl = $locationHeader;
@@ -687,9 +691,9 @@ class RemoteFilesystem
         }
 
         if (!$this->retry) {
-            $e = new TransportException('The "'.$this->fileUrl.'" file could not be downloaded, got redirect without Location ('.$http_response_header[0].')');
-            $e->setHeaders($http_response_header);
-            $e->setResponse($this->decodeResult($result, $http_response_header));
+            $e = new TransportException('The "'.$this->fileUrl.'" file could not be downloaded, got redirect without Location ('.$responseHeaders[0].')');
+            $e->setHeaders($responseHeaders);
+            $e->setResponse($this->decodeResult($result, $responseHeaders));
 
             throw $e;
         }
@@ -699,13 +703,13 @@ class RemoteFilesystem
 
     /**
      * @param string|false $result
-     * @param string[]     $http_response_header
+     * @param string[]     $responseHeaders
      */
-    private function decodeResult($result, array $http_response_header): ?string
+    private function decodeResult($result, array $responseHeaders): ?string
     {
         // decode gzip
         if ($result && extension_loaded('zlib')) {
-            $contentEncoding = Response::findHeaderValue($http_response_header, 'content-encoding');
+            $contentEncoding = Response::findHeaderValue($responseHeaders, 'content-encoding');
             $decode = $contentEncoding && 'gzip' === strtolower($contentEncoding);
 
             if ($decode) {

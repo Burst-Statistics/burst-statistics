@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<ruleset name="PHPCompatibilityWP">
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="PHPCompatibilityWP" xsi:noNamespaceSchemaLocation="https://schema.phpcodesniffer.com/phpcs.xsd">
+
     <description>WordPress specific ruleset which checks for PHP cross version compatibility.</description>
 
     <!--
@@ -79,7 +80,9 @@
     <rule ref="PHPCompatibility.Extensions.RemovedExtensions">
         <properties>
             <!-- Contained in /wp-includes/functions.php. -->
-            <property name="functionWhitelist" type="array" value="mysql_to_rfc3339"/>
+            <property name="functionWhitelist" type="array">
+                <element value="mysql_to_rfc3339"/>
+            </property>
         </properties>
     </rule>
 

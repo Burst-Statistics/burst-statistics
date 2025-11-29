@@ -4,7 +4,7 @@
  *
  * @author    Juliette Reinders Folmer <phpcs_nospam@adviesenzo.nl>
  * @copyright 2024 PHPCSStandards and contributors
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Tests\Core\Util\Tokens;
@@ -175,6 +175,19 @@ final class TokenNameTest extends TestCase
             'PHP 8.1 native token, polyfilled: T_ENUM'                                    => [
                 'tokenCode' => T_ENUM,
                 'expected'  => 'T_ENUM',
+            ],
+
+            'PHP 8.4 native token, polyfilled: T_PUBLIC_SET'                              => [
+                'tokenCode' => T_PUBLIC_SET,
+                'expected'  => 'T_PUBLIC_SET',
+            ],
+            'PHP 8.4 native token, polyfilled: T_PROTECTED_SET'                           => [
+                'tokenCode' => T_PROTECTED_SET,
+                'expected'  => 'T_PROTECTED_SET',
+            ],
+            'PHP 8.4 native token, polyfilled: T_PRIVATE_SET'                             => [
+                'tokenCode' => T_PRIVATE_SET,
+                'expected'  => 'T_PRIVATE_SET',
             ],
         ];
 

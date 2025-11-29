@@ -4,7 +4,7 @@
  *
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @copyright 2006-2015 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Standards\Squiz\Sniffs\Functions;
@@ -70,8 +70,6 @@ class FunctionDeclarationArgumentSpacingSniff implements Sniff
 
         if (isset($tokens[$stackPtr]['parenthesis_opener']) === false
             || isset($tokens[$stackPtr]['parenthesis_closer']) === false
-            || $tokens[$stackPtr]['parenthesis_opener'] === null
-            || $tokens[$stackPtr]['parenthesis_closer'] === null
         ) {
             return;
         }
@@ -327,6 +325,40 @@ class FunctionDeclarationArgumentSpacingSniff implements Sniff
                     ];
 
                     $fix = $phpcsFile->addFixableError($error, $visibilityToken, 'SpacingAfterVisbility', $data);
+                    if ($fix === true) {
+                        $phpcsFile->fixer->beginChangeset();
+                        $phpcsFile->fixer->addContent($visibilityToken, ' ');
+
+                        for ($i = ($visibilityToken + 1); $tokens[$i]['code'] === T_WHITESPACE; $i++) {
+                            $phpcsFile->fixer->replaceToken($i, '');
+                        }
+
+                        $phpcsFile->fixer->endChangeset();
+                    }
+                }//end if
+            }//end if
+
+            if (isset($param['set_visibility_token']) === true && $param['set_visibility_token'] !== false) {
+                $visibilityToken      = $param['set_visibility_token'];
+                $afterVisibilityToken = $phpcsFile->findNext(T_WHITESPACE, ($visibilityToken + 1), $param['token'], true);
+
+                $spacesAfter = 0;
+                if ($afterVisibilityToken !== false
+                    && $tokens[$visibilityToken]['line'] !== $tokens[$afterVisibilityToken]['line']
+                ) {
+                    $spacesAfter = 'newline';
+                } else if ($tokens[($visibilityToken + 1)]['code'] === T_WHITESPACE) {
+                    $spacesAfter = $tokens[($visibilityToken + 1)]['length'];
+                }
+
+                if ($spacesAfter !== 1) {
+                    $error = 'Expected 1 space after set-visibility modifier "%s"; %s found';
+                    $data  = [
+                        $tokens[$visibilityToken]['content'],
+                        $spacesAfter,
+                    ];
+
+                    $fix = $phpcsFile->addFixableError($error, $visibilityToken, 'SpacingAfterSetVisibility', $data);
                     if ($fix === true) {
                         $phpcsFile->fixer->beginChangeset();
                         $phpcsFile->fixer->addContent($visibilityToken, ' ');

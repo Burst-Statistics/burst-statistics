@@ -49,11 +49,12 @@ final class DeprecatedParametersSniff extends AbstractFunctionParameterSniff {
 	 * Array of function, argument, and default value for deprecated argument.
 	 *
 	 * The functions are ordered alphabetically.
-	 * Last updated for WordPress 6.3.
+	 *
+	 * {@internal To be updated after every major release. Last updated for WordPress 6.9.0-RC2.}
 	 *
 	 * @since 0.12.0
 	 *
-	 * @var array Multidimensional array with parameter details.
+	 * @var array<string, array<int, array<string, mixed>>> Multidimensional array with parameter details.
 	 *    $target_functions = array(
 	 *        (string) Function name. => array(
 	 *            (int) Target parameter position, 1-based. => array(
@@ -83,6 +84,13 @@ final class DeprecatedParametersSniff extends AbstractFunctionParameterSniff {
 				'name'    => 'deprecated',
 				'value'   => null,
 				'version' => '5.9.0',
+			),
+		),
+		'_wp_can_use_pcre_u' => array(
+			1 => array(
+				'name'    => 'set',
+				'value'   => null,
+				'version' => '6.9.0',
 			),
 		),
 		'_wp_post_revision_fields' => array(
@@ -207,6 +215,13 @@ final class DeprecatedParametersSniff extends AbstractFunctionParameterSniff {
 				'name'    => 'deprecated',
 				'value'   => false,
 				'version' => '4.2.0',
+			),
+		),
+		'inject_ignored_hooked_blocks_metadata_attributes' => array(
+			2 => array(
+				'name'    => 'deprecated',
+				'value'   => null,
+				'version' => '6.5.3',
 			),
 		),
 		'install_search_form' => array(
@@ -408,6 +423,13 @@ final class DeprecatedParametersSniff extends AbstractFunctionParameterSniff {
 				'name'    => 'deprecated',
 				'value'   => null,
 				'version' => '3.8.0',
+			),
+		),
+		'wp_render_elements_support_styles' => array(
+			1 => array(
+				'name'    => 'parsed_block',
+				'value'   => null,
+				'version' => '6.6.0',
 			),
 		),
 		'wp_title_rss' => array(

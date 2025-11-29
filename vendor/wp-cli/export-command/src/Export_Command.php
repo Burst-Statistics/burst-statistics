@@ -441,7 +441,7 @@ class Export_Command extends WP_CLI_Command {
 			return true;
 		}
 
-		$stati = get_post_statuses();
+		$stati = get_post_stati();
 		if ( empty( $stati ) || is_wp_error( $stati ) ) {
 			WP_CLI::warning( 'Could not find any post stati.' );
 			return false;

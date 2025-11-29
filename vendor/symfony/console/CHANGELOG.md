@@ -1,6 +1,46 @@
 CHANGELOG
 =========
 
+8.0
+---
+
+ * Make `AsCommand` attribute class `final`
+ * Remove methods `Command::getDefaultName()` and `Command::getDefaultDescription()` in favor of the `#[AsCommand]` attribute
+ * Ensure closures set via `Command::setCode()` method have proper parameter and return types
+ * Add method `isSilent()` to `OutputInterface`
+ * Remove deprecated `Symfony\Component\Console\Application::add()` method in favor of `Symfony\Component\Console\Application::addCommand()`
+ * Add argument `$finishedIndicator` to `ProgressIndicator::finish()`
+
+7.4
+---
+
+ * Add `Command::getCode()` to get the code set via `setCode()`
+ * Allow setting aliases and the hidden flag via the command name passed to the constructor
+ * Introduce `Symfony\Component\Console\Application::addCommand()` to simplify using invokable commands when the component is used standalone
+ * Deprecate `Symfony\Component\Console\Application::add()` in favor of `Symfony\Component\Console\Application::addCommand()`
+ * Add `BackedEnum` support with `#[Argument]` and `#[Option]` inputs in invokable commands
+ * Allow Usages to be specified via `#[AsCommand]` attribute.
+ * Allow passing invokable commands to `Symfony\Component\Console\Tester\CommandTester`
+ * Add `#[MapInput]` attribute to support DTOs in commands
+ * Add optional timeout for interaction in `QuestionHelper`
+ * Add support for interactive invokable commands with `#[Interact]` and `#[Ask]` attributes
+ * Add support for `Cursor` helper in invokable commands
+
+7.3
+---
+
+ * Add `TreeHelper` and `TreeStyle` to display tree-like structures
+ * Add `SymfonyStyle::createTree()`
+ * Add support for invokable commands and add `#[Argument]` and `#[Option]` attributes to define input arguments and options
+ * Deprecate not declaring the parameter type in callable commands defined through `setCode` method
+ * Add support for help definition via `AsCommand` attribute
+ * Deprecate methods `Command::getDefaultName()` and `Command::getDefaultDescription()` in favor of the `#[AsCommand]` attribute
+ * Add support for Markdown format in `Table`
+ * Add support for `LockableTrait` in invokable commands
+ * Deprecate returning a non-integer value from a `\Closure` function set via `Command::setCode()`
+ * Mark `#[AsCommand]` attribute as `@final`
+ * Add support for `SignalableCommandInterface` with invokable commands
+
 7.2
 ---
 

@@ -14,7 +14,6 @@ Feature: Manage widgets in WordPress sidebar
     And I run `wp widget add search sidebar-2 --title="Quick Search"`
     And I run `wp widget add text sidebar-3 --title="Text"`
 
-
   Scenario: Widget CRUD
     When I run `wp widget list sidebar-1 --fields=name,id,position`
     Then STDOUT should be a table containing rows:

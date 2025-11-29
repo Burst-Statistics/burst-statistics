@@ -4,7 +4,7 @@
  *
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @copyright 2006-2015 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Standards\Generic\Tests\PHP;
@@ -55,6 +55,11 @@ final class LowerCaseKeywordUnitTest extends AbstractSniffUnitTest
             57 => 2,
             58 => 1,
             60 => 1,
+            68 => 1,
+            69 => 1,
+            70 => 1,
+            71 => 1,
+            72 => 1,
         ];
 
     }//end getErrorList()

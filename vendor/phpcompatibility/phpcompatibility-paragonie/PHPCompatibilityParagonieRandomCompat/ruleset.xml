@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<ruleset name="PHPCompatibilityParagonieRandomCompat">
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="PHPCompatibilityParagonieRandomCompat" xsi:noNamespaceSchemaLocation="https://schema.phpcodesniffer.com/phpcs.xsd">
+
     <description>PHPCompatibility ruleset for PHP_CodeSniffer which accounts for polyfills provided by the Paragonie random_compat library.</description>
 
     <rule ref="PHPCompatibility">

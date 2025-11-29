@@ -4,7 +4,7 @@
  *
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @copyright 2006-2019 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Standards\PSR12\Sniffs\Properties;
@@ -50,8 +50,14 @@ class ConstantVisibilitySniff implements Sniff
         $ignore   = Tokens::$emptyTokens;
         $ignore[] = T_FINAL;
 
+        $validVisibility = [
+            T_PRIVATE   => T_PRIVATE,
+            T_PUBLIC    => T_PUBLIC,
+            T_PROTECTED => T_PROTECTED,
+        ];
+
         $prev = $phpcsFile->findPrevious($ignore, ($stackPtr - 1), null, true);
-        if (isset(Tokens::$scopeModifiers[$tokens[$prev]['code']]) === true) {
+        if (isset($validVisibility[$tokens[$prev]['code']]) === true) {
             return;
         }
 

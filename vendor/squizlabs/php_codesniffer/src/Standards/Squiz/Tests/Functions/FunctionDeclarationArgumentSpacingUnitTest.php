@@ -4,7 +4,7 @@
  *
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @copyright 2006-2015 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Standards\Squiz\Tests\Functions;
@@ -95,6 +95,12 @@ final class FunctionDeclarationArgumentSpacingUnitTest extends AbstractSniffUnit
                 207 => 2,
                 208 => 1,
                 209 => 1,
+                215 => 2,
+                220 => 1,
+                221 => 1,
+                222 => 2,
+                223 => 1,
+                224 => 1,
             ];
 
         default:

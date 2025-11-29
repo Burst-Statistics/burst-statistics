@@ -3,6 +3,9 @@ Feature: Manage WP Cron events
   Background:
     Given a WP install
 
+  # Fails on WordPress 4.9 because `wp cron event run --due-now`
+  # executes the "wp_privacy_delete_old_export_files" event there.
+  @require-wp-5.0
   Scenario: --due-now with supplied events should only run those
     # WP throws a notice here for older versions of core.
     When I try `wp cron event run --all`
@@ -84,4 +87,54 @@ Feature: Manage WP Cron events
     Then STDERR should be:
       """
       Error: Unscheduling events is only supported from WordPress 4.9.0 onwards.
+      """
+
+  Scenario: Run cron event with a registered shutdown function
+    Given a wp-content/mu-plugins/setup_shutdown_function.php file:
+      """
+      add_action('mycron', function() {
+        breakthings();
+      });
+
+      register_shutdown_function(function() {
+        $error = error_get_last();
+        if ($error['type'] === E_ERROR) {
+          WP_CLI::line('MY SHUTDOWN FUNCTION');
+        }
+        });
+      """
+
+    When I run `wp cron event schedule mycron now`
+    And I try `wp cron event run --due-now`
+    Then STDOUT should contain:
+      """
+      MY SHUTDOWN FUNCTION
+      """
+
+  Scenario: Run cron event with a registered shutdown function that logs to a file
+    Given a wp-content/mu-plugins/setup_shutdown_function_log.php file:
+      """
+      <?php
+      add_action('mycronlog', function() {
+        breakthings();
+      });
+
+      register_shutdown_function(function() {
+        error_log('LOG A SHUTDOWN FROM ERROR');
+      });
+      """
+
+    And I run `wp config set WP_DEBUG true --raw`
+    And I run `wp config set WP_DEBUG_LOG '{RUN_DIR}/server.log'`
+
+    When I try `wp cron event schedule mycronlog now`
+    And I try `wp cron event run --due-now`
+    Then STDERR should contain:
+      """
+      Call to undefined function breakthings()
+      """
+    And the {RUN_DIR}/server.log file should exist
+    And the {RUN_DIR}/server.log file should contain:
+      """
+      LOG A SHUTDOWN FROM ERROR
       """

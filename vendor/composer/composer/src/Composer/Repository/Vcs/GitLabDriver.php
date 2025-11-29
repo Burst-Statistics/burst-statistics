@@ -159,7 +159,7 @@ class GitLabDriver extends VcsDriver
                 $composer = $this->getBaseComposerInformation($identifier);
 
                 if ($this->shouldCache($identifier)) {
-                    $this->cache->write($identifier, json_encode($composer));
+                    $this->cache->write($identifier, JsonFile::encode($composer, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES));
                 }
             }
 
@@ -463,7 +463,7 @@ class GitLabDriver extends VcsDriver
             if ($fetchingRepoData) {
                 $json = $response->decodeJson();
 
-                // Accessing the API with a token with Guest (10) access will return
+                // Accessing the API with a token with Guest (10) or Planner (15) access will return
                 // more data than unauthenticated access but no default_branch data
                 // accessing files via the API will then also fail
                 if (!isset($json['default_branch']) && isset($json['permissions'])) {
@@ -474,13 +474,13 @@ class GitLabDriver extends VcsDriver
                     // - value will be null if no access is set
                     // - value will be array with key access_level if set
                     foreach ($json['permissions'] as $permission) {
-                        if ($permission && $permission['access_level'] > 10) {
+                        if ($permission && $permission['access_level'] >= 20) {
                             $moreThanGuestAccess = true;
                         }
                     }
 
                     if (!$moreThanGuestAccess) {
-                        $this->io->writeError('<warning>GitLab token with Guest only access detected</warning>');
+                        $this->io->writeError('<warning>GitLab token with Guest or Planner only access detected</warning>');
 
                         $this->attemptCloneFallback();
 
@@ -610,7 +610,6 @@ class GitLabDriver extends VcsDriver
     /**
      * @param  array<string> $configuredDomains
      * @param  array<string> $urlParts
-     * @param string         $portNumber
      *
      * @return string|false
      */

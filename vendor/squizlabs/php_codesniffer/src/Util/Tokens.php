@@ -4,7 +4,7 @@
  *
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @copyright 2006-2015 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Util;
@@ -178,6 +178,19 @@ if (defined('T_READONLY') === false) {
 
 if (defined('T_ENUM') === false) {
     define('T_ENUM', 'PHPCS_T_ENUM');
+}
+
+// Some PHP 8.4 tokens, replicated for lower versions.
+if (defined('T_PUBLIC_SET') === false) {
+    define('T_PUBLIC_SET', 'PHPCS_T_PUBLIC_SET');
+}
+
+if (defined('T_PROTECTED_SET') === false) {
+    define('T_PROTECTED_SET', 'PHPCS_T_PROTECTED_SET');
+}
+
+if (defined('T_PRIVATE_SET') === false) {
+    define('T_PRIVATE_SET', 'PHPCS_T_PRIVATE_SET');
 }
 
 // Tokens used for parsing doc blocks.
@@ -463,9 +476,12 @@ final class Tokens
      * @var array<int|string, int|string>
      */
     public static $scopeModifiers = [
-        T_PRIVATE   => T_PRIVATE,
-        T_PUBLIC    => T_PUBLIC,
-        T_PROTECTED => T_PROTECTED,
+        T_PRIVATE       => T_PRIVATE,
+        T_PUBLIC        => T_PUBLIC,
+        T_PROTECTED     => T_PROTECTED,
+        T_PUBLIC_SET    => T_PUBLIC_SET,
+        T_PROTECTED_SET => T_PROTECTED_SET,
+        T_PRIVATE_SET   => T_PRIVATE_SET,
     ];
 
     /**
@@ -752,13 +768,13 @@ final class Tokens
 
 
     /**
-     * Given a token, returns the name of the token.
+     * Given a token constant, returns the name of the token.
      *
      * If passed an integer, the token name is sourced from PHP's token_name()
      * function. If passed a string, it is assumed to be a PHPCS-supplied token
      * that begins with PHPCS_T_, so the name is sourced from the token value itself.
      *
-     * @param int|string $token The token to get the name for.
+     * @param int|string $token The token constant to get the name for.
      *
      * @return string
      */
@@ -788,8 +804,8 @@ final class Tokens
      * @param array<int|string> $tokens The token types to get the highest weighted
      *                                  type for.
      *
-     * @return int The highest weighted token.
-     *             On equal "weight", returns the first token of that particular weight.
+     * @return int|string The highest weighted token.
+     *                    On equal "weight", returns the first token of that particular weight.
      */
     public static function getHighestWeightedToken(array $tokens)
     {

@@ -90,9 +90,9 @@ Feature: Create a wp-config file
 
     When I try `wp version`
     Then STDERR should not contain:
-    """
-    Constant WP_DEBUG already defined
-    """
+      """
+      Constant WP_DEBUG already defined
+      """
 
   @require-wp-4.0
   Scenario: No wp-config.php and WPLANG
@@ -292,4 +292,3 @@ Feature: Create a wp-config file
       """
       PasswordWith'SingleQuotes'
       """
-

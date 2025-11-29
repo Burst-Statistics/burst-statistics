@@ -4,7 +4,7 @@
  *
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @copyright 2006-2015 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Standards\PEAR\Tests\WhiteSpace;
@@ -18,6 +18,21 @@ use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
  */
 final class ScopeIndentUnitTest extends AbstractSniffUnitTest
 {
+
+
+    /**
+     * Get a list of CLI values to set before the file is tested.
+     *
+     * @param string                  $testFile The name of the file being tested.
+     * @param \PHP_CodeSniffer\Config $config   The config data for the test run.
+     *
+     * @return void
+     */
+    public function setCliValues($testFile, $config)
+    {
+        $config->setConfigData('scope_indent_debug', '0', true);
+
+    }//end setCliValues()
 
 
     /**

@@ -1,6 +1,18 @@
 Changelog
 ==========
 
+#### 1.17.4
+* Fixed warning on PHP 8.5 when handling large numbers
+
+#### 1.17.3
+* Fixed compatibility with PHP 8.5
+
+#### 1.17.2
+* Fixed bug where `const` declarations were allowed without an initializer
+
+#### 1.17.1
+* Fixed bug where `continue` and `break` were allowed outside iteration and `break` statements
+
 #### 1.17.0
 * Implemented ES2025 parser with import attributes
 

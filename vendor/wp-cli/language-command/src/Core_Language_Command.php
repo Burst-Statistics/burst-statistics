@@ -93,6 +93,9 @@ class Core_Language_Command extends WP_CLI\CommandWithTranslation {
 	 *     | az             | Azerbaijani             | uninstalled |
 	 *
 	 * @subcommand list
+	 *
+	 * @param string[] $args Positional arguments. Unused.
+	 * @param array{field?: string, format: string, language?: string, english_name?: string, native_name?: string, status?: string, update?: string, updated?: string} $assoc_args Associative arguments.
 	 */
 	public function list_( $args, $assoc_args ) {
 		$translations = $this->get_all_languages();
@@ -126,7 +129,7 @@ class Core_Language_Command extends WP_CLI\CommandWithTranslation {
 
 		foreach ( $translations as $key => $translation ) {
 			foreach ( array_keys( $translation ) as $field ) {
-				if ( isset( $assoc_args[ $field ] ) && $assoc_args[ $field ] !== $translation[ $field ] ) {
+				if ( isset( $assoc_args[ $field ] ) && ! in_array( $translation[ $field ], array_map( 'trim', explode( ',', $assoc_args[ $field ] ) ), true ) ) {
 					unset( $translations[ $key ] );
 				}
 			}
@@ -154,8 +157,10 @@ class Core_Language_Command extends WP_CLI\CommandWithTranslation {
 	 *     1
 	 *
 	 * @subcommand is-installed
+	 *
+	 * @param array{string} $args Positional arguments.
 	 */
-	public function is_installed( $args, $assoc_args = array() ) {
+	public function is_installed( $args ) {
 		list( $language_code ) = $args;
 		$available             = $this->get_installed_languages();
 		if ( in_array( $language_code, $available, true ) ) {
@@ -191,6 +196,9 @@ class Core_Language_Command extends WP_CLI\CommandWithTranslation {
 	 *     Success: Installed 1 of 1 languages.
 	 *
 	 * @subcommand install
+	 *
+	 * @param string[] $args Positional arguments.
+	 * @param array{activate?: bool} $assoc_args Associative arguments.
 	 */
 	public function install( $args, $assoc_args ) {
 		$language_codes = (array) $args;
@@ -253,8 +261,10 @@ class Core_Language_Command extends WP_CLI\CommandWithTranslation {
 	 *
 	 * @subcommand uninstall
 	 * @throws WP_CLI\ExitException
+	 *
+	 * @param string[] $args Positional arguments.
 	 */
-	public function uninstall( $args, $assoc_args ) {
+	public function uninstall( $args ) {
 		global $wp_filesystem;
 
 		$dir   = 'core' === $this->obj_type ? '' : "/$this->obj_type";
@@ -339,6 +349,9 @@ class Core_Language_Command extends WP_CLI\CommandWithTranslation {
 	 *     Success: Updated 1/1 translation.
 	 *
 	 * @subcommand update
+	 *
+	 * @param string[] $args Positional arguments.
+	 * @param array{'dry-run'?: bool} $assoc_args Associative arguments.
 	 */
 	public function update( $args, $assoc_args ) { // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod.Found -- Overruling the documentation, so not useless ;-).
 		parent::update( $args, $assoc_args );
@@ -362,8 +375,10 @@ class Core_Language_Command extends WP_CLI\CommandWithTranslation {
 	 *
 	 * @subcommand activate
 	 * @throws WP_CLI\ExitException
+	 *
+	 * @param array{string} $args Positional arguments.
 	 */
-	public function activate( $args, $assoc_args ) {
+	public function activate( $args ) {
 		\WP_CLI::warning( 'This command is deprecated. use wp site switch-language instead' );
 
 		list( $language_code ) = $args;

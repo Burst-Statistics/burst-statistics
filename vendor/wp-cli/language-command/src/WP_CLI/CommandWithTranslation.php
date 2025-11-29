@@ -24,6 +24,9 @@ abstract class CommandWithTranslation extends WP_CLI_Command {
 
 	/**
 	 * Updates installed languages for the current object type.
+	 *
+	 * @param string[] $args Positional arguments.
+	 * @param array{'dry-run'?: bool, all?: bool} $assoc_args Associative arguments.
 	 */
 	public function update( $args, $assoc_args ) {
 		$updates = $this->get_translation_updates();
@@ -57,12 +60,22 @@ abstract class CommandWithTranslation extends WP_CLI_Command {
 				$name = 'WordPress'; // Core.
 
 				if ( 'plugin' === $update->type ) {
-					$plugins     = get_plugins( '/' . $update->slug );
+					/**
+					 * @var array<array{Name: string}> $plugins
+					 */
+					$plugins = get_plugins( '/' . $update->slug );
+
+					/**
+					 * @var array{Name: string}> $plugin_data
+					 */
 					$plugin_data = array_shift( $plugins );
 					$name        = $plugin_data['Name'];
 				} elseif ( 'theme' === $update->type ) {
 					$theme_data = wp_get_theme( $update->slug );
-					$name       = $theme_data['Name'];
+					/**
+					 * @var string $name
+					 */
+					$name = $theme_data['Name'];
 				}
 
 				// Gets the translation data.
@@ -97,7 +110,12 @@ abstract class CommandWithTranslation extends WP_CLI_Command {
 				foreach ( $available_updates as $update ) {
 					WP_CLI::line( "Updating '{$update->Language}' translation for {$update->Name} {$update->Version}..." );
 
-					$result = Utils\get_upgrader( $upgrader )->upgrade( $update );
+					/**
+					 * @var \WP_CLI\LanguagePackUpgrader $upgrader_instance
+					 */
+					$upgrader_instance = Utils\get_upgrader( $upgrader );
+
+					$result = $upgrader_instance->upgrade( $update );
 
 					$results[] = $result;
 				}
@@ -181,7 +199,11 @@ abstract class CommandWithTranslation extends WP_CLI_Command {
 				break;
 		}
 
-		$updates   = array();
+		$updates = array();
+
+		/**
+		 * @var object{translations: array} $transient
+		 */
 		$transient = get_site_transient( $transient );
 
 		if ( empty( $transient->translations ) ) {
@@ -218,7 +240,8 @@ abstract class CommandWithTranslation extends WP_CLI_Command {
 		if ( ! $translation_to_load ) {
 			return new \WP_Error( 'not_found', $slug ? "Language '{$download}' for '{$slug}' not available." : "Language '{$download}' not available." );
 		}
-		$translation = (object) $translation;
+
+		$translation = (object) $translation_to_load;
 
 		$translation->type = rtrim( $this->obj_type, 's' );
 
@@ -228,7 +251,15 @@ abstract class CommandWithTranslation extends WP_CLI_Command {
 		}
 
 		$upgrader = 'WP_CLI\\LanguagePackUpgrader';
-		$result   = Utils\get_upgrader( $upgrader )->upgrade( $translation, array( 'clear_update_cache' => false ) );
+
+		/**
+		 * @var \WP_CLI\LanguagePackUpgrader $upgrader_instance
+		 */
+		$upgrader_instance = Utils\get_upgrader( $upgrader );
+
+		// Incorrect docblock in WordPress core.
+		// @phpstan-ignore argument.type
+		$result = $upgrader_instance->upgrade( $translation, array( 'clear_update_cache' => false ) );
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
@@ -246,9 +277,12 @@ abstract class CommandWithTranslation extends WP_CLI_Command {
 	 *
 	 * @param string $slug Optional. Plugin or theme slug. Defaults to 'default' for core.
 	 *
-	 * @return array
+	 * @return string[]
 	 */
 	protected function get_installed_languages( $slug = 'default' ) {
+		/**
+		 * @var array<string, array<string, array<string, mixed>>> $available
+		 */
 		$available   = wp_get_installed_translations( $this->obj_type );
 		$available   = ! empty( $available[ $slug ] ) ? array_keys( $available[ $slug ] ) : array();
 		$available[] = 'en_US';
@@ -261,13 +295,15 @@ abstract class CommandWithTranslation extends WP_CLI_Command {
 	 *
 	 * @param string $slug Optional. Plugin or theme slug. Not used for core.
 	 *
-	 * @return array
+	 * @return array<array{language: string, english_name: string, native_name: string, updated: string}>
 	 */
 	protected function get_all_languages( $slug = null ) {
 		require_once ABSPATH . '/wp-admin/includes/translation-install.php';
 		require ABSPATH . WPINC . '/version.php'; // Include an unmodified $wp_version
 
 		$args = array(
+			// False positive, because it's defined in version.php
+			// @phpstan-ignore variable.undefined
 			'version' => $wp_version,
 		);
 

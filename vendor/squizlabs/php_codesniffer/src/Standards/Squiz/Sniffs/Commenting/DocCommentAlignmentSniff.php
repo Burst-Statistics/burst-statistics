@@ -4,7 +4,7 @@
  *
  * @author    Greg Sherwood <gsherwood@squiz.net>
  * @copyright 2006-2015 Squiz Pty Ltd (ABN 77 084 670 600)
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Standards\Squiz\Sniffs\Commenting;
@@ -52,7 +52,7 @@ class DocCommentAlignmentSniff implements Sniff
     {
         $tokens = $phpcsFile->getTokens();
 
-        // We are only interested in function/class/interface doc block comments.
+        // We are only interested in function/class/interface/enum/property/const doc block comments.
         $ignore = Tokens::$emptyTokens;
         if ($phpcsFile->tokenizerType === 'JS') {
             $ignore[] = T_EQUAL;
@@ -61,15 +61,14 @@ class DocCommentAlignmentSniff implements Sniff
         }
 
         $nextToken = $phpcsFile->findNext($ignore, ($stackPtr + 1), null, true);
-        $ignore    = [
+
+        $ignore  = Tokens::$scopeModifiers;
+        $ignore += [
             T_CLASS     => true,
             T_INTERFACE => true,
             T_ENUM      => true,
             T_ENUM_CASE => true,
             T_FUNCTION  => true,
-            T_PUBLIC    => true,
-            T_PRIVATE   => true,
-            T_PROTECTED => true,
             T_STATIC    => true,
             T_ABSTRACT  => true,
             T_FINAL     => true,

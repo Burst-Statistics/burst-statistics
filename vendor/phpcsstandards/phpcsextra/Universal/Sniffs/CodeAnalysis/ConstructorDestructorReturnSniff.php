@@ -124,7 +124,7 @@ final class ConstructorDestructorReturnSniff implements Sniff
          * OK, so now we know for sure that this is a constructor/destructor method.
          */
 
-         // Check for a return type.
+        // Check for a return type.
         $tokens     = $phpcsFile->getTokens();
         $properties = FunctionDeclarations::getProperties($phpcsFile, $stackPtr);
         if ($properties['return_type'] !== '' && $properties['return_type_token'] !== false) {
@@ -166,7 +166,7 @@ final class ConstructorDestructorReturnSniff implements Sniff
         $current = $tokens[$stackPtr]['scope_opener'];
         $end     = $tokens[$stackPtr]['scope_closer'];
 
-        // Not searching for arrow functions as those have an implicit return, so no
+        // Not searching for arrow functions as those have an implicit return, so won't use the `return` keyword.
         $search            = Collections::functionDeclarationTokens();
         $search[\T_RETURN] = \T_RETURN;
 

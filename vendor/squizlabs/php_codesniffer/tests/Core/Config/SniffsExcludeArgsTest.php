@@ -3,7 +3,7 @@
  * Tests for the \PHP_CodeSniffer\Config --sniffs and --exclude arguments.
  *
  * @author  Dan Wallis <dan@wallis.nz>
- * @license https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Tests\Core\Config;
@@ -24,7 +24,7 @@ final class SniffsExcludeArgsTest extends TestCase
     /**
      * Ensure that the expected error message is returned for invalid arguments.
      *
-     * @param string        $argument   'sniffs' or 'exclude'.
+     * @param string        $argument   Either 'sniffs' or 'exclude'.
      * @param string        $value      List of sniffs to include / exclude.
      * @param array<string> $errors     Sniff code and associated help text.
      * @param string|null   $suggestion Help text shown to end user with correct syntax for argument.
@@ -34,6 +34,11 @@ final class SniffsExcludeArgsTest extends TestCase
      */
     public function testInvalid($argument, $value, $errors, $suggestion)
     {
+        $cmd = 'phpcs';
+        if (PHP_CODESNIFFER_CBF === true) {
+            $cmd = 'phpcbf';
+        }
+
         $exception = 'PHP_CodeSniffer\Exceptions\DeepExitException';
         $message   = 'ERROR: The --'.$argument.' option only supports sniff codes.'.PHP_EOL;
         $message  .= 'Sniff codes are in the form "Standard.Category.Sniff".'.PHP_EOL;
@@ -47,7 +52,7 @@ final class SniffsExcludeArgsTest extends TestCase
         }
 
         $message .= PHP_EOL;
-        $message .= 'Run "phpcs --help" for usage information'.PHP_EOL;
+        $message .= "Run \"{$cmd} --help\" for usage information".PHP_EOL;
         $message .= PHP_EOL;
 
         if (method_exists($this, 'expectException') === true) {
@@ -203,7 +208,7 @@ final class SniffsExcludeArgsTest extends TestCase
     /**
      * Ensure that the valid data does not throw an exception, and the value is stored.
      *
-     * @param string        $argument 'sniffs' or 'exclude'.
+     * @param string        $argument Either 'sniffs' or 'exclude'.
      * @param string        $value    List of sniffs to include or exclude.
      * @param array<string> $result   Expected sniffs to be set on the Config object.
      *
@@ -284,7 +289,7 @@ final class SniffsExcludeArgsTest extends TestCase
     /**
      * Ensure that only the first argument is processed and others are ignored.
      *
-     * @param string $argument 'sniffs' or 'exclude'.
+     * @param string $argument Either 'sniffs' or 'exclude'.
      *
      * @return       void
      * @dataProvider dataOnlySetOnce

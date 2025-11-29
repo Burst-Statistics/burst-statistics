@@ -4,7 +4,7 @@
  *
  * @author    Juliette Reinders Folmer <phpcs_nospam@adviesenzo.nl>
  * @copyright 2024 PHPCSStandards and contributors
- * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
+ * @license   https://github.com/PHPCSStandards/PHP_CodeSniffer/blob/HEAD/licence.txt BSD Licence
  */
 
 namespace PHP_CodeSniffer\Tests\Core\Ruleset;
@@ -67,6 +67,8 @@ final class ProcessRulesetTest extends TestCase
             "$std.DeprecatedInvalid.InvalidDeprecationMessage"       => "$sniffDir\DeprecatedInvalid\InvalidDeprecationMessageSniff",
             "$std.DeprecatedInvalid.InvalidDeprecationVersion"       => "$sniffDir\DeprecatedInvalid\InvalidDeprecationVersionSniff",
             "$std.DeprecatedInvalid.InvalidRemovalVersion"           => "$sniffDir\DeprecatedInvalid\InvalidRemovalVersionSniff",
+            "$std.MissingInterface.ValidImplements"                  => "$sniffDir\MissingInterface\ValidImplementsSniff",
+            "$std.MissingInterface.ValidImplementsViaAbstract"       => "$sniffDir\MissingInterface\ValidImplementsViaAbstractSniff",
             "$std.SetProperty.AllowedAsDeclared"                     => "$sniffDir\SetProperty\AllowedAsDeclaredSniff",
             "$std.SetProperty.AllowedViaMagicMethod"                 => "$sniffDir\SetProperty\AllowedViaMagicMethodSniff",
             "$std.SetProperty.AllowedViaStdClass"                    => "$sniffDir\SetProperty\AllowedViaStdClassSniff",

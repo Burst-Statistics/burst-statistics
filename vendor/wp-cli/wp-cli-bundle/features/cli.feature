@@ -7,13 +7,13 @@ Feature: `wp cli` tasks
 
     When I run `{PHAR_PATH} cli version`
     Then STDOUT should be:
-    """
-    WP-CLI 1.2.3
-    """
+      """
+      WP-CLI 1.2.3
+      """
     And the {FRAMEWORK_ROOT}/VERSION file should be:
-    """
-    {TRUE_VERSION}
-    """
+      """
+      {TRUE_VERSION}
+      """
 
   @github-api
   Scenario: Check for updates
@@ -22,9 +22,9 @@ Feature: `wp cli` tasks
 
     When I run `{PHAR_PATH} cli check-update`
     Then STDOUT should contain:
-    """
-    package_url
-    """
+      """
+      package_url
+      """
     And STDERR should be empty
 
   @github-api
@@ -45,12 +45,12 @@ Feature: `wp cli` tasks
     When I run `{PHAR_PATH} cli update --yes`
     Then STDOUT should contain:
       """
-      md5 hash verified:
+      sha512 hash verified:
       """
     And STDOUT should contain:
-    """
-    Success:
-    """
+      """
+      Success:
+      """
     And STDERR should be empty
     And the return code should be 0
 
@@ -84,7 +84,7 @@ Feature: `wp cli` tasks
     When I run `{PHAR_PATH} cli update --patch --yes`
     Then STDOUT should contain:
       """
-      md5 hash verified: a0cf91756fd46903c83c436ec1d462eb
+      sha512 hash verified: c1d40ee90b330ca1f8ddbed14b938b41ec5d9ff723c7c1cf3f41a2d9a1b271079a51a37ea3d1c9aa9c628fdd43449dba3995a8de150a68abbd505b06b91d9d2b
       """
     And STDOUT should contain:
       """
@@ -106,13 +106,13 @@ Feature: `wp cli` tasks
 
     When I run `{PHAR_PATH} cli update --no-patch --yes`
     Then STDOUT should contain:
-    """
-    Success:
-    """
+      """
+      Success:
+      """
     And STDOUT should not contain:
-    """
-    2.8.1
-    """
+      """
+      2.8.1
+      """
     And STDERR should be empty
     And the return code should be 0
 
@@ -123,7 +123,7 @@ Feature: `wp cli` tasks
     When I run `{PHAR_PATH} cli update --nightly --yes`
     Then STDOUT should contain:
       """
-      md5 hash verified:
+      sha512 hash verified:
       """
     And STDOUT should contain:
       """
@@ -149,11 +149,11 @@ Feature: `wp cli` tasks
     When I run `{PHAR_PATH} cli update --stable < session`
     Then STDOUT should contain:
       """
-      You have version 2.8.0. Would you like to update to the latest stable release? [y/n]
+      You are currently using WP-CLI version 2.8.0. Would you like to update to the latest stable release? [y/n]
       """
     And STDOUT should contain:
       """
-      md5 hash verified:
+      sha512 hash verified:
       """
     And STDOUT should contain:
       """

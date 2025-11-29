@@ -1,5 +1,8 @@
 <?php
 
+use WP_CLI\Traverser\RecursiveDataStructureTraverser;
+use WP_CLI\Utils;
+
 /**
  * Adds, removes, fetches, and flushes the WP Object Cache object.
  *
@@ -405,5 +408,173 @@ class Cache_Command extends WP_CLI_Command {
 			WP_CLI::error( "Cache group '$group' was not flushed." );
 		}
 		WP_CLI::success( "Cache group '$group' was flushed." );
+	}
+
+	/**
+	 * Get a nested value from the cache.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <key>
+	 * : Cache key.
+	 *
+	 * <key-path>...
+	 * : The name(s) of the keys within the value to locate the value to pluck.
+	 *
+	 * [--group=<group>]
+	 * : Method for grouping data within the cache which allows the same key to be used across groups.
+	 * ---
+	 * default: default
+	 * ---
+	 *
+	 * [--format=<format>]
+	 * : The output format of the value.
+	 * ---
+	 * default: plaintext
+	 * options:
+	 *   - plaintext
+	 *   - json
+	 *   - yaml
+	 * ---
+	 */
+	public function pluck( $args, $assoc_args ) {
+		list( $key ) = $args;
+		$group       = Utils\get_flag_value( $assoc_args, 'group' );
+
+		$value = wp_cache_get( $key, $group );
+
+		if ( false === $value ) {
+			WP_CLI::warning( "No object found for the key '$key' in group '$group'" );
+			exit;
+		}
+
+		$key_path = array_map(
+			function ( $key ) {
+				if ( is_numeric( $key ) && ( (string) intval( $key ) === $key ) ) {
+					return (int) $key;
+				}
+				return $key;
+			},
+			array_slice( $args, 1 )
+		);
+
+		$traverser = new RecursiveDataStructureTraverser( $value );
+
+		try {
+			$value = $traverser->get( $key_path );
+		} catch ( \Exception $e ) {
+			die( 1 );
+		}
+
+		WP_CLI::print_value( $value, $assoc_args );
+	}
+
+	/**
+	 * Update a nested value from the cache.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action>
+	 * : Patch action to perform.
+	 * ---
+	 * options:
+	 *   - insert
+	 *   - update
+	 *   - delete
+	 * ---
+	 *
+	 * <key>
+	 * : Cache key.
+	 *
+	 * <key-path>...
+	 * : The name(s) of the keys within the value to locate the value to patch.
+	 *
+	 * [<value>]
+	 * : The new value. If omitted, the value is read from STDIN.
+	 *
+	 * [--group=<group>]
+	 * : Method for grouping data within the cache which allows the same key to be used across groups.
+	 * ---
+	 * default: default
+	 * ---
+	 *
+	 * [--expiration=<expiration>]
+	 *  : Define how long to keep the value, in seconds. `0` means as long as possible.
+	 *  ---
+	 *  default: 0
+	 *  ---
+	 *
+	 * [--format=<format>]
+	 * : The serialization format for the value.
+	 * ---
+	 * default: plaintext
+	 * options:
+	 *   - plaintext
+	 *   - json
+	 * ---
+	 */
+	public function patch( $args, $assoc_args ) {
+		list( $action, $key ) = $args;
+		$group                = Utils\get_flag_value( $assoc_args, 'group' );
+		$expiration           = Utils\get_flag_value( $assoc_args, 'expiration' );
+
+		$key_path = array_map(
+			function ( $key ) {
+				if ( is_numeric( $key ) && ( (string) intval( $key ) === $key ) ) {
+					return (int) $key;
+				}
+
+				return $key;
+			},
+			array_slice( $args, 2 )
+		);
+
+		if ( 'delete' === $action ) {
+			$patch_value = null;
+		} else {
+			$stdin_value = Utils\has_stdin()
+				? trim( WP_CLI::get_value_from_arg_or_stdin( $args, -1 ) )
+				: null;
+
+			if ( ! empty( $stdin_value ) ) {
+				$patch_value = WP_CLI::read_value( $stdin_value, $assoc_args );
+			} elseif ( count( $key_path ) > 1 ) {
+				$patch_value = WP_CLI::read_value( array_pop( $key_path ), $assoc_args );
+			} else {
+				$patch_value = null;
+			}
+
+			if ( null === $patch_value ) {
+				WP_CLI::error( 'Please provide value to update.' );
+			}
+		}
+
+		/* Need to make a copy of $current_value here as it is modified by reference */
+		$old_value     = wp_cache_get( $key, $group );
+		$current_value = $old_value;
+		if ( is_object( $old_value ) ) {
+			$current_value = clone $old_value;
+		}
+
+		$traverser = new RecursiveDataStructureTraverser( $current_value );
+
+		try {
+			$traverser->$action( $key_path, $patch_value );
+		} catch ( \Exception $e ) {
+			WP_CLI::error( $e->getMessage() );
+		}
+
+		$patched_value = $traverser->value();
+
+		if ( $patched_value === $old_value ) {
+			WP_CLI::success( "Value passed for cache key '$key' is unchanged." );
+		} else {
+			$success = wp_cache_set( $key, $patched_value, $group, $expiration );
+			if ( $success ) {
+				WP_CLI::success( "Updated cache key '$key'." );
+			} else {
+				WP_CLI::error( "Could not update cache key '$key'." );
+			}
+		}
 	}
 }

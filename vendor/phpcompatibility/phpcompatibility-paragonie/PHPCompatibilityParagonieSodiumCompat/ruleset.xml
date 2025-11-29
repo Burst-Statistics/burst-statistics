@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<ruleset name="PHPCompatibilityParagonieSodiumCompat">
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="PHPCompatibilityParagonieSodiumCompat" xsi:noNamespaceSchemaLocation="https://schema.phpcodesniffer.com/phpcs.xsd">
+
     <description>PHPCompatibility ruleset for PHP_CodeSniffer which accounts for polyfills provided by the Paragonie sodium_compat library.</description>
 
     <!--
@@ -204,6 +205,12 @@
     <rule ref="PHPCompatibility.FunctionNameRestrictions.NewMagicMethods.__debuginfoFound">
         <exclude-pattern>/sodium_compat/src/Core(32)?/Curve25519/Fe\.php$</exclude-pattern>
         <exclude-pattern>/sodium_compat/src/Core/AES/Block\.php$</exclude-pattern>
+    </rule>
+    <rule ref="PHPCompatibility.FunctionNameRestrictions.NewMagicMethods.__serializeFound">
+        <exclude-pattern>/sodium_compat/src/PHP52/SplFixedArray\.php$</exclude-pattern>
+    </rule>
+    <rule ref="PHPCompatibility.FunctionNameRestrictions.NewMagicMethods.__unserializeFound">
+        <exclude-pattern>/sodium_compat/src/PHP52/SplFixedArray\.php$</exclude-pattern>
     </rule>
     <rule ref="PHPCompatibility.FunctionUse.NewFunctions.hash_equalsFound">
         <exclude-pattern>/sodium_compat/src/Core/Util\.php$</exclude-pattern>

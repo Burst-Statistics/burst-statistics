@@ -57,15 +57,15 @@ Feature: Manage Cap
       """
       observe
       """
-    Then STDOUT should not contain:
+    And STDOUT should not contain:
       """
       detect
       """
-    Then STDOUT should not contain:
+    And STDOUT should not contain:
       """
       discover
       """
-    Then STDOUT should not contain:
+    And STDOUT should not contain:
       """
       examine
       """
@@ -83,15 +83,15 @@ Feature: Manage Cap
       """
       observe,true
       """
-    Then STDOUT should contain:
+    And STDOUT should contain:
       """
       detect,false
       """
-    Then STDOUT should contain:
+    And STDOUT should contain:
       """
       discover,false
       """
-    Then STDOUT should contain:
+    And STDOUT should contain:
       """
       examine,false
       """
@@ -141,7 +141,7 @@ Feature: Manage Cap
       """
       observe,true
       """
-    Then STDOUT should not contain:
+    And STDOUT should not contain:
       """
       detect,false
       """
