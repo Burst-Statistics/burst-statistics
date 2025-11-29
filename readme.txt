@@ -5,7 +5,7 @@ Tags: statistics, analytics, stats, analytics alternative
 Requires at least: 6.4
 License: GPL2
 Requires PHP: 8.0
-Tested up to: 6.8
+Tested up to: 6.9
 Stable tag: 3.1.0.3
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.

@@ -10,6 +10,8 @@
  * Domain Path: /languages
  * Author: Burst Statistics - Stats & Analytics for WordPress
  * Author URI: https://burst-statistics.com
+ * License: GPL v2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
 
 /*
