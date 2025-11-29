@@ -134,7 +134,7 @@ class Tracking {
 
 		// if track_url_changes is enabled, also check for changing parameters.
 		if ( $this->get_option_bool( 'track_url_change' ) ) {
-			$previous_page_url .= $previous_hit['parameters'];
+            $previous_page_url .= $previous_hit['parameters'] ?? '';
 			$new_page_url      .= $sanitized_data['parameters'];
 		}
 		$is_same_url = $previous_page_url === $new_page_url;
