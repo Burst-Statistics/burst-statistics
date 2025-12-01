@@ -98,13 +98,19 @@ We value your feedback. You can [submit a support request on the WordPress forum
 
 == Change log ==
 = 3.1.0.3 =
-* November 25th
+* December 1st
 * Fix: saving settings changes after saving initial changes required a reload.
 * Performance: Performance improvements by offloading resource greedy processes during tracking to cron in batches
 * Improvement: User Agent Parser improvements, removing invalid browsers
 * Fix: dropdown for advanced filters not filtering the list.
 * Fix: undefined tab caused by incomplete removal of sales menu when no WooCommerce or EDD detected.
 * Fix: object caching on page counts causing slow update of page counts, props @fveits
+
+= 3.0.2 =
+* November 25th 2025
+* Fix: some notices were incorrectly dismissed during validation.
+* Improvement: added automated test for hook goals.
+* Improvement: added automated test for archiving restoration.
 
 = 3.0.0 =
 * November 11th 2025
