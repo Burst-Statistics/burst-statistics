@@ -12,6 +12,10 @@ return [
 					'id'    => 'elementor_pro_forms_form_submitted',
 					'title' => 'Elementor - ' . __( 'Form Submission', 'burst-statistics' ),
 				],
+				[
+					'id'    => 'submit_button_click',
+					'title' => 'Elementor - ' . __( 'Form Submission', 'burst-statistics' ),
+				],
 			],
 	],
 	'woocommerce'                      => [

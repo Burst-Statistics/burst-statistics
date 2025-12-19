@@ -55,9 +55,6 @@ class Shortcodes {
 
 		// Add filters to detect our shortcodes and enqueue the style when needed.
 		add_filter( 'the_content', [ $this, 'check_for_burst_shortcodes' ], 10, 1 );
-
-		// Also check in widgets, Gutenberg blocks, etc.
-		add_action( 'wp_footer', [ $this, 'maybe_enqueue_shortcode_styles' ], 10 );
 	}
 
 	/**
@@ -84,46 +81,7 @@ class Shortcodes {
 	}
 
 	/**
-	 * Fallback check for shortcodes in widgets or other areas
-	 */
-	public function maybe_enqueue_shortcode_styles(): void {
-		global $wp_query;
-
-		// Check if we're on a singular post or page.
-		if ( is_singular() ) {
-			$post = $wp_query->get_queried_object();
-
-			// Check post content for shortcodes.
-			if ( $post && isset( $post->post_content ) && (
-					has_shortcode( $post->post_content, 'burst-most-visited' ) ||
-					has_shortcode( $post->post_content, 'burst_statistics' )
-				) ) {
-				$this->enqueue_shortcode_styles();
-				return;
-			}
-		}
-
-		// Check active widgets for shortcodes.
-		$active_widgets = wp_get_sidebars_widgets();
-		if ( is_array( $active_widgets ) ) {
-			foreach ( $active_widgets as $sidebar_widgets ) {
-				if ( ! is_array( $sidebar_widgets ) ) {
-					continue;
-				}
-
-				foreach ( $sidebar_widgets as $widget ) {
-					if ( strpos( $widget, 'text' ) !== false ) {
-						// This is a text widget that might contain shortcodes.
-						$this->enqueue_shortcode_styles();
-						return;
-					}
-				}
-			}
-		}
-	}
-
-	/**
-	 * Actually enqueue the shortcode styles
+	 * Enqueue the shortcode styles
 	 */
 	private function enqueue_shortcode_styles(): void {
 		wp_enqueue_style( 'burst-statistics-shortcodes' );
@@ -508,7 +466,8 @@ class Shortcodes {
 		// Apply format.
 		if ( $atts['format'] === 'text' ) {
 			// Get metric labels from our Frontend_Statistics class.
-			$metric_labels = $this->statistics->get_metric_labels();
+			$query_data    = new Query_Data();
+			$metric_labels = $query_data->get_allowed_metrics_labels();
 			$metric_label  = isset( $metric_labels[ $atts['type'] ] ) ? $metric_labels[ $atts['type'] ] : '';
 			$output        = sprintf(
 				'<p class="burst-statistics-text burst-statistics-%s">%s: %s</p>',

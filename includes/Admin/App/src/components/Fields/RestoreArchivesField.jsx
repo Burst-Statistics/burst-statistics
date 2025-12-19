@@ -4,10 +4,10 @@ import Icon from '../../utils/Icon';
 import useArchiveStore from '@/store/useArchivesStore';
 import useSettingsData from '@/hooks/useSettingsData';
 import DataTable from 'react-data-table-component';
-import useLicenseData from '@/hooks/useLicenseData'
-import { useQuery } from '@tanstack/react-query'
+import useLicenseData from '@/hooks/useLicenseData';
+import { useQuery } from '@tanstack/react-query';
 
-const RestoreArchivesField = forwardRef( ( { ...props }, ref ) => {
+const RestoreArchivesField = forwardRef( () => {
 	const [ searchValue, setSearchValue ] = useState( '' );
 	const [ selectedArchives, setSelectedArchives ] = useState([]);
 	const [ downloading, setDownloading ] = useState( false );
@@ -16,33 +16,76 @@ const RestoreArchivesField = forwardRef( ( { ...props }, ref ) => {
 	const [ entirePageSelected, setEntirePageSelected ] = useState( false );
 	const [ sortBy, setSortBy ] = useState( 'title' );
 	const [ sortDirection, setSortDirection ] = useState( 'asc' );
+	const [ localProgress, setLocalProgress ] = useState( 0 );
 
-
-	const archives = useArchiveStore( state => state.archives );
-	const fetching = useArchiveStore( state => state.fetching );
-	const fetchData = useArchiveStore( state => state.fetchData );
-	const deleteArchives = useArchiveStore( state => state.deleteArchives );
-	const downloadUrl = useArchiveStore( state => state.downloadUrl );
-	const startRestoreArchives = useArchiveStore( state => state.startRestoreArchives );
-	const fetchRestoreArchivesProgress = useArchiveStore( state => state.fetchRestoreArchivesProgress );
-	const restoring = useArchiveStore( state => state.restoring );
-	const progress = useArchiveStore( state => state.progress );
+	const archives = useArchiveStore( ( state ) => state.archives );
+	const fetching = useArchiveStore( ( state ) => state.fetching );
+	const fetchData = useArchiveStore( ( state ) => state.fetchData );
+	const deleteArchives = useArchiveStore( ( state ) => state.deleteArchives );
+	const downloadUrl = useArchiveStore( ( state ) => state.downloadUrl );
+	const startRestoreArchives = useArchiveStore(
+		( state ) => state.startRestoreArchives
+	);
+	const fetchRestoreArchivesProgress = useArchiveStore(
+		( state ) => state.fetchRestoreArchivesProgress
+	);
+	const restoring = useArchiveStore( ( state ) => state.restoring );
+	const progress = useArchiveStore( ( state ) => state.progress );
 	const { addNotice } = useSettingsData();
 	const { isPro } = useLicenseData();
 
-	useQuery(
-	  {
-		  queryFn: () => fetchRestoreArchivesProgress(),
-		  queryKey: [ 'restore-archives-progress' ],
-		  refetchInterval: restoring ? 5000 : false,
-	  }
-	);
+	const { isFetching } = useQuery({
+		queryFn: () => fetchRestoreArchivesProgress(),
+		queryKey: [ 'restore-archives-progress' ],
+		refetchInterval: restoring ? 5000 : false
+	});
+
+	// Update local progress from server progress when fetch completes
+	useEffect( () => {
+		if ( ! isFetching && progress !== undefined ) {
+			setLocalProgress( progress );
+		}
+	}, [ isFetching, progress ]);
+
+	// Update local progress from server progress when fetch completes
+	useEffect( () => {
+		if ( ! isFetching && progress !== undefined ) {
+			setLocalProgress( progress );
+		}
+	}, [ isFetching, progress ]);
+
+	// Increment local progress every second when restoring and not fetching
+	useEffect( () => {
+		if ( ! restoring || 100 <= localProgress ) {
+			return;
+		}
+
+		const interval = setInterval( () => {
+			setLocalProgress( ( prev ) => {
+
+				// Only increment if not currently fetching and below 100
+				if ( ! isFetching && 100 > prev ) {
+					return Math.min( prev + 1, 99 ); // Cap at 99 until real progress arrives
+				}
+				return prev;
+			});
+		}, 2000 );
+
+		return () => clearInterval( interval );
+	}, [ restoring, isFetching, localProgress ]);
+
+	// Reset local progress when restoring stops
+	useEffect( () => {
+		if ( ! restoring ) {
+			setLocalProgress( 0 );
+		}
+	}, [ restoring ]);
 
 	useEffect( () => {
 		let mounted = true;
 
-		const loadData = async () => {
-			if (mounted) {
+		const loadData = async() => {
+			if ( mounted ) {
 				await fetchData( isPro );
 			}
 		};
@@ -52,10 +95,10 @@ const RestoreArchivesField = forwardRef( ( { ...props }, ref ) => {
 		return () => {
 			mounted = false;
 		};
-	}, [isPro, fetchData] );
+	}, [ isPro, fetchData ]);
 
 	const handlePageChange = ( page ) => {
-		setPagination( { ...pagination, currentPage: page } );
+		setPagination({ ...pagination, currentPage: page });
 	};
 
 	const updateSelectedArchives = ( ids ) => {
@@ -65,15 +108,16 @@ const RestoreArchivesField = forwardRef( ( { ...props }, ref ) => {
 				setIndeterminate( false );
 			}
 			setSelectedArchives( ids );
-		} catch (error) {
+		} catch ( e ) { // eslint-disable-line @typescript-eslint/no-unused-vars
+
 			// Component was unmounted, ignore the error
-			console.log('Component unmounted, ignoring state update');
+			console.log( 'Component unmounted, ignoring state update' );
 		}
-	}
+	};
 
 	const onDeleteArchives = async( e, ids ) => {
 		e.preventDefault();
-		updateSelectedArchives( [] );
+		updateSelectedArchives([]);
 		await deleteArchives( ids );
 	};
 
@@ -82,17 +126,20 @@ const RestoreArchivesField = forwardRef( ( { ...props }, ref ) => {
 		updateSelectedArchives([]);
 		await startRestoreArchives( ids );
 		addNotice(
-		  'archive_data',
-		  'warning',
-		  __( 'Because restoring files can conflict with the archiving functionality, archiving has been disabled.', 'burst-statistics' ),
-		  __( 'Archiving disabled', 'burst-statistics' )
+			'archive_data',
+			'warning',
+			__(
+				'Because restoring files can conflict with the archiving functionality, archiving has been disabled.',
+				'burst-statistics'
+			),
+			__( 'Archiving disabled', 'burst-statistics' )
 		);
 	};
 
 	const downloadArchives = async( e ) => {
 		e.preventDefault();
-		let selectedArchivesCopy = archives.filter( ( archive ) =>
-		  selectedArchives.includes( archive.id )
+		const selectedArchivesCopy = archives.filter( ( archive ) =>
+			selectedArchives.includes( archive.id )
 		);
 		setDownloading( true );
 		const downloadNext = async() => {
@@ -101,22 +148,28 @@ const RestoreArchivesField = forwardRef( ( { ...props }, ref ) => {
 				const url = downloadUrl + archive.id;
 
 				try {
-					let request = new XMLHttpRequest();
+					const request = new XMLHttpRequest();
 					request.responseType = 'blob';
 					request.open( 'get', url, true );
 					request.send();
 					request.onreadystatechange = function() {
 						if ( 4 === this.readyState && 200 === this.status ) {
-							let obj = window.URL.createObjectURL( this.response );
-							let element = window.document.createElement( 'a' );
+							const obj = window.URL.createObjectURL(
+								this.response
+							);
+							const element = window.document.createElement( 'a' );
 							element.href = obj;
 							element.download = archive.title;
 							element.style.display = 'none';
-							document.body.appendChild(element);
+							document.body.appendChild( element );
 							element.click();
-							document.body.removeChild(element); // prevents redirect
+							document.body.removeChild( element ); // prevents redirect
 
-							updateSelectedArchives( selectedArchivesCopy.map( archive => archive.id ) );
+							updateSelectedArchives(
+								selectedArchivesCopy.map(
+									( archive ) => archive.id
+								)
+							);
 
 							setDownloading( false );
 
@@ -142,11 +195,13 @@ const RestoreArchivesField = forwardRef( ( { ...props }, ref ) => {
 	const handleSelectEntirePage = ( selected ) => {
 		if ( selected ) {
 			setEntirePageSelected( true );
-			let currentPage = pagination.currentPage ? pagination.currentPage : 1;
-			let filtered = handleFiltering( archives );
-			let archivesOnPage = filtered.slice(
-			  ( currentPage - 1 ) * 10,
-			  currentPage * 10
+			const currentPage = pagination.currentPage ?
+				pagination.currentPage :
+				1;
+			const filtered = handleFiltering( archives );
+			const archivesOnPage = filtered.slice(
+				( currentPage - 1 ) * 10,
+				currentPage * 10
 			);
 			setSelectedArchives( archivesOnPage.map( ( archive ) => archive.id ) );
 		} else {
@@ -164,15 +219,17 @@ const RestoreArchivesField = forwardRef( ( { ...props }, ref ) => {
 				setSelectedArchives( docs );
 			}
 		} else {
-			docs = [ ...selectedArchives.filter( ( archiveId ) => archiveId !== id ) ];
+			docs = [
+				...selectedArchives.filter( ( archiveId ) => archiveId !== id )
+			];
 			setSelectedArchives( docs );
 		}
 
-		let currentPage = pagination.currentPage ? pagination.currentPage : 1;
-		let filtered = handleFiltering( archives );
-		let archivesOnPage = filtered.slice(
-		  ( currentPage - 1 ) * 10,
-		  currentPage * 10
+		const currentPage = pagination.currentPage ? pagination.currentPage : 1;
+		const filtered = handleFiltering( archives );
+		const archivesOnPage = filtered.slice(
+			( currentPage - 1 ) * 10,
+			currentPage * 10
 		);
 		let allSelected = true;
 		let hasOneSelected = false;
@@ -199,7 +256,9 @@ const RestoreArchivesField = forwardRef( ( { ...props }, ref ) => {
 		let newArchives = [ ...archives ];
 		newArchives = handleSort( newArchives, sortBy, sortDirection );
 		newArchives = newArchives.filter( ( archive ) => {
-			return archive.title.toLowerCase().includes( searchValue.toLowerCase() );
+			return archive.title
+				.toLowerCase()
+				.includes( searchValue.toLowerCase() );
 		});
 		return newArchives;
 	};
@@ -225,13 +284,22 @@ const RestoreArchivesField = forwardRef( ( { ...props }, ref ) => {
 		};
 		if ( -1 !== selector.toString().indexOf( 'title' ) && 'title' !== sortBy ) {
 			setSortBy( 'title' );
-		} else if ( -1 !== selector.toString().indexOf( 'size' ) && 'size' !== sortBy ) {
+		} else if (
+			-1 !== selector.toString().indexOf( 'size' ) &&
+			'size' !== sortBy
+		) {
 			setSortBy( 'size' );
 		}
 		if ( 'title' === sortBy ) {
 			rows.sort( ( a, b ) => {
-				const [ yearA, monthA ] = a.id.replace( '.zip', '' ).split( '-' ).map( Number );
-				const [ yearB, monthB ] = b.id.replace( '.zip', '' ).split( '-' ).map( Number );
+				const [ yearA, monthA ] = a.id
+					.replace( '.zip', '' )
+					.split( '-' )
+					.map( Number );
+				const [ yearB, monthB ] = b.id
+					.replace( '.zip', '' )
+					.split( '-' )
+					.map( Number );
 
 				if ( yearA !== yearB ) {
 					return multiplier * ( yearA - yearB );
@@ -252,21 +320,21 @@ const RestoreArchivesField = forwardRef( ( { ...props }, ref ) => {
 	const columns = [
 		{
 			name: (
-			  <input
-				type="checkbox"
-				className={indeterminate ? 'burst-indeterminate' : ''}
-				checked={entirePageSelected}
-				disabled={fetching || 0 === archives.length || restoring}
-				onChange={( e ) => handleSelectEntirePage( e.target.checked )}
-			  />
+				<input
+					type="checkbox"
+					className={indeterminate ? 'burst-indeterminate' : ''}
+					checked={entirePageSelected}
+					disabled={fetching || 0 === archives.length || restoring}
+					onChange={( e ) => handleSelectEntirePage( e.target.checked )}
+				/>
 			),
 			selector: ( row ) => row.selectControl,
-			width: '60px',
+			width: '60px'
 		},
 		{
 			name: __( 'Archive', 'burst-statistics' ),
 			selector: ( row ) => row.title,
-			sortable: true,
+			sortable: true
 		},
 		{
 			name: __( 'Size', 'burst-statistics' ),
@@ -274,134 +342,149 @@ const RestoreArchivesField = forwardRef( ( { ...props }, ref ) => {
 			sortable: true,
 			width: '120px',
 			style: {
-				justifyContent: 'flex-end', // replaces right:true
-			},
+				justifyContent: 'flex-end' // replaces right:true
+			}
 		}
 	];
 
-	let filteredArchives = handleFiltering( archives );
-	let data = [];
+	const filteredArchives = handleFiltering( archives );
+	const data = [];
 	filteredArchives.forEach( ( archive ) => {
-		let archiveCopy = { ...archive };
+		const archiveCopy = { ...archive };
 		archiveCopy.selectControl = (
-		  <input
-			type="checkbox"
-			className="m-0"
-			disabled={archiveCopy.restoring || restoring}
-			checked={selectedArchives.includes( archiveCopy.id )}
-			onChange={( e ) => onSelectArchive( e.target.checked, archiveCopy.id )}
-		  />
+			<input
+				type="checkbox"
+				className="m-0"
+				disabled={archiveCopy.restoring || restoring}
+				checked={selectedArchives.includes( archiveCopy.id )}
+				onChange={( e ) =>
+					onSelectArchive( e.target.checked, archiveCopy.id )
+				}
+			/>
 		);
 		data.push( archiveCopy );
 	});
 
 	let showDownloadButton = 1 < selectedArchives.length;
 	if ( ! showDownloadButton && 1 === selectedArchives.length ) {
-		let currentSelected = archives.filter( ( archive ) =>
-		  selectedArchives.includes( archive.id )
+		const currentSelected = archives.filter( ( archive ) =>
+			selectedArchives.includes( archive.id )
 		);
 		showDownloadButton =
-		  currentSelected.hasOwnProperty( 0 ) &&
-		  '' !== currentSelected[0].download_url;
+			Object.prototype.hasOwnProperty.call( currentSelected, 0 ) &&
+			'' !== currentSelected[0].download_url;
 	}
-	//with just one month to restore, progress will always be zero. So we show 50% by default until it's finished.
-	console.log("selected arhcives count ", selectedArchives.length)
-	const defaultProgresss = selectedArchives.length >= 1 ? 5 : 50;
+	const displayProgress = restoring ? localProgress : 0;
+
 	return (
-	  <div className="w-full p-6">
-		  <div className="flex py-2.5 px-6 justify-between">
-			  <input
-				type="text"
-				placeholder={__( 'Search', 'burst-statistics' )}
-				value={searchValue}
-				onChange={( e ) => setSearchValue( e.target.value )}
-			  />
+		<div className="w-full p-6">
+			<div className="flex py-2.5 px-6 justify-between">
+				<input
+					type="text"
+					placeholder={__( 'Search', 'burst-statistics' )}
+					value={searchValue}
+					onChange={( e ) => setSearchValue( e.target.value )}
+				/>
 
-			  {
-				restoring && <div className="flex items-center justify-end text-gray-400 w-full gap-1">{progress === 0 ? defaultProgresss : progress } %<Icon name="loading" color="gray"/></div>
-			  }
-		  </div>
+				{restoring && (
+					<div className="flex items-center justify-end text-gray-400 w-full gap-1 restore-processing">
+						{displayProgress} %<Icon name="loading" color="gray" />
+					</div>
+				)}
+			</div>
 
-		  {
-			0 < selectedArchives.length && (
-			  <div className="mt-[10px] mb-[10px] items-center bg-blue-light py-2.5 px-6 flex space-y-2">
-				  <div className="flex mb-4 mt-4 justify-between items-center w-full">
-					  <div>
-						  {
-							  selectedArchives.length > 0 && sprintf( _n( '%s item selected', '%s items selected', selectedArchives.length, 'burst-statistics' ), selectedArchives.length )
-						  }
-					  </div>
+			{0 < selectedArchives.length && (
+				<div className="mt-[10px] mb-[10px] items-center bg-blue-light py-2.5 px-6 flex space-y-2">
+					<div className="flex mb-4 mt-4 justify-between items-center w-full">
+						<div>
+							{0 < selectedArchives.length &&
+								sprintf(
+									_n(
+										'%s item selected',
+										'%s items selected',
+										selectedArchives.length,
+										'burst-statistics'
+									),
+									selectedArchives.length
+								)}
+						</div>
 
-					  <div className="flex gap-2.5">
-						  {
-							  showDownloadButton && (
+						<div className="flex gap-2.5">
+							{showDownloadButton && (
 								<button
-								  disabled={ downloading || ( progress && 100 > progress ) }
-								  className="burst-button burst-button--secondary"
-								  onClick={ ( e ) => downloadArchives( e ) }
+									disabled={
+										downloading ||
+										( progress && 100 > progress )
+									}
+									className="burst-button burst-button--secondary"
+									onClick={( e ) => downloadArchives( e )}
 								>
-									{ __( 'Download', 'burst-statistics' ) }
+									{__( 'Download', 'burst-statistics' )}
 
-									{ downloading && <Icon name="loading" color="gray"/> }
+									{downloading && (
+										<Icon name="loading" color="gray" />
+									)}
 								</button>
-							 )
-						  }
+							)}
 
-						  <button
-							disabled={ progress && 100 > progress }
-							className="burst-button burst-button--primary"
-							onClick={ ( e ) => onRestoreArchives( e, selectedArchives ) }
-						  >
-							  { __( 'Restore', 'burst-statistics' ) }
-							  { 100 > progress && <Icon name="loading" color="gray"/> }
-						  </button>
+							<button
+								disabled={progress && 100 > progress}
+								className="burst-button burst-button--primary"
+								onClick={( e ) =>
+									onRestoreArchives( e, selectedArchives )
+								}
+							>
+								{__( 'Restore', 'burst-statistics' )}
+								{100 > progress && (
+									<Icon name="loading" color="gray" />
+								)}
+							</button>
 
-						  <button
-							disabled={ progress && 100 > progress }
-							className="burst-button burst-button--tertiary"
-							onClick={ ( e ) => onDeleteArchives( e, selectedArchives ) }
-						  >
-							  { __( 'Delete', 'burst-statistics' ) }
-						  </button>
-					  </div>
-				  </div>
-			  </div>
-			)
-		  }
+							<button
+								disabled={progress && 100 > progress}
+								className="burst-button burst-button--tertiary"
+								onClick={( e ) =>
+									onDeleteArchives( e, selectedArchives )
+								}
+							>
+								{__( 'Delete', 'burst-statistics' )}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 
-		  {
-			DataTable && (
-			  <DataTable
-				columns={columns}
-				data={data}
-				dense
-				paginationPerPage={10}
-				onChangePage={handlePageChange}
-				paginationState={pagination}
-				persistTableHead
-				defaultSortFieldId={2}
-				pagination
-				paginationRowsPerPageOptions={[ 10, 25, 50 ]}
-				paginationComponentOptions={
-					{
+			{DataTable && (
+				<DataTable
+					columns={columns}
+					data={data}
+					dense
+					paginationPerPage={10}
+					onChangePage={handlePageChange}
+					paginationState={pagination}
+					persistTableHead
+					defaultSortFieldId={2}
+					pagination
+					paginationRowsPerPageOptions={[ 10, 25, 50 ]}
+					paginationComponentOptions={{
 						rowsPerPageText: '',
 						rangeSeparatorText: __( 'of', 'burst-statistics' ),
 						noRowsPerPage: false,
 						selectAllRowsItem: true,
 						selectAllRowsItemText: __( 'All', 'burst-statistics' )
+					}}
+					noDataComponent={
+						<div className="p-8">
+							{__( 'No archives', 'burst-statistics' )}
+						</div>
 					}
-				}
-				noDataComponent={
-					<div className="p-8">
-								{ __( 'No archives', 'burst-statistics' ) }
-							</div>
-				}
-				sortFunction={handleSort}
-			  />
-			)
-		  }
+					sortFunction={handleSort}
+				/>
+			)}
 		</div>
 	);
 });
+
+RestoreArchivesField.displayName = 'RestoreArchivesField';
 
 export default RestoreArchivesField;

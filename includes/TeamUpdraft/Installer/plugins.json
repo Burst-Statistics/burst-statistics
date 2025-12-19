@@ -9,9 +9,11 @@
       "value": "WPO_Menu_Cart_Pro"
     },
     "wordpress_url": "https://wordpress.org/plugins/woocommerce-menu-bar-cart/",
+    "php" : "7.4",
+    "wp" : "3.4",
     "upgrade_url": "https://wpovernight.com/downloads/menu-cart-pro/",
     "title": "Menu Cart for WooCommerce",
-    "description": "Add a shopping cart button to your menu bar",
+    "description": "Add a shopping cart button to your menu bar.",
     "conditions": {
       "plugin": "WC_VERSION"
     },
@@ -28,9 +30,11 @@
     "search_url": "wp%2520overnight&tab=search&type=term",
     "constant_free": "WPO_WCPDF_VERSION",
     "wordpress_url": "https://wordpress.org/plugins/woocommerce-pdf-invoices-packing-slips/",
+    "php" : "7.4",
+    "wp" : "4.4",
     "upgrade_url": "https://wpovernight.com/downloads/woocommerce-pdf-invoices-packing-slips-professional/",
     "title": "PDF Invoices & Packing Slips for WooCommerce",
-    "description": "Automatically adds a PDF or UBL invoice to the order confirmation emails sent out to your customers",
+    "description": "Automatically adds a PDF or UBL invoice to the order confirmation emails sent out to your customers.",
     "conflicting_plugins": [
       "WF_PKLIST_VERSION",
       "WPI_FILE",
@@ -54,9 +58,11 @@
       "value": "AIOWPS_PREMIUM_VERSION"
     },
     "wordpress_url": "https://wordpress.org/plugins/all-in-one-wp-security-and-firewall/",
+    "php" : "5.6",
+    "wp" : "5.0",
     "upgrade_url": "https://teamupdraft.com/all-in-one-security/",
-    "title": "All-In-One Security – Simply secure your site",
-    "description": "The easiest way to secure your WordPress site",
+    "title": "All-In-One Security (AIOS)",
+    "description": "The easiest way to secure your WordPress site.",
     "conflicting_plugins": [
       "WORDFENCE_VERSION",
       "ITSEC_VERSION",
@@ -79,9 +85,11 @@
       "value": "BURST_PRO"
     },
     "wordpress_url": "https://wordpress.org/plugins/burst-statistics/",
+    "php" : "8.0",
+    "wp" : "6.4",
     "upgrade_url": "https://burst-statistics.com/pricing/",
-    "title": "Burst Statistics – Privacy Friendly Analytics for WordPress",
-    "description": "Understandable, self hosted and privacy-friendly analytics for WordPress"
+    "title": "Burst Statistics",
+    "description": "Privacy Friendly Analytics for WordPress."
   },
   {
     "file": "updraftplus/updraftplus.php",
@@ -93,9 +101,11 @@
       "value": "UpdraftPlus_Addon_Google_Enhanced"
     },
     "wordpress_url": "https://wordpress.org/plugins/updraftplus/",
+    "php" : "5.6",
+    "wp" : "3.2",
     "upgrade_url": "https://teamupdraft.com/updraftplus/pricing/",
-    "title": "UpdraftPlus - Back-up & migrate your site with ease",
-    "description": "The world’s highest ranking and most popular scheduled backup and migration plugin",
+    "title": "UpdraftPlus",
+    "description": "Back up & migrate your site with ease.",
     "conflicting_plugins": [
       "DUPLICATOR_DISABLE_CAP_BASIC",
       "WPVIVID_PLUGIN_VERSION",
@@ -116,9 +126,11 @@
       "value": "wp-optimize-premium/wp-optimize.php"
     },
     "wordpress_url": "https://wordpress.org/plugins/wp-optimize/",
+    "php" : "7.2",
+    "wp" : "4.9",
     "upgrade_url": "https://teamupdraft.com/wp-optimize/pricing/",
-    "title": "WP-Optimize – Easily boost your page speed",
-    "description": "Powerful, easy to use, all-in-one WordPress performance plugin",
+    "title": "WP-Optimize",
+    "description": "Easily boost your page speed.",
     "conflicting_plugins": [
       "WP_ROCKET_VERSION",
       "DISABLE_SUPERCACHE",
@@ -140,9 +152,11 @@
       "value": "internal-links-premium/wp-internal-linkjuicer.php"
     },
     "wordpress_url": "https://wordpress.org/plugins/internal-links/",
+    "php" : "7.1",
+    "wp" : "5.9.0",
     "upgrade_url": "https://www.internallinkjuicer.com/#get",
-    "title": "Internal Link Juicer – SEO Auto Linker for WordPress",
-    "description": "Automatically create internal links to boost your SEO and user experience"
+    "title": "Internal Link Juicer",
+    "description": "SEO Auto Linker for WordPress."
   },
   {
     "file": "wpgetapi/wpgetapi.php",
@@ -154,9 +168,11 @@
       "value": "wpgetapi-extras/wpgetapi-extras.php"
     },
     "wordpress_url": "https://wordpress.org/plugins/wpgetapi/",
+    "php" : "7.2",
+    "wp" : "5.6",
     "upgrade_url": "https://wpgetapi.com/pricing/",
     "title": "WPGet API",
-    "description": "Connect to any external REST API",
+    "description": "Connect to any external REST API.",
     "niche": true
   }
 ]

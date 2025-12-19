@@ -25,7 +25,7 @@ trait Admin_Helper {
 	 *
 	 * @return boolean true or false
 	 */
-	public function user_can_view(): bool {
+	protected function user_can_view(): bool {
 		if ( isset( burst_loader()->user_can_view ) ) {
 			return burst_loader()->user_can_view;
 		}
@@ -46,7 +46,7 @@ trait Admin_Helper {
 	/**
 	 * Verify if this is an authenticated rest request for Burst
 	 */
-	public function is_logged_in_rest(): bool {
+	protected function is_logged_in_rest(): bool {
 		if ( isset( burst_loader()->is_logged_in_rest ) ) {
 			return burst_loader()->is_logged_in_rest;
 		}
@@ -58,7 +58,7 @@ trait Admin_Helper {
 	/**
 	 * Check if we're on the Burst page
 	 */
-	public function is_burst_page(): bool {
+	protected function is_burst_page(): bool {
 		if ( $this->is_logged_in_rest() ) {
 			return true;
 		}
@@ -67,7 +67,7 @@ trait Admin_Helper {
 			return false;
 		}
 
-		parse_str( $_SERVER['QUERY_STRING'], $params );
+		parse_str( sanitize_text_field( wp_unslash( $_SERVER['QUERY_STRING'] ) ), $params );
 		if ( array_key_exists( 'page', $params ) && ( $params['page'] === 'burst' ) ) {
 			return true;
 		}
@@ -81,7 +81,7 @@ trait Admin_Helper {
 	 *               utm_content=page-analytics -> specifies that the user is interacting with the page analytics feature.
 	 *               utm_source=download-button -> indicates that the click originated from the download button.
 	 */
-	public function get_website_url( string $url = '/', array $params = [] ): string {
+	protected function get_website_url( string $url = '/', array $params = [] ): string {
 		$version    = defined( 'BURST_PRO' ) ? 'pro' : 'free';
 		$version_nr = defined( 'BURST_VERSION' ) ? BURST_VERSION : '0';
 
@@ -105,7 +105,7 @@ trait Admin_Helper {
 	/**
 	 * Checks if the user has admin access to the Burst plugin.
 	 */
-	public function has_admin_access(): bool {
+	protected function has_admin_access(): bool {
 		if ( isset( burst_loader()->has_admin_access ) ) {
 			return burst_loader()->has_admin_access;
 		}
@@ -132,7 +132,7 @@ trait Admin_Helper {
 	/**
 	 * Checks if user has sales admin access to the Burst plugin.
 	 */
-	public function has_sales_admin_access(): bool {
+	protected function has_sales_admin_access(): bool {
 		if ( ! $this->has_admin_access() ) {
 			return false;
 		}
@@ -173,7 +173,7 @@ trait Admin_Helper {
 	 *     installed_by: string
 	 * }
 	 */
-	public function localized_settings( array $js_data ): array {
+	protected function localized_settings( array $js_data ): array {
 		return apply_filters(
 			'burst_localize_script',
 			[
@@ -203,7 +203,7 @@ trait Admin_Helper {
 	/**
 	 * Get admin url. We don't use a different URL for multisite, as there is no network settings page.
 	 */
-	public function admin_url( string $page = '' ): string {
+	protected function admin_url( string $page = '' ): string {
 		if ( isset( burst_loader()->admin_url ) ) {
 			$url = burst_loader()->admin_url;
 		} else {
@@ -222,7 +222,7 @@ trait Admin_Helper {
 	 *
 	 * @return array<string, string> Associative array of role slugs and their translated names.
 	 */
-	public function get_user_roles(): array {
+	protected function get_user_roles(): array {
 		if ( ! $this->user_can_manage() ) {
 			return [];
 		}
@@ -237,7 +237,7 @@ trait Admin_Helper {
 	 *
 	 * @return boolean true or false
 	 */
-	public function user_can_manage(): bool {
+	protected function user_can_manage(): bool {
 		// Check if we already have a cached result.
 		if ( isset( burst_loader()->user_can_manage ) ) {
 			return burst_loader()->user_can_manage;
@@ -277,7 +277,7 @@ trait Admin_Helper {
 	 *
 	 * @return array<int, string> List of available date range keys.
 	 */
-	public function get_date_ranges(): array {
+	protected function get_date_ranges(): array {
 		return apply_filters(
 			'burst_date_ranges',
 			[
@@ -299,7 +299,7 @@ trait Admin_Helper {
 	 * Add some additional sanitizing
 	 * https://developer.wordpress.org/news/2023/08/understand-and-use-wordpress-nonces-properly/#verifying-the-nonce
 	 */
-	public function verify_nonce( ?string $nonce, string $action ): bool {
+	protected function verify_nonce( ?string $nonce, string $action ): bool {
 		if ( empty( $nonce ) ) {
 			return false;
 		}
@@ -310,19 +310,33 @@ trait Admin_Helper {
 	 * We use this custom sprintf for outputting translatable strings. This function only works with %s
 	 * This function wraps the sprintf and will prevent fatal errors.
 	 */
-	public function sprintf(): string {
-		$args             = func_get_args();
-		$count            = substr_count( $args[0], '%s' );
-		$count_percentage = substr_count( $args[0], '%' );
-		$args_count       = count( $args ) - 1;
+	protected function sprintf(): string {
+		$args   = func_get_args();
+		$format = $args[0];
+		$passed = array_slice( $args, 1 );
 
-		if ( $count_percentage === $count ) {
-			if ( $args_count === $count ) {
-				return call_user_func_array( 'sprintf', $args );
+		// Find all numbered placeholders (%1$s, %2$d, etc).
+		preg_match_all( '/%(\d+)\$/', $format, $matches );
+
+		if ( ! empty( $matches[1] ) ) {
+			$max_index    = max( $matches[1] );
+			$passed_count = count( $passed );
+
+			// If we have enough args for the highest placeholder index, run sprintf.
+			if ( $passed_count >= $max_index ) {
+				return sprintf( ...$args );
 			}
+
+			return $format . ' (Translation error)';
 		}
 
-		return $args[0] . ' (Translation error)';
+		// Fallback for old-style %s %d etc.
+		$expected = preg_match_all( '/%(?!%)[a-zA-Z]/', $format );
+		if ( $expected === count( $passed ) ) {
+			return sprintf( ...$args );
+		}
+
+		return $format . ' (Translation error)';
 	}
 
 	/**
@@ -338,7 +352,7 @@ trait Admin_Helper {
 	 *     version: string
 	 * }
 	 */
-	public function get_chunk_translations( string $dir ): array {
+	protected function get_chunk_translations( string $dir ): array {
 		$default           = [
 			'json_translations' => [],
 			'js_file'           => '',
@@ -387,23 +401,5 @@ trait Admin_Helper {
 			'dependencies'      => $asset_file['dependencies'],
 			'version'           => $asset_file['version'],
 		];
-	}
-
-	/**
-	 * Custom printf function to prevent errors when translators make a mistake in the %s items
-	 *
-	 * @echo string
-	 */
-	public function printf(): void {
-		$args       = func_get_args();
-		$count      = substr_count( $args[0], '%s' );
-		$args_count = count( $args ) - 1;
-
-		if ( $args_count === $count ) {
-			$string = call_user_func_array( 'sprintf', $args );
-			echo wp_kses_post( $string );
-		} else {
-			echo wp_kses_post( $args[0] ) . ' (Translation error)';
-		}
 	}
 }

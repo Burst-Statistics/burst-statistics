@@ -5,13 +5,13 @@ import {
 	getCountryName,
 	getContinentName,
 	formatCurrency
-} from '@/utils/formatting'
+} from '@/utils/formatting';
 import Flag from '@/components/Statistics/Flag';
 import ClickToFilter from '@/components/Common/ClickToFilter';
 import { memo } from 'react';
 import { safeDecodeURI } from '@/utils/lib';
 import { __ } from '@wordpress/i18n';
-import Icon from "@/utils/Icon";
+import Icon from '@/utils/Icon';
 
 // Column format constants
 const FORMATS = {
@@ -24,149 +24,27 @@ const FORMATS = {
   INTEGER: 'integer',
   REFERRER: 'referrer',
   FLOAT: 'float',
-  CURRENCY: 'currency',
-};
-
-// Cache for format cell functions to avoid recreating them for every cell
-const formatFunctionCache = new Map();
-
-// Optimized version of transformDataTableData
-const transformDataTableData = ( response, columnOptions ) => {
-  if ( ! response || ! response.columns ) {
-    return { columns: [], data: [] };
-  }
-
-  // Create a new object instead of mutating the response
-  const result = {
-    ...response,
-    columns: [],
-    data: Array.isArray( response.data ) ? [ ...response.data ] : []
-  };
-
-  // Pre-calculate column formats once
-  const columnFormats = {};
-  response.columns.forEach( column => {
-    columnFormats[column.id] = columnOptions[column.id]?.format || 'integer';
-  });
-
-  // Update columns
-  result.columns = response.columns.map( ( column ) => {
-
-    // Check if column exists in columnOptions
-    if ( ! columnOptions[column.id]) {
-      return column;
-    }
-
-    //@todo fix "right" as boolean value warning
-    let rightValue = 'left' !== columnOptions[column.id]?.align;
-    const format = columnFormats[column.id];
-
-    const updatedColumn = {
-      ...column,
-      selector: ( row ) => row[column.id],
-      right: rightValue
-    };
-
-    // add sort function if percentage or time or integer
-    if ( 'percentage' === format || 'time' === format || 'integer' === format ) {
-      updatedColumn.sortFunction = ( rowA, rowB ) => {
-
-        // Handle null/undefined values by placing them at the end when sorting
-        if ( null === rowA[column.id] || rowA[column.id] === undefined ) {
-          return 1;
-        }
-        if ( null === rowB[column.id] || rowB[column.id] === undefined ) {
-          return -1;
-        }
-
-        // Parse values to numbers for comparison
-        const numA = parseFloat( rowA[column.id]);
-        const numB = parseFloat( rowB[column.id]);
-
-        // Handle NaN values
-        if ( isNaN( numA ) ) {
-return 1;
-}
-        if ( isNaN( numB ) ) {
-return -1;
-}
-
-        return numA - numB;
-      };
-    } else if ( 'url' === format || 'text' === format ) {
-
-      // Add string-based sorting for text and URL columns
-      updatedColumn.sortFunction = ( rowA, rowB ) => {
-
-        // Handle null/undefined values
-        if ( ! rowA[column.id]) {
-return 1;
-}
-        if ( ! rowB[column.id]) {
-return -1;
-}
-
-        // Convert to strings and compare
-        const strA = String( rowA[column.id]).toLowerCase();
-        const strB = String( rowB[column.id]).toLowerCase();
-
-        return strA.localeCompare( strB );
-      };
-    }
-
-    // Use cached format cell function if it exists, or create a new one
-    const cacheKey = `${column.id}:${format}`;
-    if ( ! formatFunctionCache.has( cacheKey ) ) {
-
-      // Define a cell rendering function based on the format
-      formatFunctionCache.set( cacheKey, ( row ) => {
-        const value = row[column.id];
-        switch ( format ) {
-          case 'percentage':
-            return formatPercentage( value );
-          case 'time':
-            return formatTime( value );
-          case 'country':
-               // Return null for undefined or null values to prevent rendering errors
-            if ( value === undefined || null === value ) {
-              return __( 'Not set', 'burst-statistics' );
-            }
-            return <CountryFilter value={value} />;
-          case 'url':
-            return <UrlFilter value={value}  row={row}/>;
-          case 'referrer':
-            return <ReferrerFilter value={value} />;
-          case 'text':
-            return value;
-          case 'integer':
-            return parseInt( value, 10 );
-          default:
-            return value;
-        }
-      });
-    }
-
-    updatedColumn.cell = formatFunctionCache.get( cacheKey );
-    return updatedColumn;
-  });
-
-  return result;
+  CURRENCY: 'currency'
 };
 
 // Memoized filter components - created once, reused everywhere
-const MemoizedClickToFilter = memo(ClickToFilter);
+const MemoizedClickToFilter = memo( ClickToFilter );
 
-const CountryFilter = memo(({ value }) => (
+const CountryFilter = memo( ({ value }) => (
   <MemoizedClickToFilter filter="country_code" filterValue={value}>
-    <Flag country={value} countryNiceName={getCountryName(value)} />
+    <Flag country={value} countryNiceName={getCountryName( value )} />
   </MemoizedClickToFilter>
-));
+) );
 
-const ContinentFilter = memo(({ value }) => (
+CountryFilter.displayName = 'CountryFilter';
+
+const ContinentFilter = memo( ({ value }) => (
   <MemoizedClickToFilter filter="continent_code" filterValue={value}>
-    <>{getContinentName(value)}</>
+    <>{getContinentName( value )}</>
   </MemoizedClickToFilter>
-));
+) );
+
+ContinentFilter.displayName = 'ContinentFilter';
 
 const UrlFilter = memo( ({ value, row }) => (
     <MemoizedClickToFilter filter="page_url" filterValue={value} row={row}>
@@ -174,11 +52,15 @@ const UrlFilter = memo( ({ value, row }) => (
     </MemoizedClickToFilter>
 ) );
 
-const TextFilter = memo(({ filter, value }) => (
+UrlFilter.displayName = 'UrlFilter';
+
+const TextFilter = memo( ({ filter, value }) => (
   <MemoizedClickToFilter filter={filter} filterValue={value}>
     {value}
   </MemoizedClickToFilter>
-));
+) );
+
+TextFilter.displayName = 'TextFilter';
 
 const ReferrerFilter = memo( ({ value }) => (
     <MemoizedClickToFilter filter="referrer" filterValue={value}>
@@ -186,26 +68,28 @@ const ReferrerFilter = memo( ({ value }) => (
     </MemoizedClickToFilter>
 ) );
 
+ReferrerFilter.displayName = 'ReferrerFilter';
+
 /**
  * Registry of column formatters - easily extensible
  * @type {Object<string, function>}
  */
 const COLUMN_FORMATTERS = {
-  [FORMATS.PERCENTAGE]: (value) => formatPercentage(value),
-  [FORMATS.TIME]: (value) => formatTime(value),
-  [FORMATS.INTEGER]: (value) => parseInt(value, 10),
-  [FORMATS.COUNTRY]: (value) => {
-    if (!value || value === '') {
-      return __('Not set', 'burst-statistics');
+  [FORMATS.PERCENTAGE]: ( value ) => formatPercentage( value ),
+  [FORMATS.TIME]: ( value ) => formatTime( value ),
+  [FORMATS.INTEGER]: ( value ) => parseInt( value, 10 ),
+  [FORMATS.COUNTRY]: ( value ) => {
+    if ( ! value || '' === value ) {
+      return __( 'Not set', 'burst-statistics' );
     }
     return <CountryFilter value={value} />;
   },
-  [FORMATS.CONTINENT]: (value) => <ContinentFilter value={value} />,
-  [FORMATS.URL]: (value, columnId, row) => <UrlFilter filter={columnId} value={value} row={row} />,
-  [FORMATS.TEXT]: (value, columnId) => <TextFilter filter={columnId} value={value} />,
-  [FORMATS.REFERRER]: (value) => <ReferrerFilter value={value} />,
-  [FORMATS.FLOAT]: (value) => parseFloat(value),
-  [FORMATS.CURRENCY]: (value) => dataFormatCurrency(value),
+  [FORMATS.CONTINENT]: ( value ) => <ContinentFilter value={value} />,
+  [FORMATS.URL]: ( value, columnId, row ) => <UrlFilter filter={columnId} value={value} row={row} />,
+  [FORMATS.TEXT]: ( value, columnId ) => <TextFilter filter={columnId} value={value} />,
+  [FORMATS.REFERRER]: ( value ) => <ReferrerFilter value={value} />,
+  [FORMATS.FLOAT]: ( value ) => parseFloat( value ),
+  [FORMATS.CURRENCY]: ( value ) => dataFormatCurrency( value )
 };
 
 /**
@@ -222,7 +106,7 @@ const dataFormatCurrency = ( value ) => {
 	}
 
 	return formatCurrency( value.currency, value.value );
-}
+};
 
 /**
  * Unified sorting function that handles all data types
@@ -230,72 +114,92 @@ const dataFormatCurrency = ( value ) => {
  * @param {string} format - The column format type
  * @returns {function} Sort comparison function
  */
-const createSortFunction = (columnId, format) => {
+const createSortFunction = ( columnId, format ) => {
 	const isNumeric = [
 		FORMATS.PERCENTAGE,
 		FORMATS.TIME,
 		FORMATS.INTEGER,
-		FORMATS.FLOAT,
-	].includes(format);
+		FORMATS.FLOAT
+	].includes( format );
 
 	const isCurrency = format === FORMATS.CURRENCY;
 
-	return (rowA, rowB) => {
+	return ( rowA, rowB ) => {
 		const valueA = rowA[columnId];
 		const valueB = rowB[columnId];
 
 		// Handle null/undefined values consistently
-		if (valueA == null && valueB == null) return 0;
-		if (valueA == null) return 1;
-		if (valueB == null) return -1;
+		if ( null == valueA && null == valueB ) {
+return 0;
+}
+		if ( null == valueA ) {
+return 1;
+}
+		if ( null == valueB ) {
+return -1;
+}
 
 		// --- CURRENCY SORTING ---
-		if (isCurrency) {
-			const amountA = typeof valueA === 'object' ? parseFloat(valueA.value) : parseFloat(valueA);
-			const amountB = typeof valueB === 'object' ? parseFloat(valueB.value) : parseFloat(valueB);
+		if ( isCurrency ) {
+			const amountA = 'object' === typeof valueA ? parseFloat( valueA.value ) : parseFloat( valueA );
+			const amountB = 'object' === typeof valueB ? parseFloat( valueB.value ) : parseFloat( valueB );
 
-			if (isNaN(amountA) && isNaN(amountB)) return 0;
-			if (isNaN(amountA)) return 1;
-			if (isNaN(amountB)) return -1;
+			if ( isNaN( amountA ) && isNaN( amountB ) ) {
+return 0;
+}
+			if ( isNaN( amountA ) ) {
+return 1;
+}
+			if ( isNaN( amountB ) ) {
+return -1;
+}
 
 			return amountA - amountB;
 		}
 
 		// --- NUMERIC SORTING ---
-		if (isNumeric) {
-			const numA = parseFloat(valueA);
-			const numB = parseFloat(valueB);
+		if ( isNumeric ) {
+			const numA = parseFloat( valueA );
+			const numB = parseFloat( valueB );
 
-			if (isNaN(numA) && isNaN(numB)) return 0;
-			if (isNaN(numA)) return 1;
-			if (isNaN(numB)) return -1;
+			if ( isNaN( numA ) && isNaN( numB ) ) {
+return 0;
+}
+			if ( isNaN( numA ) ) {
+return 1;
+}
+			if ( isNaN( numB ) ) {
+return -1;
+}
 
 			return numA - numB;
 		}
 
-		return String(valueA).toLowerCase().localeCompare(String(valueB).toLowerCase());
+		return String( valueA ).toLowerCase().localeCompare( String( valueB ).toLowerCase() );
 	};
 };
 
-const addABTestIcon = (content, row) => {
-  if (!row.is_ab_test) return content;
+const addABTestIcon = ( content, row ) => {
+  if ( ! row.is_ab_test ) {
+return content;
+}
 
   let name;
   let color;
   let tooltip;
-  if ( row.significant === 'no_winner' ) {
-    tooltip = __('The test resulted in a tie. More hits might still result in a winner, but the difference will probably be very small.', 'burst-statistics');
+  if ( 'no_winner' === row.significant ) {
+    tooltip = __( 'The test resulted in a tie. More hits might still result in a winner, but the difference will probably be very small.', 'burst-statistics' );
     color = 'gold';
     name = 'scale';
-  } else if ( row.significant === 'still_running' ) {
-    tooltip = __('Not enough data yet to declare a winner or tie.', 'burst-statistics');
+  } else if ( 'still_running' === row.significant ) {
+    tooltip = __( 'Not enough data yet to declare a winner or tie.', 'burst-statistics' );
     color = 'grey';
     name = 'hourglass';
   } else {
-    tooltip = row.winner ? __('Winner of the A/B test with a probability of >95%.', 'burst-statistics')
-    : __('Least performant version of the A/B test with a probability of >95%.', 'burst-statistics');
-    color = row.winner ? "gold": "black";
-    name = row.winner ? "trophy" : "frown";
+    tooltip = row.winner ? __( 'Winner of the A/B test with a probability of >95%.', 'burst-statistics' ) :
+    __( 'Least performant version of the A/B test with a probability of >95%.', 'burst-statistics' );
+    color = row.winner ? 'gold' : 'black';
+    name = row.winner ? 'trophy' : 'frown';
   }
 
   return (
@@ -312,28 +216,29 @@ const addABTestIcon = (content, row) => {
  * @param {string} columnId - The column identifier
  * @returns {function} Cell formatter function
  */
-const createCellFormatter = (format, columnId) => {
+const createCellFormatter = ( format, columnId ) => {
   const formatter = COLUMN_FORMATTERS[format];
-  
-  if (!formatter) {
-    console.warn(`Unknown column format: ${format}. Using default text formatter.`);
-    return (row) => row[columnId] || '';
+
+  if ( ! formatter ) {
+    console.warn( `Unknown column format: ${format}. Using default text formatter.` );
+    return ( row ) => row[columnId] || '';
   }
 
-  return (row) => {
+  return ( row ) => {
     try {
       const value = row[columnId] ?? '';
-      const formatted = formatter(value, columnId, row);
+      const formatted = formatter( value, columnId, row );
+
       //add a-b test icon when conversion_rate or conversions column are present, but not both.
       if (
-          (columnId === 'conversion_rate') ||
-          (columnId === 'conversions' && !('conversion_rate' in row))
+          ( 'conversion_rate' === columnId ) ||
+          ( 'conversions' === columnId && ! ( 'conversion_rate' in row ) )
       ) {
-        return addABTestIcon(formatted, row);
+        return addABTestIcon( formatted, row );
       }
       return formatted;
-    } catch (error) {
-      console.error(`Error formatting cell value for column ${columnId}:`, error);
+    } catch ( error ) {
+      console.error( `Error formatting cell value for column ${columnId}:`, error );
       return row[columnId] || '';
     }
   };
@@ -345,11 +250,11 @@ const createCellFormatter = (format, columnId) => {
  * @param {Object} columnOptions - Column configuration options
  * @returns {Object} Transformed column for data table
  */
-const transformColumn = (column, columnOptions) => {
+const transformColumn = ( column, columnOptions ) => {
   const options = columnOptions[column.id];
 
   // Return original column if no options configured
-  if (!options) {
+  if ( ! options ) {
     return column;
   }
 
@@ -358,10 +263,10 @@ const transformColumn = (column, columnOptions) => {
 
   const transformedColumn = {
     ...column,
-    selector: (row) => row[column.id],
-    right: align !== 'left',
-    sortFunction: createSortFunction(column.id, format),
-    cell: createCellFormatter(format, column.id),
+    selector: ( row ) => row[column.id],
+    right: 'left' !== align,
+    sortFunction: createSortFunction( column.id, format ),
+    cell: createCellFormatter( format, column.id )
   };
 
   return transformedColumn;
@@ -372,17 +277,17 @@ const transformColumn = (column, columnOptions) => {
  * @param {*} response - API response to validate
  * @throws {Error} If response is invalid
  */
-const validateResponse = (response) => {
-  if (!response || typeof response !== 'object') {
-    throw new Error('Invalid response: expected object');
+const validateResponse = ( response ) => {
+  if ( ! response || 'object' !== typeof response ) {
+    throw new Error( 'Invalid response: expected object' );
   }
 
-  if (!Array.isArray(response.columns)) {
-    throw new Error('Invalid response: columns must be an array');
+  if ( ! Array.isArray( response.columns ) ) {
+    throw new Error( 'Invalid response: columns must be an array' );
   }
 
-  if (!Array.isArray(response.data)) {
-    throw new Error('Invalid response: data must be an array');
+  if ( ! Array.isArray( response.data ) ) {
+    throw new Error( 'Invalid response: data must be an array' );
   }
 };
 
@@ -392,20 +297,20 @@ const validateResponse = (response) => {
  * @param {Object} columnOptions - Column configuration options
  * @returns {Object} Transformed data with columns and data arrays
  */
-const transformDataTableData = (response, columnOptions) => {
+const transformDataTableData = ( response, columnOptions ) => {
   try {
-    validateResponse(response);
+    validateResponse( response );
 
     return {
-      columns: response.columns.map(column => transformColumn(column, columnOptions)),
-      data: [...response.data],
+      columns: response.columns.map( column => transformColumn( column, columnOptions ) ),
+      data: [ ...response.data ]
     };
-  } catch (error) {
-    console.error('Data transformation error:', error);
-    return { 
-      columns: [], 
+  } catch ( error ) {
+    console.error( 'Data transformation error:', error );
+    return {
+      columns: [],
       data: [],
-      error: error.message,
+      error: error.message
     };
   }
 };
@@ -416,12 +321,12 @@ const transformDataTableData = (response, columnOptions) => {
  * @throws {Error} If required parameters are missing
  */
 const validateParams = ({ startDate, endDate, range, columnsOptions }) => {
-  if (!startDate || !endDate || !range) {
-    throw new Error('Missing required parameters: startDate, endDate, range');
+  if ( ! startDate || ! endDate || ! range ) {
+    throw new Error( 'Missing required parameters: startDate, endDate, range' );
   }
 
-  if (!columnsOptions || typeof columnsOptions !== 'object') {
-    throw new Error('Missing or invalid columnsOptions parameter');
+  if ( ! columnsOptions || 'object' !== typeof columnsOptions ) {
+    throw new Error( 'Missing or invalid columnsOptions parameter' );
   }
 };
 
@@ -435,31 +340,32 @@ const validateParams = ({ startDate, endDate, range, columnsOptions }) => {
  * @param {Object} params.columnsOptions - Column configuration options
  * @returns {Promise<Object>} Transformed data table data
  */
-const getDataTableData = async (params) => {
+const getDataTableData = async( params ) => {
   try {
-    validateParams(params);
+    validateParams( params );
 
     const { startDate, endDate, range, args, columnsOptions, type } = params;
 
 	const endpoint = 'ecommerce-datatable' === type ? 'ecommerce/datatable' : 'datatable';
 
-	const { data } = await getData(endpoint, startDate, endDate, range, args);
+	const { data } = await getData( endpoint, startDate, endDate, range, args );
+
     // Fetch data from API
 
-    if (!data) {
-      throw new Error('No data received from API');
+    if ( ! data ) {
+      throw new Error( 'No data received from API' );
     }
 
     // Transform data for table consumption
-    return transformDataTableData(data, columnsOptions);
+    return transformDataTableData( data, columnsOptions );
 
-  } catch (error) {
-    console.error('Error fetching data table data:', error);
-    
+  } catch ( error ) {
+    console.error( 'Error fetching data table data:', error );
+
     return {
       columns: [],
       data: [],
-      error: error.message,
+      error: error.message
     };
   }
 };
@@ -473,7 +379,7 @@ export {
   transformColumn,
   transformDataTableData,
   validateResponse,
-  validateParams,
+  validateParams
 };
 
 export default getDataTableData;

@@ -31,7 +31,7 @@ if ( ! class_exists( 'mail_reports' ) ) {
 		 *
 		 * @return array<string, mixed> The modified output array.
 		 */
-		public function send_test_report_action( array $output, string $action, array $data ): array {
+		public function send_test_report_action( array $output, string $action, ?array $data ): array {
 			// phpcs warning fixed.
 			unset( $data );
 			if ( ! $this->user_can_manage() ) {
@@ -42,12 +42,14 @@ if ( ! class_exists( 'mail_reports' ) ) {
 				$this->send_test_report();
 				$output = [
 					'success' => true,
-					'message' => __( 'E-mail report sent.', 'burst-statistics' ),
+					'message' => __( 'E-mail report scheduled to send on next cron job.', 'burst-statistics' ),
 				];
 			}
 
 			return $output;
 		}
+
+
 
 		/**
 		 * Send a test email.
@@ -151,8 +153,7 @@ if ( ! class_exists( 'mail_reports' ) ) {
 
 				$wp_date_format = get_option( 'date_format' );
 				// translators: 1: start date, 2: end date.
-				$mailer->message = sprintf( __( 'This report covers the period from %s to %s.', 'burst-statistics' ), date_i18n( $wp_date_format, $date_start ), date_i18n( $wp_date_format, $date_end ) );
-			} else {
+				$mailer->message = sprintf( __( 'This report covers the period from %1$s to %2$s.', 'burst-statistics' ), date_i18n( $wp_date_format, $date_start ), date_i18n( $wp_date_format, $date_end ) );         } else {
 				// translators: %s is the domain name (e.g., example.com).
 				$mailer->subject = sprintf( _x( 'Your weekly insights for %s are here!', 'domain name', 'burst-statistics' ), $mailer->pretty_domain );
 				// translators: %s is the domain name (e.g., example.com), HTML tags included for styling.
@@ -187,21 +188,21 @@ if ( ! class_exists( 'mail_reports' ) ) {
 
 				$wp_date_format  = get_option( 'date_format' );
 				$mailer->message = date_i18n( $wp_date_format, $date_start ) . ' - ' . date_i18n( $wp_date_format, $date_end );
-			}
+				}
 
-			$compare = $this->get_compare_data( $date_start, $date_end, $compare_date_start, $compare_date_end );
-			update_option( 'burst_last_report_sent', time(), false );
+				$compare = $this->get_compare_data( $date_start, $date_end, $compare_date_start, $compare_date_end );
+				update_option( 'burst_last_report_sent', time(), false );
 
-			$blocks   = [];
-			$blocks[] = [
-				'title'    => __( 'Compare', 'burst-statistics' ),
-				'subtitle' => $frequency === 'weekly' ? __( 'vs. previous week', 'burst-statistics' ) : __( 'vs. previous month', 'burst-statistics' ),
-				'table'    => self::format_array_as_table( $compare ),
-				'url'      => $this->admin_url( 'burst#/statistics' ),
-			];
+				$blocks   = [];
+				$blocks[] = [
+					'title'    => __( 'Compare', 'burst-statistics' ),
+					'subtitle' => $frequency === 'weekly' ? __( 'vs. previous week', 'burst-statistics' ) : __( 'vs. previous month', 'burst-statistics' ),
+					'table'    => self::format_array_as_table( $compare ),
+					'url'      => $this->admin_url( 'burst#/statistics' ),
+				];
 
-			$custom_blocks = $this->get_blocks();
-			foreach ( $custom_blocks as $index => $block ) {
+				$custom_blocks = $this->get_blocks();
+				foreach ( $custom_blocks as $index => $block ) {
 					$qd = new Query_Data(
 						[
 							'select'   => $block['select'],
@@ -210,24 +211,24 @@ if ( ! class_exists( 'mail_reports' ) ) {
 						]
 					);
 
-					$results                 = $this->get_top_results( $date_start, $date_end, $qd );
-					$completed_block         = [
-						'title' => $block['title'],
-						'table' => self::format_array_as_table( $results ),
-						'url'   => $this->admin_url( 'burst' . $block['url'] ),
-					];
-					$custom_blocks[ $index ] = $completed_block;
-			}
+						$results                 = $this->get_top_results( $date_start, $date_end, $qd );
+						$completed_block         = [
+							'title' => $block['title'],
+							'table' => self::format_array_as_table( $results ),
+							'url'   => $this->admin_url( 'burst' . $block['url'] ),
+						];
+						$custom_blocks[ $index ] = $completed_block;
+				}
 
-			$blocks = array_merge( $blocks, $custom_blocks );
-			$blocks = apply_filters( 'burst_mail_reports_blocks', $blocks, $date_start, $date_end );
+				$blocks = array_merge( $blocks, $custom_blocks );
+				$blocks = apply_filters( 'burst_mail_reports_blocks', $blocks, $date_start, $date_end );
 
-			$mailer->blocks = $blocks;
-			$attachment_id  = $this->get_option( 'logo_attachment_id' );
-			if ( (int) $attachment_id > 0 ) {
-				$mailer->logo = wp_get_attachment_url( $attachment_id );
-			}
-			$mailer->send_mail_queue();
+				$mailer->blocks = $blocks;
+				$attachment_id  = $this->get_option( 'logo_attachment_id' );
+				if ( (int) $attachment_id > 0 ) {
+					$mailer->logo = wp_get_attachment_url( $attachment_id );
+				}
+				$mailer->send_mail_queue();
 		}
 
 		/**

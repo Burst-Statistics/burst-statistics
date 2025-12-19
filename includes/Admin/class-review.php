@@ -122,23 +122,33 @@ class Review {
 							<?php
 							if ( $this->visitors > $this->min_visitors ) {
 								// translators: %s is the number of visitors tracked by Burst Statistics.
-								$this->printf( __( 'Hi there! Your site is doing awesome! Burst Statistics has tracked %s visitors for you!', 'burst-statistics' ), $this->visitors );
+								echo wp_kses_post( $this->sprintf( esc_html__( 'Hi there! Your site is doing awesome! Burst Statistics has tracked %s visitors for you!', 'burst-statistics' ), $this->visitors ) );
 							} else {
 								esc_html_e( 'Hi, you have been using Burst for more than a month now, awesome!', 'burst-statistics' );
 							}
 							?>
 						</b>
 						<?php
-						$this->printf(
-						// translators: 1: opening anchor tag to the support message form, 2: closing anchor tag.
-							__( 'If you have any questions or feedback, leave us a %smessage%s.', 'burst-statistics' ),
-							'<a href="' . $this->get_website_url(
-								'support',
-								[
-									'utm_source' => 'review_notice',
-								]
-							) . '" target="_blank">',
-							'</a>'
+						echo wp_kses(
+							$this->sprintf(
+							// translators: 1: opening anchor tag to the support message form, 2: closing anchor tag.
+								__( 'If you have any questions or feedback, leave us a %1$smessage%2$s.', 'burst-statistics' ),
+								'<a href="' . esc_url(
+									$this->get_website_url(
+										'support',
+										[
+											'utm_source' => 'review_notice',
+										]
+									)
+								) . '" target="_blank">',
+								'</a>'
+							),
+							[
+								'a' => [
+									'href'   => [],
+									'target' => [],
+								],
+							]
 						);
 						?>
 					</p>
@@ -237,8 +247,8 @@ class Review {
 	 * @access public
 	 */
 	public function dismiss_review_notice_callback(): void {
-		$type  = isset( $_POST['type'] ) ? sanitize_title( $_POST['type'] ) : false;
-		$token = isset( $_POST['token'] ) ? sanitize_title( $_POST['token'] ) : false;
+		$type  = isset( $_POST['type'] ) ? sanitize_title( wp_unslash( $_POST['type'] ) ) : false;
+		$token = isset( $_POST['token'] ) ? sanitize_title( wp_unslash( $_POST['token'] ) ) : false;
 		if ( ! wp_verify_nonce( $token, 'burst_dismiss_review' ) ) {
 			wp_die();
 		}

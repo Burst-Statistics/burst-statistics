@@ -1,4 +1,4 @@
-import {memo, useMemo} from 'react';
+import { memo } from 'react';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
@@ -7,30 +7,27 @@ import Field from '@/components/Fields/Field';
 import Overlay from '@/components/Common/Overlay';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import { __ } from '@wordpress/i18n';
-import useLicenseData from "@/hooks/useLicenseData";
+import useLicenseData from '@/hooks/useLicenseData';
+import clsx from 'clsx';
 
-const SettingsGroupBlock = memo(
-  ({ group, fields, control, isLastGroup }) => {
-      const {
-          isLicenseValid,
-      } = useLicenseData();
+const SettingsGroupBlock = memo( ({ group, fields, control, isLastGroup }) => {
+	const { isLicenseValid } = useLicenseData();
 
-      const className = isLastGroup ? 'rounded-b-none' : 'mb-5';
+    const className = clsx( 'p-0', isLastGroup ? 'rounded-b-none' : 'mb-5', 'license' === group.id ? '' : 'pb-4' );
 
-
-    if ( fields.length === 0 ) {
-      return null; // No fields to display
-    }
+	if ( 0 === fields.length ) {
+		return null; // No fields to display
+	}
 
     return (
       <Block key={group.id} className={className}>
-        {group.pro && !isLicenseValid  && (
+        {group.pro && ! isLicenseValid  && (
           <Overlay className='backdrop-blur-sm'>
             <div className='flex flex-col gap-4'>
               <h4>{__( 'Unlock Advanced Features with Burst Pro', 'burst-statistics' )}</h4>
               <p>
-                {__( 'This setting is exclusive to Pro users.', 'burst-statistics' )} 
-              {group.pro && group.pro.text && (' ' + group.pro.text)}
+                {__( 'This setting is exclusive to Pro users.', 'burst-statistics' )}
+              {group.pro && group.pro.text && ( ' ' + group.pro.text )}
               </p>
               {group.pro.url && <ButtonInput className="text-center" target="_blank" link={{ to: group.pro.url }} btnVariant='primary' btnSize='small'>
                 {__( 'Upgrade to Pro', 'burst-statistics' )}
@@ -39,10 +36,10 @@ const SettingsGroupBlock = memo(
             </Overlay>
         )}
         <BlockHeading title={group.title} className="burst-settings-group-block" />
-        <BlockContent className="p-0 pb-4">
+        <BlockContent className={'p-0'}>
           {group.description && <h3 className="mb-5 text-sm">{group.description}</h3>}
           <div className="flex flex-wrap">
-            {fields.map( ( field, i ) => (
+            {fields.map( ( field ) => (
               <ErrorBoundary key={field.id} fallback={'Could not load field'}>
                 <Field
                   setting={field}

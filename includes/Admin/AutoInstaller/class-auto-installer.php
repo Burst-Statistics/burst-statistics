@@ -488,7 +488,7 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 								</span>&nbsp;
 								<?php
 								// translators: 1: opening anchor tag for manual install link, 2: closing anchor tag.
-								printf( esc_html( __( 'Install %sManually%s.', 'burst-statistics' ) ) . '&nbsp;', '<a target="_blank" href="' . esc_url( $this->instructions ) . '">', '</a>' );
+								printf( esc_html( __( 'Install %1$sManually%2$s.', 'burst-statistics' ) ) . '&nbsp;', '<a target="_blank" href="' . esc_url( $this->instructions ) . '">', '</a>' );
 								?>
 							</div>
 							<div class="burst-error-message burst-license burst-hidden"><span>
@@ -498,7 +498,7 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 								</span>&nbsp;
 								<?php
 								// translators: 1: opening anchor tag to the license page, 2: closing anchor tag.
-								printf( esc_html( __( 'Check your %slicense%s.', 'burst-statistics' ) ) . '&nbsp;', '<a target="_blank" href="' . esc_url( $this->account_url ) . '">', '</a>' );
+								printf( esc_html( __( 'Check your %1$slicense%2$s.', 'burst-statistics' ) ) . '&nbsp;', '<a target="_blank" href="' . esc_url( $this->account_url ) . '">', '</a>' );
 								?>
 							</div>
 						</div>

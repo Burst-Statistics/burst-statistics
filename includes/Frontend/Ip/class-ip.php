@@ -56,17 +56,18 @@ class Ip {
 
 		// Cloudflare first (real client IP).
 		if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
-			$candidates[] = $_SERVER['HTTP_CF_CONNECTING_IP'];
+			$candidates[] = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) );
 		}
 
 		// True-Client-IP (Akamai/CF).
 		if ( ! empty( $_SERVER['HTTP_TRUE_CLIENT_IP'] ) ) {
-			$candidates[] = $_SERVER['HTTP_TRUE_CLIENT_IP'];
+			$candidates[] = sanitize_text_field( wp_unslash( $_SERVER['HTTP_TRUE_CLIENT_IP'] ) );
 		}
 
 		// X-Forwarded-For may contain a CSV list: pick the left-most valid public IP.
 		if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			foreach ( explode( ',', $_SERVER['HTTP_X_FORWARDED_FOR'] ) as $part ) {
+			$forwarded_for = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
+			foreach ( explode( ',', $forwarded_for ) as $part ) {
 				$candidates[] = trim( $part );
 			}
 		}
@@ -74,7 +75,7 @@ class Ip {
 		// Other common headers.
 		foreach ( [ 'HTTP_X_REAL_IP', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_CLIENT_IP', 'REMOTE_ADDR' ] as $h ) {
 			if ( ! empty( $_SERVER[ $h ] ) ) {
-				$candidates[] = $_SERVER[ $h ];
+				$candidates[] = sanitize_text_field( wp_unslash( $_SERVER[ $h ] ) );
 			}
 		}
 

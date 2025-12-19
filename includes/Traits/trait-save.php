@@ -22,7 +22,7 @@ trait Save {
 	/**
 	 * Update a burst option
 	 */
-	public function update_option( string $name, $value ): void {
+	protected function update_option( string $name, $value ): void {
 
 		if ( ! $this->user_can_manage() ) {
 			return;

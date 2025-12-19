@@ -12,7 +12,7 @@ if ( ! function_exists( '\Burst\burst_is_logged_in_rest' ) && ! function_exists(
 		if ( $memo !== null ) {
 			return $memo;
 		}
-		$uri = $_SERVER['REQUEST_URI'] ?? '';
+		$uri = sanitize_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) );
 		// Cheap path: return early if not our REST route.
 		if ( strpos( $uri, '/burst/v1/' ) === false && strpos( $uri, '%2Fburst%2Fv1%2F' ) === false ) {
 			$memo = false;
@@ -31,12 +31,13 @@ if ( ! function_exists( '\Burst\burst_get_option' ) && ! function_exists( 'burst
 	/**
 	 * Get a Burst option by name
 	 */
-	function burst_get_option( string $name, $default = false ) {
+	function burst_get_option( string $name, $default = null ) {
 
 		$name    = sanitize_title( $name );
 		$options = get_option( 'burst_options_settings', [] );
+        $value_exists = array_key_exists( $name, $options );
 		$value   = $options[ $name ] ?? false;
-		if ( $value === false && $default !== false ) {
+		if ( !$value_exists && $default !== null ) {
 			$value = $default;
 		}
 

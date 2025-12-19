@@ -644,7 +644,7 @@ class Admin {
 				'name' => 'tablet',
 			],
 		];
-		$this->insert_row( 'platforms', $data );
+		$this->insert_row( 'devices', $data );
 
 		$data = [
 			[
@@ -672,25 +672,18 @@ class Admin {
 		$max_views = 500;
 		for ( $i = 0; $i < $total_days; $i++ ) {
 			$stats_date_unix = $start_date_unix - ( $i * DAY_IN_SECONDS );
-			// 2022-02-07.
-			$stats_date        = self::convert_unix_to_date( $stats_date_unix );
-			$total_entry_added = false;
-			$max_views        -= $i * 2;
-			$min_views         = 10;
+			$max_views      -= $i * 2;
+			$min_views       = 10;
 			if ( $max_views <= $min_views ) {
 				$max_views = $min_views + 5;
 			}
 			foreach ( $posts as $post ) {
 				$post_id = $post->ID;
 
-				$page_url            = str_replace( home_url(), '', get_permalink( $post_id ) );
-				$visitors            = random_int( $min_views, $max_views );
-				$page_views          = 2 * $visitors;
-				$sessions            = round( 0.5 * $visitors, 0 );
-				$first_time_visitors = round( 0.1 * $visitors, 0 );
-				$bounces             = round( 0.03 * $visitors, 0 );
-				$values              = [];
-				$placeholders        = [];
+				$page_url     = str_replace( home_url(), '', get_permalink( $post_id ) );
+				$visitors     = random_int( $min_views, $max_views );
+				$values       = [];
+				$placeholders = [];
 
 				for ( $j = 0; $j < $visitors; $j++ ) {
 					$uid          = random_int( 1, 1000 );
@@ -701,28 +694,39 @@ class Admin {
 					$time_on_page = wp_rand( 20, 3 * MINUTE_IN_SECONDS );
 					$referrer     = $this->get_random_referrer();
 
-					$placeholders[] = '(%d, %s, %d, %d, %d, %d, %d, %d, %d, %s)';
+					$wpdb->insert(
+						"{$wpdb->prefix}burst_sessions",
+						[
+							'referrer'          => $referrer,
+							'first_visited_url' => '/',
+							'last_visited_url'  => '/',
+						],
+						[ '%s', '%s', '%s' ]
+					);
+
+					$session_id = $wpdb->insert_id;
+
+					$placeholders[] = '(%d, %s, %d, %d, %d, %d, %d, %d, %d, %d)';
 					$values         = array_merge(
 						$values,
 						[
 							$stats_date_unix,
 							$page_url,
 							$uid,
-							// first_time_visit.
 							1,
 							$bounce,
 							$browser_id,
 							$device_id,
 							$platform_id,
 							$time_on_page,
-							$referrer,
+							$session_id,
 						]
 					);
 				}
 
 				$query = "
                     INSERT INTO {$wpdb->prefix}burst_statistics
-                    (time, page_url, uid, first_time_visit, bounce, browser_id, device_id, platform_id, time_on_page, referrer)
+                    (time, page_url, uid, first_time_visit, bounce, browser_id, device_id, platform_id, time_on_page, session_id)
                     VALUES " . implode( ', ', $placeholders );
 				$wpdb->query( $wpdb->prepare( $query, ...$values ) );
 			}
@@ -760,20 +764,44 @@ class Admin {
 		$js = 'let burst = ' . wp_json_encode( $localize_args ) . ';';
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-		$js .= file_get_contents( BURST_PATH . "assets/js/build/burst$cookieless_text.min.js" );
+		$js                .= file_get_contents( BURST_PATH . "assets/js/build/burst$cookieless_text.min.js" );
+		$filename           = $this->get_frontend_js_filename();
+		$ghost_mode_enabled = apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
+		$upload_dir         = $this->upload_dir( 'js', $ghost_mode_enabled );
+		$file               = $upload_dir . $filename;
 
-		$upload_dir = $this->upload_dir( 'js' );
-		$file       = $upload_dir . 'burst.min.js';
+		// copy timeme script to uploads dir if ghost mode is enabled.
+		if ( $ghost_mode_enabled ) {
+			$js                      = $this->strip_window_exports( $js );
+			$timeme_original_file    = BURST_PATH . 'assets/js/timeme/timeme.min.js';
+			$timeme_obfustcated_file = $upload_dir . 'timeme.min.js';
+			if ( ! file_exists( $timeme_obfustcated_file ) ) {
+				copy( $timeme_original_file, $timeme_obfustcated_file );
+			}
+		}
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		global $wp_filesystem;
-		if ( ! WP_Filesystem() ) {
-			return;
+		if ( WP_Filesystem() ) {
+			if ( $wp_filesystem->is_dir( $upload_dir ) && $wp_filesystem->is_writable( $upload_dir ) ) {
+				delete_option( 'burst_js_write_error' );
+				$wp_filesystem->put_contents( $file, $js, FS_CHMOD_FILE );
+			} else {
+				update_option( 'burst_js_write_error', true, false );
+			}
 		}
+	}
 
-		if ( $wp_filesystem->is_dir( $upload_dir ) && $wp_filesystem->is_writable( $upload_dir ) ) {
-			$wp_filesystem->put_contents( $file, $js, FS_CHMOD_FILE );
-		}
+	/**
+	 * Strip window export statements from JavaScript file.
+	 *
+	 * @param string $js_content The JavaScript content.
+	 * @return string The processed JavaScript content.
+	 */
+	private function strip_window_exports( string $js_content ): string {
+		$pattern    = '/,window\.burst_uid\s*=\s*burst_uid\s*,\s*window\.burst_use_cookies\s*=\s*burst_use_cookies\s*,\s*window\.burst_fingerprint\s*=\s*burst_fingerprint\s*,\s*window\.burst_update_hit\s*=\s*burst_update_hit\s*;?/';
+		$js_content = preg_replace( $pattern, '', $js_content );
+		return preg_replace( '/\n{3,}/', "\n\n", $js_content );
 	}
 
 	/**
@@ -820,7 +848,7 @@ class Admin {
 		}
 		$content = sprintf(
 		// translators: 1: opening anchor tag to the privacy statement, 2: closing anchor tag.
-			__( 'This website uses Burst Statistics, a Privacy-Friendly Statistics Tool to analyze visitor behavior. For this functionality we (this website) collect anonymized data, stored locally without sharing it with other parties. For more information, please read the %s Privacy Statement %s from Burst.', 'burst-statistics' ),
+			__( 'This website uses Burst Statistics, a Privacy-Friendly Statistics Tool to analyze visitor behavior. For this functionality we (this website) collect anonymized data, stored locally without sharing it with other parties. For more information, please read the %1$s Privacy Statement %2$s from Burst.', 'burst-statistics' ),
 			'<a href="https://burst-statistics.com/legal/privacy-statement/" target="_blank">',
 			'</a>'
 		);
@@ -838,7 +866,11 @@ class Admin {
 			set_transient( 'burst_redirect_to_settings_page', true, 5 * MINUTE_IN_SECONDS );
 			update_option( 'burst_activation_time', time(), false );
 			update_option( 'burst_last_cron_hit', time(), false );
+			$this->update_option( 'combine_vars_and_script', true );
+			$this->create_js_file();
+
 			$this->tasks->add_initial_tasks();
+
 			if ( ! $this->table_exists( 'burst_goals' ) ) {
 				return;
 			}
@@ -976,8 +1008,8 @@ class Admin {
 
 		// Sunday after Black Friday.
 		$start = strtotime( '+2 days', $black_friday );
-		// Tuesday after Cyber Monday, end of day.
-		$end = strtotime( '+4 days 23:59:59', $black_friday );
+		// Cyber Monday, end of day.
+		$end = strtotime( '+3 days 23:59:59', $black_friday );
 
 		return ( $now >= $start && $now <= $end );
 	}
@@ -1202,10 +1234,10 @@ class Admin {
 	 *
 	 * @param array  $output The initial output array.
 	 * @param string $action The action to perform.
-	 * @param array  $data   Additional data for processing.
+	 * @param ?array $data   Additional data for processing.
 	 * @return array<string, mixed> The modified output array.
 	 */
-	public function maybe_delete_all_data( array $output, string $action, array $data ): array {
+	public function maybe_delete_all_data( array $output, string $action, ?array $data ): array {
 		// fix phpcs warning.
 		unset( $data );
 		if ( ! $this->user_can_manage() ) {
@@ -1296,6 +1328,8 @@ class Admin {
 				'burst_onboarding_free_completed',
 				'burst_missing_tables',
 				'burst_tasks_permanently_dismissed',
+				'burst_skipped_onboarding',
+				'burst_completed_onboarding',
 			],
 		);
 
@@ -1362,6 +1396,8 @@ class Admin {
 			'burst_license_expires',
 			'burst_transients',
 			'burst_ecommerce_activated_time',
+			'burst_skipped_onboarding',
+			'burst_completed_onboarding',
 		];
 		// delete options.
 		foreach ( $options as $option_name ) {

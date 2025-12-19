@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo } from 'react';
 
 /**
  * GeoMapFeature.propTypes = {
@@ -21,36 +21,37 @@ import { memo } from 'react'
  * }
  */
 const GeoMapFeature = memo(
-    ({
-        feature,
-        path,
-        fillColor,
-        borderWidth,
-        borderColor,
-        onClick,
-        onMouseEnter,
-        onMouseMove,
-        onMouseLeave,
-        opacity = 1,
-    }) => {
+	({
+		feature,
+		path,
+		fillColor,
+		borderWidth,
+		borderColor,
+		onClick,
+		onMouseEnter,
+		onMouseMove,
+		onMouseLeave,
+		opacity = 1
+	}) => {
+		return (
+			<path
+				key={feature.id}
+				fill={feature?.fill ?? fillColor}
+				strokeWidth={borderWidth}
+				stroke={borderColor}
+				strokeLinejoin="bevel"
+				d={path( feature )}
+				opacity={opacity}
+				style={{ cursor: onClick ? 'pointer' : 'default' }}
+				onMouseEnter={( event ) => onMouseEnter?.( feature, event )}
+				onMouseMove={( event ) => onMouseMove?.( feature, event )}
+				onMouseLeave={( event ) => onMouseLeave?.( feature, event )}
+				onClick={( event ) => onClick?.( feature, event )}
+			/>
+		);
+	}
+);
 
-        return (
-            <path
-                key={feature.id}
-                fill={feature?.fill ?? fillColor}
-                strokeWidth={borderWidth}
-                stroke={borderColor}
-                strokeLinejoin="bevel"
-                d={path(feature)}
-                opacity={opacity}
-                style={{ cursor: onClick ? 'pointer' : 'default' }}
-                onMouseEnter={event => onMouseEnter?.(feature, event)}
-                onMouseMove={event => onMouseMove?.(feature, event)}
-                onMouseLeave={event => onMouseLeave?.(feature, event)}
-                onClick={event => onClick?.(feature, event)}
-            />
-        )
-    }
-)
+GeoMapFeature.displayName = 'GeoMapFeature';
 
-export default GeoMapFeature
+export default GeoMapFeature;

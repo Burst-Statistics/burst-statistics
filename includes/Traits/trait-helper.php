@@ -18,7 +18,7 @@ trait Helper {
 	/**
 	 * Check if this is Pro
 	 */
-	public function is_pro(): bool {
+	protected function is_pro(): bool {
 		return defined( 'BURST_PRO' );
 	}
 
@@ -26,7 +26,7 @@ trait Helper {
 	/**
 	 * Get an option from the burst settings
 	 */
-	public function get_option( string $option, $default = false ) {
+	protected function get_option( string $option, $default = null ) {
         if ( !function_exists( 'burst_get_option' ) ) {
             require_once BURST_PATH . 'includes/functions.php';
         }
@@ -35,25 +35,38 @@ trait Helper {
 	// phpcs:enable
 
 	/**
+	 * Get the frontend JS filename, with optional name obfuscation.
+	 */
+	protected function get_frontend_js_filename(): string {
+		$obfuscate = apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
+		$filename  = 'burst';
+		if ( $obfuscate ) {
+			$filename = substr( hash( 'sha256', 'burst-' . get_site_url() ), 0, 8 );
+		}
+		return $filename . '.min.js';
+	}
+
+	/**
 	 * Get an option from the burst settings and cast it to a boolean
 	 */
-	public function get_option_bool( string $option ): bool {
-		return (bool) $this->get_option( $option );
+	protected function get_option_bool( string $option, ?bool $default_value = null ): bool {
+		return (bool) $this->get_option( $option, $default_value );
 	}
 
 	/**
 	 * Get an option from the burst settings and cast it to an int
 	 */
-	public function get_option_int( string $option ): int {
+	protected function get_option_int( string $option ): int {
 		return (int) $this->get_option( $option );
 	}
 
 	/**
 	 * Get the upload dir
 	 */
-	public function upload_dir( string $path = '' ): string {
+	protected function upload_dir( string $path = '', bool $root = false ): string {
 		$uploads    = wp_upload_dir();
-		$upload_dir = trailingslashit( apply_filters( 'burst_upload_dir', $uploads['basedir'] ) ) . 'burst/' . $path;
+		$dir        = $root ? '' : 'burst/';
+		$upload_dir = trailingslashit( apply_filters( 'burst_upload_dir', $uploads['basedir'] ) ) . $dir . $path;
 		if ( ! is_dir( $upload_dir ) ) {
 			wp_mkdir_p( $upload_dir );
 		}
@@ -64,7 +77,7 @@ trait Helper {
 	/**
 	 * Check if open_basedir restriction is enabled
 	 */
-	public function has_open_basedir_restriction( string $path ): bool {
+	protected function has_open_basedir_restriction( string $path ): bool {
 		// Default error handler is required.
 		// phpcs:ignore
 		set_error_handler( null );
@@ -90,17 +103,18 @@ trait Helper {
 	/**
 	 * Get the upload url
 	 */
-	public function upload_url( string $path = '' ): string {
+	protected function upload_url( string $path = '', bool $root = false ): string {
 		$uploads    = wp_upload_dir();
 		$upload_url = $uploads['baseurl'];
 		$upload_url = trailingslashit( apply_filters( 'burst_upload_url', $upload_url ) );
-		return trailingslashit( $upload_url . 'burst/' . $path );
+		$dir        = $root ? '' : 'burst/';
+		return trailingslashit( $upload_url . $dir . $path );
 	}
 
 	/**
 	 * Get beacon path
 	 */
-	public static function get_beacon_url(): string {
+	protected static function get_beacon_url(): string {
 		if ( is_multisite() && (bool) get_site_option( 'burst_track_network_wide' ) && self::is_networkwide_active() ) {
 			if ( is_main_site() ) {
 				return BURST_URL . 'endpoint.php';
@@ -117,7 +131,7 @@ trait Helper {
 	/**
 	 * Check if Burst is networkwide active
 	 */
-	public static function is_networkwide_active(): bool {
+	protected static function is_networkwide_active(): bool {
 		if ( ! is_multisite() ) {
 			return false;
 		}
@@ -135,7 +149,7 @@ trait Helper {
 	/**
 	 * Check if we are currently in preview mode from one of the known page builders
 	 */
-	public function is_pagebuilder_preview(): bool {
+	protected function is_pagebuilder_preview(): bool {
 		$preview = false;
 		global $wp_customize;
 		// these are all only exists checks, no data is processed.
@@ -160,7 +174,7 @@ trait Helper {
 	/**
 	 * Check if we are in preview mode for Burst
 	 */
-	public function is_plugin_preview(): bool {
+	protected function is_plugin_preview(): bool {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only checking if parameter exists, not processing data.
 		return isset( $_GET['burst_preview'] );
 	}
@@ -169,7 +183,7 @@ trait Helper {
 	 * Check if the remote file exists
 	 * Used by geo ip in case a user has located the maxmind database outside WordPress.
 	 */
-	public static function remote_file_exists( string $url ): bool {
+	protected static function remote_file_exists( string $url ): bool {
 		// used to encode the url for the option name, not for security purposes.
 		// phpcs:ignore
 		// nosemgrep
@@ -203,7 +217,7 @@ trait Helper {
 	/**
 	 * Check if we are running in a test environment
 	 */
-	public static function is_test(): bool {
+	protected static function is_test(): bool {
 		return getenv( 'BURST_CI_ACTIVE' ) !== false || ( defined( 'BURST_CI_ACTIVE' ) );
 	}
 
@@ -214,7 +228,7 @@ trait Helper {
 	 * @param $message
 	 * @return void
 	 */
-	public static function error_log_test( $message ): void {
+	protected static function error_log_test( $message ): void {
 		if ( self::is_test() ) {
 			self::error_log( $message );
 		}
@@ -225,7 +239,7 @@ trait Helper {
 	/**
 	 * Log error to error_log
 	 */
-	public static function error_log( $message ): void {
+	protected static function error_log( $message ): void {
 		// @phpstan-ignore-next-line.
 		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
 			return;
@@ -256,7 +270,7 @@ trait Helper {
 	 * @param int $n The number to format.
 	 * @return string The formatted number.
 	 */
-	private function format_number_short( int $n ): string {
+	protected function format_number_short( int $n ): string {
 		if ( $n >= 1_000_000_000 ) {
 			return round( $n / 1_000_000_000, 1 ) . 'B';
 		}
@@ -274,7 +288,7 @@ trait Helper {
 	 *
 	 * @return int The checkout page ID.
 	 */
-	public function burst_checkout_page_id(): int {
+	protected function burst_checkout_page_id(): int {
 		$cache_key = 'burst_checkout_page_id';
 		$page_id   = get_transient( $cache_key );
 
@@ -294,7 +308,7 @@ trait Helper {
 	 *
 	 * @return int The checkout page ID.
 	 */
-	public function burst_products_page_id(): int {
+	protected function burst_products_page_id(): int {
 		$cache_key = 'burst_products_page_id';
 		$page_id   = get_transient( $cache_key );
 
@@ -314,7 +328,7 @@ trait Helper {
 	 *
 	 * @return string The burst uid.
 	 */
-	public function get_burst_uid(): string {
+	protected function get_burst_uid(): string {
 		$burst_uid = isset( $_COOKIE['burst_uid'] ) ? \Burst\burst_loader()->frontend->tracking->sanitize_uid( $_COOKIE['burst_uid'] ) : false;
 		if ( ! $burst_uid ) {
 			// try fingerprint from session.
@@ -329,7 +343,7 @@ trait Helper {
 	 *
 	 * @return string The base currency.
 	 */
-	public function get_base_currency(): string {
+	protected function get_base_currency(): string {
 		$cache_key     = 'burst_base_currency';
 		$base_currency = get_transient( $cache_key );
 
@@ -348,7 +362,7 @@ trait Helper {
 	 *
 	 * @return int The ecommerce cutoff time in seconds.
 	 */
-	public function get_ecommerce_activation_time(): int {
+	protected function get_ecommerce_activation_time(): int {
 		$cutoff_time = (int) get_option( 'burst_ecommerce_activated_time' );
 
 		if ( empty( $cutoff_time ) ) {
@@ -365,7 +379,7 @@ trait Helper {
 	 * @param float $current  The current value.
 	 * @return float|null The percentage change, or null if previous value is zero.
 	 */
-	public static function calculate_percentage_change( float $previous, float $current ): ?float {
+	protected static function calculate_percentage_change( float $previous, float $current ): ?float {
 		if ( $previous === 0.0 ) {
 			return null;
 		}
@@ -379,7 +393,7 @@ trait Helper {
 	 *
 	 * @throws \Exception //exception.
 	 */
-	private static function get_wp_timezone_offset(): int {
+	protected static function get_wp_timezone_offset(): int {
 		$timezone = wp_timezone();
 		$datetime = new \DateTime( 'now', $timezone );
 		return $timezone->getOffset( $datetime );
@@ -391,7 +405,7 @@ trait Helper {
 	 * @param string $time_string date string in format Y-m-d H:i:s.
 	 * @throws \Exception //exception.
 	 */
-	public static function convert_date_to_unix(
+	protected static function convert_date_to_unix(
 		string $time_string
 	): int {
 		$time               = \DateTime::createFromFormat( 'Y-m-d H:i:s', $time_string );
@@ -404,7 +418,7 @@ trait Helper {
 	/**
 	 * Convert unix timestamp to date string by gmt offset.
 	 */
-	public static function convert_unix_to_date( int $unix_timestamp ): string {
+	protected static function convert_unix_to_date( int $unix_timestamp ): string {
 		$adjusted_timestamp = $unix_timestamp + self::get_wp_timezone_offset();
 
 		// Convert the adjusted timestamp to a DateTime object.
@@ -413,5 +427,35 @@ trait Helper {
 
 		// Format the DateTime object to 'Y-m-d' format.
 		return $time->format( 'Y-m-d' );
+	}
+
+	/**
+	 * Ensure input is an array if applicable
+	 *
+	 * @param mixed $input The input value.
+	 * @return mixed The input as an array if applicable, otherwise the original input.
+	 */
+	public function ensure_array_if_applicable( mixed $input ): mixed {
+		if ( is_array( $input ) ) {
+			return $input;
+		}
+
+		if ( is_string( $input ) ) {
+			// Try JSON decode first - if it's valid JSON array, transform it.
+			$decoded = json_decode( $input, true );
+			if ( is_array( $decoded ) ) {
+				return $decoded;
+			}
+			// Only transform to comma-separated if it contains commas (indicating multiple values).
+			if ( strpos( $input, ',' ) !== false ) {
+				return array_map( 'trim', explode( ',', $input ) );
+			}
+
+			// Single string value - return as-is.
+			return $input;
+		}
+
+		// Return other types (int, etc.) as-is.
+		return $input;
 	}
 }

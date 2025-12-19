@@ -30,14 +30,28 @@
 		@apply px-6 max-xl:px-2.5;
 	}
 
-	.rdt_TableHeadRow,
+	.rdt_TableHeadRow {
+		@apply burst-inline-block-padding bg-gray-50 text-gray border-b border-gray-200;
+	}
+
 	.rdt_TableRow {
-		@apply burst-inline-block-padding;
+		@apply burst-inline-block-padding border-b border-gray-200;
 	}
 
 	.rdt_TableCol,
 	.rdt_TableCell {
 		@apply pl-0 pr-0;
+	}
+
+	/* First column takes up remaining space, other columns stay fixed. */
+	.rdt_TableCol:first-child,
+	.rdt_TableCell:first-child {
+		@apply flex-1 min-w-0;
+	}
+
+	.rdt_TableCol:not(:first-child),
+	.rdt_TableCell:not(:first-child) {
+		@apply flex-none;
 	}
 
 	.rdt_Pagination select + svg {

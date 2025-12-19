@@ -19,8 +19,8 @@ require_once BASE_PATH . 'wp-load.php';
 
 if ( defined( 'BURST_ALLOWED_ORIGINS' ) ) {
 	$burst_allowed_origins = explode( ',', BURST_ALLOWED_ORIGINS );
-	$burst_origin          = $_SERVER['HTTP_ORIGIN'] ?? '';
-	// phpcs:ignore
+	$burst_origin          = isset( $_SERVER['HTTP_ORIGIN'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_ORIGIN'] ) ) : '';
+    // phpcs:ignore
 	$burst_origin_host     = parse_url( $burst_origin, PHP_URL_HOST );
 	if ( in_array( $burst_origin_host, $burst_allowed_origins, true ) ) {
 		header( 'Access-Control-Allow-Origin: ' . $burst_origin );
@@ -28,7 +28,7 @@ if ( defined( 'BURST_ALLOWED_ORIGINS' ) ) {
 		header( 'Access-Control-Allow-Methods: POST, OPTIONS' );
 		header( 'Access-Control-Allow-Headers: Content-Type' );
 
-		if ( $_SERVER['REQUEST_METHOD'] === 'OPTIONS' ) {
+		if ( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS' ) {
 			header( 'Access-Control-Max-Age: 3600' );
 			http_response_code( 204 );
 			exit;

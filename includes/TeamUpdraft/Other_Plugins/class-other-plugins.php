@@ -91,7 +91,7 @@ class Other_Plugins {
 			exit;
 		}
 
-		$action = isset( $data['path'] ) ? sanitize_title( $_POST['path'] ) : '';
+		$action = isset( $data['path'] ) ? sanitize_title( wp_unslash( $data['path'] ) ) : '';
 		preg_match( '/do_action\/([a-z\_\-]+)$/', $action, $matches );
 		if ( isset( $matches[1] ) ) {
 			$action = $matches[1];

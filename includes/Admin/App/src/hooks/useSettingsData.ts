@@ -1,23 +1,27 @@
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import {getFields, setFields} from '@/utils/api';
-import {toast} from 'react-toastify';
-import useLicenseData from "@/hooks/useLicenseData";
+import { useMemo } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getFields, setFields } from '@/utils/api';
+import { toast } from 'react-toastify';
+import useLicenseData from '@/hooks/useLicenseData';
 
 interface SettingField {
-    id: string;
-    value: any;
-
-    [key: string]: any;
+	id: string;
+	value: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+	[key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 interface UseSettingsDataResult {
-    settings: SettingField[] | undefined;
-    saveSettings: (data: any) => Promise<void>;
-    getValue: (id: string) => any;
-    addNotice: (settings_id: string, warning_type: string, message: string, title: string) => void;
-    setValue: (id: string, value: any) => void;
-    isSavingSettings: boolean;
-    invalidateSettings: () => Promise<void>;
+	settings: SettingField[] | undefined;
+	saveSettings: ( data: any ) => Promise<void>; // eslint-disable-line @typescript-eslint/no-explicit-any
+	getValue: ( id: string ) => any; // eslint-disable-line @typescript-eslint/no-explicit-any
+	addNotice: (
+		settings_id: string,
+		warning_type: string,
+		message: string,
+		title: string
+	) => void;
+	setValue: ( id: string, value: any ) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
+	isSavingSettings: boolean;
 }
 
 /**
@@ -25,91 +29,119 @@ interface UseSettingsDataResult {
  * This hook provides functions to fetch and update settings.
  */
 const useSettingsData = (): UseSettingsDataResult => {
-    const queryClient = useQueryClient();
-    const {
-        isLicenseValid,
-    } = useLicenseData();
-    // Query for fetching settings from server
-    const query = useQuery<SettingField[]>({
-        queryKey: ['settings_fields'],
-        queryFn: async () => {
-            const fields = await getFields();
-            return fields.fields as SettingField[];
-        },
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        initialData: (window as any).burst_settings?.fields as SettingField[] | undefined,
-        retry: 0,
-        select: (data) => [...data], // create a new array so deps are updated
-    });
+	const queryClient = useQueryClient();
+	const { isLicenseValid } = useLicenseData();
 
-    const addNotice = (settings_id: string, warning_type: string, message: string, title: string) => {
-        queryClient.setQueryData<SettingField[]>(['settings_fields'], (oldData) => {
-            if (!oldData) return oldData;
+	// Query for fetching settings from server
+	const query = useQuery<SettingField[]>({
+		queryKey: [ 'settings_fields' ],
+		queryFn: async() => {
+			const fields = await getFields();
+			return fields.fields as SettingField[];
+		},
+		staleTime: 1000 * 60 * 5,
+		initialData: ( window as any ).burst_settings?.fields as // eslint-disable-line @typescript-eslint/no-explicit-any
+			| SettingField[]
+			| undefined,
+		retry: 0
+	});
 
-            return oldData.map((field) => {
-                if (field.id !== settings_id) return field;
+	const addNotice = (
+		settings_id: string,
+		warning_type: string,
+		message: string,
+		title: string
+	) => {
+		queryClient.setQueryData<SettingField[]>(
+			[ 'settings_fields' ],
+			( oldData ) => {
+				if ( ! oldData ) {
+					return oldData;
+				}
 
-                const updatedNotice = {
-                    title,
-                    label: warning_type,
-                    description: message,
-                };
+				return oldData.map( ( field ) => {
+					if ( field.id !== settings_id ) {
+						return field;
+					}
 
-                return {
-                    ...field,
-                    notice: updatedNotice,
-                };
-            });
-        });
-    };
+					const updatedNotice = {
+						title,
+						label: warning_type,
+						description: message
+					};
 
-    const getValue = (id: string) =>
-        query.data?.find((field) => field.id === id)?.value;
+					return {
+						...field,
+						notice: updatedNotice
+					};
+				});
+			}
+		);
+	};
 
-    const setValue = (id: string, value: any) => {
-        if (!query.data) return;
-        const field = query.data.find((field) => field.id === id);
-        if (field) {
-            field.value = value;
-        }
-    };
+	const getValue = ( id: string ) =>
+		query.data?.find( ( field ) => field.id === id )?.value;
 
-    // Update Mutation for settings data
-    const {mutateAsync: saveSettings, isPending: isSavingSettings} = useMutation<void, Error, any>({
-        mutationFn: async (data: any) => {
-            await setFields(data);
-            await queryClient.invalidateQueries({queryKey: ['settings_fields']});
-        },
-        onSuccess: () => {
-            toast.success('Settings saved');
-        },
-    });
+	const setValue = ( id: string, value: any ) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+		queryClient.setQueryData<SettingField[]>(
+			[ 'settings_fields' ],
+			( oldData ) => {
+				if ( ! oldData ) {
+					return oldData;
+				}
 
-    const getSettings = () => {
-        const settings = query.data;
-        if (typeof settings === 'undefined') {
-            return settings;
-        }
-        //parse the fields list. Any blocked pro features get unblocked here.
-        settings.forEach((field) => {
-            if (field.pro && isLicenseValid ) {
-                Object.assign(field, field.pro);
-            }
-        });
+				return oldData.map( ( field ) => {
+					if ( field.id !== id ) {
+						return field;
+					}
+					return {
+						...field,
+						value
+					};
+				});
+			}
+		);
+	};
 
-        return settings;
-    }
+	// Update Mutation for settings data
+	const { mutateAsync: saveSettings, isPending: isSavingSettings } =
+		useMutation<void, Error, any>({ // eslint-disable-line @typescript-eslint/no-explicit-any
+			mutationFn: async( data: any ) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+				await setFields( data );
+			},
+			onSuccess: async() => {
+				await queryClient.invalidateQueries({
+					queryKey: [ 'settings_fields' ],
+					refetchType: 'active'
+				});
+				toast.success( 'Settings saved' );
+			}
+		});
 
-    return {
-        settings: getSettings(),
-        saveSettings,
-        getValue,
-        addNotice,
-        setValue,
-        isSavingSettings,
-        invalidateSettings: () =>
-            queryClient.invalidateQueries({queryKey: ['settings_fields']}),
-    };
+	// Memoize settings to only create new objects when data actually changes.
+	const settings = useMemo( () => {
+		const settingsData = query.data;
+		if ( 'undefined' === typeof settingsData ) {
+			return settingsData;
+		}
+
+		// Parse the fields list. Any blocked pro features get unblocked here.
+		return settingsData.map( ( field ) => {
+			if ( field.pro && isLicenseValid ) {
+				return { ...field, ...field.pro };
+			}
+			return field;
+		});
+	}, [ query.data, isLicenseValid ]);
+
+	return {
+		settings,
+		saveSettings,
+		getValue,
+		addNotice,
+		setValue,
+		isSavingSettings
+	};
 };
 
 export default useSettingsData;

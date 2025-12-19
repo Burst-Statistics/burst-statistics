@@ -3,22 +3,21 @@ import { ReactComponent as Logo } from '@/../img/burst-logo.svg';
 import { __, setLocaleData } from '@wordpress/i18n';
 import ButtonInput from '../Inputs/ButtonInput';
 import { burst_get_website_url } from '@/utils/lib';
-import { useEffect } from '@wordpress/element';
 import ProBadge from '@/components/Common/ProBadge';
 import clsx from 'clsx';
-import { useRef } from 'react';
-import useLicenseData from "@/hooks/useLicenseData";
-import SubscriptionHeader from '../Common/Pro/SubscriptionHeader'
+import { useRef, useState, useEffect } from 'react';
+import useLicenseData from '@/hooks/useLicenseData';
+import SubscriptionHeader from '../Common/Pro/SubscriptionHeader';
 
 /**
  * Generates the URL for a given menu item.
  *
- * @param {Object} menuItem - The menu item object.
- * @param {string} menuItem.id - The ID of the menu item.
- * @param {string} menuItem.title - The title of the menu item.
- * @param {Array} [menuItem.menu_items] - Optional array of sub-menu items.
+ * @param {Object} menuItem              - The menu item object.
+ * @param {string} menuItem.id           - The ID of the menu item.
+ * @param {string} menuItem.title        - The title of the menu item.
+ * @param {Array}  [menuItem.menu_items] - Optional array of sub-menu items.
  *
- * @returns {string} The generated URL for the menu item.
+ * @return {string} The generated URL for the menu item.
  */
 const getMenuItemUrl = ( menuItem ) => {
 
@@ -39,17 +38,16 @@ const getMenuItemUrl = ( menuItem ) => {
 /**
  * Header component. Renders the header section with logo, navigation menu, and action buttons.
  *
- * @returns { JSX.Element } The rendered Header component.
+ * @return { JSX.Element } The rendered Header component.
  */
 const Header = () => {
-	const menu = Array.isArray( burst_settings.menu ) ? burst_settings.menu : Object.values(burst_settings.menu);
+	const menu = Array.isArray( burst_settings.menu ) ?
+		burst_settings.menu :
+		Object.values( burst_settings.menu );
 
-	const {
-		isPro,
-		isLicenseValid,
-		isTrial,
-	} = useLicenseData();
-	const activeClassName = 'border-primary font-bold text-primary hover:border-primary hover:bg-primary-light';
+	const { isPro, isTrial } = useLicenseData();
+	const activeClassName =
+		'border-primary font-bold text-primary hover:border-primary hover:bg-primary-light';
 	const linkClassName = clsx(
 		'py-6 px-5',
 		'max-sm:py-4.5 max-sm:px-3.5',
@@ -66,114 +64,69 @@ const Header = () => {
 
 	const supportUrl = ! isPro ?
 		'https://wordpress.org/support/plugin/burst-statistics/' :
-		burst_get_website_url(
-			'/support/',
-			{
+		burst_get_website_url( '/support/', {
 				utm_source: 'header',
 				utm_content: 'support'
-			}
-		);
+			});
 
 	const upgradeUrl = isPro ?
 		false :
-		burst_get_website_url(
-			'/pricing/',
-			{
+		burst_get_website_url( '/pricing/', {
 				utm_source: 'header',
 				utm_content: 'upgrade-to-pro'
-			}
-		);
+			});
 
 	// load the chunk translations passed to us from the rsssl_settings object.
 	// only works in build mode, not in dev mode.
 	useEffect( () => {
 		burst_settings.json_translations.forEach( ( translationsString ) => {
-			let translations = JSON.parse( translationsString );
-			let localeData =
+			const translations = JSON.parse( translationsString );
+			const localeData =
 				translations.locale_data['burst-statistics'] ||
 				translations.locale_data.messages;
 			localeData[''].domain = 'burst-statistics';
 			setLocaleData( localeData, 'burst-statistics' );
-		} );
-	}, [] );
+		});
+	}, []);
 
 	return (
 		<div className="bg-white shadow-sm">
 			<SubscriptionHeader />
 			<div className="mx-auto flex max-w-screen-2xl items-center gap-5 px-5 max-xxs:gap-0">
-				<div className='max-xxs:w-16 max-xxs:h-auto max-xxs:hidden'>
-					<Link className='flex gap-3 align-middle' from="/" to="/">
-						<Logo className="h-11 w-auto px-0 py-2"/>
+				<div className="max-xxs:w-16 max-xxs:h-auto max-xxs:hidden">
+					<Link className="flex gap-3 align-middle" from="/" to="/">
+						<Logo className="h-11 w-auto px-0 py-2" />
 					</Link>
 				</div>
 
-				<div
-					className="flex items-center flex-1 max-xxs:animate-scrollIndicator overflow-x-auto scrollbar-hide">
-					{
-						menu.map((menuItem) => {
-							const linkRef = useRef();
-							return (
-								<Link
-									key={menuItem.id}
-									from='/'
-									ref={linkRef}
-									onClick={(event) => {
-										// When link is clicked scroll that into view.
-										const link = event.currentTarget;
-										link.scrollIntoView({
-											behavior: "smooth",
-											inline: "center"
-										})
-									}}
-									to={getMenuItemUrl(menuItem)}
-									params={{settingsId: menuItem.menu_items?.[0]?.id}}
-									className={linkClassName}
-									activeOptions={{
-										// default options, maybe modify to fit our needs.
-										exact: false,
-										includeHash: false,
-										includeSearch: true,
-										explicitUndefined: false
-									}}
-									activeProps={{className: activeClassName}}
-								>
-									{
-										({isActive}) => {
-											// Scroll the active link into view on initial render.
-											useEffect(() => {
-												if (isActive && linkRef.current) {
-													// Scroll into view after some seconds.
-													setTimeout(() => {
-														linkRef.current.scrollIntoView({
-															behavior: "smooth",
-															inline: "center"
-														})
-													}, 1500);
-												}
-											}, []);
-
-											return (
-												<>
-												{ menuItem.title + ' '} 
-												{ menuItem.pro && <ProBadge type={isTrial ? 'icon' : 'badge'} label={__("Pro", "burst-statistics")} id={menuItem.id} /> }
-												</>
-											);
-										}
-									}
-								</Link>
-							);
-						})
-					}
+				<div className="flex items-center flex-1 max-xxs:animate-scrollIndicator overflow-x-auto scrollbar-hide">
+					{menu.map( ( menuItem ) => (
+						<MenuItemLink
+							key={menuItem.id}
+							menuItem={menuItem}
+							linkClassName={linkClassName}
+							activeClassName={activeClassName}
+							isTrial={isTrial}
+						/>
+					) )}
 				</div>
 
 				<div className="flex items-center gap-5">
-					<ButtonInput className='max-xxs:hidden' link={{to: supportUrl}} btnVariant="tertiary">
-						{__('Support', 'burst-statistics')}
+					<ButtonInput
+						className="max-xxs:hidden"
+						link={{ to: supportUrl }}
+						btnVariant="tertiary"
+					>
+						{__( 'Support', 'burst-statistics' )}
 					</ButtonInput>
 
 					{upgradeUrl && (
-						<ButtonInput className='max-xxs:ml-4' link={{to: upgradeUrl}} btnVariant="primary">
-							{__('Upgrade to Pro', 'burst-statistics')}
+						<ButtonInput
+							className="max-xxs:ml-4"
+							link={{ to: upgradeUrl }}
+							btnVariant="primary"
+						>
+							{__( 'Upgrade to Pro', 'burst-statistics' )}
 						</ButtonInput>
 					)}
 				</div>
@@ -181,6 +134,78 @@ const Header = () => {
 		</div>
 	);
 };
+
+const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => {
+	const linkRef = useRef( null );
+	const [ isActiveState, setIsActiveState ] = useState( false );
+
+	useEffect( () => {
+		if ( isActiveState && linkRef.current ) {
+			const el = linkRef.current;
+
+			// Scroll after a slight delay (same behavior as before)
+			const t = setTimeout( () => {
+				el.scrollIntoView({
+					behavior: 'smooth',
+					inline: 'center'
+				});
+			}, 1500 );
+
+			return () => clearTimeout( t );
+		}
+	}, [ isActiveState ]); // eslint-disable-line react-hooks/exhaustive-deps
+
+	return (
+		<Link
+			key={menuItem.id}
+			from="/"
+			ref={linkRef}
+			onClick={( event ) => {
+				const link = event.currentTarget;
+				link.scrollIntoView({
+					behavior: 'smooth',
+					inline: 'center'
+				});
+			}}
+			to={getMenuItemUrl( menuItem )}
+			params={{
+				settingsId: menuItem.menu_items?.[0]?.id
+			}}
+			className={linkClassName}
+			activeOptions={{
+				exact: false,
+				includeHash: false,
+				includeSearch: true,
+				explicitUndefined: false
+			}}
+			activeProps={{
+				className: activeClassName
+			}}
+		>
+			{({ isActive }) => {
+
+				// Track active state in React state (valid)
+				if ( isActive !== isActiveState ) {
+					setIsActiveState( isActive );
+				}
+
+				return (
+					<>
+						{menuItem.title + ' '}
+						{menuItem.pro && (
+							<ProBadge
+								type={isTrial ? 'icon' : 'badge'}
+								label={__( 'Pro', 'burst-statistics' )}
+								id={menuItem.id}
+							/>
+						)}
+					</>
+				);
+			}}
+		</Link>
+	);
+};
+
 
 Header.displayName = 'Header';
 

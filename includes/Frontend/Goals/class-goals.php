@@ -41,9 +41,8 @@ class Goals {
 		global $wpdb;
 
 		// Get all columns from {$wpdb->prefix}burst_goals table.
-		$table_name = $wpdb->prefix . 'burst_goals';
 		if ( empty( $this->orderby_columns ) ) {
-			$cols                  = $wpdb->get_results( "SHOW COLUMNS FROM $table_name", ARRAY_A );
+			$cols                  = $wpdb->get_results( "SHOW COLUMNS FROM {$wpdb->prefix}burst_goals", ARRAY_A );
 			$this->orderby_columns = array_column( $cols, 'Field' );
 		}
 
@@ -97,8 +96,6 @@ class Goals {
 		}
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'burst_goals';
-
 		try {
 			$default_args = [
 				'status'  => 'all',
@@ -117,22 +114,26 @@ class Goals {
 			$args['status']  = $this->sanitize_status( $args['status'] );
 			$args['limit']   = (int) $args['limit'];
 			$args['offset']  = (int) $args['offset'];
-
-			$query = "SELECT * FROM {$table_name}";
-			$where = [];
 			if ( $args['status'] !== 'all' ) {
-				$where[] = $wpdb->prepare( 'status = %s', $args['status'] );
+				$results = $wpdb->get_results(
+					$wpdb->prepare(
+						"SELECT * FROM {$wpdb->prefix}burst_goals WHERE status = %s ORDER BY " . esc_sql( $args['orderby'] ) . ' ' . esc_sql( $args['order'] ) . '  LIMIT %d, %d',
+						$args['status'],
+						$args['offset'],
+						$args['limit']
+					),
+					ARRAY_A
+				);
+			} else {
+				$results = $wpdb->get_results(
+					$wpdb->prepare(
+						"SELECT * FROM {$wpdb->prefix}burst_goals ORDER BY " . esc_sql( $args['orderby'] ) . ' ' . esc_sql( $args['order'] ) . ' LIMIT %d, %d',
+						$args['offset'],
+						$args['limit']
+					),
+					ARRAY_A
+				);
 			}
-			if ( ! empty( $where ) ) {
-				$query .= ' WHERE ' . implode( ' AND ', $where );
-			}
-
-			// can only be columns or DESC/ASC because of sanitizing.
-			$query .= " ORDER BY {$args['orderby']} {$args['order']}";
-			// can only be integer because of sanitizing.
-			$query  .= " LIMIT {$args['offset']}, {$args['limit']}";
-			$results = $wpdb->get_results( $query, ARRAY_A );
-
 		} catch ( \Exception $e ) {
 			self::error_log( $e->getMessage() );
 			// If an exception is caught, assume the table does not exist.

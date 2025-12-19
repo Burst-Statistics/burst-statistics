@@ -84,6 +84,10 @@ return [
 							'text' => __( 'With Pro, you can archive old data to keep your dashboard clean and restore it anytime when needed. No more lost data. No more clutter. Just seamless control.', 'burst-statistics' ),
 						],
 					],
+					[
+						'id'    => 'import_export_settings',
+						'title' => __( 'Manage settings', 'burst-statistics' ),
+					],
 				],
 			],
 			[
@@ -102,6 +106,10 @@ return [
 					[
 						'id'    => 'scripts',
 						'title' => __( 'Scripts', 'burst-statistics' ),
+					],
+					[
+						'id'    => 'beta',
+						'title' => __( 'Beta', 'burst-statistics' ),
 					],
 				],
 			],
