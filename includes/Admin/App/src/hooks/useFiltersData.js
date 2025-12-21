@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { doAction } from '@/utils/api';
 import useGoalsData from '@/hooks/useGoalsData';
 import { useCallback } from 'react';
@@ -14,13 +14,6 @@ export const useFiltersData = () => {
 		});
 		return response.data?.[type] || [];
 	};
-
-	const goalsQuery = useQuery({
-		queryKey: [ 'filters_data', 'goals' ],
-		queryFn: () => fetchFilterData( 'goals' ),
-		staleTime: 5 * 60 * 1000,
-		cacheTime: 30 * 60 * 1000
-	});
 
 	const getFilterOptions = useCallback(
 		async( type, search ) => {
@@ -67,8 +60,6 @@ export const useFiltersData = () => {
 	};
 
 	return {
-		isLoading: goalsQuery.isLoading,
-		isError: goalsQuery.isError,
 		getFilterOptions,
 		getFilterOptionById,
 		getFilterIdByTitle

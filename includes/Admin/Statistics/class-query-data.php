@@ -376,6 +376,9 @@ class Query_Data {
 		if ( $key === 'order_by' ) {
 			$array_values   = $this->ensure_array_if_applicable( $value );
 			$this->order_by = is_array( $array_values ) ? $array_values : [ $array_values ];
+			if ( $this->is_strict() ) {
+				$this->order_by = $this->validate_order_by( $this->order_by );
+			}
 			return;
 		}
 
@@ -566,11 +569,8 @@ class Query_Data {
 
 		if ( in_array( $metric, $allowed_metrics, true ) ) {
 			return $metric;
-		}
-
-		// Debug: Log when a metric is not allowed.
-		if ( in_array( $metric, [ 'sales', 'revenue', 'product' ], true ) ) {
-			self::error_log( 'Metric "' . $metric . '" not in allowed metrics. Allowed: ' . wp_json_encode( $allowed_metrics ) );
+		} else {
+			self::error_log( "Metric '$metric' is not allowed. Returning default metric '$default_metric'." );
 		}
 
 		return $default_metric;
@@ -608,6 +608,8 @@ class Query_Data {
 
 		if ( in_array( $device, $allowed_devices, true ) ) {
 			return $device;
+		} else {
+			self::error_log( "Device filter value '$device' is not allowed." );
 		}
 
 		return '';
@@ -629,6 +631,8 @@ class Query_Data {
 			// Only allow valid metric fields for group_by.
 			if ( in_array( $field, $allowed_group_by, true ) ) {
 				$sanitized_group_by[] = $field;
+			} else {
+				self::error_log( "Group by field '$field' is not allowed." );
 			}
 		}
 

@@ -130,14 +130,14 @@ const createSortFunction = ( columnId, format ) => {
 
 		// Handle null/undefined values consistently
 		if ( null == valueA && null == valueB ) {
-return 0;
-}
+			return 0;
+		}
 		if ( null == valueA ) {
-return 1;
-}
+			return 1;
+		}
 		if ( null == valueB ) {
-return -1;
-}
+			return -1;
+		}
 
 		// --- CURRENCY SORTING ---
 		if ( isCurrency ) {
@@ -145,14 +145,14 @@ return -1;
 			const amountB = 'object' === typeof valueB ? parseFloat( valueB.value ) : parseFloat( valueB );
 
 			if ( isNaN( amountA ) && isNaN( amountB ) ) {
-return 0;
-}
+				return 0;
+			}
 			if ( isNaN( amountA ) ) {
-return 1;
-}
+				return 1;
+			}
 			if ( isNaN( amountB ) ) {
-return -1;
-}
+				return -1;
+			}
 
 			return amountA - amountB;
 		}

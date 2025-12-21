@@ -720,6 +720,16 @@ const DataTableBlock = ({
 		});
 	}, [ columnsData, columnsOptions ]);
 
+	// sortedColumns the first column should have overflow true.
+	if ( 0 < sortedColumnsData.length ) {
+		sortedColumnsData[0] = {
+			...sortedColumnsData[0],
+			allowOverflow: true,
+			wrap: false,
+			grow: 2
+		};
+	}
+
 	// Memoize DataTable props to prevent unnecessary re-renders
 	const dataTableProps = useMemo(
 		() => ({

@@ -143,42 +143,17 @@ class Frontend_Statistics {
 	 */
 	public function generate_statistics_query( Query_Data $query_data ): string {
 		global $wpdb;
-
-		// Sanitize inputs.
-		$filters = $query_data->sanitize_filters( $query_data->filters );
-		$select  = array_map( 'esc_sql', $query_data->select );
-
-		// Validate group_by and order_by against whitelists.
-		$group_by = $query_data->validate_group_by( $query_data->group_by );
-		$order_by = $query_data->validate_order_by( $query_data->order_by );
-
-		// Filter select to only include allowed metrics.
-		// Ensure both arrays contain only strings for proper comparison.
-		$allowed_metrics = array_map( 'strval', $query_data->get_allowed_metrics() );
-		$select_strings  = array_map( 'strval', $select );
-		$select          = array_intersect( $select_strings, $allowed_metrics );
-		$limit           = $query_data->limit;
 		// Ensure we have at least one valid metric.
-		if ( empty( $select ) ) {
+		if ( empty( $query_data->select ) ) {
 			// Default to pageviews if no valid metrics.
-			$select = [ 'pageviews' ];
+			$query_data->select = [ 'pageviews' ];
 		}
 
-		// Prepare SELECT clause with metrics.
-		$select_sql = $this->build_select_metrics( $select, $query_data );
-
-		// Base table.
-		$table_name = $wpdb->prefix . 'burst_statistics AS statistics';
-
-		// Build WHERE clause from filters.
-		$where = $this->build_where_clause( $filters, $query_data );
-
-		if ( ! empty( $group_by ) ) {
-			$group_by_sql = 'GROUP BY ' . implode( ',', esc_sql( $group_by ) );
-		} else {
-			$group_by_sql = '';
-		}
-		$order_by_sql = ! empty( $order_by ) ? 'ORDER BY ' . implode( ',', esc_sql( $order_by ) ) : '';
+		$select_sql   = $this->build_select_metrics( $query_data->select, $query_data );
+		$table_name   = $wpdb->prefix . 'burst_statistics AS statistics';
+		$where        = $this->build_where_clause( $query_data->filters, $query_data );
+		$group_by_sql = ! empty( $query_data->group_by ) ? 'GROUP BY ' . implode( ',', $query_data->group_by ) : '';
+		$order_by_sql = ! empty( $query_data->order_by ) ? 'ORDER BY ' . implode( ',', $query_data->order_by ) : '';
 
 		// Build the complete SQL query using a prepared statement.
 		$sql_parts = [
@@ -202,14 +177,14 @@ class Frontend_Statistics {
 		}
 
 		// Add limit with prepared statement if needed.
-		if ( $limit > 0 ) {
+		if ( $query_data->limit > 0 ) {
 			$sql_parts[] = 'LIMIT %d';
 			$sql_string  = implode( ' ', $sql_parts );
 			$sql         = $wpdb->prepare(
 				$sql_string,
 				$query_data->date_start,
 				$query_data->date_end,
-				$limit
+				$query_data->limit
 			);
 		} else {
 			$sql_string = implode( ' ', $sql_parts );

@@ -46,7 +46,7 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 	const [ filteredOptions, setFilteredOptions ] = useState<SelectOption[]>([]);
 	const [ searchTerm, setSearchTerm ] = useState<string>( '' );
 	const [ hasFullDataset, setHasFullDataset ] = useState<boolean>( false );
-	const { getFilterOptions, isLoading, isError } = useFiltersData();
+	const { getFilterOptions } = useFiltersData();
 
 	useEffect( () => {
 		setValue( initialValue );
@@ -160,12 +160,6 @@ return;
 		// Update search term for reloadOnSearch functionality
 		setSearchTerm( input );
 
-		// If still loading or error, return empty array via callback
-		if ( isLoading || isError ) {
-			callback?.([]);
-			return;
-		}
-
 		// If no available options yet, return empty array
 		if ( ! availableOptions.length ) {
 			callback?.([]);
@@ -273,7 +267,6 @@ return;
 						defaultOptions={filteredOptions}
 						placeholder={getPlaceholder()}
 						isSearchable={true}
-						isLoading={isLoading}
 						disabled={false}
 						insideModal={true}
 						allowCustomValue={0 === filteredOptions.length}

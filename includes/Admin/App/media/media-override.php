@@ -44,6 +44,29 @@
  * https://core.trac.wordpress.org/ticket/32264.
  */
 
+/**
+ * Translation wrapper functions. These strings are copied from WordPress core, as this is a wp core override.
+ *
+ * @param string $text Text to translate.
+ * @return string|null Translated text.
+ */
+function burst_core_translation_wrapper( string $text ): ?string {
+    // phpcs:ignore WordPress.WP.I18n.MissingArgDomain, WordPress.WP.I18n.NonSingularStringLiteralText
+	return __( $text );
+}
+
+/**
+ * Translation wrapper functions with context. These strings are copied from WordPress core, as this is a wp core override.
+ *
+ * @param string $text    Text to translate.
+ * @param string $comment Contextual comment for the translators.
+ * @return string|null Translated text.
+ */
+function burst_core_translation_wrapper_x( string $text, string $comment ): ?string {
+    // phpcs:ignore WordPress.WP.I18n.MissingArgDomain, WordPress.WP.I18n.NonSingularStringLiteralText, WordPress.WP.I18n.NonSingularStringLiteralContext
+	return _x( $text, $comment );
+}
+
 
 /**
  * Enqueues all scripts, styles, settings, and templates necessary to use
@@ -161,125 +184,125 @@ function burst_wp_enqueue_media( $args = [] ) {
 
 	$strings = [
 		// Generic.
-		'url'                         => __( 'URL' ),
-		'addMedia'                    => __( 'Add Media' ),
-		'search'                      => __( 'Search' ),
-		'select'                      => __( 'Select' ),
-		'cancel'                      => __( 'Cancel' ),
-		'update'                      => __( 'Update' ),
-		'replace'                     => __( 'Replace' ),
-		'remove'                      => __( 'Remove' ),
-		'back'                        => __( 'Back' ),
+		'url'                         => burst_core_translation_wrapper( 'URL' ),
+		'addMedia'                    => burst_core_translation_wrapper( 'Add Media' ),
+		'search'                      => burst_core_translation_wrapper( 'Search' ),
+		'select'                      => burst_core_translation_wrapper( 'Select' ),
+		'cancel'                      => burst_core_translation_wrapper( 'Cancel' ),
+		'update'                      => burst_core_translation_wrapper( 'Update' ),
+		'replace'                     => burst_core_translation_wrapper( 'Replace' ),
+		'remove'                      => burst_core_translation_wrapper( 'Remove' ),
+		'back'                        => burst_core_translation_wrapper( 'Back' ),
 		/*
 		translators: This is a would-be plural string used in the media manager.
 			If there is not a word you can use in your language to avoid issues with the
 			lack of plural support here, turn it into "selected: %d" then translate it.
 		 */
-		'selected'                    => __( '%d selected' ),
-		'dragInfo'                    => __( 'Drag and drop to reorder media files.' ),
+		'selected'                    => burst_core_translation_wrapper( '%d selected' ),
+		'dragInfo'                    => burst_core_translation_wrapper( 'Drag and drop to reorder media files.' ),
 
 		// Upload.
-		'uploadFilesTitle'            => __( 'Upload Files' ),
-		'uploadImagesTitle'           => __( 'Upload Images' ),
+		'uploadFilesTitle'            => burst_core_translation_wrapper( 'Upload Files' ),
+		'uploadImagesTitle'           => burst_core_translation_wrapper( 'Upload Images' ),
 
 		// Library.
-		'mediaLibraryTitle'           => __( 'Media Library' ),
-		'insertMediaTitle'            => __( 'Insert Media' ),
-		'createNewGallery'            => __( 'Create a new gallery' ),
-		'createNewPlaylist'           => __( 'Create a new playlist' ),
-		'createNewVideoPlaylist'      => __( 'Create a new video playlist' ),
-		'returnToLibrary'             => __( '&#8592; Return to library' ),
-		'allMediaItems'               => __( 'All media items' ),
-		'allDates'                    => __( 'All dates' ),
-		'noItemsFound'                => __( 'No items found.' ),
-		'insertIntoPost'              => $hier ? __( 'Insert into page' ) : __( 'Insert into post' ),
-		'unattached'                  => __( 'Unattached' ),
-		'trash'                       => _x( 'Trash', 'noun' ),
-		'uploadedToThisPost'          => $hier ? __( 'Uploaded to this page' ) : __( 'Uploaded to this post' ),
-		'warnDelete'                  => __( "You are about to permanently delete this item.\n  'Cancel' to stop, 'OK' to delete." ),
-		'warnBulkDelete'              => __( "You are about to permanently delete these items.\n  'Cancel' to stop, 'OK' to delete." ),
-		'warnBulkTrash'               => __( "You are about to trash these items.\n  'Cancel' to stop, 'OK' to delete." ),
-		'bulkSelect'                  => __( 'Bulk Select' ),
-		'cancelSelection'             => __( 'Cancel Selection' ),
-		'trashSelected'               => __( 'Trash Selected' ),
-		'untrashSelected'             => __( 'Untrash Selected' ),
-		'deleteSelected'              => __( 'Delete Selected' ),
-		'deletePermanently'           => __( 'Delete Permanently' ),
-		'apply'                       => __( 'Apply' ),
-		'filterByDate'                => __( 'Filter by date' ),
-		'filterByType'                => __( 'Filter by type' ),
-		'searchMediaLabel'            => __( 'Search Media' ),
-		'noMedia'                     => __( 'No media attachments found.' ),
+		'mediaLibraryTitle'           => burst_core_translation_wrapper( 'Media Library' ),
+		'insertMediaTitle'            => burst_core_translation_wrapper( 'Insert Media' ),
+		'createNewGallery'            => burst_core_translation_wrapper( 'Create a new gallery' ),
+		'createNewPlaylist'           => burst_core_translation_wrapper( 'Create a new playlist' ),
+		'createNewVideoPlaylist'      => burst_core_translation_wrapper( 'Create a new video playlist' ),
+		'returnToLibrary'             => burst_core_translation_wrapper( '&#8592; Return to library' ),
+		'allMediaItems'               => burst_core_translation_wrapper( 'All media items' ),
+		'allDates'                    => burst_core_translation_wrapper( 'All dates' ),
+		'noItemsFound'                => burst_core_translation_wrapper( 'No items found.' ),
+		'insertIntoPost'              => $hier ? burst_core_translation_wrapper( 'Insert into page' ) : burst_core_translation_wrapper( 'Insert into post' ),
+		'unattached'                  => burst_core_translation_wrapper( 'Unattached' ),
+		'trash'                       => burst_core_translation_wrapper_x( 'Trash', 'noun' ),
+		'uploadedToThisPost'          => $hier ? burst_core_translation_wrapper( 'Uploaded to this page' ) : burst_core_translation_wrapper( 'Uploaded to this post' ),
+		'warnDelete'                  => burst_core_translation_wrapper( "You are about to permanently delete this item.\n  'Cancel' to stop, 'OK' to delete." ),
+		'warnBulkDelete'              => burst_core_translation_wrapper( "You are about to permanently delete these items.\n  'Cancel' to stop, 'OK' to delete." ),
+		'warnBulkTrash'               => burst_core_translation_wrapper( "You are about to trash these items.\n  'Cancel' to stop, 'OK' to delete." ),
+		'bulkSelect'                  => burst_core_translation_wrapper( 'Bulk Select' ),
+		'cancelSelection'             => burst_core_translation_wrapper( 'Cancel Selection' ),
+		'trashSelected'               => burst_core_translation_wrapper( 'Trash Selected' ),
+		'untrashSelected'             => burst_core_translation_wrapper( 'Untrash Selected' ),
+		'deleteSelected'              => burst_core_translation_wrapper( 'Delete Selected' ),
+		'deletePermanently'           => burst_core_translation_wrapper( 'Delete Permanently' ),
+		'apply'                       => burst_core_translation_wrapper( 'Apply' ),
+		'filterByDate'                => burst_core_translation_wrapper( 'Filter by date' ),
+		'filterByType'                => burst_core_translation_wrapper( 'Filter by type' ),
+		'searchMediaLabel'            => burst_core_translation_wrapper( 'Search Media' ),
+		'noMedia'                     => burst_core_translation_wrapper( 'No media attachments found.' ),
 
 		// Library Details.
-		'attachmentDetails'           => __( 'Attachment Details' ),
+		'attachmentDetails'           => burst_core_translation_wrapper( 'Attachment Details' ),
 
 		// From URL.
-		'insertFromUrlTitle'          => __( 'Insert from URL' ),
+		'insertFromUrlTitle'          => burst_core_translation_wrapper( 'Insert from URL' ),
 
 		// Featured Images.
-		'setFeaturedImageTitle'       => __( 'Set Featured Image' ),
-		'setFeaturedImage'            => __( 'Set featured image' ),
+		'setFeaturedImageTitle'       => burst_core_translation_wrapper( 'Set Featured Image' ),
+		'setFeaturedImage'            => burst_core_translation_wrapper( 'Set featured image' ),
 
 		// Gallery.
-		'createGalleryTitle'          => __( 'Create Gallery' ),
-		'editGalleryTitle'            => __( 'Edit Gallery' ),
-		'cancelGalleryTitle'          => __( '&#8592; Cancel Gallery' ),
-		'insertGallery'               => __( 'Insert gallery' ),
-		'updateGallery'               => __( 'Update gallery' ),
-		'addToGallery'                => __( 'Add to gallery' ),
-		'addToGalleryTitle'           => __( 'Add to Gallery' ),
-		'reverseOrder'                => __( 'Reverse order' ),
+		'createGalleryTitle'          => burst_core_translation_wrapper( 'Create Gallery' ),
+		'editGalleryTitle'            => burst_core_translation_wrapper( 'Edit Gallery' ),
+		'cancelGalleryTitle'          => burst_core_translation_wrapper( '&#8592; Cancel Gallery' ),
+		'insertGallery'               => burst_core_translation_wrapper( 'Insert gallery' ),
+		'updateGallery'               => burst_core_translation_wrapper( 'Update gallery' ),
+		'addToGallery'                => burst_core_translation_wrapper( 'Add to gallery' ),
+		'addToGalleryTitle'           => burst_core_translation_wrapper( 'Add to Gallery' ),
+		'reverseOrder'                => burst_core_translation_wrapper( 'Reverse order' ),
 
 		// Edit Image.
-		'imageDetailsTitle'           => __( 'Image Details' ),
-		'imageReplaceTitle'           => __( 'Replace Image' ),
-		'imageDetailsCancel'          => __( 'Cancel Edit' ),
-		'editImage'                   => __( 'Edit Image' ),
+		'imageDetailsTitle'           => burst_core_translation_wrapper( 'Image Details' ),
+		'imageReplaceTitle'           => burst_core_translation_wrapper( 'Replace Image' ),
+		'imageDetailsCancel'          => burst_core_translation_wrapper( 'Cancel Edit' ),
+		'editImage'                   => burst_core_translation_wrapper( 'Edit Image' ),
 
 		// Crop Image.
-		'chooseImage'                 => __( 'Choose Image' ),
-		'selectAndCrop'               => __( 'Select and Crop' ),
-		'skipCropping'                => __( 'Skip Cropping' ),
-		'cropImage'                   => __( 'Crop Image' ),
-		'cropYourImage'               => __( 'Crop your image' ),
-		'cropping'                    => __( 'Cropping&hellip;' ),
-		'suggestedDimensions'         => __( 'Suggested image dimensions:' ),
-		'cropError'                   => __( 'There has been an error cropping your image.' ),
+		'chooseImage'                 => burst_core_translation_wrapper( 'Choose Image' ),
+		'selectAndCrop'               => burst_core_translation_wrapper( 'Select and Crop' ),
+		'skipCropping'                => burst_core_translation_wrapper( 'Skip Cropping' ),
+		'cropImage'                   => burst_core_translation_wrapper( 'Crop Image' ),
+		'cropYourImage'               => burst_core_translation_wrapper( 'Crop your image' ),
+		'cropping'                    => burst_core_translation_wrapper( 'Cropping&hellip;' ),
+		'suggestedDimensions'         => burst_core_translation_wrapper( 'Suggested image dimensions:' ),
+		'cropError'                   => burst_core_translation_wrapper( 'There has been an error cropping your image.' ),
 
 		// Edit Audio.
-		'audioDetailsTitle'           => __( 'Audio Details' ),
-		'audioReplaceTitle'           => __( 'Replace Audio' ),
-		'audioAddSourceTitle'         => __( 'Add Audio Source' ),
-		'audioDetailsCancel'          => __( 'Cancel Edit' ),
+		'audioDetailsTitle'           => burst_core_translation_wrapper( 'Audio Details' ),
+		'audioReplaceTitle'           => burst_core_translation_wrapper( 'Replace Audio' ),
+		'audioAddSourceTitle'         => burst_core_translation_wrapper( 'Add Audio Source' ),
+		'audioDetailsCancel'          => burst_core_translation_wrapper( 'Cancel Edit' ),
 
 		// Edit Video.
-		'videoDetailsTitle'           => __( 'Video Details' ),
-		'videoReplaceTitle'           => __( 'Replace Video' ),
-		'videoAddSourceTitle'         => __( 'Add Video Source' ),
-		'videoDetailsCancel'          => __( 'Cancel Edit' ),
-		'videoSelectPosterImageTitle' => __( 'Select Poster Image' ),
-		'videoAddTrackTitle'          => __( 'Add Subtitles' ),
+		'videoDetailsTitle'           => burst_core_translation_wrapper( 'Video Details' ),
+		'videoReplaceTitle'           => burst_core_translation_wrapper( 'Replace Video' ),
+		'videoAddSourceTitle'         => burst_core_translation_wrapper( 'Add Video Source' ),
+		'videoDetailsCancel'          => burst_core_translation_wrapper( 'Cancel Edit' ),
+		'videoSelectPosterImageTitle' => burst_core_translation_wrapper( 'Select Poster Image' ),
+		'videoAddTrackTitle'          => burst_core_translation_wrapper( 'Add Subtitles' ),
 
 		// Playlist.
-		'playlistDragInfo'            => __( 'Drag and drop to reorder tracks.' ),
-		'createPlaylistTitle'         => __( 'Create Audio Playlist' ),
-		'editPlaylistTitle'           => __( 'Edit Audio Playlist' ),
-		'cancelPlaylistTitle'         => __( '&#8592; Cancel Audio Playlist' ),
-		'insertPlaylist'              => __( 'Insert audio playlist' ),
-		'updatePlaylist'              => __( 'Update audio playlist' ),
-		'addToPlaylist'               => __( 'Add to audio playlist' ),
-		'addToPlaylistTitle'          => __( 'Add to Audio Playlist' ),
+		'playlistDragInfo'            => burst_core_translation_wrapper( 'Drag and drop to reorder tracks.' ),
+		'createPlaylistTitle'         => burst_core_translation_wrapper( 'Create Audio Playlist' ),
+		'editPlaylistTitle'           => burst_core_translation_wrapper( 'Edit Audio Playlist' ),
+		'cancelPlaylistTitle'         => burst_core_translation_wrapper( '&#8592; Cancel Audio Playlist' ),
+		'insertPlaylist'              => burst_core_translation_wrapper( 'Insert audio playlist' ),
+		'updatePlaylist'              => burst_core_translation_wrapper( 'Update audio playlist' ),
+		'addToPlaylist'               => burst_core_translation_wrapper( 'Add to audio playlist' ),
+		'addToPlaylistTitle'          => burst_core_translation_wrapper( 'Add to Audio Playlist' ),
 
 		// Video Playlist.
-		'videoPlaylistDragInfo'       => __( 'Drag and drop to reorder videos.' ),
-		'createVideoPlaylistTitle'    => __( 'Create Video Playlist' ),
-		'editVideoPlaylistTitle'      => __( 'Edit Video Playlist' ),
-		'cancelVideoPlaylistTitle'    => __( '&#8592; Cancel Video Playlist' ),
-		'insertVideoPlaylist'         => __( 'Insert video playlist' ),
-		'updateVideoPlaylist'         => __( 'Update video playlist' ),
-		'addToVideoPlaylist'          => __( 'Add to video playlist' ),
-		'addToVideoPlaylistTitle'     => __( 'Add to Video Playlist' ),
+		'videoPlaylistDragInfo'       => burst_core_translation_wrapper( 'Drag and drop to reorder videos.' ),
+		'createVideoPlaylistTitle'    => burst_core_translation_wrapper( 'Create Video Playlist' ),
+		'editVideoPlaylistTitle'      => burst_core_translation_wrapper( 'Edit Video Playlist' ),
+		'cancelVideoPlaylistTitle'    => burst_core_translation_wrapper( '&#8592; Cancel Video Playlist' ),
+		'insertVideoPlaylist'         => burst_core_translation_wrapper( 'Insert video playlist' ),
+		'updateVideoPlaylist'         => burst_core_translation_wrapper( 'Update video playlist' ),
+		'addToVideoPlaylist'          => burst_core_translation_wrapper( 'Add to video playlist' ),
+		'addToVideoPlaylistTitle'     => burst_core_translation_wrapper( 'Add to Video Playlist' ),
 	];
 
 	/**

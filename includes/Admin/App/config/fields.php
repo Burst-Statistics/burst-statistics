@@ -360,6 +360,7 @@ return [
 		'menu_id'  => 'data',
 		'group_id' => 'data_archiving',
 		'options'  => [
+
 			'none'    => __( 'Don\'t manage', 'burst-statistics' ),
 			'archive' => __( 'Automatically Archive', 'burst-statistics' ),
 			'delete'  => __( 'Automatically Delete', 'burst-statistics' ),

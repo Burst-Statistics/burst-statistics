@@ -43,17 +43,6 @@
 		@apply pl-0 pr-0;
 	}
 
-	/* First column takes up remaining space, other columns stay fixed. */
-	.rdt_TableCol:first-child,
-	.rdt_TableCell:first-child {
-		@apply flex-1 min-w-0;
-	}
-
-	.rdt_TableCol:not(:first-child),
-	.rdt_TableCell:not(:first-child) {
-		@apply flex-none;
-	}
-
 	.rdt_Pagination select + svg {
 		@apply hidden;
 	}

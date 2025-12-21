@@ -6230,19 +6230,6 @@ a.burst-button,
   padding-right: 0px;
 }
 
-/* First column takes up remaining space, other columns stay fixed. */
-
-.rdt_TableCol:first-child,
-	.rdt_TableCell:first-child {
-  min-width: 0px;
-  flex: 1 1 0%;
-}
-
-.rdt_TableCol:not(:first-child),
-	.rdt_TableCell:not(:first-child) {
-  flex: none;
-}
-
 .rdt_Pagination select + svg {
   display: none;
 }
