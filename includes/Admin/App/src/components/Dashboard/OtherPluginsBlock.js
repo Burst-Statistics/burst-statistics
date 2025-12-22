@@ -151,6 +151,7 @@ const OtherPluginsBlock = () => {
 
 		return (
 			<div
+				key={plugin.slug}
 				className={`
         burst-other-plugins-element burst-${plugin.slug}
         w-full

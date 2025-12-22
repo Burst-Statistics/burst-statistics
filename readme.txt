@@ -6,7 +6,7 @@ Requires at least: 6.4
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 6.9
-Stable tag: 3.1.0.3
+Stable tag: 3.1.4
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 
@@ -97,6 +97,18 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.1.4 =
+* December 23rd 2025
+* Improvement: styling of datatable blocks and loading states.
+* Improvement: referrer query performance improvements.
+* Improvement: parameter query performance improvements.
+* Improvement: exclude track hit over Rest Api from the Burst Rest Api Optimizer, this way all plugins are loaded during the hit, which is required for hook goals.
+* Improvement: added fallback to default method for combine variables and scripts, in case the uploads directory is not writable.
+* Improvement: the 'cron not running' notice not dismissible anymore, as it is a critical issue.
+* Improvement: allow search for formatted data on datatables, e.g. you can now search for 'United States' instead of US on the locations datatable.
+* Improvement: add parameter filtering.
+* Fix: filtering on devices block.
+
 = 3.1.0.3 =
 * December 1st
 * Fix: saving settings changes after saving initial changes required a reload.

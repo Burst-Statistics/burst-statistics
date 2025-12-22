@@ -240,7 +240,7 @@ return;
 				return __( 'Enter search term', 'burst-statistics' );
 			case 'content':
 				return __( 'Enter content identifier', 'burst-statistics' );
-			case 'url_parameter':
+			case 'parameter':
 				return __(
 					'Enter URL parameter (e.g., utm_campaign)',
 					'burst-statistics'

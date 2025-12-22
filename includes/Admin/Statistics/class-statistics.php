@@ -70,11 +70,12 @@ class Statistics {
 
 		// Query last 30 minutes of traffic.
 		$args = [
-			'date_start'    => $time_start_30m,
-			'date_end'      => $now + HOUR_IN_SECONDS,
-			'custom_select' => 'time+time_on_page / 1000 AS active_time, referrer AS utm_source, page_url, time, time_on_page, uid, page_id',
-			'order_by'      => 'active_time DESC',
-			'limit'         => 100,
+			'date_start'               => $time_start_30m,
+			'date_end'                 => $now + HOUR_IN_SECONDS,
+			'custom_select'            => '%s time+time_on_page / 1000 AS active_time, referrer AS utm_source, page_url, time, time_on_page, uid, page_id',
+			'custom_select_parameters' => [ '' ],
+			'order_by'                 => 'active_time DESC',
+			'limit'                    => 100,
 		];
 
 		$qd  = new Query_Data( $args );
@@ -158,11 +159,13 @@ class Statistics {
 
 		// Use enhanced query builder with custom WHERE for complex live visitor logic.
 		$args = [
-			'date_start'    => $time_start,
+			'date_start'               => $time_start,
 			// Add buffer to ensure we don't exclude based on end time.
-			'date_end'      => $now + HOUR_IN_SECONDS,
-			'custom_select' => 'COUNT(DISTINCT(uid))',
-			'custom_where'  => "AND ( (time + time_on_page / 1000 + {$on_page_offset} + {$exit_margin}) > {$now})",
+			'date_end'                 => $now + HOUR_IN_SECONDS,
+			'custom_select'            => '%s COUNT(DISTINCT(uid))',
+			'custom_select_parameters' => [ '' ],
+			'custom_where'             => 'AND ( (time + time_on_page / 1000 + %d + %d) > %d)',
+			'custom_where_parameters'  => [ $on_page_offset, $exit_margin, $now ],
 		];
 		$qd   = new Query_Data( $args );
 		$sql  = $this->get_sql_table( $qd );
@@ -735,10 +738,11 @@ class Statistics {
 			'filters'    => $args['filters'],
 		];
 
-		$query_args['select']        = [ 'device_id' ];
-		$query_args['custom_select'] = 'device_id, COUNT(device_id) AS count';
-		$query_args['group_by']      = 'device_id';
-		$query_args['having']        = [ 'device_id > 0' ];
+		$query_args['select']                   = [ 'device_id' ];
+		$query_args['custom_select']            = '%s device_id, COUNT(device_id) AS count';
+		$query_args['custom_select_parameters'] = [ '' ];
+		$query_args['group_by']                 = 'device_id';
+		$query_args['having']                   = [ 'device_id > 0' ];
 
 		$qd  = new Query_Data( $query_args );
 		$sql = $this->get_sql_table( $qd );
@@ -822,11 +826,12 @@ class Statistics {
 				'limit'      => 1,
 			];
 
-			$query_args['select']        = [ 'browser_id', 'platform_id' ];
-			$query_args['custom_select'] = 'browser_id, platform_id, COUNT(*) as count';
-			$query_args['group_by']      = [ 'browser_id', 'platform_id' ];
-			$query_args['having']        = [ 'browser_id > 0' ];
-			$query_args['order_by']      = 'count DESC';
+			$query_args['select']                   = [ 'browser_id', 'platform_id' ];
+			$query_args['custom_select']            = '%s browser_id, platform_id, COUNT(*) as count';
+			$query_args['custom_select_parameters'] = [ '' ];
+			$query_args['group_by']                 = [ 'browser_id', 'platform_id' ];
+			$query_args['having']                   = [ 'browser_id > 0' ];
+			$query_args['order_by']                 = 'count DESC';
 
 			$qd  = new Query_Data( $query_args );
 			$sql = $this->get_sql_table( $qd );
@@ -839,28 +844,33 @@ class Statistics {
 			$browser         = $this->get_lookup_table_name_by_id( 'browser', $browser_id );
 			$platform        = $this->get_lookup_table_name_by_id( 'platform', $platform_id );
 			$data[ $device ] = [
-				'os'      => $platform ?: '',
-				'browser' => $browser ?: '',
+				'os'        => $platform ?: '',
+				'browser'   => $browser ?: '',
+				'device_id' => \Burst\burst_loader()->frontend->tracking->get_lookup_table_id( 'device', $device ),
 			];
 		}
 
 		// Setup defaults.
 		$default_data = [
 			'desktop' => [
-				'os'      => '',
-				'browser' => '',
+				'os'        => '',
+				'browser'   => '',
+				'device_id' => 0,
 			],
 			'tablet'  => [
-				'os'      => '',
-				'browser' => '',
+				'os'        => '',
+				'browser'   => '',
+				'device_id' => 0,
 			],
 			'mobile'  => [
-				'os'      => '',
-				'browser' => '',
+				'os'        => '',
+				'browser'   => '',
+				'device_id' => 0,
 			],
 			'other'   => [
-				'os'      => '',
-				'browser' => '',
+				'os'        => '',
+				'browser'   => '',
+				'device_id' => 0,
 			],
 		];
 
@@ -1206,13 +1216,14 @@ class Statistics {
 				'new_visitor'      => 'statistics.first_time_visit',
 				'page_url'         => 'statistics.page_url',
 				'referrer'         => 'sessions.referrer',
-				'device'           => 'statistics.device_id',
 				'browser'          => 'statistics.browser_id',
 				'platform'         => 'statistics.platform_id',
 				'platform_id'      => 'statistics.platform_id',
 				'browser_id'       => 'statistics.browser_id',
 				'device_id'        => 'statistics.device_id',
 				'entry_exit_pages' => 'entry_exit_pages',
+				'parameter'        => 'parameter',
+				'parameters'       => 'statistics.parameters',
 				// only needed for pages datatable.
 				'goal_id'          => 'goals.goal_id',
 			]
@@ -1261,6 +1272,14 @@ class Statistics {
 					$values          = explode( ',', $value );
 					$values          = array_map( 'intval', $values );
 					$where_clauses[] = "( $qualified_name= " . implode( " OR $qualified_name = ", $values ) . ')';
+				} elseif ( $filter === 'parameter' ) {
+					$include_value = str_contains( $value, '=' );
+					$value         = esc_sql( sanitize_text_field( $value ) );
+					if ( $include_value ) {
+						$where_clauses[] = $wpdb->prepare( "CONCAT(params.parameter, '=', params.value) = %s", "{$value}" );
+					} else {
+						$where_clauses[] = $wpdb->prepare( ' (params.parameter = %s OR params.value = %s) ', "{$value}", "{$value}" );
+					}
 				} else {
 					$value = esc_sql( sanitize_text_field( $value ) );
 					if ( $filter === 'referrer' ) {
@@ -1859,7 +1878,6 @@ class Statistics {
 				$sql .= ' UNION ' . $union_query;
 			}
 		}
-
 		return $sql;
 	}
 

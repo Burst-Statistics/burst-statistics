@@ -15,6 +15,11 @@ import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import useSettingsData from '@/hooks/useSettingsData';
 import DownloadCsvButton from '@/components/Statistics/DownloadCsvButton';
+import { COLUMN_FORMATTERS, FORMATS } from '@/api/getDataTableData';
+import {
+	getCountryName,
+	getContinentName
+} from '@/utils/formatting';
 
 /**
  * DataTableBlock component for displaying a block with a datatable. This
@@ -660,6 +665,41 @@ const DataTableBlock = ({
 	const tableData = useMemo( () => data.data || [], [ data.data ]);
 	const columnsData = data.columns;
 
+	/**
+	 * To enable searching on formatted values, we need to get the formatted value.
+	 * @param value
+	 * @param format
+	 * @param columnId
+	 * @returns {*|string|string}
+	 */
+	const getSearchableValue = ( value, format, columnId ) => {
+		if ( null === value || value === undefined ) {
+			return '';
+		}
+
+		const formatter = COLUMN_FORMATTERS[format];
+		if ( ! formatter ) {
+			return value.toString();
+		}
+
+		const formatted = formatter( value, columnId );
+		if ( null === formatted || formatted === undefined ) {
+			return '';
+		}
+
+		if ( 'object' === typeof formatted ) {
+			if ( format === FORMATS.COUNTRY ) {
+				return getCountryName( value ) || value;
+			}
+			if ( format === FORMATS.CONTINENT ) {
+				return getContinentName( value ) || value;
+			}
+			return value.toString();
+		}
+
+		return formatted.toString();
+	};
+
 	// Memoize the filtered data to avoid recalculations
 	const filteredData = useMemo( () => {
 		let filtered = [];
@@ -682,10 +722,9 @@ const DataTableBlock = ({
 						if ( null === value || value === undefined ) {
 							return false;
 						}
-						return value
-							.toString()
-							.toLowerCase()
-							.includes( searchTerm );
+						const format = columnsOptions[column]?.format;
+						const searchValue = getSearchableValue( value, format, column );
+						return searchValue.toLowerCase().includes( searchTerm );
 					});
 				});
 			}

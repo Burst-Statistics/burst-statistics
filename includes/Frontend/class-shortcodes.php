@@ -330,11 +330,14 @@ class Shortcodes {
 
 			// Execute query based on type.
 			if ( in_array( $atts['type'], [ 'top_pages', 'top_referrers', 'device_breakdown' ], true ) ) {
-				// List-type data.
+				// The query is prepared within the query_data method.
+                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				$results = $wpdb->get_results( $sql, ARRAY_A );
 				$output  = $this->render_list_type_results( $results, $atts );
 			} else {
 				// Single value data.
+				// The query is prepared within the query_data method.
+                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				$result = $wpdb->get_row( $sql, ARRAY_A );
 				$output = $this->render_single_value_result( $result, $atts );
 			}

@@ -35,6 +35,9 @@ const GeoMapFeature = memo(
 	}) => {
 		return (
 			<path
+
+				//this class is used for the tracking test. Do not remove or change it without updating the test as well.
+				className={'burst-region-' + feature?.properties?.name}
 				key={feature.id}
 				fill={feature?.fill ?? fillColor}
 				strokeWidth={borderWidth}

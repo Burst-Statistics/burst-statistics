@@ -129,13 +129,19 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		category: 'behavior',
 		coming_soon: true
 	},
-	url_parameter: {
+	parameter: {
 		label: __( 'URL Parameter', 'burst-statistics' ),
 		icon: 'parameters',
 		type: 'string',
 		pro: true,
-		category: 'sources',
-		coming_soon: true
+		category: 'sources'
+	},
+	parameters: {
+		label: __( 'URL Parameters', 'burst-statistics' ),
+		icon: 'parameters',
+		type: 'string',
+		pro: true,
+		category: 'sources'
 	},
 	campaign: {
 		label: __( 'Campaign', 'burst-statistics' ),
@@ -285,5 +291,5 @@ export const INITIAL_FILTERS: FilterSearchParams = FILTER_KEYS.reduce(
 );
 
 // Default favorites for new users.
-export const DEFAULT_FAVORITES = [ 'page_url', 'referrer', 'bounces', 'device' ];
+export const DEFAULT_FAVORITES = [ 'page_url', 'referrer', 'bounces', 'device_id' ];
 

@@ -18,8 +18,8 @@ const DeviceItem = memo( ({ deviceKey, deviceData }) => {
 	return (
 		<ClickToFilter
 			key={deviceKey}
-			filter="device"
-			filterValue={deviceKey}
+			filter="device_id"
+			filterValue={deviceData?.device_id}
 			label={deviceData.title}
 		>
 			<ExplanationAndStatsItem
@@ -94,6 +94,7 @@ const DevicesBlock = () => {
 		placeholderData: emptyDataSubtitle
 	});
 
+
 	// Memoize the merged data to prevent unnecessary recomputations
 	const data = useMemo( () => {
 		if ( titleAndValueQuery.data && subtitleQuery.data ) {
@@ -113,9 +114,9 @@ const DevicesBlock = () => {
 		return placeholderData;
 	}, [ titleAndValueQuery.data, subtitleQuery.data, placeholderData ]);
 
+
 	// Memoize the device keys to prevent recreation of the array on every render
 	const deviceKeys = useMemo( () => Object.keys( data ), [ data ]);
-
 	return (
 		<Block className="row-span-1 lg:col-span-6 xl:col-span-3">
 			<BlockHeading title={__( 'Devices', 'burst-statistics' )} />

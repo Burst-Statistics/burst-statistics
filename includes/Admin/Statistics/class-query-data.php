@@ -135,6 +135,9 @@ class Query_Data {
 	 */
 	public string $custom_where = '';
 
+	public array $custom_where_parameters  = [];
+	public array $custom_select_parameters = [];
+
 	/**
 	 * Subquery for the query.
 	 *
@@ -190,7 +193,6 @@ class Query_Data {
 		'page_url',
 		'referrer',
 		'device',
-		'count',
 	];
 
 	/**
@@ -220,8 +222,14 @@ class Query_Data {
 			'device_id'            => 'Device',
 			'browser_id'           => 'Browser',
 			'platform_id'          => 'Platform',
+			'count'                => 'Count',
+			'period'               => 'Period',
 		];
 		$this->initialize_allowlists();
+
+		// these parameters are used for prepared statements in custom SQL clauses.
+		$this->custom_where_parameters  = isset( $args['custom_where_parameters'] ) && is_array( $args['custom_where_parameters'] ) ? $args['custom_where_parameters'] : [];
+		$this->custom_select_parameters = isset( $args['custom_select_parameters'] ) && is_array( $args['custom_select_parameters'] ) ? $args['custom_select_parameters'] : [];
 
 		if ( ! empty( $args ) ) {
 			foreach ( $args as $key => $value ) {
@@ -256,6 +264,7 @@ class Query_Data {
 			$keys    = apply_filters( 'burst_allowed_metric_keys', $this->strict_metric_keys, $this->is_strict() );
 			$metrics = array_intersect_key( $metrics, array_flip( $keys ) );
 		}
+
 		$this->allowed_metrics = apply_filters( 'burst_allowed_metrics', $metrics, $this->is_strict() );
 	}
 
@@ -316,30 +325,13 @@ class Query_Data {
 	 * Get allowed order_by values based on strict mode
 	 */
 	private function initialize_allowed_order_by(): void {
-		if ( $this->is_strict() ) {
-			$order_by = [
-				'pageviews DESC',
-				'pageviews ASC',
-				'visitors DESC',
-				'visitors ASC',
-				'sessions DESC',
-				'sessions ASC',
-				'bounce_rate DESC',
-				'bounce_rate ASC',
-				'avg_time_on_page DESC',
-				'avg_time_on_page ASC',
-				'first_time_visitors DESC',
-				'first_time_visitors ASC',
-				'count DESC',
-				'count ASC',
-			];
-		} else {
-			$metrics  = $this->get_allowed_metrics();
-			$order_by = [];
-			foreach ( $metrics as $metric ) {
-				$order_by[] = $metric . ' DESC';
-				$order_by[] = $metric . ' ASC';
-			}
+
+		$metrics  = $this->get_allowed_metrics();
+		$order_by = [];
+		foreach ( $metrics as $metric ) {
+			$order_by[] = $metric . ' DESC';
+			$order_by[] = $metric . ' ASC';
+			$order_by[] = $metric;
 		}
 
 		$this->allowed_order_by = apply_filters( 'burst_statistics_allowed_order_by', $order_by, $this->is_strict() );
@@ -363,7 +355,12 @@ class Query_Data {
 		}
 
 		if ( $key === 'custom_where' && ! $this->strict ) {
-			$this->custom_where = $value;
+			$this->custom_where = $this->get_prepared_custom_sql( $value, 'where' );
+			return;
+		}
+
+		if ( $key === 'custom_select' && ! $this->strict ) {
+			$this->custom_select = $this->get_prepared_custom_sql( $value, 'select' );
 			return;
 		}
 
@@ -376,14 +373,7 @@ class Query_Data {
 		if ( $key === 'order_by' ) {
 			$array_values   = $this->ensure_array_if_applicable( $value );
 			$this->order_by = is_array( $array_values ) ? $array_values : [ $array_values ];
-			if ( $this->is_strict() ) {
-				$this->order_by = $this->validate_order_by( $this->order_by );
-			}
-			return;
-		}
-
-		if ( $key === 'custom_select' && ! $this->strict ) {
-			$this->custom_select = $value;
+			$this->order_by = $this->validate_order_by( $this->order_by );
 			return;
 		}
 
@@ -680,6 +670,8 @@ class Query_Data {
 			$item = trim( (string) $item );
 			if ( in_array( $item, $allowed, true ) ) {
 				$validated[] = $item;
+			} else {
+				self::error_log( "Order by clause '$item' is not allowed." );
 			}
 		}
 
@@ -815,39 +807,12 @@ class Query_Data {
 	}
 
 	/**
-	 * Get the group_by value for the query.
-	 *
-	 * @return string[] Group by clause.
-	 */
-	public function get_group_by_value(): array {
-		return $this->group_by;
-	}
-
-	/**
 	 * Get the order_by value for the query.
 	 *
 	 * @return string[] Order by clause.
 	 */
 	public function get_order_by_value(): array {
 		return $this->order_by;
-	}
-
-	/**
-	 * Get the limit for the query results.
-	 *
-	 * @return int Limit value.
-	 */
-	public function get_limit(): int {
-		return $this->limit;
-	}
-
-	/**
-	 * Get all JOIN clauses applied to the query.
-	 *
-	 * @return array JOIN clauses.
-	 */
-	public function get_joins(): array {
-		return $this->joins;
 	}
 
 	/**
@@ -860,75 +825,40 @@ class Query_Data {
 	}
 
 	/**
-	 * Get the HAVING clauses for the query.
+	 * Get the prepared custom WHERE clause
 	 *
-	 * @return array HAVING clauses.
+	 * @return string Prepared custom WHERE clause
 	 */
-	public function get_having(): array {
-		return $this->having;
-	}
+	public function get_prepared_custom_sql( string $custom_sql, string $context ): string {
+		global $wpdb;
 
-	/**
-	 * Get the custom SELECT clause.
-	 *
-	 * @return string Custom SELECT clause.
-	 */
-	public function get_custom_select(): string {
-		return $this->custom_select;
-	}
+		if ( empty( $custom_sql ) ) {
+			return '';
+		}
 
-	/**
-	 * Get the custom WHERE clause.
-	 *
-	 * @return string Custom WHERE clause.
-	 */
-	public function get_custom_where(): string {
-		return $this->custom_where;
-	}
+		$custom_parameters = $context === 'select' ? $this->custom_select_parameters : $this->custom_where_parameters;
 
-	/**
-	 * Get the subquery used within the query.
-	 *
-	 * @return string Subquery SQL.
-	 */
-	public function get_subquery(): string {
-		return $this->subquery;
-	}
+		// If no params, return empty (required).
+		if ( empty( $custom_parameters ) ) {
+			self::error_log( 'Custom SQL clause has no parameters, these are required. Use empty string if not needed. Returning empty custom_' . $context );
+			return '';
+		}
 
-	/**
-	 * Get the UNION clauses for the query.
-	 *
-	 * @return array UNION clauses.
-	 */
-	public function get_union(): array {
-		return $this->union;
-	}
+		if ( ! $this->validate_custom_sql_safety( $custom_sql, $context ) ) {
+			self::error_log( "Custom $context clause failed safety validation. Returning empty custom_" . $context );
+			return '';
+		}
 
-	/**
-	 * Check whether the query should use DISTINCT.
-	 *
-	 * @return bool True if DISTINCT is enabled.
-	 */
-	public function is_distinct(): bool {
-		return $this->distinct;
-	}
+		if ( count( $custom_parameters ) === 1 && $custom_parameters[0] === '' && str_contains( $custom_sql, '%s' ) ) {
+			// remove the placeholder %s and return sql as is.
+			return str_replace( '%s', '', $custom_sql );
+		}
 
-	/**
-	 * Get the window functions applied to the query.
-	 *
-	 * @return array Window functions configuration.
-	 */
-	public function get_window(): array {
-		return $this->window;
-	}
-
-	/**
-	 * Check whether bounces are excluded from the query.
-	 *
-	 * @return bool True if bounces are excluded.
-	 */
-	public function get_exclude_bounces_flag(): bool {
-		return $this->exclude_bounces;
+		// Prepare with parameters.
+		return $wpdb->prepare(
+			$custom_sql,
+			...$custom_parameters
+		);
 	}
 
 	/**
@@ -951,5 +881,112 @@ class Query_Data {
 	 */
 	public function is_strict(): bool {
 		return $this->strict;
+	}
+
+
+	/**
+	 * Validate custom SELECT/WHERE clauses for safe SQL patterns
+	 *
+	 * @param string $sql SQL clause to validate.
+	 * @param string $context 'select' or 'where' for better error messages.
+	 * @return bool True if valid, false if suspicious.
+	 */
+	private function validate_custom_sql_safety( string $sql, string $context = 'select' ): bool {
+		// Remove all whitespace for easier pattern matching.
+		$normalized = preg_replace( '/\s+/', ' ', trim( $sql ) );
+
+		// 1. Check for dangerous SQL keywords.
+		$dangerous_keywords = [
+			'DROP',
+			'DELETE',
+			'TRUNCATE',
+			'ALTER',
+			'CREATE',
+			'REPLACE',
+			'INSERT',
+			'UPDATE',
+			'EXEC',
+			'EXECUTE',
+			'UNION',
+			'LOAD_FILE',
+			'OUTFILE',
+			'DUMPFILE',
+			'INTO\s+(?:OUT|DUMP)FILE',
+			'BENCHMARK',
+			'SLEEP',
+			'WAITFOR',
+			'DELAY',
+			'INFORMATION_SCHEMA',
+			'LOAD\s+DATA',
+			'SHOW\s+TABLES',
+			'SHOW\s+DATABASES',
+		];
+
+		foreach ( $dangerous_keywords as $keyword ) {
+			if ( preg_match( '/\b' . $keyword . '\b/i', $normalized ) ) {
+				self::error_log(
+					"Dangerous keyword '$keyword' detected in custom_$context. Query blocked. " .
+					'SQL: ' . substr( $sql, 0, 100 )
+				);
+				return false;
+			}
+		}
+
+		// 2. Check for suspicious patterns.
+		$suspicious_patterns = [
+			// Multiple statements (semicolon followed by more SQL).
+			'/;.*\w/',
+			// SQL comments with content after them.
+			'/--\s*[^\s]/',
+			// MySQL comments with content.
+			'/#.*[^\s]/',
+			// Block comments (can hide malicious code).
+			'/\/\*.*\*\//',
+			// Hex literals (often used in injection).
+			'/0x[0-9a-f]+/i',
+			// CHAR() function (can encode malicious strings).
+			'/char\s*\(/i',
+			// CONCAT often used in injection.
+			'/concat\s*\(/i',
+			// File reading.
+			'/load_file\s*\(/i',
+			// File writing.
+			'/into\s+(outfile|dumpfile)/i',
+		];
+
+		foreach ( $suspicious_patterns as $pattern ) {
+			if ( preg_match( $pattern, $normalized ) ) {
+				self::error_log(
+					"Suspicious pattern detected in custom_$context. Query blocked. " .
+					"Pattern: $pattern | SQL: " . substr( $sql, 0, 100 )
+				);
+				return false;
+			}
+		}
+
+		// 4. Check for balanced parentheses (prevents injection via unclosed brackets).
+		$open  = substr_count( $sql, '(' );
+		$close = substr_count( $sql, ')' );
+		if ( $open !== $close ) {
+			self::error_log(
+				"Unbalanced parentheses in custom_$context. Query blocked. " .
+				'SQL: ' . substr( $sql, 0, 100 )
+			);
+			return false;
+		}
+
+		// 5. Check for balanced quotes (prevents injection via unclosed strings).
+		$single_quotes = substr_count( $sql, "'" ) - substr_count( $sql, "\\'" );
+		$double_quotes = substr_count( $sql, '"' ) - substr_count( $sql, '\\"' );
+
+		if ( $single_quotes % 2 !== 0 || $double_quotes % 2 !== 0 ) {
+			self::error_log(
+				"SECURITY: Unbalanced quotes in custom_$context. Query blocked. " .
+				'SQL: ' . substr( $sql, 0, 100 )
+			);
+			return false;
+		}
+
+		return true;
 	}
 }

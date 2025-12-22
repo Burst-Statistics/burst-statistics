@@ -33,6 +33,7 @@ const transformDevicesSubtitle = ( response ) => {
 		const browser = response[key].browser ? response[key].browser : '';
 		Object.assign( data, {
 			[key]: {
+				device_id: response[key].device_id,
 				subtitle:
 					'' === os && '' === browser ? '-' : os + ' / ' + browser
 			}

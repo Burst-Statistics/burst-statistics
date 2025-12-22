@@ -13,6 +13,11 @@ import {
 	createHashHistory
 } from '@tanstack/react-router';
 
+// StyleSheetManager is used to configure styled-components globally
+// We need this to filter out the 'right' prop that react-data-table-component
+// passes to styled components, which causes warnings in styled-components v6
+import { StyleSheetManager } from 'styled-components';
+
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
 
@@ -144,26 +149,36 @@ const initApp = () => {
 	// Create the app element
 	const app = (
 		<StrictMode>
-			<QueryClientProvider client={queryClient}>
-				<Suspense fallback={<PendingComponent />}>
-					<RouterProvider router={router} />
-					<Suspense fallback={null}>
-						<ToastContainer
-							position="bottom-right"
+			{/*
+				StyleSheetManager prevents styled-components from forwarding the 'right' prop to DOM elements.
+				This is needed because react-data-table-component uses 'right' prop for column alignment,
+				which triggers warnings in styled-components v6 when passed to DOM elements.
+				See: getDataTableData.js line 267 where 'right' prop is set based on column alignment.
+			*/}
+			<StyleSheetManager
+				shouldForwardProp={( prop ) => 'right' !== prop}
+			>
+				<QueryClientProvider client={queryClient}>
+					<Suspense fallback={<PendingComponent />}>
+						<RouterProvider router={router} />
+						<Suspense fallback={null}>
+							<ToastContainer
+								position="bottom-right"
 
-							// autoClose={5000}
-							hideProgressBar={true}
-							newestOnTop={false}
-							closeOnClick
-							pauseOnFocusLoss
-							draggable
-							pauseOnHover
-							theme="light"
-						/>
+								// autoClose={5000}
+								hideProgressBar={true}
+								newestOnTop={false}
+								closeOnClick
+								pauseOnFocusLoss
+								draggable
+								pauseOnHover
+								theme="light"
+							/>
+						</Suspense>
+						<div id="modal-root" />
 					</Suspense>
-					<div id="modal-root" />
-				</Suspense>
-			</QueryClientProvider>
+				</QueryClientProvider>
+			</StyleSheetManager>
 		</StrictMode>
 	);
 

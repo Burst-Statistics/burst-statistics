@@ -295,7 +295,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 		<Modal
 			isOpen={isOpen}
 			onClose={() => setIsOpen( false )}
-			title={'selection' === currentStep ? getTitle() : undefined}
+			title={getTitle()}
 			subtitle={'selection' === currentStep ? getSubtitle() : undefined}
 			customHeader={'setup' === currentStep ? renderCustomHeader() : null}
 			content={renderContent()}

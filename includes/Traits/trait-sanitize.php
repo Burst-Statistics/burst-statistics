@@ -349,7 +349,7 @@ trait Sanitize {
 		// don't track if referrer is the same as current host.
 		// if referrer_url starts with current_host, then it is not a referrer.
 		if ( str_starts_with( $referrer_host, $current_host ) ) {
-			return 'self';
+			return '';
 		}
 
 		$ref_spam_list = file( BURST_PATH . 'lib/vendor/matomo/referrer-spam-list/spammers.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
