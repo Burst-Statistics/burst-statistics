@@ -354,10 +354,10 @@ return [
 		'context'  => __( 'Upload a previously exported settings file to overwrite your current settings.', 'burst-statistics' ),
 		'disabled' => true,
 		'default'  => false,
-        'pro'      => [
-            'url'      => 'pricing/',
-            'disabled' => false,
-        ],
+		'pro'      => [
+			'url'      => 'pricing/',
+			'disabled' => false,
+		],
 	],
 	[
 		'id'       => 'archive_data',
@@ -369,17 +369,12 @@ return [
 			'archive' => __( 'Automatically Archive', 'burst-statistics' ),
 			'delete'  => __( 'Automatically Delete', 'burst-statistics' ),
 		],
-		'pro'      => [
-			'url'      => 'pricing/',
-			'disabled' => false,
-		],
 		'notice'   => [
 			'label'       => 'default',
 			'title'       => __( 'Why should I manage old data?', 'burst-statistics' ),
 			'description' => __( 'Managing old data can optimize storage and improve site performance. Choose to archive or delete based on your needs.', 'burst-statistics' ),
 			'url'         => 'do-I-need-to-archive-my-data/',
 		],
-		'disabled' => [ 'archive' ],
 		'type'     => 'select',
 		'label'    => __( 'Choose how to manage old statistics', 'burst-statistics' ),
 		// translators: %s is the current size of the database used by Burst, e.g. "10 MB".
