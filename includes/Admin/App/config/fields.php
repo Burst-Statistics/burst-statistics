@@ -352,8 +352,12 @@ return [
 		'type'     => 'upload',
 		'label'    => __( 'Import settings', 'burst-statistics' ),
 		'context'  => __( 'Upload a previously exported settings file to overwrite your current settings.', 'burst-statistics' ),
-		'disabled' => false,
+		'disabled' => true,
 		'default'  => false,
+        'pro'      => [
+            'url'      => 'pricing/',
+            'disabled' => false,
+        ],
 	],
 	[
 		'id'       => 'archive_data',
