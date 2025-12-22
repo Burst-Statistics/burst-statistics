@@ -60,7 +60,7 @@ class Posts {
 			update_user_meta(
 				get_current_user_id(),
 				'burst_pageviews_timerange',
-				$this->sanitize_time_range( $_POST['burst_pageviews_timerange'] )
+				$this->sanitize_time_range( sanitize_text_field( wp_unslash( $_POST['burst_pageviews_timerange'] ) ) )
 			);
 		}
 	}

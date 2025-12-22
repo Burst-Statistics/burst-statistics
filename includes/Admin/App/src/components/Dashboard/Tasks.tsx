@@ -1,9 +1,9 @@
 import TaskElement from './TaskElement';
-import { __ } from "@wordpress/i18n";
-import useTasks from "@/store/useTasksStore";
-import { useEffect } from "react";
-import { LiveVisitorTaskElement } from "@/components/Dashboard/LiveVisitorTaskElement";
-import {AnimatePresence, motion, Variants} from "framer-motion";
+import { __ } from '@wordpress/i18n';
+import useTasks from '@/store/useTasksStore';
+import { useEffect } from 'react';
+import { LiveVisitorTaskElement } from '@/components/Dashboard/LiveVisitorTaskElement';
+import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { listSlideAnimation } from './OverviewBlock';
 
 /**
@@ -18,14 +18,15 @@ const LoadingComponent = (): React.ReactElement => {
 			type: 'system',
 			function: 'loading'
 		},
-		msg: __( 'Loading tasks...', 'burst-statistics' ),
+		msg: __( 'Loading tasks…', 'burst-statistics' ),
 		icon: 'skeleton',
 		dismissible: false,
 		plusone: false,
-		label: __( 'Loading...', 'burst-statistics' )
+		label: __( 'Loading…', 'burst-statistics' )
 	};
 
-	return <TaskElement task={ loadingTask } onCloseTaskHandler={ () => {} } />;
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+	return <TaskElement task={loadingTask} onCloseTaskHandler={() => {}} />;
 };
 
 /**
@@ -47,7 +48,8 @@ const NoTasksComponent = (): React.ReactElement => {
 		label: __( 'Completed', 'burst-statistics' )
 	};
 
-	return <TaskElement task={ completedTask } onCloseTaskHandler={ () => {} } />;
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+	return <TaskElement task={completedTask} onCloseTaskHandler={() => {}} />;
 };
 
 export type TaskProp = {
@@ -57,26 +59,27 @@ export type TaskProp = {
 		function: string;
 	};
 	msg?: string;
-	icon: string,
+	icon: string;
 	dismissible: boolean;
 	plusone: boolean;
 	label?: string;
 	status?: string;
 	url?: string;
 	fix?: string;
-}
+};
 
 /**
  * Tasks component to display list of tasks or loading/no tasks message
  *
  * @return { React.ReactElement | Array< React.ReactElement > } Tasks component or list of TaskElement components
  */
-const Tasks = (): React.ReactElement | Array< React.ReactElement > => {
+const Tasks = (): React.ReactElement | Array<React.ReactElement> => {
 	const tasks = useTasks( ( state ) => state.tasks );
 	const loading = useTasks( ( state ) => state.loading );
 	const getTasks = useTasks( ( state ) => state.getTasks );
 
 	useEffect(
+
 		/**
 		 * Fetch tasks on component mount and when getTasks changes.
 		 */
@@ -91,35 +94,37 @@ const Tasks = (): React.ReactElement | Array< React.ReactElement > => {
 	}
 
 	const clientTasks = tasks.filter( ( task: TaskProp ) => {
-		return task.condition.type === 'clientside';
-	} );
+		return 'clientside' === task.condition.type;
+	});
 
 	const serverTasks = tasks.filter( ( task: TaskProp ) => {
-		return task.condition.type !== 'clientside';
-	} );
+		return 'clientside' !== task.condition.type;
+	});
 
 	return (
 		<AnimatePresence mode="popLayout">
-			<ClientTasks tasks={ clientTasks } />
-			<ServerTasks tasks={ serverTasks } />
+			<ClientTasks tasks={clientTasks} />
+			<ServerTasks tasks={serverTasks} />
 		</AnimatePresence>
 	);
-}
+};
 
 /**
  * ServerTasks component to display server-side tasks or no tasks message
  *
- * @param { Object } props - Component props
- * @param { Array } props.tasks - List of server-side tasks
+ * @param { Object } props       - Component props
+ * @param { Array }  props.tasks - List of server-side tasks
  *
  * @return { React.ReactElement | Array< React.ReactElement > } NoTasksComponent or list of TaskElement components
  */
-const ServerTasks = ( { tasks }: { tasks: TaskProp[] } ) => {
-	if ( tasks.length === 0 ) {
+const ServerTasks = ({ tasks }: { tasks: TaskProp[] }) => {
+    const dismissTask = useTasks( ( state ) => state.dismissTask );
+
+	if ( 0 === tasks.length ) {
 		return (
 			<motion.div
-				key='no-tasks'
-				variants={ listSlideAnimation( 1 ) as Variants }
+				key="no-tasks"
+				variants={listSlideAnimation( 1 ) as Variants}
 				initial="initial"
 				animate="animate"
 				exit="exit"
@@ -129,70 +134,65 @@ const ServerTasks = ( { tasks }: { tasks: TaskProp[] } ) => {
 		);
 	}
 
-	const dismissTask = useTasks( ( state ) => state.dismissTask );
-
 	return tasks.map( ( task: TaskProp, index: number ) => {
 		return (
 			<motion.div
 				layout
-				key={ task.id }
-				variants={ listSlideAnimation( index ) as Variants }
+				key={task.id}
+				variants={listSlideAnimation( index ) as Variants}
 				initial="initial"
 				animate="animate"
 				exit="exit"
 			>
 				<TaskElement
-					key={ task.id }
-					task={ task }
-					onCloseTaskHandler={ () => dismissTask( task.id ) }
+					key={task.id}
+					task={task}
+					onCloseTaskHandler={() => dismissTask( task.id )}
 				/>
 			</motion.div>
 		);
-	} );
-}
+	});
+};
 
 /**
  * ClientTasks component to display client-side tasks
  *
- * @param { Object } props - Component props
- * @param { Array } props.tasks - List of client-side tasks
+ * @param { Object } props       - Component props
+ * @param { Array }  props.tasks - List of client-side tasks
  *
  * @return { Array< React.ReactElement > } List of TaskElement components
  */
-const ClientTasks = ( { tasks }: { tasks: TaskProp[] } ) => {
+const ClientTasks = ({ tasks }: { tasks: TaskProp[] }) => {
 	return tasks.map( ( task: TaskProp, index: number ) => {
-		if ( task.id === 'live_visitors' ) {
-
+		if ( 'live_visitors' === task.id ) {
 			return (
 				<motion.div
 					layout
-					key={ task.id }
-					variants={ listSlideAnimation( index ) as Variants }
+					key={task.id}
+					variants={listSlideAnimation( index ) as Variants}
 					initial="initial"
 					animate="animate"
 					exit="exit"
 				>
-					<LiveVisitorTaskElement task={ task } />
+					<LiveVisitorTaskElement task={task} />
 				</motion.div>
-			)
+			);
 		}
 
 		return (
 			<motion.div
 				layout
-				key={ task.id }
-				variants={ listSlideAnimation( index ) as Variants }
+				key={task.id}
+				variants={listSlideAnimation( index ) as Variants}
 				initial="initial"
 				animate="animate"
 				exit="exit"
 			>
-				<TaskElement
-					task={ task }
-					onCloseTaskHandler={ () => {} }
-				/>
+                { /* eslint-disable-next-line @typescript-eslint/no-empty-function */ }
+				<TaskElement task={task} onCloseTaskHandler={() => {}} />
 			</motion.div>
 		);
-	} );
-}
+	});
+};
 
 export default Tasks;

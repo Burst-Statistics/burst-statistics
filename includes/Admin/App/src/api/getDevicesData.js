@@ -1,47 +1,45 @@
 import { __ } from '@wordpress/i18n';
 import { getData } from '@/utils/api';
 import {
-  formatNumber,
-  formatTime,
-  getBouncePercentage,
-  getChangePercentage,
-  getPercentage
+	getPercentage
 } from '@/utils/formatting';
 
 const deviceNames = {
-  desktop: __( 'Desktop', 'burst-statistics' ),
-  tablet: __( 'Tablet', 'burst-statistics' ),
-  mobile: __( 'Mobile', 'burst-statistics' ),
-  other: __( 'Other', 'burst-statistics' )
+	desktop: __( 'Desktop', 'burst-statistics' ),
+	tablet: __( 'Tablet', 'burst-statistics' ),
+	mobile: __( 'Mobile', 'burst-statistics' ),
+	other: __( 'Other', 'burst-statistics' )
 };
 
 // Existing transform function for title and value
 const transformDevicesTitleAndValue = ( response ) => {
-  let data = {};
-  for ( const [ key, value ] of Object.entries( deviceNames ) ) {
-    Object.assign( data, {
-      [key]: {
-        title: value,
-        value: getPercentage( response[key].count, response.all.count )
-      }
-    });
-  }
-  return data;
+	const data = {};
+	for ( const [ key, value ] of Object.entries( deviceNames ) ) {
+		Object.assign( data, {
+			[key]: {
+				title: value,
+				value: getPercentage( response[key].count, response.all.count )
+			}
+		});
+	}
+	return data;
 };
 
 // New transform function for subtitle
 const transformDevicesSubtitle = ( response ) => {
-  let data = {};
-  for ( const [ key ] of Object.entries( deviceNames ) ) {
-    let os = response[key].os ? response[key].os : '';
-    let browser = response[key].browser ? response[key].browser : '';
-    Object.assign( data, {
-      [key]: {
-        subtitle: '' === os && '' === browser ? '-' : os + ' / ' + browser
-      }
-    });
-  }
-  return data;
+	const data = {};
+	for ( const [ key ] of Object.entries( deviceNames ) ) {
+		const os = response[key].os ? response[key].os : '';
+		const browser = response[key].browser ? response[key].browser : '';
+		Object.assign( data, {
+			[key]: {
+				device_id: response[key].device_id,
+				subtitle:
+					'' === os && '' === browser ? '-' : os + ' / ' + browser
+			}
+		});
+	}
+	return data;
 };
 
 /**
@@ -51,22 +49,23 @@ const transformDevicesSubtitle = ( response ) => {
  * @param {string} args.endDate
  * @param {string} args.range
  * @param {Object} args.filters
- * @returns {Promise<*>}
+ * @param          args.args
+ * @return {Promise<*>}
  */
 export const getDevicesTitleAndValueData = async({
-  startDate,
-  endDate,
-  range,
-  args
+	startDate,
+	endDate,
+	range,
+	args
 }) => {
-  const { data } = await getData(
-    'devicesTitleAndValue',
-    startDate,
-    endDate,
-    range,
-    args
-  );
-  return transformDevicesTitleAndValue( data );
+	const { data } = await getData(
+		'devicesTitleAndValue',
+		startDate,
+		endDate,
+		range,
+		args
+	);
+	return transformDevicesTitleAndValue( data );
 };
 
 /**
@@ -76,20 +75,21 @@ export const getDevicesTitleAndValueData = async({
  * @param {string} args.endDate
  * @param {string} args.range
  * @param {Object} args.filters
- * @returns {Promise<*>}
+ * @param          args.args
+ * @return {Promise<*>}
  */
 export const getDevicesSubtitleData = async({
-  startDate,
-  endDate,
-  range,
-  args
+	startDate,
+	endDate,
+	range,
+	args
 }) => {
-  const { data } = await getData(
-    'devicesSubtitle',
-    startDate,
-    endDate,
-    range,
-    args
-  );
-  return transformDevicesSubtitle( data );
+	const { data } = await getData(
+		'devicesSubtitle',
+		startDate,
+		endDate,
+		range,
+		args
+	);
+	return transformDevicesSubtitle( data );
 };

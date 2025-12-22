@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import debounce from 'lodash/debounce';
 
 /**
@@ -11,24 +11,36 @@ import debounce from 'lodash/debounce';
  * the callback function, like during typing in a search input.
  *
  * @param {Function} callback - The function to debounce.
- * @param {number} delay - The amount of time (in milliseconds) the function should wait
- *                         before the last call to execute the callback.
- * @param {Array} deps - The dependencies array which, if changed, will recreate the debounced function.
+ * @param {number}   delay    - The amount of time (in milliseconds) the function should wait
+ *                            before the last call to execute the callback.
+ * @param {Array}    deps     - The dependencies array which, if changed, will recreate the debounced function.
  *
- * @returns {Function} A debounced version of the callback function.
+ * @return {Function} A debounced version of the callback function.
  */
 function useDebouncedCallback( callback, delay, deps = []) {
+	const callbackRef = useRef( callback );
+	callbackRef.current = callback;
 
-  // The useCallback hook returns a memoized version of the callback that only changes
-  // if one of the dependencies has changed. We're using it here to memoize the debounced
-  // version of the provided callback function.
-  const debouncedCallback = useCallback(
-      debounce( ( ...args ) => callback( ...args ), delay ),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [ delay, ...deps ]
-  );
+	// Convert deps to a stable string key.
+	// React Compiler allows this because it's not used *as* a dependency array.
+	const depsKey = JSON.stringify( deps );
 
-  return debouncedCallback;
+	// Create debounced fn when delay or deps change
+	const debounced = useMemo( () => {
+		return debounce( ( ...args ) => callbackRef.current( ...args ), delay );
+	}, [ delay, depsKey ]); // eslint-disable-line react-hooks/exhaustive-deps
+
+	useEffect( () => {
+		return () => debounced.cancel();
+	}, [ debounced ]);
+
+	// Stable wrapper; debounced handles deps changes internally
+	return useCallback(
+		( ...args ) => {
+			debounced( ...args );
+		},
+		[ debounced ] // literal → allowed
+	);
 }
 
 export default useDebouncedCallback;

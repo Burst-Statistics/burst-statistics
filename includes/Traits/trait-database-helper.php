@@ -18,7 +18,7 @@ trait Database_Helper {
 	/**
 	 * Check if table exists
 	 */
-	public function table_exists( string $table ): bool {
+	protected function table_exists( string $table ): bool {
 		global $wpdb;
 		return (bool) $wpdb->query( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . sanitize_title( $table ) ) );
 	}
@@ -27,7 +27,7 @@ trait Database_Helper {
 	 * Check if a table has a specific column
 	 * pass the table name without WordPress (wp_) prefix, but with burst prefix.
 	 */
-	public function column_exists( string $table_name, string $column_name ): bool {
+	protected function column_exists( string $table_name, string $column_name ): bool {
 		global $wpdb;
 		$table_name = $wpdb->prefix . $table_name;
 		$columns    = $wpdb->get_col( "DESC $table_name" );
@@ -44,7 +44,7 @@ trait Database_Helper {
 	 * @param string $table_name The table to add the index to (without prefix).
 	 * @param array  $indexes Array of column names to include in the index.
 	 */
-	public function add_index( string $table_name, array $indexes ): void {
+	protected function add_index( string $table_name, array $indexes ): void {
 		global $wpdb;
 		if ( ! $this->user_can_manage() ) {
 			return;

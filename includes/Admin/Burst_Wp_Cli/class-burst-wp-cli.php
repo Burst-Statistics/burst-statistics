@@ -230,15 +230,54 @@ class Burst_Wp_Cli {
 		if ( empty( $assoc_args ) ) {
 			\WP_CLI::error( 'No options passed' );
 		}
-
+		$last_updated_name = 'none';
 		foreach ( $assoc_args as $name => $value ) {
 			$value = $value === 'true' ? true : $value;
 			$this->update_option( $name, $value );
-			$admin = new Admin();
-			$admin->init();
-			$admin->create_js_file();
-			// response used in test.
-			\WP_CLI::success( "Option $name updated" );
+			$last_updated_name = $name;
+		}
+
+		$admin = new Admin();
+		$admin->init();
+		$admin->create_js_file();
+		// response used in test. using last updated option name.
+		\WP_CLI::success( "Option $last_updated_name updated" );
+	}
+
+	/**
+	 * Unzip a file through CLI
+	 *
+	 * @throws \WP_CLI\ExitException //exit exception.
+	 */
+	public function unzip( array $args, array $assoc_args ): void {
+		if ( ! $this->wp_cli_active() ) {
+			return;
+		}
+
+		if ( empty( $assoc_args['zip_path'] ) || empty( $assoc_args['extract_to'] ) ) {
+			\WP_CLI::error( 'zip_path and extract_to are required' );
+		}
+		global $wp_filesystem;
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+
+		$zip_path   = $assoc_args['zip_path'];
+		$extract_to = $assoc_args['extract_to'];
+
+		$zip = new \ZipArchive();
+		if ( $zip->open( $zip_path ) === true ) {
+			if ( ! file_exists( $extract_to ) ) {
+				WP_Filesystem();
+				if ( ! $wp_filesystem->is_dir( $extract_to ) ) {
+					$wp_filesystem->mkdir( $extract_to, FS_CHMOD_DIR );
+				}
+			}
+			$zip->extractTo( $extract_to );
+			$zip->close();
+			\WP_CLI::success( "Extracted $zip_path to $extract_to" );
+		} else {
+			\WP_CLI::error( "Failed to open zip file: $zip_path" );
 		}
 	}
 }

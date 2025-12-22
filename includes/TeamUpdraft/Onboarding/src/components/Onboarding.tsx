@@ -9,6 +9,7 @@ import ModalContent from "./Modal/ModalContent";
 import { sprintf, __ } from '@wordpress/i18n';
 import Icon from "../utils/Icon";
 import {get_website_url} from "@/utils/lib.js";
+import {updateAction} from "../utils/api";
 
 /**
  * Onboarding component that guides users through a series of steps
@@ -76,6 +77,7 @@ const Onboarding: FC = () => {
 
     const handleClose = () => {
         setOpen(false);
+        updateAction({}, 'user_skipped_wizard');
     };
 
     const handlePrevious = () => {
@@ -145,8 +147,11 @@ const Onboarding: FC = () => {
 
         setCurrentStepIndex(currentStepIndex + 1);
         // If this is the last step, reload the page if this is so configured.
-        if (currentStepIndex + 1 >= steps.length && onboardingData.reload_on_finish ) {
-            window.location.reload();
+        if (currentStepIndex + 1 >= steps.length ) {
+            await updateAction({}, 'user_completed_wizard');
+            if (onboardingData.reload_on_finish) {
+                window.location.reload();
+            }
         }
     };
 

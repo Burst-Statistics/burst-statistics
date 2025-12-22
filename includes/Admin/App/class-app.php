@@ -33,7 +33,7 @@ class App {
 	public Menu $menu;
 	public Fields $fields;
 	public Tasks $tasks;
-	public string $nonce_expired_feedback = 'The provided nonce has expired. Please refresh the page.';
+	public string $nonce_expired_feedback = 'Session expired. Try refreshing the page.';
 
 	/**
 	 * Initialize the App class
@@ -1033,6 +1033,7 @@ class App {
 				$data      = $this->get_filter_options( $data_type, $search );
 				break;
 			default:
+				$data = is_array( $data ) ? $data : [];
 				$data = apply_filters( 'burst_do_action', [], $action, $data );
 		}
 
@@ -1295,25 +1296,25 @@ class App {
 		$search    = sanitize_text_field( $search );
 		$like      = '%' . $wpdb->esc_like( $search ) . '%';
 		$where     = strlen( $search ) > 0 ? $wpdb->prepare( 'WHERE name LIKE %s ', $like ) : '';
-		$referrers = $wpdb->get_results( "SELECT name FROM {$wpdb->prefix}burst_referrers $where ORDER BY ID ASC limit 1000", ARRAY_A );
+		$referrers = $wpdb->get_results( "SELECT CONCAT(TRIM(TRAILING '/' FROM name), '/') as name FROM {$wpdb->prefix}burst_referrers $where ORDER BY ID ASC limit 1000", ARRAY_A );
 		if ( empty( $referrers ) ) {
 			$sql = "INSERT IGNORE INTO {$wpdb->prefix}burst_referrers (name)
-                    SELECT domain
-                    FROM (
-                      SELECT 
-                        LOWER(SUBSTRING_INDEX(SUBSTRING_INDEX(referrer, '/', 3), '/', -1)) AS domain
-                      FROM {$wpdb->prefix}burst_statistics
-                      WHERE referrer IS NOT NULL 
-                        AND referrer != ''
-                        AND referrer LIKE 'http%'
-                        AND referrer NOT LIKE '/%'
-                    ) AS derived
-                    WHERE domain != ''
-                      AND SUBSTRING_INDEX(domain, ':', 1) NOT REGEXP '^[0-9]{1,3}(\\.[0-9]{1,3}){3}$'
-                    GROUP BY domain
-                    ORDER BY COUNT(*) DESC
-                    LIMIT 2000;";
+                 SELECT CONCAT(TRIM(TRAILING '/' FROM domain), '/') AS domain
+                 FROM (
+                   SELECT 
+                     LOWER(SUBSTRING_INDEX(referrer, '/', 1)) AS domain
+                   FROM {$wpdb->prefix}burst_sessions
+                   WHERE referrer IS NOT NULL 
+                     AND referrer != ''
+                     AND referrer NOT LIKE '/%'
+                 ) AS derived
+                 WHERE domain != ''
+                   AND SUBSTRING_INDEX(domain, ':', 1) NOT REGEXP '^[0-9]{1,3}(\\.[0-9]{1,3}){3}$'
+                 GROUP BY domain
+                 ORDER BY COUNT(*) DESC
+                 LIMIT 2000;";
 			$wpdb->query( $sql );
+
 			$referrers = $wpdb->get_results( "select name from {$wpdb->prefix}burst_referrers ORDER BY ID ASC", ARRAY_A );
 		}
 		return $referrers;
@@ -1394,18 +1395,87 @@ class App {
 	}
 
 	/**
+	 * Process and sanitize request arguments for data requests.
+	 *
+	 * @param \WP_REST_Request $request The REST request object.
+	 * @param string           $type The data type being requested.
+	 * @param array            $base_args Base arguments to include in the result.
+	 * @return array<string, mixed> Sanitized arguments from the request.
+	 */
+	public function normalize_values( \WP_REST_Request $request, string $type, array $base_args = [] ): array {
+		$available_args = $this->get_data_available_args( $type );
+
+		foreach ( $available_args as $arg ) {
+			if ( $request->get_param( $arg ) ) {
+				$base_args[ $arg ] = $this->normalize_value( $arg, $request->get_param( $arg ) );
+			}
+		}
+		return $base_args;
+	}
+
+	/**
+	 * Sanitize argument based on its type.
+	 *
+	 * @param string $arg The argument name.
+	 * @param mixed  $value The value to sanitize.
+	 * @return mixed Sanitized value.
+	 */
+	// phpcs:disable
+	public function normalize_value( string $arg, $value ) {
+		// phpcs:enable
+
+		switch ( $arg ) {
+			case 'filters':
+				return array_filter(
+					$this->ensure_array_if_applicable( $value ),
+					static function ( $item ) {
+						// Keep values that are not false and not empty string, OR are exactly zero (int or string).
+						if ( $item === 0 || $item === '0' ) {
+							return true;
+						}
+						return $item !== false && $item !== '';
+					}
+				);
+			case 'group_by':
+			case 'order_by':
+			case 'metrics':
+				$processed_value = $this->ensure_array_if_applicable( $value );
+				if ( is_array( $processed_value ) ) {
+					return $processed_value;
+				} else {
+					return [ $processed_value ];
+				}
+			case 'goal_id':
+				return absint( $value );
+			case 'date_start':
+				return $this->normalize_date( $value . ' 00:00:00' );
+			case 'date_end':
+				return $this->normalize_date( $value . ' 23:59:59' );
+			default:
+				// Allow other plugins/extensions to handle custom argument sanitization.
+				// Apply smart transformation for consistent filter interface.
+				$processed_value = $this->ensure_array_if_applicable( $value );
+				$sanitized_value = apply_filters( 'burst_sanitize_arg', null, $arg, $processed_value );
+				if ( $sanitized_value !== null ) {
+					return $sanitized_value;
+				}
+				return $value;
+		}
+	}
+
+	/**
 	 * Get data from the REST API.
 	 */
 	public function get_data( \WP_REST_Request $request ): \WP_REST_Response {
 		// Process common request patterns.
-		$processed = $this->process_rest_request( $request, 'view' );
+		$processed = $this->process_rest_request( $request );
+
 		if ( $processed['success'] === false ) {
 			return $this->create_rest_response( $processed, 403 );
 		}
 
 		$type = $processed['type'];
-		$args = $this->sanitize_request_args( $request, $type );
-		$args = apply_filters( 'burst_get_data_request_args', $args, $type, $request );
+		$args = apply_filters( 'burst_get_data_request_args', $this->normalize_values( $request, $type ), $type, $request );
 
 		switch ( $type ) {
 			case 'live-visitors':

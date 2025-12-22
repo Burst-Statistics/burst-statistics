@@ -80,8 +80,9 @@ class Tracking {
 		$session_arr    = [
 			'last_visited_url' => $this->create_path( $sanitized_data ),
 			'city_code'        => $sanitized_data['city_code'] ?? '',
+			'referrer'         => $sanitized_data['referrer'],
 		];
-		unset( $sanitized_data['city_code'] );
+		unset( $sanitized_data['city_code'], $sanitized_data['referrer'] );
 
 		// keep track of the hosts, to check if this is a multi domain setup.
 		$destructured = $this->sanitize_url( $sanitized_data['host'] );
@@ -134,7 +135,7 @@ class Tracking {
 
 		// if track_url_changes is enabled, also check for changing parameters.
 		if ( $this->get_option_bool( 'track_url_change' ) ) {
-            $previous_page_url .= $previous_hit['parameters'] ?? '';
+			$previous_page_url .= $previous_hit['parameters'] ?? '';
 			$new_page_url      .= $sanitized_data['parameters'];
 		}
 		$is_same_url = $previous_page_url === $new_page_url;
@@ -870,11 +871,11 @@ class Tracking {
 		}
 
 		$inserted = $wpdb->insert( $wpdb->prefix . 'burst_statistics', $data );
-        if ( $inserted === false ) {
-            self::error_log( 'Failed to create statistic. Error: ' . $wpdb->last_error );
-            return 0;
-        }
-        return $wpdb->insert_id;
+		if ( $inserted === false ) {
+			self::error_log( 'Failed to create statistic. Error: ' . $wpdb->last_error );
+			return 0;
+		}
+		return $wpdb->insert_id;
 	}
 
 	/**
@@ -982,8 +983,7 @@ class Tracking {
 			return '';
 		}
 
-		$fingerprint = $_SESSION['burst_fingerprint'] ?? '';
-		return $this->sanitize_fingerprint( $fingerprint );
+		return $this->sanitize_fingerprint( sanitize_text_field( $_SESSION['burst_fingerprint'] ?? '' ) );
 	}
 
 	/**

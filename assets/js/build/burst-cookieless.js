@@ -386,14 +386,15 @@ async function burst_update_hit(update_uid = false, force = false) {
  *
  */
 async function burst_track_hit() {
+  const isInitialHit = burst.tracking.isInitialHit;
+  burst.tracking.isInitialHit = false;
   await pageIsRendered;
-  if (!burst.tracking.isInitialHit) {
+  if ( !isInitialHit ) {
     burst_update_hit();
     return;
   }
   if (burst_is_user_agent() || burst_is_do_not_track()) return;
 
-  burst.tracking.isInitialHit = false;
   if (Date.now() - burst.tracking.lastUpdateTimestamp < 300) return;
 
   document.dispatchEvent(new CustomEvent('burst_before_track_hit', { detail: burst }));
@@ -402,6 +403,17 @@ async function burst_track_hit() {
     burst_get_time_on_page(),
     burst_use_cookies() ? burst_uid() : burst_fingerprint()
   ]);
+
+  //wait for body document to resolve.
+  let attempts = 0;
+  const maxAttempts = 200; // 200 * 2ms = 400ms max, 2ms should be enough to get the body in almost all cases.
+  while ( !document.body && attempts++ < maxAttempts ) {
+    await new Promise(resolve => setTimeout(resolve, 2));
+  }
+
+  if ( !document.body ) {
+    console.warn('Burst: missing page_id attribute, not able to resolve body element.');
+  }
 
   const data = {
     uid: burst_use_cookies() ? id : false,
@@ -412,8 +424,8 @@ async function burst_track_hit() {
     device_resolution: `${window.screen.width * window.devicePixelRatio}x${window.screen.height * window.devicePixelRatio}`,
     time_on_page: time,
     completed_goals: burst.goals.completed,
-    page_id: document.body?.dataset?.burst_id || 0,
-    page_type: document.body?.dataset?.burst_type || '',
+    page_id: document.body?.dataset?.burst_id ?? document.body?.dataset?.b_id ?? 0,
+    page_type: document.body?.dataset?.burst_type ?? document.body?.dataset?.b_type ?? '',
     should_load_ecommerce: burst.should_load_ecommerce,
   };
 

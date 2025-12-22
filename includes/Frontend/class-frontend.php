@@ -73,11 +73,13 @@ class Frontend {
 			return $html;
 		}
 
-		$identifier = $this->get_current_page_identifier();
-		$id         = (int) $identifier['ID'];
-		$type       = (string) $identifier['type'];
+		$identifier         = $this->get_current_page_identifier();
+		$id                 = (int) $identifier['ID'];
+		$type               = (string) $identifier['type'];
+		$ghost_mode_enabled = (bool) apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
+		$prefix             = $ghost_mode_enabled ? 'b' : 'burst';
 		if ( $id > -1 && strpos( $html, '<body' ) !== false ) {
-			$data_attr = 'data-burst_id="' . esc_attr( (string) $id ) . '" data-burst_type="' . esc_attr( $type ) . '"';
+			$data_attr = 'data-' . $prefix . '_id="' . esc_attr( (string) $id ) . '" data-' . $prefix . '_type="' . esc_attr( $type ) . '"';
 			$html      = preg_replace( '/(<body[^>]*?)>/i', '$1 ' . $data_attr . '>', $html, 1 );
 		}
 		return $html;
@@ -262,12 +264,24 @@ class Frontend {
 	public function enqueue_burst_time_tracking_script( string $hook ): void {
 		// fix phpcs warning.
 		unset( $hook );
+		$file               = 'assets/js/timeme/timeme.min.js';
+		$src                = BURST_URL . $file;
+		$path               = BURST_PATH . $file;
+		$prefix             = 'burst';
+		$ghost_mode_enabled = apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
+		if ( $ghost_mode_enabled ) {
+			$prefix      = 'b';
+			$upload_url  = $this->upload_url( 'js', true );
+			$upload_path = $this->upload_dir( 'js', true );
+			$src         = $upload_url . 'timeme.min.js';
+			$path        = $upload_path . 'timeme.min.js';
+		}
 		if ( ! $this->exclude_from_tracking() ) {
 			wp_enqueue_script(
-				'burst-timeme',
-				BURST_URL . 'assets/js/timeme/timeme.min.js',
+				$prefix . '-timeme',
+				$src,
 				[],
-				filemtime( BURST_PATH . 'assets/js/timeme/timeme.min.js' ),
+				filemtime( $path ),
 				false
 			);
 		}
@@ -298,35 +312,43 @@ class Frontend {
 		}
 
 		if ( ! $this->exclude_from_tracking() ) {
+			$ghost_mode_enabled      = (bool) apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
+			$cookieless              = $this->get_option_bool( 'enable_cookieless_tracking' );
+			$cookieless_text         = $cookieless ? '-cookieless' : '';
+			$prefix                  = $ghost_mode_enabled ? 'b' : 'burst';
 			$in_footer               = $this->get_option_bool( 'enable_turbo_mode' );
-			$deps                    = $this->tracking->beacon_enabled() ? [ 'burst-timeme' ] : [ 'burst-timeme', 'wp-api-fetch' ];
-			$combine_vars_and_script = $this->get_option_bool( 'combine_vars_and_script' );
+			$deps                    = $this->tracking->beacon_enabled() ? [ $prefix . '-timeme' ] : [ $prefix . '-timeme', 'wp-api-fetch' ];
+			$combine_vars_and_script = $this->get_option_bool( 'combine_vars_and_script', true );
+			$file_url                = BURST_URL . "assets/js/build/burst$cookieless_text.min.js";
+			$file_path               = BURST_PATH . "assets/js/build/burst$cookieless_text.min.js";
+			$add_localize_script     = true;
 			if ( $combine_vars_and_script ) {
-				$upload_url  = $this->upload_url( 'js' );
-				$upload_path = $this->upload_dir( 'js' );
-				wp_enqueue_script(
-					'burst',
-					$upload_url . 'burst.min.js',
-					apply_filters( 'burst_script_dependencies', $deps ),
-					filemtime( $upload_path . 'burst.min.js' ),
-					$in_footer
-				);
-			} else {
-				$minified        = '.min';
-				$cookieless      = $this->get_option_bool( 'enable_cookieless_tracking' );
-				$cookieless_text = $cookieless ? '-cookieless' : '';
-				$localize_args   = $this->tracking->get_options();
-				wp_enqueue_script(
-					'burst',
-					BURST_URL . "assets/js/build/burst$cookieless_text$minified.js",
-					apply_filters( 'burst_script_dependencies', $deps ),
-					filemtime( BURST_PATH . "assets/js/build/burst$cookieless_text$minified.js" ),
-					$in_footer
-				);
+				$filename    = $this->get_frontend_js_filename();
+				$root        = apply_filters( 'burst_obfuscate_filename', $ghost_mode_enabled );
+				$upload_url  = $this->upload_url( 'js', $root );
+				$upload_path = $this->upload_dir( 'js', $root );
+
+				// Fallback to default filename if the custom written one doesn't exist.
+				if ( file_exists( $upload_path . $filename ) ) {
+					$file_url            = $upload_url . $filename;
+					$file_path           = $upload_path . $filename;
+					$add_localize_script = false;
+				}
+			}
+
+			wp_enqueue_script(
+				'burst',
+				$file_url,
+				apply_filters( 'burst_script_dependencies', $deps ),
+				filemtime( $file_path ),
+				$in_footer
+			);
+
+			if ( $add_localize_script ) {
 				wp_localize_script(
 					'burst',
 					'burst',
-					$localize_args
+					$this->tracking->get_options()
 				);
 			}
 		}
@@ -431,16 +453,16 @@ class Frontend {
 		}
 
 		global $wpdb;
-		$sql = $wpdb->prepare(
-			"SELECT COUNT(*) as total_views
+		$views = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) as total_views
          FROM {$wpdb->prefix}burst_statistics
          WHERE page_id = %d AND time > %d and time < %d",
-			$post_id,
-			$start,
-			$end
+				$post_id,
+				$start,
+				$end
+			)
 		);
-
-		$views = (int) $wpdb->get_var( $sql );
 		wp_cache_set( $cache_key, $views, 'burst', HOUR_IN_SECONDS );
 
 		return $views;

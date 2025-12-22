@@ -1,5 +1,85 @@
 <?php
 defined( 'ABSPATH' ) || die();
+/**
+ * Burst Statistics Settings Configuration
+ *
+ * This file defines all available settings for the Burst Statistics plugin.
+ * Each setting is represented as an array with various configuration options.
+ *
+ * Available Field Properties:
+ * ---------------------------
+ *
+ * @property string $id                 Unique identifier for the setting
+ * @property string $menu_id            Menu/tab where the setting appears (e.g., 'general', 'advanced', 'data', 'goals')
+ * @property string $group_id           Group within the menu where the setting belongs
+ * @property string $type               Input type: 'checkbox', 'radio', 'select', 'number', 'text', 'button', 'hidden',
+ *                                      'email_reports', 'logo_editor', 'goals', 'ip_blocklist', 'restore_archives', 'checkbox_group'
+ * @property string $label              Display label for the setting
+ * @property string|array $context      Help text or contextual information
+ *                                      - string: Simple help text
+ *                                      - array: ['text' => '...', 'url' => '...'] for text with documentation link
+ * @property bool|array $disabled       Whether the field is disabled
+ *                                      - bool: true/false
+ *                                      - array: Disabled for specific option values (used with select/radio)
+ * @property mixed $default             Default value for the setting
+ * @property array|null $options        Available options for select/radio/checkbox_group types
+ *                                      - array: key-value pairs or nested arrays with 'label', 'context', 'recommended' properties
+ *                                      - string: Function name to call (e.g., 'get_user_roles()')
+ * @property array|null $pro            Pro feature configuration
+ *                                      - 'url': Link to upgrade/pricing page
+ *                                      - 'disabled': Whether pro features are disabled
+ * @property array|null $notice         Notice/help box displayed with the setting
+ *                                      - 'label': Notice type (e.g., 'default')
+ *                                      - 'title': Notice title
+ *                                      - 'description': Notice description
+ *                                      - 'url': Documentation link
+ * @property array|null $react_conditions Conditional visibility/state rules based on other field values
+ *                                      - Key-value pairs where key is the field ID to watch
+ *                                      - Value can be:
+ *                                        * bool: true/false for checkbox fields
+ *                                        * string: Specific value to match
+ *                                        * array: Multiple acceptable values
+ *                                      - Special 'action' key determines behavior:
+ *                                        * 'action' => 'disable': Field becomes disabled when conditions are NOT met
+ *                                        * No action or other value: Field is hidden when conditions are NOT met (default)
+ * @property bool|null $recommended     Whether this option is recommended (used in radio/select options)
+ * @property string|null $action        Action identifier for button types (e.g., 'send_email_report', 'reset')
+ * @property string|null $button_text   Text displayed on button elements
+ * @property string|null $warnTitle     Warning dialog title (for dangerous actions)
+ * @property string|null $warnContent   Warning dialog content
+ * @property string|null $warnType      Warning type: 'info', 'warning', 'danger'
+ * @property int|null $min              Minimum value for number inputs
+ *
+ * React Conditions Examples:
+ * --------------------------
+ *
+ * 1. Hide field when checkbox is not checked:
+ *    'react_conditions' => [
+ *        'combine_vars_and_script' => true,
+ *    ]
+ *
+ * 2. Disable field when checkbox is not checked (field remains visible but inactive):
+ *    'react_conditions' => [
+ *        'combine_vars_and_script' => true,
+ *        'action' => 'disable',
+ *    ]
+ *
+ * 3. Show field only when select has specific values:
+ *    'react_conditions' => [
+ *        'archive_data' => ['archive', 'delete'],
+ *    ]
+ *
+ * 4. Multiple conditions (all must be met):
+ *    'react_conditions' => [
+ *        'enable_feature' => true,
+ *        'mode' => 'advanced',
+ *        'action' => 'disable',
+ *    ]
+ *
+ * Note: When 'action' => 'disable' is set, the field will be visible but disabled when conditions are NOT met.
+ *       Without the action property, the field will be completely hidden when conditions are NOT met.
+ */
+
 return [
 	[
 		'id'       => 'review_notice_shown',
@@ -158,6 +238,19 @@ return [
 		'default'     => '',
 	],
 	[
+		'id'       => 'enable_shortcodes',
+		'menu_id'  => 'advanced',
+		'group_id' => 'tracking',
+		'type'     => 'checkbox',
+		'label'    => __( 'Enable shortcodes', 'burst-statistics' ),
+		'context'  => [
+			'text' => __( 'Enable statistics shortcodes for use on your website.', 'burst-statistics' ),
+			'url'  => 'burst-statistics-shortcodes/',
+		],
+		'disabled' => false,
+		'default'  => false,
+	],
+	[
 		'id'       => 'geo_ip_database_type',
 		'menu_id'  => 'advanced',
 		'group_id' => 'data_collection',
@@ -219,11 +312,49 @@ return [
 		'group_id' => 'scripts',
 		'type'     => 'checkbox',
 		'label'    => __( 'Merge tracking settings and script', 'burst-statistics' ),
-		'context'  => __( 'Boost site speed by merging the Burst settings into the Burst script.', 'burst-statistics' ),
-		'disabled' => false,
+		'context'  => __( 'Boost site speed by merging the Burst settings into the Burst script.', 'burst-statistics' ) .
+			' ' . ( (bool) get_option( 'burst_js_write_error' ) ? __( 'This option is only available when the WordPress can write to the uploads directory. Please ensure that the WordPress installation has write permissions to "wp-content/uploads/burst/".', 'burst-statistics' ) : '' ),
+		'disabled' => get_option( 'burst_js_write_error' ),
 		'default'  => true,
 	],
+	[
+		'id'               => 'ghost_mode',
+		'menu_id'          => 'advanced',
+		'group_id'         => 'scripts',
+		'type'             => 'checkbox',
+		'label'            => __( 'Enable ghost mode', 'burst-statistics' ),
+		'context'          => [
+			'text' => __( 'Available when "Merge tracking settings and script" is activated. If you enable this, the javascript filename does not include "burst", making it less obvious.', 'burst-statistics' ),
+		],
+		'react_conditions' => [
+			'combine_vars_and_script' => true,
+			'action'                  => 'disable',
+		],
+		'disabled'         => false,
+		'default'          => false,
+	],
 
+	[
+		'id'          => 'export_settings',
+		'menu_id'     => 'data',
+		'group_id'    => 'import_export_settings',
+		'type'        => 'export_settings',
+		'button_text' => __( 'Download settings file', 'burst-statistics' ),
+		'label'       => __( 'Export settings', 'burst-statistics' ),
+		'context'     => __( 'Download a file containing your current settings. Use this for migrating or copying settings to another website.', 'burst-statistics' ),
+		'disabled'    => false,
+		'default'     => false,
+	],
+	[
+		'id'       => 'import_settings',
+		'menu_id'  => 'data',
+		'group_id' => 'import_export_settings',
+		'type'     => 'upload',
+		'label'    => __( 'Import settings', 'burst-statistics' ),
+		'context'  => __( 'Upload a previously exported settings file to overwrite your current settings.', 'burst-statistics' ),
+		'disabled' => false,
+		'default'  => false,
+	],
 	[
 		'id'       => 'archive_data',
 		'menu_id'  => 'data',
@@ -255,7 +386,7 @@ return [
 		'id'               => 'archive_after_months',
 		'menu_id'          => 'data',
 		'group_id'         => 'data_archiving',
-		'min'              => 12,
+		'min'              => apply_filters( 'burst_minimum_archive_months', 12 ),
 		'type'             => 'number',
 		'label'            => __( 'Retain data for how many months?', 'burst-statistics' ),
 		'disabled'         => false,
@@ -288,7 +419,7 @@ return [
 		'action'      => 'reset',
 		'button_text' => __( 'Reset statistics', 'burst-statistics' ),
 		'label'       => __( 'Reset statistics', 'burst-statistics' ),
-		'comment'     => __( 'This will permanently delete all statistics, goals, and goal statistics.', 'burst-statistics' ),
+		'context'     => __( 'This will permanently delete all statistics, goals, and goal statistics.', 'burst-statistics' ),
 		'disabled'    => false,
 		'default'     => false,
 	],
@@ -302,18 +433,5 @@ return [
 		'react_conditions' => [
 			'archive_data' => [ 'archive' ],
 		],
-	],
-	[
-		'id'       => 'enable_shortcodes',
-		'menu_id'  => 'secret',
-		'group_id' => 'secret',
-		'type'     => 'checkbox',
-		'label'    => __( 'Enable shortcodes', 'burst-statistics' ),
-		'context'  => [
-			'text' => __( 'Enable statistics shortcodes for use on your website.', 'burst-statistics' ),
-			'url'  => 'burst-statistics-shortcodes/',
-		],
-		'disabled' => false,
-		'default'  => false,
 	],
 ];

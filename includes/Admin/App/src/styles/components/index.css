@@ -30,9 +30,12 @@
 		@apply px-6 max-xl:px-2.5;
 	}
 
-	.rdt_TableHeadRow,
+	.rdt_TableHeadRow {
+		@apply burst-inline-block-padding bg-gray-50 text-gray border-b border-gray-200;
+	}
+
 	.rdt_TableRow {
-		@apply burst-inline-block-padding;
+		@apply burst-inline-block-padding border-b border-gray-200;
 	}
 
 	.rdt_TableCol,

@@ -25,8 +25,8 @@ trait Helper {
 	/**
 	 * Get an option from the burst settings and cast it to a boolean
 	 */
-	public function get_option_bool( string $option ): bool {
-		return (bool) $this->get_option( $option );
+	public function get_option_bool( string $option, bool $default = false ): bool {
+		return (bool) $this->get_option( $option, $default );
 	}
 
 	/**

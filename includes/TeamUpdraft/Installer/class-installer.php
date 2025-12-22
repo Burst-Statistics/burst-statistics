@@ -126,6 +126,18 @@ class Installer {
 			}
 		}
 
+		// check php and wp version requirements.
+		global $wp_version;
+		foreach ( $plugins as $index => $plugin ) {
+			$required_php_version = $plugin['php'] ?? '5.6';
+			$required_wp_version  = $plugin['wp'] ?? '4.0';
+			if (
+				version_compare( PHP_VERSION, $required_php_version, '<' ) ||
+				version_compare( $wp_version, $required_wp_version, '<' ) ) {
+				unset( $plugins[ $index ] );
+			}
+		}
+
 		// Remove plugins where the conditions regarding required plugins or other are not met.
 		foreach ( $plugins as $index => $plugin ) {
 			if ( ! isset( $plugin['conditions'] ) ) {

@@ -2,9 +2,7 @@
 namespace Burst\Frontend;
 
 use Burst\Admin\Statistics\Query_Data;
-use Burst\Admin\Statistics\Statistics;
 use Burst\Traits\Helper;
-use Peast\Query;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -24,103 +22,9 @@ class Frontend_Statistics {
 	use Helper;
 
 	/**
-	 * Store allowed metrics for reuse across methods
-	 *
-	 * @var array<string>
-	 */
-	private array $allowed_metrics;
-
-	/**
-	 * Store allowed filter keys for reuse across methods
-	 *
-	 * @var array<string>
-	 */
-	private array $allowed_filter_keys;
-
-	/**
-	 * Store allowed group_by values
-	 *
-	 * @var array<string>
-	 */
-	private array $allowed_group_by;
-
-	/**
-	 * Store allowed order_by values
-	 *
-	 * @var array<string>
-	 */
-	private array $allowed_order_by;
-
-	/**
 	 * Constructor to initialize class properties
 	 */
-	public function __construct() {
-		// Define the default allowed metrics.
-		$default_metrics = [
-			'pageviews',
-			'visitors',
-			'sessions',
-			'bounce_rate',
-			'avg_time_on_page',
-			'first_time_visitors',
-			'page_url',
-			'referrer',
-			'device',
-			'count',
-		];
-
-		// Allow modification of allowed metrics via filter.
-		$this->allowed_metrics = apply_filters( 'burst_statistics_allowed_metrics', $default_metrics );
-
-		// Define allowed filter keys.
-		$default_filter_keys = [
-			'page_type',
-			'page_id',
-			'page_url',
-			'referrer',
-			'device',
-			'browser',
-			'platform',
-		];
-
-		// Allow modification of allowed filter keys via filter.
-		$this->allowed_filter_keys = apply_filters( 'burst_statistics_allowed_filter_keys', $default_filter_keys );
-
-		// Define allowed group_by values.
-		$default_group_by = [
-			'page_type',
-			'page_id',
-			'page_url',
-			'referrer',
-			'device',
-			'browser',
-			'platform',
-		];
-
-		// Allow modification of allowed group_by values via filter.
-		$this->allowed_group_by = apply_filters( 'burst_statistics_allowed_group_by', $default_group_by );
-
-		// Define allowed order_by values.
-		$default_order_by = [
-			'pageviews DESC',
-			'pageviews ASC',
-			'visitors DESC',
-			'visitors ASC',
-			'sessions DESC',
-			'sessions ASC',
-			'bounce_rate DESC',
-			'bounce_rate ASC',
-			'avg_time_on_page DESC',
-			'avg_time_on_page ASC',
-			'first_time_visitors DESC',
-			'first_time_visitors ASC',
-			'count DESC',
-			'count ASC',
-		];
-
-		// Allow modification of allowed order_by values via filter.
-		$this->allowed_order_by = apply_filters( 'burst_statistics_allowed_order_by', $default_order_by );
-	}
+	public function __construct() {}
 
 	/**
 	 * Get date range based on period.
@@ -239,42 +143,17 @@ class Frontend_Statistics {
 	 */
 	public function generate_statistics_query( Query_Data $query_data ): string {
 		global $wpdb;
-
-		// Sanitize inputs.
-		$filters = $this->sanitize_filters( $query_data->filters );
-		$select  = array_map( 'esc_sql', $query_data->select );
-
-		// Validate group_by and order_by against whitelists.
-		$group_by = $this->validate_group_by( $query_data->group_by );
-		$order_by = $this->validate_order_by( $query_data->order_by );
-
-		// Filter select to only include allowed metrics.
-		// Ensure both arrays contain only strings for proper comparison.
-		$allowed_metrics = array_map( 'strval', $this->allowed_metrics );
-		$select_strings  = array_map( 'strval', $select );
-		$select          = array_intersect( $select_strings, $allowed_metrics );
-		$limit           = $query_data->limit;
 		// Ensure we have at least one valid metric.
-		if ( empty( $select ) ) {
+		if ( empty( $query_data->select ) ) {
 			// Default to pageviews if no valid metrics.
-			$select = [ 'pageviews' ];
+			$query_data->select = [ 'pageviews' ];
 		}
 
-		// Prepare SELECT clause with metrics.
-		$select_sql = $this->build_select_metrics( $select, $query_data );
-
-		// Base table.
-		$table_name = $wpdb->prefix . 'burst_statistics AS statistics';
-
-		// Build WHERE clause from filters.
-		$where = $this->build_where_clause( $filters );
-
-		if ( ! empty( $group_by ) ) {
-			$group_by_sql = 'GROUP BY ' . esc_sql( $group_by );
-		} else {
-			$group_by_sql = '';
-		}
-		$order_by_sql = ! empty( $order_by ) ? 'ORDER BY ' . esc_sql( $order_by ) : '';
+		$select_sql   = $this->build_select_metrics( $query_data->select, $query_data );
+		$table_name   = $wpdb->prefix . 'burst_statistics AS statistics';
+		$where        = $this->build_where_clause( $query_data->filters, $query_data );
+		$group_by_sql = ! empty( $query_data->group_by ) ? 'GROUP BY ' . implode( ',', $query_data->group_by ) : '';
+		$order_by_sql = ! empty( $query_data->order_by ) ? 'ORDER BY ' . implode( ',', $query_data->order_by ) : '';
 
 		// Build the complete SQL query using a prepared statement.
 		$sql_parts = [
@@ -298,14 +177,14 @@ class Frontend_Statistics {
 		}
 
 		// Add limit with prepared statement if needed.
-		if ( $limit > 0 ) {
+		if ( $query_data->limit > 0 ) {
 			$sql_parts[] = 'LIMIT %d';
 			$sql_string  = implode( ' ', $sql_parts );
 			$sql         = $wpdb->prepare(
 				$sql_string,
 				$query_data->date_start,
 				$query_data->date_end,
-				$limit
+				$query_data->limit
 			);
 		} else {
 			$sql_string = implode( ' ', $sql_parts );
@@ -418,88 +297,6 @@ class Frontend_Statistics {
 	}
 
 	/**
-	 * Validate group_by against whitelist
-	 *
-	 * @param string $group_by Group by clause to validate.
-	 * @return string Validated group_by or empty string.
-	 */
-	private function validate_group_by( string $group_by ): string {
-		// Allow only values in the whitelist.
-		return in_array( $group_by, $this->allowed_group_by, true ) ? $group_by : '';
-	}
-
-	/**
-	 * Validate order_by against whitelist
-	 *
-	 * @param string $order_by Order by clause to validate.
-	 * @return string Validated order_by or empty string.
-	 */
-	private function validate_order_by( string $order_by ): string {
-		// Allow only values in the whitelist.
-		return in_array( $order_by, $this->allowed_order_by, true ) ? $order_by : '';
-	}
-
-	/**§
-	 * Sanitize filters for safe SQL usage
-	 *
-	 * @param array $filters Filters to sanitize.
-	 * @return array<string, string> Sanitized filters.
-	 */
-	private function sanitize_filters( array $filters ): array {
-		// Filter out false or empty values.
-		$filters = array_filter(
-			$filters,
-			function ( $item ) {
-				return $item !== false && $item !== '';
-			}
-		);
-
-		// Sanitize keys and values and limit to allowed keys.
-		$sanitized = [];
-		foreach ( $filters as $key => $value ) {
-			// Only allow filters with whitelisted keys.
-			if ( in_array( $key, $this->allowed_filter_keys, true ) ) {
-				$sanitized_key = sanitize_key( $key );
-
-				// Use appropriate sanitization based on filter type.
-				switch ( $key ) {
-					case 'page_url':
-						// For URLs, use wp_parse_url to extract path component.
-						$parsed_url      = wp_parse_url( $value, PHP_URL_PATH );
-						$sanitized_value = ( $parsed_url !== false && $parsed_url !== null ) ? $parsed_url : sanitize_text_field( $value );
-						break;
-					case 'referrer':
-						// For referrers, sanitize as URL.
-						$sanitized_value = esc_url_raw( $value );
-						break;
-					case 'page_id':
-						$sanitized_value = absint( $value );
-						break;
-					case 'page_type':
-						$allowed_page_types = apply_filters( 'burst_allowed_post_types', get_post_types( [ 'public' => true ] ) );
-						$sanitized_value    = in_array( $value, $allowed_page_types, true ) ? $value : 'post';
-						break;
-					case 'device':
-					case 'browser':
-					case 'platform':
-						// For device/browser/platform, use sanitize_key for consistency.
-						$sanitized_value = sanitize_key( $value );
-						break;
-					default:
-						// Default to text field sanitization.
-						$sanitized_value = sanitize_text_field( $value );
-						break;
-				}
-
-				if ( ! empty( $sanitized_value ) ) {
-					$sanitized[ $sanitized_key ] = $sanitized_value;
-				}
-			}
-		}
-		return $sanitized;
-	}
-
-	/**
 	 * Build the SELECT clause for chosen metrics
 	 *
 	 * @param array      $metrics Metrics to include.
@@ -512,7 +309,7 @@ class Frontend_Statistics {
 
 		foreach ( $metrics as $metric ) {
 			// Skip if not in allowed metrics list.
-			if ( ! in_array( $metric, $this->allowed_metrics, true ) ) {
+			if ( ! in_array( $metric, $query_data->get_allowed_metrics(), true ) ) {
 				continue;
 			}
 
@@ -572,13 +369,13 @@ class Frontend_Statistics {
 	 * @param array $filters Filter conditions.
 	 * @return string WHERE clause.
 	 */
-	private function build_where_clause( array $filters ): string {
+	private function build_where_clause( array $filters, Query_Data $query_data ): string {
 		global $wpdb;
 		$where_parts = [];
 
 		foreach ( $filters as $key => $value ) {
 			// Only process if key is in allowed list (already validated in sanitize_filters).
-			if ( ! in_array( $key, $this->allowed_filter_keys, true ) ) {
+			if ( ! in_array( $key, $query_data->get_allowed_filter_keys(), true ) ) {
 				continue;
 			}
 
@@ -623,25 +420,6 @@ class Frontend_Statistics {
 		}
 
 		return ! empty( $where_parts ) ? 'AND ' . implode( ' AND ', $where_parts ) : '';
-	}
-
-	/**
-	 * Get metric labels for display purposes
-	 *
-	 * @return array<string, string> Array of metric names and their human-readable labels.
-	 */
-	public function get_metric_labels(): array {
-		$labels = [
-			'pageviews'           => __( 'Pageviews', 'burst-statistics' ),
-			'visitors'            => __( 'Visitors', 'burst-statistics' ),
-			'sessions'            => __( 'Sessions', 'burst-statistics' ),
-			'bounce_rate'         => __( 'Bounce rate', 'burst-statistics' ),
-			'avg_time_on_page'    => __( 'Average time on page', 'burst-statistics' ),
-			'first_time_visitors' => __( 'New visitors', 'burst-statistics' ),
-		];
-
-		// Allow extensions to add their own metric labels.
-		return apply_filters( 'burst_statistics_metric_labels', $labels );
 	}
 
 	/**

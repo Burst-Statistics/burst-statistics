@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo } from 'react';
 
 /**
  * GeoGraticule.propTypes = {
@@ -8,8 +8,17 @@ import { memo } from 'react'
  *     lineColor: PropTypes.string.isRequired,
  * }
  */
-const GeoGraticule = memo(({ path, graticule, lineWidth, lineColor }) => {
-    return <path fill="none" strokeWidth={lineWidth} stroke={lineColor} d={path(graticule())} />
-})
+const GeoGraticule = memo( ({ path, graticule, lineWidth, lineColor }) => {
+	return (
+		<path
+			fill="none"
+			strokeWidth={lineWidth}
+			stroke={lineColor}
+			d={path( graticule() )}
+		/>
+	);
+});
 
-export default GeoGraticule
+GeoGraticule.displayName = 'GeoGraticule';
+
+export default GeoGraticule;

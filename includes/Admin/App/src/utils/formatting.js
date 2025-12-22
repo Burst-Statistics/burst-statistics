@@ -1,12 +1,24 @@
 import { dateI18n } from '@wordpress/date';
-import { format, isSameDay, startOfDay, endOfDay, addDays, addMonths, startOfMonth, endOfMonth, startOfYear, endOfYear, addYears } from 'date-fns';
-import {__} from '@wordpress/i18n';
+import {
+	format,
+	isSameDay,
+	startOfDay,
+	endOfDay,
+	addDays,
+	addMonths,
+	startOfMonth,
+	endOfMonth,
+	startOfYear,
+	endOfYear,
+	addYears
+} from 'date-fns';
+import { __ } from '@wordpress/i18n';
 
 /**
  * Returns a formatted string that represents the relative time between two dates
  * @param {Date | number} relativeDate - The date to compare or a UTC timestamp
- * @param {Date} date - The reference date, defaults to the current date
- * @returns {string} The relative time string
+ * @param {Date}          date         - The reference date, defaults to the current date
+ * @return {string} The relative time string
  */
 const getRelativeTime = ( relativeDate, date = new Date() ) => {
 
@@ -21,71 +33,71 @@ const getRelativeTime = ( relativeDate, date = new Date() ) => {
 		// invalid date, probably still loading
 		return '-';
 	}
-	let units = {
+	const units = {
 		year: 24 * 60 * 60 * 1000 * 365,
-		month: 24 * 60 * 60 * 1000 * 365 / 12,
+		month: ( 24 * 60 * 60 * 1000 * 365 ) / 12,
 		day: 24 * 60 * 60 * 1000,
 		hour: 60 * 60 * 1000,
 		minute: 60 * 1000,
 		second: 1000
 	};
-	let rtf = new Intl.RelativeTimeFormat( 'en', { numeric: 'auto' });
-	let elapsed = relativeDate - date;
+	const rtf = new Intl.RelativeTimeFormat( 'en', { numeric: 'auto' });
+	const elapsed = relativeDate - date;
 
 	// "Math.abs" accounts for both "past" & "future" scenarios
-	for ( let u in units ) {
+	for ( const u in units ) {
 		if ( Math.abs( elapsed ) > units[u] || 'second' === u ) {
 			return rtf.format( Math.round( elapsed / units[u]), u );
 		}
 	}
+
+	return '-';
 };
 
 /**
  * Calculates the percentage of a value from the total and returns it as a formatted string or a number
- * @param {number} val - The value to calculate the percentage of
- * @param {number} total - The total value
- * @param {boolean} format - If true, returns the percentage as a formatted string, otherwise as a number
- * @returns {string | number} The formatted percentage or the raw percentage
+ * @param {number}  val          - The value to calculate the percentage of
+ * @param {number}  total        - The total value
+ * @param {boolean} shouldFormat - If true, returns the percentage as a formatted string, otherwise as a number
+ * @return {string | number} The formatted percentage or the raw percentage
  */
-const getPercentage = ( val, total, format = true ) => {
+const getPercentage = ( val, total, shouldFormat = true ) => {
 	val = Number( val );
 	total = Number( total );
 	let percentage = val / total;
 	if ( isNaN( percentage ) ) {
 		percentage = 0;
 	}
-	return format ? new Intl.NumberFormat(
-	  undefined,
-	  {
-		  style: 'percent',
-		  maximumFractionDigits: 1
-	  }).format( percentage ) : percentage;
+	return shouldFormat ?
+		new Intl.NumberFormat( undefined, {
+				style: 'percent',
+				maximumFractionDigits: 1
+			}).format( percentage ) :
+		percentage;
 };
 
 /**
  * Calculates the percentage change between two values and returns an object with the formatted percentage and status
  * @param {number} currValue - The current value
  * @param {number} prevValue - The previous value
- * @returns {Object} An object with a formatted percentage and a status ('positive' or 'negative')
+ * @return {Object} An object with a formatted percentage and a status ('positive' or 'negative')
  */
 function getChangePercentage( currValue, prevValue ) {
 	currValue = Number( currValue );
 	prevValue = Number( prevValue );
 
-	let change = {};
+	const change = {};
 	let percentage = ( currValue - prevValue ) / prevValue;
 	if ( isNaN( percentage ) ) {
 		percentage = 0;
 	}
 
-	change.val =  new Intl.NumberFormat(
-	  undefined,
-	  {
-		  style: 'percent',
-		  maximumFractionDigits: 1,
-		  signDisplay: 'exceptZero'
-	  }).format( percentage );
-	change.status = ( 0 < percentage ) ? 'positive' : 'negative';
+	change.val = new Intl.NumberFormat( undefined, {
+		style: 'percent',
+		maximumFractionDigits: 1,
+		signDisplay: 'exceptZero'
+	}).format( percentage );
+	change.status = 0 < percentage ? 'positive' : 'negative';
 
 	if ( percentage === Infinity ) {
 		change.val = '';
@@ -98,21 +110,19 @@ function getChangePercentage( currValue, prevValue ) {
 function getAbsoluteChangePercentage( currValue, prevValue ) {
 	currValue = Number( currValue );
 	prevValue = Number( prevValue );
-	let change = {};
+	const change = {};
 	let percentage = ( currValue - prevValue ) / 100;
 	if ( isNaN( percentage ) ) {
 		percentage = 0;
 	}
 
-	change.val = new Intl.NumberFormat(
-	  undefined,
-	  {
-		  style: 'percent',
-		  maximumFractionDigits: 1,
-		  signDisplay: 'exceptZero'
-	  }).format( percentage );
+	change.val = new Intl.NumberFormat( undefined, {
+		style: 'percent',
+		maximumFractionDigits: 1,
+		signDisplay: 'exceptZero'
+	}).format( percentage );
 
-	change.status = ( 0 < percentage ) ? 'positive' : 'negative';
+	change.status = 0 < percentage ? 'positive' : 'negative';
 
 	if ( percentage === Infinity ) {
 		change.val = '';
@@ -122,44 +132,52 @@ function getAbsoluteChangePercentage( currValue, prevValue ) {
 	return change;
 }
 
-
 /**
  * Calculates the bounce percentage of bounced sessions and total sessions
- * @param {number} bounced_sessions - The number of bounced sessions
- * @param {number} sessions - The total number of sessions
- * @param {boolean} format - If true, returns the bounce percentage as a formatted string, otherwise as a number
- * @returns {string | number} The formatted bounce percentage or the raw bounce percentage
+ * @param {number}  bounced_sessions - The number of bounced sessions
+ * @param {number}  sessions         - The total number of sessions
+ * @param {boolean} shouldFormat     - If true, returns the bounce percentage as a formatted string, otherwise as a number
+ * @return {string | number} The formatted bounce percentage or the raw bounce percentage
  */
-function getBouncePercentage( bounced_sessions, sessions, format = true ) {
+function getBouncePercentage( bounced_sessions, sessions, shouldFormat = true ) {
 	bounced_sessions = Number( bounced_sessions );
 	sessions = Number( sessions );
-	return getPercentage( bounced_sessions, sessions + bounced_sessions, format );
+	return getPercentage(
+		bounced_sessions,
+		sessions + bounced_sessions,
+		shouldFormat
+	);
 }
 
 /**
  * Formats a Unix timestamp as a date string, using the site's locale and wp date format
  * @param {number} unixTimestamp - The Unix timestamp to format
- * @returns {string} The formatted date string
+ * @return {string} The formatted date string
  */
 const formatUnixToDate = ( unixTimestamp ) => {
-	const formattedDate = dateI18n( burst_settings.date_format, new Date( unixTimestamp * 1000 ) );
+	const formattedDate = dateI18n(
+		burst_settings.date_format,
+		new Date( unixTimestamp * 1000 )
+	);
 	return formattedDate;
 };
 
 /**
  * Check if a date is valid
  * @param {string | number} date - The date to check
- * @return {boolean}
+ * @return {boolean} True if the date is valid, false otherwise
  */
-const  isValidDate = ( date ) => {
+const isValidDate = ( date ) => {
 	const MIN_START_DATE = 1640995200 * 1000; // January 1, 2022 in Unix timestamp
-	return date && ( 'number' === typeof date || Date.parse( date ) >= MIN_START_DATE );
+	return (
+		date && ( 'number' === typeof date || Date.parse( date ) >= MIN_START_DATE )
+	);
 };
 
 /**
  * Converts a date to a Unix timestamp in milliseconds
  * @param {string | number} date - The date to convert
- * @return {number|number|number}
+ * @return {number} The Unix timestamp in milliseconds
  */
 const toUnixTimestampMillis = ( date ) => {
 	if ( 'number' === typeof date ) {
@@ -175,7 +193,7 @@ const toUnixTimestampMillis = ( date ) => {
 /**
  * Formats a duration given in milliseconds as a time string in the format 'HH:mm:ss'
  * @param {number} timeInMilliSeconds - The duration in milliseconds
- * @returns {string} The formatted time string
+ * @return {string} The formatted time string
  */
 function formatTime( timeInMilliSeconds = 0 ) {
 	let timeInSeconds = Number( timeInMilliSeconds );
@@ -185,8 +203,8 @@ function formatTime( timeInMilliSeconds = 0 ) {
 
 	const seconds = Math.floor( timeInSeconds / 1000 );
 	const hours = Math.floor( seconds / 3600 );
-	const minutes = Math.floor( ( seconds - ( hours * 3600 ) ) / 60 );
-	const remainingSeconds = seconds - ( hours * 3600 ) - ( minutes * 60 );
+	const minutes = Math.floor( ( seconds - hours * 3600 ) / 60 );
+	const remainingSeconds = seconds - hours * 3600 - minutes * 60;
 
 	const zeroPad = ( num ) => {
 		if ( isNaN( num ) ) {
@@ -194,27 +212,29 @@ function formatTime( timeInMilliSeconds = 0 ) {
 		}
 		return String( num ).padStart( 2, '0' );
 	};
-// if hours is 0, return minutes and seconds
-	if (hours === 0) {
-		return [minutes, remainingSeconds].map(zeroPad).join(':');
+
+	// if hours is 0, return minutes and seconds
+	if ( 0 === hours ) {
+		return [ minutes, remainingSeconds ].map( zeroPad ).join( ':' );
 	}
 
-	return [hours, minutes, remainingSeconds].map( zeroPad ).join( ':' );
+	return [ hours, minutes, remainingSeconds ].map( zeroPad ).join( ':' );
 }
 
 /**
  * Formats a number using compact notation with the specified number of decimal places
- * @param {number} value - The number to format
+ * @param {number} value    - The number to format
  * @param {number} decimals - The number of decimal places to use
- * @returns {string} The formatted number
+ * @return {string} The formatted number
  */
 function formatNumber( value, decimals = 1 ) {
 	value = Number( value );
 	if ( isNaN( value ) ) {
 		value = 0;
 	}
+
 	// if value is smaller than 1000, return the number without decimals.
-	if ( value < 1000 ) {
+	if ( 1000 > value ) {
 		decimals = 0;
 	}
 	return new Intl.NumberFormat( undefined, {
@@ -227,43 +247,50 @@ function formatNumber( value, decimals = 1 ) {
 
 /**
  * Formats a percentage value with the specified number of decimal places
- * @param {number} value - The percentage value (not multiplied by 100)
+ * @param {number} value    - The percentage value (not multiplied by 100)
  * @param {number} decimals - The number of decimal places to use
- * @returns {string} The formatted percentage
+ * @return {string} The formatted percentage
  */
 function formatPercentage( value, decimals = 1 ) {
-	value = Number(value);
-	if (isNaN(value)) {
+	value = Number( value );
+	if ( isNaN( value ) ) {
 		value = 0;
 	}
-	if (value === 0) {
+	if ( 0 === value ) {
 		return '0%';
 	}
-	if (value > 0 && value < 0.1) {
+	if ( 0 < value && 0.1 > value ) {
 		return '<0.1%';
 	}
+
 	// For other values, format as percent with given decimals
-	return new Intl.NumberFormat(undefined, {
+	return new Intl.NumberFormat( undefined, {
 		style: 'percent',
 		maximumFractionDigits: decimals
-	}).format(value / 100);
+	}).format( value / 100 );
 }
 
 /**
  * Returns the name of a country based on its country code. If undefined return Unknown
- * @param countryCode
- * @return {*}
+ * @param {string} countryCode countryCode - The country code
+ * @return {string} The country name
  */
 function getCountryName( countryCode ) {
 	if ( countryCode ) {
-		return burst_settings.countries[countryCode.toUpperCase()] || __( 'Not set', 'burst-statistics' );
+		return (
+			burst_settings.countries[countryCode.toUpperCase()] ||
+			__( 'Not set', 'burst-statistics' )
+		);
 	}
 	return __( 'Unknown', 'burst-statistics' );
 }
 
 function getContinentName( continentCode ) {
 	if ( continentCode ) {
-		return burst_settings.continents[continentCode.toUpperCase()] || __( 'Not set', 'burst-statistics' );
+		return (
+			burst_settings.continents[continentCode.toUpperCase()] ||
+			__( 'Not set', 'burst-statistics' )
+		);
 	}
 	return __( 'Unknown', 'burst-statistics' );
 }
@@ -281,8 +308,10 @@ function getDateWithOffset( currentDate = new Date() ) {
 
 	// add burst_settings.gmt_offset x hour and client's timezone offset in
 	// seconds to currentUnix
-	const currentUnixWithOffsets = currentUnix +
-	  ( burst_settings.gmt_offset * 3600 ) - clientTimezoneOffsetSeconds;
+	const currentUnixWithOffsets =
+		currentUnix +
+		burst_settings.gmt_offset * 3600 -
+		clientTimezoneOffsetSeconds;
 
 	const currentDateWithOffset = new Date( currentUnixWithOffsets * 1000 );
 
@@ -291,14 +320,14 @@ function getDateWithOffset( currentDate = new Date() ) {
 const currentDateWithOffset = getDateWithOffset();
 
 const availableRanges = {
-	'today': {
+	today: {
 		label: __( 'Today', 'burst-statistics' ),
 		range: () => ({
 			startDate: startOfDay( currentDateWithOffset ),
 			endDate: endOfDay( currentDateWithOffset )
 		})
 	},
-	'yesterday': {
+	yesterday: {
 		label: __( 'Yesterday', 'burst-statistics' ),
 		range: () => ({
 			startDate: startOfDay( addDays( currentDateWithOffset, -1 ) ),
@@ -336,7 +365,9 @@ const availableRanges = {
 	'week-to-date': {
 		label: __( 'Week to date', 'burst-statistics' ),
 		range: () => ({
-			startDate: startOfDay( addDays( currentDateWithOffset, -currentDateWithOffset.getDay() ) ),
+			startDate: startOfDay(
+				addDays( currentDateWithOffset, -currentDateWithOffset.getDay() )
+			),
 			endDate: endOfDay( currentDateWithOffset )
 		})
 	},
@@ -364,22 +395,26 @@ const availableRanges = {
 };
 
 const getAvailableRanges = ( selectedRanges ) => {
-	return Object.values( selectedRanges ).filter( Boolean ).map( ( value ) => {
-		const range = availableRanges[value];
-		range.isSelected = isSelected;
-		return range;
-	});
+	return Object.values( selectedRanges )
+		.filter( Boolean )
+		.map( ( value ) => {
+			const range = availableRanges[value];
+			range.isSelected = isSelected;
+			return range;
+		});
 };
 
 const getAvailableRangesWithKeys = ( selectedRanges ) => {
-	let ranges = {};
+	const ranges = {};
 	Object.keys( availableRanges ) // Get the keys from the availableRanges object
-	  .filter( key => selectedRanges.includes( key ) ) // Filter the keys based on selectedRanges
-	  .forEach( key => {
-		  ranges[key] = { // Assign a new object to the key on the ranges object
-			  ...availableRanges[key] // Spread the properties from the range object
-		  };
-	  });
+		.filter( ( key ) => selectedRanges.includes( key ) ) // Filter the keys based on selectedRanges
+		.forEach( ( key ) => {
+			ranges[key] = {
+
+				// Assign a new object to the key on the ranges object
+				...availableRanges[key] // Spread the properties from the range object
+			};
+		});
 	return ranges;
 };
 
@@ -394,37 +429,39 @@ const getDisplayDates = ( startDate, endDate ) => {
 function isSelected( range ) {
 	const definedRange = this.range();
 	return (
-	  isSameDay( range.startDate, definedRange.startDate ) &&
-	  isSameDay( range.endDate, definedRange.endDate )
+		isSameDay( range.startDate, definedRange.startDate ) &&
+		isSameDay( range.endDate, definedRange.endDate )
 	);
 }
 
 /**
  * Creates a value formatter function based on metric options.
- * @param {string} metric - The metric key.
+ * @param {string} metric        - The metric key.
  * @param {Object} metricOptions - The metric options object.
- * @returns {Function} A value formatter function.
+ * @return {Function} A value formatter function.
  */
-function createValueFormatter(metric, metricOptions = {}) {
-	if (!metric || !metricOptions[metric]) {
-		return (d) => formatNumber(d);
+function createValueFormatter( metric, metricOptions = {}) {
+	if ( ! metric || ! metricOptions[metric]) {
+		return ( d ) => formatNumber( d );
 	}
 
 	const { isPercentage, isTime, precision, suffix } = metricOptions[metric];
 
-	return (value) => {
-		if (value === null || value === undefined) return '';
-
-		if (isPercentage) {
-			return formatPercentage(value, precision);
+	return ( value ) => {
+		if ( null === value || value === undefined ) {
+			return '';
 		}
 
-		if (isTime) {
-			return formatTime(value);
+		if ( isPercentage ) {
+			return formatPercentage( value, precision );
 		}
 
-		let formatted = formatNumber(value, precision);
-		if (suffix) {
+		if ( isTime ) {
+			return formatTime( value );
+		}
+
+		let formatted = formatNumber( value, precision );
+		if ( suffix ) {
 			formatted += suffix;
 		}
 		return formatted;
@@ -434,18 +471,18 @@ function createValueFormatter(metric, metricOptions = {}) {
 /**
  * Formats a currency value using Intl.NumberFormat and returns the currency symbol
  * @param {string} currency - The currency code (e.g., 'USD', 'EUR').
- * @param {number} value - The currency value to format.
+ * @param {number} value    - The currency value to format.
  *
- * @returns {string} The formatted currency symbol.
+ * @return {string} The formatted currency symbol.
  */
 function formatCurrency( currency, value ) {
 	return new Intl.NumberFormat( undefined, {
 		style: 'currency',
-		currency: currency,
+		currency,
 		maximumFractionDigits: 2,
 		minimumFractionDigits: 2,
 		trailingZeroDisplay: 'stripIfInteger'
-	} ).format( value );
+	}).format( value );
 }
 
 export {
@@ -467,5 +504,6 @@ export {
 	getAvailableRangesWithKeys,
 	getDisplayDates,
 	createValueFormatter,
-	formatCurrency
+	formatCurrency,
+	toUnixTimestampMillis
 };

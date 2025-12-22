@@ -6,14 +6,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Burst\Admin\Capability\Capability;
-use Burst\Admin\DB_Upgrade\DB_Upgrade;
 use Burst\Traits\Admin_Helper;
+use Burst\Traits\Database_Helper;
 use Burst\Traits\Save;
 use Burst\Frontend\Goals\Goals;
 
 
 class Upgrade {
 	use Admin_Helper;
+	use Database_Helper;
 	use Save;
 
 	/**
@@ -77,29 +78,6 @@ class Upgrade {
 			Capability::add_capability( 'manage' );
 		}
 
-		if ( $prev_version
-			&& version_compare( $prev_version, '1.3.0', '<' ) ) {
-			if ( is_multisite() ) {
-				$tour_shown = get_site_option( 'burst_tour_shown_once', false );
-			} else {
-				$tour_shown = get_option( 'burst_tour_shown_once', false );
-			}
-
-			if ( $tour_shown ) {
-				$this->update_option( 'burst_tour_shown_once', $tour_shown );
-			}
-		}
-
-		// add capability to multisite as well.
-		if ( is_multisite() ) {
-			if ( $prev_version
-				&& version_compare( $prev_version, '1.3.4', '<' )
-			) {
-				Capability::add_capability( 'view', [ 'administrator', 'editor' ] );
-				Capability::add_capability( 'manage' );
-			}
-		}
-
 		// Version 1.3.5.
 		// - Upgrade to new bounce table.
 		// - Upgrade to remove `event` and `action` columns from `burst_statistics` table.
@@ -157,7 +135,7 @@ class Upgrade {
 
 		// check if column 'device_id' exists in the table 'burst_statistics'.
 		$is_version_upgrade      = $prev_version && version_compare( $prev_version, '1.7.0', '<' );
-		$lookup_table_incomplete = version_compare( $prev_version, '1.7.1', '=' ) && ! ( new DB_Upgrade() )->column_exists( 'burst_statistics', 'device_id' );
+		$lookup_table_incomplete = version_compare( $prev_version, '1.7.1', '=' ) && ! $this->column_exists( 'burst_statistics', 'device_id' );
 		if ( $lookup_table_incomplete || $is_version_upgrade ) {
 			update_option( 'burst_last_cron_hit', time(), false );
 			// this option is used in the tracking, so should autoload until completed.
@@ -234,7 +212,14 @@ class Upgrade {
 
 		if ( $prev_version && version_compare( $prev_version, '3.0.1', '<' ) ) {
 			update_option( 'burst_is_multi_domain', false );
-			burst_reinstall_rest_api_optimizer();
+			$plugin_activated_time = get_option( 'burst_activation_time', 0 );
+			$cutoff_date           = strtotime( '2025-11-24 00:00:00' );
+			if ( $plugin_activated_time > 0 && $plugin_activated_time < $cutoff_date ) {
+				if ( ! defined( 'BURST_PRO' ) ) {
+					\Burst\burst_loader()->admin->tasks->undismiss_task( 'bf_notice' );
+					\Burst\burst_loader()->admin->tasks->undismiss_task( 'cm_notice' );
+				}
+			}
 		}
 
         // phpcs:disable
@@ -255,7 +240,36 @@ class Upgrade {
                 GROUP BY uid
             ");
         }
+
         //phpcs:enable
+		if ( $prev_version && version_compare( $prev_version, '3.1.0.4', '<' ) ) {
+			$plugin_activated_time = get_option( 'burst_activation_time', 0 );
+			$cutoff_date           = strtotime( '2025-11-24 00:00:00' );
+			if ( $plugin_activated_time > 0 && $plugin_activated_time < $cutoff_date ) {
+				// free already dismissed in 3.0.1.
+				if ( defined( 'BURST_PRO' ) ) {
+					\Burst\burst_loader()->admin->tasks->undismiss_task( 'bf_notice' );
+					\Burst\burst_loader()->admin->tasks->undismiss_task( 'cm_notice' );
+					\Burst\burst_loader()->admin->tasks->schedule_task_validation();
+				}
+			}
+		}
+
+		if ( $prev_version && version_compare( $prev_version, '3.1.1', '<' ) ) {
+			// reinstall with permalink for woocommerce exclusion.
+			burst_reinstall_rest_api_optimizer();
+		}
+
+		if ( $prev_version && version_compare( $prev_version, '3.1.4', '<' ) ) {
+			\Burst\burst_loader()->admin->tasks->add_task( 'filters_in_url' );
+		}
+
+		if ( $prev_version && version_compare( $prev_version, '3.1.4', '<' ) ) {
+			update_option( 'burst_db_upgrade_move_referrers_to_sessions', true, false );
+			delete_option( 'burst_pageviews_to_update' );
+			// clear old referrers table.
+			\Burst\burst_loader()->admin->app->weekly_clear_referrers_table();
+		}
 
 		$admin = new Admin();
 		$admin->run_table_init_hook();

@@ -10,8 +10,8 @@ class Cron {
 	 */
 	public function init(): void {
 		add_action( 'init', [ $this, 'schedule_cron' ], 10, 2 );
+		add_action( 'admin_init', [ $this, 'maybe_handle_cron_task' ], 10, 2 );
 		add_action( 'cron_schedules', [ $this, 'filter_cron_schedules' ], 10, 2 );
-		add_action( 'burst_every_ten_minutes', [ $this, 'test_hourly_cron' ] );
 		add_action( 'burst_every_hour', [ $this, 'test_hourly_cron' ] );
 	}
 
@@ -46,16 +46,26 @@ class Cron {
 	/**
 	 * Check if the cron has run the last 24 hours
 	 */
-	public function cron_active(): bool {
+	public function is_cron_active(): bool {
 		$now           = time();
 		$last_cron_hit = get_option( 'burst_last_cron_hit', 0 );
 		$diff          = $now - $last_cron_hit;
+		return $diff <= DAY_IN_SECONDS;
+	}
 
-		$cron_active = $diff <= DAY_IN_SECONDS;
-		if ( $cron_active ) {
+	/**
+	 * Check if the cron has run the last 24 hours
+	 */
+	public function maybe_handle_cron_task(): void {
+		$cron_active     = $this->is_cron_active();
+		$cron_task_added = \Burst\burst_loader()->admin->tasks->has_task( 'cron' );
+		if ( $cron_active && $cron_task_added ) {
 			\Burst\burst_loader()->admin->tasks->dismiss_task( 'cron' );
 		}
-		return $cron_active;
+
+		if ( ! $cron_active && ! $cron_task_added ) {
+			\Burst\burst_loader()->admin->tasks->add_task( 'cron' );
+		}
 	}
 
 	/**

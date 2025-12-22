@@ -1,16 +1,18 @@
 import { memo } from 'react';
 import Tooltip from '../components/Common/Tooltip';
 import {
-    LucideProps,
-    OctagonAlert,
-    Percent,
-    ShoppingCart,
-    UserRoundCheck,
-    UserRoundPlus,
-    TriangleAlert,
-    Zap, Lightbulb, MoveRight, Ellipsis
-} from 'lucide-react';
-import {
+	LucideProps,
+	OctagonAlert,
+	Percent,
+	ShoppingCart,
+	UserRoundCheck,
+	UserRoundPlus,
+	TriangleAlert,
+	Download,
+	Zap,
+	Lightbulb,
+	MoveRight,
+	Ellipsis,
 	AlertCircle,
 	AlertOctagon,
 	AlertTriangle,
@@ -89,12 +91,13 @@ import {
 	LineSquiggle,
 	PartyPopper,
 	Sprout,
+	Upload
 } from 'lucide-react';
-import { clsx } from "clsx";
+import { clsx } from 'clsx';
 
 // Color mapping from our custom colors to CSS variables
 const iconColors = {
-    'black-light': 'black-light',
+	'black-light': 'black-light',
 	black: 'black',
 	green: 'green',
 	yellow: 'yellow',
@@ -103,7 +106,7 @@ const iconColors = {
 	gray: 'gray-500',
 	lightgray: 'gray-300',
 	white: 'white',
-	gold: 'gold',
+	gold: 'gold'
 };
 
 // Map existing icon names to Lucide icon components
@@ -178,6 +181,8 @@ const iconComponents = {
 	'log-out': LogOut,
 	alert: CircleAlert,
 	search: Search,
+	upload: Upload,
+
 	// Filter icons from useFiltersStore
 	bounce: LogOut,
 	user: User,
@@ -192,14 +197,17 @@ const iconComponents = {
 	city: Building,
 	'operating-system': Monitor,
 	browser: Globe,
+
 	// Filter category icons
 	traffic: Car,
 	behavior: Brain,
 	technology: Cpu,
+
 	// Star icons
 	'star-filled': Star,
 	'star-outline': Star,
 	'map-pinned': MapPinned,
+
 	// Additional icons
 	empty: CircleOff,
 	grid: Grid3x3,
@@ -210,12 +218,13 @@ const iconComponents = {
 	'party-popper': PartyPopper,
 	'error-octagon': OctagonAlert,
 	'warning-triangle': TriangleAlert,
-	'percent': Percent,
-	'sprout' : Sprout,
-    zap: Zap,
-    bulb: Lightbulb,
-    'right-arrow': MoveRight,
-    ellipsis: Ellipsis
+	percent: Percent,
+	sprout: Sprout,
+	zap: Zap,
+	bulb: Lightbulb,
+	'right-arrow': MoveRight,
+	ellipsis: Ellipsis,
+	download: Download
 };
 
 // Define types for icon names and colors
@@ -234,67 +243,113 @@ export interface IconProps {
 	style?: React.CSSProperties;
 }
 
-const Icon = memo( ( { style = {}, name = 'bullet', color = 'black', size = 18, strokeWidth = 1.5, tooltip, onClick, className }: IconProps ) => {
-	// Get color value from our color mappings or use the provided color directly
-	const colorVal = iconColors[ color as keyof typeof iconColors ] || color;
+const Icon = memo(
+	({
+		style = {},
+		name = 'bullet',
+		color = 'black',
+		size = 18,
+		strokeWidth = 1.5,
+		tooltip,
+		onClick,
+		className
+	}: IconProps ) => {
 
-	// Get the icon component or fallback to Circle
-	const IconComponent = iconComponents[ name as keyof typeof iconComponents ] || Circle;
+		// Get color value from our color mappings or use the provided color directly
+		const colorVal = iconColors[color as keyof typeof iconColors] || color;
 
-	// Create the icon component props
-	const iconProps: LucideProps = {
-		size,
-		color: 'currentColor',
-		strokeWidth,
-		style
-	};
+		// Get the icon component or fallback to Circle
+		const IconComponent =
+			iconComponents[name as keyof typeof iconComponents] || Circle;
 
-	/**
-	 * Render the icon with special handling for certain icons
-	 *
-	 * @returns {JSX.Element} The rendered icon component
-	 */
-	const renderIcon = () => {
-		// Special handling for bullet and dot icons - they should be filled
-		if ( ( name === 'bullet' || name === 'dot' ) && IconComponent === Circle ) {
-			return <Circle {...iconProps} className={ colorVal && `fill-${colorVal}`} />;
+		// Create the icon component props
+		const iconProps: LucideProps = {
+			size,
+			color: 'currentColor',
+			strokeWidth,
+			style
+		};
+
+		/**
+		 * Render the icon with special handling for certain icons
+		 *
+		 * @return {JSX.Element} The rendered icon component
+		 */
+		const renderIcon = () => {
+
+			// Special handling for bullet and dot icons - they should be filled
+			if (
+				( 'bullet' === name || 'dot' === name ) &&
+				IconComponent === Circle
+			) {
+				return (
+					<Circle
+						{...iconProps}
+						className={colorVal && `fill-${colorVal}`}
+					/>
+				);
+			}
+
+			// Special handling for star-filled - should be filled
+			if ( 'star-filled' === name && IconComponent === Star ) {
+				return (
+					<Star
+						{...iconProps}
+						className={colorVal && `fill-${colorVal}`}
+					/>
+				);
+			}
+
+			// Special handling for loading icon - should spin
+			if ( 'loading' === name && IconComponent === Loader ) {
+				return (
+					<Loader
+						{...iconProps}
+						className={clsx(
+							className,
+							'animate-spin [animation-duration:2s]',
+							colorVal && `text-${colorVal}`
+						)}
+					/>
+				);
+			}
+
+			return (
+				<IconComponent
+					className={clsx( className, colorVal && `text-${colorVal}` )}
+					{...iconProps}
+				/>
+			);
+		};
+
+		/**
+		 * Handle click event
+		 *
+		 * @return void
+		 */
+		const handleClick = () => {
+			if ( onClick ) {
+				onClick();
+			}
+		};
+
+		const iconElement = (
+			<div
+				onClick={() => handleClick()}
+				className="flex items-center justify-center"
+			>
+				{renderIcon()}
+			</div>
+		);
+
+		if ( tooltip ) {
+			return <Tooltip content={tooltip}>{iconElement}</Tooltip>;
 		}
 
-		// Special handling for star-filled - should be filled
-		if ( name === 'star-filled' && IconComponent === Star ) {
-			return <Star {...iconProps} className={ colorVal && `fill-${colorVal}`} />;
-		}
-
-		// Special handling for loading icon - should spin
-		if ( name === 'loading' && IconComponent === Loader ) {
-			return <Loader {...iconProps} className={ clsx( className, 'animate-spin [animation-duration:2s]', colorVal && `text-${colorVal}` ) } />;
-		}
-
-		return <IconComponent className={ clsx( className, colorVal && `text-${colorVal}` ) } { ...iconProps } />;
-	};
-
-	/**
-	 * Handle click event
-	 *
-	 * @returns void
-	 */
-	const handleClick = () => {
-		if ( onClick ) {
-			onClick();
-		}
-	};
-
-	const iconElement = (
-		<div onClick={ () => handleClick() } className='flex items-center justify-center'>
-			{ renderIcon() }
-		</div>
-	);
-
-	if ( tooltip ) {
-		return <Tooltip content={ tooltip }>{ iconElement }</Tooltip>;
+		return iconElement;
 	}
+);
 
-	return iconElement;
-});
+Icon.displayName = 'BurstIcon';
 
 export default Icon;

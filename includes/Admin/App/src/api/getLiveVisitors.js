@@ -4,13 +4,13 @@ import { formatNumber } from '../utils/formatting';
 /**
  * Get live visitors
  *
- * @param { Object } args - The arguments object.
+ * @param { Object } args           - The arguments object.
  * @param { string } args.startDate - The start date for the data range.
- * @param { string } args.endDate - The end date for the data range.
- * @param { string } args.range - The range of data to retrieve.
- * @param { Object } args.filters - Additional filters to apply to the data.
+ * @param { string } args.endDate   - The end date for the data range.
+ * @param { string } args.range     - The range of data to retrieve.
+ * @param { Object } args.filters   - Additional filters to apply to the data.
  *
- * @returns {Promise<*>} The formatted number of live visitors.
+ * @return {Promise<*>} The formatted number of live visitors.
  */
 const getLiveVisitors = async( args ) => {
 	const { startDate, endDate, range, filters } = args;

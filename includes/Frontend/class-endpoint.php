@@ -46,13 +46,6 @@ class Endpoint {
 	}
 
 	/**
-	 * Check if tracking status is error
-	 */
-	public static function tracking_status_error(): bool {
-		return self::get_tracking_status() === 'error';
-	}
-
-	/**
 	 * Test tracking status
 	 * Only returns 'error', 'rest', 'beacon'
 	 */

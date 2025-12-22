@@ -96,6 +96,8 @@ module.exports = {
 	content: ['./src/**/*.{js,jsx,ts,tsx}'],
 	safelist: [
 		'animate-spin',
+		'animate-pulseSlow',
+		'animate-shimmer',
 		{
 			pattern: /(yellow|green|blue|black|gray-400)$/,
 			variants: ['hover', '[&_a:hover]', '[&_a>.burst-bullet:hover]'],
@@ -192,8 +194,6 @@ module.exports = {
 				black: '#1a1a1ae5',
 				'black-light': '#1A1A1AB2',
 				white: '#ffffffe5',
-				gray: '#454552e5',
-
 				primary: theme('colors.primary.DEFAULT'),
 				secondary: theme('colors.secondary.DEFAULT'),
 				yellow: theme('colors.yellow.DEFAULT'),

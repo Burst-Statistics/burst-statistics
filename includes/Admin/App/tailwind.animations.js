@@ -192,6 +192,14 @@ const keyFrames = {
 			transform: 'translateX(0)',
 		},
 	},
+	pulseSlow: {
+		'0%, 100%': { opacity: '1' },
+		'50%': { opacity: '0.4' },
+	},
+	shimmer: {
+		'0%': { transform: 'translateX(-100%)' },
+		'100%': { transform: 'translateX(100%)' },
+	},
 }
 
 const animations = {
@@ -222,6 +230,8 @@ const animations = {
 	toastZoomOut: 'toastZoomOut 0.5s ease both',
 	toastTrackProgress: 'toastTrackProgress 1s linear forwards',
 	scrollIndicator: 'scrollIndicator 1.5s ease-in-out',
+	pulseSlow: 'pulseSlow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+	shimmer: 'shimmer 2s infinite',
 }
 
 export {

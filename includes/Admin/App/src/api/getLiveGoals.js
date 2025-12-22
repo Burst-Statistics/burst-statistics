@@ -8,16 +8,16 @@ import { formatNumber } from '@/utils/formatting';
  * @param {string} args.endDate
  * @param {string} args.range
  * @param {Object} args.filters
- * @returns {Promise<*>}
+ * @return {Promise<*>}
  */
 const getLiveGoals = async( args ) => {
-  const { startDate, endDate, range, filters, goal_id } = args;
-  if ( ! goal_id ) {
-    return '-';
-  }
-  const { data } = await getData( 'live-goals', startDate, endDate, range, {
-    goal_id: goal_id
-  });
-  return formatNumber( data?.goals_count );
+	const { startDate, endDate, range, goal_id } = args;
+	if ( ! goal_id ) {
+		return '-';
+	}
+	const { data } = await getData( 'live-goals', startDate, endDate, range, {
+		goal_id
+	});
+	return formatNumber( data?.goals_count );
 };
 export default getLiveGoals;

@@ -31,6 +31,11 @@ return [
 					'type' => 'hook',
 					'hook' => 'elementor_pro/forms/form_submitted',
 				],
+				[
+					'id'       => 'submit_button_click',
+					'type'     => 'clicks',
+					'selector' => '.elementor-field-type-submit .elementor-button',
+				],
 			],
 	],
 	// eCommerce plugins.

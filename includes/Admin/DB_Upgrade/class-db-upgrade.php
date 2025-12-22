@@ -216,6 +216,10 @@ class DB_Upgrade {
 			$this->upgrade_add_page_ids();
 		}
 
+		if ( 'move_referrers_to_sessions' === $do_upgrade ) {
+			$this->upgrade_referrers();
+		}
+
 		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
 		if ( $this->get_progress( 'free', 'all' ) < 100 ) {
 			// free upgrades not finished yet.
@@ -282,6 +286,9 @@ class DB_Upgrade {
 				],
 				'2.2.6'   => [
 					'add_page_ids',
+				],
+				'3.1.4'   => [
+					'move_referrers_to_sessions',
 				],
 			]
 		);
@@ -775,6 +782,7 @@ class DB_Upgrade {
 				'post_type'   => $post_types,
 				'post_status' => 'publish',
 				'numberposts' => 5,
+                //phpcs:ignore
 				'meta_query'  => [
 					[
 						'key'     => 'burst_page_id_upgraded',
@@ -1100,6 +1108,111 @@ class DB_Upgrade {
 			delete_option( 'burst_db_upgrade_column_offset' );
 			delete_option( 'burst_db_upgrade_drop_path_from_parameters_column' );
 			delete_transient( 'burst_progress_drop_path_from_parameters_column' );
+		}
+	}
+
+	/**
+	 * Upgrade referrer column to normalized format in batches
+	 */
+	private function upgrade_referrers(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+
+		if ( ! get_option( 'burst_db_upgrade_move_referrers_to_sessions' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$statistics_table = $wpdb->prefix . 'burst_statistics';
+		$sessions_table   = $wpdb->prefix . 'burst_sessions';
+
+		// Check if both tables exist.
+		if ( ! $this->table_exists( 'burst_statistics' ) || ! $this->table_exists( 'burst_sessions' ) ) {
+			self::error_log( 'Missing tables, delay referrer upgrade until tables have upgraded.' );
+			return;
+		}
+
+		// check if column exists.
+		if ( ! $this->column_exists( 'burst_sessions', 'referrer' ) ) {
+			self::error_log( 'Referrer column does not exist in sessions table, delay referrer upgrade until tables have upgraded.' );
+			return;
+		}
+
+		$batch = $this->batch;
+		$start = microtime( true );
+
+		// Count remaining sessions to process (where referrer is NULL = not yet migrated).
+		$remaining_count = (int) $wpdb->get_var(
+			"SELECT COUNT(DISTINCT s.ID) 
+        FROM {$sessions_table} s
+        INNER JOIN {$statistics_table} st ON st.session_id = s.ID
+        WHERE s.referrer IS NULL"
+		);
+
+		$total_count = (int) $wpdb->get_var(
+			"SELECT COUNT(DISTINCT s.ID) 
+        FROM {$sessions_table} s
+        INNER JOIN {$statistics_table} st ON st.session_id = s.ID"
+		);
+
+		$done_count = $total_count - $remaining_count;
+
+		// Calculate and store progress.
+		$progress = 0 === $total_count ? 1 : $done_count / $total_count;
+		$progress = round( $progress, 2 );
+		set_transient( 'burst_progress_move_referrers_to_sessions', $progress, HOUR_IN_SECONDS );
+
+		if ( $remaining_count > 0 ) {
+			// STEP 1: Get batch of session IDs to process.
+			$session_ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT s.ID 
+                FROM {$sessions_table} s
+                WHERE s.referrer IS NULL
+                LIMIT %d",
+					$batch
+				)
+			);
+
+			if ( empty( $session_ids ) ) {
+				return;
+			}
+
+			$session_ids_placeholder = implode( ',', array_fill( 0, count( $session_ids ), '%d' ) );
+
+			// STEP 2: Update sessions with normalized referrers from the earliest pageview.
+			$sql = $wpdb->prepare(
+				"UPDATE {$sessions_table} s
+            INNER JOIN (
+                SELECT 
+                    st.session_id,
+                    CASE 
+                        WHEN st.referrer = '' OR st.referrer IS NULL THEN ''
+                        ELSE TRIM(LEADING 'www.' FROM SUBSTRING_INDEX(SUBSTRING_INDEX(st.referrer, '://', -1), '/', 1))
+                    END as normalized_referrer
+                FROM {$statistics_table} st
+                INNER JOIN (
+                    SELECT session_id, MIN(time) as first_time
+                    FROM {$statistics_table}
+                    WHERE session_id IN ({$session_ids_placeholder})
+                    GROUP BY session_id
+                ) earliest ON st.session_id = earliest.session_id AND st.time = earliest.first_time
+            ) as first_stats ON s.ID = first_stats.session_id
+            SET s.referrer = first_stats.normalized_referrer
+            WHERE s.referrer IS NULL",             // phpcs:ignore
+				...$session_ids
+			);
+
+			$wpdb->query( $sql );
+		} else {
+			self::error_log( 'All referrers processed, cleaning up.' );
+			delete_option( 'burst_db_upgrade_move_referrers_to_sessions' );
+			delete_transient( 'burst_progress_move_referrers_to_sessions' );
+
+			// to do next release..
+            // phpcs:ignore
+			// $wpdb->query( "ALTER TABLE {$statistics_table} DROP COLUMN referrer" );
 		}
 	}
 }

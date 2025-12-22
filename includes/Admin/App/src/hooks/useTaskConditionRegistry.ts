@@ -1,4 +1,4 @@
-import { useLiveVisitorsData } from '@/hooks/useLiveVisitorsData'
+import { useLiveVisitorsData } from '@/hooks/useLiveVisitorsData';
 
 /**
  * Shape of a single task condition.
@@ -11,7 +11,7 @@ export type TaskCondition = {
  * Registry type where keys are condition IDs.
  */
 type TaskConditionRegistry = {
-	[ id: string ]: TaskCondition;
+	[id: string]: TaskCondition;
 };
 
 /**
@@ -19,22 +19,19 @@ type TaskConditionRegistry = {
  *
  * @param { string } id The condition ID.
  *
- * @returns The condition object, or false if not found.
+ * @return The condition object, or false if not found.
  */
-export const useTaskConditionRegistry = (
-	id: string
-): TaskCondition | false => {
+export const useTaskConditionRegistry = ( id: string ): TaskCondition | false => {
+	const liveVisitorsQuery: any = useLiveVisitorsData(); // eslint-disable-line @typescript-eslint/no-explicit-any
+	const live = parseInt( liveVisitorsQuery?.data ?? 0 );
+
 	const registry: TaskConditionRegistry = {
 		live_visitors: {
 			condition: () => {
-				// Add 'any' type for now until all JS files are converted to TS.
-				const liveVisitorsQuery: any = useLiveVisitorsData();
-				const live = parseInt( liveVisitorsQuery.data );
-
-				return live > 0;
-			},
-		},
+				return 0 < live;
+			}
+		}
 	};
 
-	return registry[ id ] ? registry[ id ] : false;
+	return registry[id] || false;
 };
