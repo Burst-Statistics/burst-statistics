@@ -72,10 +72,11 @@ class Statistics {
 		$args = [
 			'date_start'               => $time_start_30m,
 			'date_end'                 => $now + HOUR_IN_SECONDS,
-			'custom_select'            => '%s time+time_on_page / 1000 AS active_time, referrer AS utm_source, page_url, time, time_on_page, uid, page_id',
+			'custom_select'            => '%s time+time_on_page / 1000 AS active_time, sessions.referrer AS utm_source, page_url, time, time_on_page, uid, page_id',
 			'custom_select_parameters' => [ '' ],
 			'order_by'                 => 'active_time DESC',
 			'limit'                    => 100,
+			'select'                   => [ 'referrer' ],
 		];
 
 		$qd  = new Query_Data( $args );
@@ -1812,6 +1813,7 @@ class Statistics {
 
 		// Pre-filter referrers if referrer is in select.
 		if ( in_array( 'referrer', $data->select, true ) ) {
+			$empty_referrers_sql = empty( $data->custom_select ) ? "AND sess.referrer != '' AND sess.referrer IS NOT NULL " : '';
 			// old versions have referrer in the burst_statistics table, so we can't use select *.
 			$table_name = " (
                             SELECT 
@@ -1835,8 +1837,7 @@ class Statistics {
                             FROM {$wpdb->prefix}burst_statistics AS s
                             JOIN {$wpdb->prefix}burst_sessions AS sess ON s.session_id = sess.ID
                             WHERE s.time BETWEEN {$data->date_start} AND {$data->date_end}
-                                AND sess.referrer != '' 
-                                AND sess.referrer IS NOT NULL
+                                $empty_referrers_sql
                         ) AS statistics ";
 		}
 
@@ -1922,11 +1923,6 @@ class Statistics {
 	private function build_where_clause( Query_Data $data ): string {
 		$where = $this->get_where_clause_for_filters( $data );
 		$where = apply_filters( 'burst_build_where_clause', $where, $data );
-
-		// Exclude empty referrers if referrer is in select.
-		if ( in_array( 'referrer', $data->select, true ) ) {
-			$where .= " AND sessions.referrer != '' AND sessions.referrer IS NOT NULL ";
-		}
 
 		// Add custom WHERE clause if provided.
 		if ( ! empty( $data->custom_where ) ) {
