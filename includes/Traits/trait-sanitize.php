@@ -358,7 +358,7 @@ trait Sanitize {
 			return 'spammer';
 		}
 
-		return trailingslashit( $referrer_host );
+		return untrailingslashit( $referrer_host );
 	}
 
 	/**

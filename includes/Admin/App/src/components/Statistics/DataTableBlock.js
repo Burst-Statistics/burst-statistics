@@ -75,7 +75,7 @@ const DataTableBlock = ({
 				visitors: {
 					label: __( 'Visitors', 'burst-statistics' ),
 					category: 'traffic',
-					pro: true,
+					pro: false,
 					align: 'right'
 				},
 				sessions: {
@@ -88,7 +88,7 @@ const DataTableBlock = ({
 					label: __( 'Bounce rate', 'burst-statistics' ),
 					category: 'engagement',
 					format: 'percentage',
-					pro: true,
+					pro: false,
 					align: 'right'
 				},
 				avg_time_on_page: {

@@ -262,9 +262,6 @@ class Upgrade {
 
 		if ( $prev_version && version_compare( $prev_version, '3.1.4', '<' ) ) {
 			\Burst\burst_loader()->admin->tasks->add_task( 'filters_in_url' );
-		}
-
-		if ( $prev_version && version_compare( $prev_version, '3.1.4', '<' ) ) {
 			update_option( 'burst_db_upgrade_move_referrers_to_sessions', true, false );
 			delete_option( 'burst_pageviews_to_update' );
 			// clear old referrers table.

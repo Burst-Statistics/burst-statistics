@@ -224,6 +224,12 @@ class Query_Data {
 			'platform_id'          => 'Platform',
 			'count'                => 'Count',
 			'period'               => 'Period',
+			'active_time'          => 'Active time',
+			'time_on_page'         => 'Time on page',
+			'time'                 => 'Time',
+			'uid'                  => 'UID',
+			'page_id'              => 'Page ID',
+
 		];
 		$this->initialize_allowlists();
 

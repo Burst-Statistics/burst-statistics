@@ -27,7 +27,7 @@ export {
 } from '@/config/filterConfig';
 
 // Routes where URL filter sync is enabled.
-const FILTER_ENABLED_ROUTES = [ '/statistics', '/sources', '/sales' ];
+export const FILTER_ENABLED_ROUTES = [ '/statistics', '/sources', '/sales' ];
 
 /**
  * Check if current route supports URL filter sync.
@@ -35,7 +35,7 @@ const FILTER_ENABLED_ROUTES = [ '/statistics', '/sources', '/sales' ];
  * @param pathname - The current route pathname.
  * @return True if filters should sync with URL on this route.
  */
-const isFilterEnabledRoute = ( pathname: string ): boolean => {
+export const isFilterEnabledRoute = ( pathname: string ): boolean => {
 	return FILTER_ENABLED_ROUTES.some( ( route ) => pathname.startsWith( route ) );
 };
 
