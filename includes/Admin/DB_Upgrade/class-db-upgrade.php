@@ -220,6 +220,10 @@ class DB_Upgrade {
 			$this->upgrade_referrers();
 		}
 
+		if ( 'fix_trailing_slash_on_referrers' === $do_upgrade ) {
+			$this->fix_trailing_slash_on_referrers();
+		}
+
 		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
 		if ( $this->get_progress( 'free', 'all' ) < 100 ) {
 			// free upgrades not finished yet.
@@ -289,6 +293,9 @@ class DB_Upgrade {
 				],
 				'3.1.4'   => [
 					'move_referrers_to_sessions',
+				],
+				'3.1.4.1' => [
+					'fix_trailing_slash_on_referrers',
 				],
 			]
 		);
@@ -1214,5 +1221,46 @@ class DB_Upgrade {
             // phpcs:ignore
 			// $wpdb->query( "ALTER TABLE {$statistics_table} DROP COLUMN referrer" );
 		}
+	}
+
+
+	/**
+	 * Upgrade referrer column to normalized format in batches
+	 */
+	private function fix_trailing_slash_on_referrers(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+
+		if ( ! get_option( 'burst_db_upgrade_fix_trailing_slash_on_referrers' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$timestamp = 1734739200;
+
+		$last_id = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT MIN(ID) FROM {$wpdb->prefix}burst_statistics WHERE time >= %d",
+				$timestamp
+			)
+		);
+
+		if ( ! empty( $last_id ) ) {
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}burst_sessions 
+                SET referrer = TRIM(TRAILING '/' FROM referrer)
+                WHERE ID >= %d
+                  AND referrer IS NOT NULL 
+                  AND referrer != ''
+                  AND referrer LIKE %s",
+					$last_id,
+					'%/'
+				)
+			);
+		}
+
+		delete_option( 'burst_db_upgrade_fix_trailing_slash_on_referrers' );
 	}
 }

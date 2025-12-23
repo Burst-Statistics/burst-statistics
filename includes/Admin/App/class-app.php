@@ -1296,10 +1296,10 @@ class App {
 		$search    = sanitize_text_field( $search );
 		$like      = '%' . $wpdb->esc_like( $search ) . '%';
 		$where     = strlen( $search ) > 0 ? $wpdb->prepare( 'WHERE name LIKE %s ', $like ) : '';
-		$referrers = $wpdb->get_results( "SELECT CONCAT(TRIM(TRAILING '/' FROM name), '/') as name FROM {$wpdb->prefix}burst_referrers $where ORDER BY ID ASC limit 1000", ARRAY_A );
+		$referrers = $wpdb->get_results( "SELECT TRIM(TRAILING '/' FROM name)  as name FROM {$wpdb->prefix}burst_referrers $where ORDER BY ID ASC limit 1000", ARRAY_A );
 		if ( empty( $referrers ) ) {
 			$sql = "INSERT IGNORE INTO {$wpdb->prefix}burst_referrers (name)
-                 SELECT CONCAT(TRIM(TRAILING '/' FROM domain), '/') AS domain
+                 SELECT TRIM(TRAILING '/' FROM domain) AS domain
                  FROM (
                    SELECT 
                      LOWER(SUBSTRING_INDEX(referrer, '/', 1)) AS domain

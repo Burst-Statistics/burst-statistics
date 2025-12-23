@@ -1,13 +1,19 @@
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import { ReactComponent as Logo } from '@/../img/burst-logo.svg';
 import { __, setLocaleData } from '@wordpress/i18n';
 import ButtonInput from '../Inputs/ButtonInput';
 import { burst_get_website_url } from '@/utils/lib';
 import ProBadge from '@/components/Common/ProBadge';
 import clsx from 'clsx';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import useLicenseData from '@/hooks/useLicenseData';
 import SubscriptionHeader from '../Common/Pro/SubscriptionHeader';
+import {
+	isFilterEnabledRoute,
+	FILTER_KEYS,
+	TRAILING_PARAM_KEY
+} from '@/hooks/useFilters';
+import { useFiltersStore } from '@/store/useFiltersStore';
 
 /**
  * Generates the URL for a given menu item.
@@ -138,6 +144,51 @@ const Header = () => {
 const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => {
 	const linkRef = useRef( null );
 	const [ isActiveState, setIsActiveState ] = useState( false );
+	const searchParams = useSearch({ strict: false });
+
+	// Get saved filters from Zustand store (persisted across routes).
+	const savedFilters = useFiltersStore( ( state ) => state.savedFilters );
+
+	// Get the target URL for this menu item.
+	const targetUrl = getMenuItemUrl( menuItem );
+
+	// Check if target route is filter-enabled.
+	const isTargetFilterEnabled = isFilterEnabledRoute( targetUrl );
+
+	// Build search params to preserve when navigating to filter-enabled routes.
+	const preservedSearch = useMemo( () => {
+		if ( ! isTargetFilterEnabled ) {
+			return undefined;
+		}
+
+		// First, try to extract filter params from current URL search.
+		const filterParams = {};
+		FILTER_KEYS.forEach( ( key ) => {
+			if ( searchParams[key] && '' !== searchParams[key]) {
+				filterParams[key] = searchParams[key];
+			}
+		});
+
+		// If no filters in URL, fall back to saved filters from Zustand store.
+		// This handles navigation from non-filter routes (like /settings/*) back to filter routes.
+		if ( 0 === Object.keys( filterParams ).length && savedFilters ) {
+			FILTER_KEYS.forEach( ( key ) => {
+				if ( savedFilters[key] && '' !== savedFilters[key]) {
+					filterParams[key] = savedFilters[key];
+				}
+			});
+		}
+
+		// Only return params if we have any filters to preserve.
+		if ( 0 === Object.keys( filterParams ).length ) {
+			return undefined;
+		}
+
+		// Add trailing param for URL parsing safety.
+		filterParams[TRAILING_PARAM_KEY] = '';
+
+		return filterParams;
+	}, [ searchParams, isTargetFilterEnabled, savedFilters ]);
 
 	useEffect( () => {
 		if ( isActiveState && linkRef.current ) {
@@ -167,10 +218,11 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => 
 					inline: 'center'
 				});
 			}}
-			to={getMenuItemUrl( menuItem )}
+			to={targetUrl}
 			params={{
 				settingsId: menuItem.menu_items?.[0]?.id
 			}}
+			search={preservedSearch}
 			className={linkClassName}
 			activeOptions={{
 				exact: false,
