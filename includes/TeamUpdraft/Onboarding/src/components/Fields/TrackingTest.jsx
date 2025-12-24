@@ -12,13 +12,15 @@ const getLiveVisitors = async(nonce) => {
     const url = 'burst/v1/data/live-visitors';
     const path = url + glue(url) + getNonce(nonce);
     const method = 'GET';
-
+    //for fallback, we have to use the burst fallback, as the teamupdraft fallback does not know this action.
+    const fallbackPath = 'burst_rest_api_fallback';
     let args = {
         path,
         method,
         data: {
             isOnboarding: true, // Indicate this is an onboarding request
         },
+        fallbackPath,
     };
     let response = await handleRequest( args );
     return response.data?.visitors;

@@ -9,7 +9,7 @@ import {glue} from './glue';
  */
 
 export const handleRequest = async (args) => {
-    const { method, path, data } = args;
+    const { method, path, data, fallbackPath } = args;
 
     if (method === 'GET') {
         args.path = `${args.path}${glue(args.path)}${buildQueryString(args.data)}`;
@@ -31,7 +31,7 @@ export const handleRequest = async (args) => {
         delete response.request_success;
     } catch (error) {
         console.log(error.message, args.path);
-        response = await ajaxRequest(method, path, data);
+        response = await ajaxRequest(method, path, data, fallbackPath);
     }
 
     document.dispatchEvent(new CustomEvent('teamupdraft_api_response', {
@@ -58,22 +58,27 @@ export const updateAction = async( data = {}, action ) => {
     return await handleRequest(args);
 }
 
-const siteUrl = ( ) => {
+const siteUrl = (fallbackPath = null ) => {
     const onboardingData = window[`teamupdraft_onboarding`] || {}
     let url = onboardingData.admin_ajax_url;
-
+    if ( fallbackPath ) {
+        //replace everything after action= with fallbackPath
+        url = url.replace( /(action=)[^\&]+/, `action=${fallbackPath}` );
+    }
     if ( 'https:' === window.location.protocol && -1 === url.indexOf( 'https://' ) ) {
         return url.replace( 'http://', 'https://' );
     }
     return url;
 };
 
-const ajaxRequest = async( method, path, requestData = null ) => {
+const ajaxRequest = async( method, path, requestData = null, fallbackPath = null ) => {
     //if requestData is an object, convert it to an array
     const queryString = buildQueryString( requestData );
+
+    const ajaxUrl = siteUrl(fallbackPath);
     //add path to request data
     requestData.path = path;
-    const url = 'GET' === method ? `${siteUrl()}&rest_action=${path.replace( '?', '&' )}&`+queryString : siteUrl();
+    const url = 'GET' === method ? `${ajaxUrl}&rest_action=${path.replace( '?', '&' )}&`+queryString : ajaxUrl;
     const options = {
         method,
         headers: { 'Content-Type': 'application/json; charset=UTF-8' }
