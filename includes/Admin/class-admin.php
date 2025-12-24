@@ -870,7 +870,7 @@ class Admin {
 			$this->create_js_file();
 
 			$this->tasks->add_initial_tasks();
-
+            flush_rewrite_rules();
 			if ( ! $this->table_exists( 'burst_goals' ) ) {
 				return;
 			}
@@ -885,6 +885,7 @@ class Admin {
 				$goal->save();
 			}
 			delete_option( 'burst_set_defaults' );
+
 		}
 	}
 
