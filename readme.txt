@@ -97,6 +97,7 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.1.5 =
 * January 7th 2026
 * Improvement: auto close notices in the right bottom of the screen.
 * Improvement: some minor mobile responsiveness improvements.
