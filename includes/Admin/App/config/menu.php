@@ -21,6 +21,7 @@ return [
 		'capabilities'   => 'view_burst_statistics',
 		'menu_slug'      => 'burst#/statistics',
 		'show_in_admin'  => true,
+		'shareable'      => true,
 	],
 	[
 		'id'             => 'sources',
@@ -31,6 +32,7 @@ return [
 		'menu_slug'      => 'burst#/sources',
 		'show_in_admin'  => true,
 		'pro'            => true,
+		'shareable'      => true,
 	],
 	[
 		'id'                      => 'settings',

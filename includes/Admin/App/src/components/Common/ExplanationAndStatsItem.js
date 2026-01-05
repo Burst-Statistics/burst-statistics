@@ -13,6 +13,7 @@ import HelpTooltip from '@/components/Common/HelpTooltip';
  * @param {string|null}   props.changeStatus Status of the change ('positive' or 'negative').
  * @param {string|null}   [props.iconKey]    Optional key for icon display. Default is null.
  * @param {string}        [props.className]  Optional additional class names. Default is ''.
+ * @param {string|null}   [props.tooltipText] Optional text for tooltip display. Default is null.param
  *
  * @return {JSX.Element} The rendered component.
  */
@@ -24,14 +25,14 @@ const ExplanationAndStatsItem = ({
 	change,
 	changeStatus,
 	iconKey = null,
-	className = ''
+	className = '',
+	tooltipText = null
 }) => {
-	let tooltipValue;
-	if ( ! exactValue || 1000 > exactValue ) {
-		tooltipValue = false;
-	} else {
-		tooltipValue = exactValue;
+
+	if ( exactValue && 1000 < exactValue ) {
+		tooltipText = tooltipText ? tooltipText : exactValue.toLocaleString();
 	}
+
 	return (
 		<div className={`flex items-start gap-3 py-2 ${className}`}>
 			{iconKey && <Icon name={iconKey} className="mt-1" />}
@@ -43,8 +44,9 @@ const ExplanationAndStatsItem = ({
 			</div>
 
 			<div className="text-right">
-				{tooltipValue ? (
-					<HelpTooltip content={tooltipValue} delayDuration={1000}>
+				{
+					exactValue && 1000 < exactValue && tooltipText ? (
+					<HelpTooltip content={ tooltipText } delayDuration={1000}>
 						<span className="text-xl font-bold text-black value">
 							{value}
 						</span>

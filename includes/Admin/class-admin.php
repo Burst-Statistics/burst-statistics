@@ -79,9 +79,9 @@ class Admin {
 		add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
 		$recalculate_cron_interval = apply_filters( 'burst_recalculate_cron_interval', 'burst_every_ten_minutes' );
 		add_action( $recalculate_cron_interval, [ $this, 'update_last_statistic_data' ] );
-		add_action( 'recalculate_known_uids_cron', [ $this, 'update_known_uids_table' ] );
-		add_action( 'recalculate_bounces_cron', [ $this, 'recalculate_bounces' ] );
-		add_action( 'recalculate_first_time_visits_cron', [ $this, 'recalculate_first_time_visits' ] );
+		add_action( 'burst_recalculate_known_uids_cron', [ $this, 'update_known_uids_table' ] );
+		add_action( 'burst_recalculate_bounces_cron', [ $this, 'recalculate_bounces' ] );
+		add_action( 'burst_recalculate_first_time_visits_cron', [ $this, 'recalculate_first_time_visits' ] );
 
 		add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
 
@@ -126,16 +126,16 @@ class Admin {
 	 * Cron to update the last 10 minutes of user data for bounces and first_time_visits.
 	 */
 	public function update_last_statistic_data(): void {
-		if ( ! wp_next_scheduled( 'recalculate_known_uids_cron' ) ) {
-			wp_schedule_single_event( time() + 10, 'recalculate_known_uids_cron' );
+		if ( ! wp_next_scheduled( 'burst_recalculate_known_uids_cron' ) ) {
+			wp_schedule_single_event( time() + 10, 'burst_recalculate_known_uids_cron' );
 		}
 
-		if ( ! wp_next_scheduled( 'recalculate_bounces_cron' ) ) {
-			wp_schedule_single_event( time() + 60, 'recalculate_bounces_cron' );
+		if ( ! wp_next_scheduled( 'burst_recalculate_bounces_cron' ) ) {
+			wp_schedule_single_event( time() + 60, 'burst_recalculate_bounces_cron' );
 		}
 
-		if ( ! wp_next_scheduled( 'recalculate_first_time_visits_cron' ) ) {
-			wp_schedule_single_event( time() + 120, 'recalculate_first_time_visits_cron' );
+		if ( ! wp_next_scheduled( 'burst_recalculate_first_time_visits_cron' ) ) {
+			wp_schedule_single_event( time() + 120, 'burst_recalculate_first_time_visits_cron' );
 		}
 	}
 
@@ -145,7 +145,7 @@ class Admin {
 	 * Marks the earliest statistic for each UID as first_time_visit = 1
 	 * Runs daily to keep data accurate without impacting real-time performance
 	 *
-	 * @hooked recalculate_first_time_visits_cron
+	 * @hooked burst_recalculate_first_time_visits_cron
 	 */
 	public function recalculate_first_time_visits(): void {
 		global $wpdb;
@@ -154,18 +154,17 @@ class Admin {
 		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', 15 * MINUTE_IN_SECONDS );
 		$time_cutoff    = ( $last_update < $default_cutoff ) ? $last_update : $default_cutoff;
 
-		$stats_table = "{$wpdb->prefix}burst_statistics";
-		$known_table = "{$wpdb->prefix}burst_known_uids";
-
 		// Mark as first-time visit if:
 		// 1. UID is NOT in known_uids, OR.
 		// 2. UID's first_seen timestamp is >= time_cutoff (meaning they're new in this batch).
-		$sql = "
-        UPDATE $stats_table bs
+		$wpdb->query(
+			$wpdb->prepare(
+				"
+        UPDATE {$wpdb->prefix}burst_statistics bs
         INNER JOIN (
             SELECT curr.uid, MIN(curr.time) AS first_time
-            FROM $stats_table curr
-            LEFT JOIN $known_table known ON curr.uid = known.uid
+            FROM {$wpdb->prefix}burst_statistics curr
+            LEFT JOIN {$wpdb->prefix}burst_known_uids known ON curr.uid = known.uid
             WHERE curr.time >= %d
               AND curr.first_time_visit = 0
               AND (known.uid IS NULL OR known.first_seen >= %d)
@@ -174,9 +173,11 @@ class Admin {
                        AND bs.time = first_visits.first_time
         SET bs.first_time_visit = 1
         WHERE bs.first_time_visit = 0
-    ";
-
-		$wpdb->query( $wpdb->prepare( $sql, $time_cutoff, $time_cutoff ) );
+    ",
+				$time_cutoff,
+				$time_cutoff
+			)
+		);
 
 		update_option( 'burst_last_first_time_visit_update', time(), false );
 	}
@@ -186,10 +187,6 @@ class Admin {
 	 */
 	public function update_known_uids_table(): void {
 		global $wpdb;
-
-		$stats_table = "{$wpdb->prefix}burst_statistics";
-		$known_table = "{$wpdb->prefix}burst_known_uids";
-
 		// Get sync cutoff (default: last 10 minutes of new data to process).
 		$last_sync      = get_option( 'burst_last_known_uids_sync', time() - 15 * MINUTE_IN_SECONDS );
 		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', 15 * MINUTE_IN_SECONDS );
@@ -199,27 +196,27 @@ class Admin {
 		$cleanup_cutoff = time() - ( 31 * DAY_IN_SECONDS );
 
 		// Step 1: Add/update UIDs from recent statistics (last 10-15 minutes).
-		$sql = $wpdb->prepare(
-			"
-        INSERT INTO $known_table (uid, first_seen, last_seen)
+		$wpdb->query(
+			$wpdb->prepare(
+				"
+        INSERT INTO {$wpdb->prefix}burst_known_uids (uid, first_seen, last_seen)
         SELECT uid, MIN(time) as first_seen, MAX(time) as last_seen
-        FROM $stats_table
+        FROM {$wpdb->prefix}burst_statistics
         WHERE time >= %d
         GROUP BY uid
         ON DUPLICATE KEY UPDATE 
             first_seen = LEAST(first_seen, VALUES(first_seen)),
             last_seen = GREATEST(last_seen, VALUES(last_seen))
     ",
-			$sync_cutoff
+				$sync_cutoff
+			)
 		);
-
-		$wpdb->query( $sql );
 
 		// Step 2: Remove UIDs not seen in 31+ days (cleanup old visitors).
 		$wpdb->query(
 			$wpdb->prepare(
 				"
-        DELETE FROM $known_table
+        DELETE FROM {$wpdb->prefix}burst_known_uids
         WHERE last_seen < %d
     ",
 				$cleanup_cutoff
@@ -265,7 +262,7 @@ class Admin {
 	public function add_ecommerce_menu_item( array $menu_items ): array {
 		$should_load_ecommerce = \Burst\burst_loader()->integrations->should_load_ecommerce();
 
-		if ( ! $should_load_ecommerce || ! $this->has_admin_access() || ! $this->has_sales_admin_access() ) {
+		if ( ! $should_load_ecommerce || ! $this->has_admin_access() || ! $this->user_can_view_sales() ) {
 			return $menu_items;
 		}
 
@@ -278,6 +275,7 @@ class Admin {
 			'menu_slug'      => 'burst#/sales',
 			'show_in_admin'  => true,
 			'pro'            => true,
+			'shareable'      => true,
 		];
 
 		// Put ecommerce menu item before the id: settings menu item.
@@ -387,16 +385,21 @@ class Admin {
 		$interval_days = (int) apply_filters( 'burst_data_cleanup_interval_days', 1 );
 		$data_treshold = (int) apply_filters( 'burst_data_cleanup_treshold', 1000 );
 		global $wpdb;
-
-		$sql = "
+		$uids = $wpdb->get_results(
+			$wpdb->prepare(
+				"
             SELECT uid, COUNT(*) as record_count
             FROM {$wpdb->prefix}burst_statistics
-            WHERE time > UNIX_TIMESTAMP(NOW() - INTERVAL {$interval_days} DAY)
+            WHERE time > UNIX_TIMESTAMP(NOW() - INTERVAL %d DAY)
             GROUP BY uid
-            HAVING COUNT(*) > {$data_treshold} LIMIT 1;
-        ";
+            HAVING COUNT(*) > %d LIMIT 1;
+        ",
+				$interval_days,
+				$data_treshold
+			),
+			ARRAY_A
+		);
 
-		$uids = $wpdb->get_results( $sql, ARRAY_A );
 		if ( ! empty( $uids ) ) {
 
 			$uids = array_map(
@@ -499,6 +502,7 @@ class Admin {
 			if ( ! empty( $statistic_ids ) ) {
 				$placeholders = implode( ',', array_fill( 0, count( $statistic_ids ), '%d' ) );
 				$sql          = "DELETE FROM {$wpdb->prefix}burst_goal_statistics WHERE statistic_id IN ($placeholders)";
+                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- values are prepared above.
 				$wpdb->query( $wpdb->prepare( $sql, ...$statistic_ids ) );
 			}
 
@@ -521,20 +525,22 @@ class Admin {
 			if ( ! empty( $session_ids ) ) {
 				$placeholders = implode( ',', array_fill( 0, count( $session_ids ), '%d' ) );
 				$sql          = "DELETE FROM {$wpdb->prefix}burst_sessions WHERE ID IN ($placeholders)";
+                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- values are prepared above.
 				$wpdb->query( $wpdb->prepare( $sql, ...$session_ids ) );
 			}
 
 			// 5. Delete statistics.
-			$sql = $wpdb->prepare(
-				"
+			$wpdb->query(
+				$wpdb->prepare(
+					"
             DELETE FROM {$wpdb->prefix}burst_statistics
             WHERE uid = %s
             AND time >= %d
         ",
-				$uid,
-				$cleanup_threshold
+					$uid,
+					$cleanup_threshold
+				)
 			);
-			$wpdb->query( $sql );
 
 			$wpdb->query( 'COMMIT' );
 
@@ -728,6 +734,7 @@ class Admin {
                     INSERT INTO {$wpdb->prefix}burst_statistics
                     (time, page_url, uid, first_time_visit, bounce, browser_id, device_id, platform_id, time_on_page, session_id)
                     VALUES " . implode( ', ', $placeholders );
+                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- values are prepared.
 				$wpdb->query( $wpdb->prepare( $query, ...$values ) );
 			}
 		}
@@ -870,7 +877,7 @@ class Admin {
 			$this->create_js_file();
 
 			$this->tasks->add_initial_tasks();
-            flush_rewrite_rules();
+			flush_rewrite_rules();
 			if ( ! $this->table_exists( 'burst_goals' ) ) {
 				return;
 			}
@@ -885,7 +892,6 @@ class Admin {
 				$goal->save();
 			}
 			delete_option( 'burst_set_defaults' );
-
 		}
 	}
 
@@ -1222,11 +1228,34 @@ class Admin {
 			$this->delete_all_burst_data();
 			$this->delete_all_burst_configuration();
 			\Burst\burst_clear_scheduled_hooks();
+			$this->delete_all_burst_cron_events();
+
 			deactivate_plugins( BURST_PLUGIN, false, $networkwide );
 			$redirect_slug = $networkwide ? 'network/plugins.php' : 'plugins.php';
 
 			wp_safe_redirect( admin_url( $redirect_slug ) );
 			exit;
+		}
+	}
+
+	/**
+	 * Delete all scheduled cron events related to Burst, including single events.
+	 */
+	private function delete_all_burst_cron_events(): void {
+		$crons = _get_cron_array();
+
+		if ( empty( $crons ) ) {
+			return;
+		}
+
+		foreach ( $crons as $timestamp => $cron ) {
+			foreach ( $cron as $hook => $events ) {
+				if ( str_starts_with( $hook, 'burst_' ) ) {
+					foreach ( $events as $event ) {
+						wp_unschedule_event( $timestamp, $hook, $event['args'] );
+					}
+				}
+			}
 		}
 	}
 
@@ -1311,33 +1340,8 @@ class Admin {
 		// delete tables.
 		foreach ( $table_names as $table_name ) {
 			$sql = "DROP TABLE IF EXISTS {$wpdb->prefix}$table_name";
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name is from a predefined list.
 			$wpdb->query( $sql );
-		}
-
-		// options to delete.
-		$options = apply_filters(
-			'burst_table_db_options',
-			[
-				'burst_parameters_db_version',
-				'burst_campaigns_db_version',
-				'burst_stats_db_version',
-				'burst_sessions_db_version',
-				'burst_goals_db_version',
-				'burst_goal_stats_db_version',
-				'burst_archive_db_version',
-				'burst_tasks',
-				'burst_onboarding_free_completed',
-				'burst_missing_tables',
-				'burst_tasks_permanently_dismissed',
-				'burst_skipped_onboarding',
-				'burst_completed_onboarding',
-			],
-		);
-
-		// delete options.
-		foreach ( $options as $option_name ) {
-			delete_option( $option_name );
-			delete_site_option( $option_name );
 		}
 	}
 
@@ -1366,44 +1370,16 @@ class Admin {
 			}
 		}
 
-		// options to delete.
-		$options = [
-			'burst_activation_time',
-			'burst_set_defaults',
-			'burst_review_notice_shown',
-			'burst_run_premium_upgrade',
-			'burst_tracking_status',
-			'burst_table_size',
-			'burst_import_geo_ip_on_activation',
-			'burst_geo_ip_import_error',
-			'burst_archive_dir',
-			'burst_geo_ip_file',
-			'burst_last_update_geo_ip',
-			'burst_license_attempts',
-			'burst_ajax_fallback_active',
-			'burst_ajax_fallback_active_timestamp',
-			'burst_tour_shown_once',
-			'burst_options_settings',
-			'burst-current-version',
-			'burst_tasks',
-			'burst_demo_data_installed',
-			'burst_trial_offered',
-			'burst_quick_win_dismissed_wins',
-			'burst_quick_win_dismissed_wins',
-			'burst_plugin_path',
-			'burst_tasks_permanently_dismissed',
-			'burst_license_activation_limit',
-			'burst_license_activations_left',
-			'burst_license_expires',
-			'burst_transients',
-			'burst_ecommerce_activated_time',
-			'burst_skipped_onboarding',
-			'burst_completed_onboarding',
-		];
-		// delete options.
-		foreach ( $options as $option_name ) {
-			delete_option( $option_name );
-			delete_site_option( $option_name );
+		// delete all burst options.
+		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'burst\_%'" );
+		if ( is_multisite() ) {
+			$wpdb->query( "DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE 'burst\_%'" );
+			$sites = get_sites( [ 'fields' => 'ids' ] );
+			foreach ( $sites as $site_id ) {
+				switch_to_blog( $site_id );
+				$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'burst\_%'" );
+				restore_current_blog();
+			}
 		}
 
 		// get all burst transients.

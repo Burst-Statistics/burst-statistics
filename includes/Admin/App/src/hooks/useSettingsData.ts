@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFields, setFields } from '@/utils/api';
 import { toast } from 'react-toastify';
 import useLicenseData from '@/hooks/useLicenseData';
+import { __ } from '@wordpress/i18n';
 
 interface SettingField {
 	id: string;
@@ -110,11 +111,12 @@ const useSettingsData = (): UseSettingsDataResult => {
 				await setFields( data );
 			},
 			onSuccess: async() => {
+				toast.success( __( 'Settings saved', 'burst-statistics' ) );
+
 				await queryClient.invalidateQueries({
 					queryKey: [ 'settings_fields' ],
 					refetchType: 'active'
 				});
-				toast.success( 'Settings saved' );
 			}
 		});
 

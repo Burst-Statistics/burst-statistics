@@ -100,20 +100,20 @@ const useLicenseData = (): UseLicenseDataReturn => {
 
         // Use initial data from window object to avoid flash of loading state
         placeholderData: (): LicenseData => ({
-            licenseStatus: window.burst_settings?.licenseStatus || '',
+            licenseStatus: window.burst_settings?.licenseStatus ?? '',
             notices: [],
             hasSubscriptionInfo: false,
             subscriptionExpiration: 0,
             subscriptionStatus: '',
             licenseExpiration: 0,
-            tier: window.burst_settings?.tier || '',
+            tier: window.burst_settings?.tier ?? '',
             trialEndTime: 0,
             isTrial: false,
             upgrades: [],
-            activationLimit: window.burst_settings?.activationLimit || 1,
-            activationsLeft: window.burst_settings?.activationsLeft || 0,
-            licenseExpiresDate: window.burst_settings?.licenseExpiresDate || '',
-            licenseIsLifetime: window.burst_settings?.licenseIsLifetime || false,
+            activationLimit: window.burst_settings?.activationLimit ?? 1,
+            activationsLeft: window.burst_settings?.activationsLeft ?? 0,
+            licenseExpiresDate: window.burst_settings?.licenseExpiresDate ?? '',
+            licenseIsLifetime: window.burst_settings?.licenseIsLifetime ?? false,
             encryptedLicenseKey: ''
         })
     });
@@ -156,14 +156,14 @@ const useLicenseData = (): UseLicenseDataReturn => {
 	}
 
     // Get current license status from React Query cache
-    const licenseStatus = data?.licenseStatus || '';
-    const hasSubscriptionInfo = data?.hasSubscriptionInfo || false;
-    const subscriptionStatus = data?.subscriptionStatus || '';
-    const subscriptionExpiration = data?.subscriptionExpiration || 0;
-    const licenseExpiration = data?.licenseExpiration || 0;
-    const tier = data?.tier || '';
-    const trialEndTime = data?.trialEndTime || 0;
-    const upgrades = data?.upgrades || [];
+    const licenseStatus = data?.licenseStatus ?? '';
+    const hasSubscriptionInfo = data?.hasSubscriptionInfo ?? false;
+    const subscriptionStatus = data?.subscriptionStatus ?? '';
+    const subscriptionExpiration = data?.subscriptionExpiration ?? 0;
+    const licenseExpiration = data?.licenseExpiration ?? 0;
+    const tier = data?.tier ?? '';
+    const trialEndTime = data?.trialEndTime ?? 0;
+    const upgrades = data?.upgrades ?? [];
 
 	// Compute license validation status
 	const isLicenseValid = 'valid' === licenseStatus && isPro;
@@ -219,6 +219,10 @@ const useLicenseData = (): UseLicenseDataReturn => {
 	};
 
 	const isLicenseValidFor = ( id: string ): boolean => {
+        if ( ! isPro ) {
+            return false;
+        }
+
 		if ( ! licenseActivated ) {
 			return false;
 		}
@@ -239,6 +243,10 @@ const useLicenseData = (): UseLicenseDataReturn => {
 			return 'agency' === tier || 'business' === tier;
 		}
 
+        if ( 'share-link' === id ) {
+            return 'agency' === tier;
+        }
+
 		//all other options when license is valid.
 		return true;
 	};
@@ -247,11 +255,11 @@ const useLicenseData = (): UseLicenseDataReturn => {
 		mutateLicense({ action: 'deactivate' });
 	};
 
-    const activationLimit = data?.activationLimit || 1;
-    const activationsLeft = data?.activationsLeft || 0;
-    const licenseExpiresDate = data?.licenseExpiresDate || '';
-    const licenseIsLifetime = data?.licenseIsLifetime || false;
-    const encryptedLicenseKey = data?.encryptedLicenseKey || '';
+    const activationLimit = data?.activationLimit ?? 1;
+    const activationsLeft = data?.activationsLeft ?? 0;
+    const licenseExpiresDate = data?.licenseExpiresDate ?? '';
+    const licenseIsLifetime = data?.licenseIsLifetime ?? false;
+    const encryptedLicenseKey = data?.encryptedLicenseKey ?? '';
 
     return {
         licenseNotices,

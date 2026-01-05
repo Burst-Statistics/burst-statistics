@@ -454,7 +454,7 @@ class App {
 
 		// Normalize/merge params from GET and POST data.
 		$merged = $get_params;
-		foreach ( [ 'goal_id', 'type', 'date_start', 'date_end', 'args', 'search', 'filters', 'metrics', 'group_by' ] as $k ) {
+		foreach ( [ 'goal_id', 'type', 'date_start', 'date_end', 'args', 'search', 'filters', 'metrics', 'group_by', 'isOnboarding' ] as $k ) {
 			if ( array_key_exists( $k, $data ) ) {
 				$merged[ $k ] = $data[ $k ];
 			}
@@ -1127,6 +1127,7 @@ class App {
 
 			if ( false === $raw_data ) {
 				// Cache miss - get from database.
+                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $queries are predefined and safe.
 				$raw_data = $wpdb->get_results( $queries[ $data_type ], ARRAY_A );
 
 				// Store in cache.
@@ -1293,12 +1294,14 @@ class App {
 	private function get_referrer_options( string $search = '' ): array {
 		global $wpdb;
 
-		$search    = sanitize_text_field( $search );
-		$like      = '%' . $wpdb->esc_like( $search ) . '%';
-		$where     = strlen( $search ) > 0 ? $wpdb->prepare( 'WHERE name LIKE %s ', $like ) : '';
-		$referrers = $wpdb->get_results( "SELECT TRIM(TRAILING '/' FROM name)  as name FROM {$wpdb->prefix}burst_referrers $where ORDER BY ID ASC limit 1000", ARRAY_A );
+		$search = sanitize_text_field( $search );
+		$like   = '%' . $wpdb->esc_like( $search ) . '%';
+		$where  = strlen( $search ) > 0 ? $wpdb->prepare( 'WHERE name LIKE %s ', $like ) : '';
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where is prepared above.
+		$referrers = $wpdb->get_results( "SELECT TRIM(TRAILING '/' FROM name) as name FROM {$wpdb->prefix}burst_referrers $where ORDER BY ID ASC limit 1000", ARRAY_A );
 		if ( empty( $referrers ) ) {
-			$sql = "INSERT IGNORE INTO {$wpdb->prefix}burst_referrers (name)
+			$wpdb->query(
+				"INSERT IGNORE INTO {$wpdb->prefix}burst_referrers (name)
                  SELECT TRIM(TRAILING '/' FROM domain) AS domain
                  FROM (
                    SELECT 
@@ -1312,8 +1315,8 @@ class App {
                    AND SUBSTRING_INDEX(domain, ':', 1) NOT REGEXP '^[0-9]{1,3}(\\.[0-9]{1,3}){3}$'
                  GROUP BY domain
                  ORDER BY COUNT(*) DESC
-                 LIMIT 2000;";
-			$wpdb->query( $sql );
+                 LIMIT 2000;"
+			);
 
 			$referrers = $wpdb->get_results( "select name from {$wpdb->prefix}burst_referrers ORDER BY ID ASC", ARRAY_A );
 		}
@@ -2214,8 +2217,9 @@ class App {
 
 		global $wpdb;
 
-		$sql = $wpdb->prepare(
-			"SELECT p.ID as page_id, 
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT p.ID as page_id, 
             p.post_title, 
             COALESCE(s.pageviews, 0) as pageviews
              FROM {$wpdb->prefix}posts p
@@ -2229,10 +2233,10 @@ class App {
                AND p.post_status = 'publish'
              ORDER BY p.post_title ASC
              LIMIT %d",
-			$max_post_count
+				$max_post_count
+			),
+			ARRAY_A
 		);
-
-		$results = $wpdb->get_results( $sql, ARRAY_A );
 
 		$result_array = [];
 		foreach ( $results as $result ) {

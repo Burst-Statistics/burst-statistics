@@ -246,13 +246,18 @@ return true;
 	 */
 	const getActivationDisplay = (): string => {
 		if ( 0 === activationLimit ) {
-			return __( 'Active on 1 of Unlimited sites', 'burst-statistics' );
+			return __( 'Unlimited sites available', 'burst-statistics' );
+		}
+
+		let usedActivations = activationLimit - activationsLeft;
+		if ( 0 > usedActivations ) {
+			usedActivations = activationLimit;
 		}
 		return sprintf(
 
 			/* translators: 1: number of sites used, 2: total number of sites allowed */
 			__( '%1$d of %2$d sites used', 'burst-statistics' ),
-			activationLimit - activationsLeft,
+			usedActivations,
 			activationLimit
 		);
 	};
@@ -273,6 +278,7 @@ return true;
 	 * This shows if auto-renewal is enabled.
 	 */
 	const getSubscriptionStatusDisplay = (): { text: string; color: string } => {
+		const isExpired = new Date( expiresDate ) < new Date();
 
 		// Check for lifetime license first (highest priority).
 		if ( isLifetime ) {
@@ -305,9 +311,9 @@ return true;
 		if ( ! hasSubscriptionInfo ) {
 			return {
 				text: sprintf(
-
-					/* translators: %s: expiration date */
-					__( 'Expires on %s', 'burst-statistics' ),
+					isExpired ?
+						__( 'Expired on %s', 'burst-statistics' ) :
+						__( 'Expires on %s', 'burst-statistics' ),
 					expiresDate
 				),
 				color: 'text-black'
@@ -329,9 +335,9 @@ return true;
 			case 'cancelled':
 				return {
 					text: sprintf(
-
-						/* translators: %s: expiration date */
-						__( 'Cancelled - Expires on %s', 'burst-statistics' ),
+						isExpired ?
+							__( 'Cancelled - Expired on %s', 'burst-statistics' ) :
+							__( 'Cancelled - Expires on %s', 'burst-statistics' ),
 						expiresDate
 					),
 					color: 'text-red font-semibold'
@@ -344,9 +350,9 @@ return true;
 			default:
 				return {
 					text: sprintf(
-
-						/* translators: %s: expiration date */
-						__( 'Expires on %s', 'burst-statistics' ),
+						isExpired ?
+							__( 'Expired on %s', 'burst-statistics' ) :
+							__( 'Expires on %s', 'burst-statistics' ),
 						expiresDate
 					),
 					color: 'text-black'

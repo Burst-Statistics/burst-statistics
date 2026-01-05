@@ -256,8 +256,10 @@ class Burst_Onboarding {
 		}
 
 		if ( $field['id'] === 'user_role_blocklist' ) {
-			if ( is_array( $field['value'] ) && in_array( 'administrator', $field['value'], true ) ) {
-				$field['default'] = true;
+			if ( empty( $field['value'] ) ||
+				( is_array( $field['value'] ) && in_array( 'administrator', $field['value'], true ) )
+			) {
+				$field['value'] = true;
 			}
 		}
 

@@ -52,7 +52,7 @@ export const FunnelChartHeader: React.FC = () => {
 		<Popover.Root open={isOpen} onOpenChange={openOrClosePopover}>
 			<Popover.Trigger onClick={() => setIsOpen( ! isOpen )} asChild>
 				<div
-					className={`${isOpen ? 'bg-gray-300 shadow-lg' : 'bg-gray-200 shadow-sm'} border border-gray-300 focus:ring-blue-500 cursor-pointer rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2`}
+					className={`${isOpen ? 'bg-gray-300 shadow-lg' : 'bg-gray-100 shadow-sm'} border border-gray-400 focus:ring-blue-500 cursor-pointer rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 opacity-30 group-hover/root:opacity-100`}
 				>
 					<Icon name="filter" />
 				</div>

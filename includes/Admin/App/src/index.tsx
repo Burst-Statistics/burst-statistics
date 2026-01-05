@@ -1,6 +1,6 @@
-import { lazy, Suspense, StrictMode } from 'react';
+import { Suspense, StrictMode } from 'react';
 import { createRoot, render } from '@wordpress/element';
-
+import { ToastContainer } from 'react-toastify';
 import {
 	QueryClient,
 	QueryCache,
@@ -90,13 +90,6 @@ const router = createRouter({
 	// defaultPreloadStaleTime: 0,
 });
 
-// Update the lazy loading to use the default path
-const ToastContainer = lazy( () =>
-	import( 'react-toastify' ).then( ( module ) => ({
-		default: module.ToastContainer
-	}) )
-);
-
 const PendingComponent = () => {
 	return (
 		<>
@@ -161,22 +154,17 @@ const initApp = () => {
 				<QueryClientProvider client={queryClient}>
 					<Suspense fallback={<PendingComponent />}>
 						<RouterProvider router={router} />
-						<Suspense fallback={null}>
-							<ToastContainer
-								position="bottom-right"
-
-								// autoClose={5000}
-								hideProgressBar={true}
-								newestOnTop={false}
-								closeOnClick
-								pauseOnFocusLoss
-								draggable
-								pauseOnHover
-								theme="light"
-							/>
-						</Suspense>
 						<div id="modal-root" />
 					</Suspense>
+					<ToastContainer
+						position="bottom-right"
+						autoClose={2000}
+						hideProgressBar={true}
+						newestOnTop={false}
+						theme="light"
+						pauseOnFocusLoss={false}
+						pauseOnHover={false}
+					/>
 				</QueryClientProvider>
 			</StyleSheetManager>
 		</StrictMode>

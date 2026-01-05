@@ -49,7 +49,7 @@ const DataTableBlock = ({
 		pages: {
 			label: __( 'Pages', 'burst-statistics' ),
 			searchable: true,
-			defaultColumns: [ 'page_url', 'pageviews', 'visitors', 'sessions' ],
+			defaultColumns: [ 'page_url', 'pageviews', 'visitors', 'bounce_rate' ],
 			columnsOptions: {
 				...( filterByDomain && {
 					host: {
@@ -81,14 +81,14 @@ const DataTableBlock = ({
 				sessions: {
 					label: __( 'Sessions', 'burst-statistics' ),
 					category: 'traffic',
-					pro: false,
+					pro: true,
 					align: 'right'
 				},
 				bounce_rate: {
 					label: __( 'Bounce rate', 'burst-statistics' ),
 					category: 'engagement',
 					format: 'percentage',
-					pro: true,
+					pro: false,
 					align: 'right'
 				},
 				avg_time_on_page: {

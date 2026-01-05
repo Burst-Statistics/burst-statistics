@@ -126,4 +126,17 @@
 			margin: var(--rsp-grid-gap);
 		}
 	}
+
+	input[type=radio]:checked {
+		position: relative;
+	}
+
+	input[type=radio]:checked::before {
+		content: "";
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		margin: 0;
+	}
 }

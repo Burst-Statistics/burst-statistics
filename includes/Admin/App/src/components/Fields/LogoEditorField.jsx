@@ -3,7 +3,7 @@ import { __ } from '@wordpress/i18n';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import Icon from '@/utils/Icon';
 import ButtonInput from '@/components/Inputs/ButtonInput';
-import { useQuery } from '@tanstack/react-query';
+import {useAttachmentUrl} from '@/hooks/useAttachmentUrl';
 
 /**
  * LogoEditorField component
@@ -20,26 +20,10 @@ import { useQuery } from '@tanstack/react-query';
  */
 const LogoEditorField = forwardRef(
 	({ field, fieldState, label, help, className, ...props }) => {
-		const defaultLogoUrl =
-			burst_settings.plugin_url + 'assets/img/burst-email-logo.png';
 
 		// onChange to update the field value (attachment ID)
-		const { data, isLoading } = useQuery({
-			queryKey: [ 'attachment', field.value ],
-			queryFn: async() => {
-				if ( '0' !== field.value && 0 !== field.value ) {
-					return await wp.media.attachment( field.value ).fetch();
-				}
-				return null;
-			}
-		});
-
-		const attachmentUrl =
-			data?.sizes?.medium?.url ||
-			data?.sizes?.large?.url ||
-			data?.sizes?.full?.url ||
-			defaultLogoUrl;
-
+		const { data, isLoading } = useAttachmentUrl( field.value );
+		const attachmentUrl = data?.attachmentUrl;
 		const frameRef = useRef( null );
 
 		const runUploader = () => {

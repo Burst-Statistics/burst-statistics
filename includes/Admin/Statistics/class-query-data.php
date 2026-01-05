@@ -240,7 +240,7 @@ class Query_Data {
 		if ( ! empty( $args ) ) {
 			foreach ( $args as $key => $value ) {
 				if ( ! property_exists( $this, $key ) ) {
-					$this::error_log( "Invalid property '$key' in Query_Data class. Please check your arguments." );
+					$this::error_log( "QueryData error: Invalid property '$key' in Query_Data class. Please check your arguments." );
 					continue;
 				}
 
@@ -397,7 +397,7 @@ class Query_Data {
 		} elseif ( is_bool( $value ) || is_float( $value ) ) {
 			$this->$key = $value;
 		} else {
-			static::error_log( 'sanitize_arg arg not found: ' . $key . ' with value: ' . wp_json_encode( $value ) );
+			static::error_log( 'QueryData error: sanitize_arg arg not found: ' . $key . ' with value: ' . wp_json_encode( $value ) );
 		}
 	}
 
@@ -439,19 +439,19 @@ class Query_Data {
 					try {
 						$output[ $key ] = call_user_func( $sanitize_function, $value );
 					} catch ( \Exception $e ) {
-						static::error_log( 'Error sanitizing filter ' . $key . ': ' . $e->getMessage() );
+						static::error_log( 'QueryData error: Error sanitizing filter ' . $key . ': ' . $e->getMessage() );
 						$output[ $key ] = sanitize_text_field( $value );
 					}
 				} elseif ( is_callable( [ $this, $sanitize_function ] ) ) {
 					try {
 						$output[ $key ] = call_user_func( [ $this, $sanitize_function ], $value );
 					} catch ( \Exception $e ) {
-						static::error_log( 'Error sanitizing filter ' . $key . ': ' . $e->getMessage() );
+						static::error_log( 'QueryData error: Error sanitizing filter ' . $key . ': ' . $e->getMessage() );
 						$output[ $key ] = sanitize_text_field( $value );
 					}
 				} else {
 					// Fallback to default sanitization.
-					static::error_log( 'Sanitization function not found for filter: ' . $key );
+					static::error_log( 'QueryData error: Sanitization function not found for filter: ' . $key );
 					$output[ $key ] = is_numeric( $value ) ? $value : sanitize_text_field( $value );
 				}
 			} else {
@@ -566,7 +566,7 @@ class Query_Data {
 		if ( in_array( $metric, $allowed_metrics, true ) ) {
 			return $metric;
 		} else {
-			self::error_log( "Metric '$metric' is not allowed. Returning default metric '$default_metric'." );
+			self::error_log( "QueryData error: Metric '$metric' is not allowed. Returning default metric '$default_metric'." );
 		}
 
 		return $default_metric;
@@ -605,7 +605,7 @@ class Query_Data {
 		if ( in_array( $device, $allowed_devices, true ) ) {
 			return $device;
 		} else {
-			self::error_log( "Device filter value '$device' is not allowed." );
+			self::error_log( "QueryData error: Device filter value '$device' is not allowed." );
 		}
 
 		return '';
@@ -623,12 +623,14 @@ class Query_Data {
 
 		foreach ( $group_by as $field ) {
 			$field = sanitize_text_field( trim( $field ) );
-
+			if ( empty( $field ) ) {
+				continue;
+			}
 			// Only allow valid metric fields for group_by.
 			if ( in_array( $field, $allowed_group_by, true ) ) {
 				$sanitized_group_by[] = $field;
 			} else {
-				self::error_log( "Group by field '$field' is not allowed." );
+				self::error_log( "QueryData error: Group by field '$field' is not allowed." );
 			}
 		}
 
@@ -674,10 +676,13 @@ class Query_Data {
 
 		foreach ( $order_by as $item ) {
 			$item = trim( (string) $item );
+			if ( empty( $item ) ) {
+				continue;
+			}
 			if ( in_array( $item, $allowed, true ) ) {
 				$validated[] = $item;
 			} else {
-				self::error_log( "Order by clause '$item' is not allowed." );
+				self::error_log( "QueryData error: Order by clause '$item' is not allowed." );
 			}
 		}
 
@@ -846,12 +851,12 @@ class Query_Data {
 
 		// If no params, return empty (required).
 		if ( empty( $custom_parameters ) ) {
-			self::error_log( 'Custom SQL clause has no parameters, these are required. Use empty string if not needed. Returning empty custom_' . $context );
+			self::error_log( 'QueryData error: Custom SQL clause has no parameters, these are required. Use empty string if not needed. Returning empty custom_' . $context );
 			return '';
 		}
 
 		if ( ! $this->validate_custom_sql_safety( $custom_sql, $context ) ) {
-			self::error_log( "Custom $context clause failed safety validation. Returning empty custom_" . $context );
+			self::error_log( "QueryData error: Custom $context clause failed safety validation. Returning empty custom_" . $context );
 			return '';
 		}
 
@@ -860,11 +865,8 @@ class Query_Data {
 			return str_replace( '%s', '', $custom_sql );
 		}
 
-		// Prepare with parameters.
-		return $wpdb->prepare(
-			$custom_sql,
-			...$custom_parameters
-		);
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- The custom sql does not contain dynamic properties, any dynamic data is prepared below.
+		return $wpdb->prepare( $custom_sql, ...$custom_parameters );
 	}
 
 	/**
@@ -931,7 +933,7 @@ class Query_Data {
 		foreach ( $dangerous_keywords as $keyword ) {
 			if ( preg_match( '/\b' . $keyword . '\b/i', $normalized ) ) {
 				self::error_log(
-					"Dangerous keyword '$keyword' detected in custom_$context. Query blocked. " .
+					"QueryData error: prohibited keyword '$keyword' detected in custom_$context. Query blocked. " .
 					'SQL: ' . substr( $sql, 0, 100 )
 				);
 				return false;
@@ -963,7 +965,7 @@ class Query_Data {
 		foreach ( $suspicious_patterns as $pattern ) {
 			if ( preg_match( $pattern, $normalized ) ) {
 				self::error_log(
-					"Suspicious pattern detected in custom_$context. Query blocked. " .
+					"QueryData error: Suspicious pattern detected in custom_$context. Query blocked. " .
 					"Pattern: $pattern | SQL: " . substr( $sql, 0, 100 )
 				);
 				return false;
@@ -975,7 +977,7 @@ class Query_Data {
 		$close = substr_count( $sql, ')' );
 		if ( $open !== $close ) {
 			self::error_log(
-				"Unbalanced parentheses in custom_$context. Query blocked. " .
+				"QueryData error: Unbalanced parentheses in custom_$context. Query blocked. " .
 				'SQL: ' . substr( $sql, 0, 100 )
 			);
 			return false;
@@ -987,7 +989,7 @@ class Query_Data {
 
 		if ( $single_quotes % 2 !== 0 || $double_quotes % 2 !== 0 ) {
 			self::error_log(
-				"SECURITY: Unbalanced quotes in custom_$context. Query blocked. " .
+				"QueryData error: Unbalanced quotes in custom_$context. Query blocked. " .
 				'SQL: ' . substr( $sql, 0, 100 )
 			);
 			return false;

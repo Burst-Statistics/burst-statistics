@@ -1,5 +1,5 @@
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
-import { PageFilter } from '@/components/Statistics/PageFilter';
+import { PageFilter } from '@/components/Filters/PageFilter';
 import DateRange from '@/components/Statistics/DateRange';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import Sales from '@/components/Sales/Sales';

@@ -124,6 +124,7 @@ const TopPerformers = (): JSX.Element => {
 							subtitle={value.subtitle}
 							value={value.value}
 							exactValue={value.exactValue}
+							tooltipText={value.tooltipText}
 							change={value.change}
 							changeStatus={value.changeStatus}
 							className={key}

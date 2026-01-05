@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PageFilter } from '@/components/Statistics/PageFilter';
-import DateRange from '@/components/Statistics/DateRange';
+import { PageHeader } from '@/components/Common/PageHeader';
 import InsightsBlock from '@/components/Statistics/InsightsBlock';
 import CompareBlock from '@/components/Statistics/CompareBlock';
 import DevicesBlock from '@/components/Statistics/DevicesBlock';
@@ -25,15 +24,7 @@ function Statistics() {
 	const blockTwoItems = isPro ? [ 'parameters' ] : [ 'referrers' ];
 	return (
 		<>
-			<div className="col-span-12 flex justify-between items-center">
-				<ErrorBoundary>
-					<PageFilter />
-				</ErrorBoundary>
-
-				<ErrorBoundary>
-					<DateRange />
-				</ErrorBoundary>
-			</div>
+			<PageHeader />
 
 			<ErrorBoundary>
 				<InsightsBlock />

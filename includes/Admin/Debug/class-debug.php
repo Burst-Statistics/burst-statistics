@@ -85,20 +85,20 @@ class Debug {
 		unset( $settings['license'] );
 
 		// WordPress burst options. Get all options that start with 'burst_'.
-		$sql        = $wpdb->prepare( "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'burst_' ) . '%' );
-		$wp_options = $wpdb->get_results( $sql, ARRAY_A );
+		$wp_options = $wpdb->get_results( $wpdb->prepare( "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'burst_' ) . '%' ), ARRAY_A );
 		$wp_options = wp_list_pluck( $wp_options, 'option_value', 'option_name' );
 		$wp_options = $this->format_array_as_string( $wp_options );
 		unset( $wp_options['burst_options_settings'] );
 
 		// Burst transients.
-		$burst_transients_sql = $wpdb->prepare(
-			"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s",
-			$wpdb->esc_like( '_transient_burst_' ) . '%'
+		$burst_transients = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s",
+				$wpdb->esc_like( '_transient_burst_' ) . '%'
+			)
 		);
-		$burst_transients     = $wpdb->get_results( $burst_transients_sql );
-		$burst_transients     = wp_list_pluck( $burst_transients, 'option_value', 'option_name' );
-		$burst_transients     = $this->format_array_as_string( $burst_transients );
+		$burst_transients = wp_list_pluck( $burst_transients, 'option_value', 'option_name' );
+		$burst_transients = $this->format_array_as_string( $burst_transients );
 
 		$debug_log_lines = $this->get_burst_debug_log_lines();
 		if ( empty( $debug_log_lines ) ) {

@@ -39,13 +39,16 @@ class Frontend {
 		add_action( 'shutdown', [ $this, 'end_buffer' ], 999 );
 		$sessions = new Sessions();
 		$sessions->init();
-		// Lazy load shortcodes only when needed.
 		$this->tracking = new Tracking();
 		$this->tracking->init();
 		$goals = new Goals();
 		$goals->init();
-		$goals_tracker = new Goals_Tracker();
-		$goals_tracker->init();
+
+		// Only init goals tracker on front-end or ajax requests.
+		if ( ! is_admin() || wp_doing_ajax() ) {
+			$goals_tracker = new Goals_Tracker();
+			$goals_tracker->init();
+		}
 
 		// Check if shortcodes option is enabled.
 		if ( $this->get_option_bool( 'enable_shortcodes' ) ) {
@@ -453,16 +456,8 @@ class Frontend {
 		}
 
 		global $wpdb;
-		$views = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) as total_views
-         FROM {$wpdb->prefix}burst_statistics
-         WHERE page_id = %d AND time > %d and time < %d",
-				$post_id,
-				$start,
-				$end
-			)
-		);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$views = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) as total_views FROM {$wpdb->prefix}burst_statistics WHERE page_id = %d AND time > %d and time < %d", $post_id, $start, $end ) );
 		wp_cache_set( $cache_key, $views, 'burst', HOUR_IN_SECONDS );
 
 		return $views;
@@ -478,6 +473,6 @@ class Frontend {
 		// translators: %d is the number of times the page has been viewed.
 		$text = sprintf( _n( 'This page has been viewed %d time.', 'This page has been viewed %d times.', $count, 'burst-statistics' ), $count );
 
-		return '<p class="burst-pageviews">' . $text . '</p>';
+		return '<p class="burst-pageviews">' . esc_html( $text ) . '</p>';
 	}
 }

@@ -43,7 +43,7 @@ export const CollapsableBlock = memo(
 							/>
 						</svg>
 					</summary>
-					<div className="p-4 pt-0">{children}</div>
+					<div className="p-4 pt-2">{children}</div>
 				</details>
 			</Block>
 		);

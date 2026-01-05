@@ -86,8 +86,7 @@ class Milestones {
 			]
 		);
 
-		$sql    = burst_loader()->admin->statistics->get_sql_table( $qd );
-		$result = $wpdb->get_row( $sql, 'ARRAY_A' );
+		$result = burst_loader()->admin->statistics->get_row( $qd, 'ARRAY_A' );
 
 		return $result ? (int) $result['pageviews'] : 0;
 	}

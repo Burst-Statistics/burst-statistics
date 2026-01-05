@@ -97,7 +97,10 @@ export const EcommerceNotices: React.FC = () => {
 					color={notice.color}
 				/>
 			),
-			{ toastId: notice.key }
+			{
+				toastId: notice.key,
+				autoClose: false
+			}
 		);
 
 		const unsubscribe = toast.onChange( ( event ) => {

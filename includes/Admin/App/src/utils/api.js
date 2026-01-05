@@ -72,7 +72,7 @@ const generateError = ( error, path = false ) => {
 	);
 
 	toast.error( messageDiv, {
-		autoClose: 15000
+		autoClose: 10000
 	});
 };
 
@@ -80,6 +80,15 @@ const makeRequest = async( path, method = 'GET', data = {}) => {
 	const controller = new AbortController();
 	const signal = controller.signal;
 	const args = { path, method, signal };
+
+	//if burst_share_token is in the url, add it to the headers
+	const urlParams = new URLSearchParams( window.location.search );
+	const shareToken = urlParams.get( 'burst_share_token' );
+	if ( shareToken ) {
+		args.headers = {
+			'X-Burst-Share-Token': shareToken
+		};
+	}
 
 	if ( 'POST' === method ) {
 		data.nonce = burst_settings.burst_nonce;
@@ -139,7 +148,7 @@ const ajaxRequest = async( method, path, requestData = null ) => {
 	try {
 		const response = await fetch( url, options );
 		if ( ! response.ok ) {
-			generateError( false, response.statusText );
+			generateError( response.statusText );
 			throw new Error( response.statusText );
 		}
 

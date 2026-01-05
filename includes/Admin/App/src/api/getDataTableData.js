@@ -4,7 +4,7 @@ import {
 	formatTime,
 	getCountryName,
 	getContinentName,
-	formatCurrency
+	formatCurrency, formatCurrencyCompact
 } from '@/utils/formatting';
 import Flag from '@/components/Statistics/Flag';
 import ClickToFilter from '@/components/Common/ClickToFilter';
@@ -12,26 +12,27 @@ import { memo } from 'react';
 import { safeDecodeURI } from '@/utils/lib';
 import { __ } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
+import HelpTooltip from '@/components/Common/HelpTooltip';
 
 // Column format constants
 const FORMATS = {
-  PERCENTAGE: 'percentage',
-  TIME: 'time',
-  COUNTRY: 'country',
-  CONTINENT: 'continent',
-  URL: 'url',
-  TEXT: 'text',
-  INTEGER: 'integer',
-  REFERRER: 'referrer',
-  FLOAT: 'float',
-  CURRENCY: 'currency'
+	PERCENTAGE: 'percentage',
+	TIME: 'time',
+	COUNTRY: 'country',
+	CONTINENT: 'continent',
+	URL: 'url',
+	TEXT: 'text',
+	INTEGER: 'integer',
+	REFERRER: 'referrer',
+	FLOAT: 'float',
+	CURRENCY: 'currency'
 };
 
 // Memoized filter components - created once, reused everywhere
 const MemoizedClickToFilter = memo( ClickToFilter );
 
 const CountryFilter = memo( ({ value }) => (
-  <MemoizedClickToFilter filter="country_code" filterValue={value}>
+	<MemoizedClickToFilter filter="country_code" filterValue={value}>
     <Flag country={value} countryNiceName={getCountryName( value )} />
   </MemoizedClickToFilter>
 ) );
@@ -39,7 +40,7 @@ const CountryFilter = memo( ({ value }) => (
 CountryFilter.displayName = 'CountryFilter';
 
 const ContinentFilter = memo( ({ value }) => (
-  <MemoizedClickToFilter filter="continent_code" filterValue={value}>
+	<MemoizedClickToFilter filter="continent_code" filterValue={value}>
     <>{getContinentName( value )}</>
   </MemoizedClickToFilter>
 ) );
@@ -47,7 +48,7 @@ const ContinentFilter = memo( ({ value }) => (
 ContinentFilter.displayName = 'ContinentFilter';
 
 const UrlFilter = memo( ({ value, row }) => (
-    <MemoizedClickToFilter filter="page_url" filterValue={value} row={row}>
+	<MemoizedClickToFilter filter="page_url" filterValue={value} row={row}>
       {safeDecodeURI( value )}
     </MemoizedClickToFilter>
 ) );
@@ -55,7 +56,7 @@ const UrlFilter = memo( ({ value, row }) => (
 UrlFilter.displayName = 'UrlFilter';
 
 const TextFilter = memo( ({ filter, value }) => (
-  <MemoizedClickToFilter filter={filter} filterValue={value}>
+	<MemoizedClickToFilter filter={filter} filterValue={value}>
     {value}
   </MemoizedClickToFilter>
 ) );
@@ -63,49 +64,60 @@ const TextFilter = memo( ({ filter, value }) => (
 TextFilter.displayName = 'TextFilter';
 
 const ReferrerFilter = memo( ({ value }) => (
-    <MemoizedClickToFilter filter="referrer" filterValue={value}>
+	<MemoizedClickToFilter filter="referrer" filterValue={value}>
       {safeDecodeURI( value )}
     </MemoizedClickToFilter>
 ) );
 
 ReferrerFilter.displayName = 'ReferrerFilter';
 
+const CurrencyValue = memo( ({ value }) => {
+	const exactValue = value?.value || 0;
+
+	if ( ! value || ! value?.currency || isNaN( exactValue ) ) {
+		return '';
+	}
+
+	const compactValue = formatCurrencyCompact( value.currency, exactValue );
+	let tooltipValue = false;
+
+	if ( 1000 < exactValue ) {
+		tooltipValue = formatCurrency( value.currency, exactValue );
+	}
+
+	if ( ! tooltipValue ) {
+		return compactValue;
+	}
+
+	return (
+		<HelpTooltip content={tooltipValue} delayDuration={1000}>
+			{compactValue}
+		</HelpTooltip>
+	);
+});
+
+CurrencyValue.displayName = 'CurrencyValue';
+
 /**
  * Registry of column formatters - easily extensible
  * @type {Object<string, function>}
  */
 const COLUMN_FORMATTERS = {
-  [FORMATS.PERCENTAGE]: ( value ) => formatPercentage( value ),
-  [FORMATS.TIME]: ( value ) => formatTime( value ),
-  [FORMATS.INTEGER]: ( value ) => parseInt( value, 10 ),
-  [FORMATS.COUNTRY]: ( value ) => {
-    if ( ! value || '' === value ) {
-      return __( 'Not set', 'burst-statistics' );
-    }
-    return <CountryFilter value={value} />;
-  },
-  [FORMATS.CONTINENT]: ( value ) => <ContinentFilter value={value} />,
-  [FORMATS.URL]: ( value, columnId, row ) => <UrlFilter filter={columnId} value={value} row={row} />,
-  [FORMATS.TEXT]: ( value, columnId ) => <TextFilter filter={columnId} value={value} />,
-  [FORMATS.REFERRER]: ( value ) => <ReferrerFilter value={value} />,
-  [FORMATS.FLOAT]: ( value ) => parseFloat( value ),
-  [FORMATS.CURRENCY]: ( value ) => dataFormatCurrency( value )
-};
-
-/**
- * Formats currency values
- *
- * @param {Object} value - Currency value object
- * @param {number} value.value - Numeric amount
- * @param {string} value.currency - Currency code (e.g., 'USD')
- * @returns {string} Formatted currency string
- */
-const dataFormatCurrency = ( value ) => {
-	if ( ! value || ! value?.currency || ! value?.value ) {
-		return '';
-	}
-
-	return formatCurrency( value.currency, value.value );
+	[FORMATS.PERCENTAGE]: ( value ) => formatPercentage( value ),
+	[FORMATS.TIME]: ( value ) => formatTime( value ),
+	[FORMATS.INTEGER]: ( value ) => parseInt( value, 10 ),
+	[FORMATS.COUNTRY]: ( value ) => {
+		if ( ! value || '' === value ) {
+			return __( 'Not set', 'burst-statistics' );
+		}
+		return <CountryFilter value={value} />;
+	},
+	[FORMATS.CONTINENT]: ( value ) => <ContinentFilter value={value} />,
+	[FORMATS.URL]: ( value, columnId, row ) => <UrlFilter filter={columnId} value={value} row={row} />,
+	[FORMATS.TEXT]: ( value, columnId ) => <TextFilter filter={columnId} value={value} />,
+	[FORMATS.REFERRER]: ( value ) => <ReferrerFilter value={value} />,
+	[FORMATS.FLOAT]: ( value ) => parseFloat( value ),
+	[FORMATS.CURRENCY]: ( value ) => <CurrencyValue value={value} />
 };
 
 /**
@@ -163,14 +175,14 @@ const createSortFunction = ( columnId, format ) => {
 			const numB = parseFloat( valueB );
 
 			if ( isNaN( numA ) && isNaN( numB ) ) {
-return 0;
-}
+				return 0;
+			}
 			if ( isNaN( numA ) ) {
-return 1;
-}
+				return 1;
+			}
 			if ( isNaN( numB ) ) {
-return -1;
-}
+				return -1;
+			}
 
 			return numA - numB;
 		}
@@ -180,34 +192,34 @@ return -1;
 };
 
 const addABTestIcon = ( content, row ) => {
-  if ( ! row.is_ab_test ) {
-return content;
-}
+	if ( ! row.is_ab_test ) {
+		return content;
+	}
 
-  let name;
-  let color;
-  let tooltip;
-  if ( 'no_winner' === row.significant ) {
-    tooltip = __( 'The test resulted in a tie. More hits might still result in a winner, but the difference will probably be very small.', 'burst-statistics' );
-    color = 'gold';
-    name = 'scale';
-  } else if ( 'still_running' === row.significant ) {
-    tooltip = __( 'Not enough data yet to declare a winner or tie.', 'burst-statistics' );
-    color = 'grey';
-    name = 'hourglass';
-  } else {
-    tooltip = row.winner ? __( 'Winner of the A/B test with a probability of >95%.', 'burst-statistics' ) :
-    __( 'Least performant version of the A/B test with a probability of >95%.', 'burst-statistics' );
-    color = row.winner ? 'gold' : 'black';
-    name = row.winner ? 'trophy' : 'frown';
-  }
+	let name;
+	let color;
+	let tooltip;
+	if ( 'no_winner' === row.significant ) {
+		tooltip = __( 'The test resulted in a tie. More hits might still result in a winner, but the difference will probably be very small.', 'burst-statistics' );
+		color = 'gold';
+		name = 'scale';
+	} else if ( 'still_running' === row.significant ) {
+		tooltip = __( 'Not enough data yet to declare a winner or tie.', 'burst-statistics' );
+		color = 'grey';
+		name = 'hourglass';
+	} else {
+		tooltip = row.winner ? __( 'Winner of the A/B test with a probability of >95%.', 'burst-statistics' ) :
+			__( 'Least performant version of the A/B test with a probability of >95%.', 'burst-statistics' );
+		color = row.winner ? 'gold' : 'black';
+		name = row.winner ? 'trophy' : 'frown';
+	}
 
-  return (
-      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+	return (
+		<span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
         <Icon name={name} color={color} tooltip={tooltip} />
-        {content}
+			{content}
     </span>
-  );
+	);
 };
 
 /**
@@ -217,31 +229,32 @@ return content;
  * @returns {function} Cell formatter function
  */
 const createCellFormatter = ( format, columnId ) => {
-  const formatter = COLUMN_FORMATTERS[format];
+	const formatter = COLUMN_FORMATTERS[format];
 
-  if ( ! formatter ) {
-    console.warn( `Unknown column format: ${format}. Using default text formatter.` );
-    return ( row ) => row[columnId] || '';
-  }
+	if ( ! formatter ) {
+		console.warn( `Unknown column format: ${format}. Using default text formatter.` );
+		return ( row ) => row[columnId] || '';
+	}
 
-  return ( row ) => {
-    try {
-      const value = row[columnId] ?? '';
-      const formatted = formatter( value, columnId, row );
+	return ( row ) => {
+		try {
+			const value = row[columnId] ?? '';
+			const formatted = formatter( value, columnId, row );
 
-      //add a-b test icon when conversion_rate or conversions column are present, but not both.
-      if (
-          ( 'conversion_rate' === columnId ) ||
-          ( 'conversions' === columnId && ! ( 'conversion_rate' in row ) )
-      ) {
-        return addABTestIcon( formatted, row );
-      }
-      return formatted;
-    } catch ( error ) {
-      console.error( `Error formatting cell value for column ${columnId}:`, error );
-      return row[columnId] || '';
-    }
-  };
+			// Add a-b test icon when conversion_rate or conversions column are present, but not both.
+			if (
+				( 'conversion_rate' === columnId ) ||
+				( 'conversions' === columnId && ! ( 'conversion_rate' in row ) )
+			) {
+				return addABTestIcon( formatted, row );
+			}
+
+			return formatted;
+		} catch ( error ) {
+			console.error( `Error formatting cell value for column ${columnId}:`, error );
+			return row[columnId] || '';
+		}
+	};
 };
 
 /**
@@ -251,25 +264,25 @@ const createCellFormatter = ( format, columnId ) => {
  * @returns {Object} Transformed column for data table
  */
 const transformColumn = ( column, columnOptions ) => {
-  const options = columnOptions[column.id];
+	const options = columnOptions[column.id];
 
-  // Return original column if no options configured
-  if ( ! options ) {
-    return column;
-  }
+	// Return original column if no options configured
+	if ( ! options ) {
+		return column;
+	}
 
-  const format = options.format || FORMATS.INTEGER;
-  const align = options.align || 'left';
+	const format = options.format || FORMATS.INTEGER;
+	const align = options.align || 'left';
 
-  const transformedColumn = {
-    ...column,
-    selector: ( row ) => row[column.id],
-    right: 'left' !== align,
-    sortFunction: createSortFunction( column.id, format ),
-    cell: createCellFormatter( format, column.id )
-  };
+	const transformedColumn = {
+		...column,
+		selector: ( row ) => row[column.id],
+		right: 'left' !== align,
+		sortFunction: createSortFunction( column.id, format ),
+		cell: createCellFormatter( format, column.id )
+	};
 
-  return transformedColumn;
+	return transformedColumn;
 };
 
 /**
@@ -278,17 +291,17 @@ const transformColumn = ( column, columnOptions ) => {
  * @throws {Error} If response is invalid
  */
 const validateResponse = ( response ) => {
-  if ( ! response || 'object' !== typeof response ) {
-    throw new Error( 'Invalid response: expected object' );
-  }
+	if ( ! response || 'object' !== typeof response ) {
+		throw new Error( 'Invalid response: expected object' );
+	}
 
-  if ( ! Array.isArray( response.columns ) ) {
-    throw new Error( 'Invalid response: columns must be an array' );
-  }
+	if ( ! Array.isArray( response.columns ) ) {
+		throw new Error( 'Invalid response: columns must be an array' );
+	}
 
-  if ( ! Array.isArray( response.data ) ) {
-    throw new Error( 'Invalid response: data must be an array' );
-  }
+	if ( ! Array.isArray( response.data ) ) {
+		throw new Error( 'Invalid response: data must be an array' );
+	}
 };
 
 /**
@@ -298,21 +311,21 @@ const validateResponse = ( response ) => {
  * @returns {Object} Transformed data with columns and data arrays
  */
 const transformDataTableData = ( response, columnOptions ) => {
-  try {
-    validateResponse( response );
+	try {
+		validateResponse( response );
 
-    return {
-      columns: response.columns.map( column => transformColumn( column, columnOptions ) ),
-      data: [ ...response.data ]
-    };
-  } catch ( error ) {
-    console.error( 'Data transformation error:', error );
-    return {
-      columns: [],
-      data: [],
-      error: error.message
-    };
-  }
+		return {
+			columns: response.columns.map( column => transformColumn( column, columnOptions ) ),
+			data: [ ...response.data ]
+		};
+	} catch ( error ) {
+		console.error( 'Data transformation error:', error );
+		return {
+			columns: [],
+			data: [],
+			error: error.message
+		};
+	}
 };
 
 /**
@@ -321,13 +334,13 @@ const transformDataTableData = ( response, columnOptions ) => {
  * @throws {Error} If required parameters are missing
  */
 const validateParams = ({ startDate, endDate, range, columnsOptions }) => {
-  if ( ! startDate || ! endDate || ! range ) {
-    throw new Error( 'Missing required parameters: startDate, endDate, range' );
-  }
+	if ( ! startDate || ! endDate || ! range ) {
+		throw new Error( 'Missing required parameters: startDate, endDate, range' );
+	}
 
-  if ( ! columnsOptions || 'object' !== typeof columnsOptions ) {
-    throw new Error( 'Missing or invalid columnsOptions parameter' );
-  }
+	if ( ! columnsOptions || 'object' !== typeof columnsOptions ) {
+		throw new Error( 'Missing or invalid columnsOptions parameter' );
+	}
 };
 
 /**
@@ -338,48 +351,46 @@ const validateParams = ({ startDate, endDate, range, columnsOptions }) => {
  * @param {string} params.range - Date range identifier
  * @param {Object} params.args - Additional query arguments
  * @param {Object} params.columnsOptions - Column configuration options
+ *
  * @returns {Promise<Object>} Transformed data table data
  */
 const getDataTableData = async( params ) => {
-  try {
-    validateParams( params );
+	try {
+		validateParams( params );
 
-    const { startDate, endDate, range, args, columnsOptions, type } = params;
+		const { startDate, endDate, range, args, columnsOptions, type } = params;
 
-	const endpoint = 'ecommerce-datatable' === type ? 'ecommerce/datatable' : 'datatable';
+		const endpoint = 'ecommerce-datatable' === type ? 'ecommerce/datatable' : 'datatable';
 
-	const { data } = await getData( endpoint, startDate, endDate, range, args );
+		const { data } = await getData( endpoint, startDate, endDate, range, args );
 
-    // Fetch data from API
+		if ( ! data ) {
+			throw new Error( 'No data received from API' );
+		}
 
-    if ( ! data ) {
-      throw new Error( 'No data received from API' );
-    }
+		// Transform data for table consumption.
+		return transformDataTableData( data, columnsOptions );
 
-    // Transform data for table consumption
-    return transformDataTableData( data, columnsOptions );
+	} catch ( error ) {
+		console.error( 'Error fetching data table data:', error );
 
-  } catch ( error ) {
-    console.error( 'Error fetching data table data:', error );
-
-    return {
-      columns: [],
-      data: [],
-      error: error.message
-    };
-  }
+		return {
+			columns: [],
+			data: [],
+			error: error.message
+		};
+	}
 };
 
-// Export utilities for testing and extension
 export {
-  FORMATS,
-  COLUMN_FORMATTERS,
-  createSortFunction,
-  createCellFormatter,
-  transformColumn,
-  transformDataTableData,
-  validateResponse,
-  validateParams
+	FORMATS,
+	COLUMN_FORMATTERS,
+	createSortFunction,
+	createCellFormatter,
+	transformColumn,
+	transformDataTableData,
+	validateResponse,
+	validateParams
 };
 
 export default getDataTableData;

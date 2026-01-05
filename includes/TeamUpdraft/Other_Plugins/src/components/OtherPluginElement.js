@@ -21,6 +21,8 @@ const OtherPluginElement = ({ wordpress_url, action, title, upgrade_url, slug })
         return statuses[action];
     };
 
+    const canInstallPlugins = teamupdraft_otherplugins.can_install_plugins;
+
     const iconProps = {
         name: ['installed', 'upgrade-to-pro', 'activate'].includes(action) ? 'circle-check' : 'circle-open',
         color: ['installed', 'upgrade-to-pro'].includes(action) ? 'green' : 'gray',
@@ -38,6 +40,7 @@ const OtherPluginElement = ({ wordpress_url, action, title, upgrade_url, slug })
                     {title}
                 </div>
             </a>
+            {canInstallPlugins &&
             <div className="min-w-fit text-sm text-gray-600">
                 {action === 'upgrade-to-pro' && (
                     <a
@@ -63,6 +66,7 @@ const OtherPluginElement = ({ wordpress_url, action, title, upgrade_url, slug })
                     </span>
                 )}
             </div>
+            }
         </div>
     );
 };

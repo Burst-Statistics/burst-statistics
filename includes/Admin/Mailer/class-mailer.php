@@ -39,8 +39,8 @@ if ( ! class_exists( 'mailer' ) ) {
 		 * Constructor
 		 */
 		public function __construct() {
-			$this->pretty_domain = preg_replace( '/^https?:\/\//', '', site_url() );
-			$this->domain        = '<a class="burst-intro-url" href="' . site_url() . '">' . $this->pretty_domain . '</a>';
+			$this->pretty_domain = preg_replace( '/^https?:\/\//', '', home_url() );
+			$this->domain        = '<a class="burst-intro-url" href="' . home_url() . '">' . $this->pretty_domain . '</a>';
 			$this->logo          = BURST_URL . '/assets/img/burst-email-logo.png';
 			$this->sent_by_text  = __( 'This e-mail is sent from your own WordPress website, which is:', 'burst-statistics' ) . ' ' . $this->pretty_domain . '.<br />' .
 									__( "If you don't want to receive these e-mails in your inbox, please go to the Burst settings page on your website and disable the email report setting or contact the administrator of your website.", 'burst-statistics' );
@@ -169,13 +169,13 @@ if ( ! class_exists( 'mailer' ) ) {
 					$this->read_more,
 					$to,
 					$this->button_text,
-					site_url(),
+					home_url(),
 					$login_url,
 					$this->change_text,
 					$this->what_now_text,
 					$this->sent_to_text,
 					$this->sent_by_text,
-					site_url(),
+					home_url(),
 				],
 				$template
 			);

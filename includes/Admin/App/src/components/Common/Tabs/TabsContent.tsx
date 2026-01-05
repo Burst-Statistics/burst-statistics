@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNonPersistedTabsStore, TabValue } from '@/store/useTabsStore';
+import { clsx } from 'clsx';
 
 /**
  * Props for the TabsContent component.
@@ -33,10 +34,7 @@ export function TabsContent({
 
     return (
         <div
-            className={
-                'burst-scroll px-6 max-m:px-2.5 py-8 h-[305px] overflow-y-auto rounded-none ' +
-                className
-            }
+            className={ clsx( 'burst-scroll px-2.5 md:px-6 py-8 h-[305px] overflow-y-auto rounded-none', className ) }
             {...rest}
         >
 			{children}
