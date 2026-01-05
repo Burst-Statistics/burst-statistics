@@ -7,6 +7,8 @@ import Icon from '@/utils/Icon';
 import { User } from 'lucide-react';
 import HelpTooltip from '@/components/Common/HelpTooltip';
 import { listSlideAnimation } from './OverviewBlock';
+import { safeDecodeURI } from '@/utils/lib';
+import { OverflowTooltip } from '@/components/Common/OverflowTooltip';
 
 /**
  * Parse UTM source from a given URL.
@@ -21,8 +23,8 @@ const parseUTMSource = ( url ) => {
 	}
 
 	try {
-		const urlObj = new URL( url );
-		return urlObj.hostname.replace( /^www\./, '' );
+		const uri = safeDecodeURI( url );
+		return uri.replace( /^www\./, '' );
 	} catch ( e ) { // eslint-disable-line @typescript-eslint/no-unused-vars
 		return __( 'Direct', 'burst-statistics' );
 	}
@@ -77,7 +79,7 @@ const TimeAgo = memo( ({ timestamp }) => {
 		return () => clearInterval( interval );
 	}, [ timestamp ]);
 
-	return <span className="text-gray font-light break-all">{timeText}</span>;
+	return <span className="text-gray font-light break-all shrink-0">{timeText}</span>;
 });
 
 TimeAgo.displayName = 'TimeAgo';
@@ -326,27 +328,31 @@ const LiveTraffic = () => {
 										checkout={traffic.checkout}
 									/>
 
-									<span className="font-medium text-black break-all">
+									<span className="font-medium text-black break-all shrink-0">
 										{traffic.page_url}
 									</span>
 
-									{utm_source && (
-										<>
-											<span className="text-gray font-light break-all">
-												-
-											</span>
+									{
+										utm_source && (
+											<>
+												<span className="text-gray font-light break-all shrink-0">
+													-
+												</span>
 
-											<span className="text-gray font-light break-all">
-												{utm_source}
-											</span>
-										</>
-									)}
+												<OverflowTooltip>
+													<span className="text-gray font-light break-all">
+														{ utm_source }
+													</span>
+												</OverflowTooltip>
+											</>
+										)
+									}
 
 									<span className="text-gray font-light break-all">
 										-
 									</span>
 
-									<TimeAgo timestamp={traffic.active_time} />
+									<TimeAgo timestamp={ traffic.active_time } />
 								</div>
 							</motion.li>
 						);

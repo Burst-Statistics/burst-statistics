@@ -41,7 +41,7 @@ const GoalSetup = ({
 	return (
 		<div className="w-full bg-gray-100 rounded-m">
 			<details className="rounded-md border border-gray-200">
-				<summary className="burst-no-marker py-1.5 px-2.5 grid gap-3 items-center list-none [grid-template-columns:26px_1fr_auto_auto_auto]">
+				<summary className="burst-no-marker py-1.5 px-2.5 grid gap-1.5 items-center list-none [grid-template-columns:26px_1fr_auto_auto_auto] md:gap-3">
 					<Icon
 						name={
 							goal.type &&

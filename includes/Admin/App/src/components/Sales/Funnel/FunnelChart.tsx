@@ -23,15 +23,31 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 	// Use index-based IDs for consistent animation between data states.
 	// Nivo tracks elements by ID to animate transitions. Using position-based
 	// IDs ensures smooth animations when switching between placeholder and real data.
-	const formattedData = useMemo(
-		() =>
-			data.map( ( item, index ) => ({
-				id: `step-${index}`,
-				value: item.value,
-				label: item.stage
-			}) ),
-		[ data ]
-	);
+	const formattedData = useMemo( () => {
+
+		// Filter out invalid entries and ensure we have valid data
+		const validData = data.filter( item =>
+			item &&
+			! isNaN( item.value ) &&
+			0 <= item.value &&
+			item.stage
+		);
+
+		// If no valid data, return a minimal placeholder
+		if ( 0 === validData.length ) {
+			return [ {
+				id: 'step-0',
+				value: 1,
+				label: __( 'No data', 'burst-statistics' )
+			} ];
+		}
+
+		return validData.map( ( item, index ) => ({
+			id: `step-${index}`,
+			value: Math.max( 0, item.value ), // Ensure non-negative
+			label: item.stage
+		}) );
+	}, [ data ]);
 
 	// Check if all values are 0 to change the funnel visually.
 	const hasData = useMemo( () => {
@@ -89,6 +105,15 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 
 		return stats;
 	}, [ data ]);
+
+	// catch fatal errors when no valid data is provided.
+	if ( ! data || 0 === data.length || ! formattedData || 0 === formattedData.length ) {
+		return (
+			<div className="border-t border-t-divider p-4">
+				{__( 'No funnel data available', 'burst-statistics' )}
+			</div>
+		);
+	}
 
 	return (
 		<div className="border-t border-t-divider">

@@ -58,6 +58,7 @@ export interface SalesMetric {
 	changeStatus: string | null;
 	change: string | null;
 	currency?: string;
+	tooltipText: string;
 }
 
 /**

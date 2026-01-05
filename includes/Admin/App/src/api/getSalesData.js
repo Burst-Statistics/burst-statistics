@@ -1,6 +1,6 @@
 import { getData } from '../utils/api';
 import { __, _n, sprintf } from '@wordpress/i18n';
-import { formatCurrency, formatPercentage } from '../utils/formatting';
+import { formatCurrency, formatCurrencyCompact, formatPercentage } from '../utils/formatting';
 
 /**
  * Get top performers
@@ -99,7 +99,8 @@ const transformSalesData = ( data ) => {
 			exactValue: null,
 			subtitle: defaultSubtitle,
 			changeStatus: null,
-			change: null
+			change: null,
+			tooltipText: null
 		};
 
 		if ( ! metric || ! metric.label ) {
@@ -299,8 +300,9 @@ const transformSalesData = ( data ) => {
 
 				const avg = current.average_order_value ?? 0;
 				const currency = current.currency ?? 'USD';
-				transformed[key].value = formatCurrency( currency, avg );
+				transformed[key].value = formatCurrencyCompact( currency, avg );
 				transformed[key].exactValue = avg;
+				transformed[key].tooltipText = formatCurrency( currency, avg );
 
 				if ( previous && null !== previous.average_order_value && previous.average_order_value !== undefined ) {
 					if (
@@ -308,7 +310,7 @@ const transformSalesData = ( data ) => {
 						current.average_order_value
 					) {
 						transformed[key].subtitle = __(
-							`Up from ${formatCurrency( currency, previous.average_order_value )} last period`,
+							`Up from ${formatCurrencyCompact( currency, previous.average_order_value )} last period`,
 							'burst-statistics'
 						);
 					} else if (
@@ -316,7 +318,7 @@ const transformSalesData = ( data ) => {
 						current.average_order_value
 					) {
 						transformed[key].subtitle = __(
-							`Down from ${formatCurrency( currency, previous.average_order_value )} last period`,
+							`Down from ${formatCurrencyCompact( currency, previous.average_order_value )} last period`,
 							'burst-statistics'
 						);
 					} else {
@@ -349,8 +351,9 @@ const transformSalesData = ( data ) => {
 
 				const total = current.total_revenue ?? 0;
 				const currency = current.currency ?? 'USD';
-				transformed[key].value = formatCurrency( currency, total );
+				transformed[key].value = formatCurrencyCompact( currency, total );
 				transformed[key].exactValue = total;
+				transformed[key].tooltipText = formatCurrency( currency, total );
 
 				const totalOrders = parseInt( current.total_orders ) ?? 0;
 				if ( 0 < totalOrders ) {

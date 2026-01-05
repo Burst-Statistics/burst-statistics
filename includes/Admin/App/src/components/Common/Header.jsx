@@ -8,6 +8,9 @@ import clsx from 'clsx';
 import { useRef, useState, useEffect, useMemo } from 'react';
 import useLicenseData from '@/hooks/useLicenseData';
 import SubscriptionHeader from '../Common/Pro/SubscriptionHeader';
+import useSettingsData from '@/hooks/useSettingsData';
+import {useAttachmentUrl} from '@/hooks/useAttachmentUrl';
+import useShareableLinkStore from '@/store/useShareableLinkStore';
 import {
 	isFilterEnabledRoute,
 	FILTER_KEYS,
@@ -47,10 +50,16 @@ const getMenuItemUrl = ( menuItem ) => {
  * @return { JSX.Element } The rendered Header component.
  */
 const Header = () => {
+	const isShareableLinkViewer = useShareableLinkStore( ( state ) => state.userCanFilterDateRange );
+
 	const menu = Array.isArray( burst_settings.menu ) ?
 		burst_settings.menu :
 		Object.values( burst_settings.menu );
 
+	const { getValue } = useSettingsData();
+	const logoId = getValue( 'logo_attachment_id' );
+	const { data, isLoading } = useAttachmentUrl( logoId );
+	const attachmentUrl = data?.attachmentUrl;
 	const { isPro, isTrial } = useLicenseData();
 	const activeClassName =
 		'border-primary font-bold text-primary hover:border-primary hover:bg-primary-light';
@@ -101,7 +110,10 @@ const Header = () => {
 			<div className="mx-auto flex max-w-screen-2xl items-center gap-5 px-5 max-xxs:gap-0">
 				<div className="max-xxs:w-16 max-xxs:h-auto max-xxs:hidden">
 					<Link className="flex gap-3 align-middle" from="/" to="/">
-						<Logo className="h-11 w-auto px-0 py-2" />
+						{isShareableLinkViewer && ! isLoading && attachmentUrl && (
+							<img alt="logo" src={attachmentUrl} className="h-11 w-auto px-0 py-2" />
+							)}
+						{! isShareableLinkViewer && <Logo className="h-11 w-auto px-0 py-2"/>}
 					</Link>
 				</div>
 
@@ -117,25 +129,28 @@ const Header = () => {
 					) )}
 				</div>
 
-				<div className="flex items-center gap-5">
-					<ButtonInput
-						className="max-xxs:hidden"
-						link={{ to: supportUrl }}
-						btnVariant="tertiary"
-					>
-						{__( 'Support', 'burst-statistics' )}
-					</ButtonInput>
-
-					{upgradeUrl && (
+				{ ! isShareableLinkViewer &&
+					<div className="flex items-center gap-5">
 						<ButtonInput
-							className="max-xxs:ml-4"
-							link={{ to: upgradeUrl }}
-							btnVariant="primary"
+							className="max-xxs:hidden"
+							link={{ to: supportUrl }}
+							btnVariant="tertiary"
 						>
-							{__( 'Upgrade to Pro', 'burst-statistics' )}
+							{__( 'Support', 'burst-statistics' )}
 						</ButtonInput>
-					)}
-				</div>
+
+						{upgradeUrl && (
+							<ButtonInput
+								className="max-xxs:ml-4"
+								link={{ to: upgradeUrl }}
+								btnVariant="primary"
+							>
+								{__( 'Upgrade to Pro', 'burst-statistics' )}
+							</ButtonInput>
+						)}
+					</div>
+				}
+
 			</div>
 		</div>
 	);

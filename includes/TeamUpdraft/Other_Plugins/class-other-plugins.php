@@ -202,14 +202,15 @@ class Other_Plugins {
 			'teamupdraft_otherplugins',
 			'teamupdraft_otherplugins',
 			[
-				'prefix'         => $this->prefix,
-				'plugins'        => $this->get_recommended_plugins(),
-				'nonce'          => wp_create_nonce( $this->prefix . '_nonce' ),
-				'rest_url'       => get_rest_url(),
-				'site_url'       => get_site_url(),
-				'admin_ajax_url' => add_query_arg( [ 'action' => $this->prefix . '_otherplugins_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
-				'is_pro'         => defined( $this->prefix . '_pro' ),
-				'network_link'   => network_site_url( 'plugins.php' ),
+				'prefix'              => $this->prefix,
+				'plugins'             => $this->get_recommended_plugins(),
+				'nonce'               => wp_create_nonce( $this->prefix . '_nonce' ),
+				'rest_url'            => get_rest_url(),
+				'site_url'            => get_site_url(),
+				'admin_ajax_url'      => add_query_arg( [ 'action' => $this->prefix . '_otherplugins_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
+				'is_pro'              => defined( $this->prefix . '_pro' ),
+				'network_link'        => network_site_url( 'plugins.php' ),
+				'can_install_plugins' => current_user_can( 'install_plugins' ),
 			]
 		);
 	}

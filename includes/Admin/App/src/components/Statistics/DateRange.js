@@ -10,6 +10,7 @@ import {
 	availableRanges
 } from '@/utils/formatting';
 import * as ReactPopover from '@radix-ui/react-popover';
+import useShareableLinkStore from '@/store/useShareableLinkStore';
 
 // Extract configuration
 const DATE_FORMAT = 'yyyy-MM-dd';
@@ -24,12 +25,18 @@ const CLICKS_TO_CLOSE = 2;
  * @param {Object}   props.display   Display dates
  * @param {boolean}  props.isOpen    Is popover open
  * @param {Function} props.setIsOpen Function to set popover open state
+ * @param {boolean} props.disabled if the trigger is disabled
  * @return {JSX.Element} Date Range Trigger
  */
-const DateRangeTrigger = ({ range, display, isOpen, setIsOpen }) => (
+const DateRangeTrigger = ({ range, display, isOpen, setIsOpen, disabled }) => (
 	<ReactPopover.Trigger
-		className="burst-date-button flex min-w-[200px] items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)]"
-		onClick={() => setIsOpen( ! isOpen )}
+		className={`burst-date-button flex min-w-[200px] items-center gap-2 rounded-md border px-3 py-2 shadow-sm transition-all duration-200 ${
+			disabled ?
+				'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-800 opacity-60' :
+				'border-gray-300 bg-white hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)]'
+		}`}
+		onClick={() => ! disabled && setIsOpen( ! isOpen )}
+		disabled={disabled}
 	>
 		<Icon name="calendar" size="18" />
 
@@ -44,6 +51,8 @@ const DateRangeTrigger = ({ range, display, isOpen, setIsOpen }) => (
 );
 
 const DateRange = () => {
+	const userCanFilterDateRange = useShareableLinkStore( ( state ) => state.userCanFilterDateRange );
+
 	const [ isOpen, setIsOpen ] = useState( false );
 	const { startDate, endDate, setDateRange, range } = useDateRange();
 
@@ -69,6 +78,10 @@ const DateRange = () => {
 
 	const updateDateRange = useCallback(
 		( ranges ) => {
+			if ( ! userCanFilterDateRange ) {
+return;
+}
+
 			try {
 				countClicks.current++;
 				const { startDate: newStartDate, endDate: newEndDate } = ranges.selection;
@@ -101,17 +114,21 @@ const DateRange = () => {
 				console.error( 'Error updating date range:', error );
 			}
 		},
-		[ setDateRange ]
+		[ setDateRange, userCanFilterDateRange ]
 	);
 
 	return (
 		<div className="ml-auto w-auto">
-			<ReactPopover.Root open={isOpen} onOpenChange={setIsOpen}>
+			<ReactPopover.Root
+				open={isOpen && userCanFilterDateRange }
+				onOpenChange={( open ) => userCanFilterDateRange && setIsOpen( open )}
+			>
 				<DateRangeTrigger
 					range={range}
 					display={display}
 					isOpen={isOpen}
 					setIsOpen={setIsOpen}
+					disabled={! userCanFilterDateRange}
 				/>
 
 				<div className="burst-date-range-popover-container relative z-[2]">

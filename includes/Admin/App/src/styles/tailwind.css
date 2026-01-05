@@ -1,3 +1,4 @@
+@import "react-toastify/dist/ReactToastify.css";
 @import "./base/index.css";
 @import "./utilities/index.css";
 @import "./components/index.css";

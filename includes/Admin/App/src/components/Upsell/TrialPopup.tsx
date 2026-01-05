@@ -82,7 +82,10 @@ const TrialPopup: React.FC<TrialPopupProps> = ({ type = 'sources' }) => {
 				description={description}
 				url={url}
 			/>
-		) );
+		),	{
+			toastId: 'trial_popup_' + type,
+			autoClose: false
+		});
 
 		// Listen for toast dismissal (either manually or via toast.dismiss)
 		const unsubscribe = toast.onChange( ( event ) => {

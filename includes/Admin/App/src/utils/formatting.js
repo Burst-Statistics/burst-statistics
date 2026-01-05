@@ -485,6 +485,54 @@ function formatCurrency( currency, value ) {
 	}).format( value );
 }
 
+/**
+ * Formats a currency value in compact form (e.g. €100k, $2.5M)
+ *
+ * @param {string} currency - The currency code (e.g., 'USD', 'EUR').
+ * @param {number} value    - The currency value to format.
+ *
+ * @return {string} The compact formatted currency value.
+ */
+function formatCurrencyCompact( currency, value ) {
+	return new Intl.NumberFormat( undefined, {
+		style: 'currency',
+		currency,
+		notation: 'compact',
+		compactDisplay: 'short',
+		maximumFractionDigits: 1
+	}).format( value );
+}
+
+/**
+ * Formats a date string for short display (e.g., "Dec 23, 2025").
+ * Uses Intl.DateTimeFormat for proper localization.
+ *
+ * @param {string | Date} dateInput - The date string (YYYY-MM-DD) or Date object.
+ * @return {string} The formatted date string, or empty string if invalid.
+ */
+function formatDateShort( dateInput ) {
+	if ( ! dateInput ) {
+		return '';
+	}
+
+	try {
+		const date = dateInput instanceof Date ? dateInput : new Date( dateInput );
+
+		// Check if the date is valid.
+		if ( isNaN( date.getTime() ) ) {
+			return '';
+		}
+
+		return new Intl.DateTimeFormat( undefined, {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		}).format( date );
+	} catch {
+		return '';
+	}
+}
+
 export {
 	getRelativeTime,
 	getPercentage,
@@ -505,5 +553,7 @@ export {
 	getDisplayDates,
 	createValueFormatter,
 	formatCurrency,
+	formatCurrencyCompact,
+	formatDateShort,
 	toUnixTimestampMillis
 };

@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PageFilter } from '@/components/Statistics/PageFilter';
-import DateRange from '@/components/Statistics/DateRange';
+import { PageHeader } from '@/components/Common/PageHeader';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import WorldMapBlock from '@/components/Sources/WorldMapBlock';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
@@ -40,14 +39,7 @@ function Sources() {
 	return (
 		<>
 			<TrialPopup />
-			<div className="col-span-12 flex items-center justify-between">
-				<ErrorBoundary>
-					<PageFilter />
-				</ErrorBoundary>
-				<ErrorBoundary>
-					<DateRange />
-				</ErrorBoundary>
-			</div>
+			<PageHeader />
 			<ErrorBoundary>
 				<WorldMapBlock />
 			</ErrorBoundary>

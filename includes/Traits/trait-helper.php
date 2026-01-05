@@ -107,7 +107,11 @@ trait Helper {
 		$uploads    = wp_upload_dir();
 		$upload_url = $uploads['baseurl'];
 		$upload_url = trailingslashit( apply_filters( 'burst_upload_url', $upload_url ) );
-		$dir        = $root ? '' : 'burst/';
+
+		$scheme     = ( str_starts_with( site_url(), 'https://' ) ) ? 'https' : 'http';
+		$upload_url = set_url_scheme( $upload_url, $scheme );
+
+		$dir = $root ? '' : 'burst/';
 		return trailingslashit( $upload_url . $dir . $path );
 	}
 

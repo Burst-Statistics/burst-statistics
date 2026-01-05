@@ -6,7 +6,7 @@ export const BlockFooter = memo( ({ children, className = '' }) => {
 		<div
 			className={clsx(
 				className,
-				'flex items-center justify-between px-6 py-3'
+				'flex items-center justify-between px-2.5 py-3 md:px-6'
 			)}
 		>
 			{children}

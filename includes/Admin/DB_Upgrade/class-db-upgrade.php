@@ -205,11 +205,11 @@ class DB_Upgrade {
 		}
 
 		if ( 'fix_missing_session_ids' === $do_upgrade ) {
-			$this->fix_missing_session_ids();
+			delete_option( 'burst_db_upgrade_fix_missing_session_ids' );
 		}
 
 		if ( 'clean_orphaned_session_ids' === $do_upgrade ) {
-			$this->clean_orphaned_session_ids();
+			delete_option( 'burst_db_upgrade_clean_orphaned_session_ids' );
 		}
 
 		if ( 'add_page_ids' === $do_upgrade ) {
@@ -355,30 +355,31 @@ class DB_Upgrade {
 		}
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'burst_statistics';
 
-		$sql = "UPDATE $table_name
+		$result = $wpdb->query(
+			"UPDATE {$wpdb->prefix}burst_statistics
                 SET bounce = 0
                 WHERE
                   (session_id IN (
                     SELECT session_id
                     FROM (
                       SELECT session_id
-                      FROM $table_name
+                      FROM {$wpdb->prefix}burst_statistics
                       GROUP BY session_id
                       HAVING COUNT(*) >= 2
                     ) as t
-                  ))";
+                  ))"
+		);
 
-		$result = $wpdb->query( $sql );
 		if ( $result === false ) {
 			return;
 		}
 
-		$sql    = "UPDATE $table_name
+		$result = $wpdb->query(
+			"UPDATE {$wpdb->prefix}burst_statistics
                 SET bounce = 0
-                WHERE bounce = 1 AND time_on_page > 5000";
-		$result = $wpdb->query( $sql );
+                WHERE bounce = 1 AND time_on_page > 5000"
+		);
 
 		// if query is successful.
 		if ( $result !== false ) {
@@ -400,20 +401,19 @@ class DB_Upgrade {
 		}
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'burst_goals';
 		// check if columns exist first.
-		$columns = $wpdb->get_col( "DESC $table_name", 0 );
+		$columns = $wpdb->get_col( "DESC {$wpdb->prefix}burst_goals", 0 );
 		if ( ! in_array( 'event', $columns, true ) || ! in_array( 'action', $columns, true ) ) {
 			delete_option( 'burst_db_upgrade_goals_remove_columns' );
 			return;
 		}
 
 		// run an sql query to remove the columns `event` and `action`.
-		$sql = "ALTER TABLE $table_name
+		$remove = $wpdb->query(
+			"ALTER TABLE {$wpdb->prefix}burst_goals
                 DROP COLUMN `event`,
-                DROP COLUMN `action`";
-
-		$remove = $wpdb->query( $sql );
+                DROP COLUMN `action`"
+		);
 
 		if ( $remove !== false ) {
 			delete_option( 'burst_db_upgrade_goals_remove_columns' );
@@ -433,14 +433,12 @@ class DB_Upgrade {
 		}
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'burst_goals';
-
 		// set conversion_metric to 'pageviews' for all goals.
-		$sql = "UPDATE $table_name
+		$add_conversion_metric = $wpdb->query(
+			"UPDATE {$wpdb->prefix}burst_goals
                 SET conversion_metric = 'pageviews'
-                WHERE conversion_metric IS NULL OR conversion_metric = ''";
-
-		$add_conversion_metric = $wpdb->query( $sql );
+                WHERE conversion_metric IS NULL OR conversion_metric = ''"
+		);
 
 		if ( $add_conversion_metric !== false ) {
 			delete_option( $option_name );
@@ -461,20 +459,15 @@ class DB_Upgrade {
 		}
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'burst_statistics';
-
 		// check if columns exist first.
-		$columns = $wpdb->get_col( "DESC $table_name", 0 );
+		$columns = $wpdb->get_col( "DESC {$wpdb->prefix}burst_statistics", 0 );
 		if ( ! in_array( 'user_agent', $columns, true ) ) {
 			delete_option( 'burst_db_upgrade_drop_user_agent' );
 			return;
 		}
 
 		// drop user_agent column.
-		$sql = "ALTER TABLE $table_name
-                DROP COLUMN `user_agent`";
-
-		$drop_user_agent = $wpdb->query( $sql );
+		$drop_user_agent = $wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_statistics DROP COLUMN `user_agent`" );
 
 		if ( $drop_user_agent !== false ) {
 			delete_option( $option_name );
@@ -494,14 +487,10 @@ class DB_Upgrade {
 		}
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'burst_statistics';
-		$home_url   = home_url();
+		$home_url = home_url();
 		// empty referrer when starts with current domain.
-		$sql = "UPDATE $table_name
-                SET referrer = null
-                WHERE referrer LIKE '$home_url%'";
-
-		$empty_referrer_when_current_domain = $wpdb->query( $sql );
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $home_url is sanitized by home_url().
+		$empty_referrer_when_current_domain = $wpdb->query( "UPDATE {$wpdb->prefix}burst_statistics SET referrer = null WHERE referrer LIKE '$home_url%'" );
 
 		if ( $empty_referrer_when_current_domain !== false ) {
 			delete_option( $option_name );
@@ -526,17 +515,12 @@ class DB_Upgrade {
 		}
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'burst_statistics';
 		// make sure it does not end with slash.
 		$home_url = untrailingslashit( home_url() );
 
 		// strip home url from entire_page_url where it starts with home_url.
-		$sql = "UPDATE $table_name
-                SET entire_page_url = REPLACE(entire_page_url, '$home_url', '')
-                WHERE entire_page_url LIKE '$home_url%'";
-
-		$strip_domain_names_from_entire_page_url = $wpdb->query( $sql );
-
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $home_url is sanitized by home_url().
+		$strip_domain_names_from_entire_page_url = $wpdb->query( "UPDATE {$wpdb->prefix}burst_statistics SET entire_page_url = REPLACE(entire_page_url, '$home_url', '') WHERE entire_page_url LIKE '$home_url%'" );
 		if ( $strip_domain_names_from_entire_page_url !== false ) {
 			delete_option( $option_name );
 		}
@@ -589,14 +573,10 @@ class DB_Upgrade {
 				}
 				return;
 			}
-
-			$sql = "INSERT INTO {$wpdb->prefix}burst_{$selected_item}s (name) SELECT DISTINCT $selected_item FROM {$wpdb->prefix}burst_statistics
-                    WHERE $selected_item IS NOT NULL AND
-                        $selected_item NOT IN (
-                        SELECT name
-                        FROM {$wpdb->prefix}burst_{$selected_item}s
-                    );";
-			$wpdb->query( $sql );
+			$wpdb->query(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $selected_item is selected from a predefined array.
+				"INSERT INTO {$wpdb->prefix}burst_{$selected_item}s (name) SELECT DISTINCT $selected_item FROM {$wpdb->prefix}burst_statistics WHERE $selected_item IS NOT NULL AND $selected_item NOT IN (SELECT name FROM {$wpdb->prefix}burst_{$selected_item}s);"
+			);
 			delete_option( "burst_db_upgrade_create_lookup_tables_$selected_item" );
 		}
 
@@ -681,6 +661,7 @@ class DB_Upgrade {
 
 			// check if this table contains data.
 			// if not, ensure that the update for this table is started again.
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $item is selected from a predefined array.
 			$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_{$item}s" );
 			if ( 0 === $count ) {
 				update_option( "burst_db_upgrade_create_lookup_tables_$item", true, false );
@@ -709,6 +690,7 @@ class DB_Upgrade {
 			$selected_item = $this->sanitize_lookup_table_type( $selected_item );
 			$start         = microtime( true );
 			// check what's still to do.
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared	 -- $selected_item is selected from a predefined array.
 			$remaining_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_statistics where {$selected_item}_id = 999999" );
 			$total_count     = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_statistics" );
 			$done_count      = $total_count - $remaining_count;
@@ -726,7 +708,9 @@ class DB_Upgrade {
 			set_transient( "burst_progress_upgrade_lookup_tables_$selected_item", $progress, HOUR_IN_SECONDS );
 			// measure time elapsed during query.
 			if ( $done_count < $total_count ) {
-				$sql = "UPDATE {$wpdb->prefix}burst_statistics AS t
+                // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $selected_item is selected from a predefined array.
+				$wpdb->query(
+					"UPDATE {$wpdb->prefix}burst_statistics AS t
                     JOIN (
                         SELECT p.{$selected_item}, p.ID, COALESCE(m.ID, 0) as {$selected_item}_id
                         FROM {$wpdb->prefix}burst_statistics p 
@@ -734,10 +718,9 @@ class DB_Upgrade {
                         WHERE p.{$selected_item}_id = 999999
                         LIMIT $batch
                     ) AS s ON t.ID = s.ID
-                    SET t.{$selected_item}_id = s.{$selected_item}_id;";
-				$wpdb->query( $sql );
-
-				// completed.
+                    SET t.{$selected_item}_id = s.{$selected_item}_id;"
+				);
+                // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$end               = microtime( true );
 				$time_elapsed_secs = $end - $start;
 			} else {
@@ -750,6 +733,7 @@ class DB_Upgrade {
 		// check if all items have been upgraded.
 		$total_not_completed = 0;
 		foreach ( $items as $item ) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $item is selected from a predefined array.
 			$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_statistics WHERE {$item}_id = 999999 " );
 			if ( 0 === $count ) {
 				delete_option( "burst_db_upgrade_upgrade_lookup_tables_$item" );
@@ -811,6 +795,7 @@ class DB_Upgrade {
 		// dynamic placeholder insertion with array_fill.
         //phpcs:ignore
         $sql =$wpdb->prepare($sql, ...$post_types);
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $post_types are sanitized post types.
 		$total_count = (int) $wpdb->get_var( $sql );
 		$done_count  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = 'burst_page_id_upgraded'" );
 
@@ -891,7 +876,8 @@ class DB_Upgrade {
 
 		$drop_sql = implode( ', ', $drop_array );
 		$sql      = "ALTER TABLE {$wpdb->prefix}burst_statistics $drop_sql";
-		$success  = $wpdb->query( $sql );
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $drop_sql is built from validated column names.
+		$success = $wpdb->query( $sql );
 
 		// check if all columns have been dropped.
 		if ( $success ) {
@@ -920,18 +906,15 @@ class DB_Upgrade {
 		}
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'burst_statistics';
 		// check if columns exist first.
-		$columns = $wpdb->get_col( "DESC $table_name", 0 );
+		$columns = $wpdb->get_col( "DESC {$wpdb->prefix}burst_statistics", 0 );
 		if ( ! in_array( 'page_id', $columns, true ) ) {
 			delete_option( 'burst_db_upgrade_drop_page_id_column' );
 			return;
 		}
 
 		// run an sql query to remove the columns `event` and `action`.
-		$sql = "ALTER TABLE $table_name DROP COLUMN `page_id`";
-
-		$remove = $wpdb->query( $sql );
+		$remove = $wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_statistics DROP COLUMN `page_id`" );
 
 		if ( $remove !== false ) {
 			delete_option( 'burst_db_upgrade_drop_page_id_column' );
@@ -942,139 +925,10 @@ class DB_Upgrade {
 	 * Update the entire_page_url column to the new name, paramaters, and change to TEXT
 	 */
 	public function change_column_name_entire_page_url(): void {
-
 		global $wpdb;
-		$table = $wpdb->prefix . 'burst_statistics';
-		$sql   = "ALTER TABLE $table MODIFY parameters TEXT;";
-		$wpdb->query( $sql );
+		$wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_statistics MODIFY parameters TEXT;" );
 		delete_option( 'burst_db_upgrade_rename_entire_page_url_column' );
 	}
-
-	/**
-	 * Upgrade missing session ids
-	 */
-	public function fix_missing_session_ids(): void {
-		global $wpdb;
-
-		// Get the last valid session_id before the incorrect session_id = 1.
-		$sql    = "
-        SELECT ID, session_id
-        FROM {$wpdb->prefix}burst_statistics
-        WHERE time > 1746449396 AND ID = (
-            SELECT s1.ID - 1
-            FROM {$wpdb->prefix}burst_statistics s1
-            WHERE s1.session_id = 1
-              AND EXISTS (
-                SELECT 1
-                FROM {$wpdb->prefix}burst_statistics s2
-                WHERE s2.ID = s1.ID - 1
-                  AND s2.session_id > 1
-              )
-            ORDER BY s1.ID ASC
-            LIMIT 1
-        )
-    ";
-		$result = $wpdb->get_row( $sql );
-
-		if ( ! $result ) {
-			delete_option( 'burst_db_upgrade_fix_missing_session_ids' );
-			return;
-		}
-
-		$last_valid_id         = (int) $result->ID;
-		$last_valid_session_id = (int) $result->session_id;
-
-		if ( $last_valid_id <= 1 || $last_valid_session_id <= 1 ) {
-			delete_option( 'burst_db_upgrade_fix_missing_session_ids' );
-			return;
-		}
-
-		if ( get_option( 'burst_fix_incorrect_bounces' ) ) {
-			// correct bounce for each unique uid with less than 5 s time_on_page.
-			$wpdb->query(
-				$wpdb->prepare(
-					"UPDATE {$wpdb->prefix}burst_statistics AS t1
-                JOIN (
-                    SELECT s.ID
-                    FROM {$wpdb->prefix}burst_statistics s
-                    JOIN (
-                        SELECT uid
-                        FROM {$wpdb->prefix}burst_statistics
-                        WHERE ID > %d
-                          AND session_id = 1
-                        GROUP BY uid
-                        HAVING COUNT(*) = 1
-                    ) AS unique_uid
-                    ON s.uid = unique_uid.uid
-                    WHERE s.ID > %d
-                      AND s.session_id = 1
-                      AND s.time_on_page < 5000
-                ) AS target
-                ON t1.ID = target.ID
-                SET t1.bounce = 1",
-					$last_valid_id,
-					$last_valid_id
-				)
-			);
-			delete_option( 'burst_fix_incorrect_bounces' );
-		}
-
-		// Get up to 100 distinct uids with session_id = 1 after last_valid_id.
-		$sql           = $wpdb->prepare(
-			"
-        SELECT DISTINCT uid
-        FROM {$wpdb->prefix}burst_statistics
-        WHERE session_id = 1
-          AND ID > %d
-        LIMIT 100
-    ",
-			$last_valid_id
-		);
-		$distinct_uids = $wpdb->get_col( $sql );
-
-		// If no more UIDs, delete the option and finish.
-		if ( empty( $distinct_uids ) ) {
-			delete_option( 'burst_db_upgrade_fix_missing_session_ids' );
-			return;
-		}
-
-		$new_session_id = $last_valid_session_id;
-		// Process each UID, assign new session_id.
-		foreach ( $distinct_uids as $distinct_uid ) {
-			// Increment session ID for this UID.
-			++$new_session_id;
-			$wpdb->query(
-				$wpdb->prepare(
-					"UPDATE {$wpdb->prefix}burst_statistics
-                 SET session_id = %d
-                 WHERE uid = %s
-                   AND ID > %d
-                   AND time > 1746449396
-                   AND session_id = 1",
-					$new_session_id,
-					$distinct_uid,
-					$last_valid_id
-				)
-			);
-		}
-	}
-
-	/**
-	 * Clean up orphaned session IDs
-	 */
-	public function clean_orphaned_session_ids(): void {
-		global $wpdb;
-		$wpdb->query(
-			"
-            DELETE s
-            FROM {$wpdb->prefix}burst_sessions s
-            LEFT JOIN {$wpdb->prefix}burst_statistics bs ON s.ID = bs.session_id
-            WHERE bs.session_id IS NULL
-        "
-		);
-		delete_option( 'burst_db_upgrade_clean_orphaned_session_ids' );
-	}
-
 
 	/**
 	 * Drop the path from the parameters column.
@@ -1094,19 +948,19 @@ class DB_Upgrade {
 
 		global $wpdb;
 		$batch_size = 50000;
-		$table      = $wpdb->prefix . 'burst_statistics';
-		$offset     = get_option( 'burst_db_upgrade_column_offset', 0 );
-		$sql        = "UPDATE $table
+		$offset     = (int) get_option( 'burst_db_upgrade_column_offset', 0 );
+		$sql        = "UPDATE {$wpdb->prefix}burst_statistics
                 SET `parameters` = IF(LOCATE('?', `entire_page_url`) > 0, SUBSTRING(`entire_page_url`, LOCATE('?', `entire_page_url`)), '')
                 WHERE ID IN (
                     SELECT ID FROM (
-                        SELECT id FROM $table LIMIT $offset, $batch_size
+                        SELECT id FROM {$wpdb->prefix}burst_statistics LIMIT $offset, $batch_size
                     ) AS temp
                 );";
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $offset and $batch_size are validated integers.
 		$wpdb->query( $sql );
 		$offset += $batch_size;
 		update_option( 'burst_db_upgrade_column_offset', $offset );
-		$total    = $wpdb->get_var( "SELECT COUNT(*) FROM $table" );
+		$total    = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_statistics" );
 		$progress = $total > 0 ? round( $offset / $total, 2 ) : 1;
 		set_transient( 'burst_progress_drop_path_from_parameters_column', $progress, HOUR_IN_SECONDS );
 
@@ -1131,9 +985,6 @@ class DB_Upgrade {
 		}
 
 		global $wpdb;
-		$statistics_table = $wpdb->prefix . 'burst_statistics';
-		$sessions_table   = $wpdb->prefix . 'burst_sessions';
-
 		// Check if both tables exist.
 		if ( ! $this->table_exists( 'burst_statistics' ) || ! $this->table_exists( 'burst_sessions' ) ) {
 			self::error_log( 'Missing tables, delay referrer upgrade until tables have upgraded.' );
@@ -1152,15 +1003,15 @@ class DB_Upgrade {
 		// Count remaining sessions to process (where referrer is NULL = not yet migrated).
 		$remaining_count = (int) $wpdb->get_var(
 			"SELECT COUNT(DISTINCT s.ID) 
-        FROM {$sessions_table} s
-        INNER JOIN {$statistics_table} st ON st.session_id = s.ID
+        FROM {$wpdb->prefix}burst_sessions s
+        INNER JOIN {$wpdb->prefix}burst_statistics st ON st.session_id = s.ID
         WHERE s.referrer IS NULL"
 		);
 
 		$total_count = (int) $wpdb->get_var(
 			"SELECT COUNT(DISTINCT s.ID) 
-        FROM {$sessions_table} s
-        INNER JOIN {$statistics_table} st ON st.session_id = s.ID"
+        FROM {$wpdb->prefix}burst_sessions s
+        INNER JOIN {$wpdb->prefix}burst_statistics st ON st.session_id = s.ID"
 		);
 
 		$done_count = $total_count - $remaining_count;
@@ -1175,7 +1026,7 @@ class DB_Upgrade {
 			$session_ids = $wpdb->get_col(
 				$wpdb->prepare(
 					"SELECT DISTINCT s.ID 
-                FROM {$sessions_table} s
+                FROM {$wpdb->prefix}burst_sessions s
                 WHERE s.referrer IS NULL
                 LIMIT %d",
 					$batch
@@ -1189,8 +1040,9 @@ class DB_Upgrade {
 			$session_ids_placeholder = implode( ',', array_fill( 0, count( $session_ids ), '%d' ) );
 
 			// STEP 2: Update sessions with normalized referrers from the earliest pageview.
+            // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared	 -- $session_ids are sanitized integers.
 			$sql = $wpdb->prepare(
-				"UPDATE {$sessions_table} s
+				"UPDATE {$wpdb->prefix}burst_sessions s
             INNER JOIN (
                 SELECT 
                     st.session_id,
@@ -1198,10 +1050,10 @@ class DB_Upgrade {
                         WHEN st.referrer = '' OR st.referrer IS NULL THEN ''
                         ELSE TRIM(LEADING 'www.' FROM SUBSTRING_INDEX(SUBSTRING_INDEX(st.referrer, '://', -1), '/', 1))
                     END as normalized_referrer
-                FROM {$statistics_table} st
+                FROM {$wpdb->prefix}burst_statistics st
                 INNER JOIN (
                     SELECT session_id, MIN(time) as first_time
-                    FROM {$statistics_table}
+                    FROM {$wpdb->prefix}burst_statistics
                     WHERE session_id IN ({$session_ids_placeholder})
                     GROUP BY session_id
                 ) earliest ON st.session_id = earliest.session_id AND st.time = earliest.first_time
@@ -1210,7 +1062,9 @@ class DB_Upgrade {
             WHERE s.referrer IS NULL",             // phpcs:ignore
 				...$session_ids
 			);
+            // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $session_ids are sanitized integers.
 			$wpdb->query( $sql );
 		} else {
 			self::error_log( 'All referrers processed, cleaning up.' );
@@ -1219,7 +1073,7 @@ class DB_Upgrade {
 
 			// to do next release..
             // phpcs:ignore
-			// $wpdb->query( "ALTER TABLE {$statistics_table} DROP COLUMN referrer" );
+			// $wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_statistics DROP COLUMN referrer" );
 		}
 	}
 

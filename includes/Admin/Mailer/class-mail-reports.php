@@ -267,8 +267,7 @@ if ( ! class_exists( 'mail_reports' ) ) {
 			$qd->date_start = $start_date;
 			$qd->date_end   = $end_date;
 
-			$sql         = \Burst\burst_loader()->admin->statistics->get_sql_table( $qd );
-			$raw_results = $wpdb->get_results( $sql, ARRAY_A );
+			$raw_results = \Burst\burst_loader()->admin->statistics->get_results( $qd, ARRAY_A );
 
 			// filter out rows where one of the columns === 'Direct.
 			$raw_results = array_filter(

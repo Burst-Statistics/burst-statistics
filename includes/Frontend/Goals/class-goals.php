@@ -136,8 +136,6 @@ class Goals {
 			}
 		} catch ( \Exception $e ) {
 			self::error_log( $e->getMessage() );
-			// If an exception is caught, assume the table does not exist.
-			do_action( 'burst_install_tables' );
 			return [];
 		}
 

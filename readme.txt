@@ -6,7 +6,7 @@ Requires at least: 6.4
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 6.9
-Stable tag: 3.1.4
+Stable tag: 3.1.5
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 
@@ -97,6 +97,16 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+* January 7th 2026
+* Improvement: auto close notices in the right bottom of the screen.
+* Improvement: some minor mobile responsiveness improvements.
+* Improvement: extend automated tests with live visitors test.
+* Improvement: wrapping of long URLs in live visitors view.
+* Improvement: extended PHPCS coverage.
+* Fix: when the browser's local storage is full, adding filters could cause an error.
+* Fix: enforce https on combined variables and scripts URL, to prevent mixed content warnings.
+* Fix: onboarding for RTL languages tried to load non existing RTL CSS file.
+
 = 3.1.4 =
 * December 23rd 2025
 * Improvement: styling of datatable blocks and loading states.
@@ -199,42 +209,6 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Fix: when the weekly statistics report was sent on another day than the default day, date range calculation could retrieve the wrong range. props Pieter
 * Fix: Referrer filter not working. props @lekkerbezig
 * Fix: allow for alternative WordPress location, e.g. in subfolder 'wp'.
-
-= 2.2.1 =
-* Fix: usage of wrong key prevented upgrade from completing
-
-= 2.2.0 =
-* New: extended range of shortcodes.
-* New: goal element preview to check if the selected element exists on the page.
-* Improvement: moved all hooks from constructor to init method.
-* Improvement: remove bounce=0 conditions on goal filtering
-* Fix: Integrations not loading due to path change in 2.0.
-* Fix: First time visits counting duplicates for visitors on cookieless tracking when they came back after a month.
-* Fix: multisite redirect to network, but should redirect to main site, props @muttleydosomething
-
-= 2.1.0 =
-* Fix: type mismatch when browser key is not in the user agent data.
-* New: Onboarding wizard for new users.
-
-= 2.0.9 =
-* Fix: incorrect "best device" conversion rate on the goals block.
-* Fix: when running tasks validation, summary warning call caused an error, due to wrong call.
-* Improvement: allow null value in admin_enqueue_scripts to prevent Visual Composer causing fatal error.
-* Improvement: changed plugin_url value to use site_url instead of get_plugin_url() to prevent mixed content.
-
-= 2.0.8 =
-* Fix: filtering by referrer not working.
-* Fix: Dashboard submenu link only working when the Burst settings page was already loaded.
-
-= 2.0.7 =
-* Fix: in some cases a php warning could be shown on the endpoint.
-* Improvement: drop option for administrators to send an email report by adding a query variable.
-* Improvement: improved efficiency of burst_find_wordpress_base_path() function.
-
-= 2.0.6 =
-* Improvement: optimized database upgrade.
-* New: rewritten plugin for even better performance
-* New: extended range of automated tests to increase reliability
 
 == Upgrade notice ==
 * Please backup before upgrading.

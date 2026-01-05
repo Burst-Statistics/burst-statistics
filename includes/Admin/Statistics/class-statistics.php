@@ -5,6 +5,7 @@ use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
+use PhpParser\Node\Expr\Cast\Object_;
 
 defined( 'ABSPATH' ) || die();
 
@@ -29,9 +30,7 @@ class Statistics {
 	 */
 	public function clear_test_visit(): void {
 		global $wpdb;
-		$session_ids = $wpdb->get_col(
-			"SELECT session_id FROM {$wpdb->prefix}burst_statistics WHERE parameters LIKE '%burst_test_hit%' OR parameters LIKE '%burst_nextpage%'"
-		);
+		$session_ids = $wpdb->get_col( "SELECT session_id FROM {$wpdb->prefix}burst_statistics WHERE parameters LIKE '%burst_test_hit%' OR parameters LIKE '%burst_nextpage%'" );
 
 		$wpdb->query(
 			"DELETE FROM {$wpdb->prefix}burst_statistics WHERE parameters LIKE '%burst_test_hit%' OR parameters LIKE '%burst_nextpage%'"
@@ -79,11 +78,8 @@ class Statistics {
 			'select'                   => [ 'referrer' ],
 		];
 
-		$qd  = new Query_Data( $args );
-		$sql = $this->get_sql_table( apply_filters( 'burst_live_traffic_args', $qd ) );
-
-		global $wpdb;
-		$traffic = $wpdb->get_results( $sql );
+		$qd      = new Query_Data( $args );
+		$traffic = $this->get_results( apply_filters( 'burst_live_traffic_args', $qd ) );
 		if ( ! is_array( $traffic ) ) {
 			$traffic = [];
 		}
@@ -159,7 +155,7 @@ class Statistics {
 		$exit_margin    = 4 * MINUTE_IN_SECONDS;
 
 		// Use enhanced query builder with custom WHERE for complex live visitor logic.
-		$args = [
+		$args       = [
 			'date_start'               => $time_start,
 			// Add buffer to ensure we don't exclude based on end time.
 			'date_end'                 => $now + HOUR_IN_SECONDS,
@@ -168,11 +164,8 @@ class Statistics {
 			'custom_where'             => 'AND ( (time + time_on_page / 1000 + %d + %d) > %d)',
 			'custom_where_parameters'  => [ $on_page_offset, $exit_margin, $now ],
 		];
-		$qd   = new Query_Data( $args );
-		$sql  = $this->get_sql_table( $qd );
-
-		global $wpdb;
-		$live_value = $wpdb->get_var( $sql );
+		$qd         = new Query_Data( $args );
+		$live_value = $this->get_var( $qd );
 
 		// check if the plugin was activated in the last hour. If so, this could be a call coming from the onboarding.
 
@@ -253,13 +246,11 @@ class Statistics {
 			]
 		);
 
-		$sql     = $this->get_sql_table( $qd );
-		$results = $wpdb->get_row( $sql, 'ARRAY_A' );
-
-		if ( $results ) {
-			$data['today']['value']      = max( 0, (int) $results['visitors'] );
-			$data['pageviews']['value']  = max( 0, (int) $results['pageviews'] );
-			$data['timeOnPage']['value'] = max( 0, (int) $results['avg_time_on_page'] );
+		$results = $this->get_row( $qd );
+		if ( is_object( $results ) ) {
+			$data['today']['value']      = max( 0, (int) $results->visitors );
+			$data['pageviews']['value']  = max( 0, (int) $results->pageviews );
+			$data['timeOnPage']['value'] = max( 0, (int) $results->avg_time_on_page );
 		}
 
 		// Query for most viewed page and top referrer.
@@ -269,7 +260,7 @@ class Statistics {
 				'referrer'   => [ 'referrer', 'pageviews' ],
 			] as $key => $fields
 		) {
-			$qd    = new Query_Data(
+			$qd     = new Query_Data(
 				[
 					'date_start' => $start,
 					'date_end'   => $end,
@@ -279,11 +270,10 @@ class Statistics {
 					'limit'      => 1,
 				]
 			);
-			$sql   = $this->get_sql_table( $qd );
-			$query = $wpdb->get_row( $sql, 'ARRAY_A' );
-			if ( $query ) {
-				$data[ $key ]['title'] = $query[ $fields[0] ];
-				$data[ $key ]['value'] = $query['pageviews'];
+			$result = $this->get_row( $qd );
+			if ( is_object( $result ) ) {
+				$data[ $key ]['title'] = $result->{$fields[0]};
+				$data[ $key ]['value'] = $result->pageviews;
 			}
 		}
 
@@ -434,8 +424,7 @@ class Statistics {
 			$date += $date_modifiers['interval_in_seconds'];
 		}
 
-		$sql  = $this->get_sql_table( $qd );
-		$hits = $wpdb->get_results( $sql, ARRAY_A );
+		$hits = $this->get_results( $qd, ARRAY_A );
 
 		// match data from db to labels.
 		foreach ( $hits as $hit ) {
@@ -670,8 +659,7 @@ class Statistics {
 				'filters'    => $filters,
 			]
 		);
-		$sql    = $this->get_sql_table( $qd );
-		$result = $wpdb->get_results( $sql, 'ARRAY_A' );
+		$result = $this->get_results( $qd, 'ARRAY_A' );
 
 		return $result[0] ?? array_fill_keys( $select, 0 );
 	}
@@ -681,7 +669,7 @@ class Statistics {
 	 */
 	private function get_bounces( int $start, int $end, array $filters ): int {
 		global $wpdb;
-		$qd  = new Query_Data(
+		$qd = new Query_Data(
 			[
 				'date_start' => $start,
 				'date_end'   => $end,
@@ -689,8 +677,7 @@ class Statistics {
 				'filters'    => $filters,
 			]
 		);
-		$sql = $this->get_sql_table( $qd );
-		return (int) $wpdb->get_var( $sql );
+		return (int) $this->get_var( $qd );
 	}
 
 	/**
@@ -700,7 +687,7 @@ class Statistics {
 		global $wpdb;
 
 		// filter is goal id so pageviews returned are the conversions.
-		$qd  = new Query_Data(
+		$qd = new Query_Data(
 			[
 				'date_start' => $start,
 				'date_end'   => $end,
@@ -708,9 +695,8 @@ class Statistics {
 				'filters'    => $filters,
 			]
 		);
-		$sql = $this->get_sql_table( $qd );
 
-		return (int) $wpdb->get_var( $sql );
+		return (int) $this->get_var( $qd );
 	}
 
 
@@ -745,11 +731,8 @@ class Statistics {
 		$query_args['group_by']                 = 'device_id';
 		$query_args['having']                   = [ 'device_id > 0' ];
 
-		$qd  = new Query_Data( $query_args );
-		$sql = $this->get_sql_table( $qd );
-
-		global $wpdb;
-		$devices_result = $wpdb->get_results( $sql, ARRAY_A );
+		$qd             = new Query_Data( $query_args );
+		$devices_result = $this->get_results( $qd, ARRAY_A );
 
 		$total   = 0;
 		$devices = [];
@@ -834,11 +817,8 @@ class Statistics {
 			$query_args['having']                   = [ 'browser_id > 0' ];
 			$query_args['order_by']                 = 'count DESC';
 
-			$qd  = new Query_Data( $query_args );
-			$sql = $this->get_sql_table( $qd );
-
-			global $wpdb;
-			$results = $wpdb->get_row( $sql, ARRAY_A );
+			$qd      = new Query_Data( $query_args );
+			$results = $this->get_row( $qd, ARRAY_A );
 
 			$browser_id      = $results['browser_id'] ?? 0;
 			$platform_id     = $results['platform_id'] ?? 0;
@@ -937,10 +917,8 @@ class Statistics {
 				'limit'      => $limit,
 			]
 		);
-		$sql               = $this->get_sql_table( $qd );
-		$data              = $wpdb->get_results( $sql, ARRAY_A );
-
-		$metric_labels = $qd->get_allowed_metrics_labels();
+		$data              = $this->get_results( $qd, ARRAY_A );
+		$metric_labels     = $qd->get_allowed_metrics_labels();
 
 		foreach ( $metrics as $metric ) {
 			// If goal_id isset then metric is a conversion.
@@ -1077,8 +1055,7 @@ class Statistics {
 			]
 		);
 
-		$sql       = $this->get_sql_table( $qd );
-		$curr_data = $wpdb->get_results( $sql );
+		$curr_data = $this->get_results( $qd );
 		$qd        = new Query_Data(
 			[
 				'date_start' => $date_start_diff,
@@ -1091,8 +1068,7 @@ class Statistics {
 				],
 			]
 		);
-		$sql       = $this->get_sql_table( $qd );
-		$prev_data = $wpdb->get_results( $sql );
+		$prev_data = $this->get_results( $qd );
 
 		// Calculate uplift for visitors.
 		$visitors               = $curr_data[0]->visitors;
@@ -1111,7 +1087,7 @@ class Statistics {
 		$time_per_session_uplift        = $this->format_uplift( $prev_time_per_session, $time_per_session );
 		$time_per_session_uplift_status = $this->calculate_uplift_status( $prev_time_per_session, $time_per_session );
 
-		$qd  = new Query_Data(
+		$qd = new Query_Data(
 			[
 				'date_start' => $date_start,
 				'date_end'   => $date_end,
@@ -1124,9 +1100,8 @@ class Statistics {
 				'order_by'   => 'pageviews DESC',
 			]
 		);
-		$sql = $this->get_sql_table( $qd );
 		// get top referrer.
-		$top_referrer = $wpdb->get_results( $sql );
+		$top_referrer = $this->get_results( $qd );
 		if ( isset( $top_referrer[0] ) ) {
 			if ( $top_referrer[0]->pageviews === 0 ) {
 				$top_referrer[0]->referrer = __( 'No referrers', 'burst-statistics' );
@@ -1147,8 +1122,7 @@ class Statistics {
 				'order_by'   => 'pageviews DESC',
 			]
 		);
-		$sql          = $this->get_sql_table( $qd );
-		$most_visited = $wpdb->get_results( $sql );
+		$most_visited = $this->get_results( $qd );
 		if ( isset( $most_visited[0] ) ) {
 			if ( $most_visited[0]->page_url === '/' ) {
 				$most_visited[0]->page_url = __( 'Homepage', 'burst-statistics' );
@@ -1265,8 +1239,9 @@ class Statistics {
 					$where_clauses[] = "{$qualified_name} = " . intval( $value );
 				} elseif ( substr( $value, -1 ) === '*' ) {
 					// remove asterisk.
-					$value           = substr( $value, 0, -1 );
-					$like            = $wpdb->esc_like( $value ) . '%';
+					$value = substr( $value, 0, -1 );
+					$like  = $wpdb->esc_like( $value ) . '%';
+                    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $qualified_name is a from a trusted array.
 					$where_clauses[] = $wpdb->prepare( "{$qualified_name} LIKE %s", $like );
 				} elseif ( strpos( $value, ',' ) !== false ) {
 					// explode comma separated values.
@@ -1284,8 +1259,10 @@ class Statistics {
 				} else {
 					$value = esc_sql( sanitize_text_field( $value ) );
 					if ( $filter === 'referrer' ) {
+                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $qualified_name is a from a trusted array.
 						$where_clauses[] = $wpdb->prepare( "{$qualified_name} LIKE %s", "%{$value}" );
 					} else {
+                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $qualified_name is a from a trusted array.
 						$where_clauses[] = $wpdb->prepare( "{$qualified_name} = %s", $value );
 					}
 				}
@@ -1567,6 +1544,7 @@ class Statistics {
 		$name = wp_cache_get( 'burst_' . $item . '_' . $id, 'burst' );
 		if ( ! $name ) {
 			global $wpdb;
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $item is from a trusted array.
 			$name = $wpdb->get_var( $wpdb->prepare( "SELECT name FROM {$wpdb->prefix}burst_{$item}s WHERE ID = %s LIMIT 1", $id ) );
 			wp_cache_set( 'burst_' . $item . '_' . $id, $name, 'burst' );
 		}
@@ -1700,16 +1678,6 @@ class Statistics {
 	}
 
 	/**
-	 * Enhanced SQL query builder with support for complex queries.
-	 *
-	 * @param Query_Data $qd Query data object containing all necessary parameters.
-	 * @return string Generated SQL query.
-	 */
-	public function get_sql_table( Query_Data $qd ): string {
-		return $this->build_raw_sql( $qd );
-	}
-
-	/**
 	 * Check if the query is for parameter conversions or parameter sales/revenue.
 	 */
 	public function is_parameter_conversion_query( Query_Data $data ): bool {
@@ -1745,9 +1713,50 @@ class Statistics {
 	}
 
 	/**
+	 * Wrapper function for get_var()
+	 *
+	 * @param Query_Data $qd The sanitized query data.
+	 * @return int|float|null The resulting variable.
+	 */
+	public function get_var( Query_Data $qd ): null|int|float {
+		global $wpdb;
+		$sql = $this->build_raw_sql( $qd );
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is built and sanitized in Query_Data.
+		return $wpdb->get_var( $sql );
+	}
+
+	/**
+	 * Wrapper function for get_row()
+	 *
+	 * @param Query_Data $qd The sanitized query data.
+	 * @param string     $output_type The output type: OBJECT, ARRAY_A, ARRAY_N.
+	 * @return array|object|null The resulting row.
+	 */
+	public function get_row( Query_Data $qd, string $output_type = 'OBJECT' ): null|array|object {
+		global $wpdb;
+		$sql = $this->build_raw_sql( $qd );
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is built and sanitized in Query_Data.
+		return $wpdb->get_row( $sql, $output_type );
+	}
+
+	/**
+	 * Wrapper function for get_results()
+	 *
+	 * @param Query_Data $qd The sanitized query data.
+	 * @param string     $output_type The output type: OBJECT, ARRAY_A, ARRAY_N.
+	 * @return array|object The results.
+	 */
+	public function get_results( Query_Data $qd, string $output_type = 'OBJECT' ): array|object {
+		global $wpdb;
+		$sql = $this->build_raw_sql( $qd );
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is built and sanitized in Query_Data.
+		return $wpdb->get_results( $sql, $output_type );
+	}
+
+	/**
 	 * Build raw SQL query with enhanced features.
 	 */
-	private function build_raw_sql( Query_Data $data ): string {
+	public function build_raw_sql( Query_Data $data ): string {
 		global $wpdb;
 
 		// Escape inputs for SQL.
@@ -2286,8 +2295,7 @@ class Statistics {
 
 				global $wpdb;
 				$qd                = new Query_Data( $enhanced_args );
-				$sql               = $this->get_sql_table( $qd );
-				$result['current'] = $wpdb->get_results( $sql, ARRAY_A );
+				$result['current'] = $this->get_results( $qd, ARRAY_A );
 				break;
 			default:
 				$result['current'] = $this->get_data(

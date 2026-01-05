@@ -148,6 +148,7 @@ const OtherPluginsBlock = () => {
 				defaultColorClass = 'black';
 				break;
 		}
+		const canInstallPlugins = burst_settings.can_install_plugins;
 
 		return (
 			<div
@@ -196,6 +197,7 @@ const OtherPluginsBlock = () => {
 					</div>
 					<div className="truncate">{plugin.title}</div>
 				</a>
+				{ canInstallPlugins &&
 				<div className="min-w-fit burst-other-plugin-status">
 					{'upgrade-to-pro' === plugin.action && (
 						<a target="_blank" href={plugin.upgrade_url}>
@@ -221,6 +223,7 @@ const OtherPluginsBlock = () => {
 						<>{__( 'Installed', 'burst-statistics' )}</>
 					)}
 				</div>
+				}
 			</div>
 		);
 	};
@@ -234,7 +237,8 @@ const OtherPluginsBlock = () => {
 					title={__( 'Other plugins', 'burst-statistics' )}
 					controls={<UpdraftPlusLogo size={24} color="gray" />}
 				/>
-				<BlockContent className={'px-6 py-0'}>
+
+				<BlockContent>
 					<div className="!flex flex-row flex-wrap mb-[10px] text-base gap-1.5 max-[992px]:flex-row max-[992px]:overflow-hidden">
 						{[ ...Array( n ) ].map( ( e, i ) => (
 							<div key={i}>
@@ -264,7 +268,8 @@ const OtherPluginsBlock = () => {
 				title={__( 'Other plugins', 'burst-statistics' )}
 				controls={<UpdraftPlusLogo size={24} color="gray" />}
 			/>
-			<BlockContent className={'px-6 py-0'}>
+
+			<BlockContent>
 				<div className="!flex flex-row flex-wrap mb-[10px] text-base gap-1.5 max-[992px]:flex-row max-[992px]:overflow-hidden">
 					{pluginData.map( ( plugin ) => otherPluginElement( plugin ) )}
 				</div>

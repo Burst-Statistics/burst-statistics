@@ -61,40 +61,39 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
 					</Select.Icon>
 				</Select.Trigger>
 
-				<Select.Content
-					className="bg-gray-100 text-black border border-gray-400 rounded-md shadow-lg ring-1 ring-black/5 overflow-hidden z-10 shadow-gray-400/50"
-					position="item-aligned"
+				<Select.Portal container={document.getElementById( 'modal-root' )}>
+					<Select.Content
+						className="bg-gray-100 text-black border border-gray-400 rounded-md shadow-lg ring-1 ring-black/5 z-[100] shadow-gray-400/50"
+						position="item-aligned"
 
-					// side="bottom"
-					// align="end"
-					// sideOffset={5}
-				>
-					<Select.ScrollUpButton className="">
-						<Icon
-							name="chevron-up"
-							color="black"
-							size={16}
-							tooltip=""
-							className=""
-						/>
-					</Select.ScrollUpButton>
-					<Select.Viewport className="">
-						{normalizedOptions.map( ( option ) => (
-							<SelectItem key={option.value} value={option.value}>
-								{option.label}
-							</SelectItem>
-						) )}
-					</Select.Viewport>
-					<Select.ScrollDownButton className="text-base">
-						<Icon
-							name="chevron-down"
-							color="white"
-							size={16}
-							tooltip=""
-							className=""
-						/>
-					</Select.ScrollDownButton>
-				</Select.Content>
+					>
+						<Select.ScrollUpButton className="">
+							<Icon
+								name="chevron-up"
+								color="black"
+								size={16}
+								tooltip=""
+								className=""
+							/>
+						</Select.ScrollUpButton>
+						<Select.Viewport className="">
+							{normalizedOptions.map( ( option ) => (
+								<SelectItem key={option.value} value={option.value}>
+									{option.label}
+								</SelectItem>
+							) )}
+						</Select.Viewport>
+						<Select.ScrollDownButton className="text-base">
+							<Icon
+								name="chevron-down"
+								color="white"
+								size={16}
+								tooltip=""
+								className=""
+							/>
+						</Select.ScrollDownButton>
+					</Select.Content>
+			</Select.Portal>
 			</Select.Root>
 		);
 	}

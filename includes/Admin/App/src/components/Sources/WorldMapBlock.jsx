@@ -9,7 +9,7 @@ import ErrorBoundary from '../Common/ErrorBoundary';
 
 const WorldMapBlock = () => {
 	return (
-		<Block className="row-span-2 xl:col-span-6">
+		<Block className="row-span-2 xl:col-span-6 group/root">
 			<ErrorBoundary>
 				<BlockHeading
 					className="border-b border-gray-200"

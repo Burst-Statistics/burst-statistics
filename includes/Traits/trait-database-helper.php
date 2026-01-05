@@ -30,7 +30,9 @@ trait Database_Helper {
 	protected function column_exists( string $table_name, string $column_name ): bool {
 		global $wpdb;
 		$table_name = $wpdb->prefix . $table_name;
-		$columns    = $wpdb->get_col( "DESC $table_name" );
+		$table_name = esc_sql( sanitize_key( $table_name ) );
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared --called with predefined table names, and sanitized above.
+		$columns = $wpdb->get_col( "DESC $table_name" );
 		return in_array( $column_name, $columns, true );
 	}
 
@@ -50,16 +52,17 @@ trait Database_Helper {
 			return;
 		}
 
-		$indexes      = array_map( 'sanitize_key', $indexes );
-		$table_name   = esc_sql( sanitize_key( $table_name ) );
-		$index        = esc_sql( implode( ', ', $indexes ) );
-		$index_name   = esc_sql( implode( '_', $indexes ) . '_index' );
-		$sql          = $wpdb->prepare( "SHOW INDEX FROM $table_name WHERE Key_name = %s", $index_name );
-		$result       = $wpdb->get_results( $sql );
+		$indexes    = array_map( 'sanitize_key', $indexes );
+		$table_name = esc_sql( sanitize_key( $table_name ) );
+		$index      = esc_sql( implode( ', ', $indexes ) );
+		$index_name = esc_sql( implode( '_', $indexes ) . '_index' );
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared --called with predefined table names, and sanitized above.
+		$result       = $wpdb->get_results( $wpdb->prepare( "SHOW INDEX FROM $table_name WHERE Key_name = %s", $index_name ) );
 		$index_exists = ! empty( $result );
 
 		if ( ! $index_exists ) {
 			$sql = "ALTER TABLE $table_name ADD INDEX $index_name ($index)";
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --called with predefined table names, and sanitized above.
 			$wpdb->query( $sql );
 
 			if ( $wpdb->last_error ) {
@@ -73,10 +76,13 @@ trait Database_Helper {
 				if ( str_contains( $wpdb->last_error, 'Specified key was too long' ) ) {
 					// Remove the original index.
 					$drop_sql = "ALTER TABLE $table_name DROP INDEX $index_name";
+                    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --called with predefined table names, and sanitized above.
 					$wpdb->query( $drop_sql );
 
 					// Try with reduced length.
+                    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --called with predefined table names, and sanitized above.
 					$reduced_sql = "ALTER TABLE $table_name ADD INDEX $index_name ($index(100))";
+                    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --called with predefined table names, and sanitized above.
 					$wpdb->query( $reduced_sql );
 					// Ignore phpstan error for the last_error check.
 					// @phpstan-ignore-next-line.

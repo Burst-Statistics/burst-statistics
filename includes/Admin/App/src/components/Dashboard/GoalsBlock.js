@@ -321,13 +321,13 @@ const GoalsBlock = () => {
 					</div>
 				) : (
 					<>
-						<div className="px-6 py-5 grid w-full grid-cols-2 gap-4 bg-yellow-light">
+						<div className="px-2.5 py-5 md:px-6 grid w-full grid-cols-2 gap-4 bg-yellow-light">
 							<TodayFilterItem {...todayFilterProps} />
 							<TotalFilterItem {...totalFilterProps} />
 						</div>
 						<div className="w-full">
 							<Tooltip content={data.topPerformer?.tooltip}>
-								<div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-4 py-2.5 px-6 even:bg-gray-100">
+								<div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-4 py-2.5 px-2.5 md:px-6 even:bg-gray-100">
 									<Icon name="winner" />
 									<p className="w-full mr-auto">
 										{safeDecodeURI(
@@ -343,7 +343,7 @@ const GoalsBlock = () => {
 								arrow
 								title={data.conversionMetric?.tooltip}
 							>
-								<div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-4 py-2.5 px-6 even:bg-gray-100">
+								<div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-4 py-2.5 px-2.5 md:px-6 even:bg-gray-100">
 									<Icon
 										name={
 											data.conversionMetric?.icon ||
@@ -361,7 +361,7 @@ const GoalsBlock = () => {
 							<Tooltip
 								content={data.conversionPercentage?.tooltip}
 							>
-								<div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-4 py-2.5 px-6 even:bg-gray-100">
+								<div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-4 py-2.5 px-2.5 md:px-6 even:bg-gray-100">
 									<Icon name="graph" />
 									<p className="w-full mr-auto">
 										{data.conversionPercentage?.title ||
@@ -374,7 +374,7 @@ const GoalsBlock = () => {
 								</div>
 							</Tooltip>
 							<Tooltip content={data.bestDevice?.tooltip}>
-								<div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-4 py-2.5 px-6 even:bg-gray-100">
+								<div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-4 py-2.5 px-2.5 md:px-6 even:bg-gray-100">
 									<Icon
 										name={
 											data.bestDevice?.icon || 'desktop'
@@ -395,12 +395,12 @@ const GoalsBlock = () => {
 
 			{0 !== goals.length && (
 				<BlockFooter>
-					<a
+					{burst_settings.manage_burst_statistics && <a
 						className={'burst-button burst-button--secondary'}
 						href={'#settings/goals'}
 					>
 						{__( 'View setup', 'burst-statistics' )}
-					</a>
+					</a> }
 					<div className="ml-auto">
 						{! isLoading && ! isError && <GoalStatus data={data} />}
 					</div>

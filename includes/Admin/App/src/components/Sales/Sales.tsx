@@ -25,6 +25,7 @@ interface SalesData {
 		change: string | null;
 		changeStatus: string | null;
 		icon?: string | null;
+		tooltipText: string | null;
 	};
 }
 
@@ -44,7 +45,8 @@ const Sales = (): JSX.Element => {
 			subtitle: '-',
 			changeStatus: null,
 			change: '-',
-			icon: 'eye'
+			icon: 'eye',
+			tooltipText: null
 		},
 		'abandonment-rate': {
 			title: __( 'Abandoned Carts', 'burst-statistics' ),
@@ -53,7 +55,8 @@ const Sales = (): JSX.Element => {
 			subtitle: '-',
 			changeStatus: null,
 			change: '-',
-			icon: 'sessions'
+			icon: 'sessions',
+			tooltipText: null
 		},
 		'average-order': {
 			title: __( 'Average Order Value', 'burst-statistics' ),
@@ -62,7 +65,8 @@ const Sales = (): JSX.Element => {
 			subtitle: '-',
 			changeStatus: null,
 			change: '-',
-			icon: 'visitors'
+			icon: 'visitors',
+			tooltipText: null
 		},
 		revenue: {
 			title: __( 'Revenue', 'burst-statistics' ),
@@ -71,7 +75,8 @@ const Sales = (): JSX.Element => {
 			subtitle: '-',
 			changeStatus: null,
 			change: '-',
-			icon: 'log-out'
+			icon: 'log-out',
+			tooltipText: null
 		}
 	};
 
@@ -105,6 +110,7 @@ const Sales = (): JSX.Element => {
 								exactValue={value.exactValue}
 								change={value.change}
 								changeStatus={value.changeStatus}
+								tooltipText={value.tooltipText}
 								className={key}
 							/>
 						);

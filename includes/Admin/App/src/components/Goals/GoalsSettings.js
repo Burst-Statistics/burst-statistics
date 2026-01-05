@@ -45,7 +45,7 @@ const GoalsSettings = () => {
 			'burst-inactive' :
 			'';
 	return (
-		<div className="box-border w-full p-6">
+		<div className="box-border w-full p-3 md:p-6">
 			<p className="text-base">
 				{__(
 					'Goals are a great way to track your progress and keep you motivated.',

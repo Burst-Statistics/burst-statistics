@@ -291,19 +291,5 @@ class Upgrade {
 			}
 			$goal->save();
 		}
-
-		// delete the setup, attribute and attribute_value fields from the db.
-		global $wpdb;
-		$table_name = $wpdb->prefix . 'burst_goals';
-
-		// Check if columns exist before querying them.
-		$columns = $wpdb->get_results( "SHOW COLUMNS FROM {$table_name}" );
-
-		foreach ( $columns as $column ) {
-			//phpcs:ignore
-			if ( $column->Field === 'setup' || $column->Field === 'attribute' || $column->Field === 'attribute_value' ) {
-				$wpdb->query( "ALTER TABLE {$table_name} DROP COLUMN {$column->Field}" );
-			}
-		}
 	}
 }

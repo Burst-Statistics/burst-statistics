@@ -84,28 +84,26 @@ const OverviewBlock = () => {
 					<TabsList tabConfig={tabConfig} tabGroup={tabGroup} />
 				}
 			/>
+
 			<BlockContent className="px-0 py-0 border-b border-gray-200">
-				{'activity' === activeTab && (
-					<TabsContent
-						className="bg-blue-light"
-						group={tabGroup}
-						id="activity"
-					>
-						<Tasks />
-					</TabsContent>
-				)}
-				{'live-visitors' === activeTab && (
-					<TabsContent
-						className="bg-brand-lightest"
-						group={tabGroup}
-						id="live-visitors"
-					>
-						<LiveTraffic />
-					</TabsContent>
-				)}
+				{
+					'activity' === activeTab && (
+						<TabsContent className="bg-blue-light" group={tabGroup} id="activity">
+							<Tasks />
+						</TabsContent>
+					)
+				}
+
+				{
+					'live-visitors' === activeTab && (
+						<TabsContent className="bg-brand-lightest" group={tabGroup} id="live-visitors">
+							<LiveTraffic />
+						</TabsContent>
+					)
+				}
 			</BlockContent>
 
-			<BlockFooter>
+			<BlockFooter className="gap-2">
 				<OverviewFooter />
 			</BlockFooter>
 		</Block>

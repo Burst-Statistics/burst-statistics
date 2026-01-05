@@ -180,19 +180,12 @@ class Frontend_Statistics {
 		if ( $query_data->limit > 0 ) {
 			$sql_parts[] = 'LIMIT %d';
 			$sql_string  = implode( ' ', $sql_parts );
-			$sql         = $wpdb->prepare(
-				$sql_string,
-				$query_data->date_start,
-				$query_data->date_end,
-				$query_data->limit
-			);
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared above.
+			$sql = $wpdb->prepare( $sql_string, $query_data->date_start, $query_data->date_end, $query_data->limit );
 		} else {
 			$sql_string = implode( ' ', $sql_parts );
-			$sql        = $wpdb->prepare(
-				$sql_string,
-				$query_data->date_start,
-				$query_data->date_end
-			);
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared above.
+			$sql = $wpdb->prepare( $sql_string, $query_data->date_start, $query_data->date_end );
 		}
 
 		return $sql;
@@ -221,6 +214,7 @@ class Frontend_Statistics {
 			$table_name = $wpdb->prefix . 'burst_' . $item . 's';
 
 			// Execute query with error handling.
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name built from predefined array.
 			$id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM {$table_name} WHERE name = %s LIMIT 1", $name ) );
 
 			// Check for database errors.
@@ -267,6 +261,7 @@ class Frontend_Statistics {
 			$table_name = $wpdb->prefix . 'burst_' . $item . 's';
 
 			// Execute query with error handling.
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name built from predefined array.
 			$name = $wpdb->get_var( $wpdb->prepare( "SELECT name FROM {$table_name} WHERE ID = %s LIMIT 1", $id ) );
 
 			// Check for database errors.
@@ -444,8 +439,9 @@ class Frontend_Statistics {
 
 		global $wpdb;
 		// Get posts sorted by pageviews.
-		$sql = $wpdb->prepare(
-			"SELECT page_id, COUNT(*) as pageview_count
+		$posts  = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT page_id, COUNT(*) as pageview_count
              FROM {$wpdb->prefix}burst_statistics
              WHERE page_id > 0
                AND time >= %d
@@ -454,13 +450,13 @@ class Frontend_Statistics {
              GROUP BY page_id
              ORDER BY pageview_count DESC
              LIMIT %d",
-			$start_time,
-			$end_time,
-			$post_type,
-			$count
+				$start_time,
+				$end_time,
+				$post_type,
+				$count
+			),
+			ARRAY_A
 		);
-
-		$posts  = $wpdb->get_results( $sql, ARRAY_A );
 		$result = [];
 
 		foreach ( $posts as $post ) {

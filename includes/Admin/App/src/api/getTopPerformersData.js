@@ -2,7 +2,8 @@ import { getData } from '../utils/api';
 import {
 	formatCurrency,
 	formatPercentage,
-	getCountryName
+	getCountryName,
+	formatCurrencyCompact
 } from '../utils/formatting';
 import { __ } from '@wordpress/i18n';
 
@@ -125,9 +126,10 @@ export const transformTopPerformersData = ( data, selectedOption ) => {
 		if ( 'revenue' === selectedOption ) {
 			const revenue = current?.total_revenue ?? 0;
 			transformedData[name].value = 0 < revenue ?
-				formatCurrency( current.currency ?? 'USD', revenue ) :
-				formatCurrency( current?.currency ?? 'USD', 0 );
+				formatCurrencyCompact( current.currency ?? 'USD', revenue ) :
+				formatCurrencyCompact( current?.currency ?? 'USD', 0 );
 			transformedData[name].exactValue = revenue;
+			transformedData[name].tooltipText = formatCurrency( current.currency ?? 'USD', revenue );
 		} else {
 			const quantity = current?.total_quantity_sold ?? 0;
 			transformedData[name].value = quantity;

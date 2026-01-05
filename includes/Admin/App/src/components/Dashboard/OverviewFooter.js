@@ -99,7 +99,7 @@ const OverviewFooter = () => {
 			</ButtonInput>
 
 			<Tooltip content={trackingTooltipText}>
-				<div className="w-max text-gray flex items-center min-w-0 leading-none gap-1.5 no-underline ml-auto burst-tooltip-trackingtext">
+				<div className="w-max text-gray flex items-center min-w-0 leading-none gap-1.5 no-underline burst-tooltip-trackingtext">
 					<Icon name={trackingIcon} color={trackingIconColor} />
 					<div>{trackingText}</div>
 				</div>

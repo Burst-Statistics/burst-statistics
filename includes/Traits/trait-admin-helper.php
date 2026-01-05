@@ -4,6 +4,7 @@ namespace Burst\Traits;
 
 use Burst\Frontend\Ip\Ip;
 
+use Burst\Pro\Admin\Share\Share;
 use function Burst\burst_loader;
 use function burst_is_logged_in_rest;
 use function burst_get_option;
@@ -31,16 +32,35 @@ trait Admin_Helper {
 		}
 
 		if ( ! is_user_logged_in() ) {
-			burst_loader()->user_can_view = false;
-			return false;
-		}
-		if ( ! current_user_can( 'view_burst_statistics' ) ) {
-			burst_loader()->user_can_view = false;
-			return false;
+			return burst_loader()->user_can_view = false;
 		}
 
-		burst_loader()->user_can_view = true;
-		return true;
+		if ( ! current_user_can( 'view_burst_statistics' ) ) {
+			return burst_loader()->user_can_view = false;
+		}
+
+		return burst_loader()->user_can_view = true;
+	}
+
+	/**
+	 * Check if user has Burst view permissions
+	 *
+	 * @return boolean true or false
+	 */
+	protected function user_can_view_sales(): bool {
+		if ( isset( burst_loader()->user_can_view_sales ) ) {
+			return burst_loader()->user_can_view_sales;
+		}
+
+		if ( ! is_user_logged_in() ) {
+			return burst_loader()->user_can_view_sales = false;
+		}
+
+		if ( ! current_user_can( 'view_sales_burst_statistics' ) ) {
+			return burst_loader()->user_can_view_sales = false;
+		}
+
+		return burst_loader()->user_can_view_sales = true;
 	}
 
 	/**
@@ -103,6 +123,43 @@ trait Admin_Helper {
 	}
 
 	/**
+	 * Validate a share token
+	 */
+	public function validate_share_token( string $token ): bool {
+		if ( ! preg_match( '/^[a-f0-9]{32}$/i', $token ) ) {
+			return false;
+		}
+
+		$existing_tokens = get_option( 'burst_share_tokens', [] );
+		$valid           = false;
+		$current_time    = time();
+		foreach ( $existing_tokens as $key => $token_data ) {
+			if ( $token_data['expires'] < $current_time ) {
+				// Token expired, remove it.
+				unset( $existing_tokens[ $key ] );
+				continue;
+			}
+			if ( $token_data['token'] === $token ) {
+				$valid = true;
+				break;
+			}
+		}
+		$request_count = (int) get_transient( "burst_shared_link_request_count_$token" );
+		++$request_count;
+		set_transient( "burst_shared_link_request_count_$token", $request_count, MINUTE_IN_SECONDS );
+
+		if ( $request_count > apply_filters( 'burst_max_shared_link_requests', 100 ) ) {
+			// Exceeded max requests for this shared link.
+			self::error_log( "Shared link token $token has exceeded max requests: $request_count" );
+			return false;
+		}
+
+		// Update the option to remove expired tokens.
+		update_option( 'burst_share_tokens', $existing_tokens );
+		return $valid;
+	}
+
+	/**
 	 * Checks if the user has admin access to the Burst plugin.
 	 */
 	protected function has_admin_access(): bool {
@@ -114,10 +171,18 @@ trait Admin_Helper {
 		if ( wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) || burst_is_logged_in_rest() ) {
 			return burst_loader()->has_admin_access = true;
 		}
+
 		// during activation, we need to load some additional files.
 		if ( get_option( 'burst_run_activation' ) ) {
 			return burst_loader()->has_admin_access = true;
 		}
+
+		// the share token is a nonce in itself with an expiry.
+        // phpcs:ignore
+		if ( isset( $_GET['burst_share_token'] ) && $this->validate_share_token( wp_unslash( $_GET['burst_share_token'] ) ) ) {
+			return burst_loader()->has_admin_access = true;
+		}
+
 		// Only check caps in admin; avoids loading user on frontend.
 		if ( is_admin() ) {
 			// Avoids double calls; still loads user once if needed.
@@ -130,22 +195,32 @@ trait Admin_Helper {
 	}
 
 	/**
-	 * Checks if user has sales admin access to the Burst plugin.
+	 * Check if the current user has the 'burst_viewer' role.
 	 */
-	protected function has_sales_admin_access(): bool {
-		if ( ! $this->has_admin_access() ) {
-			return false;
+	private static function is_shareable_link_viewer(): bool {
+		if ( isset( burst_loader()->is_shareable_link_viewer ) ) {
+			return burst_loader()->is_shareable_link_viewer;
 		}
+		$user = wp_get_current_user();
+		return burst_loader()->is_shareable_link_viewer = in_array( 'burst_viewer', (array) $user->roles, true );
+	}
 
-		if ( ! is_user_logged_in() ) {
-			return false;
-		}
-
-		if ( ! current_user_can( 'view_sales_burst_statistics' ) ) {
-			return false;
-		}
-
-		return true;
+	/**
+	 * Get share link permissions
+	 *
+	 * @return array <string, bool> Associative array of share link permissions.
+	 */
+	private static function get_share_link_permissions(): array {
+		// if the current user is NOT a shareable link viewer, it is a normal user with full permissions.
+		$is_shareable_link_viewer = self::is_shareable_link_viewer();
+		return apply_filters(
+			'burst_share_link_permissions',
+			[
+				'can_change_date'          => ! $is_shareable_link_viewer,
+				'can_filter'               => ! $is_shareable_link_viewer,
+				'is_shareable_link_viewer' => $is_shareable_link_viewer,
+			]
+		);
 	}
 
 	/**
@@ -153,49 +228,67 @@ trait Admin_Helper {
 	 *
 	 * @param array $js_data Array of loaded translations.
 	 * @return array{
-	 *     json_translations: list<array<string, mixed>>,
+	 *     burst_version: string,
+	 *     is_pro: bool,
+	 *     plugin_url: string,
+	 *     installed_by: string,
 	 *     site_url: string,
 	 *     admin_ajax_url: string,
 	 *     dashboard_url: string,
-	 *     plugin_url: string,
 	 *     network_link: string,
-	 *     is_pro: bool,
 	 *     nonce: string,
 	 *     burst_nonce: string,
 	 *     current_ip: string,
 	 *     user_roles: array<string, string>,
-	 *     date_ranges: array<int, string>,
+	 *     view_sales_burst_statistics: bool,
+	 *     manage_burst_statistics: bool,
+	 *     can_install_plugins: bool,
+	 *     is_shareable_link_viewer: bool,
+	 *     json_translations: list<array<string, mixed>>,
 	 *     date_format: string,
-	 *     tour_shown: mixed,
-	 *     gmt_offset: mixed,
-	 *     goals_information_shown: int,
-	 *     burst_version: string,
-	 *     installed_by: string
+	 *     gmt_offset: float|int|string,
+	 *     date_ranges: array<int, string>,
+	 *     tour_shown: int
 	 * }
 	 */
 	protected function localized_settings( array $js_data ): array {
+		$user_can_install = current_user_can( 'install_plugins' );
 		return apply_filters(
 			'burst_localize_script',
 			[
-				'json_translations'           => $js_data['json_translations'],
+				// Core plugin information.
+				'burst_version'               => BURST_VERSION,
+				'is_pro'                      => defined( 'BURST_PRO' ),
+				'plugin_url'                  => BURST_URL,
+				'installed_by'                => get_option( 'teamupdraft_installation_source_burst-statistics', '' ),
+
+				// URLs and endpoints.
 				'site_url'                    => get_rest_url(),
 				'admin_ajax_url'              => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
 				'dashboard_url'               => $this->admin_url( 'burst' ),
-				'plugin_url'                  => BURST_URL,
 				'network_link'                => network_site_url( 'plugins.php' ),
-				'is_pro'                      => defined( 'BURST_PRO' ),
-				// to authenticate the logged in user.
+
+				// Security and authentication.
 				'nonce'                       => wp_create_nonce( 'wp_rest' ),
 				'burst_nonce'                 => wp_create_nonce( 'burst_nonce' ),
 				'current_ip'                  => Ip::get_ip_address(),
+
+				// User permissions and capabilities.
 				'user_roles'                  => $this->get_user_roles(),
-				'date_ranges'                 => $this->get_date_ranges(),
+				'view_sales_burst_statistics' => $this->user_can_view_sales(),
+				'manage_burst_statistics'     => $this->user_can_manage(),
+				'can_install_plugins'         => $user_can_install,
+				'share_link_permissions'      => self::get_share_link_permissions(),
+
+				// Localization and internationalization.
+				'json_translations'           => $js_data['json_translations'],
 				'date_format'                 => get_option( 'date_format' ),
-				'tour_shown'                  => $this->get_option_int( 'burst_tour_shown_once' ),
 				'gmt_offset'                  => get_option( 'gmt_offset' ),
-				'burst_version'               => BURST_VERSION,
-				'installed_by'                => get_option( 'teamupdraft_installation_source_burst-statistics', '' ),
-				'view_sales_burst_statistics' => current_user_can( 'view_sales_burst_statistics' ),
+
+				// Configuration and options.
+				'date_ranges'                 => $this->get_date_ranges(),
+				'tour_shown'                  => $this->get_option_int( 'burst_tour_shown_once' ),
+
 			]
 		);
 	}
@@ -303,7 +396,8 @@ trait Admin_Helper {
 		if ( empty( $nonce ) ) {
 			return false;
 		}
-		return wp_verify_nonce( sanitize_text_field( wp_unslash( $nonce ) ), $action );
+		$valid = wp_verify_nonce( sanitize_text_field( wp_unslash( $nonce ) ), $action );
+		return apply_filters( 'burst_verify_nonce', wp_verify_nonce( sanitize_text_field( wp_unslash( $nonce ) ), $action ), $nonce, $action );
 	}
 
 	/**

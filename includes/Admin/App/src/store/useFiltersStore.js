@@ -143,6 +143,46 @@ export const useFiltersStore = create(
 					};
 				}
 				return persistedState;
+			},
+			storage: {
+				getItem: ( name ) => {
+					try {
+						const str = localStorage.getItem( name );
+						return str ? JSON.parse( str ) : null;
+					} catch ( error ) {
+						console.warn( 'Failed to read from localStorage:', error );
+						return null;
+					}
+				},
+				setItem: ( name, value ) => {
+					try {
+						localStorage.setItem( name, JSON.stringify( value ) );
+					} catch ( error ) {
+						console.warn( 'Failed to write to localStorage:', error );
+						if ( 'QuotaExceededError' === error.name ) {
+							console.warn( 'Storage quota exceeded, clearing saved filters' );
+
+							// Keep favorites but clear savedFilters to free space
+							try {
+								const minimalValue = {
+									...value,
+									savedFilters: {} // Clear the large data
+								};
+								localStorage.removeItem( name );
+								localStorage.setItem( name, JSON.stringify( minimalValue ) );
+							} catch ( retryError ) {
+								console.error( 'Failed to save even after cleanup:', retryError );
+							}
+						}
+					}
+				},
+				removeItem: ( name ) => {
+					try {
+						localStorage.removeItem( name );
+					} catch ( error ) {
+						console.warn( 'Failed to remove from localStorage:', error );
+					}
+				}
 			}
 		}
 	)

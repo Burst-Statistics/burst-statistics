@@ -1,41 +1,32 @@
-import Icon from '../../../utils/Icon';
 import { __ } from '@wordpress/i18n';
+import IconButton from '../../Inputs/IconButton';
 
 /**
- * Reusable AddFilterButton component for adding new filters
+ * Reusable AddFilterButton component for adding new filters.
+ * Uses the generic IconButton component with dashed variant styling.
  *
- * @param {Object}   props           - Component props
- * @param {Function} props.onClick   - Callback function when button is clicked
- * @param {string}   props.className - Additional CSS classes
- * @param {string}   props.label     - Button label (default: 'Add filter')
- * @return {JSX.Element} AddFilterButton component
+ * @param {Object}   props           - Component props.
+ * @param {Function} props.onClick   - Callback function when button is clicked.
+ * @param {string}   props.className - Additional CSS classes.
+ * @param {string}   props.label     - Button label (default: 'Add filter').
+ * @param {string}   props.icon      - Button icon (default: 'plus').
+ * @return {JSX.Element} AddFilterButton component.
  */
 const AddFilterButton = ({
 	onClick,
 	className = '',
+	icon = 'plus',
 	label = __( 'Add filter', 'burst-statistics' )
 }) => {
-	const baseClasses =
-		'inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-200 shadow-sm rounded-md text-sm transition-all duration-200 hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)] border-dashed cursor-pointer transition-colors';
-	const combinedClasses = `${baseClasses} ${className}`.trim();
-
 	return (
-		<div
-			className={combinedClasses}
+		<IconButton
+			variant="dashed"
+			icon={icon}
+			label={label}
 			onClick={onClick}
-			role="button"
-			tabIndex={0}
-			onKeyDown={( e ) => {
-				if ( 'Enter' === e.key || ' ' === e.key ) {
-					e.preventDefault();
-					onClick?.( e );
-				}
-			}}
-			aria-label={label}
-		>
-			<Icon name="plus" size="16" />
-			<p className="font-medium">{label}</p>
-		</div>
+			className={className}
+			ariaLabel={label}
+		/>
 	);
 };
 

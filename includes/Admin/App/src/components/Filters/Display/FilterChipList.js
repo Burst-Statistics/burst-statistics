@@ -1,4 +1,5 @@
 import FilterChip from './FilterChip';
+import useShareableLinkStore from '@/store/useShareableLinkStore';
 
 /**
  * Reusable FilterChipList component for displaying a list of filter chips
@@ -20,6 +21,8 @@ const FilterChipList = ({
 	showRemoveButton = true,
 	emptyMessage = null
 }) => {
+	const userCanFilter = useShareableLinkStore( ( state ) => state.userCanFilterDateRange );
+
 	if ( ( ! Array.isArray( filters ) || 0 === filters.length ) && ! emptyMessage ) {
 
 		// If filters is not an array or is empty, return null
@@ -35,6 +38,7 @@ const FilterChipList = ({
 		<div className={className}>
 			{filters.map( ( filter ) => (
 				<FilterChip
+					disabled={ ! userCanFilter }
 					key={filter.key}
 					filter={filter}
 					onRemove={onRemove}

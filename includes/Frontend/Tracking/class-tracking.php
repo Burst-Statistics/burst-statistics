@@ -461,10 +461,8 @@ class Tracking {
 			if ( false === $all_items ) {
 				// Cache miss - load all items from database.
 				global $wpdb;
-				$results = $wpdb->get_results(
-					"SELECT ID, name FROM {$wpdb->prefix}burst_{$item}s",
-					OBJECT_K
-				);
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name cannot be parameterized. Selected from safe list above.
+				$results = $wpdb->get_results( "SELECT ID, name FROM {$wpdb->prefix}burst_{$item}s", OBJECT_K );
 
 				$all_items = [];
 				foreach ( $results as $result ) {
@@ -595,8 +593,11 @@ class Tracking {
 			return [];
 		}
 
-		// Prevent queries during install.
-		if ( defined( 'BURST_INSTALL_TABLES_RUNNING' ) ) {
+		// Prevent queries during install or uninstall.
+		if (
+			defined( 'BURST_INSTALL_TABLES_RUNNING' ) ||
+			defined( 'BURST_UNINSTALLING' )
+		) {
 			return [];
 		}
 
@@ -726,21 +727,6 @@ class Tracking {
 	}
 
 	/**
-	 * Get first time visit
-	 */
-	public function is_first_time_visit( string $burst_uid ): int {
-		global $wpdb;
-		// Check if uid is already in the database.
-		$sql                = $wpdb->prepare(
-			"SELECT EXISTS(SELECT 1 FROM {$wpdb->prefix}burst_statistics WHERE uid = %s LIMIT 1)",
-			$burst_uid,
-		);
-		$fingerprint_exists = $wpdb->get_var( $sql );
-
-		return $fingerprint_exists ? 0 : 1;
-	}
-
-	/**
 	 * Get last user statistic from the burst_statistics table.
 	 *
 	 * @param string $uid         The user identifier or fingerprint.
@@ -773,6 +759,7 @@ class Tracking {
 		if ( $need_session_data ) {
 			// With JOIN to get host.
 			$last_row = $wpdb->get_row(
+                // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where consists of only prepared parts.
 				$wpdb->prepare(
 					"SELECT 
                     s.ID, 
@@ -789,23 +776,12 @@ class Tracking {
                 LIMIT 1",
 					$uid
 				)
+                // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			);
 		} else {
 			$last_row = $wpdb->get_row(
-				$wpdb->prepare(
-					"SELECT 
-                    ID, 
-                    session_id, 
-                    parameters, 
-                    time_on_page, 
-                    bounce, 
-                    page_url
-                FROM {$wpdb->prefix}burst_statistics
-                WHERE uid = %s {$where} 
-                ORDER BY ID DESC 
-                LIMIT 1",
-					$uid
-				)
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where consists of only prepared parts.
+				$wpdb->prepare( "SELECT ID, session_id, parameters, time_on_page, bounce, page_url FROM {$wpdb->prefix}burst_statistics WHERE uid = %s {$where} ORDER BY ID DESC LIMIT 1", $uid )
 			);
 		}
 
@@ -914,12 +890,8 @@ class Tracking {
 		foreach ( $goal_ids as $goal_id ) {
 			$values[] = $wpdb->prepare( '(%d, %d)', $goal_id, $statistic_id );
 		}
-
-		$wpdb->query(
-			"INSERT IGNORE INTO {$wpdb->prefix}burst_goal_statistics 
-        (goal_id, statistic_id) 
-        VALUES " . implode( ',', $values )
-		);
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Using prepare for each value above.
+		$wpdb->query( "INSERT IGNORE INTO {$wpdb->prefix}burst_goal_statistics (goal_id, statistic_id)  VALUES " . implode( ',', $values ) );
 	}
 
 	/**
