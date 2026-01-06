@@ -860,8 +860,7 @@ export const ShareButton = () => {
 
 	// Don't render if license doesn't support sharing.
 	if ( ! isLicenseValidFor( 'share-link' ) ) {
-
-		//return null;
+		return null;
 	}
 
 	return (

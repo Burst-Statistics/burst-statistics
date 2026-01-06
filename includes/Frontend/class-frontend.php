@@ -315,10 +315,9 @@ class Frontend {
 		}
 
 		if ( ! $this->exclude_from_tracking() ) {
-			$ghost_mode_enabled      = (bool) apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
 			$cookieless              = $this->get_option_bool( 'enable_cookieless_tracking' );
 			$cookieless_text         = $cookieless ? '-cookieless' : '';
-			$prefix                  = $ghost_mode_enabled ? 'b' : 'burst';
+			$prefix                  = 'burst';
 			$in_footer               = $this->get_option_bool( 'enable_turbo_mode' );
 			$deps                    = $this->tracking->beacon_enabled() ? [ $prefix . '-timeme' ] : [ $prefix . '-timeme', 'wp-api-fetch' ];
 			$combine_vars_and_script = $this->get_option_bool( 'combine_vars_and_script', true );
@@ -326,13 +325,15 @@ class Frontend {
 			$file_path               = BURST_PATH . "assets/js/build/burst$cookieless_text.min.js";
 			$add_localize_script     = true;
 			if ( $combine_vars_and_script ) {
-				$filename    = $this->get_frontend_js_filename();
-				$root        = apply_filters( 'burst_obfuscate_filename', $ghost_mode_enabled );
-				$upload_url  = $this->upload_url( 'js', $root );
-				$upload_path = $this->upload_dir( 'js', $root );
+				$ghost_mode_enabled = (bool) apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
+				$filename           = $this->get_frontend_js_filename();
+				$root               = apply_filters( 'burst_obfuscate_filename', $ghost_mode_enabled );
+				$upload_url         = $this->upload_url( 'js', $root );
+				$upload_path        = $this->upload_dir( 'js', $root );
 
-				// Fallback to default filename if the custom written one doesn't exist.
+				// Only use the written file if it exists.
 				if ( file_exists( $upload_path . $filename ) ) {
+					$prefix              = $ghost_mode_enabled ? 'b' : 'burst';
 					$file_url            = $upload_url . $filename;
 					$file_path           = $upload_path . $filename;
 					$add_localize_script = false;
@@ -340,7 +341,7 @@ class Frontend {
 			}
 
 			wp_enqueue_script(
-				'burst',
+				$prefix,
 				$file_url,
 				apply_filters( 'burst_script_dependencies', $deps ),
 				filemtime( $file_path ),
@@ -349,7 +350,7 @@ class Frontend {
 
 			if ( $add_localize_script ) {
 				wp_localize_script(
-					'burst',
+					$prefix,
 					'burst',
 					$this->tracking->get_options()
 				);
