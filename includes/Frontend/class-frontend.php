@@ -319,7 +319,6 @@ class Frontend {
 			$cookieless_text         = $cookieless ? '-cookieless' : '';
 			$prefix                  = 'burst';
 			$in_footer               = $this->get_option_bool( 'enable_turbo_mode' );
-			$deps                    = $this->tracking->beacon_enabled() ? [ $prefix . '-timeme' ] : [ $prefix . '-timeme', 'wp-api-fetch' ];
 			$combine_vars_and_script = $this->get_option_bool( 'combine_vars_and_script', true );
 			$file_url                = BURST_URL . "assets/js/build/burst$cookieless_text.min.js";
 			$file_path               = BURST_PATH . "assets/js/build/burst$cookieless_text.min.js";
@@ -339,7 +338,7 @@ class Frontend {
 					$add_localize_script = false;
 				}
 			}
-
+			$deps = $this->tracking->beacon_enabled() ? [ $prefix . '-timeme' ] : [ $prefix . '-timeme', 'wp-api-fetch' ];
 			wp_enqueue_script(
 				$prefix,
 				$file_url,
