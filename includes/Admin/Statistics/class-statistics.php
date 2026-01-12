@@ -1195,6 +1195,7 @@ class Statistics {
 				'platform'         => 'statistics.platform_id',
 				'platform_id'      => 'statistics.platform_id',
 				'browser_id'       => 'statistics.browser_id',
+				'device'           => 'statistics.device_id',
 				'device_id'        => 'statistics.device_id',
 				'entry_exit_pages' => 'entry_exit_pages',
 				'parameter'        => 'parameter',

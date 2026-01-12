@@ -50,7 +50,7 @@ const getMenuItemUrl = ( menuItem ) => {
  * @return { JSX.Element } The rendered Header component.
  */
 const Header = () => {
-	const isShareableLinkViewer = useShareableLinkStore( ( state ) => state.userCanFilterDateRange );
+	const isShareableLinkViewer = useShareableLinkStore( ( state ) => state.isShareableLinkViewer );
 
 	const menu = Array.isArray( burst_settings.menu ) ?
 		burst_settings.menu :

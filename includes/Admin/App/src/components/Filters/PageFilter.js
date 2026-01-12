@@ -10,7 +10,7 @@ import useShareableLinkStore from '@/store/useShareableLinkStore';
  * @return {JSX.Element} PageFilter component
  */
 export const PageFilter = () => {
-	const userCanFilter = useShareableLinkStore( ( state ) => state.userCanFilterDateRange );
+	const userCanFilter = useShareableLinkStore( ( state ) => state.userCanFilter );
 	const [ isModalOpen, setIsModalOpen ] = useState( false );
 	const [ editingFilter, setEditingFilter ] = useState( null );
 	const { activeFilters, removeFilter } = useFilterDisplay();

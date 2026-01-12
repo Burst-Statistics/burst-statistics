@@ -6,8 +6,6 @@ const useShareableLinkStore = create( () => {
     const canFilterDateRange = burst_settings?.share_link_permissions?.can_change_date || false;
 
     return {
-        canFilter,
-        canFilterDateRange,
         isShareableLinkViewer,
         userCanFilter: ! isShareableLinkViewer || canFilter,
         userCanFilterDateRange: ! isShareableLinkViewer || canFilterDateRange

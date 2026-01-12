@@ -48,10 +48,25 @@ class Onboarding {
 		$this->onboarding_path = __DIR__;
 		$this->onboarding_url  = plugin_dir_url( __FILE__ );
 
+		$this->maybe_flush_rewrite_rules();
+
 		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
 		add_action( 'wp_ajax_' . $this->prefix . '_onboarding_rest_api_fallback', [ $this, 'rest_api_fallback' ] );
 		add_action( "admin_print_scripts-{$this->page_hook_suffix}", [ $this, 'enqueue_onboarding_scripts' ], 1 );
 		add_action( 'admin_footer', [ $this, 'add_root_html' ] );
+	}
+
+	/**
+	 * Flush rewrite rules on first onboarding initialization
+	 * As we're registering the rest route conditionally, we need to flush the rewrite rules once.
+	 */
+	private function maybe_flush_rewrite_rules(): void {
+		$flushed_option = $this->prefix . '_onboarding_flushed_rewrite_rules';
+
+		if ( ! get_site_option( $flushed_option ) ) {
+			flush_rewrite_rules();
+			update_site_option( $flushed_option, time() );
+		}
 	}
 
 	/**
@@ -231,6 +246,7 @@ class Onboarding {
 			delete_option( $prefix . '_skipped_onboarding' );
 			delete_option( $prefix . '_start_onboarding' );
 			delete_option( $prefix . '_completed_onboarding' );
+			delete_site_option( $prefix . '_onboarding_flushed_rewrite_rules' );
 			return false;
 		}
 

@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useMemo } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import {useState, useCallback, useEffect, useMemo, createInterpolateElement} from '@wordpress/element';
+import {__, _n, sprintf} from '@wordpress/i18n';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLocation } from '@tanstack/react-router';
 import { doAction } from '@/utils/api';
@@ -230,25 +230,53 @@ const LinkConfigurationSummary = ({ currentTab, startDate, endDate, filters }) =
 				{hasFilters && (
 					<>
 						<dt className="font-base text-gray">
-							{1 === activeFilters.length ?
-								__( 'Filter:', 'burst-statistics' ) :
-								__( 'Filters:', 'burst-statistics' )}
+							{sprintf(
+								_n( 'Filter:', 'Filters:', activeFilters.length, 'burst-statistics' )
+							)}
 						</dt>
 						<dd className="font-medium text-black">
-							{activeFilters.map( ( filter, index ) => (
-								<span key={filter.key}>
-									{0 < index && (
-										<span className="font-light text-gray">
-											{' '}{__( 'and', 'burst-statistics' )}{' '}
-										</span>
-									)}
-									{filter.label}
-									<span className="font-light text-gray">
-										{' '}{__( 'is', 'burst-statistics' )}{' '}
-									</span>
-									{filter.value}
-								</span>
-							) )}
+							{activeFilters.map( ( filter, index ) => {
+								if ( 0 === index ) {
+
+									// first filter: "Page is Homepage"
+									return (
+										<span key={filter.key}>
+                        {createInterpolateElement(
+							sprintf(
+
+								/* translators: 1: filter label, 2: filter value */
+								__( '%1$s is %2$s', 'burst-statistics' ),
+								'<strong>' + filter.label + '</strong>',
+								'<em>' + filter.value + '</em>'
+							),
+							{
+								strong: <span className="font-medium text-black" />,
+								em: <span className="font-light text-gray" />
+							}
+						)}
+                    </span>
+									);
+								}
+
+								// next filters: "and Page is Contact"
+								return (
+									<span key={filter.key}>
+                    {createInterpolateElement(
+						sprintf(
+
+							/* translators: 1: filter label, 2: filter value */
+							__( ' and %1$s is %2$s', 'burst-statistics' ),
+							'<strong>' + filter.label + '</strong>',
+							'<em>' + filter.value + '</em>'
+						),
+						{
+							strong: <span className="font-medium text-black" />,
+							em: <span className="font-light text-gray" />
+						}
+					)}
+                </span>
+								);
+							})}
 						</dd>
 					</>
 				)}

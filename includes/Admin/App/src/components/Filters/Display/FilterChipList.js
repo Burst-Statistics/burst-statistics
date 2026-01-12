@@ -21,7 +21,7 @@ const FilterChipList = ({
 	showRemoveButton = true,
 	emptyMessage = null
 }) => {
-	const userCanFilter = useShareableLinkStore( ( state ) => state.userCanFilterDateRange );
+	const userCanFilter = useShareableLinkStore( ( state ) => state.userCanFilter );
 
 	if ( ( ! Array.isArray( filters ) || 0 === filters.length ) && ! emptyMessage ) {
 

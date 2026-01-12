@@ -69,9 +69,8 @@ class Frontend_Admin {
 			if ( ! in_array( $post->post_type, $burst_top_bar_post_types, true ) ) {
 				return;
 			}
-			$frontend = new Frontend();
-			$count    = $frontend->get_post_pageviews( $post->ID );
-			$count    = $this->format_number_short( $count );
+			$count = \Burst\burst_loader()->frontend->get_post_pageviews( $post->ID );
+			$count = $this->format_number_short( $count );
 		} else {
 			return;
 		}
