@@ -318,6 +318,7 @@ class Query_Data {
 				'browser',
 				'platform',
 				'period',
+				'continent_code',
 			];
 		} else {
 			$group_by   = $this->get_allowed_metrics();
@@ -757,6 +758,7 @@ class Query_Data {
 				'city'                  => __( 'City', 'burst-statistics' ),
 				'state'                 => __( 'State', 'burst-statistics' ),
 				'continent'             => __( 'Continent', 'burst-statistics' ),
+				'continent_code'        => __( 'Continent', 'burst-statistics' ),
 				'source'                => __( 'Source', 'burst-statistics' ),
 				'medium'                => __( 'Medium', 'burst-statistics' ),
 				'campaign'              => __( 'Campaign', 'burst-statistics' ),

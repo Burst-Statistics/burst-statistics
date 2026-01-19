@@ -207,6 +207,14 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		pro: true,
 		category: 'location'
 	},
+	continent_code: {
+		label: __( 'Continent', 'burst-statistics' ),
+		icon: 'continent',
+		type: 'string',
+		options: 'continents',
+		pro: true,
+		category: 'location'
+	},
 	time_per_session: {
 		label: __( 'Time per Session', 'burst-statistics' ),
 		icon: 'time',

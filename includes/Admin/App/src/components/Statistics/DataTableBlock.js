@@ -25,17 +25,17 @@ import {
  * DataTableBlock component for displaying a block with a datatable. This
  * component is used in the StatisticsPage.
  *
- * @param  {Object}  props                - Component props.
- * @param  {Array}   props.allowedConfigs - Allowed datatable configurations.
- * @param  {string}  props.id             - Unique identifier for the datatable.
- * @param  {boolean} props.isEcommerce    - Whether this is an eCommerce datatable.
+ * @param  {Object}  props                Component props.
+ * @param  {Array}   props.allowedConfigs Allowed datatable configurations.
+ * @param  {string}  props.id             Unique identifier for the datatable.
+ * @param  {boolean} props.isEcommerce    Whether this is an eCommerce datatable.
  * @return {JSX.Element} The DataTableBlock component.
  */
 const DataTableBlock = ({
-	allowedConfigs = [ 'pages', 'referrers' ],
-	id,
-	isEcommerce = false
-}) => {
+							allowedConfigs = [ 'pages', 'referrers' ],
+							id,
+							isEcommerce = false
+						}) => {
 	const { startDate, endDate, range } = useDate( ( state ) => state );
 	const { filters } = useFilters();
 	const defaultConfig = allowedConfigs[0];
@@ -507,26 +507,11 @@ const DataTableBlock = ({
 					align: 'left',
 					group_by: true
 				},
-
-				// TODO: Enable when product page view tracking is implemented.
-				// product_views: {
-				// 	label: __( 'Views', 'burst-statistics' ),
-				// 	pro: true,
-				// 	align: 'right'
-				// },
 				adds_to_cart: {
 					label: __( 'Adds to cart', 'burst-statistics' ),
 					pro: true,
 					align: 'right'
 				},
-
-				// TODO: Enable when product page view tracking is implemented.
-				// cart_to_view_rate: {
-				// 	label: __( 'Cart-to-view rate', 'burst-statistics' ),
-				// 	pro: true,
-				// 	format: 'percentage',
-				// 	align: 'right'
-				// },
 				sales: {
 					label: __( 'Sales', 'burst-statistics' ),
 					pro: true,
@@ -538,14 +523,6 @@ const DataTableBlock = ({
 					format: 'currency',
 					align: 'right'
 				}
-
-				// TODO: Enable when product page view tracking is implemented.
-				// purchase_to_view_rate: {
-				// 	label: __( 'Purchase-to-view rate', 'burst-statistics' ),
-				// 	pro: true,
-				// 	format: 'percentage',
-				// 	align: 'right'
-				// }
 			}
 		}
 	};
@@ -555,7 +532,9 @@ const DataTableBlock = ({
 		getSelectedConfig,
 		setSelectedConfig: setSelectedConfigStore,
 		getColumns: getColumnsStore,
-		setColumns: setColumnsStore
+		setColumns: setColumnsStore,
+		getSortConfig,
+		setSortConfig
 	} = useDataTableStore();
 
 	const [ selectedConfig, setSelectedConfigState ] = useState( () =>
@@ -581,6 +560,17 @@ const DataTableBlock = ({
 		return initialColumns.filter( ( column ) =>
 			availableColumns.includes( column )
 		);
+	});
+
+	// Sort state: initialise from localStorage
+	const [ sortField, setSortFieldState ] = useState( () => {
+		const saved = getSortConfig( selectedConfig );
+		return saved?.fieldId ?? 2;
+	});
+
+	const [ sortDirection, setSortDirectionState ] = useState( () => {
+		const saved = getSortConfig( selectedConfig );
+		return saved?.direction ?? 'desc';
 	});
 
 	const setColumns = useCallback(
@@ -610,7 +600,32 @@ const DataTableBlock = ({
 			config[selectedConfig]?.defaultColumns || []
 		);
 		setColumns( newColumns );
-	}, [ selectedConfig, setColumns, getColumnsStore ]); // eslint-disable-line react-hooks/exhaustive-deps
+
+		const savedSort = getSortConfig( selectedConfig );
+		if ( savedSort ) {
+			setSortFieldState( savedSort.fieldId );
+			setSortDirectionState( savedSort.direction );
+		} else {
+			setSortFieldState( 2 );
+			setSortDirectionState( 'desc' );
+		}
+	}, [ selectedConfig, setColumns, getColumnsStore, getSortConfig ]); // eslint-disable-line react-hooks/exhaustive-deps
+
+
+	const handleSort = useCallback(
+		( column, sortDirection ) => {
+			const fieldId = column.id || column.selector;
+			const direction = sortDirection.toLowerCase();
+
+			setSortFieldState( fieldId );
+			setSortDirectionState( direction );
+			setSortConfig( selectedConfig, {
+				fieldId,
+				direction
+			});
+		},
+		[ selectedConfig, setSortConfig ]
+	);
 
 	// search
 	const [ filterText, setFilterText ] = useState( '' );
@@ -732,8 +747,50 @@ const DataTableBlock = ({
 			filtered = tableData;
 		}
 
+		// Sort the filtered data.
+		filtered = [ ...filtered ].sort( ( a, b ) => {
+			let actualSortField = sortField;
+
+			//if sortField is not in sortedColumnsData, use the second column as default
+			if ( ! actualSortField && 1 < sortedColumnsData.length ) {
+				actualSortField = sortedColumnsData[1].id;
+			}
+
+			const aValue = a[actualSortField];
+			const bValue = b[actualSortField];
+
+			// Handle null/undefined values
+			if ( null === aValue || aValue === undefined ) {
+return 1;
+}
+			if ( null === bValue || bValue === undefined ) {
+return -1;
+}
+
+			// Check if both values are numeric (including numeric strings)
+			const aNum = Number( aValue );
+			const bNum = Number( bValue );
+			const aIsNumeric = ! isNaN( aNum ) && '' !== aValue && null !== aValue;
+			const bIsNumeric = ! isNaN( bNum ) && '' !== bValue && null !== bValue;
+
+			// If both are numeric, do numeric comparison
+			if ( aIsNumeric && bIsNumeric ) {
+				return 'asc' === sortDirection ? aNum - bNum : bNum - aNum;
+			}
+
+			// String comparison for non-numeric values
+			const aStr = String( aValue ).toLowerCase();
+			const bStr = String( bValue ).toLowerCase();
+
+			if ( 'asc' === sortDirection ) {
+				return aStr.localeCompare( bStr );
+			} else {
+				return bStr.localeCompare( aStr );
+			}
+		});
+
 		return Array.isArray( filtered ) ? filtered : [];
-	}, [ tableData, filterText, configDetails?.searchable, columnsOptions ]);
+	}, [ sortField, sortDirection, tableData, filterText, configDetails?.searchable, columnsOptions ]);
 
 	const isLoading = query.isLoading || query.isFetching;
 	const error = query.error;
@@ -771,11 +828,23 @@ const DataTableBlock = ({
 
 	// Memoize DataTable props to prevent unnecessary re-renders
 	const dataTableProps = useMemo(
-		() => ({
+
+		() => {
+
+			const sortColumnIndex = sortedColumnsData.findIndex( col =>
+				col.id === sortField
+			);
+
+			// findIndex returns -1 if not found, default to 2, otherwise use 1-based index
+			const sortFieldId = -1 !== sortColumnIndex ? sortColumnIndex + 1 : 2;
+
+			return {
 			columns: sortedColumnsData,
 			data: filteredData,
-			defaultSortFieldId: 2,
-			defaultSortAsc: false,
+			sortServer: true,
+			defaultSortFieldId: sortFieldId,
+			defaultSortAsc: 'asc' === sortDirection,
+			onSort: handleSort,
 			pagination: true,
 			paginationRowsPerPageOptions: [ 10, 25, 50, 100, 200 ],
 			paginationPerPage: 10,
@@ -805,8 +874,9 @@ const DataTableBlock = ({
 					error={error}
 				/>
 			)
-		}),
-		[ sortedColumnsData, filteredData, noData, isLoading, error ]
+		};
+},
+		[ sortedColumnsData, filteredData, sortField, sortDirection, handleSort, noData, isLoading, error ]
 	);
 
 	// Early return if config details are not available
@@ -821,6 +891,7 @@ const DataTableBlock = ({
 		.replace( /[^a-zA-Z0-9-]/g, '' );
 
 	const fileName = `${safeDomain}-${selectedConfig}-${startDate}-${endDate}`;
+
 
 	return (
 		<Block className="row-span-2 overflow-hidden xl:col-span-6 group/root">
