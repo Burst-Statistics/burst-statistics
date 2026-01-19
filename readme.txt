@@ -6,7 +6,7 @@ Requires at least: 6.4
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 6.9
-Stable tag: 3.1.5
+Stable tag: 3.1.6
 
 Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 
@@ -97,6 +97,14 @@ Absolutely! Both free and premium plugin can be managed with composer. Read the 
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.1.6 =
+* January 20th 2026
+* Fix: deleting old data in archive functionality not working due to incorrect SQL syntax.
+* Fix: Not filtering browser/OS data by device on the insights block, props @alisontaylorbc.
+* Improvement: add automated test for data deletion.
+* Improvement: add persistent sorting to datatable block, props @ankush.
+* Improvement: filtering by continent.
+
 = 3.1.5 =
 * January 7th 2026
 * Improvement: auto close notices in the right bottom of the screen.
@@ -180,36 +188,6 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Improvement: made it possible to track hook goals with cookieless tracking.
 * Improvement: migrated all remaining css to tailwind css.
 * Fix: Group by on parameters overview should group by combination of parameter and value.
-
-= 2.2.5 =
-* Fix: incorrect calculation of bounces and bounce rate.
-* Fix: upgrade link on archiving not working.
-
-= 2.2.4 =
-* New: debug information in Site Health Info.
-* New: wildcard filtering on page URL in advanced filters, by adding an asterisk behind your string.
-* Improvement: check in endpoint if Burst is still active, for situations where javascript is still active, due to caching, but plugin not active.
-* Improvement: catch incorrect data structure on hit, for situations where previous javascript is still active due to caching.
-* Improvement: larger selection of Tips & Tricks retrieved from website, showing a variety of different and more up to date articles.
-* Improvement: performance optimizations.
-* Fix: when statistics table is empty, the summary table upgrade could fail on an empty value for "first visit", props @programmin.
-* Fix: catch edge case where a theme passes a null value to the "the_content" filter (which is incorrect behaviour). props @sllew.
-* Fix: incorrect bounce calculation, resulting in too high bounces and bounce rates.
-
-= 2.2.3 =
-* Improvement: allow ipv6 addresses
-* Improvement: prevent false positives on ajax fallback notice
-* Improvement: rest optimizer improvements
-
-= 2.2.2 =
-* New: Extensive range of filter options to easily track what campaigns are delivering your conversions!
-* Improvement: Added CORS support to tracking endpoint to allow cross-origin requests via fetch/sendBeacon. props Alex
-* Improvement: automatic cleanup of anomalous numbers of visits, when one visitor results in over 1000 page views in 24 hours (customizable with filters).
-* Improvement: remove duplicate non necessary json_encode from endpoint
-* Improvement: Add logging option to check error responses on the endpoint or rest api, when BURST_DEBUG and WP_DEBUG are set to true.
-* Fix: when the weekly statistics report was sent on another day than the default day, date range calculation could retrieve the wrong range. props Pieter
-* Fix: Referrer filter not working. props @lekkerbezig
-* Fix: allow for alternative WordPress location, e.g. in subfolder 'wp'.
 
 == Upgrade notice ==
 * Please backup before upgrading.

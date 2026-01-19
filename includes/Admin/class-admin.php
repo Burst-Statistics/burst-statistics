@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Burst\Admin\App\App;
+use Burst\Admin\Archive\Archive;
 use Burst\Admin\Burst_Wp_Cli\Burst_Wp_Cli;
 use Burst\Admin\Cron\Cron;
 use Burst\Admin\Dashboard_Widget\Dashboard_Widget;
@@ -91,6 +92,9 @@ class Admin {
 		$db_upgrade->init();
 		$cron = new Cron();
 		$cron->init();
+
+		$archive = new Archive();
+		$archive->init();
 
 		$goal_statistics = new Goal_Statistics();
 		$goal_statistics->init();

@@ -1063,7 +1063,7 @@ class App {
 		}
 
 		global $wpdb;
-		$valid_types = [ 'hosts', 'devices', 'browsers', 'platforms', 'countries', 'states', 'cities', 'pages', 'referrers', 'campaigns', 'sources', 'mediums', 'contents', 'terms' ];
+		$valid_types = [ 'hosts', 'devices', 'browsers', 'platforms', 'countries', 'states', 'continents', 'cities', 'pages', 'referrers', 'campaigns', 'sources', 'mediums', 'contents', 'terms' ];
 
 		// Return invalid data type error.
 		if ( empty( $data_type ) || ! in_array( $data_type, $valid_types, true ) ) {
@@ -1110,6 +1110,18 @@ class App {
 				],
 				array_keys( $raw_data ),
 				$raw_data
+			);
+		} elseif ( $data_type === 'continents' ) {
+			$raw_data = apply_filters( 'burst_continents', [] );
+			$raw_data = array_map(
+				function ( $key, $value ) {
+					return [
+						'ID'   => $key,
+						'name' => $value,
+					];
+				},
+				array_keys( $raw_data ),
+				array_values( $raw_data )
 			);
 		} elseif ( $data_type === 'referrers' ) {
 			$raw_data = $this->get_referrer_options( $search );

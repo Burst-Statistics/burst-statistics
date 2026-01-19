@@ -82,8 +82,8 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 	const debouncedFetchOptions = useMemo( () => {
 		return debounce( async( search: string ) => {
 			if ( ! config.options ) {
-return;
-}
+				return;
+			}
 
 			const opts = await getFilterOptions( config.options, search );
 

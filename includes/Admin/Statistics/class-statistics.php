@@ -650,7 +650,6 @@ class Statistics {
 	 * @return array<string, int|string|null> Associative array of selected metrics with their values.
 	 */
 	public function get_data( array $select, int $start, int $end, array $filters ): array {
-		global $wpdb;
 		$qd     = new Query_Data(
 			[
 				'date_start' => $start,
@@ -668,7 +667,6 @@ class Statistics {
 	 * Get bounces for a given time period.
 	 */
 	private function get_bounces( int $start, int $end, array $filters ): int {
-		global $wpdb;
 		$qd = new Query_Data(
 			[
 				'date_start' => $start,
@@ -877,8 +875,6 @@ class Statistics {
 	 * @todo Add support for exit rate, entrances, actual pagespeed, returning visitors, interactions per visit.
 	 */
 	public function get_datatables_data( array $args = [] ): array {
-		global $wpdb;
-
 		$defaults = [
 			'date_start' => 0,
 			'date_end'   => 0,
@@ -1195,6 +1191,7 @@ class Statistics {
 				'platform'         => 'statistics.platform_id',
 				'platform_id'      => 'statistics.platform_id',
 				'browser_id'       => 'statistics.browser_id',
+				'device'           => 'statistics.device_id',
 				'device_id'        => 'statistics.device_id',
 				'entry_exit_pages' => 'entry_exit_pages',
 				'parameter'        => 'parameter',
@@ -2293,7 +2290,6 @@ class Statistics {
 					$query_config['enhanced_args']
 				);
 
-				global $wpdb;
 				$qd                = new Query_Data( $enhanced_args );
 				$result['current'] = $this->get_results( $qd, ARRAY_A );
 				break;
