@@ -715,6 +715,27 @@ const DataTableBlock = ({
 		return formatted.toString();
 	};
 
+	// Add a useMemo to sort columnsData based on columnsOptions order
+	const sortedColumnsData = useMemo( () => {
+
+		// Check if columnsData and columnsOptions are valid
+		if ( ! columnsData || ! columnsOptions ) {
+			return [];
+		}
+
+		// Create an array from columnsOptions keys to define the order
+		const order = Object.keys( columnsOptions );
+
+		// Sort columnsData based on the order of columns in columnsOptions
+		return columnsData.sort( ( a, b ) => {
+			const orderA = order.indexOf( a.selector );
+			const orderB = order.indexOf( b.selector );
+
+			return orderA - orderB;
+		});
+	}, [ columnsData, columnsOptions ]);
+
+
 	// Memoize the filtered data to avoid recalculations
 	const filteredData = useMemo( () => {
 		let filtered = [];
@@ -748,6 +769,11 @@ const DataTableBlock = ({
 		}
 
 		// Sort the filtered data.
+		// Safety check: ensure sortedColumnsData exists and has items
+		if ( ! sortedColumnsData || ! Array.isArray( sortedColumnsData ) || 0 === sortedColumnsData.length ) {
+			return filtered;
+		}
+
 		filtered = [ ...filtered ].sort( ( a, b ) => {
 			let actualSortField = sortField;
 
@@ -790,31 +816,11 @@ return -1;
 		});
 
 		return Array.isArray( filtered ) ? filtered : [];
-	}, [ sortField, sortDirection, tableData, filterText, configDetails?.searchable, columnsOptions ]);
+	}, [ sortField, sortDirection, tableData, filterText, configDetails?.searchable, columnsOptions, sortedColumnsData ]);
 
 	const isLoading = query.isLoading || query.isFetching;
 	const error = query.error;
 	const noData = 0 === filteredData.length;
-
-	// Add a useMemo to sort columnsData based on columnsOptions order
-	const sortedColumnsData = useMemo( () => {
-
-		// Check if columnsData and columnsOptions are valid
-		if ( ! columnsData || ! columnsOptions ) {
-			return [];
-		}
-
-		// Create an array from columnsOptions keys to define the order
-		const order = Object.keys( columnsOptions );
-
-		// Sort columnsData based on the order of columns in columnsOptions
-		return columnsData.sort( ( a, b ) => {
-			const orderA = order.indexOf( a.selector );
-			const orderB = order.indexOf( b.selector );
-
-			return orderA - orderB;
-		});
-	}, [ columnsData, columnsOptions ]);
 
 	// sortedColumns the first column should have overflow true.
 	if ( 0 < sortedColumnsData.length ) {
