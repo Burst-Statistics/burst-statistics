@@ -1,5 +1,5 @@
 === Burst Statistics - Privacy-Friendly Analytics for WordPress ===
-Contributors: hesseldejong, RogierLankhorst
+Contributors: hesseldejong, RogierLankhorst, sh4lin
 Donate link: paypal.me/Burststatistics
 Tags: statistics, analytics, stats, analytics alternative
 Requires at least: 6.4
