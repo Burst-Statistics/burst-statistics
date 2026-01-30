@@ -43,7 +43,7 @@ Install, activate, done. No Google accounts, no tracking codes, no configuration
 Not a port from another platform. Designed specifically for WordPress with native performance and seamless integration.
 
 **Fast and lightweight**
-Optimized database queries, no bloated scripts (under 4kb), no external dependencies slowing down your pages. Designed to track accurately even when using aggressive server-side caching.
+Optimized database queries, no bloated scripts (<4kb tracking script), no external dependencies slowing down your pages. Designed to track accurately even when using aggressive server-side caching.
 
 = Features =
 
@@ -99,7 +99,7 @@ Burst Statistics was created by experienced developers who also created:
 * **Privacy-conscious site owners** — GDPR-compliant stats without consent banners
 * **Anyone tired of Google Analytics** — Get clarity instead of confusion
 
-Unlock comprehensive insights into your website’s user behaviour with Burst Pro. Benefit from advanced features designed to improve performance, boost engagement, and drive conversions. [Elevate your data analysis experience by upgrading to Burst Pro today.](https://burst-statistics.com/pricing/)
+Unlock comprehensive insights into your website’s user behaviour with Burst Pro. Benefit from advanced features designed to improve performance, boost engagement, and drive conversions. [Get Burst Pro now.](https://burst-statistics.com/pricing/)
 
 = Free vs Pro =
 
@@ -107,14 +107,21 @@ Unlock comprehensive insights into your website’s user behaviour with Burst Pr
 
 **Burst Pro** adds advanced features for businesses and professionals:
 
+Creator plan:
 * UTM campaign tracking — See which marketing efforts drive results
 * Geographic data — Country and city-level visitor insights
 * Advanced filtering — Segment data by any dimension
 * Data archiving settings — Keep your database lean automatically
-* Full sales dashboard — Understand what content brings in the most revenue (Burst Pro - Business plan)
-* Revenue attribution — Connect WooCommerce sales to traffic sources (Burst Pro - Business plan)
-* Reporting — Generate shareable reports (Burst Pro - Agency plan)
 * Priority support — Direct contact with our developers (You'll speak to actual humans!)
+
+Business plan:
+* Everything in the creator plan +
+* Full sales dashboard — Understand what content brings in the most revenue
+* Revenue attribution — Connect WooCommerce sales to traffic sources
+
+Agency plan:
+* Everything in the business plan +
+* Reporting — Generate shareable reports
 
 
 = Learn More =
@@ -139,7 +146,7 @@ That's it. No external accounts. No tracking codes to paste. Burst starts collec
 Yes. Burst Statistics is 100% free with no tracking limits. Pro is optional for users who need advanced features like UTM tracking, revenue attribution, geographic data or reporting. That's how we can keep Burst Statistics Free for most users.
 
 = Where is the data stored? =
-All statistics are stored in your own WordPress database. Unlike Google Analytics or cloud-based tools, we have zero access to your data. It never leaves your server without your permission.
+All statistics are stored in your own WordPress database. Unlike Google Analytics or cloud-based tools, we have zero access to your data. Your data never leaves your server, unless you manually opt in to share anonymous usage insights with us.
 
 = Is Burst a good Google Analytics alternative? =
 Yes. If you find GA4 too complex or are concerned about sending visitor data to Google, Burst is the perfect replacement. You get the statistics you actually need - visitors, referrers, top pages, conversions - without the overwhelm.
