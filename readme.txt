@@ -1,221 +1,100 @@
-=== Burst Statistics - Privacy-Friendly WordPress Analytics (Google Analytics Alternative) ===
+=== Burst Statistics - Privacy-Friendly Analytics for WordPress ===
 Contributors: hesseldejong, RogierLankhorst, sh4lin
 Donate link: paypal.me/Burststatistics
-Tags: analytics, statistics, stats, analytics alternative
+Tags: statistics, analytics, stats, analytics alternative
 Requires at least: 6.4
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 6.9
 Stable tag: 3.1.6
 
-Analytics you'll actually use. Clean dashboards, weekly email reports, fully self-hosted and zero configuration required.
+Self-hosted, privacy-friendly stats for WordPress. Simple interface, no setup. Get detailed analytics with Burst Statistics.
 
 == Description ==
+= Unlock the Power of Privacy-Friendly Analytics with Burst Statistics! =
+Self-hosted, privacy-friendly WordPress stats with Burst Statistics! Our dashboards offer clear and concise insights, allowing you to make informed decisions without feeling overwhelmed by abundant data. Choose Burst Statistics for seamless and reliable analytics trusted by over 300,000 users.
 
-**Finally, WordPress analytics that don't make your head spin.**
+**This plugin is free and does not require an account.**
 
-Google Analytics is overkill. Other WordPress statistics plugins are cluttered and confusing. You just want to know what's happening on your site - without a data science degree.
+= Key Features for Powerful Insights =
+* **Privacy-Friendly:** All data is stored on your own server.
+* **Essential Metrics:** Get the core data you need, like Pageviews, Visitors, Sessions, Time on Page, and Referrers.
+* **Real-Time Data:** Get instant insights directly on your dashboard.
+* **Track Your Goals:** Easily track your custom goals and keep track of conversions.
+* **Free Support:** Feel free to reach out to us for assistance. We would be happy to help in any way we can.
+* **Simplicity:** User-friendly analytics that does not overwhelm you with data.
+* **Email Reporting:** Receive regular email reports on your website’s stats.
 
-Burst Statistics gives you a clean, intuitive analytics dashboard focused on the metrics that actually matter. No external accounts. No complex setup. Install, activate, and understand your traffic in seconds.
+= Here’s a review from one of our users: =
+>“On-premise Analytics is a great, if not the best, alternative to Google Analytics in the GDPR era. On top of that, since it’s native to WordPress, it’s so easy to configure Goals, etc. That’s awesome.”
+>- [Daan from Daan.dev (@daanvandenbergh)](https://wordpress.org/support/topic/great-product-with-great-potential/)
 
-Trusted by **200,000+ WordPress sites**. Built by the team he experienced team behind UpdraftPlus, WP-Optimize, and All-In-One Security
+= From the creators of UpdraftPlus, WP Optimize and All In One Security =
+Burst Statistics was created by experienced developers who also created:
+* [UpdraftPlus: WP Backup & Migration Plugin](https://wordpress.org/plugins/updraftplus/)
+* [All-In-One Security (AIOS) – Security and Firewall](https://wordpress.org/plugins/all-in-one-wp-security-and-firewall/)
+* [WP-Optimize – Cache, Compress images, Minify & Clean database to boost page speed & performance](https://wordpress.org/plugins/wp-optimize/)
+With a proven track record of providing top-notch, user-friendly solutions, you can trust that Burst Statistics meets the same high standards.
 
-= What users are saying =
+Our community speaks for itself: with over 3,000,000 downloads and 300,000 active users, Burst Statistics is a trusted choice for your analytics needs.
 
-> "I tried WP Statistics and Independent Analytics, but they're overloaded and confusing. Burst's UI is intuitive and focused on what matters to me."
-> — @vallered on wordpress.org
+= Make Burst Statistics better! =
+Our team is always working on improving our plugin, and your input as a user can significantly help us in this process. You don’t require any coding or software development knowledge to contribute; simply sharing your ideas or any issues you encounter would help to improve the plugin significantly. Please feel free to contact us via [a support request on the WordPress forums; we welcome any feedback you may have.](https://wordpress.org/support/plugin/burst-statistics/)
 
-> "On-premise analytics is a great, if not the best, alternative to Google Analytics in the GDPR era. Since it's native to WordPress, it's so easy to configure Goals. That's awesome."
-> — Daan from Daan.dev
+= Get even more insight with Burst Pro =
+Unlock comprehensive insights into your website’s user behavior with Burst Pro. Benefit from advanced features designed to improve performance, boost engagement, and drive conversions. [Elevate your data analysis experience by upgrading to Burst Pro today.](https://burst-statistics.com/pricing/)
 
-> "Finally, an analytics plugin I can actually explain to clients. The charts are visual, data is real-time, and the integration with WooCommerce is excellent."
-> — @anguskeystone on wordpress.org
+Burst Pro Features include:
 
-= Why Burst Statistics? =
+* **Geo-Tracking:** Identify the countries your visitors are coming from.
+* **Data Archiving:** Automatic archiving and manual restore options.
+* **Multiple Goals:** Track multiple objectives to measure your site’s success.
+* **More metrics:** Get more insights into your website’s performance.
+* **Premium Support:** Premium Support from our fantastic team.
+* **URL Parameter Tracking:** Monitor the effectiveness of your URL parameters.
+* **UTM Campaign Tracking:** Track the performance of your marketing campaigns.
 
-**Clean UI, not cluttered dashboards**
-Other analytics plugins throw everything at you. Burst shows what matters — visitors, pageviews, referrers, top pages — in a dashboard you'll actually use. No overload of data. No confusing menus.
+For upcoming features, please [visit our roadmap on our website.](https://burst-statistics.com/development-roadmap/)
 
-**Privacy-first by design**
-All statistics stay on your server. No external tracking. Optional cookieless mode for full GDPR compliance without consent banners. Your data is yours - we never see it without your explicit permission.
-
-**Zero setup friction**
-Install, activate, done. No Google accounts, no tracking codes, no configuration headaches. Start seeing live visitors immediately.
-
-**Built for WordPress**
-Not a port from another platform. Designed specifically for WordPress with native performance and seamless integration.
-
-**Fast and lightweight**
-Optimized database queries, minimal scripts, no external dependencies slowing down your pages. 
-
-= Features =
-
-**Understand your traffic**
-
-* Real-time visitor tracking
-* Pageviews, sessions, and unique visitors
-* Bounce rate and time on page
-* Device, browser and operating system detection
-
-**Know where visitors come from**
-
-* Referrer tracking (search engines, social media, direct)
-* Landing page performance
-* Traffic comparison over time
-
-**See what content performs**
-
-* Top pages and posts ranked by views
-* Compare any date range
-* Track individual page performance
-
-**Custom conversion tracking**
-
-* Track views, clicks and hooks
-* Track WooCommerce sales (using hooks)
-* Track custom events or hooks
-
-**Privacy without compromise**
-
-* 100% self-hosted — all statistics stored locally in your WordPress database
-* Cookieless tracking option (no consent banner required in some countries)
-* Designed to support GDPR, CCPA, and PECR compliance
-
-**Stay informed**
-
-* Weekly or monthly email reports delivered to your inbox
-* Compare periods to spot trends
-* Get notified when tracking does not work
-
-= Seamless Integrations =
-
-Burst Statistics integrates with your favorite plugins. 
-
-**E-Commerce & Payments**
-
-* WooCommerce — Track product views and sales (Pro integration)
-* WooCommerce Payments — Revenue attribution (Pro integration)
-* Easy Digital Downloads — Digital product analytics (Pro integration)
-* EDD Multi-currency — International sales tracking (Pro integration)
-* EDD Recurring Payments — Subscription analytics (Pro integration)
-* GiveWP — Donation tracking and goals
-
-**Forms & Lead Generation**
-
-* Gravity Forms
-* Contact Form 7
-* WPForms
-* Ninja Forms
-* Formidable Forms
-* WS Form
-* HappyForms
-* Fluent Forms
-
-**Page Builders & Performance**
-
-* Elementor — Full compatibility
-* WP Rocket — Optimized caching support
-* LiteSpeed Cache — Compatible
-* Complianz — GDPR/CCPA consent integration
-
-**Membership & LMS**
-
-* MemberPress
-* LearnDash
-* LifterLMS
-* Restrict Content Pro
-
-**Other Integrations**
-
-* Yoast SEO
-* Rank Math
-* Yoast Duplicate Post
-* WPML — Multilingual tracking
-* Polylang — Multilingual tracking
-
-= Who is Burst for? =
-
-* **Bloggers & content creators** — See which posts resonate with your audience
-* **Small business owners** — Understand your traffic without complexity
-* **WooCommerce stores** — Track visitor behavior and sales (Pro)
-* **Agencies & freelancers** — Manage analytics across client sites (Pro)
-* **Privacy-conscious site owners** — GDPR-compliant stats without consent banners
-* **Anyone tired of Google Analytics** — Get clarity instead of confusion
-
-= Free vs Pro =
-
-**Burst Statistics (Free)** includes everything you need to understand your website traffic: visitors, pageviews, referrers, top content, device stats, goal tracking, email reports, and more.
-
-**Burst Pro** adds advanced features for businesses and professionals:
-
-* UTM campaign tracking — See which marketing efforts drive results
-* Geographic data — Country and city-level visitor insights
-* Advanced filtering — Segment data by any dimension
-* Data retention policies — Keep your database lean automatically
-* Full sales dashboard - Understand what content brings in the most revenue
-* Revenue attribution — Connect WooCommerce sales to traffic sources (Business plan)
-* Reporting — Generate shareable reports (Agency plan)
-* Priority support — Direct contact with our developers (You'll speak to actual humans!)
-
-[Compare Free vs Pro →](https://burst-statistics.com/pricing/)
-
-= Learn More =
-
-* [Getting Started Guide](https://burst-statistics.com/docs/getting-started/)
-* [Burst vs Google Analytics](https://burst-statistics.com/burst-vs-google-analytics/)
-* [Privacy & GDPR Compliance](https://burst-statistics.com/privacy/)
-* [All Features](https://burst-statistics.com/features/)
-* [Burst Pro Pricing](https://burst-statistics.com/pricing/)
-
-== Installation ==
-
-1. Go to **Plugins → Add New** in your WordPress dashboard
-2. Search for **Burst Statistics**
-3. Click **Install Now**, then **Activate**
-4. Visit **Statistics → Dashboard** to see your analytics
-
-That's it. No external accounts. No tracking codes to paste. Burst starts collecting statistics immediately.
+= Installation =
+* Go to “Plugins” in your WordPress Dashboard, and click “Add new”.
+* Click “Upload”, and select the downloaded .zip file.
+* Activate your new plugin.
+* Use our tour to get familiar with Burst Statistics.
 
 == Frequently Asked Questions ==
-
-= Is Burst really free? =
-Yes. Burst Statistics is 100% free with no tracking limits. Pro is optional for users who need advanced features like UTM tracking, revenue attribution, geographic data or reporting. That's how we can keep Burst Statistics Free for most users. 
-
-= Is Burst a good Google Analytics alternative? =
-Yes. If you find GA4 too complex or are concerned about sending visitor data to Google, Burst is the perfect replacement. You get the statistics you actually need - visitors, referrers, top pages, conversions - without the overwhelm.
+= Knowledgebase =
+We will maintain and grow a [knowledgebase about Burst Statistics](https://burst-statistics.com/docs/) and analytics & privacy in general.
 
 = Where is the data stored? =
-All statistics are stored in your own WordPress database. Unlike Google Analytics or cloud-based tools, we have zero access to your data. It never leaves your server.
+The data is stored in your own WordPress database. Unlike cloud solutions, we have no access to your data. We aim to keep the data as small as possible, and Burst can also automatically archive or delete old data. Read more about [if you need data archiving](https://burst-statistics.com/do-i-need-to-archive-my-data/).
 
-= Does Burst slow down my website? =
-No. Burst is built for performance with optimized database queries, minimal tracking scripts, and Turbo Mode if speed is more important than accuracy. Your site stays fast.
+= Do I need an account? =
+No, you don’t need an account; no data is sent to another website.
 
-= Do I need a cookie consent banner? =
-Not necessarily. Burst has a cookieless tracking mode that's fully GDPR/CCPA compliant without requiring consent. If you prefer cookie-based tracking for higher accuracy, Burst integrates seamlessly with Complianz and other consent plugins.
+= Is there a limit to the number of visitors I can track? =
+No, there is no limit. The only limiting factor is your own database and server.
 
-= How is Burst different from WP Statistics or Independent Analytics? =
-Burst focuses on clarity over quantity. While other plugins can feel cluttered and overwhelming, Burst's dashboard is designed to show you what matters without the noise. Users consistently mention our clean, intuitive interface as the reason they switched.
-
-= Can I use Burst alongside Google Analytics? =
-Yes. Many users run both during a transition period or keep GA4 for historical data while using Burst for daily insights. There's no conflict.
+= Can I exclude IP addresses or user roles from tracking? =
+Burst Statistics allows you to exclude specific IP addresses and user roles from tracking in the settings. Burst also excludes most known crawlers and bots from being tracked. Read more about [IP blocking](https://burst-statistics.com/exclude-ip-addresses-from-burst-statistics/) or [excluding user roles](https://burst-statistics.com/excluding-logged-in-users-by-user-role/).
 
 = Does Burst Statistics use cookies? =
 There is an option to use cookieless tracking if you prefer. But by default, Burst uses cookies because they are more accurate and lightweight. While using cookies, Burst remains privacy-friendly because all data is anonymous and stored on your server. Read more about [why cookies are misunderstood](https://burst-statistics.com/why-is-burst-privacy-friendly/#misunderstood-cookies).
 
-= Does Burst work with WooCommerce? =
-Yes. Basic pageview tracking works in the free version. For revenue tracking, product analytics, and sales attribution, you'll need Burst Pro.
+= Why is Burst Statistics Privacy-Friendly? =
+Burst Statistics provides an Analytics Dashboard with anonymized data that is yours and yours alone. Read more about [Why Burst Statistics is Privacy-Friendly](https://burst-statistics.com/why-is-burst-privacy-friendly/).
 
-= Can I track form submissions? =
-Yes. Burst integrates with Gravity Forms, Contact Form 7, WPForms, Ninja Forms, Formidable Forms, WS Form, HappyForms, and Fluent Forms. Form submissions can be tracked as a goal.
+= What is Cookieless tracking? =
+Burst Statistics can be used without setting cookies or storing data in browsers. However, this can affect accuracy, so a hybrid option with cookies after consent is possible. Read more about [Cookieless tracking](https://burst-statistics.com/definition/what-is-cookieless-tracking/).
 
-= How do I migrate from another analytics plugin? =
-Install and activate Burst — it starts tracking immediately. Historical data from other plugins can't be imported, but you can run both side-by-side during a transition period.
+= Does Burst Statistics affect performance? =
+Performance is almost not affected. We have built Burst to be very performant for your users because we know how important it is for your website. Read more about [Turbo Mode](https://burst-statistics.com/definition/turbo-mode/)
 
-== Screenshots ==
-1. **The Dashboard:** Clean, easy-to-read analytics inside WordPress.
-2. **Page Insights:** See exactly how individual pages perform.
-3. **Settings:** Simple toggle options, no coding required.
+= Is it possible to install Burst Statistics with composer? =
+Absolutely! Both free and premium plugin can be managed with composer. Read the [documentation](https://burst-statistics.com/installing-burst-statistics-with-composer/) for more information.
 
+= Can I give feedback about the plugin? =
+We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
 = 3.1.6 =
@@ -313,3 +192,5 @@ Install and activate Burst — it starts tracking immediately. Historical data f
 == Upgrade notice ==
 * Please backup before upgrading.
 
+== Screenshots ==
+1. Burst Statistics: Analytics Dashboard
