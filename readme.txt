@@ -133,6 +133,18 @@ All Burst Pro plans include **priority support**.  You'll have direct contact wi
 * [Privacy & GDPR Compliance](https://burst-statistics.com/why-is-burst-privacy-friendly/)
 * [Burst Pro Pricing](https://burst-statistics.com/pricing/)
 
+= Privacy and Data Sharing =
+Burst Statistics includes an **optional** data sharing program. It is disabled by default. You can enable it under Burst Statistics → Settings → Data Sharing, and you can turn it off again at any time from the same location.
+When enabled, the plugin sends a small set of aggregated, anonymized metrics to Burst Statistics' servers once per month. This includes traffic statistics (visitors, pageviews, bounce rate, session duration), database row counts and query performance timings. No personal data, IP addresses, domain names, or visitor information is ever transmitted. All data is aggregated on your server before it leaves, making it impossible to trace back to your website or any individual user.
+
+We use this data to:
+* build anonymous industry benchmarks so you can compare your site's performance against peers;
+* understand which features are most used, so we can prioritize development effectively;
+* know which WordPress and PHP versions are in active use, so we can make informed support decisions;
+* identify slow database queries across real-world installs, so we can improve plugin performance for everyone.
+
+For the complete list of data fields collected and full details on how the data is used, please read our [Data Sharing Policy](https://burst-statistics.com/how-we-handle-anonymous-usage-data/).
+This feature connects to: https://api.burst-statistics.com
 
 = Installation =
 1. Go to **Plugins → Add New** in your WordPress dashboard
