@@ -8,12 +8,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Burst\Admin\App\App;
 use Burst\Admin\Archive\Archive;
 use Burst\Admin\Burst_Wp_Cli\Burst_Wp_Cli;
+use Burst\Admin\Capability\Capability;
 use Burst\Admin\Cron\Cron;
 use Burst\Admin\Dashboard_Widget\Dashboard_Widget;
+use Burst\Admin\Data_Sharing\Data_Sharing;
 use Burst\Admin\DB_Upgrade\DB_Upgrade;
 use Burst\Admin\Debug\Debug;
-use Burst\Admin\Mailer\Mail_Reports;
 use Burst\Admin\Posts\Posts;
+use Burst\Admin\Reports\Report_Logs;
+use Burst\Admin\Reports\Reports;
+use Burst\Admin\Share\Share;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
 use Burst\Frontend\Goals\Goal;
@@ -22,7 +26,6 @@ use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Save;
-use Burst\Admin\Capability\Capability;
 
 class Admin {
 	use Database_Helper;
@@ -100,8 +103,10 @@ class Admin {
 		$goal_statistics->init();
 		$this->statistics = new Statistics();
 		$this->statistics->init();
-		$reports = new Mail_Reports();
+		$reports = new Reports();
 		$reports->init();
+		$reports_logs = Report_Logs::instance();
+		$reports_logs->init();
 		$this->app = new App();
 		$this->app->init();
 
@@ -120,10 +125,18 @@ class Admin {
 		$milestones = new Milestones();
 		$milestones->init();
 
+		if ( $this->get_option_bool( 'anonymous_usage_data' ) ) {
+			$data_sharing = new Data_Sharing();
+			$data_sharing->init();
+		}
+
 		if ( defined( 'BURST_BLUEPRINT' ) && ! get_option( 'burst_demo_data_installed' ) ) {
 			add_action( 'init', [ $this, 'install_demo_data' ] );
 			update_option( 'burst_demo_data_installed', true, false );
 		}
+
+		$share = new Share();
+		$share->init();
 	}
 
 	/**
@@ -285,7 +298,7 @@ class Admin {
 		// Put ecommerce menu item before the id: settings menu item.
 		$settings_index = null;
 		foreach ( $menu_items as $index => $item ) {
-			if ( isset( $item['id'] ) && 'settings' === $item['id'] ) {
+			if ( isset( $item['id'] ) && 'reporting' === $item['id'] ) {
 				$settings_index = $index;
 				break;
 			}
@@ -1324,6 +1337,7 @@ class Admin {
 				'burst_devices',
 				'burst_referrers',
 				'burst_known_uids',
+				'burst_query_stats',
 			],
 		);
 	}

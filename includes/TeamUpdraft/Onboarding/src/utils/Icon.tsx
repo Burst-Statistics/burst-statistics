@@ -5,6 +5,7 @@ import {
   AlertCircle,
   AlertOctagon,
   AlertTriangle,
+  Ban,
   Braces,
   Calendar,
   CalendarX,
@@ -133,7 +134,9 @@ const iconComponents = {
   world: Earth,
   filters: Filter,
   referrers: ExternalLink,
-  hook: Webhook
+  hook: Webhook,
+  ban: Ban,
+  'external-link': ExternalLink
 };
 
 // Define types for icon names and colors

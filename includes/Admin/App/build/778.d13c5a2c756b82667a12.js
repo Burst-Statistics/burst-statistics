@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunk_burst_statistics_burst_statistics=self.webpackChunk_burst_statistics_burst_statistics||[]).push([[778],{53778(s,r,t){t.r(r),t.d(r,{errorComponent:()=>c});var e=t(10790),c=function(s){var r=s.error;return(0,e.jsx)("div",{className:"text-red-500 p-4",children:r.message||"An error occurred loading sources"})}}}]);

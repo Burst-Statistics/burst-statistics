@@ -4,3 +4,12 @@
 @tailwind utilities;
 
 /* Custom styles for the onboarding component */
+
+/* Switch component styles */
+[data-state="checked"].switch-root {
+	background-color: var(--teamupdraft-green) !important;
+}
+
+.switch-root[data-state="checked"] {
+	background-color: var(--teamupdraft-green) !important;
+}

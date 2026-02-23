@@ -32,7 +32,7 @@ export const OverflowTooltip = ({
 	}, [ children ]);
 
 	const combinedClassName = clsx(
-		'truncate w-full',
+		'truncate w-full text-base',
 		className
 	);
 

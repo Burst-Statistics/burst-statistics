@@ -1,3 +1,4 @@
+import { clsx } from 'clsx';
 import Icon from '../../../utils/Icon';
 import { safeDecodeURI } from '../../../utils/lib';
 import { __ } from '@wordpress/i18n';
@@ -12,6 +13,7 @@ import { __ } from '@wordpress/i18n';
  * @param {string}   props.className        - Additional CSS classes
  * @param {boolean}  props.showRemoveButton - Whether to show the remove button (default: true)
  * @param {boolean}  props.disabled         - Whether the chip is disabled (default: false)
+ * @param {boolean}  props.smallLabels      - Whether to use small size styling (px-2 py-1 text-xs) (default: false)
  * @return {JSX.Element} FilterChip component
  */
 const FilterChip = ({
@@ -20,13 +22,28 @@ const FilterChip = ({
 						onClick,
 						className = '',
 						showRemoveButton = true,
-						disabled = false
+						disabled = false,
+						smallLabels = false
 					}) => {
-	const baseClasses = disabled ?
-		'inline-flex items-center gap-2 px-3 py-2 bg-gray-100 border border-gray-200 shadow-sm rounded-md text-sm cursor-not-allowed opacity-60' :
-		'inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-200 shadow-sm rounded-md text-sm transition-all duration-200 hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)] cursor-pointer';
+	const chipClasses = clsx(
 
-	const combinedClasses = `${baseClasses} ${className}`.trim();
+		// Base styles.
+		'inline-flex items-center gap-2 border shadow-sm rounded-md transition-all duration-200',
+
+		// Size-specific styles.
+		{
+			'px-2 py-1 text-xs': smallLabels,
+			'px-3 py-2 text-sm': ! smallLabels
+		},
+
+		// State-specific styles.
+		{
+			'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60': disabled,
+			'bg-white border-gray-300 hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)] cursor-pointer': ! disabled
+		},
+
+		className
+	);
 
 	const handleChipClick = ( e ) => {
 		if ( disabled ) {
@@ -75,7 +92,7 @@ const FilterChip = ({
 
 	return (
 		<div
-			className={combinedClasses}
+			className={chipClasses}
 			onClick={handleChipClick}
 			onKeyDown={handleKeyDown}
 			role="button"
@@ -88,18 +105,27 @@ const FilterChip = ({
 			title={disabled ? '' : __( 'Click to edit filter', 'burst-statistics' )}
 		>
 			{/* Filter Icon */}
-			<Icon name={filter.config.icon} size="16" />
+			<Icon name={filter.config.icon} size={smallLabels ? 14 : 16} />
 
 			{/* Filter Label */}
-			<p className={`font-medium ${disabled ? 'text-gray-800' : ''}`}>
+			<p className={clsx(
+				'font-medium',
+				{ 'text-gray-800': disabled }
+			)}>
 				{filter.config.label}
 			</p>
 
 			{/* Separator */}
-			<span className={`h-4 w-px ${disabled ? 'bg-gray-300' : 'bg-gray-400'}`}></span>
+			<span className={clsx(
+				'w-px',
+				smallLabels ? 'h-3' : 'h-4',
+				disabled ? 'bg-gray-300' : 'bg-gray-400'
+			)}></span>
 
 			{/* Filter Value */}
-			<p className={disabled ? 'text-gray-800' : 'text-gray'}>
+			<p className={clsx(
+				{ 'text-gray-800': disabled, 'text-gray': ! disabled }
+			)}>
 				{safeDecodeURI( filter.displayValue )}
 			</p>
 
@@ -108,18 +134,21 @@ const FilterChip = ({
 				<button
 					onClick={handleRemove}
 					disabled={disabled}
-					className={`remove-button rounded-full p-1 transition-colors ${
-						disabled ?
-							'cursor-not-allowed opacity-50' :
-							'hover:bg-gray-200'
-					}`}
+					className={clsx(
+						'remove-button rounded-full transition-colors',
+						smallLabels ? 'p-0.5' : 'p-1',
+						{
+							'cursor-not-allowed opacity-50': disabled,
+							'hover:bg-gray-200': ! disabled
+						}
+					)}
 					aria-label={__( 'Remove filter', 'burst-statistics' )}
 					title={disabled ? '' : __( 'Remove filter', 'burst-statistics' )}
 				>
 					<Icon
 						name="times"
 						color={disabled ? 'var(--rsp-grey-300)' : 'var(--rsp-grey-500)'}
-						size="16"
+						size={smallLabels ? 14 : 16}
 					/>
 				</button>
 			)}

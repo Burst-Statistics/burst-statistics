@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { DateRangePicker } from 'react-date-range';
-import { format, parseISO } from 'date-fns';
+import { format, isSameDay, parseISO } from 'date-fns';
 import Icon from '@/utils/Icon';
 import { useDateRange } from '@/hooks/useDateRange';
 import {
@@ -14,7 +14,7 @@ import useShareableLinkStore from '@/store/useShareableLinkStore';
 
 // Extract configuration
 const DATE_FORMAT = 'yyyy-MM-dd';
-const MIN_DATE = new Date( 2022, 0, 1 );
+const MIN_DATE = new Date( 2022, 0, 1 ); // This is the first date for a first Burst plugin on a live enviroment.
 const CLICKS_TO_CLOSE = 2;
 
 /**
@@ -95,9 +95,16 @@ return;
 					key: 'selection'
 				});
 
-				const selectedRangeKey = Object.keys( availableRanges ).find(
-					( key ) => availableRanges[key].isSelected( ranges.selection )
-				);
+			const selectedRangeKey = Object.keys( availableRanges ).find(
+				( key ) => {
+					const rangeObj = availableRanges[key];
+					const definedRange = rangeObj.range();
+					return (
+						isSameDay( ranges.selection.startDate, definedRange.startDate ) &&
+						isSameDay( ranges.selection.endDate, definedRange.endDate )
+					);
+				}
+			);
 				const newRange = selectedRangeKey || 'custom';
 
 				const shouldClose =

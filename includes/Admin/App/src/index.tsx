@@ -17,9 +17,39 @@ import {
 // We need this to filter out the 'right' prop that react-data-table-component
 // passes to styled components, which causes warnings in styled-components v6
 import { StyleSheetManager } from 'styled-components';
+import isPropValid from '@emotion/is-prop-valid';
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
+const shouldForwardProp = ( prop: string ) => {
+
+	// List of react-data-table-component specific props that should not be forwarded to DOM
+	const dataTableProps = [
+		'right',
+		'grow',
+		'wrap',
+		'allowOverflow',
+		'button',
+		'center',
+		'compact',
+		'hide',
+		'ignoreRowClick',
+		'maxWidth',
+		'minWidth',
+		'omit',
+		'reorder',
+		'sortable',
+		'width'
+	];
+
+	// Filter out data table props first
+	if ( dataTableProps.includes( prop ) ) {
+		return false;
+	}
+
+	// Then use isPropValid for standard HTML validation
+	return isPropValid( prop );
+};
 
 // Add type declaration for window.burst_settings
 declare global {
@@ -149,7 +179,7 @@ const initApp = () => {
 				See: getDataTableData.js line 267 where 'right' prop is set based on column alignment.
 			*/}
 			<StyleSheetManager
-				shouldForwardProp={( prop ) => 'right' !== prop}
+				shouldForwardProp={shouldForwardProp}
 			>
 				<QueryClientProvider client={queryClient}>
 					<Suspense fallback={<PendingComponent />}>

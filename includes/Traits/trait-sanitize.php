@@ -10,6 +10,23 @@ trait Sanitize {
 	use Helper;
 
 	/**
+	 * Sanitize hash fragment from URL.
+	 * Allows alphanumeric, /, ?, =, &, _, -, ., % characters (% for URL encoding).
+	 *
+	 * @param string $hash The hash fragment to sanitize (including the # character).
+	 * @return string Sanitized hash fragment.
+	 */
+	private static function sanitize_hash_fragment( string $hash ): string {
+		if ( empty( $hash ) ) {
+			return '';
+		}
+
+		// Sanitize hash: allow alphanumeric, /, ?, =, &, _, -, ., % characters.
+		// Hash fragments are client-side only, but we sanitize to prevent XSS if displayed.
+		return preg_replace( '/[^#a-zA-Z0-9\/?=&_\-.%]/', '', $hash );
+	}
+
+	/**
 	 * Sanitize a relative URL, ensuring it starts with a slash and doesn't contain the domain.
 	 *
 	 * @param string $url URL to sanitize.
@@ -79,6 +96,7 @@ trait Sanitize {
 
 		switch ( $type ) {
 			case 'checkbox':
+			case 'anonymous_usage_data':
 			case 'hidden':
 				return (int) $value;
 			case 'checkbox_group':
@@ -97,6 +115,8 @@ trait Sanitize {
 				return $this->sanitize_email_reports( $value );
 			case 'license':
 				return defined( 'BURST_PRO' ) && class_exists( '\\Burst\\Pro\\Admin\\Licensing\\Licensing' ) ? ( new \Burst\Pro\Admin\Licensing\Licensing() )->sanitize_license( $value ) : '';
+			case 'textarea':
+				return wp_kses_post( $value );
 			default:
 				return sanitize_text_field( $value );
 		}
@@ -427,6 +447,7 @@ trait Sanitize {
 				'user_role_blocklist',
 				'checkbox_group',
 				'license',
+				'anonymous_usage_data',
 			]
 		);
 	}

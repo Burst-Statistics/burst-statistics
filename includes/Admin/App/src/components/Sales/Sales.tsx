@@ -1,8 +1,7 @@
 /**
  * Sales Component.
  */
-import { useDate } from '@/store/useDateStore';
-import { useFilters } from '@/hooks/useFilters';
+
 import { useQuery } from '@tanstack/react-query';
 import { __ } from '@wordpress/i18n';
 import { Block } from '@/components/Blocks/Block';
@@ -12,6 +11,8 @@ import getSales from '@/api/getSalesData';
 import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import SalesFooter from '@/components/Sales/SalesFooter';
 import ExplanationAndStatsItem from '@/components/Common/ExplanationAndStatsItem';
+import {useBlockConfig} from '@/hooks/useBlockConfig';
+import {BlockComponentProps} from '@/store/reports/types';
 
 /**
  * Sales data interface.
@@ -34,9 +35,9 @@ interface SalesData {
  *
  * @return {JSX.Element} The Sales component.
  */
-const Sales = (): JSX.Element => {
-	const { startDate, endDate, range } = useDate( ( state ) => state );
-	const { filters } = useFilters();
+const Sales = ( props:BlockComponentProps ): JSX.Element => {
+	const { startDate, endDate, range, filters, index } = useBlockConfig( props );
+
 	const placeholderData: SalesData = {
 		'conversion-rate': {
 			title: __( 'Conversion Rate', 'burst-statistics' ),
@@ -90,7 +91,9 @@ const Sales = (): JSX.Element => {
 	const sales = salesQuery.data || null;
 
 	const blockHeadingProps = {
-		title: __( 'Sales', 'burst-statistics' )
+		title: __( 'Sales', 'burst-statistics' ),
+		isReport: props.isReport,
+		reportBlockIndex: index
 	};
 
 	return (

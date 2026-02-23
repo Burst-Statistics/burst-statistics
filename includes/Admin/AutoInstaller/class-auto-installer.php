@@ -257,7 +257,7 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 					$this->plugin_name     = 'Burst Pro';
 					$this->plugin_constant = 'BURST_PRO';
 					$this->prefix          = 'burst_';
-					$this->api_url         = 'https://licensing.burst-statistics.com';
+					$this->api_url         = 'https://license.burst-statistics.com';
 					$this->dashboard_url   = add_query_arg( [ 'page' => 'burst' ], admin_url( 'admin.php' ) );
 					$this->account_url     = 'https://burst-statistics.com/account';
 					$this->instructions    = 'https://burst-statistics.com/how-to-install-burst-pro';
@@ -833,6 +833,7 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 				$result   = $upgrader->install( $download_link );
 
 				if ( $result ) {
+					update_option( 'burst_auto_installed', true, false );
 					$response = [
 						'success' => true,
 					];

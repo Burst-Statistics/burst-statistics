@@ -217,7 +217,7 @@ const Onboarding: FC = () => {
                             )}
 
                             <ButtonInput
-                                className="w-full burst-continue flex justify-center items-center"
+                                className={"w-full burst-continue flex justify-center items-center "+ ((isUpdating || isInstalling) ? 'burst-updating' : '')}
                                 btnVariant={isLastStep() ? "tertiary" : "secondary"}
                                 size={isLastStep() ? "md" : "lg"}
                                 disabled={isContinueDisabled()}

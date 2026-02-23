@@ -8,7 +8,7 @@ import TextAreaField from './TextAreaField';
 import IpBlockField from './IpBlockField';
 import SwitchField from './SwitchField';
 import ButtonControlField from './ButtonControlField';
-import EmailReportsField from './EmailReportsField';
+import ReportingField from './ReportingField';
 import CheckboxGroupField from './CheckboxGroupField';
 import GoalsSettings from '../Goals/GoalsSettings';
 import LicenseField from './LicenseField';
@@ -19,7 +19,9 @@ import RestoreArchivesField from './RestoreArchivesField';
 import RadioField from './RadioField';
 import UploadField from './UploadField';
 import ExportSettingsField from './ExportSettingsField';
+import AnonymousUsageDataField from './AnonymousUsageDataField';
 import useLicenseData from '@/hooks/useLicenseData';
+import { ReportLogsField } from '@/components/Fields/ReportLogsField';
 
 const fieldComponents = {
 	text: TextField,
@@ -30,7 +32,7 @@ const fieldComponents = {
 	textarea: TextAreaField,
 	ip_blocklist: IpBlockField,
 	button: ButtonControlField,
-	email_reports: EmailReportsField,
+	email_reports: ReportingField,
 	checkbox_group: CheckboxGroupField,
 	goals: GoalsSettings,
 	license: LicenseField,
@@ -39,7 +41,9 @@ const fieldComponents = {
 	restore_archives: RestoreArchivesField,
 	radio: RadioField,
 	upload: UploadField,
-	export_settings: ExportSettingsField
+	export_settings: ExportSettingsField,
+	report_logs: ReportLogsField,
+    anonymous_usage_data: AnonymousUsageDataField
 };
 
 const Field = memo( ({ setting, control, ...props }) => {

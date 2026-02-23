@@ -1,6 +1,8 @@
+// hooks/useFilters.ts - Blijft de main entry point
 import { useLocation, useNavigate, useSearch } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFiltersStore } from '@/store/useFiltersStore';
+
 import {
 	FILTER_CONFIG,
 	FILTER_CATEGORIES,
@@ -10,66 +12,31 @@ import {
 	type FilterKey,
 	type FilterSearchParams,
 	type FilterConfig as FilterConfigType
-} from '@/config/filterConfig';
 
-// Re-export for convenience.
-export {
-	FILTER_CONFIG,
-	FILTER_CATEGORIES,
-	FILTER_KEYS,
-	INITIAL_FILTERS,
-	TRAILING_PARAM_KEY,
-	validateFilterSearch,
-	type FilterKey,
-	type FilterSearchParams,
-	type FilterCategory,
-	type FilterConfig
 } from '@/config/filterConfig';
+import { useWizardStore } from '@/store/reports/useWizardStore';
 
-// Routes where URL filter sync is enabled.
 export const FILTER_ENABLED_ROUTES = [ '/statistics', '/sources', '/sales' ];
 
-/**
- * Check if current route supports URL filter sync.
- *
- * @param pathname - The current route pathname.
- * @return True if filters should sync with URL on this route.
- */
 export const isFilterEnabledRoute = ( pathname: string ): boolean => {
 	return FILTER_ENABLED_ROUTES.some( ( route ) => pathname.startsWith( route ) );
 };
 
-/**
- * Build search params object with trailing param always last.
- * This ensures proper URL parsing when used with hash-based routing.
- *
- * @param params - The search params to build.
- * @return Ordered search params with trailing param last.
- */
 const buildSearchParams = (
 	params: Record<string, string | undefined>
 ): Record<string, string> => {
 	const result: Record<string, string> = {};
 
-	// Add all params except the trailing one first.
 	Object.keys( params ).forEach( ( key ) => {
 		if ( key !== TRAILING_PARAM_KEY && params[key] !== undefined ) {
 			result[key] = params[key] as string;
 		}
 	});
 
-	// Always add trailing param last.
 	result[TRAILING_PARAM_KEY] = '';
-
 	return result;
 };
 
-/**
- * Check if URL has any active filter params.
- *
- * @param searchParams - The current search params from URL.
- * @return True if any filter is set in URL.
- */
 const hasUrlFilters = ( searchParams: FilterSearchParams ): boolean => {
 	return FILTER_KEYS.some( ( key ) => {
 		const value = searchParams[key];
@@ -78,45 +45,46 @@ const hasUrlFilters = ( searchParams: FilterSearchParams ): boolean => {
 };
 
 /**
- * Hook to manage filters using TanStack Router's search params.
- * Uses Zustand persist for session storage, router for runtime state.
- * URL sync only works on specific routes: /statistics, /sources, /sales.
- *
- * @return Filter state and actions.
+ * Hook to manage filters.
+ * - Without reportBlockIndex: uses URL params (for /statistics, /sources, /sales)
+ * - With reportBlockIndex: uses wizard store (for report blocks)
  */
-export const useFilters = () => {
+export const useFilters = ( reportBlockIndex?: number ) => {
+	const updateReportFilters = useWizardStore( ( state ) => state.updateFilters );
+	const getReportFilters = useWizardStore( ( state ) => state.getFilters );
+
 	const navigate = useNavigate();
 	const location = useLocation();
 	const hasInitialized = useRef( false );
 
-	// Check if current route supports URL filter sync.
 	const isFilterRoute = isFilterEnabledRoute( location.pathname );
+	const isBlockMode = 'number' === typeof reportBlockIndex;
 
-	// Get persistence functions from Zustand store.
+	// Shared favorites logic (always from main store)
 	const favorites = useFiltersStore( ( state ) => state.favorites );
 	const addToFavorites = useFiltersStore( ( state ) => state.addToFavorites );
-	const removeFromFavorites = useFiltersStore(
-		( state ) => state.removeFromFavorites
-	);
+	const removeFromFavorites = useFiltersStore( ( state ) => state.removeFromFavorites );
 	const toggleFavorite = useFiltersStore( ( state ) => state.toggleFavorite );
 	const isFavorite = useFiltersStore( ( state ) => state.isFavorite );
 
-	// Saved filters persistence (Zustand with persist middleware).
+	// URL-specific store access
 	const setSavedFilters = useFiltersStore( ( state ) => state.setSavedFilters );
 	const getSavedFilters = useFiltersStore( ( state ) => state.getSavedFilters );
-	const clearSavedFilters = useFiltersStore(
-		( state ) => state.clearSavedFilters
-	);
+	const clearSavedFilters = useFiltersStore( ( state ) => state.clearSavedFilters );
+	const wizardContent = useWizardStore( ( state ) => state.wizard.content );
 
-	// Get current filter values from router search params (runtime source of truth).
+	// Get current filter values from appropriate source
 	const searchParams = useSearch({ strict: false }) as FilterSearchParams;
 
-	// Compute active filters (non-empty values).
-	// Only populated on filter-enabled routes.
 	const filters = useMemo( () => {
-		const result: FilterSearchParams = { ...INITIAL_FILTERS };
 
-		// Only read from URL on filter-enabled routes.
+		// Block mode: get from wizard store
+		if ( isBlockMode ) {
+			return getReportFilters( reportBlockIndex ) || INITIAL_FILTERS;
+		}
+
+		// URL mode: get from URL params (only on filter routes)
+		const result: FilterSearchParams = { ...INITIAL_FILTERS };
 		if ( isFilterRoute ) {
 			FILTER_KEYS.forEach( ( key ) => {
 				if ( searchParams[key]) {
@@ -124,24 +92,23 @@ export const useFilters = () => {
 				}
 			});
 		}
-
 		return result;
-	}, [ searchParams, isFilterRoute ]);
+		// eslint-disable-next-line
+	}, [ searchParams, isFilterRoute, isBlockMode, reportBlockIndex, getReportFilters, wizardContent ]);
 
-	// Initialize: restore from Zustand if URL has no filters (only on filter-enabled routes).
+	// Initialize URL filters (only in URL mode)
 	useEffect( () => {
-		if ( ! isFilterRoute || hasInitialized.current ) {
+		if ( isBlockMode || ! isFilterRoute || hasInitialized.current ) {
 			return;
 		}
+
 		hasInitialized.current = true;
 
-		// If URL already has filters, save them to Zustand and use those.
 		if ( hasUrlFilters( searchParams ) ) {
 			setSavedFilters( searchParams );
 			return;
 		}
 
-		// Load from Zustand store and apply to URL.
 		const storedFilters = getSavedFilters();
 		const hasStoredFilters = 0 < Object.keys( storedFilters ).length;
 
@@ -150,33 +117,48 @@ export const useFilters = () => {
 			navigate({
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				search: newSearch as any,
-				replace: true // Replace to not create extra history entry on init.
+				replace: true
 			});
 		}
-	}, [ isFilterRoute ]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [ isFilterRoute, isBlockMode ]); // eslint-disable-line react-hooks/exhaustive-deps
 
-	// Sync filters to Zustand whenever they change (for session persistence).
-	// Only sync on filter-enabled routes.
+	// Sync filters to appropriate store (removed - happens in setFilters instead)
+	// Block mode filters are managed directly via setFilters/deleteFilter/clearAllFilters
+
+	// Only sync URL filters to localStorage
 	useEffect( () => {
-		if ( isFilterRoute && hasInitialized.current ) {
-			setSavedFilters( filters );
+		if ( isBlockMode || ! hasInitialized.current || ! isFilterRoute ) {
+			return;
 		}
-	}, [ filters, setSavedFilters, isFilterRoute ]);
+
+		setSavedFilters( filters );
+	}, [ filters, isBlockMode, isFilterRoute, setSavedFilters ]);
 
 	/**
-	 * Set a filter value and update URL.
-	 * Only works on filter-enabled routes.
-	 *
-	 * @param filter - The filter key to update.
-	 * @param value  - The value to set for the filter.
+	 * Set a filter value
 	 */
 	const setFilters = useCallback(
 		( filter: string, value: string ) => {
-			if ( 'string' !== typeof filter || ! filter.length ) {
+			if ( ! filter.length ) {
 				return;
 			}
 
-			// Only update on filter-enabled routes.
+			// Block mode: update wizard store
+			if ( isBlockMode ) {
+				const currentFilters = getReportFilters( reportBlockIndex ) || {};
+				const newFilters = { ...currentFilters };
+
+				if ( '' === value || null === value || value === undefined ) {
+					delete newFilters[filter];
+				} else {
+					newFilters[filter] = value;
+				}
+
+				updateReportFilters( reportBlockIndex, newFilters );
+				return;
+			}
+
+			// URL mode: update URL params (only on filter routes)
 			if ( ! isFilterRoute ) {
 				return;
 			}
@@ -184,8 +166,6 @@ export const useFilters = () => {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const searchUpdater = ( prev: any ) => {
 				const newParams = { ...prev };
-
-				// Remove trailing param so we can add it last.
 				delete newParams[TRAILING_PARAM_KEY];
 
 				if ( '' === value || null === value || value === undefined ) {
@@ -200,22 +180,28 @@ export const useFilters = () => {
 			navigate({
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				search: searchUpdater as any,
-				replace: false // Create history entry for back button.
+				replace: false
 			});
 		},
-		[ navigate, isFilterRoute ]
+		[ navigate, isFilterRoute, isBlockMode, reportBlockIndex, getReportFilters, updateReportFilters ]
 	);
 
 	/**
-	 * Clear a specific filter.
-	 * Only works on filter-enabled routes.
-	 *
-	 * @param filter - The filter key to clear.
+	 * Clear a specific filter
 	 */
 	const deleteFilter = useCallback(
 		( filter: string ) => {
 
-			// Only update on filter-enabled routes.
+			// Block mode: update wizard store
+			if ( isBlockMode ) {
+				const currentFilters = getReportFilters( reportBlockIndex ) || {};
+				const newFilters = { ...currentFilters };
+				delete newFilters[filter];
+				updateReportFilters( reportBlockIndex, newFilters );
+				return;
+			}
+
+			// URL mode: update URL params (only on filter routes)
 			if ( ! isFilterRoute ) {
 				return;
 			}
@@ -223,11 +209,8 @@ export const useFilters = () => {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const searchUpdater = ( prev: any ) => {
 				const newParams = { ...prev };
-
-				// Remove trailing param so we can add it last.
 				delete newParams[TRAILING_PARAM_KEY];
 				delete newParams[filter];
-
 				return buildSearchParams( newParams );
 			};
 
@@ -237,19 +220,22 @@ export const useFilters = () => {
 				replace: false
 			});
 		},
-		[ navigate, isFilterRoute ]
+		[ navigate, isFilterRoute, isBlockMode, reportBlockIndex, getReportFilters, updateReportFilters ]
 	);
 
 	/**
-	 * Clear all filters.
-	 * Clears both URL and persisted storage.
+	 * Clear all filters
 	 */
 	const clearAllFilters = useCallback( () => {
 
-		// Clear Zustand persisted filters.
-		clearSavedFilters();
+		// Block mode: clear from wizard store
+		if ( isBlockMode ) {
+			updateReportFilters( reportBlockIndex, {});
+			return;
+		}
 
-		// Clear URL on filter-enabled routes.
+		// URL mode: clear from both stores
+		clearSavedFilters();
 		if ( isFilterRoute ) {
 			navigate({
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -257,12 +243,10 @@ export const useFilters = () => {
 				replace: false
 			});
 		}
-	}, [ navigate, clearSavedFilters, isFilterRoute ]);
+	}, [ navigate, clearSavedFilters, isFilterRoute, isBlockMode, reportBlockIndex, updateReportFilters ]);
 
 	/**
-	 * Get active filters (non-empty values).
-	 *
-	 * @return Object containing only filters with values.
+	 * Get active filters (non-empty values)
 	 */
 	const getActiveFilters = useCallback( (): FilterSearchParams => {
 		const active: FilterSearchParams = {};
@@ -276,9 +260,7 @@ export const useFilters = () => {
 	}, [ filters ]);
 
 	/**
-	 * Check if any filters are active.
-	 *
-	 * @return True if any filter has a value.
+	 * Check if any filters are active
 	 */
 	const hasActiveFilters = useMemo( (): boolean => {
 		return FILTER_KEYS.some( ( key ) => {
@@ -288,25 +270,17 @@ export const useFilters = () => {
 	}, [ filters ]);
 
 	/**
-	 * Get filters organized by category.
-	 *
-	 * @return Object with categories as keys and filter arrays as values.
+	 * Get filters organized by category
 	 */
 	const getFiltersByCategory = useCallback( () => {
-		const categorizedFilters: Record<
-			string,
-			Array<{ key: string } & FilterConfigType>
-		> = {
+		const categorizedFilters: Record<string, Array<{ key: string } & FilterConfigType>> = {
 			content: [],
 			sources: [],
 			behavior: [],
 			location: []
 		};
 
-		// Group filters by category.
-		(
-			Object.entries( FILTER_CONFIG ) as Array<[ FilterKey, FilterConfigType ]>
-		).forEach( ([ filterKey, config ]) => {
+		( Object.entries( FILTER_CONFIG ) as Array<[FilterKey, FilterConfigType]> ).forEach( ([ filterKey, config ]) => {
 			if ( config.category && categorizedFilters[config.category]) {
 				categorizedFilters[config.category].push({
 					key: filterKey,
@@ -319,9 +293,7 @@ export const useFilters = () => {
 	}, []);
 
 	/**
-	 * Get favorite filters with their configuration.
-	 *
-	 * @return Array of favorite filter objects.
+	 * Get favorite filters with their configuration
 	 */
 	const getFavoriteFilters = useCallback( () => {
 		return favorites
@@ -334,24 +306,24 @@ export const useFilters = () => {
 
 	return {
 
-		// State.
+		// State
 		filters,
 		filtersConf: FILTER_CONFIG,
 		filterCategories: FILTER_CATEGORIES,
 		favorites,
-		isFilterRoute,
+		isFilterRoute: isBlockMode ? false : isFilterRoute, // Block mode never uses routes
 
-		// Filter actions.
+		// Filter actions
 		setFilters,
 		deleteFilter,
 		clearAllFilters,
 
-		// Filter getters.
+		// Filter getters
 		getActiveFilters,
 		hasActiveFilters,
 		getFiltersByCategory,
 
-		// Favorites actions.
+		// Favorites actions (shared across all contexts)
 		addToFavorites,
 		removeFromFavorites,
 		toggleFavorite,
@@ -361,3 +333,16 @@ export const useFilters = () => {
 };
 
 export default useFilters;
+
+export {
+	FILTER_CONFIG,
+	FILTER_CATEGORIES,
+	FILTER_KEYS,
+	INITIAL_FILTERS,
+	TRAILING_PARAM_KEY,
+	validateFilterSearch,
+	type FilterKey,
+	type FilterSearchParams,
+	type FilterCategory,
+	type FilterConfig
+} from '@/config/filterConfig';

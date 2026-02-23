@@ -151,6 +151,20 @@ return [
 				],
 			],
 	],
+	'fluentform'                       => [
+		'goals' =>
+			[
+				[
+					'id'    => 'fluentform_submission_inserted',
+					'title' => 'Fluent Forms - ' . __( 'Submit form', 'burst-statistics' ),
+
+				],
+				[
+					'id'    => 'fluentforms_click_submit',
+					'title' => 'Fluent Forms - ' . __( 'Submit form', 'burst-statistics' ),
+				],
+			],
+	],
 	'happy-forms'                      => [
 		'constant_or_function' => 'HAPPYFORMS_VERSION',
 		'label'                => 'Happyforms',

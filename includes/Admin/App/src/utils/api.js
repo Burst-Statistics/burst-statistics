@@ -348,6 +348,23 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
 
 export const getMenu = () => makeRequest( 'burst/v1/menu/' + glue() + getNonce() );
 
+export const getReportPreview = ( blocks, frequency ) => {
+	const data = {
+		blocks: blocks,
+		frequency: frequency
+	};
+	return doAction( 'report/preview', data );
+
+};
+
+export const getReports = () => {
+	return makeRequest( 'burst/v1/reports/' + glue() + getNonce() );
+};
+
+export const getReportLogs = () => {
+	return makeRequest( 'burst/v1/report/logs' + glue() + getNonce() );
+};
+
 export const getPosts = ( search ) =>
 	makeRequest( `burst/v1/posts/${glue()}${getNonce()}&search=${search}` ).then(
 		( response ) => {

@@ -22,6 +22,8 @@ const greenColor = {
     safelist: [
       'text-green-600',
       'text-red-600',
+      'bg-primary',
+      'data-[state=checked]:bg-primary',
     ],
     theme: {
       extend: {

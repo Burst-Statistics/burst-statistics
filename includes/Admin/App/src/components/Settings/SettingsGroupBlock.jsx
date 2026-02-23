@@ -10,14 +10,14 @@ import { __ } from '@wordpress/i18n';
 import useLicenseData from '@/hooks/useLicenseData';
 import clsx from 'clsx';
 
-const SettingsGroupBlock = memo( ({ group, fields, control, isLastGroup }) => {
-	const { isLicenseValid } = useLicenseData();
+const SettingsGroupBlock = memo( ({ group, fields, control, isLastGroup, isShowingFooter = true }) => {
+		const { isLicenseValid } = useLicenseData();
 
-    const className = clsx( 'p-0', isLastGroup ? 'rounded-b-none' : 'mb-5', 'license' === group.id ? '' : 'pb-4' );
+		const className = clsx( 'p-0', isLastGroup && isShowingFooter ? 'rounded-b-none' : 'mb-5', 'license' === group.id ? '' : 'pb-4' );
 
-	if ( 0 === fields.length ) {
-		return null; // No fields to display
-	}
+		if ( 0 === fields.length ) {
+			return null; // No fields to display
+		}
 
     return (
       <Block key={group.id} className={className}>

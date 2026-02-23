@@ -268,10 +268,20 @@ class Upgrade {
 			\Burst\burst_loader()->admin->app->weekly_clear_referrers_table();
 		}
 
+		if ( $prev_version && version_compare( $prev_version, '3.2.0', '<' ) ) {
+			burst_reinstall_rest_api_optimizer();
+			$installed_by = get_option( 'teamupdraft_installation_source_burst-statistics' );
+			if ( ! empty( $installed_by ) ) {
+				update_site_option( 'teamupdraft_installation_source_burst-statistics', $installed_by );
+			}
+			update_option( 'burst_db_upgrade_move_reports_to_new_tables', true, false );
+			\Burst\burst_loader()->admin->tasks->add_task( 'join-discord' );
+		}
+
 		$admin = new Admin();
 		$admin->run_table_init_hook();
 		$admin->create_js_file();
-
+		wp_schedule_single_event( time() + 60, 'burst_upgrade_iteration' );
 		do_action( 'burst_upgrade_after', $prev_version );
 		update_option( 'burst-current-version', $new_version );
 	}

@@ -33,17 +33,58 @@ if ( ! function_exists( '\Burst\burst_get_option' ) && ! function_exists( 'burst
 	 */
 	function burst_get_option( string $name, $default = null ) {
 
-		$name    = sanitize_title( $name );
-		$options = get_option( 'burst_options_settings', [] );
+		$name         = sanitize_title( $name );
+		$options      = get_option( 'burst_options_settings', [] );
         $value_exists = array_key_exists( $name, $options );
-		$value   = $options[ $name ] ?? false;
-		if ( !$value_exists && $default !== null ) {
+		$value        = $options[ $name ] ?? false;
+
+		if ( ! $value_exists && $default !== null ) {
 			$value = $default;
 		}
 
 		return apply_filters( "burst_option_$name", $value, $name );
 	}
     //phpcs:enable
+}
+
+if ( ! function_exists( '\Burst\burst_update_option' ) && ! function_exists( 'burst_update_option' ) ) {
+	//phpcs:disable
+	/**
+	 * Update a Burst option by name
+	 */
+	function burst_update_option( string $name, $value ): void {
+		$name    = sanitize_title( $name );
+		$options = get_option( 'burst_options_settings', [] );
+
+		if ( ! is_array( $options ) ) {
+			$options = [];
+		}
+
+		$options[ $name ] = $value;
+		update_option( 'burst_options_settings', $options );
+	}
+	//phpcs:enable
+}
+
+if ( ! function_exists( '\Burst\burst_delete_option' ) && ! function_exists( 'burst_delete_option' ) ) {
+	//phpcs:disable
+	/**
+	 * Delete a Burst option by name
+	 */
+	function burst_delete_option( string $name ): void {
+		$name    = sanitize_title( $name );
+		$options = get_option( 'burst_options_settings', [] );
+
+		if ( ! is_array( $options ) ) {
+			$options = [];
+		}
+
+		if ( array_key_exists( $name, $options ) ) {
+			unset( $options[ $name ] );
+			update_option( 'burst_options_settings', $options );
+		}
+	}
+	//phpcs:enable
 }
 
 if ( ! function_exists( '\Burst\burst_get_value' ) && ! function_exists( 'burst_get_value' ) ) {

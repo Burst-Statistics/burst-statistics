@@ -16,6 +16,9 @@ import Tooltip from './Tooltip';
 import { FILTER_CONFIG } from '@/config/filterConfig';
 import { formatDateShort } from '@/utils/formatting';
 import useShareableLinkStore from '@/store/useShareableLinkStore';
+import {copyToClipboard} from '@/utils/copyToClipboard';
+import ProBadge from '@/components/Common/ProBadge';
+import React from 'react';
 
 /**
  * Expiration options for the share link.
@@ -87,35 +90,6 @@ const getTabTitle = ( tabId ) => {
 
 	const item = menu.find( ( m ) => m.id === tabId );
 	return item?.title || tabId;
-};
-
-/**
- * Copy text to clipboard with fallback for older browsers.
- *
- * @param {string} text - The text to copy.
- * @return {Promise<void>}
- */
-const copyToClipboard = async( text ) => {
-	try {
-		if ( navigator.clipboard && navigator.clipboard.writeText ) {
-			await navigator.clipboard.writeText( text );
-			return;
-		}
-	} catch ( err ) {
-		console.warn( 'Clipboard API failed, trying fallback', err );
-	}
-
-	// Fallback for older browsers or non-HTTPS.
-	const textArea = document.createElement( 'textarea' );
-	textArea.value = text;
-	textArea.style.position = 'fixed';
-	textArea.style.left = '-999999px';
-	document.body.appendChild( textArea );
-	textArea.select();
-	textArea.focus();
-	document.execCommand( 'copy' );
-	document.body.removeChild( textArea );
-
 };
 
 /**
@@ -309,6 +283,10 @@ const AdvancedOptions = ({
 	shareableTabs,
 	currentTab
 }) => {
+	const { isLicenseValidFor } = useLicenseData();
+
+	const shareLinkPro = isLicenseValidFor( 'share-link-advanced' );
+
 	return (
 		<div className="border-t border-gray-200 -mx-4 px-4 pt-3">
 			{/* Header / Toggle. */}
@@ -323,6 +301,7 @@ const AdvancedOptions = ({
 					className={`text-gray-700 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
 				/>
 				<span>{__( 'Advanced options', 'burst-statistics' )}</span>
+				<ProBadge label={window.burst_settings?.is_pro ? 'Agency' : 'Pro'} id={'share-link-advanced'} />
 			</button>
 
 			{/* Content. */}
@@ -345,15 +324,16 @@ const AdvancedOptions = ({
 									{Object.entries( PERMISSION_LABELS ).map( ([ key, label ]) => (
 										<label
 											key={key}
-											className="flex items-center gap-2 cursor-pointer text-sm"
+											className={`flex items-center gap-2 cursor-pointer text-sm ${! shareLinkPro ? 'cursor-default' : 'cursor-pointer'}`}
 										>
 											<input
+												disabled={! shareLinkPro}
 												type="checkbox"
 												checked={permissions[key] || false}
 												onChange={() => onPermissionToggle( key )}
-												className="rounded border-gray-400 text-wp-blue focus:ring-wp-blue cursor-pointer"
+												className="rounded border-gray-400 text-wp-blue focus:ring-wp-blue cursor-pointer disabled:cursor-default disabled:opacity-60"
 											/>
-											<span className="text-gray">{label}</span>
+											<span className={! shareLinkPro ? 'text-gray-500' : 'text-gray'}>{label}</span>
 										</label>
 									) )}
 								</div>
@@ -368,22 +348,22 @@ const AdvancedOptions = ({
 									<div className="flex flex-wrap gap-x-6 gap-y-2">
 										{shareableTabs.map( ( tab ) => {
 											const isCurrentTab = tab.id === currentTab;
+											const disabled = ! shareLinkPro || isCurrentTab;
 											const isChecked = sharedTabs.includes( tab.id );
 
 											return (
 												<label
 													key={tab.id}
-													className={`flex items-center gap-2 text-sm ${isCurrentTab ? 'cursor-default' : 'cursor-pointer'
-														}`}
+													className={`flex items-center gap-2 text-sm ${disabled ? 'cursor-default' : 'cursor-pointer'}`}
 												>
 													<input
 														type="checkbox"
 														checked={isChecked}
 														onChange={() => onTabToggle( tab.id )}
-														disabled={isCurrentTab}
+														disabled={disabled}
 														className="rounded border-gray-400 text-wp-blue focus:ring-wp-blue cursor-pointer disabled:cursor-default disabled:opacity-60"
 													/>
-													<span className={isCurrentTab ? 'text-gray-500' : 'text-gray'}>
+													<span className={disabled ? 'text-gray-500' : 'text-gray'}>
 														{tab.title}
 														{isCurrentTab && (
 															<span className="ml-1 text-xs text-gray-400">
@@ -649,10 +629,9 @@ const ActiveLinksSection = ({
  * @return {JSX.Element|null} ShareButton component or null if viewer or license invalid.
  */
 export const ShareButton = () => {
-	const { isLicenseValidFor } = useLicenseData();
 	const location = useLocation();
 	const { startDate, endDate } = useDateRange();
-	const { filters } = useFilters();
+	const { filters } = useFilters( 'url' );
 
 	// Get current tab from location.
 	const currentTab = useMemo(
@@ -665,7 +644,7 @@ export const ShareButton = () => {
 
 	// Modal state.
 	const [ isModalOpen, setIsModalOpen ] = useState( false );
-	const [ expiration, setExpiration ] = useState( '7d' );
+	const [ expiration, setExpiration ] = useState( '24h' );
 	const [ permissions, setPermissions ] = useState( DEFAULT_PERMISSIONS );
 	const [ advancedOpen, setAdvancedOpen ] = useState( false );
 	const [ activeLinksOpen, setActiveLinksOpen ] = useState( false );
@@ -883,11 +862,6 @@ export const ShareButton = () => {
 
 	// Don't render for viewers.
 	if ( isShareableLinkViewer ) {
-		return null;
-	}
-
-	// Don't render if license doesn't support sharing.
-	if ( ! isLicenseValidFor( 'share-link' ) ) {
 		return null;
 	}
 

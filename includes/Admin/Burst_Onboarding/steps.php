@@ -33,19 +33,6 @@ return [
 				'type'  => 'license',
 				'label' => __( 'Enter your license key', 'burst-statistics' ),
 			],
-// phpcs:disable
-// Uncomment the following lines if for password/email license activation.
-//            [
-//				'id'    => 'registration_email',
-//				'type'  => 'email',
-//				'label' => __( 'Enter your e-mail address', 'burst-statistics' ),
-//			],
-//            [
-//				'id'    => 'registration_password',
-//				'type'  => 'password',
-//				'label' => __( 'Enter password', 'burst-statistics' ),
-//			],
-//phpcs:enable
 		],
 		'button'   => [
 			'id'    => 'activate',
@@ -123,6 +110,25 @@ return [
 				'id'    => 'save',
 				'label' => __( 'Save and continue', 'burst-statistics' ),
 			],
+	],
+	[
+		'id'             => 'anonymous_usage_data',
+		'type'           => 'settings',
+		'first_run_only' => true,
+		'title'          => __( 'Help improve Burst', 'burst-statistics' ),
+		'subtitle'       => __( 'Help us build better features and improve recommendations by sharing anonymous usage data. We never collect personal information.', 'burst-statistics' ),
+		'fields'         => [
+			[
+				'id'      => 'anonymous_usage_data',
+				'type'    => 'anonymous_usage_data',
+				'label'   => '',
+				'default' => false,
+			],
+		],
+		'button'         => [
+			'id'    => 'save',
+			'label' => __( 'Save and continue', 'burst-statistics' ),
+		],
 	],
 	[
 		'id'             => 'plugins',

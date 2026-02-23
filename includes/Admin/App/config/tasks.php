@@ -52,6 +52,21 @@ return [
 		'dismissible' => true,
 	],
 	[
+		'id'          => 'join-discord',
+		'condition'   => [
+			'type' => 'activation',
+		],
+		// @phpstan-ignore-next-line
+		'msg'         => $this->sprintf(
+		// translators: 1: opening anchor tag to support thread, 2: closing anchor tag.
+			__( 'Join the Burst community on %1$s Team Updraft Discord%2$s to discuss features, get help, and shape the future of Burst.', 'burst-statistics' ),
+			'<a href="https://discord.gg/jCC7GD59nS" target="_blank">',
+			'</a>'
+		),
+		'icon'        => 'completed',
+		'dismissible' => true,
+	],
+	[
 		'id'          => 'ecommerce_integration',
 		'msg'         => __( 'New in Burst Pro: dedicated sales dashboard for WooCommerce and Easy Digital Downloads.', 'burst-statistics' ),
 		'icon'        => 'new',

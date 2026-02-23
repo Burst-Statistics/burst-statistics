@@ -1,6 +1,12 @@
 <?php
 namespace Burst\Admin\DB_Upgrade;
 
+use Burst\Admin\Reports\DomainTypes\Report_Content_Block;
+use Burst\Admin\Reports\DomainTypes\Report_Day_Of_Week;
+use Burst\Admin\Reports\DomainTypes\Report_Format;
+use Burst\Admin\Reports\DomainTypes\Report_Frequency;
+use Burst\Admin\Reports\DomainTypes\Report_Week_Of_Month;
+use Burst\Admin\Reports\Report;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
@@ -224,6 +230,10 @@ class DB_Upgrade {
 			$this->fix_trailing_slash_on_referrers();
 		}
 
+		if ( 'move_reports_to_new_tables' === $do_upgrade ) {
+			$this->move_reports_to_new_tables();
+		}
+
 		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
 		if ( $this->get_progress( 'free', 'all' ) < 100 ) {
 			// free upgrades not finished yet.
@@ -238,6 +248,69 @@ class DB_Upgrade {
 		}
 
 		delete_transient( 'burst_upgrade_running' );
+	}
+
+	/**
+	 * Move reports to new tables
+	 */
+	private function move_reports_to_new_tables(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+
+		if ( ! $this->table_exists( 'burst_reports' ) ) {
+			return;
+		}
+
+		$option_name = 'burst_db_upgrade_move_reports_to_new_tables';
+		if ( ! get_option( $option_name ) ) {
+			return;
+		}
+
+		// Check if old reports table exists.
+		$old_reports = $this->get_option( 'email_reports_mailinglist' );
+
+		if ( empty( $old_reports ) ) {
+			delete_option( $option_name );
+			return;
+		}
+
+		$reports_to_migrate = [];
+
+		foreach ( $old_reports as $old_report ) {
+
+			if ( ! isset( $old_report['email'] ) ) {
+				continue;
+			}
+
+			$frequency = $old_report['frequency'] ?? 'weekly';
+
+			$reports_to_migrate[ $frequency ][] = $old_report['email'];
+		}
+
+		foreach ( $reports_to_migrate as $frequency => $emails ) {
+			$report = new Report();
+
+			$week_of_month = Report_Frequency::MONTHLY === $frequency ? Report_Week_Of_Month::FIRST : Report_Week_Of_Month::default();
+			$day_of_week   = Report_Frequency::WEEKLY === $frequency || Report_Frequency::MONTHLY === $frequency ? Report_Day_Of_Week::MONDAY : Report_Day_Of_Week::default();
+			$send_time     = '09:00';
+			$content       = defined( 'BURST_PRO' ) ? Report_Content_Block::all() : Report_Content_Block::default();
+
+			$report->set_format( Report_Format::default() )
+					->set_frequency( $frequency )
+					->set_day_of_week( $day_of_week )
+					->set_week_of_month( $week_of_month )
+					->set_send_time( $send_time )
+					->set_content( $content )
+					->set_recipients( $emails )
+					->set_enabled( true )
+					->set_scheduled( true );
+
+			$report->save();
+		}
+
+		burst_delete_option( 'email_reports_mailinglist' );
+		delete_option( $option_name );
 	}
 
 	/**
@@ -296,6 +369,9 @@ class DB_Upgrade {
 				],
 				'3.1.4.1' => [
 					'fix_trailing_slash_on_referrers',
+				],
+				'3.2.0'   => [
+					'move_reports_to_new_tables',
 				],
 			]
 		);

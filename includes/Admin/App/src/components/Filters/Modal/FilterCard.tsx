@@ -23,6 +23,7 @@ interface FilterCardProps {
 		position: number;
 		total: number;
 	};
+	reportBlockIndex:number;
 }
 
 const FilterCard: React.FC<FilterCardProps> = ({
@@ -30,10 +31,11 @@ const FilterCard: React.FC<FilterCardProps> = ({
 	config,
 	isActive = false,
 	onClick,
-	gridPosition
+	gridPosition,
+    reportBlockIndex
 }) => {
 	const { isLicenseValid } = useLicenseData();
-	const { isFavorite, toggleFavorite } = useFilters();
+	const { isFavorite, toggleFavorite } = useFilters( reportBlockIndex );
 	const isDisabled = ( config.pro && ! isLicenseValid ) || config.coming_soon;
 	const isFav = isFavorite( filterKey );
 

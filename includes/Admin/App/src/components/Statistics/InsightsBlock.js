@@ -5,15 +5,16 @@ import { BlockContent } from '@/components/Blocks/BlockContent';
 import InsightsHeader from './InsightsHeader';
 import { useInsightsStore } from '../../store/useInsightsStore';
 import InsightsGraph from './InsightsGraph';
-import { useDate } from '../../store/useDateStore';
 import { useQuery } from '@tanstack/react-query';
 import getInsightsData from '../../api/getInsightsData';
-import { useFilters } from '@/hooks/useFilters';
+import {useBlockConfig} from '@/hooks/useBlockConfig';
 
-const InsightsBlock = () => {
+//eslint-disable-next-line
+const InsightsBlock = (props) => {
+	const { startDate, endDate, range, filters, allowBlockFilters, isReport, index } = useBlockConfig( props );
+
 	const metrics = useInsightsStore( ( state ) => state.getMetrics() );
-	const { startDate, endDate, range } = useDate( ( state ) => state );
-	const { filters } = useFilters();
+
 	const args = { filters, metrics };
 
 	const query = useQuery({
@@ -46,11 +47,15 @@ const InsightsBlock = () => {
 			<BlockHeading
 				title={__( 'Insights', 'burst-statistics' )}
 				className="border-b border-gray-200"
+				isReport={isReport}
+				reportBlockIndex={index}
 				controls={
-					<InsightsHeader
-						selectedMetrics={metrics}
-						filters={filters}
-					/>
+					allowBlockFilters ? (
+						<InsightsHeader
+							selectedMetrics={metrics}
+							filters={filters}
+						/>
+					) : undefined
 				}
 			/>
 			<BlockContent>

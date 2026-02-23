@@ -19,7 +19,9 @@ const FilterChipList = ({
 	onClick,
 	className = 'flex flex-wrap gap-2',
 	showRemoveButton = true,
-	emptyMessage = null
+	emptyMessage = null,
+    isReport	= false,
+    smallLabels = false
 }) => {
 	const userCanFilter = useShareableLinkStore( ( state ) => state.userCanFilter );
 
@@ -33,17 +35,17 @@ const FilterChipList = ({
 	if ( 0 === filters.length && emptyMessage ) {
 		return <div className="text-gray-500 text-sm">{emptyMessage}</div>;
 	}
-
 	return (
 		<div className={className}>
 			{filters.map( ( filter ) => (
 				<FilterChip
-					disabled={ ! userCanFilter }
+					disabled={ isReport || ! userCanFilter }
 					key={filter.key}
 					filter={filter}
 					onRemove={onRemove}
 					onClick={onClick}
 					showRemoveButton={showRemoveButton}
+					smallLabels={smallLabels}
 				/>
 			) )}
 		</div>

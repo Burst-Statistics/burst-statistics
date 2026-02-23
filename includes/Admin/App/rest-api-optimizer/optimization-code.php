@@ -44,7 +44,7 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 			// below requests are burst requests, but requiring the other plugins to load.
 			str_contains( $request_uri, 'burst/v1/track' ) ||
 			str_contains( $request_uri, 'burst/v1/auto_installer' ) ||
-			str_contains( $request_uri, 'burst/v1/do_action/send_email_report' ) ||
+			str_contains( $request_uri, 'burst/v1/do_action/report/send-test-report' ) ||
 			str_contains( $request_uri, 'burst/v1/otherplugins' ) ||
 			str_contains( $request_uri, 'burst/v1/onboarding' ) ||
 			str_contains( $request_uri, 'otherpluginsdata' ) ||

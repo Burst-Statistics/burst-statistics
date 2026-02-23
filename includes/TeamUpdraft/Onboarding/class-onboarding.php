@@ -435,13 +435,13 @@ class Onboarding {
 						}
 
 						if ( ! empty( $reporting_email_field_name ) ) {
-							// using prefixed hook.
+							// Using prefixed hook.
                             // phpcs:ignore
-							do_action( $this->prefix . '_onboarding_update_single_option', $reporting_email_field_name, $email );
+							do_action( $this->prefix . '_create_report_from_onboarding', $email );
 						}
 						if ( ! empty( $mailinglist_signup_field_name ) ) {
 							$include_tips = isset( $data['tips_tricks'] ) && (bool) $data['tips_tricks'];
-							// using prefixed hook.
+							// Using prefixed hook.
                             // phpcs:ignore
 							do_action( $this->prefix . '_onboarding_update_single_option', 'tips_tricks_mailinglist', $email );
 

@@ -229,11 +229,16 @@ const transformSalesData = ( data ) => {
 					} else {
 
 						// Larger ratios — use "1 in X visitors convert"
-						transformed[key].subtitle = _n(
-							`1 in ${roundedRatio} visitor converts`,
-							`1 in ${roundedRatio} visitors convert`,
-							roundedRatio,
-							'burst-statistics'
+						transformed[key].subtitle = sprintf(
+							_n(
+
+								// translators: 1: ratio of visitors per conversion.
+								'1 in %d visitor converts',
+								'1 in %d visitors convert',
+								roundedRatio,
+								'burst-statistics'
+							),
+							roundedRatio
 						);
 					}
 				} else if ( 0 < totalVisitors ) {
@@ -270,11 +275,16 @@ const transformSalesData = ( data ) => {
 				transformed[key].value = formatPercentage( abandonedRate );
 				const totalAbandoned = parseInt( current.total_abandoned, 10 );
 				if ( 0 < totalAbandoned ) {
-					transformed[key].subtitle = _n(
-						`${totalAbandoned} cart was abandoned`,
-						`${totalAbandoned} carts were abandoned`,
-						totalAbandoned,
-						'burst-statistics'
+					transformed[key].subtitle = sprintf(
+						_n(
+
+							// translators: 1: total abandoned carts.
+							'%d cart was abandoned',
+							'%d carts were abandoned',
+							totalAbandoned,
+							'burst-statistics'
+						),
+						totalAbandoned
 					);
 				} else {
 					transformed[key].subtitle = __(
@@ -309,17 +319,27 @@ const transformSalesData = ( data ) => {
 						previous.average_order_value <
 						current.average_order_value
 					) {
-						transformed[key].subtitle = __(
-							`Up from ${formatCurrencyCompact( currency, previous.average_order_value )} last period`,
-							'burst-statistics'
+						transformed[key].subtitle = sprintf(
+							__(
+
+								// translators: 1: previous average order value.
+								'Up from %s last period',
+								'burst-statistics'
+							),
+							formatCurrencyCompact( currency, previous.average_order_value )
 						);
 					} else if (
 						previous.average_order_value >
 						current.average_order_value
 					) {
-						transformed[key].subtitle = __(
-							`Down from ${formatCurrencyCompact( currency, previous.average_order_value )} last period`,
-							'burst-statistics'
+						transformed[key].subtitle = sprintf(
+							__(
+
+								// translators: 1: previous average order value.
+								'Down from %s last period',
+								'burst-statistics'
+							),
+							formatCurrencyCompact( currency, previous.average_order_value )
 						);
 					} else {
 						transformed[key].subtitle = __(
@@ -357,11 +377,16 @@ const transformSalesData = ( data ) => {
 
 				const totalOrders = parseInt( current.total_orders ) ?? 0;
 				if ( 0 < totalOrders ) {
-					transformed[key].subtitle = _n(
-						`${totalOrders} successful order`,
-						`${totalOrders} successful orders`,
-						totalOrders,
-						'burst-statistics'
+					transformed[key].subtitle = sprintf(
+						_n(
+
+							// translators: 1: total successful orders.
+							'%d successful order',
+							'%d successful orders',
+							totalOrders,
+							'burst-statistics'
+						),
+						totalOrders
 					);
 				} else {
 					transformed[key].subtitle = __(

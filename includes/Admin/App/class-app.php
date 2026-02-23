@@ -2,8 +2,10 @@
 namespace Burst\Admin\App;
 
 use Burst\Admin\App\Fields\Fields;
+use Burst\Admin\App\Fields\Reporting_Fields;
 use Burst\Admin\App\Menu\Menu;
 use Burst\Admin\Burst_Onboarding\Burst_Onboarding;
+use Burst\Admin\Reports\Reports;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Tasks;
 use Burst\Frontend\Endpoint;
@@ -15,6 +17,7 @@ use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
 use Burst\Traits\Save;
 use Burst\UserAgentParser\UserAgentParser;
+
 use function Burst\burst_loader;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -33,6 +36,11 @@ class App {
 	public Menu $menu;
 	public Fields $fields;
 	public Tasks $tasks;
+
+	/**
+	 * Reporting fields.
+	 */
+	public Reporting_Fields $reporting_fields;
 	public string $nonce_expired_feedback = 'Session expired. Try refreshing the page.';
 
 	/**
@@ -51,7 +59,11 @@ class App {
 		add_action( 'burst_daily', [ $this, 'maybe_update_plugin_path' ] );
 		$this->menu   = new Menu();
 		$this->fields = new Fields();
-		$onboarding   = new Burst_Onboarding();
+
+		$this->reporting_fields = new Reporting_Fields();
+		$this->reporting_fields->init();
+
+		$onboarding = new Burst_Onboarding();
 		$onboarding->init();
 
 		add_action( 'admin_init', [ $this, 'maybe_redirect_to_settings_page' ] );
@@ -77,7 +89,7 @@ class App {
 		if ( get_transient( 'burst_redirect_to_settings_page' ) && ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'burst' ) ) {
 			delete_transient( 'burst_redirect_to_settings_page' );
 			// we don't redirect when installed through the onboarding of another plugin.
-			if ( get_option( 'teamupdraft_installation_source_burst-statistics' ) ) {
+			if ( get_site_option( 'teamupdraft_installation_source_burst-statistics' ) ) {
 				return;
 			}
 
@@ -504,6 +516,9 @@ class App {
 				$response = $this->get_posts( $request, $data );
 			} elseif ( strpos( $action, '/data/' ) !== false ) {
 				$response = $this->get_data( $request );
+			} elseif ( strpos( $action, '/reports' ) ) {
+				$reports  = new Reports();
+				$response = $reports->get_reports( $request );
 			} elseif ( $do_action ) {
 				$req = new \WP_REST_Request();
 				$req->set_param( 'action', $do_action );
@@ -1041,13 +1056,7 @@ class App {
 			ob_clean();
 		}
 
-		return new \WP_REST_Response(
-			[
-				'data'            => $data,
-				'request_success' => true,
-			],
-			200
-		);
+		return $this->create_rest_response( $data );
 	}
 
 	/**
@@ -1555,13 +1564,25 @@ class App {
 		}
 
 		if ( ( isset( $data['success'] ) && ! $data['success'] ) || $status !== 200 ) {
-			return new \WP_REST_Response(
-				[
-					'data'    => $data,
-					'success' => false,
-				],
-				$status
-			);
+			unset( $data['success'] );
+
+			if ( isset( $data['message'] ) ) {
+				return new \WP_REST_Response(
+					[
+						'message' => $data['message'],
+						'success' => false,
+					],
+					$status
+				);
+			} else {
+				return new \WP_REST_Response(
+					[
+						'data'    => $data,
+						'success' => false,
+					],
+					$status
+				);
+			}
 		}
 
 		return new \WP_REST_Response(

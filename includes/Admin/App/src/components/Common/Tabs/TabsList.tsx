@@ -1,7 +1,7 @@
-import React from 'react';
 import clsx from 'clsx';
 import type { ReactElement } from 'react';
 import { TabsTrigger } from '@/components/Common/Tabs';
+import { useNonPersistedTabsStore } from '@/store/useTabsStore';
 
 /**
  * Single tab item type.
@@ -35,6 +35,17 @@ export function TabsList({
 	tabConfig,
 	tabGroup
 }: TabsListProps ): ReactElement {
+	const getActiveTab = useNonPersistedTabsStore( ( state ) =>
+		state.getActiveTab
+	);
+
+	/**
+	 * Get active tab with default fallback to first item in config.
+	 * The store will automatically set the default if no tab is active.
+	 */
+	const defaultTabId = 0 < tabConfig.length ? tabConfig[0].id : undefined;
+	getActiveTab( tabGroup, defaultTabId );
+
 	return (
 		<div
 			className={clsx(

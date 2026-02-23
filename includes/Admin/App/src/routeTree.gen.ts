@@ -9,13 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StoryRouteImport } from './routes/story'
 import { Route as StatisticsRouteImport } from './routes/statistics'
 import { Route as SourcesRouteImport } from './routes/sources'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SalesRouteImport } from './routes/sales'
+import { Route as ReportingRouteImport } from './routes/reporting'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsSettingsIdRouteImport } from './routes/settings.$settingsId'
+import { Route as ReportingReportingIdRouteImport } from './routes/reporting.$reportingId'
 
+const StoryRoute = StoryRouteImport.update({
+  id: '/story',
+  path: '/story',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StatisticsRoute = StatisticsRouteImport.update({
   id: '/statistics',
   path: '/statistics',
@@ -36,6 +44,11 @@ const SalesRoute = SalesRouteImport.update({
   path: '/sales',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportingRoute = ReportingRouteImport.update({
+  id: '/reporting',
+  path: '/reporting',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -46,69 +59,101 @@ const SettingsSettingsIdRoute = SettingsSettingsIdRouteImport.update({
   path: '/$settingsId',
   getParentRoute: () => SettingsRoute,
 } as any)
+const ReportingReportingIdRoute = ReportingReportingIdRouteImport.update({
+  id: '/$reportingId',
+  path: '/$reportingId',
+  getParentRoute: () => ReportingRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/reporting': typeof ReportingRouteWithChildren
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRouteWithChildren
   '/sources': typeof SourcesRoute
   '/statistics': typeof StatisticsRoute
+  '/story': typeof StoryRoute
+  '/reporting/$reportingId': typeof ReportingReportingIdRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/reporting': typeof ReportingRouteWithChildren
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRouteWithChildren
   '/sources': typeof SourcesRoute
   '/statistics': typeof StatisticsRoute
+  '/story': typeof StoryRoute
+  '/reporting/$reportingId': typeof ReportingReportingIdRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/reporting': typeof ReportingRouteWithChildren
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRouteWithChildren
   '/sources': typeof SourcesRoute
   '/statistics': typeof StatisticsRoute
+  '/story': typeof StoryRoute
+  '/reporting/$reportingId': typeof ReportingReportingIdRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/reporting'
     | '/sales'
     | '/settings'
     | '/sources'
     | '/statistics'
+    | '/story'
+    | '/reporting/$reportingId'
     | '/settings/$settingsId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/reporting'
     | '/sales'
     | '/settings'
     | '/sources'
     | '/statistics'
+    | '/story'
+    | '/reporting/$reportingId'
     | '/settings/$settingsId'
   id:
     | '__root__'
     | '/'
+    | '/reporting'
     | '/sales'
     | '/settings'
     | '/sources'
     | '/statistics'
+    | '/story'
+    | '/reporting/$reportingId'
     | '/settings/$settingsId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ReportingRoute: typeof ReportingRouteWithChildren
   SalesRoute: typeof SalesRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   SourcesRoute: typeof SourcesRoute
   StatisticsRoute: typeof StatisticsRoute
+  StoryRoute: typeof StoryRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/story': {
+      id: '/story'
+      path: '/story'
+      fullPath: '/story'
+      preLoaderRoute: typeof StoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/statistics': {
       id: '/statistics'
       path: '/statistics'
@@ -137,6 +182,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reporting': {
+      id: '/reporting'
+      path: '/reporting'
+      fullPath: '/reporting'
+      preLoaderRoute: typeof ReportingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -151,8 +203,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsSettingsIdRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/reporting/$reportingId': {
+      id: '/reporting/$reportingId'
+      path: '/$reportingId'
+      fullPath: '/reporting/$reportingId'
+      preLoaderRoute: typeof ReportingReportingIdRouteImport
+      parentRoute: typeof ReportingRoute
+    }
   }
 }
+
+interface ReportingRouteChildren {
+  ReportingReportingIdRoute: typeof ReportingReportingIdRoute
+}
+
+const ReportingRouteChildren: ReportingRouteChildren = {
+  ReportingReportingIdRoute: ReportingReportingIdRoute,
+}
+
+const ReportingRouteWithChildren = ReportingRoute._addFileChildren(
+  ReportingRouteChildren,
+)
 
 interface SettingsRouteChildren {
   SettingsSettingsIdRoute: typeof SettingsSettingsIdRoute
@@ -168,10 +239,12 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ReportingRoute: ReportingRouteWithChildren,
   SalesRoute: SalesRoute,
   SettingsRoute: SettingsRouteWithChildren,
   SourcesRoute: SourcesRoute,
   StatisticsRoute: StatisticsRoute,
+  StoryRoute: StoryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

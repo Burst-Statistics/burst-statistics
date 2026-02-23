@@ -33,7 +33,7 @@ const ClickToFilter = ({
 }) => {
 
 	// Filter actions from TanStack Router-based hook.
-	const { setFilters, filtersConf, getActiveFilters } = useFilters();
+	const { setFilters, filtersConf, getActiveFilters } = useFilters(  );
 	const { getGoal } = useGoalsData();
 	const setInsightsMetrics = useInsightsStore( ( state ) => state.setMetrics );
 	const insightsMetrics = useInsightsStore( ( state ) => state.getMetrics() );
