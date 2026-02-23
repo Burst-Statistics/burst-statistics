@@ -6,7 +6,7 @@ Requires at least: 6.4
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 6.9
-Stable tag: 3.1.6
+Stable tag: 3.2.0
 
 Analytics you'll actually use. Privacy-friendly, zero config, and designed to be actionable. Get insights, not just raw data.
 
@@ -201,6 +201,15 @@ Absolutely! Both free and premium plugins can be managed with Composer. Read the
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.2.0 =
+* February 25rd 2026
+* New: anonymously share data to help us improve Burst Statistics: build industry benchmarks, targeted feature development, and performance improvements.
+* New: add notice about discord, inviting users to join our discord server.
+* New: Easily share statistics with your team or clients, with the share button in the Burst Statistics dashboard.
+* Fix: catch non json encoded data in Rest API tracking, props @rajkumarreddyv
+* Fix: Bounce and bounce rate calculations now correctly count distinct bounced sessions instead of summing bounce flags, preventing inflated numbers.
+* Fix: default value logic for 'merge variables and scripts' made it impossible to disable the setting.
+
 = 3.1.6 =
 * January 20th 2026
 * Fix: deleting old data in archive functionality not working due to incorrect SQL syntax.
