@@ -30,16 +30,16 @@
 		@apply px-6 max-xl:px-2.5;
 	}
 
-	.rdt_TableHeadRow {
+	.burst-data-table:not(.no-custom-burst-style) .rdt_TableHeadRow {
 		@apply burst-inline-block-padding bg-gray-50 text-gray border-b border-gray-200;
 	}
 
-	.rdt_TableRow {
+	.burst-data-table:not(.no-custom-burst-style) .rdt_TableRow {
 		@apply burst-inline-block-padding border-b border-gray-200;
 	}
 
-	.rdt_TableCol,
-	.rdt_TableCell {
+	.burst-data-table:not(.no-custom-burst-style) .rdt_TableCol,
+	.burst-data-table:not(.no-custom-burst-style) .rdt_TableCell {
 		@apply pl-0 pr-0;
 	}
 

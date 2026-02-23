@@ -1,5 +1,3 @@
-import { useFilters } from '@/hooks/useFilters';
-import { useDate } from '@/store/useDateStore';
 import ExplanationAndStatsItem from '@/components/Common/ExplanationAndStatsItem';
 import { __ } from '@wordpress/i18n';
 import CompareFooter from './CompareFooter';
@@ -9,10 +7,12 @@ import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import { BlockFooter } from '@/components/Blocks/BlockFooter';
+import {useBlockConfig} from '@/hooks/useBlockConfig';
+//eslint-disable-next-line
+const CompareBlock = (props) => {
 
-const CompareBlock = () => {
-	const { startDate, endDate, range } = useDate( ( state ) => state );
-	const { filters } = useFilters();
+	const { startDate, endDate, range, filters, isReport, index } = useBlockConfig( props );
+
 	const args = { filters };
 
 	const metrics = {
@@ -50,7 +50,7 @@ const CompareBlock = () => {
 
 	return (
 		<Block className="row-span-1 lg:col-span-6 xl:col-span-3">
-			<BlockHeading title={__( 'Compare', 'burst-statistics' )} />
+			<BlockHeading title={__( 'Compare', 'burst-statistics' )} isReport={isReport} reportBlockIndex={index} />
 			<BlockContent>
 				{Object.keys( data ).map( ( key, i ) => {
 					const m = data[key];

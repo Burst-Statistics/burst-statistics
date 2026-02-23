@@ -16,7 +16,8 @@ const AddFilterButton = ({
 	onClick,
 	className = '',
 	icon = 'plus',
-	label = __( 'Add filter', 'burst-statistics' )
+	label = __( 'Add filter', 'burst-statistics' ),
+	smallLabels = false
 }) => {
 	return (
 		<IconButton
@@ -26,6 +27,7 @@ const AddFilterButton = ({
 			onClick={onClick}
 			className={className}
 			ariaLabel={label}
+			size={smallLabels ? 'sm' : 'md'}
 		/>
 	);
 };

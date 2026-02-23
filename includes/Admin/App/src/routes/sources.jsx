@@ -3,7 +3,6 @@ import { PageHeader } from '@/components/Common/PageHeader';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import WorldMapBlock from '@/components/Sources/WorldMapBlock';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
-import { __ } from '@wordpress/i18n';
 import SourcesUpsellBackground from '@/components/Upsell/Sources/SourcesUpsellBackground';
 import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
@@ -14,8 +13,7 @@ export const Route = createFileRoute( '/sources' )({
 	component: Sources,
 	errorComponent: ({ error }) => (
 		<div className="text-red-500 p-4">
-			{error.message ||
-				__( 'An error occurred loading statistics', 'burst-statistics' )}
+			{error.message || 'An error occurred loading sources'}
 		</div>
 	)
 });

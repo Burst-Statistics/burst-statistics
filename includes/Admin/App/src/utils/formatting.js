@@ -1,16 +1,15 @@
 import { dateI18n } from '@wordpress/date';
 import {
-	format,
-	isSameDay,
-	startOfDay,
-	endOfDay,
 	addDays,
 	addMonths,
-	startOfMonth,
+	addYears,
+	endOfDay,
 	endOfMonth,
-	startOfYear,
 	endOfYear,
-	addYears
+	isSameDay,
+	startOfDay,
+	startOfMonth,
+	startOfYear
 } from 'date-fns';
 import { __ } from '@wordpress/i18n';
 
@@ -155,12 +154,46 @@ function getBouncePercentage( bounced_sessions, sessions, shouldFormat = true ) 
  * @return {string} The formatted date string
  */
 const formatUnixToDate = ( unixTimestamp ) => {
-	const formattedDate = dateI18n(
+	return dateI18n(
 		burst_settings.date_format,
 		new Date( unixTimestamp * 1000 )
 	);
-	return formattedDate;
 };
+
+/**
+ * Formats a Unix timestamp using Intl.
+ *
+ * @param {number} unixTimestamp - Unix timestamp in seconds
+ *
+ * @return {string}
+ */
+const formatUnixToTime = ( unixTimestamp ) => {
+	const date = new Date(
+		unixTimestamp * 1000
+	);
+
+	return new Intl.DateTimeFormat(
+		undefined,
+		{
+			timeStyle: 'short'
+		}
+	).format( date );
+};
+
+/**
+ * Formats a Unix timestamp as a date and time string, using the site's locale and wp date/time format
+ *
+ * @param {number} unixTimestamp - The Unix timestamp to format
+ *
+ * @return {string} The formatted date and time string
+ */
+const formatUnixToDateTime = ( unixTimestamp ) => {
+	return dateI18n(
+		`${ burst_settings.date_format } \\a\\t ${ burst_settings.time_format }`,
+		unixTimestamp * 1000
+	);
+};
+
 
 /**
  * Check if a date is valid
@@ -341,6 +374,17 @@ const availableRanges = {
 			endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
 		})
 	},
+	'last-week': {
+		label: __( 'Last week', 'burst-statistics' ),
+		range: () => {
+			const daysFromSunday = currentDateWithOffset.getDay();
+			const startOfThisWeek = addDays( currentDateWithOffset, -daysFromSunday );
+			return {
+				startDate: startOfDay( addDays( startOfThisWeek, -7 ) ),
+				endDate: endOfDay( addDays( startOfThisWeek, -1 ) )
+			};
+		}
+	},
 	'last-30-days': {
 		label: __( 'Last 30 days', 'burst-statistics' ),
 		range: () => ({
@@ -419,10 +463,11 @@ const getAvailableRangesWithKeys = ( selectedRanges ) => {
 };
 
 const getDisplayDates = ( startDate, endDate ) => {
-	const formatString = 'MMMM d, yyyy';
+
+	// format is based on user's locale
 	return {
-		startDate: startDate ? format( new Date( startDate ), formatString ) : '',
-		endDate: endDate ? format( new Date( endDate ), formatString ) : ''
+		startDate: startDate ? formatDate( new Date( startDate ) ) : '',
+		endDate: endDate ? formatDate( new Date( endDate ) ) : ''
 	};
 };
 
@@ -504,6 +549,69 @@ function formatCurrencyCompact( currency, value ) {
 }
 
 /**
+ * Formats a date string for display (e.g., "September 1, 2025").
+ * Uses Intl.DateTimeFormat for proper localization.
+ *
+ * @param {string | Date} dateInput - The date string (YYYY-MM-DD) or Date object.
+ * @return {string} The formatted date string, or empty string if invalid.
+ */
+function formatDate( dateInput ) {
+	if ( ! dateInput ) {
+		return '';
+	}
+
+	try {
+		const date = dateInput instanceof Date ? dateInput : new Date( dateInput );
+
+		// Check if the date is valid.
+		if ( isNaN( date.getTime() ) ) {
+			return '';
+		}
+
+		return new Intl.DateTimeFormat( undefined, {
+			month: 'long',
+			day: 'numeric',
+			year: 'numeric'
+		}).format( date );
+	} catch {
+		return '';
+	}
+}
+
+/**
+ * Formats a date string for display (e.g., "September 1, 2025 12:00:00").
+ * Uses Intl.DateTimeFormat for proper localization.
+ *
+ * @param {string | Date} dateInput - The date string (YYYY-MM-DD) or Date object.
+ * @return {string} The formatted date string, or empty string if invalid.
+ */
+function formatDateAndTime( dateInput ) {
+	if ( ! dateInput ) {
+		return '';
+	}
+
+	try {
+		const date = dateInput instanceof Date ? dateInput : new Date( dateInput );
+
+		// Check if the date is valid.
+		if ( isNaN( date.getTime() ) ) {
+			return '';
+		}
+
+		return new Intl.DateTimeFormat( undefined, {
+			month: 'long',
+			day: 'numeric',
+			year: 'numeric',
+			hour: 'numeric',
+			minute: 'numeric',
+			second: 'numeric'
+		}).format( date );
+	} catch {
+		return '';
+	}
+}
+
+/**
  * Formats a date string for short display (e.g., "Dec 23, 2025").
  * Uses Intl.DateTimeFormat for proper localization.
  *
@@ -553,7 +661,11 @@ export {
 	getDisplayDates,
 	createValueFormatter,
 	formatCurrency,
+	toUnixTimestampMillis,
+	formatUnixToDateTime,
 	formatCurrencyCompact,
 	formatDateShort,
-	toUnixTimestampMillis
+	formatDate,
+	formatDateAndTime,
+	formatUnixToTime
 };

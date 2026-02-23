@@ -12,7 +12,7 @@ const SalesUpsellBackground = () => {
 		<>
 			<div className="col-span-12 flex items-center justify-between">
 				<ErrorBoundary>
-					<PageFilter />
+					<PageFilter/>
 				</ErrorBoundary>
 
 				<ErrorBoundary>

@@ -7,6 +7,7 @@ import DisabledBadge from '@/components/Common/DisabledBadge';
 import ProBadge from '@/components/Common/ProBadge';
 import HelpTooltip from '@/components/Common/HelpTooltip';
 import useLicenseData from '@/hooks/useLicenseData';
+import {AnimatePresence, motion} from 'framer-motion';
 
 interface FieldWrapperProps {
 	label: string;
@@ -140,23 +141,42 @@ const FieldWrapper = memo(
 					<div className={clsx( fieldOrderClass )}>{fieldBlock}</div>
 				</div>
 
-				{error && (
-					<p
-						className="mt-2 text-sm font-semibold text-red"
-						role="alert"
-					>
-						{error}
-					</p>
-				)}
+				<AnimatePresence mode="wait">
+					{error && (
+						<motion.p
+							key="field-error"
+							role="alert"
+							initial={{ opacity: 0, y: -6 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -6 }}
+							transition={{
+								duration: 0.2,
+								ease: 'easeOut'
+							}}
+							className="mt-2 text-sm font-semibold text-red"
+						>
+							{error}
+						</motion.p>
+					)}
+				</AnimatePresence>
 
-				{warning && (
-					<p
-						className="mt-2 text-sm font-semibold text-orange"
-						role="alert"
-					>
-						{warning}
-					</p>
-				)}
+
+				<AnimatePresence mode="wait">
+					{warning && (
+						<motion.p
+							key="field-warning"
+							role="alert"
+							initial={{ opacity: 0, y: -6 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -6 }}
+							transition={{ duration: 0.2, ease: 'easeOut' }}
+							className="mt-2 text-sm font-semibold text-orange"
+						>
+							{warning}
+						</motion.p>
+					)}
+				</AnimatePresence>
+
 
 				{context && (
 					<p className="mt-2 text-sm font-normal text-gray">

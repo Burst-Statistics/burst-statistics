@@ -6,18 +6,22 @@ import { memo } from 'react';
 import WorldMap from '@/components/Sources/WorldMap/WorldMap';
 import WorldMapHeader from '@/components/Sources/WorldMap/WorldMapHeader';
 import ErrorBoundary from '../Common/ErrorBoundary';
+import { useBlockConfig } from '@/hooks/useBlockConfig';
 
-const WorldMapBlock = () => {
+const WorldMapBlock = ( props ) => {
+	const { allowBlockFilters, isReport, index } = useBlockConfig( props );
 	return (
 		<Block className="row-span-2 xl:col-span-6 group/root">
 			<ErrorBoundary>
 				<BlockHeading
 					className="border-b border-gray-200"
 					title={__( 'World View', 'burst-statistics' )}
-					controls={<WorldMapHeader />}
+					isReport={isReport}
+					reportBlockIndex={index}
+					controls={allowBlockFilters ? <WorldMapHeader /> : undefined}
 				/>
 				<BlockContent className="px-0 py-0">
-					<WorldMap />
+					<WorldMap {...props}/>
 				</BlockContent>
 			</ErrorBoundary>
 		</Block>

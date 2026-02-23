@@ -1,12 +1,17 @@
 import React, { forwardRef } from 'react';
 import clsx from 'clsx';
 import Icon from '@/utils/Icon';
+import {__} from '@wordpress/i18n';
+import ProBadge from '@/components/Common/ProBadge';
+import useLicenseData from '@/hooks/useLicenseData';
 
-interface RadioOption {
+export interface RadioOption {
 	type: string;
-	icon: string;
 	label: string;
+	icon?: string;
 	description?: string;
+	disabled?: boolean;
+	pro?: boolean;
 }
 
 interface RadioButtonsInputProps {
@@ -56,6 +61,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 		},
 		ref
 	) => {
+		const { isTrial } = useLicenseData();
 
 		// Construct the radio group name using goalId if provided.
 		const name = goalId ? `${goalId}-${inputId}` : inputId;
@@ -89,10 +95,9 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 					const option = options[key];
 					const optionId = `${name}-${option.type}`;
 					const isSelected = option.type === value;
-
 					return (
 						<div
-							className="w-full bg-gray-200 rounded-m"
+							className="w-full bg-gray-200 rounded-lg"
 							key={optionId}
 						>
 							<input
@@ -101,7 +106,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 								name={name}
 								id={optionId}
 								value={option.type}
-								disabled={disabled}
+								disabled={disabled || option.disabled}
 								onChange={( e ) => {
 									onChange( e.target.value );
 								}}
@@ -110,20 +115,20 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 							<label
 								htmlFor={optionId}
 								className={clsx(
-									'flex gap-2.5 m-[1px] items-start space-x-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer',
-									'focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2',
+									'flex gap-2.5 m-[1px] items-start p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer',
+									'focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 items-center',
 									{
 										'border-primary bg-primary-light':
 											isSelected,
 										'border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50':
 											! isSelected,
 										'opacity-50 cursor-not-allowed':
-											disabled
+											disabled || option.disabled
 									}
 								)}
 							>
 								{/* Custom styled radio button */}
-								<div className="flex-shrink-0 mt-1">
+								<div className="flex-shrink-0">
 									<div
 										className={clsx(
 											'w-4 h-4 rounded-full border-2 transition-all duration-200 flex items-center justify-center',
@@ -143,12 +148,16 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 
 								{/* Content area */}
 								<div className="flex items-center flex-row min-w-0 gap-1">
-									<div className="flex items-center space-x-3">
-										<Icon
-											name={option.icon}
-											size={18}
-											className="flex-shrink-0"
-										/>
+									<div className="flex items-center gap-1">
+										{
+											option.icon && (
+												<Icon
+													name={option.icon}
+													size={18}
+													className="flex-shrink-0"
+												/>
+											)
+										}
 										<h5
 											className={clsx(
 												'text-base font-medium transition-colors text-gray-900'
@@ -156,6 +165,13 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 										>
 											{option.label}
 										</h5>
+										{option.pro && <>
+											Pro
+											<ProBadge
+											label={__( 'Pro', 'burst-statistics' )}
+											id={'reporting'}
+											type={isTrial ? 'icon' : 'badge'}
+										/></>}
 									</div>
 
 									{option.description &&

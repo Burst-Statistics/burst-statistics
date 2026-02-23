@@ -229,8 +229,8 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 	 */
 	const hasMoreSites = ( upgrade: LicenseUpgrade, limit: number, orEqual = false ): boolean => {
 		if ( 'unlimited' === upgrade.sites ) {
-return true;
-}
+			return true;
+		}
 		return 'number' === typeof upgrade.sites && ( orEqual ? upgrade.sites >= limit : upgrade.sites > limit );
 	};
 

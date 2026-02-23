@@ -17,6 +17,8 @@ import {
 	TRAILING_PARAM_KEY
 } from '@/hooks/useFilters';
 import { useFiltersStore } from '@/store/useFiltersStore';
+import { useLocation } from '@tanstack/react-router';
+import TransparencyModal from './TransparencyModal';
 
 /**
  * Generates the URL for a given menu item.
@@ -50,7 +52,11 @@ const getMenuItemUrl = ( menuItem ) => {
  * @return { JSX.Element } The rendered Header component.
  */
 const Header = () => {
+	const location = useLocation();
+	const isStory = '/story' === location.pathname;
 	const isShareableLinkViewer = useShareableLinkStore( ( state ) => state.isShareableLinkViewer );
+	const { isLicenseValidFor } = useLicenseData();
+	const shareLinkPro = isLicenseValidFor( 'share-link-advanced' );
 
 	const menu = Array.isArray( burst_settings.menu ) ?
 		burst_settings.menu :
@@ -61,17 +67,13 @@ const Header = () => {
 	const { data, isLoading } = useAttachmentUrl( logoId );
 	const attachmentUrl = data?.attachmentUrl;
 	const { isPro, isTrial } = useLicenseData();
-	const activeClassName =
-		'border-primary font-bold text-primary hover:border-primary hover:bg-primary-light';
+	const activeClassName = 'border-b-4 border-primary font-bold text-primary hover:border-primary hover:bg-primary-light';
 	const linkClassName = clsx(
-		'py-6 px-5',
-		'max-sm:py-4.5 max-sm:px-3.5',
-		'max-sm:py-4',
+		'py-4 px-3.5',
+		'lg:py-6 lg:px-5',
 		'rounded-sm',
 		'relative',
 		'text-md',
-		'border-b-4',
-		'max-xxs:border-b-2',
 		'hover:border-gray-500 hover:bg-gray-100',
 		'transition-border duration-150',
 		'transition-background duration-150'
@@ -91,7 +93,7 @@ const Header = () => {
 				utm_content: 'upgrade-to-pro'
 			});
 
-	// load the chunk translations passed to us from the rsssl_settings object.
+	// load the chunk translations passed to us from the burst_settings object.
 	// only works in build mode, not in dev mode.
 	useEffect( () => {
 		burst_settings.json_translations.forEach( ( translationsString ) => {
@@ -104,53 +106,139 @@ const Header = () => {
 		});
 	}, []);
 
+	const leftMenuItems = menu.filter( ( item ) => ! item.location || 'left' === item.location );
+	const rightMenuItems = menu.filter( ( item ) => 'right' === item.location );
+	if ( isStory ) {
+		return null;
+	}
+	const isWhiteLabel = isShareableLinkViewer && shareLinkPro;
 	return (
 		<div className="bg-white shadow-sm">
 			<SubscriptionHeader />
 			<div className="mx-auto flex max-w-screen-2xl items-center gap-5 px-5 max-xxs:gap-0">
 				<div className="max-xxs:w-16 max-xxs:h-auto max-xxs:hidden">
-					<Link className="flex gap-3 align-middle" from="/" to="/">
-						{isShareableLinkViewer && ! isLoading && attachmentUrl && (
-							<img alt="logo" src={attachmentUrl} className="h-11 w-auto px-0 py-2" />
-							)}
-						{! isShareableLinkViewer && <Logo className="h-11 w-auto px-0 py-2"/>}
-					</Link>
-				</div>
-
-				<div className="flex items-center flex-1 max-xxs:animate-scrollIndicator overflow-x-auto scrollbar-hide">
-					{menu.map( ( menuItem ) => (
-						<MenuItemLink
-							key={menuItem.id}
-							menuItem={menuItem}
-							linkClassName={linkClassName}
-							activeClassName={activeClassName}
-							isTrial={isTrial}
-						/>
-					) )}
-				</div>
-
-				{ ! isShareableLinkViewer &&
-					<div className="flex items-center gap-5">
-						<ButtonInput
-							className="max-xxs:hidden"
-							link={{ to: supportUrl }}
-							btnVariant="tertiary"
-						>
-							{__( 'Support', 'burst-statistics' )}
-						</ButtonInput>
-
-						{upgradeUrl && (
-							<ButtonInput
-								className="max-xxs:ml-4"
-								link={{ to: upgradeUrl }}
-								btnVariant="primary"
+					{isWhiteLabel && ! isLoading && attachmentUrl ? (
+						<img alt="logo" src={attachmentUrl} className="h-11 w-auto px-0 py-2" />
+					) : isShareableLinkViewer ? (
+							<a
+								href={burst_get_website_url( '', {
+									utm_source: 'share-link',
+									utm_medium: 'header',
+									utm_campaign: 'free-branding'
+								})}
+								target="_blank"
+								rel="noopener noreferrer"
 							>
-								{__( 'Upgrade to Pro', 'burst-statistics' )}
-							</ButtonInput>
-						)}
-					</div>
-				}
+								<Logo className="h-11 w-auto px-0 py-2"/>
+							</a>
+					) : (
+						<Link className="flex gap-3 align-middle" from="/" to="/">
+							<Logo className="h-11 w-auto px-0 py-2"/>
+						</Link>
+					)}
+				</div>
 
+				<div className="hidden md:flex items-center flex-1">
+					{
+						leftMenuItems.map( ( menuItem ) => (
+							<MenuItemLink
+								key={menuItem.id}
+								menuItem={menuItem}
+								linkClassName={linkClassName}
+								activeClassName={activeClassName}
+								isTrial={isTrial}
+						/>
+						) )
+					}
+				</div>
+                { isShareableLinkViewer && ! isWhiteLabel && (
+                    <div className="flex items-center gap-4">
+                        <TransparencyModal />
+                        <a
+                            href={burst_get_website_url( '', {
+                                utm_source: 'share-link',
+                                utm_medium: 'header',
+                                utm_campaign: 'free-branding'
+                            })}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-light rounded-lg border border-primary/20 hover:border-primary/40 transition-all duration-200"
+                        >
+							<span className="text-sm font-medium text-gray-700">
+								Data collected with <span className="text-primary font-semibold">Burst Statistics</span>
+							</span>
+                        </a>
+                    </div>
+                )}
+				<div className="overflow-x-auto scrollbar-hide md:hidden">
+					<div className="flex flex-1 items-center animate-scrollIndicator">
+						{
+							leftMenuItems.map( ( menuItem ) => (
+								<MenuItemLink
+									key={menuItem.id}
+									menuItem={menuItem}
+									linkClassName={linkClassName}
+									activeClassName={activeClassName}
+									isTrial={isTrial}
+								/>
+							) )
+						}
+
+						{
+							! isShareableLinkViewer && (
+								rightMenuItems.map( ( menuItem ) => (
+									<MenuItemLink
+										key={menuItem.id}
+										menuItem={menuItem}
+										linkClassName={linkClassName}
+										activeClassName={activeClassName}
+										isTrial={isTrial}
+									/>
+								) )
+							)
+						}
+					</div>
+				</div>
+
+                {
+					! isShareableLinkViewer && (
+						<div className="flex items-center gap-2.5 lg:gap-5">
+							<div className="hidden md:flex">
+								{
+									rightMenuItems.map( ( menuItem ) => (
+										<MenuItemLink
+											key={menuItem.id}
+											menuItem={menuItem}
+											linkClassName={linkClassName}
+											activeClassName={activeClassName}
+											isTrial={isTrial}
+										/>
+									) )
+								}
+							</div>
+
+							<ButtonInput
+								className="hidden sm:block"
+								link={{ to: supportUrl }}
+								btnVariant="tertiary"
+							>
+								{__( 'Support', 'burst-statistics' )}
+							</ButtonInput>
+
+							{
+								upgradeUrl && (
+									<ButtonInput
+										className="max-xxs:ml-4"
+										link={{ to: upgradeUrl }}
+										btnVariant="primary"
+									>
+										{__( 'Upgrade to Pro', 'burst-statistics' )}
+									</ButtonInput>
+								)
+							}
+						</div>
+					)
+				}
 			</div>
 		</div>
 	);

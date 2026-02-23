@@ -1,9 +1,9 @@
 // hooks/useGeoData.js
-import { useMemo } from '@wordpress/element'; // Or from '@wordpress/element'
-import { useQuery } from '@tanstack/react-query';
-import { feature } from 'topojson-client';
-import { useGeoStore } from '@/store/useGeoStore'; // Adjust path
-import { getJsonData } from '@/utils/api'; // Your existing API util
+import {useMemo} from '@wordpress/element'; // Or from '@wordpress/element'
+import {useQuery} from '@tanstack/react-query';
+import {feature} from 'topojson-client';
+import {useGeoStore} from '@/store/useGeoStore'; // Adjust path
+import {getJsonData} from '@/utils/api'; // Your existing API util
 import useLicenseData from '@/hooks/useLicenseData';
 
 // Assuming burst_settings is globally available in your WP environment
@@ -60,8 +60,7 @@ const fetchWorldTopo = async( isSimplified = false ) => {
 			SIMPLIFIED_WORLD_GEO_URL :
 			`${WORLD_GEO_URL_BASE}/world.json`;
 
-		const json = await getJsonData( url );
-		return json;
+		return await getJsonData( url );
 	} catch ( error ) {
 		console.error( 'Error fetching world topo:', error );
 		throw error;

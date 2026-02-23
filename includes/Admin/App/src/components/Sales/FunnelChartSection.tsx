@@ -1,7 +1,5 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useDate } from '@/store/useDateStore';
-import { useFilters } from '@/hooks/useFilters';
 import { getFunnelData } from '@/api/getFunnelData';
 import { __ } from '@wordpress/i18n';
 import { Block } from '@/components/Blocks/Block';
@@ -10,6 +8,8 @@ import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { FunnelChartHeader } from '@/components/Sales/FunnelChartHeader';
 import { useFunnelStore } from '@/store/useFunnelStore';
 import { FunnelChart, FunnelStage } from './Funnel';
+import {useBlockConfig} from '@/hooks/useBlockConfig';
+import {BlockComponentProps} from '@/store/reports/types';
 
 /**
  * Placeholder data for the funnel chart to prevent layout shifts.
@@ -49,9 +49,9 @@ const placeholderFunnelData: FunnelStage[] = [
  *
  * @return {JSX.Element} The FunnelChartSection component.
  */
-const FunnelChartSection: React.FC = () => {
-	const { startDate, endDate, range } = useDate( ( state ) => state );
-	const { filters } = useFilters();
+const FunnelChartSection: React.FC<BlockComponentProps> = ( props ) => {
+	const { startDate, endDate, range, filters, allowBlockFilters, index } = useBlockConfig( props );
+
 	const selectedPages = useFunnelStore( ( state ) => state.selectedPages );
 
 	const funnelQuery = useQuery<FunnelStage[] | null>({
@@ -79,7 +79,9 @@ const FunnelChartSection: React.FC = () => {
 
 	const blockHeadingProps = {
 		title: __( 'Funnel', 'burst-statistics' ),
-		controls: <FunnelChartHeader />
+		isReport: props.isReport,
+		reportBlockIndex: index,
+		controls: allowBlockFilters ? <FunnelChartHeader /> : undefined
 	};
 
 	const blockContentProps = {

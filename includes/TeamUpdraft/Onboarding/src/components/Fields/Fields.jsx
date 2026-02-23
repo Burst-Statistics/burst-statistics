@@ -4,6 +4,7 @@ import TrackingTest from './TrackingTest';
 import Email from './Email';
 import Password from './Password';
 import Plugins from './Plugins';
+import AnonymousUsageData from './AnonymousUsageData';
 import { ErrorBoundary } from '../ErrorBoundary';
 import useOnboardingStore from "@/store/useOnboardingStore";
 
@@ -29,6 +30,7 @@ const Fields = ({ fields, onChange }) => {
         email: Email,
         plugins: Plugins,
         password: Password,
+        anonymous_usage_data: AnonymousUsageData,
     };
 
     //the settings contain the values.

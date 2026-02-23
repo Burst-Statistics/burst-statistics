@@ -280,4 +280,49 @@ class Burst_Wp_Cli {
 			\WP_CLI::error( "Failed to open zip file: $zip_path" );
 		}
 	}
+
+	/**
+	 * Send test telemetry data
+	 *
+	 * Usage: wp burst send_test_telemetry [--endpoint=<url>]
+	 *
+	 * @throws \WP_CLI\ExitException //exit exception.
+	 */
+	public function send_test_telemetry( array $args, array $assoc_args ): void {
+		if ( ! $this->wp_cli_active() ) {
+			return;
+		}
+
+		// Only allow this command in test environments or when explicitly enabled.
+		if ( ! self::is_test() && ! defined( 'BURST_ALLOW_TEST_TELEMETRY' ) ) {
+			\WP_CLI::error( 'Test telemetry can only be sent in test environments or when BURST_ALLOW_TEST_TELEMETRY is defined in wp-config.php' );
+		}
+
+		// Check if Data_Sharing class exists.
+		if ( ! class_exists( 'Burst\Admin\Data_Sharing\Data_Sharing' ) ) {
+			\WP_CLI::error( 'Data_Sharing class not found' );
+		}
+
+		$data_sharing = new \Burst\Admin\Data_Sharing\Data_Sharing();
+
+		// Get custom endpoint if provided.
+		$endpoint = $assoc_args['endpoint'] ?? null;
+
+		if ( $endpoint ) {
+			\WP_CLI::log( "Sending test telemetry to custom endpoint: $endpoint" );
+		} else {
+			\WP_CLI::log( 'Sending test telemetry to default endpoint' );
+		}
+
+		$response = $data_sharing->send_test_telemetry( $endpoint );
+
+		// Output the response as JSON.
+		echo wp_json_encode( $response, JSON_PRETTY_PRINT );
+
+		if ( $response['success'] ) {
+			\WP_CLI::success( 'Test telemetry sent successfully' );
+		} else {
+			\WP_CLI::error( 'Failed to send test telemetry: ' . ( $response['message'] ?? 'Unknown error' ) );
+		}
+	}
 }

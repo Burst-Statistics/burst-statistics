@@ -19,7 +19,7 @@ class Installer {
 	 */
 	private string $caller_slug = '';
 	private array $plugins      = [];
-	private string $endpoint    = 'https://burst.ams3.cdn.digitaloceanspaces.com/teamupdraft/';
+
 	/**
 	 * Constructor
 	 */
@@ -206,7 +206,7 @@ class Installer {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function enrich_plugin_data( array $plugins ): array {
-		$icon_url  = $this->endpoint . 'images/';
+		$icon_url  = BURST_URL . '/includes/TeamUpdraft/Installer/images/';
 		$admin_url = is_multisite() ? network_admin_url( 'plugin-install.php?s=' ) : admin_url( 'plugin-install.php?s=' );
 		foreach ( $plugins as $index => $plugin ) {
 			$action                      = $this->get_plugin_action( $plugin['slug'] );
@@ -244,17 +244,6 @@ class Installer {
 		}
 
 		$json_path = __DIR__ . '/plugins.json';
-		// if the file is over one week old, delete it, so we can download a new one.
-		if ( file_exists( $json_path ) && ( time() - filemtime( $json_path ) > WEEK_IN_SECONDS ) ) {
-			wp_delete_file( $json_path );
-		}
-
-		if ( ! file_exists( $json_path ) ) {
-			$this->download_json_file();
-		}
-		if ( ! file_exists( $json_path ) ) {
-			$json_path = __DIR__ . '/plugins-fallback.json';
-		}
 
         // phpcs:disable WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		$json = file_get_contents( $json_path );
@@ -292,29 +281,6 @@ class Installer {
 		);
 
 		return $this->plugins;
-	}
-
-	/**
-	 * Get the plugins.json file from the remote server.
-	 */
-	private function download_json_file(): void {
-		$remote_json = $this->endpoint . 'json/plugins.json';
-		$response    = wp_remote_get( $remote_json );
-		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
-			return;
-		}
-		$json = wp_remote_retrieve_body( $response );
-		if ( ! empty( $json ) ) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-			global $wp_filesystem;
-			if ( ! WP_Filesystem() ) {
-				return;
-			}
-
-			if ( $wp_filesystem->is_writable( __DIR__ ) ) {
-				$wp_filesystem->put_contents( __DIR__ . '/plugins.json', $json, FS_CHMOD_FILE );
-			}
-		}
 	}
 
 	/**
@@ -474,7 +440,7 @@ class Installer {
 			return false;
 		}
 		// plugin successfully activated. We save an option so the just installed plugin knows how it was installed.
-		update_option( 'teamupdraft_installation_source_' . $this->slug, $this->caller_slug, false );
+		update_site_option( 'teamupdraft_installation_source_' . $this->slug, $this->caller_slug );
 		return true;
 	}
 

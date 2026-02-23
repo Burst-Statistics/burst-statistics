@@ -243,8 +243,20 @@ const useLicenseData = (): UseLicenseDataReturn => {
 			return 'agency' === tier || 'business' === tier;
 		}
 
-        if ( 'share-link' === id ) {
+        if ( 'share-link-advanced' === id ) {
             return 'agency' === tier;
+        }
+        if ( 'reporting' === id ) {
+            return 'agency' === tier;
+        }
+        const possibleIds = [
+            'share-link-advanced',
+            'sources',
+            'sales',
+            'reporting'
+        ];
+        if ( ! possibleIds.includes( id ) ) {
+            console.error( `Invalid upgrade ID: ${id}` );
         }
 
 		//all other options when license is valid.

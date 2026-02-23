@@ -17,10 +17,12 @@ interface FilterConfig {
 
 interface FilterSelectionViewProps {
 	onSelectFilter: ( filterKey: string, config: FilterConfig ) => void;
+	reportBlockIndex:number;
 }
 
 const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
-	onSelectFilter
+	onSelectFilter,
+	reportBlockIndex
 }) => {
 	const {
 		filtersConf: filtersConfInitial,
@@ -28,7 +30,7 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 		getActiveFilters,
 		getFiltersByCategory,
 		getFavoriteFilters
-	} = useFilters();
+	} = useFilters( reportBlockIndex );
 	const { getValue } = useSettingsData();
 
 	const [ activeTab, setActiveTab ] = useState<string>( 'favorites' );
@@ -190,6 +192,7 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 				>
 					{filters.map( ( filter, index ) => (
 						<FilterCard
+							reportBlockIndex={reportBlockIndex}
 							key={filter.key}
 							filterKey={filter.key}
 							config={filter}

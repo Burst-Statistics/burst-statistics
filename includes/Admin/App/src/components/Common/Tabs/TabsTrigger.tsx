@@ -78,6 +78,10 @@ export function TabsTrigger({
 				activeClassesByVariant[activeVariant],
 				className
 			)}
+			type="button"
+			role="tab"
+			aria-controls={id}
+			aria-selected={selected || undefined}
 			onClick={handleClick}
 			data-active={selected || undefined}
 			{...rest}

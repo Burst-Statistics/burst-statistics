@@ -34,7 +34,7 @@ export function TabsContent({
 
     return (
         <div
-            className={ clsx( 'burst-scroll px-2.5 md:px-6 py-8 h-[305px] overflow-y-auto rounded-none', className ) }
+            className={ clsx( '', className ) }
             {...rest}
         >
 			{children}

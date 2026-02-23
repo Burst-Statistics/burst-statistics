@@ -153,50 +153,6 @@ return [
 		'default'  => false,
 	],
 	[
-		'id'       => 'email_reports_mailinglist',
-		'menu_id'  => 'general',
-		'group_id' => 'email_reports',
-		'type'     => 'email_reports',
-		'label'    => __( 'Email reports', 'burst-statistics' ),
-		'disabled' => false,
-		'default'  => '',
-	],
-	[
-		'id'       => 'logo_attachment_id',
-		'menu_id'  => 'general',
-		'group_id' => 'email_reports',
-		'type'     => 'logo_editor',
-		'label'    => __( 'Change logo in the email reports', 'burst-statistics' ),
-		'context'  => __( 'Recommended size is 200 pixels by 70 pixels and try to keep the filesize under 200 kb.', 'burst-statistics' ),
-		'pro'      => [
-			'url' => 'pricing/',
-		],
-		'disabled' => false,
-		'default'  => false,
-	],
-	[
-		'id'       => 'tips_tricks_mailinglist',
-		'menu_id'  => 'general',
-		'group_id' => 'email_reports',
-		'type'     => 'hidden',
-		'label'    => '',
-		'disabled' => false,
-		'default'  => '',
-	],
-	[
-		'id'          => 'send_email_report',
-		'menu_id'     => 'general',
-		'group_id'    => 'email_reports',
-		'type'        => 'button',
-		'action'      => 'send_email_report',
-		'button_text' => __( 'Send', 'burst-statistics' ),
-		'label'       => __( 'Send an e-mail report', 'burst-statistics' ),
-		'context'     => __( 'This will send an e-mail to all listed recipients.', 'burst-statistics' ),
-		'disabled'    => false,
-		'default'     => false,
-	],
-
-	[
 		'id'       => 'goals',
 		'menu_id'  => 'goals',
 		'group_id' => 'goals',
@@ -236,6 +192,21 @@ return [
 		'recommended' => true,
 		'disabled'    => false,
 		'default'     => '',
+	],
+	[
+		'id'       => 'custom_block_rules',
+		'menu_id'  => 'advanced',
+		'group_id' => 'tracking',
+		'type'     => 'textarea',
+		'label'    => __( 'Exclude requests with a specific text in the url or the referrer.', 'burst-statistics' ),
+		'context'  => __( 'Enter one string per line.', 'burst-statistics' ),
+		'disabled' => false,
+		'default'  => '',
+		'notice'   => [
+			'label'       => 'default',
+			'title'       => __( 'Using custom block rules', 'burst-statistics' ),
+			'description' => __( 'The hit will be blocked if this string is found in the referrer, user agent, or URL. You can also use regex patterns, e.g. /facebook(externalhit|bot|crawler|preview)/i', 'burst-statistics' ),
+		],
 	],
 	[
 		'id'       => 'enable_shortcodes',
@@ -315,7 +286,7 @@ return [
 		'context'  => __( 'Boost site speed by merging the Burst settings into the Burst script.', 'burst-statistics' ) .
 			' ' . ( (bool) get_option( 'burst_js_write_error' ) ? __( 'This option is only available when the WordPress can write to the uploads directory. Please ensure that the WordPress installation has write permissions to "wp-content/uploads/burst/".', 'burst-statistics' ) : '' ),
 		'disabled' => get_option( 'burst_js_write_error' ),
-		'default'  => true,
+		'default'  => false,
 	],
 	[
 		'id'               => 'ghost_mode',
@@ -437,5 +408,14 @@ return [
 		'react_conditions' => [
 			'archive_data' => [ 'archive' ],
 		],
+	],
+	[
+		'id'       => 'anonymous_usage_data',
+		'menu_id'  => 'general',
+		'group_id' => 'anonymous_usage_data',
+		'type'     => 'anonymous_usage_data',
+		'label'    => ' ',
+		'disabled' => false,
+		'default'  => false,
 	],
 ];

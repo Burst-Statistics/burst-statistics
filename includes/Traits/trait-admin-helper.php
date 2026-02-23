@@ -3,11 +3,9 @@
 namespace Burst\Traits;
 
 use Burst\Frontend\Ip\Ip;
-
-use Burst\Pro\Admin\Share\Share;
 use function Burst\burst_loader;
 use function burst_is_logged_in_rest;
-use function burst_get_option;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -111,7 +109,7 @@ trait Admin_Helper {
 		];
 
 		$params              = wp_parse_args( $params, $default_params );
-		$plugin_installed_by = get_option( 'teamupdraft_installation_source_burst-statistics', '' );
+		$plugin_installed_by = get_site_option( 'teamupdraft_installation_source_burst-statistics', '' );
 		if ( ! empty( $plugin_installed_by ) ) {
 			$params['utm_source'] = 'onboarding-' . $plugin_installed_by;
 		}
@@ -260,7 +258,7 @@ trait Admin_Helper {
 				'burst_version'               => BURST_VERSION,
 				'is_pro'                      => defined( 'BURST_PRO' ),
 				'plugin_url'                  => BURST_URL,
-				'installed_by'                => get_option( 'teamupdraft_installation_source_burst-statistics', '' ),
+				'installed_by'                => get_site_option( 'teamupdraft_installation_source_burst-statistics', '' ),
 
 				// URLs and endpoints.
 				'site_url'                    => get_rest_url(),
@@ -287,6 +285,7 @@ trait Admin_Helper {
 
 				// Configuration and options.
 				'date_ranges'                 => $this->get_date_ranges(),
+				'time_format'                 => get_option( 'time_format' ),
 				'tour_shown'                  => $this->get_option_int( 'burst_tour_shown_once' ),
 
 			]

@@ -32,17 +32,11 @@ const ProBadge: React.FC<ProBadgeProps> = ({
 	label,
 	type = 'badge'
 }) => {
-	const { isTrial, licenseInactive, isLicenseValidFor } = useLicenseData();
-
-	if ( licenseInactive && ! isTrial ) {
-
-		// return null;
-	}
+	const { isTrial, isLicenseValidFor } = useLicenseData();
 
 	if ( ! isTrial && isLicenseValidFor( id ) ) {
 		return null;
 	}
-
 	let finalUrl = url;
 	if ( ! finalUrl ) {
 		finalUrl = burst_get_website_url( 'pricing', {
@@ -66,14 +60,20 @@ const ProBadge: React.FC<ProBadgeProps> = ({
 		);
 	}
 
+	const altText = isTrial ?
+		__(
+			'Enjoy full access for the remainder of your trial.',
+			'burst-statistics'
+		) :
+		__(
+		'Unlock this feature with Pro. Upgrade for more insights and control.',
+		'burst-statistics'
+	);
 	return (
 		<a
 			href={finalUrl}
 			className={`inline-flex items-center rounded bg-primary px-2 py-0.5 text-xs font-medium text-white transition-colors ${className}`}
-			title={__(
-				'Unlock this feature with Pro. Upgrade for more insights and control.',
-				'burst-statistics'
-			)}
+			title={altText}
 		>
 			{/* Not translated because it's a brand name */}
 			{label || 'Burst Pro'}

@@ -4,8 +4,6 @@
 import getTopPerformers, {
 	transformTopPerformersData
 } from '@/api/getTopPerformersData';
-import { useDate } from '@/store/useDateStore';
-import { useFilters } from '@/hooks/useFilters';
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { __ } from '@wordpress/i18n';
@@ -14,6 +12,8 @@ import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import SelectInput from '@/components/Inputs/SelectInput';
 import TopPerformerStats from '@/components/Sales/TopPerformersStats';
+import {useBlockConfig} from '@/hooks/useBlockConfig';
+import {BlockComponentProps} from '@/store/reports/types';
 
 const options = [
 	{
@@ -66,9 +66,8 @@ const placeholderData = {
  *
  * @return {JSX.Element} The Top Performers component.
  */
-const TopPerformers = (): JSX.Element => {
-	const { startDate, endDate, range } = useDate( ( state ) => state );
-	const { filters } = useFilters();
+const TopPerformers = ( props:BlockComponentProps ): JSX.Element => {
+	const { startDate, endDate, range, filters, allowBlockFilters, index } = useBlockConfig( props );
 	const [ selectedOption, setSelectedOption ] = useState( options[0].value );
 
 	const { data: rawData, isLoading } = useQuery({
@@ -100,7 +99,9 @@ const TopPerformers = (): JSX.Element => {
 
 	const blockHeadingProps = {
 		title: __( 'Top performers', 'burst-statistics' ),
-		controls: (
+		isReport: props.isReport,
+		reportBlockIndex: index,
+		controls: allowBlockFilters ? (
 			<div className="flex items-center gap-2.5">
 				<SelectInput
 					options={options}
@@ -108,7 +109,7 @@ const TopPerformers = (): JSX.Element => {
 					onChange={setSelectedOption}
 				/>
 			</div>
-		)
+		) : undefined
 	};
 
 	return (

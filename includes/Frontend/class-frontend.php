@@ -3,6 +3,7 @@ namespace Burst\Frontend;
 
 use Burst\Frontend\Goals\Goals;
 use Burst\Frontend\Goals\Goals_Tracker;
+use Burst\Frontend\Share\Share_Expired;
 use Burst\Frontend\Tracking\Tracking;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
@@ -55,6 +56,9 @@ class Frontend {
 			$shortcodes = new Shortcodes();
 			$shortcodes->init();
 		}
+
+		$share = new Share_Expired();
+		$share->init();
 	}
 
 	/**

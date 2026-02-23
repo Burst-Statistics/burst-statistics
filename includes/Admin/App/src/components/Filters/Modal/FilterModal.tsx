@@ -23,6 +23,7 @@ interface FilterModalProps {
 		config: FilterConfig;
 		value: string;
 	};
+	reportBlockIndex:number;
 }
 
 type ModalStep = 'selection' | 'setup';
@@ -30,10 +31,11 @@ type ModalStep = 'selection' | 'setup';
 const FilterModal: React.FC<FilterModalProps> = ({
 	isOpen,
 	setIsOpen,
-	initialFilter
+	initialFilter,
+    reportBlockIndex
 }) => {
 	const { setFilters, deleteFilter, clearAllFilters, getActiveFilters } =
-		useFilters();
+		useFilters( reportBlockIndex );
 
 	const [ currentStep, setCurrentStep ] = useState<ModalStep>( 'selection' );
 	const [ selectedFilter, setSelectedFilter ] = useState<string | null>( null );
@@ -121,7 +123,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
 	const renderContent = (): React.ReactNode => {
 		if ( 'selection' === currentStep ) {
-			return <FilterSelectionView onSelectFilter={handleSelectFilter} />;
+			return <FilterSelectionView onSelectFilter={handleSelectFilter} reportBlockIndex={reportBlockIndex} />;
 		}
 
 		// TypeScript-safe: ensure values exist

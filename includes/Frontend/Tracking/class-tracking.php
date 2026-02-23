@@ -52,15 +52,20 @@ class Tracking {
 	 */
 	public function track_hit( array $data ): string {
 		// validate & sanitize all data.
-		$sanitized_data        = $this->prepare_tracking_data( $data );
-		$should_load_ecommerce = $sanitized_data['should_load_ecommerce'];
+		$sanitized_data = $this->prepare_tracking_data( $data );
 
-		unset( $sanitized_data['should_load_ecommerce'] );
+		if ( $this->blocked_by_custom_block_rules( $sanitized_data ) ) {
+			self::error_log( 'Custom block rule prevented tracking.' );
+			return 'blocked by custom rule';
+		}
 
 		if ( $sanitized_data['referrer'] === 'spammer' ) {
 			self::error_log( 'Referrer spam prevented.' );
 			return 'referrer is spam';
 		}
+
+		$should_load_ecommerce = $sanitized_data['should_load_ecommerce'];
+		unset( $sanitized_data['should_load_ecommerce'] );
 
 		// If new hit, get the last row.
 		$result = $this->get_hit_type( $sanitized_data );
@@ -178,6 +183,68 @@ class Tracking {
 	}
 
 	/**
+	 * Apply custom block rules to the sanitized data. Rules can be simple strings or regex patterns. Examples of regex patterns:
+	 * /text-in-url[0-9]+/i
+	 * /^https:\/\/domain\./
+	 * /facebook(bot|crawler)/i
+	 *
+	 * @param array $sanitized_data The sanitized tracking data.
+	 * @return bool If the request should be blocked.
+	 */
+	private function blocked_by_custom_block_rules( array $sanitized_data ): bool {
+		$block_rules = (string) $this->get_option( 'custom_block_rules' );
+		if ( empty( $block_rules ) ) {
+			return false;
+		}
+
+		$page_url   = $sanitized_data['host'] . $this->create_path( $sanitized_data );
+		$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
+		$referrer   = $sanitized_data['referrer'];
+
+		// Explode by new line, trim each line and filter out empty lines.
+		$block_rules_array = array_filter(
+			array_map( 'trim', explode( "\n", $block_rules ) ),
+			fn( $rule ) => $rule !== ''
+		);
+		foreach ( $block_rules_array as $rule ) {
+			// Check if rule looks like regex (starts and ends with / and has valid delimiters).
+			$is_regex = preg_match( '/^\/.*\/[imsxu]*$/', $rule );
+
+			if ( $is_regex ) {
+				$fields_to_check = [
+					$page_url,
+					$referrer,
+					$user_agent,
+				];
+
+				foreach ( $fields_to_check as $field ) {
+                    // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Intentionally suppressing errors for user-provided regex patterns.
+					$match_result = @preg_match( $rule, $field );
+
+					// Check for regex errors (returns false on invalid pattern).
+					if ( $match_result === false ) {
+						self::error_log( sprintf( 'Invalid regex pattern in custom block rules: %s', $rule ) );
+						// Skip to next rule.
+						break;
+					}
+
+					// Check for match.
+					if ( $match_result === 1 ) {
+						return true;
+					}
+				}
+			} elseif ( stripos( $page_url, $rule ) !== false ||
+				stripos( $referrer, $rule ) !== false ||
+				stripos( $user_agent, $rule ) !== false
+			) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Burst Statistics beacon endpoint for collecting hits
 	 */
 	public function beacon_track_hit(): string {
@@ -212,9 +279,17 @@ class Tracking {
 	 * Burst Statistics rest_api endpoint for collecting hits
 	 */
 	public function rest_track_hit( \WP_REST_Request $request ): \WP_REST_Response {
-		// has to be decoded, contrary to what phpstan says.
-		// @phpstan-ignore-next-line.
-		$data     = json_decode( $request->get_json_params(), true );
+		$raw_data = $request->get_json_params();
+
+		// API expects JSON string, not pre-parsed array.
+		if ( ! is_string( $raw_data ) ) {
+			return new \WP_REST_Response(
+				[ 'error' => 'Invalid request format' ],
+				400
+			);
+		}
+
+		$data     = json_decode( $raw_data, true );
 		$test_hit = isset( $data['url'] ) && strpos( $data['url'], 'burst_test_hit' ) !== false;
 
 		if ( Ip::is_ip_blocked() && ! $test_hit ) {

@@ -11,7 +11,7 @@ class Cron {
 	public function init(): void {
 		add_action( 'init', [ $this, 'schedule_cron' ], 10, 2 );
 		add_action( 'admin_init', [ $this, 'maybe_handle_cron_task' ], 10, 2 );
-		add_action( 'cron_schedules', [ $this, 'filter_cron_schedules' ], 10, 2 );
+		add_filter( 'cron_schedules', [ $this, 'filter_cron_schedules' ], 10, 2 );
 		add_action( 'burst_every_hour', [ $this, 'test_hourly_cron' ] );
 	}
 
@@ -40,6 +40,9 @@ class Cron {
 		}
 		if ( ! wp_next_scheduled( 'burst_weekly' ) ) {
 			wp_schedule_event( time(), 'burst_weekly', 'burst_weekly' );
+		}
+		if ( ! wp_next_scheduled( 'burst_monthly' ) ) {
+			wp_schedule_event( time(), 'burst_monthly', 'burst_monthly' );
 		}
 	}
 
@@ -90,6 +93,10 @@ class Cron {
 		$schedules['burst_weekly']            = [
 			'interval' => WEEK_IN_SECONDS,
 			'display'  => 'Once every week',
+		];
+		$schedules['burst_monthly']           = [
+			'interval' => MONTH_IN_SECONDS,
+			'display'  => 'Once every month',
 		];
 
 		return $schedules;

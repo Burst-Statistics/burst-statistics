@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import getGeoData from '@/api/getGeoData';
-import { useFilters } from '@/hooks/useFilters';
-import { useDate } from '@/store/useDateStore';
 import { useGeoStore } from '@/store/useGeoStore';
+import {useBlockConfig} from '@/hooks/useBlockConfig';
 
-export const useGeoAnalytics = () => {
-	const { startDate, endDate, range } = useDate( ( state ) => state );
-	const { filters } = useFilters();
+export const useGeoAnalytics = ( props ) => {
+	const { startDate, endDate, range, filters } = useBlockConfig( props );
+
 	const metrics = useGeoStore( ( state ) => state.selectedMetric );
 	const currentView = useGeoStore( ( state ) => state.currentView );
 

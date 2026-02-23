@@ -10,8 +10,8 @@ import { __ } from '@wordpress/i18n';
  *
  * @return {Object} Filter display utilities and operations.
  */
-export const useFilterDisplay = () => {
-	const { filters, filtersConf, setFilters } = useFilters();
+export const useFilterDisplay = ( reportBlockIndex ) => {
+	const { filters, filtersConf, setFilters } = useFilters( reportBlockIndex );
 	const { getFilterOptionById } = useFiltersData();
 	const { setMetrics, getMetrics } = useInsightsStore();
 

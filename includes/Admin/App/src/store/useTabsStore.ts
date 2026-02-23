@@ -14,7 +14,7 @@ export type TabValue = string;
 interface TabsState {
 	groups: Record<string, TabValue>;
 	setActiveTab: ( group: string, value: TabValue ) => void;
-	getActiveTab: ( group: TabValue ) => TabValue | undefined;
+	getActiveTab: ( group: TabValue, defaultValue?: TabValue ) => TabValue | undefined;
 }
 
 /**
@@ -44,13 +44,23 @@ export const createTabsStore = ( persisted = true ) => {
 
 		/**
 		 * Get the active tab for a specific group.
+		 * If no tab is set and a default value is provided, it will be set automatically.
 		 *
-		 * @param { string } group - The group identifier.
+		 * @param { string }        group        - The group identifier.
+		 * @param { TabValue }     [defaultValue] - Optional default value to set if no tab is active.
 		 *
 		 * @return { TabValue | undefined } The value of the active tab, or undefined if not set.
 		 */
-		getActiveTab: ( group: string ): TabValue | undefined =>
-			get().groups[group]
+		getActiveTab: ( group: string, defaultValue?: TabValue ): TabValue | undefined => {
+			const current = get().groups[group];
+			if ( undefined === current && defaultValue ) {
+				set( ( state ) => ({
+					groups: { ...state.groups, [group]: defaultValue }
+				}) );
+				return defaultValue;
+			}
+			return current;
+		}
 	});
 	if ( persisted ) {
 		return create<TabsState>()(

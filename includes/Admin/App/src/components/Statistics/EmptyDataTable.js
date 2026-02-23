@@ -233,7 +233,7 @@ const EmptyPagination = () => {
  *
  * @return {JSX.Element} An empty state element.
  */
-const EmptyState = () => {
+const EmptyState = ({ emptyStateMessage = '' }) => {
 	return (
 		<div
 			className="w-full flex flex-col"
@@ -264,7 +264,9 @@ const EmptyState = () => {
 					{__( 'No data to display', 'burst-statistics' )}
 				</h3>
 				<p className="text-sm text-gray-400 max-w-xs">
-					{__( 'There is no data available for the selected filters and date range.', 'burst-statistics' )}
+					{
+						emptyStateMessage ? emptyStateMessage : __( 'There is no data available for the selected filters and date range.', 'burst-statistics' )
+					}
 				</p>
 			</div>
 			{/* Disabled pagination. */}
@@ -325,14 +327,15 @@ const ErrorState = ({ error }) => {
  * EmptyDataTable is a functional component that handles different states of data loading.
  * It displays different messages based on whether the data is loading, there's an error, no data is available, or an unexpected error occurred.
  *
- * @param {Object}  props           - The properties passed to the component.
- * @param {boolean} props.isLoading - Indicates whether the data is currently loading.
- * @param {Object}  props.error     - An error object that may occur during data loading.
- * @param {boolean} props.noData    - Indicates whether there is no data available.
+ * @param {Object}  props                   - The properties passed to the component.
+ * @param {boolean} props.isLoading         - Indicates whether the data is currently loading.
+ * @param {Object|null}  props.error        - An error object that may occur during data loading.
+ * @param {boolean} props.noData            - Indicates whether there is no data available.
+ * @param {string}  props.emptyStateMessage - Custom message to display when no data is available.
  *
  * @return {JSX.Element} A div element containing a message based on the current state.
  */
-const EmptyDataTable = ({ isLoading, error, noData }) => {
+const EmptyDataTable = ({ isLoading, error, noData, emptyStateMessage }) => {
 
 	// Loading state.
 	if ( isLoading ) {
@@ -346,7 +349,7 @@ const EmptyDataTable = ({ isLoading, error, noData }) => {
 
 	// No data state.
 	if ( noData ) {
-		return <EmptyState />;
+		return <EmptyState emptyStateMessage={ emptyStateMessage } />;
 	}
 
 	// Fallback or unexpected error state.

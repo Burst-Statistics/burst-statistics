@@ -298,17 +298,12 @@ class Statistics {
 	public function get_insights_date_modifiers( int $date_start, int $date_end ): array {
 		$nr_of_days = $this->get_nr_of_periods( 'day', $date_start, $date_end );
 
-		$week_string         = _x( 'Week', 'Week 1, as in Week number 1', 'burst-statistics' );
-		$escaped_week_string = '';
-		for ( $i = 0, $i_max = strlen( $week_string ); $i < $i_max; $i++ ) {
-			$escaped_week_string .= '\\' . $week_string[ $i ];
-		}
-
 		// Define intervals and corresponding settings.
 		$intervals = [
 			'hour'  => [ '%Y-%m-%d %H', 'Y-m-d H', 'd M H:00', HOUR_IN_SECONDS ],
 			'day'   => [ '%Y-%m-%d', 'Y-m-d', 'D d M', DAY_IN_SECONDS ],
-			'week'  => [ '%Y-%u', 'Y-W', $escaped_week_string . ' W', WEEK_IN_SECONDS ],
+			// Use %x (ISO year) and %v (ISO week), to prevent 0 hits on week 1 of a leap year.
+			'week'  => [ '%x-%v', 'o-W', 'M j', WEEK_IN_SECONDS ],
 			'month' => [ '%Y-%m', 'Y-m', 'M', MONTH_IN_SECONDS ],
 		];
 
@@ -328,10 +323,11 @@ class Statistics {
 
 		$nr_of_intervals = $this->get_nr_of_periods( $interval, $date_start, $date_end );
 
-		// check if $date_start does not equal the current year, so the year only shows if not the current year is in the dataset.
-		$is_current_year = gmdate( 'Y', $date_start ) === gmdate( 'Y' );
-		// if date_start and date_end are not in the same year, add Y or y to the php_pretty_date_format.
-		$php_pretty_date_format .= $is_current_year ? '' : ' y';
+		// Check if the date range spans multiple years.
+		$spans_multiple_years = gmdate( 'Y', $date_start ) !== gmdate( 'Y', $date_end );
+
+		// Add year to format if we span multiple years.
+		$php_pretty_date_format .= $spans_multiple_years ? ' y' : '';
 
 		return [
 			'interval'               => $interval,
@@ -366,7 +362,6 @@ class Statistics {
 	 * @throws \Exception //exception.
 	 */
 	public function get_insights_data( array $args = [] ): array {
-		global $wpdb;
 		$defaults = [
 			'date_start' => 0,
 			'date_end'   => 0,
@@ -378,7 +373,7 @@ class Statistics {
 				'date_start'     => (int) $args['date_start'],
 				'date_end'       => (int) $args['date_end'],
 				'select'         => $args['metrics'],
-				'filters'        => $args['filters'],
+				'filters'        => $args['filters'] ?? [],
 				'group_by'       => 'period',
 				'order_by'       => 'period',
 				'limit'          => 0,
@@ -1013,136 +1008,6 @@ class Statistics {
 	}
 
 	/**
-	 * Get statistics for the dashboard widget.
-	 *
-	 * @return array{
-	 *     visitors: int,
-	 *     visitors_uplift: string,
-	 *     visitors_uplift_status: string,
-	 *     time_per_session: float,
-	 *     time_per_session_uplift: string,
-	 *     time_per_session_uplift_status: string,
-	 *     top_referrer: string,
-	 *     top_referrer_pageviews: int,
-	 *     most_visited: string,
-	 *     most_visited_pageviews: int
-	 * }
-	 */
-	public function get_dashboard_widget_statistics(
-		int $date_start = 0,
-		int $date_end = 0
-	): array {
-		global $wpdb;
-
-		$time_diff       = $date_end - $date_start;
-		$date_start_diff = $date_start - $time_diff;
-		$date_end_diff   = $date_end - $time_diff;
-
-		$qd = new Query_Data(
-			[
-				'date_start' => $date_start,
-				'date_end'   => $date_end,
-				'select'     => [
-					'visitors',
-					'sessions',
-					'pageviews',
-					'avg_time_on_page',
-				],
-			]
-		);
-
-		$curr_data = $this->get_results( $qd );
-		$qd        = new Query_Data(
-			[
-				'date_start' => $date_start_diff,
-				'date_end'   => $date_end_diff,
-				'select'     => [
-					'visitors',
-					'sessions',
-					'pageviews',
-					'avg_time_on_page',
-				],
-			]
-		);
-		$prev_data = $this->get_results( $qd );
-
-		// Calculate uplift for visitors.
-		$visitors               = $curr_data[0]->visitors;
-		$visitors_uplift        = $this->format_uplift( $prev_data[0]->visitors, $visitors );
-		$visitors_uplift_status = $this->calculate_uplift_status( $prev_data[0]->visitors, $visitors );
-
-		// Time per session = avg time_on_page / avg pageviews per session.
-		$average_pageviews_per_session = ( (int) $curr_data[0]->sessions !== 0 ) ? ( $curr_data[0]->pageviews / $curr_data[0]->sessions ) : 0;
-		$time_per_session              = $curr_data[0]->avg_time_on_page / max( 1, $average_pageviews_per_session );
-
-		// Prev time per session.
-		$prev_average_pageviews_per_session = ( (int) $prev_data[0]->sessions !== 0 ) ? ( $prev_data[0]->pageviews / $prev_data[0]->sessions ) : 0;
-		$prev_time_per_session              = $prev_data[0]->avg_time_on_page / max( 1, $prev_average_pageviews_per_session );
-
-		// calculate uplift for time per session.
-		$time_per_session_uplift        = $this->format_uplift( $prev_time_per_session, $time_per_session );
-		$time_per_session_uplift_status = $this->calculate_uplift_status( $prev_time_per_session, $time_per_session );
-
-		$qd = new Query_Data(
-			[
-				'date_start' => $date_start,
-				'date_end'   => $date_end,
-				'select'     => [
-					'pageviews',
-					'referrer',
-				],
-				'filters'    => [ 'referrer' ],
-				'group_by'   => 'pageviews',
-				'order_by'   => 'pageviews DESC',
-			]
-		);
-		// get top referrer.
-		$top_referrer = $this->get_results( $qd );
-		if ( isset( $top_referrer[0] ) ) {
-			if ( $top_referrer[0]->pageviews === 0 ) {
-				$top_referrer[0]->referrer = __( 'No referrers', 'burst-statistics' );
-			}
-		}
-
-		// get most visited page.
-		$qd           = new Query_Data(
-			[
-				'date_start' => $date_start,
-				'date_end'   => $date_end,
-				'select'     => [
-					'pageviews',
-					'page_url',
-				],
-				'filters'    => [ 'page_url' ],
-				'group_by'   => 'pageviews',
-				'order_by'   => 'pageviews DESC',
-			]
-		);
-		$most_visited = $this->get_results( $qd );
-		if ( isset( $most_visited[0] ) ) {
-			if ( $most_visited[0]->page_url === '/' ) {
-				$most_visited[0]->page_url = __( 'Homepage', 'burst-statistics' );
-			} elseif ( $most_visited[0]->pageviews === 0 ) {
-				$most_visited[0]->page_url = __( 'No pageviews', 'burst-statistics' );
-			}
-		}
-		// Create the result array.
-		$result                                   = [];
-		$result['visitors']                       = $visitors;
-		$result['visitors_uplift']                = $visitors_uplift;
-		$result['visitors_uplift_status']         = $visitors_uplift_status;
-		$result['time_per_session']               = $time_per_session;
-		$result['time_per_session_uplift']        = $time_per_session_uplift;
-		$result['time_per_session_uplift_status'] = $time_per_session_uplift_status;
-		$result['top_referrer']                   = isset( $top_referrer[0]->referrer ) ? $top_referrer[0]->referrer : __( 'No referrers', 'burst-statistics' );
-		$result['top_referrer_pageviews']         = isset( $top_referrer[0]->pageviews ) ? $top_referrer[0]->pageviews : 0;
-		$result['most_visited']                   = isset( $most_visited[0]->page_url ) ? $most_visited[0]->page_url : __( 'No pageviews', 'burst-statistics' );
-		$result['most_visited_pageviews']         = isset( $top_referrer[0]->pageviews ) ? $top_referrer[0]->pageviews : 0;
-
-		return $result;
-	}
-
-	/**
 	 * Helper function to get percentage, allow for zero division
 	 */
 	private function calculate_ratio(
@@ -1298,10 +1163,10 @@ class Statistics {
 				: 'COUNT( statistics.ID )';
 				break;
 			case 'bounces':
-				$sql = 'SUM(session_bounces.bounce) ';
+				$sql = 'COUNT(DISTINCT CASE WHEN session_bounces.bounce = 1 THEN session_bounces.session_id END) ';
 				break;
 			case 'bounce_rate':
-				$sql = 'ROUND(SUM(session_bounces.bounce) / COUNT(DISTINCT session_bounces.session_id) * 100, 2) ';
+				$sql = 'ROUND(COUNT(DISTINCT CASE WHEN session_bounces.bounce = 1 THEN session_bounces.session_id END) / COUNT(DISTINCT session_bounces.session_id) * 100, 2) ';
 				break;
 			case 'sessions':
 				$sql = $exclude_bounces
@@ -1627,6 +1492,18 @@ class Statistics {
         `last_seen` INT UNSIGNED NOT NULL,
         PRIMARY KEY (uid)
     ) $charset_collate;",
+			'burst_query_stats'      => "CREATE TABLE {$wpdb->prefix}burst_query_stats (
+        `ID` int NOT NULL AUTO_INCREMENT,
+        `sql_hash` varchar(16) NOT NULL,
+        `sql_query` text NOT NULL,
+        `avg_execution_time` float NOT NULL,
+        `max_execution_time` float NOT NULL,
+        `min_execution_time` float NOT NULL,
+        `last_updated` int NOT NULL,
+        `execution_count` int NOT NULL,
+        PRIMARY KEY (ID),
+        UNIQUE KEY sql_hash (sql_hash)
+    ) $charset_collate;",
 		];
 
 		// Create tables.
@@ -1635,6 +1512,16 @@ class Statistics {
 			if ( ! empty( $wpdb->last_error ) ) {
 				self::error_log( "Error creating table {$table_name}: " . $wpdb->last_error );
 			}
+		}
+
+		$indexes = [
+			[ 'avg_execution_time' ],
+			[ 'last_updated' ],
+		];
+
+		$table_name = $wpdb->prefix . 'burst_query_stats';
+		foreach ( $indexes as $index ) {
+			$this->add_index( $table_name, $index );
 		}
 
 		$indexes = [
@@ -1717,9 +1604,72 @@ class Statistics {
 	 */
 	public function get_var( Query_Data $qd ): null|int|float {
 		global $wpdb;
-		$sql = $this->build_raw_sql( $qd );
+		$sql        = $this->build_raw_sql( $qd );
+		$start_time = microtime( true );
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is built and sanitized in Query_Data.
-		return $wpdb->get_var( $sql );
+		$result   = $wpdb->get_var( $sql );
+		$end_time = microtime( true );
+		$this->store_query_execution_time( $sql, $start_time, $end_time );
+		return $result;
+	}
+
+	/**
+	 * Store query execution time for slow query analysis.
+	 *
+	 * @param string $sql The executed SQL query.
+	 * @param float  $start The start time in seconds.
+	 * @param float  $end The end time in seconds.
+	 */
+	private function store_query_execution_time( string $sql, float $start, float $end ): void {
+		global $wpdb;
+
+		$execution_time = $end - $start;
+		$sql_hash       = hash( 'fnv1a64', $sql );
+		$table_name     = $wpdb->prefix . 'burst_query_stats';
+
+		// Check if query exists and was updated recently.
+		$existing = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}burst_query_stats WHERE sql_hash = %s",
+				$sql_hash
+			)
+		);
+
+		if ( $existing ) {
+			// Only update if last update was more than 7 days ago.
+			$last_updated = strtotime( $existing->last_updated );
+			if ( ( time() - $last_updated ) < WEEK_IN_SECONDS ) {
+				return;
+			}
+
+			$wpdb->update(
+				$table_name,
+				[
+					'avg_execution_time' => ( $existing->avg_execution_time * $existing->execution_count + $execution_time ) / ( $existing->execution_count + 1 ),
+					'max_execution_time' => max( $existing->max_execution_time, $execution_time ),
+					'min_execution_time' => min( $existing->min_execution_time, $execution_time ),
+					'execution_count'    => $existing->execution_count + 1,
+					'last_updated'       => time(),
+				],
+				[ 'sql_hash' => $sql_hash ],
+				[ '%f', '%f', '%f', '%d', '%s' ],
+				[ '%s' ]
+			);
+		} else {
+			$wpdb->insert(
+				$table_name,
+				[
+					'sql_hash'           => $sql_hash,
+					'sql_query'          => $sql,
+					'avg_execution_time' => $execution_time,
+					'max_execution_time' => $execution_time,
+					'min_execution_time' => $execution_time,
+					'execution_count'    => 1,
+					'last_updated'       => current_time( 'mysql' ),
+				],
+				[ '%s', '%s', '%f', '%f', '%f', '%d', '%s' ]
+			);
+		}
 	}
 
 	/**
@@ -1732,8 +1682,13 @@ class Statistics {
 	public function get_row( Query_Data $qd, string $output_type = 'OBJECT' ): null|array|object {
 		global $wpdb;
 		$sql = $this->build_raw_sql( $qd );
+
+		$start_time = microtime( true );
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is built and sanitized in Query_Data.
-		return $wpdb->get_row( $sql, $output_type );
+		$result   = $wpdb->get_row( $sql, $output_type );
+		$end_time = microtime( true );
+		$this->store_query_execution_time( $sql, $start_time, $end_time );
+		return $result;
 	}
 
 	/**
@@ -1746,8 +1701,13 @@ class Statistics {
 	public function get_results( Query_Data $qd, string $output_type = 'OBJECT' ): array|object {
 		global $wpdb;
 		$sql = $this->build_raw_sql( $qd );
+
+		$start_time = microtime( true );
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is built and sanitized in Query_Data.
-		return $wpdb->get_results( $sql, $output_type );
+		$result   = $wpdb->get_results( $sql, $output_type );
+		$end_time = microtime( true );
+		$this->store_query_execution_time( $sql, $start_time, $end_time );
+		return $result;
 	}
 
 	/**
@@ -1803,11 +1763,11 @@ class Statistics {
                 FROM {$wpdb->prefix}burst_parameters AS p
                 JOIN {$wpdb->prefix}burst_statistics AS s ON s.ID = p.statistic_id
                 WHERE s.time BETWEEN {$data->date_start} AND {$data->date_end}
-                AND parameters IS NOT NULL AND parameters != ''
-                GROUP BY params.parameter, params.value, s.uid
+                AND s.parameters IS NOT NULL AND s.parameters != ''
+                GROUP BY p.parameter, p.value, s.uid
             ) AS params ";
 		} elseif ( in_array( 'parameter', $data->select, true ) ) {
-			// make a faster paramters query by filtering out statistics without parameters first.
+			// make a faster parameters query by filtering out statistics without parameters first.
 			$table_name = " (
                 SELECT * 
                 FROM {$wpdb->prefix}burst_statistics 
@@ -1848,14 +1808,21 @@ class Statistics {
 		}
 
 		if ( $this->is_campaign_conversion_query( $data ) ) {
-			// get campaigns parameters from select args.
+			// Get campaign parameters from select args.
 			$parameters = [];
 			foreach ( $data->select as $value ) {
 				if ( $this->is_campaign_parameter( $value ) ) {
-					// prepend ca. to the parameter.
 					$parameters[] = 'ca.' . esc_sql( $value );
 				}
 			}
+
+			// Also include campaign parameters used as filters so they are available in WHERE.
+			foreach ( array_keys( $data->filters ) as $filter_key ) {
+				if ( $this->is_campaign_parameter( $filter_key ) && ! in_array( 'ca.' . $filter_key, $parameters, true ) ) {
+					$parameters[] = 'ca.' . esc_sql( $filter_key );
+				}
+			}
+
 			$parameter_sql = implode( ', ', $parameters ) . ',';
 
 			// If campaigns are selected, we need to handle the campaigns query.

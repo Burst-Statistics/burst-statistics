@@ -1,6 +1,7 @@
 import React, {useState, useEffect, forwardRef, useMemo} from 'react';
 import { useCombobox, useMultipleSelection } from 'downshift';
 import { debounce } from 'lodash';
+import { __ } from '@wordpress/i18n';
 
 interface SelectOption {
 	value: any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -71,7 +72,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 			isSearchable = true,
 			name,
 			disabled = false,
-			placeholder = 'Select an option...',
+			placeholder = __( 'Select an option...', 'burst-statistics' ),
 			insideModal = false,
 			maxSelections = 1,
 			showRemoveButton = true,
@@ -363,7 +364,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 									selectedItem,
 									index
 								})}
-								className="inline-flex items-center gap-1 rounded bg-primary-light px-2 py-1 text-xs text-primary-dark focus:bg-primary focus:text-white focus:outline-none"
+								className="inline-flex items-center gap-1 rounded bg-primary-light px-2 py-1 text-base text-primary-dark focus:bg-primary focus:text-white focus:outline-none"
 							>
 								{selectedItem.label}
 								{showRemoveButton && (
@@ -472,7 +473,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 							<li
 								key={item.value}
 								{...getItemProps({ item, index })}
-								className={`cursor-pointer px-3 py-2 text-sm first:rounded-t-md last:rounded-b-md ${
+								className={`cursor-pointer px-3 py-2 text-base first:rounded-t-md last:rounded-b-md ${
 									highlightedIndex === index ?
 										'bg-primary-light text-primary-dark' :
 										'hover:bg-gray-100'

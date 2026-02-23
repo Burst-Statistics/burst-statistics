@@ -215,6 +215,23 @@ return [
 				],
 			],
 	],
+	'fluentform'                       => [
+		'constant_or_function' => 'FLUENTFORM',
+		'label'                => 'Fluent Forms',
+		'goals'                =>
+			[
+				[
+					'id'   => 'fluentform_submission_inserted',
+					'type' => 'hook',
+					'hook' => 'fluentform/submission_inserted',
+				],
+				[
+					'id'       => 'fluentforms_click_submit',
+					'type'     => 'clicks',
+					'selector' => '.ff-btn-submit',
+				],
+			],
+	],
 	'happy-forms'                      => [
 		'constant_or_function' => 'HAPPYFORMS_VERSION',
 		'label'                => 'Happyforms',

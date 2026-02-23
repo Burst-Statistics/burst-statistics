@@ -1,7 +1,5 @@
 import { __ } from '@wordpress/i18n';
 import ClickToFilter from '../Common/ClickToFilter';
-import { useFilters } from '@/hooks/useFilters';
-import { useDate } from '@/store/useDateStore';
 import ExplanationAndStatsItem from '@/components/Common/ExplanationAndStatsItem';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -12,6 +10,7 @@ import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import { useMemo, memo } from 'react';
+import {useBlockConfig} from '@/hooks/useBlockConfig';
 
 // Memoize the device item to prevent unnecessary re-renders.
 const DeviceItem = memo( ({ deviceKey, deviceData }) => {
@@ -36,9 +35,8 @@ const DeviceItem = memo( ({ deviceKey, deviceData }) => {
 
 DeviceItem.displayName = 'DeviceItem';
 
-const DevicesBlock = () => {
-	const { startDate, endDate, range } = useDate( ( state ) => state );
-	const { filters } = useFilters();
+const DevicesBlock = ( props ) => {
+	const { startDate, endDate, range, filters, isReport, index } = useBlockConfig( props );
 
 	// Memoize args to prevent unnecessary recomputations
 	const args = useMemo( () => ({ filters }), [ filters ]);
@@ -119,7 +117,7 @@ const DevicesBlock = () => {
 	const deviceKeys = useMemo( () => Object.keys( data ), [ data ]);
 	return (
 		<Block className="row-span-1 lg:col-span-6 xl:col-span-3">
-			<BlockHeading title={__( 'Devices', 'burst-statistics' )} />
+			<BlockHeading title={__( 'Devices', 'burst-statistics' )} isReport={isReport} reportBlockIndex={index} />
 			<BlockContent>
 				{deviceKeys.map( ( key ) => (
 					<DeviceItem

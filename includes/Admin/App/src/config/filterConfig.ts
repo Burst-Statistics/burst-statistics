@@ -240,6 +240,9 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		category: 'content'
 	}
 };
+export type BlockFilters = {
+	[blockId: string]: FilterSearchParams;
+}
 
 // Get all filter keys from config.
 export const FILTER_KEYS = Object.keys( FILTER_CONFIG ) as FilterKey[];

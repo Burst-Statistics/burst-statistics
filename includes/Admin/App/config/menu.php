@@ -35,6 +35,51 @@ return [
 		'shareable'      => true,
 	],
 	[
+		'id'                      => 'reporting',
+		'title'                   => __( 'Reporting', 'burst-statistics' ),
+		'default_hidden'          => false,
+		'capabilities'            => 'manage_burst_statistics',
+		'menu_slug'               => 'burst#/reporting/reports',
+		'show_in_admin'           => true,
+		'show_in_plugin_overview' => true,
+		'location'                => 'right',
+		'menu_items'              => [
+			[
+				'id'       => 'reports',
+				'group_id' => 'reports',
+				'title'    => __( 'Reports', 'burst-statistics' ),
+				'groups'   => [
+					[
+						'id'    => 'reports',
+						'title' => __( 'Reports', 'burst-statistics' ),
+					],
+				],
+			],
+			[
+				'id'       => 'customization',
+				'group_id' => 'customization',
+				'title'    => __( 'Customization', 'burst-statistics' ),
+				'groups'   => [
+					[
+						'id'    => 'customization',
+						'title' => __( 'Customization', 'burst-statistics' ),
+					],
+				],
+			],
+			[
+				'id'       => 'logs',
+				'group_id' => 'logs',
+				'title'    => __( 'Logs', 'burst-statistics' ),
+				'groups'   => [
+					[
+						'id'    => 'logs',
+						'title' => __( 'Logs', 'burst-statistics' ),
+					],
+				],
+			],
+		],
+	],
+	[
 		'id'                      => 'settings',
 		'title'                   => __( 'Settings', 'burst-statistics' ),
 		'default_hidden'          => false,
@@ -42,6 +87,7 @@ return [
 		'menu_slug'               => 'burst#/settings/general',
 		'show_in_admin'           => true,
 		'show_in_plugin_overview' => true,
+		'location'                => 'right',
 		'menu_items'              => [
 			[
 				'id'       => 'general',
@@ -53,8 +99,8 @@ return [
 						'title' => __( 'General', 'burst-statistics' ),
 					],
 					[
-						'id'    => 'email_reports',
-						'title' => __( 'Email reports', 'burst-statistics' ),
+						'id'    => 'anonymous_usage_data',
+						'title' => __( 'Anonymous usage data', 'burst-statistics' ),
 					],
 				],
 			],

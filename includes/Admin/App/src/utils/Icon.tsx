@@ -16,6 +16,7 @@ import {
 	AlertCircle,
 	AlertOctagon,
 	AlertTriangle,
+	Ban,
 	Braces,
 	Building,
 	Calendar,
@@ -91,7 +92,11 @@ import {
 	LineSquiggle,
 	PartyPopper,
 	Sprout,
-	Upload
+	ArrowDownUp,
+	Upload,
+	Pencil,
+	GripVertical,
+	Image
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -113,6 +118,7 @@ const iconColors = {
 const iconComponents = {
 	'circle-open': Circle,
 	bullet: Circle,
+	image: Image,
 	dot: Circle,
 	circle: CircleOff,
 	period: CircleDot,
@@ -224,7 +230,12 @@ const iconComponents = {
 	bulb: Lightbulb,
 	'right-arrow': MoveRight,
 	ellipsis: Ellipsis,
-	download: Download
+    download: Download,
+    ban: Ban,
+    'external-link': ExternalLink,
+	'arrow-down-up': ArrowDownUp,
+	pencil: Pencil,
+	'grip-vertical': GripVertical
 };
 
 // Define types for icon names and colors

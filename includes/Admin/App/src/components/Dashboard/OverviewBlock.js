@@ -88,7 +88,7 @@ const OverviewBlock = () => {
 			<BlockContent className="px-0 py-0 border-b border-gray-200">
 				{
 					'activity' === activeTab && (
-						<TabsContent className="bg-blue-light" group={tabGroup} id="activity">
+						<TabsContent className="bg-blue-light burst-scroll px-2.5 md:px-6 py-8 h-[305px] overflow-y-auto rounded-none" group={tabGroup} id="activity">
 							<Tasks />
 						</TabsContent>
 					)
@@ -96,7 +96,7 @@ const OverviewBlock = () => {
 
 				{
 					'live-visitors' === activeTab && (
-						<TabsContent className="bg-brand-lightest" group={tabGroup} id="live-visitors">
+						<TabsContent className="bg-brand-lightest burst-scroll px-2.5 md:px-6 py-8 h-[305px] overflow-y-auto rounded-none" group={tabGroup} id="live-visitors">
 							<LiveTraffic />
 						</TabsContent>
 					)

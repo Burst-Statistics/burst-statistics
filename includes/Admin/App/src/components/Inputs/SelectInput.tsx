@@ -14,6 +14,7 @@ interface SelectInputProps {
 	value: string;
 	onChange: ( value: string ) => void;
 	options?: OptionsType;
+	disabled?: boolean;
 }
 
 /**
@@ -37,18 +38,24 @@ const normalizeOptions = ( options: OptionsType = []): SelectOption[] => {
  * @return {JSX.Element} The rendered select component
  */
 const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
-	({ value, onChange, options = [] }, ref ) => {
+	({ disabled = false, value, onChange, options = [] }, ref ) => {
 		const normalizedOptions = normalizeOptions( options );
 
 		return (
 			<Select.Root
+				disabled={disabled}
 				value={value}
 				onValueChange={( value ) => onChange( value )}
 			>
 				<Select.Trigger
 					ref={ref}
-					className="inline-flex items-center justify-center gap-1 rounded bg-white text-base leading-none outline outline-gray-400 px-2 py-2 hover:bg-gray-100 focus:shadow-[0_0_0_2px]"
-				>
+                    disabled={disabled}
+					className={clsx(
+						'inline-flex items-center justify-center gap-1 rounded bg-white text-base leading-none outline outline-gray-400 px-2 py-2 focus:shadow-[0_0_0_2px]',
+						disabled ?
+							'opacity-50 cursor-not-allowed bg-gray-100' :
+							'hover:bg-gray-100 cursor-pointer'
+					)}				>
 					<Select.Value placeholder="Select an option…" />
 					<Select.Icon className="text-base">
 						<Icon

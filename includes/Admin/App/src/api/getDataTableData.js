@@ -33,23 +33,23 @@ const MemoizedClickToFilter = memo( ClickToFilter );
 
 const CountryFilter = memo( ({ value }) => (
 	<MemoizedClickToFilter filter="country_code" filterValue={value}>
-    <Flag country={value} countryNiceName={getCountryName( value )} />
-  </MemoizedClickToFilter>
+		<Flag country={value} countryNiceName={getCountryName( value )} />
+	</MemoizedClickToFilter>
 ) );
 
 CountryFilter.displayName = 'CountryFilter';
 
 const ContinentFilter = memo( ({ value }) => (
 	<MemoizedClickToFilter filter="continent_code" filterValue={value}>
-    <>{getContinentName( value )}</>
-  </MemoizedClickToFilter>
+		{getContinentName( value )}
+	</MemoizedClickToFilter>
 ) );
 
 ContinentFilter.displayName = 'ContinentFilter';
 
 const UrlFilter = memo( ({ value, row }) => (
 	<MemoizedClickToFilter filter="page_url" filterValue={value} row={row}>
-      {safeDecodeURI( value )}
+		{safeDecodeURI( value )}
     </MemoizedClickToFilter>
 ) );
 
@@ -57,16 +57,16 @@ UrlFilter.displayName = 'UrlFilter';
 
 const TextFilter = memo( ({ filter, value }) => (
 	<MemoizedClickToFilter filter={filter} filterValue={value}>
-    {value}
-  </MemoizedClickToFilter>
+		{value}
+	</MemoizedClickToFilter>
 ) );
 
 TextFilter.displayName = 'TextFilter';
 
 const ReferrerFilter = memo( ({ value }) => (
 	<MemoizedClickToFilter filter="referrer" filterValue={value}>
-      {safeDecodeURI( value )}
-    </MemoizedClickToFilter>
+		{safeDecodeURI( value )}
+	</MemoizedClickToFilter>
 ) );
 
 ReferrerFilter.displayName = 'ReferrerFilter';
