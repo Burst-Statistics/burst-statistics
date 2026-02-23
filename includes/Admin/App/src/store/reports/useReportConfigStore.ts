@@ -6,7 +6,7 @@ import {
 	DayOfWeekType,
 	FrequencyType,
 	ContentItems,
-	WeekOfMonthType, ReportLogStatus, ReportLogSeverity
+	WeekOfMonthType, ReportLogStatus, ReportLogSeverity, BlockComponentProps
 } from './types';
 import InsightsBlock from '@/components/Statistics/InsightsBlock';
 import CompareBlock from '@/components/Statistics/CompareBlock';
@@ -17,6 +17,7 @@ import Sales from '@/components/Sales/Sales';
 import TopPerformers from '@/components/Sales/TopPerformers';
 import FunnelChartSection from '@/components/Sales/FunnelChartSection';
 import Logo from '@/components/Reporting/ReportWizard/Blocks/Logo';
+import {ComponentType} from "react";
 const AVAILABLE_CONTENT: ContentItems = [
 	{
 		id: 'logo',
@@ -64,7 +65,7 @@ const AVAILABLE_CONTENT: ContentItems = [
 		label: __( 'Pages', 'burst-statistics' ),
 		icon: 'page',
 		pro: true,
-		component: DataTableBlock,
+		component: DataTableBlock as ComponentType<BlockComponentProps>,
 		blockProps: { allowedConfigs: [ 'pages' ] }
 	},
 	{
@@ -72,7 +73,7 @@ const AVAILABLE_CONTENT: ContentItems = [
 		label: __( 'Referrers', 'burst-statistics' ),
 		icon: 'external-link',
 		pro: true,
-		component: DataTableBlock,
+		component: DataTableBlock as ComponentType<BlockComponentProps>,
 		blockProps: { allowedConfigs: [ 'referrers' ] }
 	},
 	{
@@ -80,7 +81,7 @@ const AVAILABLE_CONTENT: ContentItems = [
 		label: __( 'Locations', 'burst-statistics' ),
 		icon: 'map-pinned',
 		pro: true,
-		component: DataTableBlock,
+		component: DataTableBlock as ComponentType<BlockComponentProps>,
 		blockProps: { allowedConfigs: [ 'locations' ] }
 	},
 	{
@@ -88,7 +89,7 @@ const AVAILABLE_CONTENT: ContentItems = [
 		label: __( 'Campaigns', 'burst-statistics' ),
 		icon: 'campaign',
 		pro: true,
-		component: DataTableBlock,
+		component: DataTableBlock as ComponentType<BlockComponentProps>,
 		blockProps: { allowedConfigs: [ 'campaigns' ] }
 	},
 	{
