@@ -33,13 +33,20 @@ class Metrics_Data extends Data_Collector {
 	 * Collect all aggregated metrics
 	 */
 	public function collect_data(): array {
-		return [
-			'aggregation_period' => $this->get_aggregation_period(),
-			'traffic'            => $this->collect_traffic_metrics(),
-			'ecommerce'          => $this->collect_ecommerce_metrics(),
-			'database'           => $this->collect_database_metrics(),
-			'query_stats'        => $this->collect_query_stats_metrics(),
-		];
+		$collected_data = [];
+
+		if ( defined( 'BURST_PRO' ) ) {
+			$collected_data['ecommerce'] = $this->collect_ecommerce_metrics();
+		} else {
+			$collected_data['ecommerce'] = null;
+		}
+
+		$collected_data['aggregation_period'] = $this->get_aggregation_period();
+		$collected_data['traffic']            = $this->collect_traffic_metrics();
+		$collected_data['database']           = $this->collect_database_metrics();
+		$collected_data['query_stats']        = $this->collect_query_stats_metrics();
+
+		return $collected_data;
 	}
 
 	/**

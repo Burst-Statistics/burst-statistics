@@ -20,9 +20,13 @@ class Settings_Data extends Data_Collector {
 	 * Collect data from the settings
 	 */
 	public function collect_data(): array {
-		$licensing      = new Licensing();
-		$license_status = $licensing->get_license_status();
-		$license_status = empty( $license_status ) ? '' : $license_status;
+		if ( ! defined( 'BURST_PRO' ) ) {
+			$license_status = 'free';
+		} else {
+			$licensing      = new Licensing();
+			$license_status = $licensing->get_license_status();
+			$license_status = empty( $license_status ) ? '' : $license_status;
+		}
 
 		$burst_activation_time_pro = get_option( 'burst_activation_time_pro', null );
 
@@ -109,6 +113,10 @@ class Settings_Data extends Data_Collector {
 	 * Get the subscription tier
 	 */
 	private function get_subscription_tier(): string {
+		if ( ! defined( 'BURST_PRO' ) ) {
+			return 'free';
+		}
+
 		$license_info = new License_Info();
 		return $license_info->tier;
 	}
