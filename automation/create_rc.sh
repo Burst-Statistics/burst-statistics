@@ -123,6 +123,7 @@ create_rc_zip() {
     "--exclude=languages/*.json" #always exclude json files
     "--exclude=languages/*.po~" #loco translate backup files
     "--exclude=/node_modules/"
+    "--exclude=/includes/Admin/Mailer/maizzle/node_modules/"
     "--exclude=/dashboard-widget/"
     "--exclude=/settings/"
     "--exclude=/includes/Admin/App/node_modules/"
