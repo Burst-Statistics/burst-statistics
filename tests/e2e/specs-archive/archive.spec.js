@@ -128,7 +128,6 @@ test.describe( 'Data archive functionality', () => {
 		console.log( '\n===== 🧪 [Test] Delete Archive Settings =====' );
 
 		await login( page );
-		await dismissOnboarding(page);
 		await backUpTheDataToArchive();
 
 		await page.screenshot( { path: `screenshots/logged-in-${ Date.now() }.png`, fullPage: true } );
@@ -137,6 +136,7 @@ test.describe( 'Data archive functionality', () => {
 		await page.goto( '/wp-admin/admin.php?page=burst#/settings/data', {
 			waitUntil: 'domcontentloaded',
 		} );
+		await dismissOnboarding(page);
 
 		await page.waitForTimeout( 1000 );
 
