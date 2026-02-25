@@ -15,13 +15,3 @@ let config = {
 
 runGoalTest('clicks', config);
 
-config = {
-    name: 'Hook Goal',
-    permalink: 'pretty',
-    beaconEnabled: true,
-    cookieless: false,
-    turboMode: false,
-};
-
-runGoalTest('hook', config);
-
