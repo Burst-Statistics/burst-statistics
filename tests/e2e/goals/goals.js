@@ -2,7 +2,6 @@ import {login} from "../helpers/auth";
 import {createTestPages} from "../helpers/createTestPages";
 import {wpCli} from "../helpers/wpCli";
 import {setPermalinkStructure} from "../helpers/setPermalinkStructure";
-import {getDebugLog} from "../helpers/getDebugLog";
 import {getPageObjectBySlug} from "../helpers/getPageObjectBySlug";
 import {updateBurstOption} from "../helpers/updateBurstOption";
 import {getTableData} from "../helpers/getTableData";

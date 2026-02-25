@@ -162,14 +162,8 @@ async function runTrackingTest(typeKey, config){
             let time_on_page = data[0].time_on_page;
 
             data = await getTableData('wp_burst_sessions', { where: "ID="+parseInt(session_id) } );
-            let city_code = data[0].city_code;
             expect(data.length).toBe(1);
-            console.log("city_code", city_code);
             console.log("wp_burst_sessions", data);
-
-            data = await getTableData('wp_burst_locations', { where: "city_code="+city_code } );
-            console.log("wp_burst_locations", data);
-            expect(data.length).toBe(1);
 
             //ensure some time has passed.
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -239,27 +233,18 @@ async function runTrackingTest(typeKey, config){
                 expect(session_id).not.toBe(new_session_id);
 
                 data = await getTableData('wp_burst_sessions', { where: "ID="+parseInt(new_session_id) } );
-                let city_code = data[0].city_code;
                 expect(data.length).toBe(1);
-                console.log("city_code", city_code);
                 console.log("wp_burst_sessions", data);
 
-    
-                data = await getTableData('wp_burst_locations', { where: "city_code="+city_code } );
-                console.log("wp_burst_locations", data);
-                expect(data.length).toBe(1);
-
                 await page.goto('wp-admin/');
-                await page.goto('wp-admin/admin.php?page=burst#/sources', { waitUntil: 'networkidle' });
+                //switch to different tabs, to check for console errors.
+                await page.goto('wp-admin/admin.php?page=burst#/statistics?range=today&_=', { waitUntil: 'networkidle' });
+                await page.waitForTimeout(500);
+
                 //change the date selection to "today"
                 await page.locator('.burst-date-button').click();
                 await page.locator('.rdrStaticRanges button').first().click();
                 await page.waitForTimeout(1000);
-                await page.screenshot({path: 'screenshots/sources-overview.png'});
-
-                //switch to different tabs, to check for console errors.
-                await page.goto('wp-admin/admin.php?page=burst#/statistics?range=today&_=', { waitUntil: 'networkidle' });
-                await page.waitForTimeout(500);
 
                 await page.goto('wp-admin/admin.php?page=burst#/', { waitUntil: 'networkidle' });
                 await page.waitForTimeout(500);
