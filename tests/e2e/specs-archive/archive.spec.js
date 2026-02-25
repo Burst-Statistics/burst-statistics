@@ -6,6 +6,7 @@ const { getTableData } = require( '../helpers/getTableData' );
 const { setPermalinkStructure } = require( '../helpers/setPermalinkStructure' );
 const fs = require( 'fs' );
 const {debugHasError} = require("../helpers/debugHasError");
+const {dismissOnboarding} = require("../helpers/dismissOnboarding");
 
 test.describe.configure( {
 	mode: 'serial',
@@ -121,38 +122,15 @@ const backUpTheDataToArchive = async () => {
 	console.log( '===== 🎉 [Backup] Completed =====\n' );
 };
 
-/**
- * Check if a file exists inside the WP environment.
- *
- * @param {string} filePath - Absolute path to file.
- * @return {Promise<boolean>}
- */
-const fileExists = async ( filePath ) => {
-	const res = await wpCli( `eval "echo file_exists('${ filePath }') ? 'yes' : 'no';"` );
-	return String( res ).trim() === 'yes';
-};
-
-/**
- * Parse raw CSV content into a 2D row array.
- *
- * @param {string} csvContent
- * @return {Array<Array<string>>}
- */
-function parseCsv( csvContent ) {
-	return csvContent
-	  .trim()
-	  .split( '\n' )
-	  .map( row => row.split( ',' ) );
-}
-
 test.describe( 'Data archive functionality', () => {
-
 	test( 'Verify delete archive settings are stored and displayed correctly', async ( { page } ) => {
 		test.setTimeout( 180000 );
 		console.log( '\n===== 🧪 [Test] Delete Archive Settings =====' );
 
 		await login( page );
-		
+		await dismissOnboarding(page);
+		await backUpTheDataToArchive();
+
 		await page.screenshot( { path: `screenshots/logged-in-${ Date.now() }.png`, fullPage: true } );
 		await setPermalinkStructure( 'pretty', page );
 
@@ -190,9 +168,9 @@ test.describe( 'Data archive functionality', () => {
 	test( 'Verify restore archive settings are disabled', async ( { page } ) => {
 		test.setTimeout( 180000 );
 		console.log( '\n===== 🧪 [Test] Restore Archive Settings =====' );
+		await login( page );
 
 		await setPermalinkStructure( 'pretty', page );
-		await login( page );
 
 		await page.goto( '/wp-admin/admin.php?page=burst#/settings/data', {
 			waitUntil: 'domcontentloaded',
@@ -209,9 +187,9 @@ test.describe( 'Data archive functionality', () => {
 
 	test( 'Verify data deletion', async ( { page } ) => {
 		test.setTimeout( 420000 );
+		await login( page );
 
 		await setPermalinkStructure( 'pretty', page );
-		await login( page );
 
 		await page.goto( '/wp-admin/admin.php?page=burst#/settings/data', {
 			waitUntil: 'domcontentloaded',
