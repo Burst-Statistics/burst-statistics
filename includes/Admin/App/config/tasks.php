@@ -57,12 +57,8 @@ return [
 			'type' => 'activation',
 		],
 		// @phpstan-ignore-next-line
-		'msg'         => $this->sprintf(
-		// translators: 1: opening anchor tag to support thread, 2: closing anchor tag.
-			__( 'Join the Burst community on %1$s Team Updraft Discord%2$s to discuss features, get help, and shape the future of Burst.', 'burst-statistics' ),
-			'<a href="https://discord.gg/jCC7GD59nS" target="_blank">',
-			'</a>'
-		),
+		'msg'         => __( 'Join the Burst community on Team Updraft Discord to discuss features, get help, and shape the future of Burst.', 'burst-statistics' ),
+		'url'         => 'https://discord.gg/jCC7GD59nS',
 		'icon'        => 'completed',
 		'dismissible' => true,
 	],

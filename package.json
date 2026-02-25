@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "e2e": "playwright test tests/e2e/specs/",
+    "e2e:onboarding": "playwright test tests/e2e/specs-onboarding/",
     "e2e:upgrade": "playwright test tests/e2e/specs-upgrade/",
     "e2e:open": "playwright test tests/e2e/specs/ --headed"
   },

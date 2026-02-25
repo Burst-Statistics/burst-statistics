@@ -190,6 +190,10 @@ class Tasks {
 				if ( strpos( $task['url'], '#' ) === 0 ) {
 					continue;
 				}
+				// if url starts with https://, it's not a link to burst-statistics, but to an external website.
+				if ( strpos( $task['url'], 'https://' ) === 0 ) {
+					continue;
+				}
 				$this->tasks[ $key ]['url'] = $this->get_website_url(
 					$task['url'],
 					[
