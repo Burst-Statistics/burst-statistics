@@ -40,13 +40,7 @@ test('after activation, onboarding starts', async ({ page }) => {
     const onboardingModal = await page.locator('text=Start onboarding');
     await expect(onboardingModal).toBeVisible();
 
-    await waitForContinueAndClick(page);
-    console.log("fill out the license field");
-    //we're on the licensing page, enter the license key in the input type="password"
-    await page.fill('input[type="password"]', '6d98acf3ea8ff53a99d815b39abbe4ad');
-    await page.screenshot({ path: 'screenshots/030-license.png' });
-
-    //activate it
+    //start
     await waitForContinueAndClick(page);
 
     //give it some time to process

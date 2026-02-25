@@ -151,9 +151,10 @@ test.describe( 'Data archive functionality', () => {
 		test.setTimeout( 180000 );
 		console.log( '\n===== 🧪 [Test] Delete Archive Settings =====' );
 
-		await setPermalinkStructure( 'pretty', page );
 		await login( page );
+		
 		await page.screenshot( { path: `screenshots/logged-in-${ Date.now() }.png`, fullPage: true } );
+		await setPermalinkStructure( 'pretty', page );
 
 		await page.goto( '/wp-admin/admin.php?page=burst#/settings/data', {
 			waitUntil: 'domcontentloaded',
