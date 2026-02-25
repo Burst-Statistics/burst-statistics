@@ -65,6 +65,16 @@ test:onboarding:
   script:
     - npm run e2e:onboarding
 
+test:archive:
+  <<: *e2e_base
+  script:
+    - npm run e2e:archive
+
+test:data-sharing:
+  <<: *e2e_base
+  script:
+    - npm run e2e:data-sharing
+
 test:e2e:upgrade:
   <<: *e2e_base
   before_script:

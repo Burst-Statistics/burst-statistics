@@ -23,12 +23,12 @@ test('after activation, onboarding starts', async ({ page }) => {
     await wpCli('option delete burst_completed_onboarding');
     await wpCli('option delete burst_skipped_onboarding');
     //ensure that the plugin is inactive
-    await wpCli('plugin deactivate burst-pro');
+    await wpCli('plugin deactivate burst-statistics');
 
     //activate the plugin
     await page.goto('/wp-admin/plugins.php');
     await page.screenshot({ path: 'screenshots/010-plugins-page-start.png' });
-    const activateLink = await page.$('#activate-burst-pro');
+    const activateLink = await page.$('#activate-burst-statistics');
     if ( activateLink ) {
         console.log("plugin is inactive, activate");
         await activateLink.click();
