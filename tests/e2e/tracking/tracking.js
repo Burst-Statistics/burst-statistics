@@ -7,7 +7,6 @@ import {updateBurstOption} from "../helpers/updateBurstOption";
 import {assertTrackingData} from "../helpers/assertTrackingData";
 import {getTableData} from "../helpers/getTableData";
 import {debugHasError} from "../helpers/debugHasError";
-import {activateLicense} from "../helpers/activateLicense";
 import {visitPage} from "../helpers/visitPage";
 const { test, expect } = require('@playwright/test');
 
@@ -250,7 +249,6 @@ async function runTrackingTest(typeKey, config){
                 console.log("wp_burst_locations", data);
                 expect(data.length).toBe(1);
 
-                await activateLicense(page);
                 await page.goto('wp-admin/');
                 await page.goto('wp-admin/admin.php?page=burst#/sources', { waitUntil: 'networkidle' });
                 //change the date selection to "today"

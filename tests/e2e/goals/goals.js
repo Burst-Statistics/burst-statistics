@@ -5,9 +5,7 @@ import {setPermalinkStructure} from "../helpers/setPermalinkStructure";
 import {getDebugLog} from "../helpers/getDebugLog";
 import {getPageObjectBySlug} from "../helpers/getPageObjectBySlug";
 import {updateBurstOption} from "../helpers/updateBurstOption";
-import {assertTrackingData} from "../helpers/assertTrackingData";
 import {getTableData} from "../helpers/getTableData";
-import {activateLicense} from "../helpers/activateLicense";
 import {createGoal} from "./createGoal";
 import {debugHasError} from "../helpers/debugHasError";
 const { test, expect } = require('@playwright/test');
@@ -23,7 +21,6 @@ async function runGoalTest(typeKey, config){
             //clear wp_burst_goal_statistics table
             await wpCli('db query "TRUNCATE TABLE wp_burst_goal_statistics"');
 
-            await activateLicense(page);
             console.log("set tracking options");
             await updateBurstOption({
                 enable_cookieless_tracking: config.cookieless,
