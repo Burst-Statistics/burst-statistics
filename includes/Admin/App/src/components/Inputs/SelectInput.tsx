@@ -14,7 +14,7 @@ interface SelectInputProps {
 	value: string;
 	onChange: ( value: string ) => void;
 	options?: OptionsType;
-	disabled?: boolean;
+	disabled?: boolean | string[];
 }
 
 /**
@@ -33,6 +33,18 @@ const normalizeOptions = ( options: OptionsType = []): SelectOption[] => {
 };
 
 /**
+ * Returns whether a specific option value is disabled.
+ * If disabled is a boolean, all options follow that value.
+ * If disabled is an array, only options whose value is in the array are disabled.
+ */
+const isOptionDisabled = ( disabled: boolean | string[], value: string ): boolean => {
+	if ( Array.isArray( disabled ) ) {
+		return disabled.includes( value );
+	}
+	return disabled;
+};
+
+/**
  * Styled select input component
  * @param  props - Props for the select component
  * @return {JSX.Element} The rendered select component
@@ -41,21 +53,25 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
 	({ disabled = false, value, onChange, options = [] }, ref ) => {
 		const normalizedOptions = normalizeOptions( options );
 
+		// Disable the entire root only when disabled is a boolean true, not when it's an array.
+		const rootDisabled = true === disabled;
+
 		return (
 			<Select.Root
-				disabled={disabled}
+				disabled={rootDisabled}
 				value={value}
 				onValueChange={( value ) => onChange( value )}
 			>
 				<Select.Trigger
 					ref={ref}
-                    disabled={disabled}
+					disabled={rootDisabled}
 					className={clsx(
 						'inline-flex items-center justify-center gap-1 rounded bg-white text-base leading-none outline outline-gray-400 px-2 py-2 focus:shadow-[0_0_0_2px]',
-						disabled ?
+						rootDisabled ?
 							'opacity-50 cursor-not-allowed bg-gray-100' :
 							'hover:bg-gray-100 cursor-pointer'
-					)}				>
+					)}
+				>
 					<Select.Value placeholder="Select an option…" />
 					<Select.Icon className="text-base">
 						<Icon
@@ -72,7 +88,6 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
 					<Select.Content
 						className="bg-gray-100 text-black border border-gray-400 rounded-md shadow-lg ring-1 ring-black/5 z-[100] shadow-gray-400/50"
 						position="item-aligned"
-
 					>
 						<Select.ScrollUpButton className="">
 							<Icon
@@ -85,7 +100,11 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
 						</Select.ScrollUpButton>
 						<Select.Viewport className="">
 							{normalizedOptions.map( ( option ) => (
-								<SelectItem key={option.value} value={option.value}>
+								<SelectItem
+									key={option.value}
+									value={option.value}
+									disabled={isOptionDisabled( disabled, option.value )}
+								>
 									{option.label}
 								</SelectItem>
 							) )}
@@ -100,7 +119,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
 							/>
 						</Select.ScrollDownButton>
 					</Select.Content>
-			</Select.Portal>
+				</Select.Portal>
 			</Select.Root>
 		);
 	}
@@ -122,14 +141,16 @@ interface SelectItemProps
  * @return {JSX.Element} The rendered select item component
  */
 const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
-	({ children, className, ...props }, ref ) => {
+	({ children, className, disabled, ...props }, ref ) => {
 		return (
 			<Select.Item
 				ref={ref}
+				disabled={disabled}
 				className={clsx(
 					'cursor-default px-2 py-2 text-base select-none flex items-center gap-1 flex-row overflow-hidden',
-					'hover:bg-gray-300 hover:text-black',
-					'focus:bg-gray-300',
+					disabled ?
+						'opacity-50 cursor-not-allowed' :
+						'hover:bg-gray-300 hover:text-black focus:bg-gray-300',
 					'transition-all duration-200',
 					className
 				)}

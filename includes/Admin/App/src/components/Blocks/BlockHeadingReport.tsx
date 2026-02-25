@@ -46,9 +46,7 @@ export const BlockHeadingReport = memo( ({ title, controls, className = '', repo
 			<div className="flex flex-col">
 				<h2 className="text-lg font-semibold">{title}</h2>
 				{subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}
-				{reportBlockIndex !== undefined && <p className="text-sm text-gray-600">Index: {reportBlockIndex}</p>}
 			</div>
-
 			{controls}
 		</div>
 	);

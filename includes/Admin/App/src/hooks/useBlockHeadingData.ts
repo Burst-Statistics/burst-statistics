@@ -48,13 +48,12 @@ export const useBlockHeadingData = ( reportBlockIndex?: number ): BlockHeadingDa
 	const dateRangeText = useMemo( () => {
 
 		// Check if block has custom date range enabled
-		if ( ! reportBlockIndex || ! blockDateRangeEnabled( reportBlockIndex ) ) {
+		if ( 'undefined' === typeof reportBlockIndex || ! blockDateRangeEnabled( reportBlockIndex ) ) {
 			return '';
 		}
 
 		const startDateValue = getStartDate( reportBlockIndex );
 		const endDateValue = getEndDate( reportBlockIndex );
-
 		if ( ! startDateValue || ! endDateValue ) {
 			return '';
 		}

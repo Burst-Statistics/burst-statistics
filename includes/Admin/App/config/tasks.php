@@ -56,7 +56,6 @@ return [
 		'condition'   => [
 			'type' => 'activation',
 		],
-		// @phpstan-ignore-next-line
 		'msg'         => __( 'Join the Burst community on Team Updraft Discord to discuss features, get help, and shape the future of Burst.', 'burst-statistics' ),
 		'url'         => 'https://discord.gg/jCC7GD59nS',
 		'icon'        => 'completed',

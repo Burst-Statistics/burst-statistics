@@ -217,7 +217,7 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 
 		//for each block, check if date_range_enabled is true and if so, return the fixed_end_date for that block.
 		const block = get().wizard.content[index];
-		if ( -1 < index && block?.date_range_enabled ) {
+		if ( -1 < index && block?.date_range_enabled && '' !== block.fixed_end_date ) {
 			return block.fixed_end_date;
 		}
 
