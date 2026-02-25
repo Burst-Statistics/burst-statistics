@@ -59,7 +59,7 @@ test:e2e:
   <<: *e2e_base
   script:
     - npm run e2e
-    -
+
 test:onboarding:
   <<: *e2e_base
   script:
