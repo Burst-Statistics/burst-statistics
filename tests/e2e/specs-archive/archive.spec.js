@@ -1,5 +1,4 @@
 const { test, expect } = require( '@playwright/test' );
-const { activateLicense } = require( '../helpers/activateLicense' );
 const { login } = require( '../helpers/auth' );
 const { wpCli } = require( '../helpers/wpCli' );
 const path = require( 'path' );
@@ -152,7 +151,6 @@ test.describe( 'Data archive functionality', () => {
 		test.setTimeout( 180000 );
 		console.log( '\n===== 🧪 [Test] Delete Archive Settings =====' );
 
-		await activateLicense( page );
 		await setPermalinkStructure( 'pretty', page );
 		await login( page );
 		await page.screenshot( { path: `screenshots/logged-in-${ Date.now() }.png`, fullPage: true } );
@@ -161,7 +159,11 @@ test.describe( 'Data archive functionality', () => {
 			waitUntil: 'domcontentloaded',
 		} );
 
-		await page.waitForTimeout( 2000 );
+		await page.waitForTimeout( 1000 );
+
+		//check if delete option is enabled.
+		const deleteOption = page.locator( 'select option[value="delete"]' );
+		await expect( deleteOption ).not.toBeDisabled();
 
 		await setArchiveSettings( page, 'Automatically Delete', 12 );
 
@@ -188,7 +190,6 @@ test.describe( 'Data archive functionality', () => {
 		test.setTimeout( 180000 );
 		console.log( '\n===== 🧪 [Test] Restore Archive Settings =====' );
 
-		await activateLicense( page );
 		await setPermalinkStructure( 'pretty', page );
 		await login( page );
 
@@ -208,7 +209,6 @@ test.describe( 'Data archive functionality', () => {
 	test( 'Verify data deletion', async ( { page } ) => {
 		test.setTimeout( 420000 );
 
-		await activateLicense( page );
 		await setPermalinkStructure( 'pretty', page );
 		await login( page );
 
