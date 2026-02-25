@@ -17,7 +17,7 @@ import Sales from '@/components/Sales/Sales';
 import TopPerformers from '@/components/Sales/TopPerformers';
 import FunnelChartSection from '@/components/Sales/FunnelChartSection';
 import Logo from '@/components/Reporting/ReportWizard/Blocks/Logo';
-import {ComponentType} from "react";
+import {ComponentType} from 'react';
 const AVAILABLE_CONTENT: ContentItems = [
 	{
 		id: 'logo',

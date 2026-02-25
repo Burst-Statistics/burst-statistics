@@ -33,7 +33,7 @@ import {useBlockConfig} from '@/hooks/useBlockConfig';
  * @return {JSX.Element} The DataTableBlock component.
  */
 const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
-	const { allowedConfigs=[], id, isEcommerce, startDate, endDate, range, filters, allowBlockFilters, isReport, index } = useBlockConfig( props );
+	const { allowedConfigs = [], id, isEcommerce, startDate, endDate, range, filters, allowBlockFilters, isReport, index } = useBlockConfig( props );
 	const defaultConfig = allowedConfigs[0];
 	const { getValue } = useSettingsData();
 	const filterByDomain = getValue( 'filtering_by_domain' );

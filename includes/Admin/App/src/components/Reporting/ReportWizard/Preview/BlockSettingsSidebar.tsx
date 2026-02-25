@@ -75,7 +75,7 @@ export const BlockSettingsSidebar: React.FC<BlockSettingsSidebarProps> = ({ repo
 	if ( ! block ) {
 		return null;
 	}
-
+console.log( 'block ', block );
 	return (
 		<motion.div
 			initial={{ opacity: 0, x: 20 }}
@@ -101,8 +101,9 @@ export const BlockSettingsSidebar: React.FC<BlockSettingsSidebarProps> = ({ repo
 				</span>
 			</div>
 
-			{/* Scrollable content. */}
-			<div className="flex-1 overflow-y-auto p-4 space-y-6">
+			{/* Scrollable content. Controls not needed for logo block.	 */}
+			{'logo' !== block.id &&
+				<div className="flex-1 overflow-y-auto p-4 space-y-6">
 				{/* Date Range Section. */}
 				<div className="space-y-3">
 					<h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -169,7 +170,7 @@ export const BlockSettingsSidebar: React.FC<BlockSettingsSidebarProps> = ({ repo
 					</div>
 				</div>
 			</div>
-
+			}
 			{/* Action buttons footer. */}
 			<div className="border-t border-gray-200 p-4 bg-gray-50">
 				<div className="flex items-center justify-between">

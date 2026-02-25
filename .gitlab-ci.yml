@@ -60,6 +60,29 @@ test:e2e:
   script:
     - npm run e2e
 
+test:onboarding:
+  <<: *e2e_base
+  before_script:
+    - npm ci --no-audit --cache .npm --prefer-offline
+    - bash /usr/local/bin/entrypoint.sh
+    - cp -R . /var/www/html/wp-content/plugins/burst-statistics/
+    # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
+    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
+    - curl -sS https://getcomposer.org/installer | php
+    - php composer.phar install
+  script:
+    - npm run e2e:onboarding
+
+test:archive:
+  <<: *e2e_base
+  script:
+    - npm run e2e:archive
+
+test:data-sharing:
+  <<: *e2e_base
+  script:
+    - npm run e2e:data-sharing
+
 test:e2e:upgrade:
   <<: *e2e_base
   before_script:
