@@ -324,6 +324,7 @@ class Frontend {
 			$prefix                  = 'burst';
 			$in_footer               = $this->get_option_bool( 'enable_turbo_mode' );
 			$combine_vars_and_script = $this->get_option_bool( 'combine_vars_and_script', true );
+            self:error_log( "combine_vars_and_script: $combine_vars_and_script" );
 			$file_url                = BURST_URL . "assets/js/build/burst$cookieless_text.min.js";
 			$file_path               = BURST_PATH . "assets/js/build/burst$cookieless_text.min.js";
 			$add_localize_script     = true;
@@ -336,11 +337,14 @@ class Frontend {
 
 				// Only use the written file if it exists.
 				if ( file_exists( $upload_path . $filename ) ) {
+                    self::error_log("file exists: $upload_path$filename");
 					$prefix              = $ghost_mode_enabled ? 'b' : 'burst';
 					$file_url            = $upload_url . $filename;
 					$file_path           = $upload_path . $filename;
 					$add_localize_script = false;
-				}
+				} else {
+                    self::error_log("file does NOT exist : $upload_path$filename");
+                }
 			}
 			$deps = $this->tracking->beacon_enabled() ? [ $prefix . '-timeme' ] : [ $prefix . '-timeme', 'wp-api-fetch' ];
 			wp_enqueue_script(
