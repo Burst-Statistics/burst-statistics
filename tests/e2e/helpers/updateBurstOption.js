@@ -6,10 +6,9 @@ const { wpCli } = require('../helpers/wpCli');
  */
 async function updateBurstOption(options) {
     const flags = Object.entries(options)
-        .map(([key, value]) => `--${key}=${value}`)
+        .map(([key, value]) => `--${key}=${String(value)}`)
         .join(' ');
 
     await wpCli(`burst save ${flags}`);
-
 }
 export { updateBurstOption };
