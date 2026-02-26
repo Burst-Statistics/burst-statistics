@@ -8,6 +8,7 @@ import {assertTrackingData} from "../helpers/assertTrackingData";
 import {getTableData} from "../helpers/getTableData";
 import {debugHasError} from "../helpers/debugHasError";
 import {visitPage} from "../helpers/visitPage";
+import {dismissOnboarding} from "../helpers/dismissOnboarding";
 const { test, expect } = require('@playwright/test');
 
 async function runTrackingTest(typeKey, config){
@@ -16,6 +17,10 @@ async function runTrackingTest(typeKey, config){
         test( 'Test track hit and update hit', async ({ page }) => {
             console.log("login to WP");
             await login(page);
+            //ensure that a page is visited so the defaults are set before we write any options. 
+            await page.goto('wp-admin/admin.php?page=burst');
+            await dismissOnboarding(page);
+            await page.goto('wp-admin/admin.php?page=burst');
 
             console.log("set tracking options, with config: ", config);
             await updateBurstOption({
