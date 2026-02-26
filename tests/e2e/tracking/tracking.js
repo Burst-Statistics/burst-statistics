@@ -16,7 +16,8 @@ async function runTrackingTest(typeKey, config){
         test( 'Test track hit and update hit', async ({ page }) => {
             console.log("login to WP");
             await login(page);
-            console.log("set tracking options");
+
+            console.log("set tracking options, with config: ", config);
             await updateBurstOption({
                 ghost_mode: config.ghostMode,
                 enable_cookieless_tracking: config.cookieless,

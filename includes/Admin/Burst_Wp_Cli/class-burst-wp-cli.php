@@ -232,6 +232,8 @@ class Burst_Wp_Cli {
 		}
 		$last_updated_name = 'none';
 		foreach ( $assoc_args as $name => $value ) {
+            self:error_log( "update ".$name . ' to ' . $value );
+
             if ( $value === 'false') $value = false;
             if ( $value === 'true') $value = true;
 			$this->update_option( $name, $value );

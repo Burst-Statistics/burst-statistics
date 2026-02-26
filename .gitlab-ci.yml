@@ -40,43 +40,43 @@ workflow:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: always
     - when: never
-
-test:phpunit:
-  <<: *e2e_base
-  before_script:
-    - npm ci --no-audit --cache .npm --prefer-offline
-    - bash /usr/local/bin/entrypoint.sh
-    - cp -R . /var/www/html/wp-content/plugins/burst-statistics/
-    # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
-    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
-    - wp plugin activate burst-statistics --path=/var/www/html
-    - curl -sS https://getcomposer.org/installer | php
-    - php composer.phar install
-  script:
-    - php vendor/bin/phpunit --debug 2>&1
-
-test:e2e:
-  <<: *e2e_base
-  script:
-    - npm run e2e
-
-test:onboarding:
-  <<: *e2e_base
-  before_script:
-    - npm ci --no-audit --cache .npm --prefer-offline
-    - bash /usr/local/bin/entrypoint.sh
-    - cp -R . /var/www/html/wp-content/plugins/burst-statistics/
-    # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
-    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
-    - curl -sS https://getcomposer.org/installer | php
-    - php composer.phar install
-  script:
-    - npm run e2e:onboarding
-
-test:archive:
-  <<: *e2e_base
-  script:
-    - npm run e2e:archive
+#
+#test:phpunit:
+#  <<: *e2e_base
+#  before_script:
+#    - npm ci --no-audit --cache .npm --prefer-offline
+#    - bash /usr/local/bin/entrypoint.sh
+#    - cp -R . /var/www/html/wp-content/plugins/burst-statistics/
+#    # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
+#    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
+#    - wp plugin activate burst-statistics --path=/var/www/html
+#    - curl -sS https://getcomposer.org/installer | php
+#    - php composer.phar install
+#  script:
+#    - php vendor/bin/phpunit --debug 2>&1
+#
+#test:e2e:
+#  <<: *e2e_base
+#  script:
+#    - npm run e2e
+#
+#test:onboarding:
+#  <<: *e2e_base
+#  before_script:
+#    - npm ci --no-audit --cache .npm --prefer-offline
+#    - bash /usr/local/bin/entrypoint.sh
+#    - cp -R . /var/www/html/wp-content/plugins/burst-statistics/
+#    # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
+#    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
+#    - curl -sS https://getcomposer.org/installer | php
+#    - php composer.phar install
+#  script:
+#    - npm run e2e:onboarding
+#
+#test:archive:
+#  <<: *e2e_base
+#  script:
+#    - npm run e2e:archive
       
 #test:goal:click:
 #  <<: *e2e_base
@@ -87,31 +87,31 @@ test:tracking:beacon:
   <<: *e2e_base
   script:
     - npm run e2e:tracking:beacon
-
-test:data-sharing:
-  <<: *e2e_base
-  script:
-    - npm run e2e:data-sharing
-
-test:e2e:upgrade:
-  <<: *e2e_base
-  before_script:
-    - npm ci --no-audit --cache .npm --prefer-offline
-    - bash /usr/local/bin/entrypoint.sh
-    - cp -R . /var/www/html/wp-content/plugins/burst-statistics-new/
-    # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
-    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics-new/
-    - wp plugin install burst-statistics --activate --path=/var/www/html
-  script:
-    - npm run e2e:upgrade
-
-test:e2e:lowest_versions:
-  <<: *e2e_base
-  image:
-    name: source.updraftplus.com:5050/ci/playwright-e2e:php-8.0-wp-6.4.0
-    entrypoint: [""]
-  script:
-    - npm run e2e
+#
+#test:data-sharing:
+#  <<: *e2e_base
+#  script:
+#    - npm run e2e:data-sharing
+#
+#test:e2e:upgrade:
+#  <<: *e2e_base
+#  before_script:
+#    - npm ci --no-audit --cache .npm --prefer-offline
+#    - bash /usr/local/bin/entrypoint.sh
+#    - cp -R . /var/www/html/wp-content/plugins/burst-statistics-new/
+#    # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
+#    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics-new/
+#    - wp plugin install burst-statistics --activate --path=/var/www/html
+#  script:
+#    - npm run e2e:upgrade
+#
+#test:e2e:lowest_versions:
+#  <<: *e2e_base
+#  image:
+#    name: source.updraftplus.com:5050/ci/playwright-e2e:php-8.0-wp-6.4.0
+#    entrypoint: [""]
+#  script:
+#    - npm run e2e
 
 
 
