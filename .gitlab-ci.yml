@@ -24,7 +24,7 @@ workflow:
     - bash /usr/local/bin/entrypoint.sh
     - cp -R . /var/www/html/wp-content/plugins/burst-statistics/
     # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
-    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
+    - chown -R www-data:www-data /var/www/html/wp-content/
     - wp plugin activate burst-statistics --path=/var/www/html
   after_script:
     - cp /var/log/php_errors.log error.log || true
