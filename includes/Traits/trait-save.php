@@ -25,6 +25,7 @@ trait Save {
 	protected function update_option( string $name, $value ): void {
 
 		if ( ! $this->user_can_manage() ) {
+            self::error_log( 'User does not have permission to manage Burst options.' );
 			return;
 		}
         $fields = new Fields();
@@ -32,12 +33,14 @@ trait Save {
 		$config_ids         = array_column( $config_fields, 'id' );
 		$config_field_index = array_search( $name, $config_ids, true );
 		if ( $config_field_index === false ) {
-			return;
+			self::error_log( 'Invalid option name: ' . $name );
+            return;
 		}
 
 		$config_field = $config_fields[ $config_field_index ];
 		$type         = $config_field['type'] ?? false;
 		if ( ! $type ) {
+            self::error_log( 'Invalid option type: ' . $name );
 			return;
 		}
 		$options = get_option( 'burst_options_settings', [] );
@@ -49,6 +52,7 @@ trait Save {
 		$type             = $this->sanitize_field_type( $config_field['type'] );
 		$value            = $this->sanitize_field( $value, $type );
 		$value            = apply_filters( 'burst_fieldvalue', $value, sanitize_text_field( $name ), $type );
+        error_log("sanitized value for $name: $value, type $type");
 		$options[ $name ] = $value;
 		// autoload as this is important for front end as well.
 		update_option( 'burst_options_settings', $options, true );
