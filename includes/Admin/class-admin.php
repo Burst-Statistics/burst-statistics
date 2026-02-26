@@ -887,6 +887,7 @@ class Admin {
 	 */
 	public function setup_defaults(): void {
 		if ( get_option( 'burst_set_defaults' ) ) {
+            error_log("setting defaults for Burst");
 			set_transient( 'burst_redirect_to_settings_page', true, 5 * MINUTE_IN_SECONDS );
 			update_option( 'burst_activation_time', time(), false );
 			update_option( 'burst_last_cron_hit', time(), false );
