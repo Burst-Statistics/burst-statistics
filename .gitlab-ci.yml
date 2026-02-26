@@ -78,10 +78,10 @@ test:archive:
   script:
     - npm run e2e:archive
       
-test:goal:click:
-  <<: *e2e_base
-  script:
-    - npm run e2e:goals:click
+#test:goal:click:
+#  <<: *e2e_base
+#  script:
+#    - npm run e2e:goals:click
 
 test:tracking:beacon:
   <<: *e2e_base

@@ -13,30 +13,6 @@ const { test, expect } = require('@playwright/test');
 async function runTrackingTest(typeKey, config){
     test.setTimeout(60000); // Set timeout to 60 seconds
     test.describe.serial(`Burst Tracking - ${config.name}`, () => {
-        const locationDetails = {
-            ip: '2a02:a463:185f:0:3090:3d3c:13d8:4a5c',
-            city: 'Groningen',
-            city_code: '2755251',
-            state: 'Groningen',
-            state_dutch: 'Groningen',
-            state_code: 'GR',
-            country: 'Netherlands',
-            country_code: 'NL',
-            continent_code: 'EU',
-        }
-        //set a eu IP address
-        test.use({
-            extraHTTPHeaders: {
-                'REMOTE_ADDR': locationDetails.ip,
-                'X-Forwarded-For': locationDetails.ip,
-                'CF-Connecting-IP': locationDetails.ip,
-                'True-Client-IP': locationDetails.ip,
-            }
-        });
-
-
-
-
         test( 'Test track hit and update hit', async ({ page }) => {
             console.log("login to WP");
             await login(page);

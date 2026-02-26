@@ -19,19 +19,6 @@ async function login(page, username = 'admin', password = 'password') {
     await page.focus('#user_pass');
     await page.fill('#user_pass', password);
     await page.click('#wp-submit');
-    // try {
-    //     await page.fill('#user_login', username);
-    //     await page.fill('#user_pass', password);
-    //     await page.click('#wp-submit');
-    // } catch (err) {
-    //     //reload the page
-    //     console.log("error on first try, reload and try again");
-    //     await page.reload();
-    //     await page.waitForTimeout(1000); // allow DOM to settle
-    //     page.fill('#user_login', username);
-    //     page.fill('#user_pass', password);
-    //     await page.click('#wp-submit');
-    // }
 
 }
 
