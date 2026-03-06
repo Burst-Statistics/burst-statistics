@@ -1,4 +1,3 @@
-import { forwardRef } from 'react';
 import HiddenInput from '@/components/Inputs/HiddenInput';
 
 /**
@@ -8,7 +7,7 @@ import HiddenInput from '@/components/Inputs/HiddenInput';
  * @param {Object} props
  * @return {JSX.Element}
  */
-const HiddenField = forwardRef( ({ field, fieldState, ...props }) => {
+const HiddenField =  ({ field, fieldState, ...props }) => {
 	const inputId = props.id || field.name;
 
 	return (
@@ -20,7 +19,7 @@ const HiddenField = forwardRef( ({ field, fieldState, ...props }) => {
 			{...props}
 		/>
 	);
-});
+};
 
 HiddenField.displayName = 'HiddenField';
 export default HiddenField;

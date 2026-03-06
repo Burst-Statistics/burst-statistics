@@ -4743,6 +4743,10 @@ input[type=radio]:checked::before {
   font-variant-numeric: var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction);
 }
 
+#burst-statistics .leading-5 {
+  line-height: 1.25rem;
+}
+
 #burst-statistics .leading-\[1\.5\] {
   line-height: 1.5;
 }

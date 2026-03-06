@@ -23,17 +23,7 @@ class Reporting_Fields {
 	 * Initialize the reporting fields.
 	 */
 	public function init(): void {
-		add_action( 'init', [ $this, 'initialize_fields' ] );
 		add_filter( 'burst_fields', [ $this, 'add_reporting_fields' ] );
-	}
-
-	/**
-	 * Load reporting fields from configuration file if not already loaded.
-	 */
-	public function initialize_fields(): void {
-		if ( empty( $this->fields ) ) {
-			$this->fields = require BURST_PATH . 'includes/Admin/App/config/reporting-fields.php';
-		}
 	}
 
 	/**
@@ -43,7 +33,9 @@ class Reporting_Fields {
 	 * @return array Modified localized settings including reporting fields.
 	 */
 	public function add_reporting_fields( array $fields ): array {
-		$this->initialize_fields();
+		if ( ! empty( array_filter( $fields, fn( $field ) => ( $field['menu_id'] ?? '' ) === 'reports' ) ) ) {
+			return $fields;
+		}
 
 		return array_merge( $fields, $this->get() );
 	}
@@ -59,7 +51,9 @@ class Reporting_Fields {
 			return [];
 		}
 
-		$this->initialize_fields();
+		if ( empty( $this->fields ) ) {
+			$this->fields = require BURST_PATH . 'includes/Admin/App/config/reporting-fields.php';
+		}
 
 		$fields = $this->fields;
 

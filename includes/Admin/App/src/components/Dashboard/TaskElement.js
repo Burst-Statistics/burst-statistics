@@ -35,10 +35,10 @@ const TaskElement = ( props ) => {
 			)}
 			{task.fix && (
 				<span
-					className="text-blue underline cursor-pointer hover:text-blue-800 hover:no-underline"
-					onClick={() => fixTask( task.id, task.fix )}
+					className="text-blue underline cursor-pointer hover:text-blue-800 hover:no-underline leading-5"
+					onClick={() => fixTask( task.id )}
 				>
-					{__( 'Fix', 'burst-statistics' )}
+					{task.fix.startsWith( 'burst_option_' ) ? __( 'Enable', 'burst-statistics' ) : __( 'Fix', 'burst-statistics' )}
 				</span>
 			)}
 			{task.plusone && (

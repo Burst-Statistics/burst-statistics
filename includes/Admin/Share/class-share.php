@@ -65,6 +65,44 @@ class Share {
 	}
 
 	/**
+	 * Get shareable tabs from the menu configuration.
+	 * Reads from burst_menu filter and returns only items with shareable => true.
+	 *
+	 * @return array Array of shareable tab configurations with id and title.
+	 */
+	public static function get_shareable_tabs(): array {
+		$menu_items = \Burst\burst_loader()->admin->app->menu->get();
+
+		$shareable_tabs = [];
+		foreach ( $menu_items as $item ) {
+			if ( ! empty( $item['shareable'] ) && ! empty( $item['id'] ) ) {
+				$shareable_tabs[] = [
+					'id'    => $item['id'],
+					'title' => $item['title'] ?? $item['id'],
+				];
+			}
+		}
+
+		return $shareable_tabs;
+	}
+
+	/**
+	 * Get array of shareable tab IDs.
+	 *
+	 * @return array Array of shareable tab IDs.
+	 */
+	private static function get_shareable_tab_ids(): array {
+		$tabs = self::get_shareable_tabs();
+
+		$shareable_ids = [];
+		foreach ( $tabs as $item ) {
+			$shareable_ids[] = $item['id'];
+		}
+
+		return $shareable_ids;
+	}
+
+	/**
 	 * Filter menu items to only include shareable items for share link viewers.
 	 *
 	 * @param array $menu_items The original menu items.
@@ -324,46 +362,6 @@ class Share {
 		}
 
 		return $user->ID;
-	}
-
-	/**
-	 * Get shareable tabs from the menu configuration.
-	 * Reads from burst_menu filter and returns only items with shareable => true.
-	 *
-	 * @return array Array of shareable tab configurations with id and title.
-	 */
-	public static function get_shareable_tabs(): array {
-		$menu_items = apply_filters( 'burst_menu', require BURST_PATH . 'includes/Admin/App/config/menu.php' );
-
-		$shareable_tabs = [];
-		foreach ( $menu_items as $item ) {
-			if ( ! empty( $item['shareable'] ) && ! empty( $item['id'] ) ) {
-				$shareable_tabs[] = [
-					'id'    => $item['id'],
-					'title' => $item['title'] ?? $item['id'],
-				];
-			}
-		}
-
-		return $shareable_tabs;
-	}
-
-	/**
-	 * Get array of shareable tab IDs.
-	 *
-	 * @return array Array of shareable tab IDs.
-	 */
-	private static function get_shareable_tab_ids(): array {
-		$menu_items = require BURST_PATH . 'includes/Admin/App/config/menu.php';
-
-		$shareable_ids = [];
-		foreach ( $menu_items as $item ) {
-			if ( ! empty( $item['shareable'] ) && ! empty( $item['id'] ) ) {
-				$shareable_ids[] = $item['id'];
-			}
-		}
-
-		return $shareable_ids;
 	}
 
 	/**

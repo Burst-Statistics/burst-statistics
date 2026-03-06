@@ -54,6 +54,7 @@ class Reports_Data extends Data_Collector {
 			}
 
 			$filtered_report              = [];
+			$filtered_report['report_id'] = $report->id;
 			$filtered_report['frequency'] = $report->frequency;
 			$filtered_report['format']    = $report->format;
 
@@ -63,7 +64,7 @@ class Reports_Data extends Data_Collector {
 					array_map(
 						function ( $block ) {
 							if ( is_string( $block ) ) {
-									return $block;
+								return $block;
 							}
 
 							if ( is_array( $block ) && isset( $block['id'] ) && is_string( $block['id'] ) ) {

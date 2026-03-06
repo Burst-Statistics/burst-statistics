@@ -4,8 +4,6 @@ import Icon from '../../utils/Icon';
 import { formatNumber } from '../../utils/formatting';
 import debounce from 'lodash/debounce';
 import usePostsStore from '../../store/usePostsStore';
-
-import { forwardRef } from 'react';
 import AsyncSelectInput from '@/components/Inputs/AsyncSelectInput';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 
@@ -21,7 +19,7 @@ import FieldWrapper from '@/components/Fields/FieldWrapper';
  * @param {Object} props      - Additional props (including options array).
  * @return {JSX.Element}
  */
-const SelectPageField = forwardRef(
+const SelectPageField =
 	({ field, fieldState, label, help, context, className, ...props }) => {
 		const inputId = props.id || field?.name;
 
@@ -78,8 +76,7 @@ const SelectPageField = forwardRef(
 				/>
 			</FieldWrapper>
 		);
-	}
-);
+	};
 
 SelectPageField.displayName = 'SelectPageField';
 

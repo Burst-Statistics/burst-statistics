@@ -35,14 +35,9 @@ class Metrics_Data extends Data_Collector {
 	public function collect_data(): array {
 		$collected_data = [];
 
-		if ( defined( 'BURST_PRO' ) ) {
-			$collected_data['ecommerce'] = $this->collect_ecommerce_metrics();
-		} else {
-			$collected_data['ecommerce'] = null;
-		}
-
 		$collected_data['aggregation_period'] = $this->get_aggregation_period();
 		$collected_data['traffic']            = $this->collect_traffic_metrics();
+		$collected_data['ecommerce']          = $this->collect_ecommerce_metrics();
 		$collected_data['database']           = $this->collect_database_metrics();
 		$collected_data['query_stats']        = $this->collect_query_stats_metrics();
 
@@ -74,7 +69,7 @@ class Metrics_Data extends Data_Collector {
 	private function collect_ecommerce_metrics(): ?array {
 		$collector = new Ecommerce_Metrics( $this->capture_data_from, $this->capture_data_to );
 
-		return $collector->collect();
+		return apply_filters( 'burst_data_sharing_ecommerce_metrics', null, $collector );
 	}
 
 	/**

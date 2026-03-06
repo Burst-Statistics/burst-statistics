@@ -42,6 +42,15 @@ defined( 'ABSPATH' ) || die();
  *                                      - Special 'action' key determines behavior:
  *                                        * 'action' => 'disable': Field becomes disabled when conditions are NOT met
  *                                        * No action or other value: Field is hidden when conditions are NOT met (default)
+ * @property array|null $recommended_conditions Conditions under which the field is marked as recommended.
+ *                                      Evaluated reactively in the UI — the RecommendBadge appears as soon as
+ *                                      the watched field changes, before saving.
+ *                                      - Key-value pairs where key is the field ID to watch
+ *                                      - Value can be:
+ *                                        * bool: true/false for checkbox fields
+ *                                        * string: Specific value to match
+ *                                        * array: Multiple acceptable values
+ *                                      - When ALL conditions are met, recommended is set to true
  * @property bool|null $recommended     Whether this option is recommended (used in radio/select options)
  * @property string|null $action        Action identifier for button types (e.g., 'send_email_report', 'reset')
  * @property string|null $button_text   Text displayed on button elements
@@ -78,6 +87,22 @@ defined( 'ABSPATH' ) || die();
  *
  * Note: When 'action' => 'disable' is set, the field will be visible but disabled when conditions are NOT met.
  *       Without the action property, the field will be completely hidden when conditions are NOT met.
+ *
+ * Recommended Conditions Examples:
+ * ---------------------------------
+ *
+ * 1. Show recommended badge when a related checkbox is enabled:
+ *    'recommended_conditions' => [
+ *        'enable_cookieless_tracking' => true,
+ *    ]
+ *
+ * 2. Show recommended badge when a select has a specific value:
+ *    'recommended_conditions' => [
+ *        'archive_data' => 'archive',
+ *    ]
+ *
+ * Note: All conditions must be met simultaneously for the badge to appear.
+ *       The badge is reactive and appears before the user saves the settings.
  */
 
 return [
@@ -108,17 +133,20 @@ return [
 		'default'  => false,
 	],
 	[
-		'id'       => 'enable_turbo_mode',
-		'menu_id'  => 'general',
-		'group_id' => 'general',
-		'type'     => 'checkbox',
-		'label'    => __( 'Enable Turbo mode', 'burst-statistics' ),
-		'context'  => [
+		'id'                     => 'enable_turbo_mode',
+		'menu_id'                => 'general',
+		'group_id'               => 'general',
+		'type'                   => 'checkbox',
+		'label'                  => __( 'Enable Turbo mode', 'burst-statistics' ),
+		'context'                => [
 			'text' => __( 'Load the tracking script later for better pagespeed, could cause visitors who leave quickly to be missed.', 'burst-statistics' ),
 			'url'  => 'definition/turbo-mode/',
 		],
-		'disabled' => false,
-		'default'  => false,
+		'disabled'               => false,
+		'default'                => false,
+		'recommended_conditions' => [
+			'enable_cookieless_tracking' => true,
+		],
 	],
 	[
 		'id'       => 'enable_cookieless_tracking',
@@ -151,6 +179,15 @@ return [
 		'label'    => __( 'Dismiss all notices in your dashboard except critical ones', 'burst-statistics' ),
 		'disabled' => false,
 		'default'  => false,
+	],
+	[
+		'id'       => 'tips_tricks_mailinglist',
+		'menu_id'  => 'general',
+		'group_id' => 'general',
+		'type'     => 'hidden',
+		'label'    => '',
+		'disabled' => false,
+		'default'  => '',
 	],
 	[
 		'id'       => 'goals',

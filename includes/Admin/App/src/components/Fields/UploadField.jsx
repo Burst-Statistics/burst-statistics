@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { __ } from '@wordpress/i18n';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import Icon from '@/utils/Icon';
@@ -40,7 +40,7 @@ const EXCLUDED_FIELDS = [
  * @param {Object} props      - Additional props.
  * @return {JSX.Element}
  */
-	const UploadField = forwardRef(
+	const UploadField = (
 	({ field, fieldState, label, help, context, className, ...props }) => {
 		const { settings, saveSettings, isSavingSettings } = useSettingsData();
 		const [ file, setFile ] = useState( false );

@@ -214,7 +214,7 @@ const LinkConfigurationSummary = ({ currentTab, startDate, endDate, filters }) =
 
 									// first filter: "Page is Homepage"
 									return (
-										<span key={filter.key}>
+										<span key={index + filter.key}>
                         {createInterpolateElement(
 							sprintf(
 
@@ -234,7 +234,7 @@ const LinkConfigurationSummary = ({ currentTab, startDate, endDate, filters }) =
 
 								// next filters: "and Page is Contact"
 								return (
-									<span key={filter.key}>
+									<span key={index + filter.key}>
                     {createInterpolateElement(
 						sprintf(
 

@@ -40,7 +40,7 @@ const FilterChipList = ({
 			{filters.map( ( filter ) => (
 				<FilterChip
 					disabled={ isReport || ! userCanFilter }
-					key={filter.key}
+					key={'filterchip' + filter.key}
 					filter={filter}
 					onRemove={onRemove}
 					onClick={onClick}

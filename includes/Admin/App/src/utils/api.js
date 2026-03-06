@@ -3,7 +3,7 @@ import { __ } from '@wordpress/i18n';
 import { toast } from 'react-toastify';
 
 const usesPlainPermalinks = () => {
-	return -1 !== burst_settings.site_url.indexOf( '?' );
+	return -1 !== burst_settings.rest_url.indexOf( '?' );
 };
 
 const glue = () => {
@@ -205,7 +205,7 @@ const stripControls = ( key, value ) => {
 const siteUrl = ( type ) => {
 	let url;
 	if ( 'undefined' === typeof type ) {
-		url = burst_settings.site_url;
+		url = burst_settings.rest_url;
 	} else {
 		url = burst_settings.admin_ajax_url;
 	}

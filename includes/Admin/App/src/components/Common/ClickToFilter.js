@@ -84,8 +84,8 @@ const ClickToFilter = ({
 			// For page_url filters, construct the full URL if it's a relative path
 			if ( 'page_url' === filter && ! filterValue.startsWith( 'http' ) ) {
 
-				// Get the site URL from window.burst_admin if available, otherwise use current origin
-				let siteUrl = window.burst_admin?.site_url || window.location.origin;
+				// Get the site URL from window.burst_settings if available, otherwise use current origin
+				let siteUrl = window.burst_settings?.site_url || window.location.origin;
 
 				// If filterBydomain is active, check if we have the domain in the row dataset. If not, we try the domain filter, if used.
 				if ( filterByDomain ) {

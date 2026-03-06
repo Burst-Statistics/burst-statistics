@@ -22,7 +22,7 @@ export const Steps = () => {
 				const isClickable = canNavigateToStep();
 
 				return (
-					<React.Fragment key={step.number}>
+					<React.Fragment key={'report-step-' + step.number}>
 						<div
 							className={`flex items-center gap-2 rounded-md p-2 transition-all duration-300 ease-in-out group ${
 								isClickable ? 'cursor-pointer hover:bg-gray-200' : 'cursor-not-allowed'

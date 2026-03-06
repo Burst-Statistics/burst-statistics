@@ -187,7 +187,7 @@ class Tasks {
 		foreach ( $this->tasks as $key => $task ) {
 			if ( isset( $task['url'] ) ) {
 				// if url starts with #, we want to link internally. So we can just return the url.
-				if ( strpos( $task['url'], '#' ) === 0 ) {
+				if ( str_starts_with( $task['url'], '#' ) ) {
 					continue;
 				}
 				// if url starts with https://, it's not a link to burst-statistics, but to an external website.
@@ -381,7 +381,6 @@ class Tasks {
 			$func   = str_replace( '!', '', $func );
 			$invert = true;
 		}
-
 		if ( str_contains( $func, 'wp_option_' ) ) {
 			$output = get_option( str_replace( 'wp_option_', '', $func ) ) !== false;
 		} else {

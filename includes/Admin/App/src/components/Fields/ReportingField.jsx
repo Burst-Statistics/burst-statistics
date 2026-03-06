@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect } from 'react';
+import React, {  useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import ButtonInput from '@/components/Inputs/ButtonInput';
@@ -19,7 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getReportsData } from '@/api/getReportsData';
 import EmptyDataTable from '@/components/Statistics/EmptyDataTable';
 
-const ReportingField = forwardRef( ({ field, fieldState, help, context, ...props }) => {
+const ReportingField = ({ field, fieldState, help, context, ...props }) => {
 	const inputId = props.id || field.name;
 
 	const { data, isFetching } = useQuery({
@@ -168,7 +168,7 @@ const ReportingField = forwardRef( ({ field, fieldState, help, context, ...props
 						__( 'This report is active and will be sent on schedule. Toggle to pause.', 'burst-statistics' ) :
 						__( 'This report is paused. Toggle to activate and resume scheduled sending.', 'burst-statistics' )
 					}>
-						<div>
+						<div className="report-activate-toggle">
 							<SwitchInput
 								onChange={() => toggleReportActive( row.id )}
 								checked={row.enabled}
@@ -282,7 +282,7 @@ const ReportingField = forwardRef( ({ field, fieldState, help, context, ...props
 			</AnimatePresence>
 		</>
 	);
-});
+};
 
 ReportingField.displayName = 'ReportingField';
 

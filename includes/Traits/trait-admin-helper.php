@@ -29,6 +29,10 @@ trait Admin_Helper {
 			return burst_loader()->user_can_view;
 		}
 
+		if ( defined( 'BURST_TELEMETRY_SENDING' ) && BURST_TELEMETRY_SENDING ) {
+			return burst_loader()->user_can_view = true;
+		}
+
 		if ( ! is_user_logged_in() ) {
 			return burst_loader()->user_can_view = false;
 		}
@@ -132,7 +136,7 @@ trait Admin_Helper {
 		$valid           = false;
 		$current_time    = time();
 		foreach ( $existing_tokens as $key => $token_data ) {
-			if ( $token_data['expires'] < $current_time ) {
+			if ( $token_data['expires'] !== 0 && $token_data['expires'] < $current_time ) {
 				// Token expired, remove it.
 				unset( $existing_tokens[ $key ] );
 				continue;
@@ -261,7 +265,8 @@ trait Admin_Helper {
 				'installed_by'                => get_site_option( 'teamupdraft_installation_source_burst-statistics', '' ),
 
 				// URLs and endpoints.
-				'site_url'                    => get_rest_url(),
+				'rest_url'                    => get_rest_url(),
+				'site_url'                    => get_site_url(),
 				'admin_ajax_url'              => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
 				'dashboard_url'               => $this->admin_url( 'burst' ),
 				'network_link'                => network_site_url( 'plugins.php' ),

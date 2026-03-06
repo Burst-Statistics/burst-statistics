@@ -37,17 +37,22 @@ class Data_Sharing {
 
 	private int $last_send;
 
-	private bool $first_send;
+	private array $api_urls = [
+		'production' => 'https://api.burst-statistics.com/v2/telemetry',
+		'staging'    => 'http://localhost:3000/v2/telemetry',
+	];
 
 	/**
-	 * Get API URL for data sharing
+	 * Get API URL for data sharing.
+	 *
+	 * @return string The API URL to send telemetry data to
 	 */
 	private function get_api_url(): string {
 		if ( wp_get_environment_type() === 'production' ) {
-			return 'https://api.burst-statistics.com/v1/telemetry';
+			return $this->api_urls['production'];
 		}
 
-		return 'http://localhost:3000/v1/telemetry';
+		return $this->api_urls['staging'];
 	}
 
 	/**
@@ -90,6 +95,10 @@ class Data_Sharing {
 			return;
 		}
 
+		if ( ! defined( 'BURST_TELEMETRY_SENDING' ) ) {
+			define( 'BURST_TELEMETRY_SENDING', true );
+		}
+
 		$this->current_send_time = time();
 
 		if ( ! $this->check_kill_switch() ) {
@@ -102,10 +111,8 @@ class Data_Sharing {
 		$one_month_ago   = strtotime( '-1 month' );
 
 		if ( $this->last_send === 0 ) {
-			$this->first_send        = true;
 			$this->capture_data_from = $one_month_ago;
 		} else {
-			$this->first_send        = false;
 			$this->capture_data_from = $this->last_send + 1;
 		}
 
@@ -113,7 +120,7 @@ class Data_Sharing {
 			return;
 		}
 
-		$aggregation = new Data_Aggregation( $this->capture_data_from, $this->current_send_time, $this->first_send );
+		$aggregation = new Data_Aggregation( $this->capture_data_from, $this->current_send_time );
 
 		try {
 			$aggregation->send_to_api( $this->get_api_url() );
@@ -139,20 +146,22 @@ class Data_Sharing {
 	 * @return array Response from the API
 	 */
 	public function send_test_telemetry( ?string $custom_endpoint = null ): array {
+		if ( ! defined( 'BURST_TELEMETRY_SENDING' ) ) {
+			define( 'BURST_TELEMETRY_SENDING', true );
+		}
+
 		$this->current_send_time = time();
 		$one_month_ago           = strtotime( '-1 month' );
 
 		$this->last_send = get_option( 'burst_last_telemetry_send', 0 );
 
 		if ( $this->last_send === 0 ) {
-			$this->first_send        = true;
 			$this->capture_data_from = $one_month_ago;
 		} else {
-			$this->first_send        = false;
 			$this->capture_data_from = $this->last_send + 1;
 		}
 
-		$aggregation = new Data_Aggregation( $this->capture_data_from, $this->current_send_time, $this->first_send, true );
+		$aggregation = new Data_Aggregation( $this->capture_data_from, $this->current_send_time, true );
 
 		try {
 			// Use custom endpoint if provided, otherwise use default.

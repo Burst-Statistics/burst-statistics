@@ -45,19 +45,23 @@ const Settings = ({ currentSettingPage }) => {
 						setting.group_id === group.id
 				)
 				.map( ( setting ) => {
-					if ( ! setting.react_conditions ) {
-						return setting;
-					}
 
-					const conditionsMet = Object.entries( setting.react_conditions )
-						.filter( ([ field ]) => 'action' !== field )
-						.every(
-							([ field, allowedValues ]) => {
+					/**
+					 * Evaluates a conditions map against the current watched form values.
+					 * Returns true when every condition in the map is satisfied.
+					 *
+					 * @param {Object} conditions - Key-value condition pairs (field => expected value).
+					 * @param {string[]} skipKeys  - Keys to skip during evaluation (e.g. 'action').
+					 * @return {boolean}
+					 */
+					const evaluateConditions = ( conditions, skipKeys = []) =>
+						Object.entries( conditions )
+							.filter( ([ field ]) => ! skipKeys.includes( field ) )
+							.every( ([ field, allowedValues ]) => {
 								let value = watchedValues?.[field] ?? initialDefaultValues[field];
 
-								//check if allowedValues is a boolean.
 								if ( 'boolean' === typeof allowedValues ) {
-									value = 1 === value || true ===  value || '1' === value;
+									value = 1 === value || true === value || '1' === value;
 								}
 								if ( ! Array.isArray( allowedValues ) ) {
 									return value === allowedValues;
@@ -67,27 +71,33 @@ const Settings = ({ currentSettingPage }) => {
 										( allowedValue ) =>
 											Array.isArray( allowedValue ) &&
 											value.length === allowedValue.length &&
-											value.every(
-												( val, index ) =>
-													val === allowedValue[index]
-											)
+											value.every( ( val, index ) => val === allowedValue[index])
 									);
 								}
 								return allowedValues.includes( value );
-							}
-						);
+							});
 
-					const action = setting.react_conditions.action || 'hide';
+					let resolvedSetting = setting;
 
-					if ( 'disable' === action ) {
-						return {
-							...setting,
-							disabled: ! conditionsMet
-						};
+					if ( setting.react_conditions ) {
+						const conditionsMet = evaluateConditions( setting.react_conditions, [ 'action' ]);
+						const action = setting.react_conditions.action || 'hide';
+
+						if ( 'disable' === action ) {
+							resolvedSetting = { ...resolvedSetting, disabled: ! conditionsMet };
+						} else if ( ! conditionsMet ) {
+
+							// Default action is 'hide'.
+							return null;
+						}
 					}
 
-					// Default action is 'hide'
-					return conditionsMet ? setting : null;
+					if ( setting.recommended_conditions ) {
+						const isRecommended = evaluateConditions( setting.recommended_conditions );
+						resolvedSetting = { ...resolvedSetting, recommended: isRecommended };
+					}
+
+					return resolvedSetting;
 				})
 				.filter( Boolean );
 

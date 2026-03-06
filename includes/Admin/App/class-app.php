@@ -57,9 +57,8 @@ class App {
 		add_action( 'burst_weekly_clear_referrers_cron', [ $this, 'weekly_clear_referrers_table' ] );
 		add_action( 'burst_weekly_clear_spam_browsers_cron', [ $this, 'weekly_clear_spam_browsers' ] );
 		add_action( 'burst_daily', [ $this, 'maybe_update_plugin_path' ] );
-		$this->menu   = new Menu();
-		$this->fields = new Fields();
-
+		$this->menu             = new Menu();
+		$this->fields           = new Fields();
 		$this->reporting_fields = new Reporting_Fields();
 		$this->reporting_fields->init();
 
@@ -214,22 +213,13 @@ class App {
 		);
 
 		// Get menu configuration and create submenu items dynamically.
-		$menu_config = $this->get_menu_config();
+		$menu_config = $this->menu->get();
 		$this->create_submenu_items( $menu_config );
 
 		// Add "Upgrade to Pro" menu item if not Pro version.
 		$this->add_upgrade_menu_item();
 
 		add_action( "admin_print_scripts-{$page_hook_suffix}", [ $this, 'plugin_admin_scripts' ], 1 );
-	}
-
-	/**
-	 * Get menu configuration from config file
-	 *
-	 * @return array<int, array<string, mixed>> Menu configuration array
-	 */
-	private function get_menu_config(): array {
-		return $this->menu->get();
 	}
 
 	/**
@@ -1020,10 +1010,13 @@ class App {
 				$option_id = sanitize_text_field( $task['fix'] );
 				$task_id   = sanitize_text_field( $task['id'] );
 				// should start with burst_ .
-				if ( strpos( $option_id, 'burst_' ) === 0 ) {
+				if ( str_starts_with( $option_id, 'burst_option_' ) ) {
+					$burst_option_id = str_replace( 'burst_option_', '', $option_id );
+					$this->update_option( $burst_option_id, true );
+				} elseif ( str_starts_with( $option_id, 'burst_' ) ) {
 					update_option( $option_id, true );
+					wp_schedule_single_event( time(), 'burst_scheduled_task_fix_' . $task_id );
 				}
-				wp_schedule_single_event( time(), 'burst_scheduled_task_fix' );
 
 				\Burst\burst_loader()->admin->tasks->dismiss_task( $task_id );
 				break;

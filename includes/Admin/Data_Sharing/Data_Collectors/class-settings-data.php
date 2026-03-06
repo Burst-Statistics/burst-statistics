@@ -6,8 +6,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use Burst\Pro\Admin\Licensing\License_Info;
-use Burst\Pro\Admin\Licensing\Licensing;
 use Burst\Traits\Helper;
 
 /**
@@ -20,14 +18,7 @@ class Settings_Data extends Data_Collector {
 	 * Collect data from the settings
 	 */
 	public function collect_data(): array {
-		if ( ! defined( 'BURST_PRO' ) ) {
-			$license_status = 'free';
-		} else {
-			$licensing      = new Licensing();
-			$license_status = $licensing->get_license_status();
-			$license_status = empty( $license_status ) ? '' : $license_status;
-		}
-
+		$license_status            = apply_filters( 'burst_data_sharing_license_status', 'free' );
 		$burst_activation_time_pro = get_option( 'burst_activation_time_pro', null );
 
 		if ( empty( $burst_activation_time_pro ) ) {
@@ -113,11 +104,6 @@ class Settings_Data extends Data_Collector {
 	 * Get the subscription tier
 	 */
 	private function get_subscription_tier(): string {
-		if ( ! defined( 'BURST_PRO' ) ) {
-			return 'free';
-		}
-
-		$license_info = new License_Info();
-		return $license_info->tier;
+		return apply_filters( 'burst_data_sharing_subscription_tier', 'free' );
 	}
 }
