@@ -7,7 +7,7 @@ test('data sharing endpoint should accept and validate test data without storing
     await login(page);
 
     await wpCli('config set BURST_CI_ACTIVE true --type=constant');
-    
+
     // Execute the test telemetry send via WP-CLI command
     const result = await wpCli('burst send_test_telemetry --endpoint="https://api.burst-statistics.com/v2/telemetry"');
 
