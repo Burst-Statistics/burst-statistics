@@ -6,7 +6,7 @@ Requires at least: 6.4
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 6.9
-Stable tag: 3.2.0
+Stable tag: 3.2.1
 
 Analytics you'll actually use. Privacy-friendly, zero config, and designed to be actionable. Get insights, not just raw data.
 
@@ -201,6 +201,14 @@ Absolutely! Both free and premium plugins can be managed with Composer. Read the
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.2.1 =
+* March 9th 2026
+* Improvement: set turbo default to enabled, and add notice to recommend enabling it when cookieless tracking is enabled.
+* Improvement: check if PharData class is installed on the server to prevent fatal errors.
+* Fix: Store scheme for usage during cron jobs. During cron, the site_url is http. For the javascript generation, we need it to reflect the actual scheme, usually https.
+* Fix: duplicate fields in the reporting settings when the share link is opened by an admin user.
+* Fix: url not found warning when classic premium report is generated.
+
 = 3.2.0 =
 * February 25rd 2026
 * New: anonymously share data to help us improve Burst Statistics: build industry benchmarks, targeted feature development, and performance improvements.
