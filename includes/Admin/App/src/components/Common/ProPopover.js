@@ -46,7 +46,7 @@ const ProPopover = ({
 						<div className="space-y-2">
 							{bulletPoints.map( ({ text, icon }) => (
 								<div
-									key={text}
+									key={'bullet-' + text}
 									className="flex items-center gap-3"
 								>
 									<div className="flex h-5 w-5 flex-shrink-0 items-center justify-center">

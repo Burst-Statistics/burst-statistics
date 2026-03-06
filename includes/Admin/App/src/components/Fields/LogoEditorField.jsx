@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef } from 'react';
+import React, { useRef } from 'react';
 import { __ } from '@wordpress/i18n';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import Icon from '@/utils/Icon';
@@ -18,7 +18,7 @@ import {useAttachmentUrl} from '@/hooks/useAttachmentUrl';
  * @param {Object} props      - Additional props from react-hook-form's Controller.
  * @return {JSX.Element}
  */
-const LogoEditorField = forwardRef(
+const LogoEditorField =
 	({ field, fieldState, label, help, className, ...props }) => {
 
 		// onChange to update the field value (attachment ID)
@@ -108,8 +108,7 @@ const LogoEditorField = forwardRef(
 				</ButtonInput>
 			</FieldWrapper>
 		);
-	}
-);
+	};
 
 LogoEditorField.displayName = 'LogoEditorField';
 

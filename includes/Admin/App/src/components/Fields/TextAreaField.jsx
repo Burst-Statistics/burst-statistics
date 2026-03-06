@@ -1,11 +1,10 @@
-import { forwardRef } from 'react';
 import TextAreaInput from '@/components/Inputs/TextAreaInput';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 
 /**
  * TextAreaField component
  */
-const TextAreaField = forwardRef(
+const TextAreaField =
 	({ field, fieldState, label, help, context, className, ...props }) => {
 		const inputId = props.id || field.name;
 
@@ -30,8 +29,7 @@ const TextAreaField = forwardRef(
 				/>
 			</FieldWrapper>
 		);
-	}
-);
+	};
 
 TextAreaField.displayName = 'TextAreaField';
 export default TextAreaField;

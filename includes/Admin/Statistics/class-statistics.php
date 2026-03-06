@@ -1424,7 +1424,6 @@ class Statistics {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		global $wpdb;
 		$charset_collate = $wpdb->get_charset_collate();
-		update_option( 'burst_last_db_upgrade_finished_time', time(), false );
 		// Create tables without indexes first.
 		$tables = [
 			'burst_statistics'       => "CREATE TABLE {$wpdb->prefix}burst_statistics (
@@ -1665,7 +1664,7 @@ class Statistics {
 					'max_execution_time' => $execution_time,
 					'min_execution_time' => $execution_time,
 					'execution_count'    => 1,
-					'last_updated'       => current_time( 'mysql' ),
+					'last_updated'       => time(),
 				],
 				[ '%s', '%s', '%f', '%f', '%f', '%d', '%s' ]
 			);

@@ -67,7 +67,7 @@ const PatternLegend = memo(
 
 					return (
 						<g
-							key={item.id}
+							key={index + item.id}
 							className="legend-item"
 							transform={`translate(0, ${itemY})`}
 						>

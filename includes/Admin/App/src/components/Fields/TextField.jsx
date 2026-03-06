@@ -14,7 +14,7 @@ import FieldWrapper from '@/components/Fields/FieldWrapper';
  * @return {JSX.Element}
  */
 const TextField = forwardRef(
-	({ field, fieldState, label, help, context, className, ...props }) => {
+	({ field, fieldState, label, help, context, className, ...props }, ref ) => {
 		const inputId = props.id || field.name;
 		return (
 			<FieldWrapper
@@ -33,6 +33,7 @@ const TextField = forwardRef(
 					id={inputId}
 					type="text"
 					aria-invalid={!! fieldState?.error?.message}
+					ref={ref}
 					{...field}
 					{...props}
 				/>

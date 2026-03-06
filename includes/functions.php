@@ -20,7 +20,7 @@ if ( ! function_exists( '\Burst\burst_is_logged_in_rest' ) && ! function_exists(
 		}
 
 		// Only now ask WP about the user (may hit usermeta once).
-		$memo = is_user_logged_in();
+		$memo = is_user_logged_in() && current_user_can( 'view_burst_statistics' );
 		return $memo;
 	}
 }

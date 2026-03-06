@@ -65,7 +65,7 @@ export const ContentListView = () => {
 
 					return (
 						<Reorder.Item
-							key={block.id}
+							key={index + block.id}
 							value={block}
 							className="group relative"
 							initial={{ opacity: 0, y: -10 }}

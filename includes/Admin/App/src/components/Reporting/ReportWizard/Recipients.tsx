@@ -77,10 +77,6 @@ export const Recipients = () => {
 				fullWidthContent
 				className="burst-reporting-wizard-gutter !pt-0 mt-5"
 			>
-				<p className="text-black text-md font-semibold">
-					{__( 'Recipients', 'burst-statistics' )}
-				</p>
-
 				<div className="mt-3">
 					<EmailSelectInput
 						value={emails}

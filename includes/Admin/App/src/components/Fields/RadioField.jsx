@@ -1,4 +1,3 @@
-import { forwardRef } from 'react';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import RadioInput from '@/components/Inputs/RadioInput';
 import RecommendBadge from '@/components/Common/RecommendBadge';
@@ -19,7 +18,7 @@ import RecommendBadge from '@/components/Common/RecommendBadge';
  * @param {Object}  options    - Radio options as key-value pairs or objects with label, context, and recommended flag.
  * @return {JSX.Element}
  */
-const RadioField = forwardRef(
+const RadioField =
 	(
 		{
 			field,
@@ -96,8 +95,8 @@ const RadioField = forwardRef(
 				</div>
 			</FieldWrapper>
 		);
-	}
-);
+	};
+
 
 RadioField.displayName = 'RadioField';
 

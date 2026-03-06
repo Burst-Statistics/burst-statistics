@@ -190,7 +190,7 @@ const REPORT_LOG_STATUS_CONFIG: Record<
 const STEPS: WizardStep[] = [
 	{ number: 1, label: __( 'Create', 'burst-statistics' ), fields: [ 'create' ] },
 	{ number: 2, label: __( 'Edit', 'burst-statistics' ), fields: [ 'editContent' ] },
-	{ number: 3, label: __( 'Schedule', 'burst-statistics' ), fields: [ 'recipients' ] },
+	{ number: 3, label: __( 'Recipients', 'burst-statistics' ), fields: [ 'recipients' ] },
 	{ number: 4, label: __( 'Review', 'burst-statistics' ), fields: [ 'reportName' ] }
 ];
 

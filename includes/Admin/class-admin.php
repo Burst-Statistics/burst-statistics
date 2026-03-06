@@ -75,7 +75,7 @@ class Admin {
 		add_action( 'burst_daily', [ $this, 'validate_tasks' ] );
 		add_action( 'burst_validate_tasks', [ $this, 'validate_tasks' ] );
 		add_action( 'plugins_loaded', [ $this, 'init_wpcli' ] );
-		add_action( 'burst_scheduled_task_fix', [ $this, 'clean_malicious_data' ] );
+		add_action( 'burst_scheduled_task_fix_malicious_data_removal', [ $this, 'clean_malicious_data' ] );
 		add_action( 'burst_daily', [ $this, 'test_database_tables' ] );
 		add_action( 'burst_attempt_database_fix', [ $this, 'test_database_tables' ] );
 		add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
@@ -88,6 +88,8 @@ class Admin {
 		add_action( 'burst_recalculate_first_time_visits_cron', [ $this, 'recalculate_first_time_visits' ] );
 
 		add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
+
+		$this->maybe_update_site_scheme();
 
 		$upgrade = new Upgrade();
 		$upgrade->init();
@@ -138,6 +140,21 @@ class Admin {
 		$share = new Share();
 		$share->init();
 	}
+
+	/**
+	 * Persist the detected SSL scheme so cron requests can use it as a fallback.
+	 * Only runs outside of cron, where is_ssl() is reliable.
+	 */
+	private function maybe_update_site_scheme(): void {
+		if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+			return;
+		}
+		$detected_scheme = is_ssl() ? 'https' : 'http';
+		if ( get_option( 'burst_site_scheme' ) !== $detected_scheme ) {
+			update_option( 'burst_site_scheme', $detected_scheme, false );
+		}
+	}
+
 
 	/**
 	 * Cron to update the last 10 minutes of user data for bounces and first_time_visits.
@@ -891,6 +908,7 @@ class Admin {
 			update_option( 'burst_activation_time', time(), false );
 			update_option( 'burst_last_cron_hit', time(), false );
 			$this->update_option( 'combine_vars_and_script', true );
+			$this->update_option( 'enable_turbo_mode', true );
 			$this->create_js_file();
 
 			$this->tasks->add_initial_tasks();
@@ -957,7 +975,7 @@ class Admin {
 	 * @return array<int, string> Array of menu links HTML
 	 */
 	private function get_menu_links_from_config(): array {
-		$menu_config = $this->get_menu_config();
+		$menu_config = $this->app->menu->get();
 		$menu_links  = [];
 
 		foreach ( $menu_config as $menu_item ) {
@@ -983,15 +1001,6 @@ class Admin {
 		}
 
 		return $menu_links;
-	}
-
-	/**
-	 * Get menu configuration from config file
-	 *
-	 * @return array<int, array<string, mixed>> Menu configuration array
-	 */
-	private function get_menu_config(): array {
-		return $this->app->menu->get();
 	}
 
 	/**

@@ -910,8 +910,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		return null;
 	}
 
-	const siteUrl = window.burst_admin?.site_url || window.location.origin;
-
+	const siteUrl = window.burst_settings?.site_url || window.location.origin;
 	const safeDomain = new URL( siteUrl ).hostname
 		.replace( /\./g, '-' )
 		.replace( /[^a-zA-Z0-9-]/g, '' );

@@ -240,7 +240,7 @@ trait Sanitize {
 			$sanitized_report          = [];
 			$sanitized_report['email'] = sanitize_email( $report['email'] );
 			if ( isset( $report['frequency'] ) ) {
-				$sanitized_report['frequency'] = sanitize_text_field( $report['frequency'] );
+				$sanitized_report['frequency'] = $this->sanitize_interval( $report['frequency'] );
 			}
 			$sanitized_email_reports[] = $sanitized_report;
 		}
@@ -305,7 +305,7 @@ trait Sanitize {
 	 * @return string Sanitized user ID.
 	 */
 	public function sanitize_uid( ?string $uid ): string {
-		if ( $uid === null || strlen( $uid ) === 0 || ! preg_match( '/^[a-z0-9-]*/', $uid ) ) {
+		if ( $uid === null || strlen( $uid ) === 0 || ! preg_match( '/^[a-z0-9-]+$/', $uid ) ) {
 			return '';
 		}
 
@@ -319,7 +319,7 @@ trait Sanitize {
 	 * @return string Sanitized fingerprint.
 	 */
 	public function sanitize_fingerprint( ?string $fingerprint ): string {
-		if ( $fingerprint === null || strlen( $fingerprint ) === 0 || ! preg_match( '/^[a-z0-9-]*/', $fingerprint ) ) {
+		if ( $fingerprint === null || strlen( $fingerprint ) === 0 || ! preg_match( '/^[a-z0-9-]+$/', $fingerprint ) ) {
 			return '';
 		}
 

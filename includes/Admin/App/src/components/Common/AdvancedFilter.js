@@ -105,9 +105,9 @@ const AdvancedFilter = ({ isOpen, setIsOpen }) => {
 							return (
 								<div
 									className="basis-1/2 max-w-[200px]"
-									key={key}
+									key={'text-filter-chip' + key}
 								>
-									<label key={key} className="flex flex-col">
+									<label className="flex flex-col">
 										{conf.label}
 									</label>
 									<input
@@ -150,14 +150,13 @@ const AdvancedFilter = ({ isOpen, setIsOpen }) => {
 							return (
 								<div
 									className="basis-1/2 max-w-[200px]"
-									key={key}
+									key={'select-filter-chip-' + key}
 								>
-									<label key={key} className="flex flex-col">
+									<label className="flex flex-col">
 										{conf.label}
 									</label>
 									<select
 										disabled={conf.pro && ! isLicenseValid}
-										key={key}
 										value={tempFilters[key] || -1}
 										onChange={( e ) =>
 											updateTempFilters(
@@ -180,7 +179,7 @@ const AdvancedFilter = ({ isOpen, setIsOpen }) => {
 										</option>
 										{options.map( ( option ) => (
 											<option
-												key={option.id}
+												key={'option-filter-' + option.id}
 												value={option.id}
 											>
 												{option.title}

@@ -112,7 +112,7 @@ export const NameInput = () => {
 					isDefault ? 'text-gray-500 italic' : 'text-black'
 				)}
 			>
-				<span className="truncate">{displayName}</span>
+				<span className="truncate burst-report-name-input">{displayName}</span>
 				<Icon
 					name="pencil"
 					size={14}

@@ -3381,10 +3381,6 @@ input[type=radio]:checked::before {
   border-radius: 0.25rem;
 }
 
-#burst-statistics .rounded-2xl {
-  border-radius: 1rem;
-}
-
 #burst-statistics .rounded-\[9px\] {
   border-radius: 9px;
 }
@@ -4741,6 +4737,10 @@ input[type=radio]:checked::before {
 #burst-statistics .ordinal {
   --tw-ordinal: ordinal;
   font-variant-numeric: var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction);
+}
+
+#burst-statistics .leading-5 {
+  line-height: 1.25rem;
 }
 
 #burst-statistics .leading-\[1\.5\] {
@@ -8938,10 +8938,6 @@ a.burst-button,
 
   #burst-statistics .sm\:block {
     display: block;
-  }
-
-  #burst-statistics .sm\:w-64 {
-    width: 16rem;
   }
 
   #burst-statistics .sm\:grid-cols-2 {

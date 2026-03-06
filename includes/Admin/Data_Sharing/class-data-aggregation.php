@@ -30,17 +30,14 @@ class Data_Aggregation {
 
 	private int $capture_data_to;
 
-	private bool $first_send;
-
 	private bool $is_test;
 
 	/**
 	 * Constructor
 	 */
-	public function __construct( int $capture_data_from, int $capture_data_to, bool $first_send, bool $is_test = false ) {
+	public function __construct( int $capture_data_from, int $capture_data_to, bool $is_test = false ) {
 		$this->capture_data_from = $capture_data_from;
 		$this->capture_data_to   = $capture_data_to;
-		$this->first_send        = $first_send;
 		$this->is_test           = $is_test;
 		$this->site_hash         = $this->generate_site_hash();
 
@@ -53,8 +50,7 @@ class Data_Aggregation {
 	private function register_collectors(): void {
 		$this->collectors = [
 			'settings'      => new Settings_Data(),
-			// For goals, if it's the first send, capture all historical data. -1 will remove date_start filter.
-			'goals'         => new Goals_Data( $this->first_send ? -1 : $this->capture_data_from, $this->capture_data_to ),
+			'goals'         => new Goals_Data(),
 			'environment'   => new Environment_Data(),
 			'email_reports' => new Reports_Data( $this->capture_data_from ),
 			'metrics'       => new Metrics_Data( $this->capture_data_from, $this->capture_data_to ),

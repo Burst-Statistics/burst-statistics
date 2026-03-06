@@ -61,13 +61,15 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 		define( 'BURST_PATH', defined( 'BURST_PRO_FILE' ) ? dirname( BURST_PRO_FILE ) . '/' : dirname( BURST_FREE_FILE ) . '/' );
 
 		$plugin_url = plugin_dir_url( BURST_FILE );
-		$scheme     = ( str_starts_with( site_url(), 'https://' ) ) ? 'https' : 'http';
-		$plugin_url = set_url_scheme( $plugin_url, $scheme );
+		// Use stored scheme as fallback for cron contexts where is_ssl() and home_url() are unreliable.
+		$stored_scheme = get_option( 'burst_site_scheme', 'http' );
+		$scheme        = ( is_ssl() || str_starts_with( home_url(), 'https://' ) || $stored_scheme === 'https' ) ? 'https' : 'http';
+		$plugin_url    = set_url_scheme( $plugin_url, $scheme );
 		define( 'BURST_URL', $plugin_url );
 		define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 		define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 		define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
-		define( 'BURST_VERSION', '3.2.0' );
+		define( 'BURST_VERSION', '3.2.1' );
 		define( 'BURST_PUBLIC_KEY', 'bst_7k9mQpX2vL4nWzR8jYhF6tGcU5eBxN3dS1aM0iKoHgJfVq' );
 		// deprecated constant.
         //phpcs:ignore

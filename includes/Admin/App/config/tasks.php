@@ -165,4 +165,21 @@ return [
 		'dismissible' => true,
 		'plusone'     => false,
 	],
+	[
+		'id'          => 'opt-in-sharing',
+		'msg'         => __( 'Help us build better features, prioritize integrations, and improve recommendations by sharing anonymous usage data. We never collect personal information, your site URL, or IP addresses. Everything stays completely anonymous.', 'burst-statistics' ),
+		'icon'        => 'new',
+		'fix'         => 'burst_option_anonymous_usage_data',
+		'dismissible' => true,
+		'plusone'     => false,
+	],
+	[
+		'id'          => 'turbo_mode_recommended',
+		'msg'         => __( 'You have cookieless tracking enabled, but Turbo mode is not enabled on your site. For best performance results, we recommend to enable Turbo mode.', 'burst-statistics' ),
+		'icon'        => 'warning',
+		'dismissible' => true,
+		'plusone'     => false,
+		'url'         => 'definition/turbo-mode/',
+		'fix'         => 'burst_option_enable_turbo_mode',
+	],
 ];

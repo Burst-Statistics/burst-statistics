@@ -75,7 +75,6 @@ export const BlockSettingsSidebar: React.FC<BlockSettingsSidebarProps> = ({ repo
 	if ( ! block ) {
 		return null;
 	}
-console.log( 'block ', block );
 	return (
 		<motion.div
 			initial={{ opacity: 0, x: 20 }}

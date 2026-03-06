@@ -82,16 +82,16 @@ const Header = () => {
 	const supportUrl = ! isPro ?
 		'https://wordpress.org/support/plugin/burst-statistics/' :
 		burst_get_website_url( '/support/', {
-				utm_source: 'header',
-				utm_content: 'support'
-			});
+			utm_source: 'header',
+			utm_content: 'support'
+		});
 
 	const upgradeUrl = isPro ?
 		false :
 		burst_get_website_url( '/pricing/', {
-				utm_source: 'header',
-				utm_content: 'upgrade-to-pro'
-			});
+			utm_source: 'header',
+			utm_content: 'upgrade-to-pro'
+		});
 
 	// load the chunk translations passed to us from the burst_settings object.
 	// only works in build mode, not in dev mode.
@@ -120,62 +120,64 @@ const Header = () => {
 					{isWhiteLabel && ! isLoading && attachmentUrl ? (
 						<img alt="logo" src={attachmentUrl} className="h-11 w-auto px-0 py-2" />
 					) : isShareableLinkViewer ? (
-							<a
-								href={burst_get_website_url( '', {
-									utm_source: 'share-link',
-									utm_medium: 'header',
-									utm_campaign: 'free-branding'
-								})}
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								<Logo className="h-11 w-auto px-0 py-2"/>
-							</a>
-					) : (
+
+						<a href={burst_get_website_url( '', {
+						utm_source: 'share-link',
+						utm_medium: 'header',
+						utm_campaign: 'free-branding'
+					})}
+						target="_blank"
+						rel="noopener noreferrer"
+						>
+						<Logo className="h-11 w-auto px-0 py-2"/>
+						</a>
+						) : (
 						<Link className="flex gap-3 align-middle" from="/" to="/">
-							<Logo className="h-11 w-auto px-0 py-2"/>
+						<Logo className="h-11 w-auto px-0 py-2"/>
 						</Link>
-					)}
+						)}
 				</div>
 
 				<div className="hidden md:flex items-center flex-1">
 					{
 						leftMenuItems.map( ( menuItem ) => (
 							<MenuItemLink
-								key={menuItem.id}
+								key={'menu-item-link' + menuItem.id}
 								menuItem={menuItem}
 								linkClassName={linkClassName}
 								activeClassName={activeClassName}
 								isTrial={isTrial}
-						/>
+							/>
 						) )
 					}
 				</div>
-                { isShareableLinkViewer && ! isWhiteLabel && (
-                    <div className="flex items-center gap-4">
-                        <TransparencyModal />
-                        <a
-                            href={burst_get_website_url( '', {
-                                utm_source: 'share-link',
-                                utm_medium: 'header',
-                                utm_campaign: 'free-branding'
-                            })}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-light rounded-lg border border-primary/20 hover:border-primary/40 transition-all duration-200"
-                        >
-							<span className="text-sm font-medium text-gray-700">
+
+				{ isShareableLinkViewer && ! isWhiteLabel && (
+					<div className="flex items-center gap-4">
+						<TransparencyModal />
+
+						<a href={burst_get_website_url( '', {
+						utm_source: 'share-link',
+						utm_medium: 'header',
+						utm_campaign: 'free-branding'
+					})}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-light rounded-lg border border-primary/20 hover:border-primary/40 transition-all duration-200"
+						>
+						<span className="text-sm font-medium text-gray-700">
 								Data collected with <span className="text-primary font-semibold">Burst Statistics</span>
 							</span>
-                        </a>
-                    </div>
-                )}
+					</a>
+					</div>
+					)}
+
 				<div className="overflow-x-auto scrollbar-hide md:hidden">
 					<div className="flex flex-1 items-center animate-scrollIndicator">
 						{
 							leftMenuItems.map( ( menuItem ) => (
 								<MenuItemLink
-									key={menuItem.id}
+									key={'menu-item-link-' + menuItem.id}
 									menuItem={menuItem}
 									linkClassName={linkClassName}
 									activeClassName={activeClassName}
@@ -188,7 +190,7 @@ const Header = () => {
 							! isShareableLinkViewer && (
 								rightMenuItems.map( ( menuItem ) => (
 									<MenuItemLink
-										key={menuItem.id}
+										key={'menu-item-link' + menuItem.id}
 										menuItem={menuItem}
 										linkClassName={linkClassName}
 										activeClassName={activeClassName}
@@ -200,14 +202,14 @@ const Header = () => {
 					</div>
 				</div>
 
-                {
+				{
 					! isShareableLinkViewer && (
 						<div className="flex items-center gap-2.5 lg:gap-5">
 							<div className="hidden md:flex">
 								{
 									rightMenuItems.map( ( menuItem ) => (
 										<MenuItemLink
-											key={menuItem.id}
+											key={'menu-item-link-' + menuItem.id}
 											menuItem={menuItem}
 											linkClassName={linkClassName}
 											activeClassName={activeClassName}
@@ -247,6 +249,7 @@ const Header = () => {
 const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => {
 	const linkRef = useRef( null );
 	const [ isActiveState, setIsActiveState ] = useState( false );
+	const isActiveRef = useRef( false );
 	const searchParams = useSearch({ strict: false });
 
 	// Get saved filters from Zustand store (persisted across routes).
@@ -293,33 +296,31 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => 
 		return filterParams;
 	}, [ searchParams, isTargetFilterEnabled, savedFilters ]);
 
+	// Sync isActiveRef to state after each render.
+	useEffect( () => {
+		if ( isActiveRef.current !== isActiveState ) {
+			setIsActiveState( isActiveRef.current );
+		}
+	}, [ isActiveState ]);
+
+	// Scroll active menu item into view after activation.
 	useEffect( () => {
 		if ( isActiveState && linkRef.current ) {
 			const el = linkRef.current;
-
-			// Scroll after a slight delay (same behavior as before)
 			const t = setTimeout( () => {
-				el.scrollIntoView({
-					behavior: 'smooth',
-					inline: 'center'
-				});
+				el.scrollIntoView({ behavior: 'smooth', inline: 'center' });
 			}, 1500 );
-
 			return () => clearTimeout( t );
 		}
 	}, [ isActiveState ]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	return (
 		<Link
-			key={menuItem.id}
 			from="/"
 			ref={linkRef}
 			onClick={( event ) => {
 				const link = event.currentTarget;
-				link.scrollIntoView({
-					behavior: 'smooth',
-					inline: 'center'
-				});
+				link.scrollIntoView({ behavior: 'smooth', inline: 'center' });
 			}}
 			to={targetUrl}
 			params={{
@@ -339,10 +340,8 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => 
 		>
 			{({ isActive }) => {
 
-				// Track active state in React state (valid)
-				if ( isActive !== isActiveState ) {
-					setIsActiveState( isActive );
-				}
+				// Update ref during render (safe - does not trigger a state update directly).
+				isActiveRef.current = isActive;
 
 				return (
 					<>
@@ -352,6 +351,7 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => 
 								type={isTrial ? 'icon' : 'badge'}
 								label={__( 'Pro', 'burst-statistics' )}
 								id={menuItem.id}
+								hasLink={false}
 							/>
 						)}
 					</>
@@ -361,7 +361,7 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => 
 	);
 };
 
-
+MenuItemLink.displayName = 'MenuItemLink';
 Header.displayName = 'Header';
 
 export default Header;

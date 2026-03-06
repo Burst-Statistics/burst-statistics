@@ -653,7 +653,6 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				if ( $now < $report->next_send_timestamp || $now > $report->next_send_timestamp + DAY_IN_SECONDS ) {
 					continue;
 				}
-
 				$this->send_report_instance( $report );
 			}
 		}

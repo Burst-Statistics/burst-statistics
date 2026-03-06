@@ -1,4 +1,3 @@
-import { forwardRef } from 'react';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import RadioButtonsInput from '@/components/Inputs/RadioButtonsInput';
 
@@ -15,7 +14,7 @@ import RadioButtonsInput from '@/components/Inputs/RadioButtonsInput';
  * @param {string} className  - Additional Tailwind CSS classes.
  * @return {JSX.Element}
  */
-const RadioButtonsField = forwardRef(
+const RadioButtonsField =
 	({ field, fieldState, label, help, context, className, ...props }) => {
 		const inputId = props.id || field.name;
 		return (
@@ -41,8 +40,7 @@ const RadioButtonsField = forwardRef(
 				/>
 			</FieldWrapper>
 		);
-	}
-);
+	};
 
 RadioButtonsField.displayName = 'RadioButtonsField';
 
