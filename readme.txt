@@ -203,7 +203,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 == Change log ==
 = 3.2.1 =
 * March 9th 2026
-* Security fix: Fixed a missing authorization check that allowed low-privilege users to manage reports. Props Sanjay Singh Jhala.
+* Security fix: Fixed a missing authorization check that allowed users with Burst View privilege to manage reports. Props Sanjay Singh Jhala.
 * Improvement: set turbo default to enabled, and add notice to recommend enabling it when cookieless tracking is enabled.
 * Improvement: check if PharData class is installed on the server to prevent fatal errors.
 * Fix: Store scheme for usage during cron jobs. During cron, the site_url is http. For the javascript generation, we need it to reflect the actual scheme, usually https.
