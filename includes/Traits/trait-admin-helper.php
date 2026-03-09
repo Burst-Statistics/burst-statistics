@@ -29,10 +29,6 @@ trait Admin_Helper {
 			return burst_loader()->user_can_view;
 		}
 
-		if ( defined( 'BURST_TELEMETRY_SENDING' ) && BURST_TELEMETRY_SENDING ) {
-			return burst_loader()->user_can_view = true;
-		}
-
 		if ( ! is_user_logged_in() ) {
 			return burst_loader()->user_can_view = false;
 		}

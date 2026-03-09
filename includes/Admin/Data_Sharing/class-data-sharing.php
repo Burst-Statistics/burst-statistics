@@ -95,10 +95,6 @@ class Data_Sharing {
 			return;
 		}
 
-		if ( ! defined( 'BURST_TELEMETRY_SENDING' ) ) {
-			define( 'BURST_TELEMETRY_SENDING', true );
-		}
-
 		$this->current_send_time = time();
 
 		if ( ! $this->check_kill_switch() ) {
@@ -146,10 +142,6 @@ class Data_Sharing {
 	 * @return array Response from the API
 	 */
 	public function send_test_telemetry( ?string $custom_endpoint = null ): array {
-		if ( ! defined( 'BURST_TELEMETRY_SENDING' ) ) {
-			define( 'BURST_TELEMETRY_SENDING', true );
-		}
-
 		$this->current_send_time = time();
 		$one_month_ago           = strtotime( '-1 month' );
 

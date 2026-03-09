@@ -203,11 +203,13 @@ We value your feedback. You can [submit a support request on the WordPress forum
 == Change log ==
 = 3.2.1 =
 * March 9th 2026
+* Security fix: Fixed a missing authorization check that allowed users with Burst View privilege to manage reports. Props Sanjay Singh Jhala.
 * Improvement: set turbo default to enabled, and add notice to recommend enabling it when cookieless tracking is enabled.
 * Improvement: check if PharData class is installed on the server to prevent fatal errors.
 * Fix: Store scheme for usage during cron jobs. During cron, the site_url is http. For the javascript generation, we need it to reflect the actual scheme, usually https.
 * Fix: duplicate fields in the reporting settings when the share link is opened by an admin user.
 * Fix: url not found warning when classic premium report is generated.
+* Fix: too strict use of sanitizers causing table prefixes to get lowercase. props @parkentosh
 
 = 3.2.0 =
 * February 25rd 2026

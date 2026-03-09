@@ -20,7 +20,12 @@ trait Database_Helper {
 	 */
 	protected function table_exists( string $table ): bool {
 		global $wpdb;
-		return (bool) $wpdb->query( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . sanitize_title( $table ) ) );
+		if ( ! in_array( $table, $this->get_table_list(), true ) ) {
+			self::error_log( "Table $table does not exist in predefined list." );
+			return false;
+		}
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated against known whitelist above.
+		return (bool) $wpdb->query( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . $table ) );
 	}
 
 	/**
@@ -29,11 +34,38 @@ trait Database_Helper {
 	 */
 	protected function column_exists( string $table_name, string $column_name ): bool {
 		global $wpdb;
+
+		if ( ! in_array( $table_name, $this->get_table_list(), true ) ) {
+			self::error_log( "Table $table_name does not exist in predefined list." );
+			return false;
+		}
+
 		$table_name = $wpdb->prefix . $table_name;
-		$table_name = esc_sql( sanitize_key( $table_name ) );
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared --called with predefined table names, and sanitized above.
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated against known whitelist above.
 		$columns = $wpdb->get_col( "DESC $table_name" );
 		return in_array( $column_name, $columns, true );
+	}
+
+	/**
+	 * Get array of Burst Tables.
+	 */
+	private function get_table_list(): array {
+		return apply_filters(
+			'burst_all_tables',
+			[
+				'burst_statistics',
+				'burst_sessions',
+				'burst_goals',
+				'burst_goal_statistics',
+				'burst_browsers',
+				'burst_browser_versions',
+				'burst_platforms',
+				'burst_devices',
+				'burst_referrers',
+				'burst_known_uids',
+				'burst_query_stats',
+			],
+		);
 	}
 
 	/**
@@ -53,7 +85,7 @@ trait Database_Helper {
 		}
 
 		$indexes    = array_map( 'sanitize_key', $indexes );
-		$table_name = esc_sql( sanitize_key( $table_name ) );
+		$table_name = esc_sql( $table_name );
 		$index      = esc_sql( implode( ', ', $indexes ) );
 		$index_name = esc_sql( implode( '_', $indexes ) . '_index' );
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared --called with predefined table names, and sanitized above.
