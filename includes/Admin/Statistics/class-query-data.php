@@ -484,7 +484,7 @@ class Query_Data {
 		foreach ( $filters as $key => $value ) {
 			// Only allow filters with whitelisted keys.
 			if ( in_array( $key, $this->get_allowed_filter_keys(), true ) ) {
-				$sanitized_key = sanitize_key( $key );
+				$sanitized_key = $key;
 
 				// Use appropriate sanitization based on filter type.
 				switch ( $key ) {

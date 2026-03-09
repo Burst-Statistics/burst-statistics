@@ -91,10 +91,6 @@ class Goals {
 	 * @return Goal[] Array of Goal objects.
 	 */
 	public function get_goals( array $args = [] ): array {
-		if ( ! $this->user_can_view() ) {
-			return [];
-		}
-
 		global $wpdb;
 		try {
 			$default_args = [

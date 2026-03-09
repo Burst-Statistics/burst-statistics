@@ -109,6 +109,17 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		}
 
 		/**
+		 * The set of actions that require manage-level access.
+		 */
+		private const MANAGE_ACTIONS = [
+			'report-create',
+			'report-delete',
+			'report-update',
+			'report-send-test-report',
+			'report-send-report-now',
+		];
+
+		/**
 		 * Handle report actions
 		 *
 		 * @param array<string, mixed> $output The output array.
@@ -117,6 +128,14 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 * @return array<string, mixed> The modified output array.
 		 */
 		public function do_action_handler( array $output, string $action, array $data ): array {
+			// Write actions require manage-level access; view-only users are blocked here.
+			if ( in_array( $action, self::MANAGE_ACTIONS, true ) && ! $this->user_can_manage() ) {
+				return [
+					'success' => false,
+					'message' => 'You do not have permission to perform this action.',
+				];
+			}
+
 			return match ( $action ) {
 				'report-create'           => $this->create_report( $data ),
 				'report-delete'           => $this->delete_report( $data ),

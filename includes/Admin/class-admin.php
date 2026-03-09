@@ -1330,28 +1330,6 @@ class Admin {
 	}
 
 	/**
-	 * Get array of Burst Tables.
-	 */
-	private function get_table_list(): array {
-		return apply_filters(
-			'burst_all_tables',
-			[
-				'burst_statistics',
-				'burst_sessions',
-				'burst_goals',
-				'burst_goal_statistics',
-				'burst_browsers',
-				'burst_browser_versions',
-				'burst_platforms',
-				'burst_devices',
-				'burst_referrers',
-				'burst_known_uids',
-				'burst_query_stats',
-			],
-		);
-	}
-
-	/**
 	 * Clear plugin data
 	 */
 	public function delete_all_burst_data(): void {
