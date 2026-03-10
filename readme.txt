@@ -6,7 +6,7 @@ Requires at least: 6.4
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 6.9
-Stable tag: 3.2.1
+Stable tag: 3.2.3
 
 Analytics you'll actually use. Privacy-friendly, zero config, and designed to be actionable. Get insights, not just raw data.
 
@@ -201,6 +201,10 @@ Absolutely! Both free and premium plugins can be managed with Composer. Read the
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.2.3 =
+* March 12th 2026
+* Fix: share link for non logged in users not loading page.
+
 = 3.2.1 =
 * March 9th 2026
 * Security fix: Fixed a missing authorization check that allowed users with Burst View privilege to manage reports. Props Sanjay Singh Jhala.

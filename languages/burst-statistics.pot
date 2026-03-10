@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Burst Pro plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: Burst Pro 3.2.1\n"
+"Project-Id-Version: Burst Pro 3.2.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/burst-pro\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-03-05T16:12:57+00:00\n"
+"POT-Creation-Date: 2026-03-10T15:12:55+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: burst-statistics\n"
@@ -419,7 +419,7 @@ msgid "What metric do you want to use to calculate the conversion rate?"
 msgstr ""
 
 #: includes/Admin/App/config/goal-fields.php:110
-#: includes/Admin/Reports/class-reports.php:795
+#: includes/Admin/Reports/class-reports.php:814
 #: includes/Admin/Statistics/class-goal-statistics.php:153
 #: includes/Admin/Statistics/class-query-data.php:743
 #: includes/Admin/App/build/index.d78c626ed88279e9da27.js:19
@@ -440,7 +440,7 @@ msgid "Visitors"
 msgstr ""
 
 #: includes/Admin/App/config/goal-fields.php:115
-#: includes/Admin/Reports/class-reports.php:792
+#: includes/Admin/Reports/class-reports.php:811
 #: includes/Admin/Statistics/class-goal-statistics.php:143
 #: includes/Admin/Statistics/class-query-data.php:742
 #: includes/Admin/App/build/index.d78c626ed88279e9da27.js:19
@@ -462,7 +462,7 @@ msgstr ""
 #: includes/Admin/Mailer/config/blocks.php:14
 #: includes/Admin/Mailer/config/blocks.php:24
 #: includes/Admin/Posts/class-posts.php:258
-#: includes/Admin/Reports/class-reports.php:789
+#: includes/Admin/Reports/class-reports.php:808
 #: includes/Admin/Statistics/class-goal-statistics.php:135
 #: includes/Admin/Statistics/class-query-data.php:741
 #: includes/Pro/class-pro.php:285
@@ -1200,7 +1200,7 @@ msgstr ""
 #. translators: %s is the domain name.
 #: includes/Admin/Mailer/class-mailer.php:449
 #: includes/Admin/Mailer/class-mailer.php:452
-#: includes/Admin/Reports/class-reports.php:885
+#: includes/Admin/Reports/class-reports.php:904
 msgctxt "domain name"
 msgid "Your weekly insights for %s are here!"
 msgstr ""
@@ -1360,23 +1360,23 @@ msgstr ""
 msgid "Weekly Summary"
 msgstr ""
 
-#: includes/Admin/Reports/class-reports.php:191
+#: includes/Admin/Reports/class-reports.php:210
 msgid "Report deleted successfully."
 msgstr ""
 
-#: includes/Admin/Reports/class-reports.php:591
+#: includes/Admin/Reports/class-reports.php:610
 msgid "No recipients specified for the report."
 msgstr ""
 
-#: includes/Admin/Reports/class-reports.php:604
+#: includes/Admin/Reports/class-reports.php:623
 msgid "Report sent."
 msgstr ""
 
-#: includes/Admin/Reports/class-reports.php:629
+#: includes/Admin/Reports/class-reports.php:648
 msgid "Sending of report scheduled."
 msgstr ""
 
-#: includes/Admin/Reports/class-reports.php:798
+#: includes/Admin/Reports/class-reports.php:817
 #: includes/Admin/Statistics/class-query-data.php:750
 #: includes/Admin/App/build/index.d78c626ed88279e9da27.js:19
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:84
@@ -1387,7 +1387,7 @@ msgstr ""
 msgid "Bounce rate"
 msgstr ""
 
-#: includes/Admin/Reports/class-reports.php:848
+#: includes/Admin/Reports/class-reports.php:867
 #: includes/Frontend/class-frontend-statistics.php:388
 #: includes/Frontend/class-shortcodes.php:407
 #: includes/Admin/App/build/698.080a6168dd2a92b3d243.js:3
@@ -1397,48 +1397,48 @@ msgid "Direct"
 msgstr ""
 
 #. translators: %s is the domain name.
-#: includes/Admin/Reports/class-reports.php:874
+#: includes/Admin/Reports/class-reports.php:893
 msgctxt "domain name"
 msgid "Your analytics insights for %s are here!"
 msgstr ""
 
 #. translators: %s is the domain name.
-#: includes/Admin/Reports/class-reports.php:879
+#: includes/Admin/Reports/class-reports.php:898
 msgctxt "domain name"
 msgid "Your daily insights for %s are here!"
 msgstr ""
 
 #. translators: %s is the domain name.
-#: includes/Admin/Reports/class-reports.php:882
+#: includes/Admin/Reports/class-reports.php:901
 msgctxt "domain name"
 msgid "Your monthly insights for %s are here!"
 msgstr ""
 
 #. translators: %1$s is the start date, %2$s is the end date.
-#: includes/Admin/Reports/class-reports.php:910
+#: includes/Admin/Reports/class-reports.php:929
 msgid "This report covers the period from %1$s to %2$s."
 msgstr ""
 
-#: includes/Admin/Reports/class-reports.php:920
+#: includes/Admin/Reports/class-reports.php:939
 msgid "View story"
 msgstr ""
 
 #. translators: %s is the website's domain name (e.g., example.com).
-#: includes/Admin/Reports/class-reports.php:923
+#: includes/Admin/Reports/class-reports.php:942
 msgid "A new report is available for %s."
 msgstr ""
 
-#: includes/Admin/Reports/class-reports.php:937
+#: includes/Admin/Reports/class-reports.php:956
 #: includes/Admin/App/build/index.d78c626ed88279e9da27.js:19
 #: includes/Admin/App/src/components/Statistics/CompareBlock.js:53
 msgid "Compare"
 msgstr ""
 
-#: includes/Admin/Reports/class-reports.php:939
+#: includes/Admin/Reports/class-reports.php:958
 msgid "vs. previous week"
 msgstr ""
 
-#: includes/Admin/Reports/class-reports.php:940
+#: includes/Admin/Reports/class-reports.php:959
 msgid "vs. previous month"
 msgstr ""
 

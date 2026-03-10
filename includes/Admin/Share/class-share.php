@@ -71,7 +71,7 @@ class Share {
 	 * @return array Array of shareable tab configurations with id and title.
 	 */
 	public static function get_shareable_tabs(): array {
-		$menu_items = \Burst\burst_loader()->admin->app->menu->get();
+		$menu_items = require BURST_PATH . 'includes/Admin/App/config/menu.php';
 
 		$shareable_tabs = [];
 		foreach ( $menu_items as $item ) {
