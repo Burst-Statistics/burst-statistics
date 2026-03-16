@@ -1,5 +1,5 @@
 === Burst Statistics - Privacy-Friendly WordPress Analytics (Google Analytics Alternative) ===
-Contributors: hesseldejong, RogierLankhorst, sh4lin
+Contributors: hesseldejong, RogierLankhorst, sh4lin, parthnvaswani
 Donate link: paypal.me/Burststatistics
 Tags: analytics, statistics, stats, privacy, GDPR
 Requires at least: 6.4
