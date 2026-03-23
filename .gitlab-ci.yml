@@ -9,7 +9,7 @@ workflow:
   variables:
     BASE_URL: "http://localhost"
   image:
-    name: source.updraftplus.com:5050/ci/playwright-e2e:php-8.2-wp-6.8.0
+    name: source.updraftplus.com:5050/ci/playwright-e2e:php-8.4-wp-7.0-beta1
     entrypoint: [""]
   cache:
     - key:
