@@ -2,7 +2,7 @@
 Contributors: hesseldejong, RogierLankhorst, sh4lin, parthnvaswani
 Donate link: paypal.me/Burststatistics
 Tags: analytics, statistics, stats, privacy, GDPR
-Requires at least: 6.4
+Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 6.9
