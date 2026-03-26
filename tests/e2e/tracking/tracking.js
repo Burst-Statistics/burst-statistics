@@ -21,7 +21,7 @@ async function runTrackingTest(typeKey, config){
             await page.goto('wp-admin/admin.php?page=burst');
             await dismissOnboarding(page);
             await page.goto('wp-admin/admin.php?page=burst');
-
+            await page.waitForTimeout(2000);
             console.log("set tracking options, with config: ", config);
             await updateBurstOption({
                 ghost_mode: config.ghostMode,
@@ -32,6 +32,7 @@ async function runTrackingTest(typeKey, config){
                 user_role_blocklist:0,
                 combine_vars_and_script: config.combineVarsAndScripts,
             });
+            await page.waitForTimeout(2000);
             console.log("create test pages");
             await createTestPages();
 
