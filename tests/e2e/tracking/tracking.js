@@ -20,15 +20,14 @@ async function runTrackingTest(typeKey, config){
             //ensure that a page is visited so the defaults are set before we write any options. 
             await page.goto('wp-admin/admin.php?page=burst');
             await dismissOnboarding(page);
-            await page.goto('wp-admin/admin.php?page=burst');
-            await page.waitForTimeout(2000);
             // Wait for burst_set_defaults to be removed before continuing
             let setDefaults = await wpCli('option get burst_set_defaults');
             while (setDefaults !== '') {
                 console.log("burst_set_defaults still exists, reloading...");
-                await page.goto('wp-admin/admin.php?page=burst');
+                await page.goto('wp-admin/admin.php?page=burst', { waitUntil: 'networkidle' });
                 setDefaults = await wpCli('option get burst_set_defaults');
-            }
+                console.log("burst_set_defaults value: ", setDefaults);
+           }
 
             console.log("set tracking options, with config: ", config);
             await updateBurstOption({
@@ -40,7 +39,6 @@ async function runTrackingTest(typeKey, config){
                 user_role_blocklist:0,
                 combine_vars_and_script: config.combineVarsAndScripts,
             });
-            await page.waitForTimeout(2000);
             console.log("create test pages");
             await createTestPages();
 
