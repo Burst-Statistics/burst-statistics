@@ -909,6 +909,7 @@ class Admin {
 				$goal->title = __( 'Default goal', 'burst-statistics' );
 				$goal->save();
 			}
+            error_log("delete burst set defaults");
 			delete_option( 'burst_set_defaults' );
 		}
 	}

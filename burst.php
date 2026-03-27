@@ -75,6 +75,7 @@ try {
             if ( ! get_option( 'burst_activation_time' ) ) {
                 set_transient( 'burst_redirect_to_settings_page', true, 5 * MINUTE_IN_SECONDS );
                 update_option( 'burst_start_onboarding', true, false );
+                error_log("set burst_set_defaults to true");
                 update_option( 'burst_set_defaults', true, false );
             }
         }
