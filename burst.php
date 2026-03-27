@@ -69,6 +69,7 @@ try {
          * This function has te have a different name, to ensure that it runs and deactivates free, if required.
          */
         function burst_on_activation(): void {
+            error_log("activating burst, set burst_run_activation to true");
             update_option( 'burst_run_activation', true, false );
 
             // ensure that defaults are set only once.

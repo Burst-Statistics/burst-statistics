@@ -761,16 +761,21 @@ class Admin {
 	 * Activation processing
 	 */
 	public function activation(): void {
+        error_log("maybe run burst activation functions");
 		if ( ! $this->has_admin_access() ) {
+            error_log("burst activation: no admin access for this request");
 			return;
 		}
 
 		if ( get_option( 'burst_run_activation' ) ) {
+            error_log("execute burst activation functions");
 			Capability::add_capability( 'view', [ 'administrator', 'editor' ] );
 			Capability::add_capability( 'manage' );
 			do_action( 'burst_activation' );
 			update_option( 'burst_run_activation', false );
-		}
+		} else {
+            error_log("burst_run_activation not set, skipping activation");
+        }
 	}
 
 	/**
