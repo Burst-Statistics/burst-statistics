@@ -22,6 +22,14 @@ async function runTrackingTest(typeKey, config){
             await dismissOnboarding(page);
             await page.goto('wp-admin/admin.php?page=burst');
             await page.waitForTimeout(2000);
+            // Wait for burst_set_defaults to be removed before continuing
+            let setDefaults = await wpCli('option get burst_set_defaults');
+            while (setDefaults !== '') {
+                console.log("burst_set_defaults still exists, reloading...");
+                await page.goto('wp-admin/admin.php?page=burst');
+                setDefaults = await wpCli('option get burst_set_defaults');
+            }
+
             console.log("set tracking options, with config: ", config);
             await updateBurstOption({
                 ghost_mode: config.ghostMode,
