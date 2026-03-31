@@ -155,7 +155,7 @@ const REPORT_LOG_STATUS_CONFIG: Record<
 		severity: ReportLogSeverity;
 	}
 > = {
-	ready_to_send: {
+	ready_to_share: {
 		severity: 'info'
 	},
 	sending_successful: {

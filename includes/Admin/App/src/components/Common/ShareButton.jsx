@@ -2,7 +2,7 @@ import {useState, useCallback, useEffect, useMemo, createInterpolateElement} fro
 import {__, _n, sprintf} from '@wordpress/i18n';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLocation } from '@tanstack/react-router';
-import { doAction } from '@/utils/api';
+import { doAction, getAction } from '@/utils/api';
 import { toast } from 'react-toastify';
 import useLicenseData from '@/hooks/useLicenseData';
 import useDateRange from '@/hooks/useDateRange';
@@ -472,7 +472,9 @@ const ShareLinkItem = ({ link, copiedId, onCopy, onRevoke, isRevoking }) => {
 						title={link.url}
 						value={link.url}
 						onClick={( e ) => e.target.select()}
-						className="max-w-full truncate text-sm text-gray-800 font-mono w-full bg-gray-50 px-2 py-1.5 rounded border border-gray-300 cursor-text focus:border-wp-blue focus:ring-1 focus:ring-wp-blue/20"
+
+						//burst-share-link-output is used for automated tests.
+						className="burst-share-link-output max-w-full truncate text-sm text-gray-800 font-mono w-full bg-gray-50 px-2 py-1.5 rounded border border-gray-300 cursor-text focus:border-wp-blue focus:ring-1 focus:ring-wp-blue/20"
 					/>
 
 					<Tooltip content={isCopied ? __( 'Copied!', 'burst-statistics' ) : __( 'Copy link', 'burst-statistics' )}>
@@ -712,7 +714,7 @@ export const ShareButton = () => {
 	const fetchShareLinks = useCallback( async() => {
 		setIsLoading( true );
 		try {
-			const response = await doAction( 'get_share_links' );
+			const response = await getAction( 'get_share_links' );
 			setShareLinks( response.share_links || []);
 		} catch ( error ) {
 			console.error( 'Failed to fetch share links:', error );
@@ -870,6 +872,9 @@ export const ShareButton = () => {
 			<AddFilterButton
 				label=""
 				icon="referrer"
+
+				//class used for automated test.
+				className="burst-share-link"
 				onClick={() => setIsModalOpen( true )}
 			/>
 
@@ -923,7 +928,9 @@ export const ShareButton = () => {
 								onClick={handleGenerate}
 								disabled={isGenerating}
 								btnVariant="primary"
-								className="w-full justify-center"
+
+								//class burst-generate-share-link-button used for automated test.
+								className="burst-generate-share-link-button w-full justify-center"
 							>
 								{isGenerating ?
 									__( 'Generating…', 'burst-statistics' ) :

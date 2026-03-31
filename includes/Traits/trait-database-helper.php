@@ -16,14 +16,24 @@ trait Database_Helper {
 	use Admin_Helper;
 
 	/**
+	 * Check if table name is valid
+	 */
+	protected function validate_table_name( string $table_name ): string {
+		$table_name = sanitize_key( $table_name );
+		if ( ! in_array( $table_name, $this->get_table_list(), true ) ) {
+			self::error_log( "Table $table_name does not exist in predefined list." );
+			return '';
+		}
+		return $table_name;
+	}
+
+	/**
 	 * Check if table exists
 	 */
 	protected function table_exists( string $table ): bool {
 		global $wpdb;
-		if ( ! in_array( $table, $this->get_table_list(), true ) ) {
-			self::error_log( "Table $table does not exist in predefined list." );
-			return false;
-		}
+		$table = $this->validate_table_name( $table );
+
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated against known whitelist above.
 		return (bool) $wpdb->query( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . $table ) );
 	}
@@ -34,11 +44,7 @@ trait Database_Helper {
 	 */
 	protected function column_exists( string $table_name, string $column_name ): bool {
 		global $wpdb;
-
-		if ( ! in_array( $table_name, $this->get_table_list(), true ) ) {
-			self::error_log( "Table $table_name does not exist in predefined list." );
-			return false;
-		}
+		$table_name = $this->validate_table_name( $table_name );
 
 		$table_name = $wpdb->prefix . $table_name;
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated against known whitelist above.
@@ -85,7 +91,7 @@ trait Database_Helper {
 		}
 
 		$indexes    = array_map( 'sanitize_key', $indexes );
-		$table_name = esc_sql( $table_name );
+		$table_name = $wpdb->prefix . $this->validate_table_name( $table_name );
 		$index      = esc_sql( implode( ', ', $indexes ) );
 		$index_name = esc_sql( implode( '_', $indexes ) . '_index' );
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared --called with predefined table names, and sanitized above.

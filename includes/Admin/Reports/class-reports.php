@@ -41,6 +41,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			add_action( 'burst_send_email_batch', [ $this, 'handle_email_batch' ], 10, 3 );
 			add_filter( 'burst_all_tables', [ $this, 'burst_add_reports_table' ] );
 			add_filter( 'burst_do_action', [ $this, 'do_action_handler' ], 10, 3 );
+			add_filter( 'burst_get_action', [ $this, 'get_action_handler' ], 10, 3 );
 			add_action( 'burst_create_report_from_onboarding', [ $this, 'create_report_from_onboarding' ] );
 		}
 
@@ -143,9 +144,23 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				'report-send-test-report' => $this->send_test_report_action( $data ),
 				'report-send-report-now'  => $this->send_report_now_action( $data ),
 				'report-preview'          => $this->get_report_preview( $data ),
-				'report-data'             => $this->get_report_data( $data ),
 				default                   => $output,
 			};
+		}
+
+		/**
+		 * Handle get actions for reports
+		 *
+		 * @param array<string, mixed>      $output The output array.
+		 * @param string                    $action The action to perform.
+		 * @param array<string, mixed>|null $data   The data for the action.
+		 * @return array<string, mixed> The modified output array.
+		 */
+		public function get_action_handler( array $output, string $action, ?array $data ): array {
+			if ( $action === 'report-data' ) {
+				return $this->get_report_data( $data );
+			}
+			return $output;
 		}
 
 		/**
@@ -404,22 +419,35 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			$token       = $data['token'];
 			$share       = new Share();
 			$report      = null;
-			$share_links = $share::get_share_links( $token );
+			$share_links = $share->get_share_links( 'report', $token );
+
 			if ( ! empty( $share_links ) ) {
 				// get first share link.
-				$share_links = array_values( $share_links );
-				$share_link  = $share_links[0];
-				$report_id   = $share_link['report_id'];
-				$report      = new Report( $report_id );
+				$share_links           = array_values( $share_links );
+				$share_link            = $share_links[0];
+				$report_id             = $share_link['report_id'];
+				$is_share_link_request = $this->is_shared_link_request();
+				$report                = new Report( $report_id, $is_share_link_request );
 			}
-
 			if ( ob_get_length() ) {
 				ob_clean();
 			}
 
+			// Resolve the logo URL server-side so it's available without wp.media in the story view.
+			$logo_attachment_id = (int) burst_get_option( 'logo_attachment_id', 0 );
+			$logo_url           = '';
+			if ( $logo_attachment_id > 0 ) {
+				$image_src = wp_get_attachment_image_src( $logo_attachment_id, 'medium' )
+					?: wp_get_attachment_image_src( $logo_attachment_id, 'large' )
+					?: wp_get_attachment_image_src( $logo_attachment_id, 'full' );
+				if ( $image_src ) {
+					$logo_url = $image_src[0];
+				}
+			}
 			return [
 				'request_success' => true,
 				'report'          => $report?->to_array(),
+				'logo_url'        => $logo_url,
 			];
 		}
 
@@ -459,6 +487,15 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 * @return \WP_REST_Response The REST response containing the list of reports.
 		 */
 		public function get_reports( \WP_REST_Request $request ): \WP_REST_Response {
+			if ( ! $this->user_can_manage() ) {
+				return new \WP_REST_Response(
+					[
+						'success' => false,
+						'message' => 'You do not have permission to manage reports.',
+					]
+				);
+			}
+
 			$nonce = $request->get_param( 'nonce' );
 			if ( ! $this->verify_nonce( $nonce, 'burst_nonce' ) ) {
 				return new \WP_REST_Response(
@@ -542,9 +579,8 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			];
 
 			foreach ( $indexes as $table => $table_indexes ) {
-				$table_name = $wpdb->prefix . $table;
 				foreach ( $table_indexes as $index ) {
-					$this->add_index( $table_name, $index );
+					$this->add_index( 'burst_reports', $index );
 				}
 			}
 		}
@@ -617,6 +653,16 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 
 			// Do not schedule test reports on cron, but send immediately.
 			if ( $is_test ) {
+				if ( ! Report_Logs::instance()->parent_processing_exists( $report_id, $queue_id ) ) {
+					Report_Logs::instance()->insert_log(
+						$report_id,
+						$queue_id,
+						null,
+						Report_Log_Status::PROCESSING,
+						Report_Log_Status::get_log_message( Report_Log_Status::PROCESSING )
+					);
+				}
+
 				$this->handle_email_batch( $report_id, $queue_id, $batch_id );
 				return [
 					'success' => true,
@@ -1006,6 +1052,19 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				}
 			}
 
+			$logo_attachment_id = (int) burst_get_option( 'logo_attachment_id', 0 );
+
+			if ( $logo_attachment_id > 0 ) {
+				$image_src = wp_get_attachment_image_src( $logo_attachment_id, 'medium' )
+					?: wp_get_attachment_image_src( $logo_attachment_id, 'large' )
+						?: wp_get_attachment_image_src( $logo_attachment_id, 'full' );
+
+				if ( $image_src ) {
+					$mailer->set_logo( $image_src[0] );
+					$mailer->set_logo_dark( $image_src[0] );
+				}
+			}
+
 			$mailer->set_blocks( $blocks );
 		}
 
@@ -1017,12 +1076,16 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 */
 		public function get_story_url( int $report_id ): string {
 			$share       = new Share();
-			$share_links = $share::get_share_links( '', $report_id );
+			$share_links = $share->get_share_links( 'report', '', $report_id );
+
 			if ( ! empty( $share_links ) ) {
 				$share_links = array_values( $share_links );
 				$share_link  = $share_links[0];
 				$token       = $share_link['token'];
-				return site_url( '/burst-dashboard/?burst_share_token=' . $token . '#/story' );
+				// During cron, site_url() may return http:// while the site runs on https://.
+				// Normalize to the same scheme as BURST_URL to ensure the link is correct.
+				$burst_scheme = wp_parse_url( BURST_URL, PHP_URL_SCHEME );
+				return set_url_scheme( site_url( '/burst-dashboard/?burst_share_token=' . $token . '#/story' ), $burst_scheme );
 			}
 			return '';
 		}

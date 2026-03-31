@@ -581,6 +581,10 @@ class Onboarding {
 			$asset_file['version']
 		);
 
+		// generate random and expiring token to use as a nonce in the burst_test_hit request.
+		$token = wp_generate_password( 10, false );
+		set_transient( $this->prefix . '_onboarding_token', $token, 15 * MINUTE_IN_SECONDS );
+
 		wp_localize_script(
 			'teamupdraft_onboarding',
 			'teamupdraft_onboarding',
@@ -601,6 +605,7 @@ class Onboarding {
 				'is_pro'                => $this->is_pro,
 				'network_link'          => network_site_url( 'plugins.php' ),
 				'reload_on_finish'      => $this->reload_settings_page_on_finish,
+				'track_test_token'      => $token,
 			]
 		);
 		// remember if user has completed the onboarding in the free plugin.

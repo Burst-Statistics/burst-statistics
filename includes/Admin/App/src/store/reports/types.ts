@@ -60,7 +60,7 @@ export type ReportLogStatus =
 	| 'scheduled'
 	| 'processing'
 	| 'partly_sent'
-	| 'ready_to_send';
+	| 'ready_to_share';
 
 export type ReportLogSeverity =
 	| 'success'

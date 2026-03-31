@@ -26,7 +26,7 @@ class Environment_Data extends Data_Collector {
 				'version' => phpversion(),
 			],
 			'plugins'   => [
-				'active_plugins' => get_option( 'active_plugins', [] ),
+				'active_plugins' => (array) get_option( 'active_plugins', [] ),
 			],
 		];
 	}

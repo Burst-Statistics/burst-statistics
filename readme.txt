@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 6.9
-Stable tag: 3.2.3
+Stable tag: 3.3.0
 
 Analytics you'll actually use. Privacy-friendly, zero config, and designed to be actionable. Get insights, not just raw data.
 
@@ -201,6 +201,22 @@ Absolutely! Both free and premium plugins can be managed with Composer. Read the
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.3.0 =
+* April 1st 2026
+* New: Time per session filter, allowing filtering by visit duration.
+* New: Dark mode support for email reports.
+* Improvement: Move columns from statistics to sessions table, reducing data storage and improving query performance.
+* Improvement: Session data included in archive CSV exports.
+* Improvement: Add missing database indexes for improved performance.
+* Security: Share link viewers could view report data (recipient email addresses, scheduling configuration). Props Sanjay Singh Jhala.
+* Security: Share link viewers could view ecommerce/sales data, even when the share link was scoped to non-sales tabs only. Props Sanjay Singh Jhala.
+* Fix: Insights chart grouping by month was incorrect.
+* Fix: Cron URL protocol mismatch could cause a http link to be included in the email report, even when the site url is https..
+* Fix: Filter type issue breaking the filtering on the devices block, props Andrew.
+* Fix: Duplicate key error in SQL hash update query.
+* Fix: Email report logo centering and dark mode styling.
+* Fix: A burst test hit could be used to bypass the built-in IP block, props Sanjay Singh Jhala.
+
 = 3.2.3 =
 * March 12th 2026
 * Fix: share link for non logged in users not loading page.

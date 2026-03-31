@@ -80,6 +80,15 @@ class Query_Data {
 	public array $filters = [];
 
 	/**
+	 * Per-filter exclusion mode.
+	 *
+	 * Maps filter key → 'include' | 'exclude'.
+	 *
+	 * @var array<string, string> $filter_exclusions
+	 */
+	public array $filter_exclusions = [];
+
+	/**
 	 * Group by clause for the query.
 	 *
 	 * @var string[] $group_by Group by clause for the query.
@@ -296,6 +305,7 @@ class Query_Data {
 				'device_id',
 				'browser_id',
 				'platform_id',
+				'time_per_session',
 			];
 
 			$keys = array_merge( $keys, $extra );
@@ -352,7 +362,8 @@ class Query_Data {
 	 */
 	private function assign_property( string $key, mixed $value ): void {
 		if ( $key === 'filters' ) {
-			$this->filters = $this->sanitize_filters( is_array( $value ) ? $value : [] );
+			$this->filters = $this->normalize_filter_values( is_array( $value ) ? $value : [] );
+			$this->filters = $this->sanitize_filters( $this->filters );
 			return;
 		}
 
@@ -527,6 +538,10 @@ class Query_Data {
 	/**
 	 * Sanitize filters for statistics queries.
 	 *
+	 * Normalizes the new { value, exclusion } filter shape from the frontend
+	 * into flat string values (backward compatible) while storing per-filter
+	 * exclusion modes in $this->filter_exclusions.
+	 *
 	 * @param array $filters Array of filters to sanitize.
 	 * @return array<string, mixed> Sanitized filters.
 	 */
@@ -536,6 +551,29 @@ class Query_Data {
 		} else {
 			return $this->sanitize_filters_flexibly( $filters );
 		}
+	}
+
+	/**
+	 * Normalize filter values: detect '!' prefix indicating exclusion,
+	 * strip it, and record the exclusion mode. All filters are passed through.
+	 *
+	 * @param array $filters Raw filters array.
+	 * @return array<string, mixed> Filters with '!' prefix stripped where applicable.
+	 */
+	private function normalize_filter_values( array $filters ): array {
+		$normalized = [];
+
+		foreach ( $filters as $key => $value ) {
+			if ( is_string( $value ) && str_starts_with( $value, '!' ) ) {
+				$normalized[ $key ]              = substr( $value, 1 );
+				$this->filter_exclusions[ $key ] = 'exclude';
+			} else {
+				$normalized[ $key ]              = $value;
+				$this->filter_exclusions[ $key ] = 'include';
+			}
+		}
+
+		return $normalized;
 	}
 
 	/**

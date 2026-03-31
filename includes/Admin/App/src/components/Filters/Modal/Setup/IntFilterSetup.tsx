@@ -2,13 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import TextInput from '@/components/Inputs/TextInput';
 import RangeSliderInput from '@/components/Inputs/RangeSliderInput';
-
-interface FilterConfig {
-	label: string;
-	icon: string;
-	type: string;
-	pro?: boolean;
-}
+import { type FilterConfig } from '@/config/filterConfig';
 
 interface IntFilterSetupProps {
 	filterKey: string;

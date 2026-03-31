@@ -486,25 +486,25 @@ class App {
 		}
 
 		if ( ! $error ) {
-			if ( strpos( $action, '/fields/get' ) !== false ) {
+			if ( str_contains( $action, '/fields/get' ) ) {
 				$response = $this->rest_api_fields_get( $request );
-			} elseif ( strpos( $action, '/fields/set' ) !== false ) {
+			} elseif ( str_contains( $action, '/fields/set' ) ) {
 				$response = $this->rest_api_fields_set( $request, $data );
-			} elseif ( strpos( $action, '/options/set' ) !== false ) {
+			} elseif ( str_contains( $action, '/options/set' ) ) {
 				$response = $this->rest_api_options_set( $request, $data );
-			} elseif ( strpos( $action, '/goals/get' ) !== false ) {
+			} elseif ( str_contains( $action, '/goals/get' ) ) {
 				$response = $this->rest_api_goals_get( $request );
-			} elseif ( strpos( $action, '/goals/add' ) !== false ) {
+			} elseif ( str_contains( $action, '/goals/add' ) ) {
 				$response = $this->rest_api_goals_add( $request, $data );
-			} elseif ( strpos( $action, '/goals/delete' ) !== false ) {
+			} elseif ( str_contains( $action, '/goals/delete' ) ) {
 				$response = $this->rest_api_goals_delete( $request, $data );
-			} elseif ( strpos( $action, '/goal_fields/get' ) !== false ) {
+			} elseif ( str_contains( $action, '/goal_fields/get' ) ) {
 				$response = $this->rest_api_goal_fields_get( $request );
-			} elseif ( strpos( $action, '/goals/set' ) !== false ) {
+			} elseif ( str_contains( $action, '/goals/set' ) ) {
 				$response = $this->rest_api_goals_set( $request, $data );
-			} elseif ( strpos( $action, '/posts/' ) !== false ) {
+			} elseif ( str_contains( $action, '/posts/' ) ) {
 				$response = $this->get_posts( $request, $data );
-			} elseif ( strpos( $action, '/data/' ) !== false ) {
+			} elseif ( str_contains( $action, '/data/' ) ) {
 				$response = $this->get_data( $request );
 			} elseif ( strpos( $action, '/reports' ) ) {
 				$reports  = new Reports();
@@ -513,6 +513,11 @@ class App {
 				$req = new \WP_REST_Request();
 				$req->set_param( 'action', $do_action );
 				$response = $this->do_action( $req, $data );
+			} elseif ( strpos( $action, 'burst/v1/get_action/' ) !== false ) {
+				$get_action = strtolower( str_replace( 'burst/v1/get_action/', '', $action ) );
+				$req        = new \WP_REST_Request();
+				$req->set_param( 'action', $get_action );
+				$response = $this->get_action( $req, $merged );
 			}
 		}
 
@@ -916,7 +921,7 @@ class App {
 					return $this->get_data( $request );
 				},
 				'permission_callback' => function () {
-					return $this->user_can_view();
+					return $this->user_can_view_sales();
 				},
 			]
 		);
@@ -939,6 +944,18 @@ class App {
 			[
 				'methods'             => 'POST',
 				'callback'            => [ $this, 'do_action' ],
+				'permission_callback' => function () {
+					return $this->user_can_manage();
+				},
+			]
+		);
+
+		register_rest_route(
+			'burst/v1',
+			'get_action/(?P<action>[a-z\_\-]+)',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'get_action' ],
 				'permission_callback' => function () {
 					return $this->user_can_view();
 				},
@@ -973,7 +990,8 @@ class App {
 	 * @return \WP_REST_Response //The response object or error.
 	 */
 	public function do_action( \WP_REST_Request $request, array $ajax_data = [] ): \WP_REST_Response {
-		if ( ! $this->user_can_view() ) {
+		// ← was user_can_view
+		if ( ! $this->user_can_manage() ) {
 			return new \WP_REST_Response(
 				[
 					'success' => false,
@@ -981,6 +999,7 @@ class App {
 				]
 			);
 		}
+
 		$action = sanitize_title( $request->get_param( 'action' ) );
 		$data   = empty( $ajax_data ) ? $request->get_params() : $ajax_data;
 		$nonce  = $data['nonce'];
@@ -1000,9 +1019,6 @@ class App {
 		switch ( $action ) {
 			case 'plugin_actions':
 				$data = $this->plugin_actions( $request, $data );
-				break;
-			case 'tasks':
-				$data = \Burst\burst_loader()->admin->tasks->get();
 				break;
 			case 'fix_task':
 				$task_id   = $data['task_id'];
@@ -1026,8 +1042,55 @@ class App {
 					\Burst\burst_loader()->admin->tasks->dismiss_task( $id );
 				}
 				break;
-			case 'otherpluginsdata':
-				$data = $this->other_plugins_data();
+			default:
+				$data = is_array( $data ) ? $data : [];
+				$data = apply_filters( 'burst_do_action', [], $action, $data );
+		}
+
+		if ( ob_get_length() ) {
+			ob_clean();
+		}
+
+		return $this->create_rest_response( $data );
+	}
+
+	/**
+	 * Perform a read-only action based on the provided GET request.
+	 * Only actions requiring burst_viewer capability should be handled here.
+	 *
+	 * @param \WP_REST_Request $request   The REST API request object.
+	 * @param array            $ajax_data Optional AJAX data (used by rest_api_fallback).
+	 */
+	public function get_action( \WP_REST_Request $request, array $ajax_data = [] ): \WP_REST_Response {
+		if ( ! $this->user_can_view() ) {
+			return new \WP_REST_Response(
+				[
+					'success' => false,
+					'message' => 'You do not have permission to perform this action.',
+				]
+			);
+		}
+
+		$action = sanitize_title( $request->get_param( 'action' ) );
+		$data   = empty( $ajax_data ) ? $request->get_params() : $ajax_data;
+		$nonce  = $data['nonce'] ?? '';
+
+		if ( ! $this->verify_nonce( $nonce, 'burst_nonce' ) ) {
+			return new \WP_REST_Response(
+				[
+					'success' => false,
+					'message' => $this->nonce_expired_feedback,
+				]
+			);
+		}
+
+		if ( empty( $ajax_data ) ) {
+			$this->remove_fallback_notice();
+		}
+
+		switch ( $action ) {
+			case 'tasks':
+				$data = \Burst\burst_loader()->admin->tasks->get();
 				break;
 			case 'tracking':
 				$data = Endpoint::get_tracking_status_and_time();
@@ -1040,9 +1103,12 @@ class App {
 				$search    = isset( $data['search'] ) ? sanitize_text_field( $data['search'] ) : '';
 				$data      = $this->get_filter_options( $data_type, $search );
 				break;
+			case 'otherpluginsdata':
+				$data = $this->other_plugins_data();
+				break;
 			default:
 				$data = is_array( $data ) ? $data : [];
-				$data = apply_filters( 'burst_do_action', [], $action, $data );
+				$data = apply_filters( 'burst_get_action', [], $action, $data );
 		}
 
 		if ( ob_get_length() ) {
@@ -1318,10 +1384,10 @@ class App {
 				"INSERT IGNORE INTO {$wpdb->prefix}burst_referrers (name)
                  SELECT TRIM(TRAILING '/' FROM domain) AS domain
                  FROM (
-                   SELECT 
+                   SELECT
                      LOWER(SUBSTRING_INDEX(referrer, '/', 1)) AS domain
                    FROM {$wpdb->prefix}burst_sessions
-                   WHERE referrer IS NOT NULL 
+                   WHERE referrer IS NOT NULL
                      AND referrer != ''
                      AND referrer NOT LIKE '/%'
                  ) AS derived
@@ -2245,8 +2311,8 @@ class App {
 
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT p.ID as page_id, 
-            p.post_title, 
+				"SELECT p.ID as page_id,
+            p.post_title,
             COALESCE(s.pageviews, 0) as pageviews
              FROM {$wpdb->prefix}posts p
              LEFT JOIN (

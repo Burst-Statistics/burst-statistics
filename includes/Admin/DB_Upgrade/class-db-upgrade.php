@@ -234,6 +234,10 @@ class DB_Upgrade {
 			$this->move_reports_to_new_tables();
 		}
 
+		if ( 'move_columns_to_sessions' === $do_upgrade ) {
+			$this->upgrade_move_columns_to_sessions();
+		}
+
 		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
 		if ( $this->get_progress( 'free', 'all' ) < 100 ) {
 			// free upgrades not finished yet.
@@ -372,6 +376,9 @@ class DB_Upgrade {
 				],
 				'3.2.0'   => [
 					'move_reports_to_new_tables',
+				],
+				'3.2.3'   => [
+					'move_columns_to_sessions',
 				],
 			]
 		);
@@ -691,10 +698,10 @@ class DB_Upgrade {
 
 		global $wpdb;
 		$wpdb->query(
-			"UPDATE {$wpdb->prefix}burst_statistics SET 
-                           browser_id = 999999, 
-                           browser_version_id = 999999, 
-                           platform_id = 999999, 
+			"UPDATE {$wpdb->prefix}burst_statistics SET
+                           browser_id = 999999,
+                           browser_version_id = 999999,
+                           platform_id = 999999,
                            device_id = 999999"
 		);
 
@@ -789,7 +796,7 @@ class DB_Upgrade {
 					"UPDATE {$wpdb->prefix}burst_statistics AS t
                     JOIN (
                         SELECT p.{$selected_item}, p.ID, COALESCE(m.ID, 0) as {$selected_item}_id
-                        FROM {$wpdb->prefix}burst_statistics p 
+                        FROM {$wpdb->prefix}burst_statistics p
                         LEFT JOIN {$wpdb->prefix}burst_{$selected_item}s m ON p.{$selected_item} = m.name
                         WHERE p.{$selected_item}_id = 999999
                         LIMIT $batch
@@ -862,11 +869,11 @@ class DB_Upgrade {
 		global $wpdb;
 		$post_types   = array_values( $post_types );
 		$placeholders = implode( ',', array_fill( 0, count( $post_types ), '%s' ) );
-		$sql          = "SELECT COUNT(*) FROM {$wpdb->posts} 
-                 WHERE post_type IN ($placeholders) 
+		$sql          = "SELECT COUNT(*) FROM {$wpdb->posts}
+                 WHERE post_type IN ($placeholders)
                  AND post_status != 'trash'
                  AND ID NOT IN (
-                     SELECT post_id FROM {$wpdb->postmeta} 
+                     SELECT post_id FROM {$wpdb->postmeta}
                      WHERE meta_key = 'burst_page_id_upgraded')";
 		// dynamic placeholder insertion with array_fill.
         //phpcs:ignore
@@ -898,8 +905,8 @@ class DB_Upgrade {
 					$param_key = ( $post_type === 'page' ) ? "page_id=$post_id" : "p=$post_id";
 					$wpdb->query(
 						$wpdb->prepare(
-							"UPDATE {$wpdb->prefix}burst_statistics 
-                             SET page_id = %d, page_type = %s 
+							"UPDATE {$wpdb->prefix}burst_statistics
+                             SET page_id = %d, page_type = %s
                              WHERE page_url='/' AND parameters LIKE %s",
 							$post_id,
 							$post_type,
@@ -909,8 +916,8 @@ class DB_Upgrade {
 				} else {
 					$wpdb->query(
 						$wpdb->prepare(
-							"UPDATE {$wpdb->prefix}burst_statistics 
-                         SET page_id = %d, page_type = %s 
+							"UPDATE {$wpdb->prefix}burst_statistics
+                         SET page_id = %d, page_type = %s
                          WHERE page_url = %s",
 							$post_id,
 							$post_type,
@@ -1078,14 +1085,14 @@ class DB_Upgrade {
 
 		// Count remaining sessions to process (where referrer is NULL = not yet migrated).
 		$remaining_count = (int) $wpdb->get_var(
-			"SELECT COUNT(DISTINCT s.ID) 
+			"SELECT COUNT(DISTINCT s.ID)
         FROM {$wpdb->prefix}burst_sessions s
         INNER JOIN {$wpdb->prefix}burst_statistics st ON st.session_id = s.ID
         WHERE s.referrer IS NULL"
 		);
 
 		$total_count = (int) $wpdb->get_var(
-			"SELECT COUNT(DISTINCT s.ID) 
+			"SELECT COUNT(DISTINCT s.ID)
         FROM {$wpdb->prefix}burst_sessions s
         INNER JOIN {$wpdb->prefix}burst_statistics st ON st.session_id = s.ID"
 		);
@@ -1101,7 +1108,7 @@ class DB_Upgrade {
 			// STEP 1: Get batch of session IDs to process.
 			$session_ids = $wpdb->get_col(
 				$wpdb->prepare(
-					"SELECT DISTINCT s.ID 
+					"SELECT DISTINCT s.ID
                 FROM {$wpdb->prefix}burst_sessions s
                 WHERE s.referrer IS NULL
                 LIMIT %d",
@@ -1120,9 +1127,9 @@ class DB_Upgrade {
 			$sql = $wpdb->prepare(
 				"UPDATE {$wpdb->prefix}burst_sessions s
             INNER JOIN (
-                SELECT 
+                SELECT
                     st.session_id,
-                    CASE 
+                    CASE
                         WHEN st.referrer = '' OR st.referrer IS NULL THEN ''
                         ELSE TRIM(LEADING 'www.' FROM SUBSTRING_INDEX(SUBSTRING_INDEX(st.referrer, '://', -1), '/', 1))
                     END as normalized_referrer
@@ -1179,10 +1186,10 @@ class DB_Upgrade {
 		if ( ! empty( $last_id ) ) {
 			$wpdb->query(
 				$wpdb->prepare(
-					"UPDATE {$wpdb->prefix}burst_sessions 
+					"UPDATE {$wpdb->prefix}burst_sessions
                 SET referrer = TRIM(TRAILING '/' FROM referrer)
                 WHERE ID >= %d
-                  AND referrer IS NOT NULL 
+                  AND referrer IS NOT NULL
                   AND referrer != ''
                   AND referrer LIKE %s",
 					$last_id,
@@ -1192,5 +1199,124 @@ class DB_Upgrade {
 		}
 
 		delete_option( 'burst_db_upgrade_fix_trailing_slash_on_referrers' );
+	}
+
+	/**
+	 * Move browser_id, browser_version_id, platform_id, device_id,
+	 * first_time_visit, bounce from statistics to sessions table.
+	 */
+	private function upgrade_move_columns_to_sessions(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+		global $wpdb;
+
+		if ( ! $this->table_exists( 'burst_statistics' ) || ! $this->table_exists( 'burst_sessions' ) ) {
+			self::error_log( 'Missing tables, delaying move_columns_to_sessions upgrade.' );
+			return;
+		}
+
+		if ( ! $this->column_exists( 'burst_sessions', 'browser_id' ) ) {
+			self::error_log( 'browser_id column missing from sessions table, delaying upgrade.' );
+			return;
+		}
+
+		if ( ! $this->column_exists( 'burst_statistics', 'browser_id' ) ) {
+			delete_option( 'burst_db_upgrade_move_columns_to_sessions' );
+			delete_transient( 'burst_progress_move_columns_to_sessions' );
+			return;
+		}
+
+		if ( ! get_option( 'burst_db_upgrade_move_columns_to_sessions' ) ) {
+			update_option( 'burst_db_upgrade_move_columns_to_sessions', true, false );
+		}
+
+		$batch = $this->batch;
+
+		$remaining_count = (int) $wpdb->get_var(
+			"SELECT COUNT(*)
+			FROM {$wpdb->prefix}burst_statistics
+			WHERE browser_id != 9999"
+		);
+
+		$total_count = (int) $wpdb->get_var(
+			"SELECT COUNT(*)
+        	FROM {$wpdb->prefix}burst_statistics"
+		);
+
+		$done_count = max( 0, $total_count - $remaining_count );
+		$progress   = 0 === $total_count ? 1 : $done_count / $total_count;
+		$progress   = round( $progress, 2 );
+		set_transient( 'burst_progress_move_columns_to_sessions', $progress, HOUR_IN_SECONDS );
+
+		if ( $remaining_count > 0 ) {
+			$wpdb->query(
+				$wpdb->prepare(
+					"CREATE TEMPORARY TABLE IF NOT EXISTS burst_batch_ids AS
+					SELECT ID, session_id
+					FROM {$wpdb->prefix}burst_statistics
+					WHERE browser_id != 9999
+					ORDER BY ID
+					LIMIT %d",
+					$batch
+				)
+			);
+
+			// Step 1: Materialize session aggregates into a temp table.
+			// burst_batch_ids is only referenced once here, avoiding the
+			// "Can't reopen table" MySQL limitation on temporary tables.
+			$wpdb->query(
+				"CREATE TEMPORARY TABLE IF NOT EXISTS burst_session_data AS
+				SELECT
+					st.session_id,
+					MIN(CASE WHEN st.browser_id != 9999 THEN st.browser_id END)                    AS browser_id,
+					MIN(CASE WHEN st.browser_id != 9999 THEN st.browser_version_id END)            AS browser_version_id,
+					MIN(CASE WHEN st.browser_id != 9999 THEN st.platform_id END)                   AS platform_id,
+					MIN(CASE WHEN st.browser_id != 9999 THEN st.device_id END)                     AS device_id,
+					COALESCE(MIN(CASE WHEN st.browser_id != 9999 THEN st.first_time_visit END), 0) AS first_time_visit,
+					CASE WHEN COUNT(st.ID) > 1 THEN 0 ELSE MAX(st.bounce) END                      AS bounce
+				FROM {$wpdb->prefix}burst_statistics st
+				INNER JOIN burst_batch_ids b ON st.session_id = b.session_id
+				GROUP BY st.session_id"
+			);
+
+			// Step 2: Update sessions using the materialized temp table.
+			// burst_session_data is a separate temp table, no double reference.
+			$wpdb->query(
+				"UPDATE {$wpdb->prefix}burst_sessions s
+				INNER JOIN burst_session_data sd ON s.ID = sd.session_id
+				SET
+					s.browser_id         = sd.browser_id,
+					s.browser_version_id = sd.browser_version_id,
+					s.platform_id        = sd.platform_id,
+					s.device_id          = sd.device_id,
+					s.first_time_visit   = sd.first_time_visit,
+					s.bounce             = sd.bounce"
+			);
+
+			// Mark the processed batch as done using sentinel value 9999.
+			$wpdb->query(
+				"UPDATE {$wpdb->prefix}burst_statistics
+				INNER JOIN burst_batch_ids b ON {$wpdb->prefix}burst_statistics.ID = b.ID
+				SET browser_id = 9999"
+			);
+
+			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS burst_session_data' );
+			$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS burst_batch_ids' );
+
+		} elseif ( $this->column_exists( 'burst_statistics', 'browser_id' ) ) {
+			$wpdb->query(
+				"ALTER TABLE {$wpdb->prefix}burst_statistics
+				DROP COLUMN `browser_id`,
+				DROP COLUMN `browser_version_id`,
+				DROP COLUMN `platform_id`,
+				DROP COLUMN `device_id`,
+				DROP COLUMN `first_time_visit`,
+				DROP COLUMN `bounce`"
+			);
+			delete_option( 'burst_db_upgrade_move_columns_to_sessions' );
+			delete_transient( 'burst_progress_move_columns_to_sessions' );
+			self::error_log( 'move_columns_to_sessions upgrade complete.' );
+		}
 	}
 }

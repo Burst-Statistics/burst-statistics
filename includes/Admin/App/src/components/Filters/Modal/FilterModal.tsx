@@ -6,14 +6,7 @@ import FilterSetupView from './FilterSetupView';
 import { useFilters } from '@/hooks/useFilters';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import Icon from '@/utils/Icon';
-
-interface FilterConfig {
-	label: string;
-	icon: string;
-	type: string;
-	pro?: boolean;
-	options?: string;
-}
+import { type FilterConfig } from '@/config/filterConfig';
 
 interface FilterModalProps {
 	isOpen: boolean;
@@ -23,7 +16,7 @@ interface FilterModalProps {
 		config: FilterConfig;
 		value: string;
 	};
-	reportBlockIndex:number;
+	reportBlockIndex: number;
 }
 
 type ModalStep = 'selection' | 'setup';
@@ -32,10 +25,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
 	isOpen,
 	setIsOpen,
 	initialFilter,
-    reportBlockIndex
+	reportBlockIndex
 }) => {
-	const { setFilters, deleteFilter, clearAllFilters, getActiveFilters } =
-		useFilters( reportBlockIndex );
+	const { setFilters, deleteFilter, clearAllFilters, getActiveFilters } = useFilters( reportBlockIndex );
 
 	const [ currentStep, setCurrentStep ] = useState<ModalStep>( 'selection' );
 	const [ selectedFilter, setSelectedFilter ] = useState<string | null>( null );
@@ -136,7 +128,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
 				filterKey={selectedFilter}
 				config={selectedConfig}
 				onBack={handleBack}
-				tempValue={tempValue}
+
+				// Type casting it to string as child component expects this as string.
+				tempValue={tempValue + ''}
 				onTempValueChange={handleTempValueChange}
 			/>
 		);

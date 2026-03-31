@@ -69,7 +69,7 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 		define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 		define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 		define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
-		define( 'BURST_VERSION', '3.2.3' );
+		define( 'BURST_VERSION', '3.3.0' );
 		define( 'BURST_PUBLIC_KEY', 'bst_7k9mQpX2vL4nWzR8jYhF6tGcU5eBxN3dS1aM0iKoHgJfVq' );
 		// deprecated constant.
         //phpcs:ignore

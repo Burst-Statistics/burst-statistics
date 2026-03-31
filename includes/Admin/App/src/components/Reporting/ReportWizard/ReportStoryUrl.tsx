@@ -56,7 +56,7 @@ export const ReportStoryUrl: React.FC<ReportStoryUrlProps> = ({ reportId }) => {
                     title={link}
                     value={link}
                     onClick={( e ) => ( e.target as HTMLInputElement ).select()}
-                    className="max-w-full truncate text-sm text-gray-800 font-mono w-full bg-gray-50 px-2 py-1.5 rounded border border-gray-300 cursor-text focus:border-wp-blue focus:ring-1 focus:ring-wp-blue/20"
+                    className="burst-story-report-url max-w-full truncate text-sm text-gray-800 font-mono w-full bg-gray-50 px-2 py-1.5 rounded border border-gray-300 cursor-text focus:border-wp-blue focus:ring-1 focus:ring-wp-blue/20"
                 />
 
                 <Tooltip content={isCopied ? __( 'Copied!', 'burst-statistics' ) : __( 'Copy link', 'burst-statistics' )}>

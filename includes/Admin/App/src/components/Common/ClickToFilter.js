@@ -33,7 +33,7 @@ const ClickToFilter = ({
 }) => {
 
 	// Filter actions from TanStack Router-based hook.
-	const { setFilters, filtersConf, getActiveFilters } = useFilters(  );
+	const { setFilters, filtersConf, getActiveFilters } = useFilters();
 	const { getGoal } = useGoalsData();
 	const setInsightsMetrics = useInsightsStore( ( state ) => state.setMetrics );
 	const insightsMetrics = useInsightsStore( ( state ) => state.getMetrics() );
@@ -94,10 +94,11 @@ const ClickToFilter = ({
 						'https://' :
 						'http://';
 
-					if ( Object.prototype.hasOwnProperty.call( row, 'host' ) ) {
+				if ( Object.prototype.hasOwnProperty.call( row, 'host' ) ) {
 						siteUrl = `${protocol}${row.host}`;
 					} else if ( Object.prototype.hasOwnProperty.call( activeFilters, 'host' ) ) {
-						siteUrl = `${protocol}${activeFilters.host}`;
+						const hostValue = activeFilters.host?.replace?.( /^!/, '' ) ?? activeFilters.host;
+						siteUrl = `${protocol}${hostValue}`;
 					}
 				}
 				url = `${siteUrl}${filterValue.startsWith( '/' ) ? '' : '/'}${filterValue}`;

@@ -57,16 +57,18 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 				$count_sql = 'COUNT(DISTINCT(statistics.uid))';
 			}
 
-            // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- using prepared parts.
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- using prepared parts.
 			$sql = $wpdb->prepare(
 				"SELECT {$count_sql} AS value FROM {$wpdb->prefix}burst_statistics AS statistics
-								INNER JOIN {$wpdb->prefix}burst_goal_statistics AS goals
-								ON statistics.ID = goals.statistic_id
-								WHERE goals.goal_id = %s AND statistics.time > %s {$date_end_sql} {$goal_url_sql}",
+        INNER JOIN {$wpdb->prefix}burst_goal_statistics AS goals
+            ON statistics.ID = goals.statistic_id
+        INNER JOIN {$wpdb->prefix}burst_sessions AS sessions
+            ON statistics.session_id = sessions.ID
+        WHERE goals.goal_id = %s AND statistics.time > %s {$date_end_sql} {$goal_url_sql}",
 				$goal_id,
 				$date_start
 			);
-            // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			return $sql;
 		}
 
@@ -208,17 +210,25 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 
 				// Query to get best performing device.
 				$completed_goals_per_device_sql  = $this->get_goal_completed_count_sql( $goal_id );
-				$completed_goals_per_device_sql  = str_replace( ' AS value FROM ', ' AS value, statistics.device_id AS device_id FROM ', $completed_goals_per_device_sql );
-				$completed_goals_per_device_sql .= ' GROUP BY statistics.device_id ORDER BY value DESC LIMIT 4';
+				$completed_goals_per_device_sql  = str_replace( ' AS value FROM ', ' AS value, sessions.device_id AS device_id FROM ', $completed_goals_per_device_sql );
+				$completed_goals_per_device_sql .= ' GROUP BY sessions.device_id ORDER BY value DESC LIMIT 4';
                 // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- get_goal_completed_count_sql returns prepared sql.
 				$completed_goals_per_device = $wpdb->get_results( $completed_goals_per_device_sql );
 
 				$pageviews_per_device_sql = $wpdb->prepare(
-                    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- using prepared parts.
-					"SELECT {$count_sql} AS value, device_id FROM {$wpdb->prefix}burst_statistics as statistics WHERE statistics.time > %s {$date_end_sql} {$goal_url_sql} GROUP BY statistics.device_id ORDER BY value DESC LIMIT 4",
+					// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- using prepared parts.
+					"SELECT {$count_sql} AS value, sessions.device_id
+					FROM {$wpdb->prefix}burst_statistics AS statistics
+					INNER JOIN {$wpdb->prefix}burst_sessions AS sessions
+						ON statistics.session_id = sessions.ID
+					WHERE statistics.time > %s {$date_end_sql} {$goal_url_sql}
+					GROUP BY sessions.device_id
+					ORDER BY value DESC
+					LIMIT 4",
 					$date_start
 				);
-                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- prepared sql.
+                // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- prepared sql.
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is prepared via $wpdb->prepare() above.
 				$pageviews_per_device = $wpdb->get_results( $pageviews_per_device_sql );
 
 				// create lookupt table for faster access to pageviews per device.
@@ -277,19 +287,6 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 		public function install_goal_statistics_table(): void {
 			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 			global $wpdb;
-			// Remove duplicates before dbDelta adds UNIQUE constraint.
-			// Keep only the row with the lowest ID for each (goal_id, statistic_id) pair.
-			if ( $this->table_exists( 'burst_goal_statistics' ) ) {
-				$wpdb->query(
-					"DELETE gs1 FROM {$wpdb->prefix}burst_goal_statistics gs1
-                INNER JOIN {$wpdb->prefix}burst_goal_statistics gs2 
-                WHERE gs1.goal_id = gs2.goal_id 
-                AND gs1.statistic_id = gs2.statistic_id 
-                AND gs1.ID > gs2.ID"
-				);
-			}
-
-			global $wpdb;
 			$charset_collate = $wpdb->get_charset_collate();
 			$sql             = "CREATE TABLE {$wpdb->prefix}burst_goal_statistics (
                 `ID` int NOT NULL AUTO_INCREMENT,
@@ -302,7 +299,6 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 			dbDelta( $sql );
 			if ( ! empty( $wpdb->last_error ) ) {
 				self::error_log( 'Error creating goal statistics table: ' . $wpdb->last_error );
-				// Exit without updating version if table creation failed.
 				return;
 			}
 
@@ -312,7 +308,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 			];
 
 			foreach ( $indexes as $index ) {
-				$this->add_index( $wpdb->prefix . 'burst_goal_statistics', $index );
+				$this->add_index( 'burst_goal_statistics', $index );
 			}
 		}
 	}

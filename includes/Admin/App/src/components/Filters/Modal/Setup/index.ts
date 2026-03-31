@@ -9,3 +9,4 @@ export { default as StringFilterSetup } from './StringFilterSetup';
 export { default as BooleanFilterSetup } from './BooleanFilterSetup';
 export { default as IntFilterSetup } from './IntFilterSetup';
 export { default as DeviceFilterSetup } from './DeviceFilterSetup';
+export { default as TimePerSessionFilterSetup } from './TimePerSessionFilterSetup';

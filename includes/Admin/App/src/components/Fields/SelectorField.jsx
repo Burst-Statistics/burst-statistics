@@ -44,7 +44,8 @@ const SelectorField = forwardRef(
 
 		const previewURL = addQueryArgs( baseUrl, {
 			burst_preview: '1',
-			burst_force_logged_out: previewDisplayLoggedOut ? '1' : '0'
+			burst_force_logged_out: previewDisplayLoggedOut ? '1' : '0',
+			nonce: burst_settings.burst_nonce
 		});
 
 		const displayPreviewURL = addQueryArgs( baseUrl, {});

@@ -26,7 +26,7 @@ const OtherPluginsBlock = () => {
 	const { data: pluginData = [], isLoading } = useQuery({
 		queryKey: [ 'otherPluginsData' ],
 		queryFn: async() => {
-			let response = await burst_api.doAction( 'otherpluginsdata' );
+			let response = await burst_api.getAction( 'otherpluginsdata' );
 			response = Object.values( response );
 
 			// Process the plugin data

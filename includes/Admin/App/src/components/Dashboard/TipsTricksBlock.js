@@ -6,13 +6,13 @@ import { BlockContent } from '@/components/Blocks/BlockContent';
 import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import { useQuery } from '@tanstack/react-query';
-import { doAction } from '@/utils/api';
+import { getAction } from '@/utils/api';
 import he from 'he';
 
 const TipsTricksBlock = () => {
 	const articlesQuery = useQuery({
 		queryKey: [ 'articles' ],
-		queryFn: () => doAction( 'get_article_data' ),
+		queryFn: () => getAction( 'get_article_data' ),
 
 		// Only fetch once when component mounts
 		staleTime: Infinity,
