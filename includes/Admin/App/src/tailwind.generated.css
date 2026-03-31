@@ -3385,6 +3385,10 @@ input[type=radio]:checked::before {
   border-radius: 0.25rem;
 }
 
+#burst-statistics .rounded-2xl {
+  border-radius: 1rem;
+}
+
 #burst-statistics .rounded-\[9px\] {
   border-radius: 9px;
 }
@@ -8968,6 +8972,10 @@ a.burst-button,
 
   #burst-statistics .sm\:block {
     display: block;
+  }
+
+  #burst-statistics .sm\:w-64 {
+    width: 16rem;
   }
 
   #burst-statistics .sm\:grid-cols-2 {
