@@ -5,15 +5,7 @@ import FilterCard from './FilterCard';
 import { useFilters } from '@/hooks/useFilters';
 import Icon from '@/utils/Icon';
 import useSettingsData from '@/hooks/useSettingsData';
-
-interface FilterConfig {
-	label: string;
-	icon: string;
-	type: string;
-	pro?: boolean;
-	category?: string;
-	coming_soon?: boolean;
-}
+import { type FilterConfig } from '@/config/filterConfig';
 
 interface FilterSelectionViewProps {
 	onSelectFilter: ( filterKey: string, config: FilterConfig ) => void;
@@ -129,14 +121,7 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 	const searchResults = searchFilters( searchQuery );
 
 	const renderFilters = (
-		filters: Array<{
-			key: string;
-			label: string;
-			icon: string;
-			type: string;
-			pro?: boolean;
-			category?: string;
-		}>,
+		filters: Array<{ key: string } & FilterConfig>,
 		searchInfo?: { source: string; isFromCurrentTab: boolean }
 	) => {
 		if ( 0 === filters.length ) {

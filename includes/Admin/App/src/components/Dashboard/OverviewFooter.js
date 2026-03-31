@@ -17,7 +17,7 @@ const OverviewFooter = () => {
 	// disabled
 	const [ lastChecked, setLastChecked ] = useState( 0 );
 	useMemo( () => {
-		burst_api.doAction( 'tracking' ).then( ( response ) => {
+		burst_api.getAction( 'tracking' ).then( ( response ) => {
 			if (
 				'beacon' === response.status ||
 				'rest' === response.status ||

@@ -2,7 +2,9 @@
 
 namespace Burst\Traits;
 
+use Burst\Admin\Share\Share;
 use Burst\Frontend\Ip\Ip;
+use Burst\Frontend\Share\Share_Expired;
 use function Burst\burst_loader;
 use function burst_is_logged_in_rest;
 
@@ -41,13 +43,18 @@ trait Admin_Helper {
 	}
 
 	/**
-	 * Check if user has Burst view permissions
+	 * Check if user has Burst view sales permissions
 	 *
 	 * @return boolean true or false
 	 */
 	protected function user_can_view_sales(): bool {
 		if ( isset( burst_loader()->user_can_view_sales ) ) {
 			return burst_loader()->user_can_view_sales;
+		}
+
+		// For shared links, access is determined solely by the sharing settings.
+		if ( $this->is_shared_link_request() ) {
+			return burst_loader()->user_can_view_sales = burst_loader()->admin->share->ecommerce_tab_is_shared();
 		}
 
 		if ( ! is_user_logged_in() ) {
@@ -59,6 +66,14 @@ trait Admin_Helper {
 		}
 
 		return burst_loader()->user_can_view_sales = true;
+	}
+
+	/**
+	 * Check if the request is a shared link request.
+	 */
+	protected function is_shared_link_request(): bool {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- only checking existence of a property, not processing the value.
+		return isset( $_SERVER['HTTP_X_BURST_SHARE_TOKEN'] ) || isset( $_GET['burst_share_token'] );
 	}
 
 	/**
@@ -123,7 +138,7 @@ trait Admin_Helper {
 	/**
 	 * Validate a share token
 	 */
-	public function validate_share_token( string $token ): bool {
+	public static function validate_share_token( string $token ): bool {
 		if ( ! preg_match( '/^[a-f0-9]{32}$/i', $token ) ) {
 			return false;
 		}
@@ -177,7 +192,7 @@ trait Admin_Helper {
 
 		// the share token is a nonce in itself with an expiry.
         // phpcs:ignore
-		if ( isset( $_GET['burst_share_token'] ) && $this->validate_share_token( wp_unslash( $_GET['burst_share_token'] ) ) ) {
+		if ( isset( $_GET['burst_share_token'] ) && self::validate_share_token( wp_unslash( $_GET['burst_share_token'] ) ) ) {
 			return burst_loader()->has_admin_access = true;
 		}
 
@@ -397,7 +412,7 @@ trait Admin_Helper {
 			return false;
 		}
 		$valid = wp_verify_nonce( sanitize_text_field( wp_unslash( $nonce ) ), $action );
-		return apply_filters( 'burst_verify_nonce', wp_verify_nonce( sanitize_text_field( wp_unslash( $nonce ) ), $action ), $nonce, $action );
+		return apply_filters( 'burst_verify_nonce', $valid, $nonce, $action );
 	}
 
 	/**

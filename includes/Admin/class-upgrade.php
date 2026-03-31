@@ -176,6 +176,20 @@ class Upgrade {
 			if ( file_exists( $mu_plugin ) ) {
 				wp_delete_file( $mu_plugin );
 			}
+
+			// Remove duplicates before dbDelta adds UNIQUE constraint.
+			// Keep only the row with the lowest ID for each (goal_id, statistic_id) pair.
+			// this is an old upgrade, moving it here to clean up the install_goal_statistics_table() function and ensure it only runs once.
+			if ( $this->table_exists( 'burst_goal_statistics' ) ) {
+				global $wpdb;
+				$wpdb->query(
+					"DELETE gs1 FROM {$wpdb->prefix}burst_goal_statistics gs1
+                INNER JOIN {$wpdb->prefix}burst_goal_statistics gs2 
+                WHERE gs1.goal_id = gs2.goal_id 
+                AND gs1.statistic_id = gs2.statistic_id 
+                AND gs1.ID > gs2.ID"
+				);
+			}
 		}
 
 		if ( $prev_version && version_compare( $prev_version, '2.2.6', '<' ) ) {
@@ -264,6 +278,10 @@ class Upgrade {
 			if ( $this->get_option_bool( 'enable_cookieless_tracking' ) && ! $this->get_option_bool( 'enable_turbo_mode' ) ) {
 				\Burst\burst_loader()->admin->tasks->add_task( 'turbo_mode_recommended' );
 			}
+		}
+
+		if ( $prev_version && version_compare( $prev_version, '3.3.0', '<' ) ) {
+			update_option( 'burst_db_upgrade_move_columns_to_sessions', true, false );
 		}
 
 		$admin = new Admin();

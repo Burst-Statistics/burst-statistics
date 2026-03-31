@@ -43,6 +43,11 @@ class Mailer {
 	public string $logo;
 
 	/**
+	 * Dark mode logo URL
+	 */
+	public string $logo_dark;
+
+	/**
 	 * Recipient e-mail addresses
 	 */
 	public array $to = [];
@@ -203,6 +208,18 @@ class Mailer {
 	 */
 	public function set_logo( string $logo ): Mailer {
 		$this->logo = $logo;
+
+		return $this;
+	}
+
+	/**
+	 * Set dark mode logo URL.
+	 *
+	 * @param string $logo_dark Dark mode logo URL.
+	 * @return Mailer Returns the Mailer instance for method chaining.
+	 */
+	public function set_logo_dark( string $logo_dark ): Mailer {
+		$this->logo_dark = $logo_dark;
 
 		return $this;
 	}
@@ -439,7 +456,8 @@ class Mailer {
 
 		$this->set_pretty_domain( preg_replace( '/^https?:\/\//', '', home_url() ) )
 			->set_domain( '<a class="burst-intro-url" href="' . home_url() . '">' . $this->pretty_domain . '</a>' )
-			->set_logo( BURST_URL . '/assets/img/burst-email-logo.png' )
+			->set_logo( BURST_URL . 'assets/img/burst-email-logo.png' )
+			->set_logo_dark( BURST_URL . 'assets/img/burst-email-logo-dark-mode.png' )
 			->set_sent_by_text(
 				// translators: %s is the website's domain name (e.g., example.com).
 				sprintf( __( 'This e-mail is sent from your own WordPress website, which is: %s.', 'burst-statistics' ), $this->pretty_domain ) .
@@ -746,6 +764,7 @@ class Mailer {
 				'{base}',
 				'{title}',
 				'{logo}',
+				'{logo_dark}',
 				'{message}',
 				'{blocks}',
 				'{read_more}',
@@ -756,6 +775,7 @@ class Mailer {
 				'<base href="' . esc_url( home_url( '/' ) ) . '">',
 				wp_kses_post( $this->title ),
 				esc_url_raw( $this->logo ),
+				esc_url_raw( $this->logo_dark ),
 				wp_kses_post( $this->message ),
 				wp_kses_post( $block_html ),
 				wp_kses_post( $this->read_more ),

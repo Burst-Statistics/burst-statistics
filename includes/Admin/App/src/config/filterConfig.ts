@@ -40,6 +40,10 @@ export interface FilterConfig {
 	category: FilterCategory;
 	reloadOnSearch?: boolean;
 	coming_soon?: boolean;
+	exclusion_allowed?: boolean;
+
+	/** When set, shows a time-limited "New" badge. Remove coming_soon and add this when launching a feature. */
+	new_badge?: { version: string; days: number; tooltip?: string };
 }
 
 /**
@@ -55,7 +59,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		options: 'pages',
 		pro: false,
 		category: 'content',
-		reloadOnSearch: true
+		reloadOnSearch: true,
+		exclusion_allowed: true
 	},
 	referrer: {
 		label: __( 'Referrer', 'burst-statistics' ),
@@ -64,7 +69,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		options: 'referrers',
 		pro: false,
 		category: 'sources',
-		reloadOnSearch: true
+		reloadOnSearch: true,
+		exclusion_allowed: true
 	},
 	goal_id: {
 		label: __( 'Goal', 'burst-statistics' ),
@@ -72,14 +78,16 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'goals',
 		pro: false,
-		category: 'content'
+		category: 'content',
+		exclusion_allowed: true
 	},
 	bounces: {
 		label: __( 'Bounced Visitors', 'burst-statistics' ),
 		icon: 'bounce',
 		type: 'boolean',
 		pro: false,
-		category: 'behavior'
+		category: 'behavior',
+		exclusion_allowed: false
 	},
 	device_id: {
 		label: __( 'Device', 'burst-statistics' ),
@@ -87,7 +95,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'devices',
 		pro: false,
-		category: 'content'
+		category: 'content',
+		exclusion_allowed: false
 	},
 
 	// Pro Filters.
@@ -104,7 +113,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		icon: 'user',
 		type: 'boolean',
 		pro: true,
-		category: 'behavior'
+		category: 'behavior',
+		exclusion_allowed: false
 	},
 	bounce_rate: {
 		label: __( 'Bounce Rate', 'burst-statistics' ),
@@ -119,7 +129,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		icon: 'bounce',
 		type: 'boolean',
 		pro: true,
-		category: 'behavior'
+		category: 'behavior',
+		exclusion_allowed: false
 	},
 	conversion_rate: {
 		label: __( 'Conversion Rate', 'burst-statistics' ),
@@ -134,14 +145,16 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		icon: 'parameters',
 		type: 'string',
 		pro: true,
-		category: 'sources'
+		category: 'sources',
+		exclusion_allowed: true
 	},
 	parameters: {
 		label: __( 'URL Parameters', 'burst-statistics' ),
 		icon: 'parameters',
 		type: 'string',
 		pro: true,
-		category: 'sources'
+		category: 'sources',
+		exclusion_allowed: true
 	},
 	campaign: {
 		label: __( 'Campaign', 'burst-statistics' ),
@@ -149,7 +162,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'campaigns',
 		pro: true,
-		category: 'sources'
+		category: 'sources',
+		exclusion_allowed: true
 	},
 	source: {
 		label: __( 'Source', 'burst-statistics' ),
@@ -157,7 +171,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'contents',
 		pro: true,
-		category: 'sources'
+		category: 'sources',
+		exclusion_allowed: true
 	},
 	medium: {
 		label: __( 'Medium', 'burst-statistics' ),
@@ -165,7 +180,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'mediums',
 		pro: true,
-		category: 'sources'
+		category: 'sources',
+		exclusion_allowed: true
 	},
 	term: {
 		label: __( 'Term', 'burst-statistics' ),
@@ -173,7 +189,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'terms',
 		pro: true,
-		category: 'sources'
+		category: 'sources',
+		exclusion_allowed: true
 	},
 	content: {
 		label: __( 'Content', 'burst-statistics' ),
@@ -181,7 +198,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'contents',
 		pro: true,
-		category: 'sources'
+		category: 'sources',
+		exclusion_allowed: true
 	},
 	country_code: {
 		label: __( 'Country', 'burst-statistics' ),
@@ -189,7 +207,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'countries',
 		pro: true,
-		category: 'location'
+		category: 'location',
+		exclusion_allowed: true
 	},
 	state: {
 		label: __( 'State', 'burst-statistics' ),
@@ -197,7 +216,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'states',
 		pro: true,
-		category: 'location'
+		category: 'location',
+		exclusion_allowed: true
 	},
 	city: {
 		label: __( 'City', 'burst-statistics' ),
@@ -205,7 +225,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'cities',
 		pro: true,
-		category: 'location'
+		category: 'location',
+		exclusion_allowed: true
 	},
 	continent_code: {
 		label: __( 'Continent', 'burst-statistics' ),
@@ -213,7 +234,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'continents',
 		pro: true,
-		category: 'location'
+		category: 'location',
+		exclusion_allowed: true
 	},
 	time_per_session: {
 		label: __( 'Time per Session', 'burst-statistics' ),
@@ -221,7 +243,7 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'int',
 		pro: true,
 		category: 'behavior',
-		coming_soon: true
+		new_badge: { version: '3.2.3', days: 30, tooltip: __( 'New in 3.2.3 – filter visitors by how long they spent on your site.', 'burst-statistics' ) }
 	},
 	platform_id: {
 		label: __( 'Operating System', 'burst-statistics' ),
@@ -229,7 +251,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'platforms',
 		pro: true,
-		category: 'content'
+		category: 'content',
+		exclusion_allowed: true
 	},
 	browser_id: {
 		label: __( 'Browser', 'burst-statistics' ),
@@ -237,7 +260,8 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'string',
 		options: 'browsers',
 		pro: true,
-		category: 'content'
+		category: 'content',
+		exclusion_allowed: true
 	}
 };
 export type BlockFilters = {
@@ -254,8 +278,8 @@ export type FilterKey = keyof typeof FILTER_CONFIG;
 export const TRAILING_PARAM_KEY = '_';
 
 /**
- * Filter search params type - all filters are optional strings.
- * Includes trailing param for URL parsing safety.
+ * Filter search params type - each filter key maps to an optional string.
+ * Exclusion is encoded as a '!' prefix on the value (e.g. '!google.com').
  */
 export type FilterSearchParams = {
 	[K in FilterKey]?: string;
@@ -288,6 +312,17 @@ export const validateFilterSearch = (
 	}
 
 	return filters;
+};
+
+/**
+ * Checks if a filter value indicates exclusion (starts with '!').
+ *
+ * @param value - The filter value to check.
+ *
+ * @return True if the value indicates exclusion, false otherwise.
+ */
+export const isExcluding = ( value: string | undefined ): boolean => {
+	return !! value && value.startsWith( '!' );
 };
 
 /**

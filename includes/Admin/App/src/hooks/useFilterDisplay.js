@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFilters } from '@/hooks/useFilters';
 import { useInsightsStore } from '../store/useInsightsStore';
 import useFiltersData from '@/hooks/useFiltersData';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
+import { formatDuration } from '@/utils/formatting';
+import { isExcluding } from '@/config/filterConfig';
 
 /**
  * Custom hook for managing filter display logic.
@@ -51,6 +53,10 @@ export const useFilterDisplay = ( reportBlockIndex ) => {
 			return '';
 		}
 
+		if ( filtersConf[filterKey].exclusion_allowed && isExcluding( value ) ) {
+			value = value.substring( 1 );
+		}
+
 		if ( Object.prototype.hasOwnProperty.call( filtersConf, filterKey ) ) {
 			const filterType = filtersConf[filterKey]?.options || false;
 			if ( filterType ) {
@@ -77,28 +83,47 @@ export const useFilterDisplay = ( reportBlockIndex ) => {
 			}
 		}
 
-		switch ( filterKey ) {
-			case 'country_code': {
-				if ( ! value ) {
-					return '';
-				}
-				const code = value.toUpperCase();
-				const countryLabel = window.burst_settings?.countries?.[ code ];
-				return countryLabel || code;
+	switch ( filterKey ) {
+		case 'country_code': {
+			if ( ! value ) {
+				return '';
 			}
-			case 'bounces':
-				return 'include' === value ?
-					__( 'Bounced visitors', 'burst-statistics' ) :
-					__( 'Active visitors', 'burst-statistics' );
-
-			case 'new_visitor':
-				return 'true' === value ?
-					__( 'New visitors', 'burst-statistics' ) :
-					__( 'Returning visitors', 'burst-statistics' );
-
-			default:
-				return value;
+			const code = value.toUpperCase();
+			const countryLabel = window.burst_settings?.countries?.[ code ];
+			return countryLabel || code;
 		}
+		case 'bounces':
+			return 'include' === value ?
+				__( 'Bounced visitors', 'burst-statistics' ) :
+				__( 'Active visitors', 'burst-statistics' );
+
+		case 'new_visitor':
+			return 'true' === value ?
+				__( 'New visitors', 'burst-statistics' ) :
+				__( 'Returning visitors', 'burst-statistics' );
+
+		case 'time_per_session': {
+			const dashIdx = String( value ).indexOf( '-' );
+			if ( -1 === dashIdx ) {
+				return value;
+			}
+			const minRaw = String( value ).slice( 0, dashIdx );
+			const maxRaw = String( value ).slice( dashIdx + 1 );
+			const minSec = parseInt( minRaw, 10 );
+			const formattedMin = formatDuration( isNaN( minSec ) ? 0 : minSec );
+			if ( '' === maxRaw ) {
+
+				/* translators: %s is a human-readable duration like 2m, 1h */
+				return sprintf( __( '%s+', 'burst-statistics' ), formattedMin );
+			}
+			const maxSec = parseInt( maxRaw, 10 );
+			const formattedMax = formatDuration( isNaN( maxSec ) ? 0 : maxSec );
+			return `${formattedMin} – ${formattedMax}`;
+		}
+
+		default:
+			return value;
+	}
 	};
 
 	/**

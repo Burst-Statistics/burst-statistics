@@ -199,7 +199,7 @@ export const BlockSettingsSidebar: React.FC<BlockSettingsSidebarProps> = ({ repo
 					<button
 						type="button"
 						onClick={handleDelete}
-						className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-all focus:ring-2 focus:ring-red-500 focus:ring-inset"
+						className={'burst-delete-story-block-' + block.id + ' flex items-center gap-1.5 px-3 py-2 rounded-md text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-all focus:ring-2 focus:ring-red-500 focus:ring-inset'}
 						aria-label={__( 'Delete block', 'burst-statistics' )}
 					>
 						<Icon name="trash" size={14} />

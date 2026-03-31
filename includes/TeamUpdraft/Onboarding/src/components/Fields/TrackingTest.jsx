@@ -288,7 +288,7 @@ const TrackingTest = () => {
                 const handleLoad = () => {
                     if (stage === 0) {
                         // Load second page
-                        iframe.src = onboardingData.site_url + '/404' + glue(onboardingData.site_url) + 'burst_test_hit&burst_nextpage';
+                        iframe.src = onboardingData.site_url + '/404' + glue(onboardingData.site_url) + 'burst_test_hit&burst_nextpage&nonce='+onboardingData.token;
                         stage = 1;
                     } else {
                         // Both stages complete
@@ -299,7 +299,7 @@ const TrackingTest = () => {
                 };
                 
                 iframe.addEventListener('load', handleLoad);
-                iframe.src = onboardingData.site_url + glue(onboardingData.site_url) + 'burst_test_hit';
+                iframe.src = onboardingData.site_url + glue(onboardingData.site_url) + 'burst_test_hit&nonce='+onboardingData.token;
             });
 
             // Check if tracking worked

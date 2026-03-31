@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import RadioButtonsInput from '@/components/Inputs/RadioButtonsInput';
-
-interface FilterConfig {
-	label: string;
-	icon: string;
-	type: string;
-	pro?: boolean;
-}
+import { type FilterConfig } from '@/config/filterConfig';
 
 interface BooleanFilterSetupProps {
 	filterKey: string;

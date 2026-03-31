@@ -266,6 +266,28 @@ export const doAction = ( action, data = {}) =>
 	});
 
 /**
+ * Perform a read-only GET action via the get_action endpoint.
+ * Use this for actions that only require burst_viewer capability.
+ *
+ * @param {string} action     - The action name
+ * @param {Object} actionData - Optional data to pass as query params
+ * @return {Promise}
+ */
+export const getAction = ( action, actionData = {}) => {
+    const params = new URLSearchParams({
+        nonce: burst_settings.burst_nonce,
+        ...actionData
+    }).toString();
+
+    return makeRequest(
+        `burst/v1/get_action/${action}${glue()}${params}`,
+        'GET'
+    ).then( ( response ) => {
+        return Object.prototype.hasOwnProperty.call( response, 'data' ) ? response.data : [];
+    });
+};
+
+/**
  * Serialize value for URL parameters, handling arrays and objects
  * @param {*} value - Value to serialize
  * @return {string} Serialized value

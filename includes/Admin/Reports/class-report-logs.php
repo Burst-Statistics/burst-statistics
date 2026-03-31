@@ -164,7 +164,7 @@ class Report_Logs {
 		];
 
 		foreach ( $indexes as $index ) {
-			$this->add_index( "{$wpdb->prefix}burst_report_logs", $index );
+			$this->add_index( 'burst_report_logs', $index );
 		}
 	}
 
@@ -562,10 +562,10 @@ class Report_Logs {
 	public function get_report_status( int $report_id ): array {
 		$report = new Report( $report_id );
 
-		if ( $report->format === Report_Format::STORY ) {
+		if ( ! $report->scheduled ) {
 			return [
-				'status'  => 'ready_to_send',
-				'message' => __( 'Ready to send', 'burst-statistics' ),
+				'status'  => 'ready_to_share',
+				'message' => __( 'Ready to share', 'burst-statistics' ),
 			];
 		}
 
