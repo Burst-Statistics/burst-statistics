@@ -133,6 +133,9 @@ class Archive {
 			$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}burst_statistics where time<= %d and time>=%d", (int) $data['unix_end'], (int) $data['unix_start'] ) );
 		}
 
+		// Delete orphaned data from the sessions table.
+		$wpdb->query( "DELETE s FROM {$wpdb->prefix}burst_sessions s LEFT JOIN {$wpdb->prefix}burst_statistics st ON s.id = st.session_id WHERE st.session_id IS NULL" );
+
 		$this->set_month_status( (int) $data['month'], (int) $data['year'], 'deleted' );
 		$this->estimate_table_size();
 		delete_transient( 'burst_running_delete' );
@@ -228,14 +231,6 @@ class Archive {
 	 * Create or update table
 	 */
 	public function upgrade_database(): void {
-		if ( ! is_admin() && ! wp_doing_cron() ) {
-			return;
-		}
-
-		if ( ! $this->user_can_manage() ) {
-			return;
-		}
-
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		global $wpdb;
 		$charset_collate = $wpdb->get_charset_collate();

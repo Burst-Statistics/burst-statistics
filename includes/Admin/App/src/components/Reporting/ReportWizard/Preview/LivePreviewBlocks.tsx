@@ -44,7 +44,7 @@ export const LivePreviewBlocks = ({ className }: { className?: string }) => {
     };
 
     return (
-        <div ref={containerRef} className={`flex h-full ${className || ''}`}>
+        <div ref={containerRef} className={`burst-story-preview-container flex h-full ${className || ''}`}>
             {/* Preview content area. */}
             <div
                 ref={previewRef}

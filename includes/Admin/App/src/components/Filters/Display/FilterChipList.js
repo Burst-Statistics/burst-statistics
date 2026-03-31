@@ -37,17 +37,19 @@ const FilterChipList = ({
 	}
 	return (
 		<div className={className}>
-			{filters.map( ( filter ) => (
-				<FilterChip
-					disabled={ isReport || ! userCanFilter }
-					key={'filterchip' + filter.key}
-					filter={filter}
-					onRemove={onRemove}
-					onClick={onClick}
-					showRemoveButton={showRemoveButton}
-					smallLabels={smallLabels}
-				/>
-			) )}
+			{
+				filters.map( ( filter ) => (
+					<FilterChip
+						disabled={ isReport || ! userCanFilter }
+						key={'filterchip' + filter.key}
+						filter={filter}
+						onRemove={onRemove}
+						onClick={onClick}
+						showRemoveButton={showRemoveButton}
+						smallLabels={smallLabels}
+					/>
+				) )
+			}
 		</div>
 	);
 };

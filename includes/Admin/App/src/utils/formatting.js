@@ -641,6 +641,38 @@ function formatDateShort( dateInput ) {
 	}
 }
 
+/**
+ * Format a duration in seconds to a human-readable string.
+ *
+ * Examples:
+ *   0     → "0s"
+ *   30    → "30s"
+ *   90    → "1m 30s"
+ *   120   → "2m"
+ *   3600  → "1h"
+ *   3660  → "1h 1m"
+ *
+ * @param {number} seconds - Duration in seconds.
+ * @return {string} Human-readable duration.
+ */
+const formatDuration = ( seconds ) => {
+	if ( 0 === seconds ) {
+		return '0s';
+	}
+	if ( 0 === seconds % 3600 ) {
+		return `${seconds / 3600}h`;
+	}
+	if ( 0 === seconds % 60 ) {
+		return `${seconds / 60}m`;
+	}
+	if ( 60 > seconds ) {
+		return `${seconds}s`;
+	}
+	const m = Math.floor( seconds / 60 );
+	const s = seconds % 60;
+	return `${m}m ${s}s`;
+};
+
 export {
 	getRelativeTime,
 	getPercentage,
@@ -667,5 +699,6 @@ export {
 	formatDateShort,
 	formatDate,
 	formatDateAndTime,
-	formatUnixToTime
+	formatUnixToTime,
+	formatDuration
 };

@@ -36,6 +36,7 @@ class Admin {
 	public Tasks $tasks;
 	public Statistics $statistics;
 	public App $app;
+	public Share $share;
 
 	/**
 	 * Initialize the admin class
@@ -86,7 +87,6 @@ class Admin {
 		add_action( 'burst_recalculate_known_uids_cron', [ $this, 'update_known_uids_table' ] );
 		add_action( 'burst_recalculate_bounces_cron', [ $this, 'recalculate_bounces' ] );
 		add_action( 'burst_recalculate_first_time_visits_cron', [ $this, 'recalculate_first_time_visits' ] );
-
 		add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
 
 		$this->maybe_update_site_scheme();
@@ -137,8 +137,8 @@ class Admin {
 			update_option( 'burst_demo_data_installed', true, false );
 		}
 
-		$share = new Share();
-		$share->init();
+		$this->share = new Share();
+		$this->share->init();
 	}
 
 	/**
@@ -188,27 +188,22 @@ class Admin {
 		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', 15 * MINUTE_IN_SECONDS );
 		$time_cutoff    = ( $last_update < $default_cutoff ) ? $last_update : $default_cutoff;
 
-		// Mark as first-time visit if:
-		// 1. UID is NOT in known_uids, OR.
-		// 2. UID's first_seen timestamp is >= time_cutoff (meaning they're new in this batch).
+		// Mark session as first_time_visit = 1 only if the session's earliest statistic
+		// matches the UID's first_seen in known_uids — meaning this is genuinely their first visit.
 		$wpdb->query(
 			$wpdb->prepare(
-				"
-        UPDATE {$wpdb->prefix}burst_statistics bs
-        INNER JOIN (
-            SELECT curr.uid, MIN(curr.time) AS first_time
-            FROM {$wpdb->prefix}burst_statistics curr
-            LEFT JOIN {$wpdb->prefix}burst_known_uids known ON curr.uid = known.uid
-            WHERE curr.time >= %d
-              AND curr.first_time_visit = 0
-              AND (known.uid IS NULL OR known.first_seen >= %d)
-            GROUP BY curr.uid
-        ) first_visits ON bs.uid = first_visits.uid 
-                       AND bs.time = first_visits.first_time
-        SET bs.first_time_visit = 1
-        WHERE bs.first_time_visit = 0
-    ",
-				$time_cutoff,
+				"UPDATE {$wpdb->prefix}burst_sessions sess
+				INNER JOIN (
+					SELECT session_id, MIN(time) AS first_time, uid
+					FROM {$wpdb->prefix}burst_statistics
+					WHERE time >= %d
+					GROUP BY session_id, uid
+				) st ON st.session_id = sess.ID
+				INNER JOIN {$wpdb->prefix}burst_known_uids known ON st.uid = known.uid
+				SET sess.first_time_visit = 1
+				WHERE sess.first_time_visit = 0
+				AND known.first_seen >= st.first_time - 1
+				AND known.first_seen <= st.first_time + 1",
 				$time_cutoff
 			)
 		);
@@ -238,7 +233,7 @@ class Admin {
         FROM {$wpdb->prefix}burst_statistics
         WHERE time >= %d
         GROUP BY uid
-        ON DUPLICATE KEY UPDATE 
+        ON DUPLICATE KEY UPDATE
             first_seen = LEAST(first_seen, VALUES(first_seen)),
             last_seen = GREATEST(last_seen, VALUES(last_seen))
     ",
@@ -267,23 +262,27 @@ class Admin {
 		$last_update    = get_option( 'burst_last_bounces_update', time() - 15 * MINUTE_IN_SECONDS );
 		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', 15 * MINUTE_IN_SECONDS );
 		$time_cutoff    = ( $last_update < $default_cutoff ) ? $last_update : $default_cutoff;
+
 		global $wpdb;
+
+		// Find sessions with >1 pageview or long time_on_page (engaged), then mark them as not bounced.
 		$wpdb->query(
 			$wpdb->prepare(
-				"UPDATE {$wpdb->prefix}burst_statistics bs
-        INNER JOIN (
-            SELECT session_id
-            FROM {$wpdb->prefix}burst_statistics
-            WHERE time > %d
-            GROUP BY session_id
-            HAVING COUNT(*) > 1
-                OR MAX(time_on_page) > 5000 -- long page time means engaged
-        ) nb ON bs.session_id = nb.session_id
-        SET bs.bounce = 0
-        WHERE bs.bounce = 1",
+				"UPDATE {$wpdb->prefix}burst_sessions sess
+            INNER JOIN (
+                SELECT session_id
+                FROM {$wpdb->prefix}burst_statistics
+                WHERE time > %d
+                GROUP BY session_id
+                HAVING COUNT(*) > 1
+                    OR MAX(time_on_page) > 5000
+            ) nb ON sess.ID = nb.session_id
+            SET sess.bounce = 0
+            WHERE sess.bounce = 1",
 				$time_cutoff
 			)
 		);
+
 		update_option( 'burst_last_bounces_update', time(), false );
 	}
 
@@ -295,11 +294,9 @@ class Admin {
 	 */
 	public function add_ecommerce_menu_item( array $menu_items ): array {
 		$should_load_ecommerce = \Burst\burst_loader()->integrations->should_load_ecommerce();
-
 		if ( ! $should_load_ecommerce || ! $this->has_admin_access() || ! $this->user_can_view_sales() ) {
 			return $menu_items;
 		}
-
 		$ecommerce_menu_item = [
 			'id'             => 'sales',
 			'title'          => __( 'Sales', 'burst-statistics' ),
@@ -740,24 +737,24 @@ class Admin {
 							'referrer'          => $referrer,
 							'first_visited_url' => '/',
 							'last_visited_url'  => '/',
+							'browser_id'        => $browser_id,
+							'device_id'         => $device_id,
+							'platform_id'       => $platform_id,
+							'bounce'            => $bounce,
+							'first_time_visit'  => 1,
 						],
-						[ '%s', '%s', '%s' ]
+						[ '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d' ]
 					);
 
 					$session_id = $wpdb->insert_id;
 
-					$placeholders[] = '(%d, %s, %d, %d, %d, %d, %d, %d, %d, %d)';
+					$placeholders[] = '(%d, %s, %d, %d, %d)';
 					$values         = array_merge(
 						$values,
 						[
 							$stats_date_unix,
 							$page_url,
 							$uid,
-							1,
-							$bounce,
-							$browser_id,
-							$device_id,
-							$platform_id,
 							$time_on_page,
 							$session_id,
 						]
@@ -765,9 +762,9 @@ class Admin {
 				}
 
 				$query = "
-                    INSERT INTO {$wpdb->prefix}burst_statistics
-                    (time, page_url, uid, first_time_visit, bounce, browser_id, device_id, platform_id, time_on_page, session_id)
-                    VALUES " . implode( ', ', $placeholders );
+					INSERT INTO {$wpdb->prefix}burst_statistics
+					(time, page_url, uid, time_on_page, session_id)
+					VALUES " . implode( ', ', $placeholders );
                 // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- values are prepared.
 				$wpdb->query( $wpdb->prepare( $query, ...$values ) );
 			}

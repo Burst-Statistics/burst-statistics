@@ -3,16 +3,10 @@ import { __ } from '@wordpress/i18n';
 import clsx from 'clsx';
 import Icon from '@/utils/Icon';
 import ProBadge from '@/components/Common/ProBadge';
+import NewBadge from '@/components/Common/NewBadge';
 import { useFilters } from '@/hooks/useFilters';
 import useLicenseData from '@/hooks/useLicenseData';
-
-interface FilterConfig {
-	label: string;
-	icon: string;
-	type: string;
-	pro?: boolean;
-	coming_soon?: boolean;
-}
+import { type FilterConfig } from '@/config/filterConfig';
 
 interface FilterCardProps {
 	filterKey: string;
@@ -81,6 +75,10 @@ const FilterCard: React.FC<FilterCardProps> = ({
 
 		if ( config.coming_soon ) {
 			description += `, ${__( 'coming soon', 'burst-statistics' )}`;
+		}
+
+		if ( config.new_badge ) {
+			description += `, ${__( 'new', 'burst-statistics' )}`;
 		}
 
 		if ( isDisabled ) {
@@ -198,19 +196,37 @@ const FilterCard: React.FC<FilterCardProps> = ({
 					<h3 className="text-sm font-medium text-gray-900">
 						{config.label}
 					</h3>
+
 					{/* Pro Badge */}
-					{config.pro && (
-						<div className="mt-2">
-							<ProBadge label={__( 'Pro', 'burst-statistics' )} />
-						</div>
-					)}
-					{config.coming_soon && (
-						<div className="mt-2">
-							<span className="inline-flex items-center rounded bg-blue-light px-2 py-0.5 text-xs font-medium text-gray">
-								{__( 'Coming soon', 'burst-statistics' )}
-							</span>
-						</div>
-					)}
+					{
+						config.pro && (
+							<div className="mt-2">
+								<ProBadge label={__( 'Pro', 'burst-statistics' )} />
+							</div>
+						)
+					}
+
+					{
+						config.coming_soon && (
+							<div className="mt-2">
+								<span className="inline-flex items-center rounded bg-blue-light px-2 py-0.5 text-xs font-medium text-gray">
+									{__( 'Coming soon', 'burst-statistics' )}
+								</span>
+							</div>
+						)
+					}
+
+					{
+						config.new_badge && (
+							<div className="mt-2">
+								<NewBadge
+									version={config.new_badge.version}
+									days={config.new_badge.days}
+									tooltipContent={config.new_badge.tooltip}
+								/>
+							</div>
+						)
+					}
 				</div>
 			</div>
 		</div>

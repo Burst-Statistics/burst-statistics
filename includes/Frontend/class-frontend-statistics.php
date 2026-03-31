@@ -143,9 +143,8 @@ class Frontend_Statistics {
 	 */
 	public function generate_statistics_query( Query_Data $query_data ): string {
 		global $wpdb;
-		// Ensure we have at least one valid metric.
+
 		if ( empty( $query_data->select ) ) {
-			// Default to pageviews if no valid metrics.
 			$query_data->select = [ 'pageviews' ];
 		}
 
@@ -155,19 +154,43 @@ class Frontend_Statistics {
 		$group_by_sql = ! empty( $query_data->group_by ) ? 'GROUP BY ' . implode( ',', $query_data->group_by ) : '';
 		$order_by_sql = ! empty( $query_data->order_by ) ? 'ORDER BY ' . implode( ',', $query_data->order_by ) : '';
 
-		// Build the complete SQL query using a prepared statement.
+		// Check if sessions join is needed based on select metrics or filters.
+		$needs_sessions  = false;
+		$session_metrics = [ 'bounce_rate', 'first_time_visitors', 'device', 'referrer' ];
+		foreach ( $query_data->select as $metric ) {
+			if ( in_array( $metric, $session_metrics, true ) ) {
+				$needs_sessions = true;
+				break;
+			}
+		}
+		if ( ! $needs_sessions ) {
+			$session_filter_keys = [ 'referrer', 'device', 'browser', 'platform', 'top_referrers' ];
+			foreach ( array_keys( $query_data->filters ) as $filter_key ) {
+				if ( in_array( $filter_key, $session_filter_keys, true ) ) {
+					$needs_sessions = true;
+					break;
+				}
+			}
+		}
+
+		$join_sql = $needs_sessions
+			? "INNER JOIN {$wpdb->prefix}burst_sessions AS sessions ON statistics.session_id = sessions.ID"
+			: '';
+
 		$sql_parts = [
 			"SELECT {$select_sql}",
 			"FROM {$table_name}",
-			'WHERE time > %d AND time < %d',
+			$join_sql,
+			'WHERE statistics.time > %d AND statistics.time < %d',
 		];
 
-		// Add the where clause if it exists.
+		// Filter out empty parts.
+		$sql_parts = array_filter( $sql_parts, fn( $part ) => ! empty( $part ) );
+
 		if ( ! empty( $where ) ) {
 			$sql_parts[] = $where;
 		}
 
-		// Add group by and order by clauses.
 		if ( ! empty( $group_by_sql ) ) {
 			$sql_parts[] = $group_by_sql;
 		}
@@ -176,15 +199,14 @@ class Frontend_Statistics {
 			$sql_parts[] = $order_by_sql;
 		}
 
-		// Add limit with prepared statement if needed.
 		if ( $query_data->limit > 0 ) {
 			$sql_parts[] = 'LIMIT %d';
 			$sql_string  = implode( ' ', $sql_parts );
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared above.
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			$sql = $wpdb->prepare( $sql_string, $query_data->date_start, $query_data->date_end, $query_data->limit );
 		} else {
 			$sql_string = implode( ' ', $sql_parts );
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared above.
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			$sql = $wpdb->prepare( $sql_string, $query_data->date_start, $query_data->date_end );
 		}
 
@@ -303,7 +325,6 @@ class Frontend_Statistics {
 		$exclude_bounces = $query_data->exclude_bounces;
 
 		foreach ( $metrics as $metric ) {
-			// Skip if not in allowed metrics list.
 			if ( ! in_array( $metric, $query_data->get_allowed_metrics(), true ) ) {
 				continue;
 			}
@@ -311,45 +332,45 @@ class Frontend_Statistics {
 			switch ( $metric ) {
 				case 'pageviews':
 					$select_parts[] = $exclude_bounces
-						? 'COALESCE( SUM( CASE WHEN bounce = 0 THEN 1 ELSE 0 END ), 0) as pageviews'
+						? 'COALESCE( SUM( CASE WHEN sessions.bounce = 0 THEN 1 ELSE 0 END ), 0) as pageviews'
 						: 'COUNT(statistics.ID) as pageviews';
 					break;
 				case 'visitors':
 					$select_parts[] = $exclude_bounces
-						? 'COUNT(DISTINCT CASE WHEN bounce = 0 THEN statistics.uid END) as visitors'
+						? 'COUNT(DISTINCT CASE WHEN sessions.bounce = 0 THEN statistics.uid END) as visitors'
 						: 'COUNT(DISTINCT statistics.uid) as visitors';
 					break;
 				case 'sessions':
 					$select_parts[] = $exclude_bounces
-						? 'COUNT( DISTINCT CASE WHEN bounce = 0 THEN statistics.session_id END ) as sessions'
+						? 'COUNT( DISTINCT CASE WHEN sessions.bounce = 0 THEN statistics.session_id END ) as sessions'
 						: 'COUNT(DISTINCT statistics.session_id) as sessions';
 					break;
 				case 'bounce_rate':
-					$select_parts[] = 'SUM(statistics.bounce) / COUNT(DISTINCT statistics.session_id) * 100 as bounce_rate';
+					$select_parts[] = 'SUM(sessions.bounce) / COUNT(DISTINCT statistics.session_id) * 100 as bounce_rate';
 					break;
 				case 'avg_time_on_page':
 					$select_parts[] = $exclude_bounces
-						? 'COALESCE( AVG( CASE WHEN bounce = 0 THEN statistics.time_on_page END ), 0 ) as avg_time_on_page'
+						? 'COALESCE( AVG( CASE WHEN sessions.bounce = 0 THEN statistics.time_on_page END ), 0 ) as avg_time_on_page'
 						: 'AVG(statistics.time_on_page) as avg_time_on_page';
 					break;
 				case 'first_time_visitors':
 					$select_parts[] = $exclude_bounces
-						? 'COALESCE( SUM( CASE WHEN bounce = 0 THEN statistics.first_time_visit ELSE 0 END ), 0 ) as first_time_visitors'
-						: 'SUM(statistics.first_time_visit) as first_time_visitors';
+						? 'COALESCE( SUM( CASE WHEN sessions.bounce = 0 THEN sessions.first_time_visit ELSE 0 END ), 0 ) as first_time_visitors'
+						: 'SUM(sessions.first_time_visit) as first_time_visitors';
 					break;
 				case 'page_url':
 					$select_parts[] = 'statistics.page_url';
 					break;
 				case 'referrer':
-					$select_parts[] = 'statistics.referrer';
+					$select_parts[] = 'sessions.referrer';
 					break;
 				case 'device':
-					$select_parts[] = 'statistics.device_id';
+					$select_parts[] = 'sessions.device_id';
 					break;
 				case 'count':
 				default:
 					$select_parts[] = $exclude_bounces
-						? 'COALESCE( SUM( CASE WHEN bounce = 0 THEN 1 ELSE 0 END ), 0) as count'
+						? 'COALESCE( SUM( CASE WHEN sessions.bounce = 0 THEN 1 ELSE 0 END ), 0) as count'
 						: 'COUNT(statistics.ID) as count';
 					break;
 			}
@@ -369,7 +390,6 @@ class Frontend_Statistics {
 		$where_parts = [];
 
 		foreach ( $filters as $key => $value ) {
-			// Only process if key is in allowed list (already validated in sanitize_filters).
 			if ( ! in_array( $key, $query_data->get_allowed_filter_keys(), true ) ) {
 				continue;
 			}
@@ -386,24 +406,24 @@ class Frontend_Statistics {
 					break;
 				case 'referrer':
 					if ( $value === 'Direct' || $value === __( 'Direct', 'burst-statistics' ) ) {
-						$where_parts[] = "(statistics.referrer = '' OR statistics.referrer IS NULL)";
+						$where_parts[] = "(sessions.referrer = '' OR sessions.referrer IS NULL)";
 					} else {
-						$where_parts[] = $wpdb->prepare( 'statistics.referrer LIKE %s', '%' . $wpdb->esc_like( $value ) . '%' );
+						$where_parts[] = $wpdb->prepare( 'sessions.referrer LIKE %s', '%' . $wpdb->esc_like( $value ) . '%' );
 					}
 					break;
 				case 'device':
-					// Convert device name to device_id if using lookup tables.
 					$device_id     = $this->get_lookup_table_id( 'device', $value );
-					$where_parts[] = $wpdb->prepare( 'statistics.device_id = %d', $device_id );
+					$where_parts[] = $wpdb->prepare( 'sessions.device_id = %d', $device_id );
 					break;
 				case 'browser':
-					$where_parts[] = $wpdb->prepare( 'statistics.browser = %s', $value );
+					$browser_id    = $this->get_lookup_table_id( 'browser', $value );
+					$where_parts[] = $wpdb->prepare( 'sessions.browser_id = %d', $browser_id );
 					break;
 				case 'platform':
-					$where_parts[] = $wpdb->prepare( 'statistics.platform = %s', $value );
+					$platform_id   = $this->get_lookup_table_id( 'platform', $value );
+					$where_parts[] = $wpdb->prepare( 'sessions.platform_id = %d', $platform_id );
 					break;
 				default:
-					// Default to empty where clause.
 					break;
 			}
 		}
@@ -411,7 +431,7 @@ class Frontend_Statistics {
 		// Handle referrer filtering to exclude own site.
 		if ( isset( $filters['referrer'] ) || isset( $filters['top_referrers'] ) ) {
 			$site_url      = str_replace( [ 'http://www.', 'https://www.', 'http://', 'https://' ], '', site_url() );
-			$where_parts[] = $wpdb->prepare( 'statistics.referrer NOT LIKE %s', '%' . $wpdb->esc_like( $site_url ) . '%' );
+			$where_parts[] = $wpdb->prepare( 'sessions.referrer NOT LIKE %s', '%' . $wpdb->esc_like( $site_url ) . '%' );
 		}
 
 		return ! empty( $where_parts ) ? 'AND ' . implode( ' AND ', $where_parts ) : '';

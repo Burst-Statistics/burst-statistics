@@ -3,14 +3,7 @@ import { __ } from '@wordpress/i18n';
 import clsx from 'clsx';
 import Icon from '@/utils/Icon';
 import useFiltersData from '@/hooks/useFiltersData';
-
-interface FilterConfig {
-	label: string;
-	icon: string;
-	type: string;
-	pro?: boolean;
-	options?: string;
-}
+import { type FilterConfig } from '@/config/filterConfig';
 
 interface DeviceFilterSetupProps {
 	filterKey: string;

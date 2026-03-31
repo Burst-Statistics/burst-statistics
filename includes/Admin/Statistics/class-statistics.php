@@ -307,7 +307,7 @@ class Statistics {
 			'month' => [ '%Y-%m', 'Y-m', 'M', MONTH_IN_SECONDS ],
 		];
 
-		// Determine the interval.
+		// Determine the interval based on how many days are selected.
 		if ( $nr_of_days > 364 ) {
 			$interval = 'month';
 		} elseif ( $nr_of_days > 48 ) {
@@ -401,22 +401,37 @@ class Statistics {
 			];
 		}
 
-		// we have a UTC corrected for timezone offset, to query in the statistics table.
-		// to show the correct labels, we convert this back with the timezone offset.
+		// We have a UTC timestamp corrected for timezone offset to query the statistics table.
+		// To show the correct labels, we convert this back with the timezone offset.
 		$timezone_offset = self::get_wp_timezone_offset();
 		$date            = $date_start + $timezone_offset;
 
-		for ( $i = 0; $i < $date_modifiers['nr_of_intervals']; $i++ ) {
-			$formatted_date            = date_i18n( $date_modifiers['php_date_format'], $date );
-			$labels[ $formatted_date ] = date_i18n( $date_modifiers['php_pretty_date_format'], $date );
+		if ( 'month' === $date_modifiers['interval'] ) {
+			// Use calendar-aware iteration so every month is represented.
+			$dt = new \DateTime( '@' . $date );
+			$dt->setTimezone( wp_timezone() );
 
-			// loop through metrics and assign x to 0, 1 , 2, 3, etc.
-			foreach ( $metrics as $metric_key => $metric ) {
-				$datasets[ $metric_key ]['data'][ $formatted_date ] = 0;
+			for ( $i = 0; $i < $date_modifiers['nr_of_intervals']; $i++ ) {
+				$formatted_date            = $dt->format( $date_modifiers['php_date_format'] );
+				$labels[ $formatted_date ] = date_i18n( $date_modifiers['php_pretty_date_format'], $dt->getTimestamp() );
+
+				foreach ( $metrics as $metric_key => $metric ) {
+					$datasets[ $metric_key ]['data'][ $formatted_date ] = 0;
+				}
+
+				$dt->modify( '+1 month' );
 			}
+		} else {
+			for ( $i = 0; $i < $date_modifiers['nr_of_intervals']; $i++ ) {
+				$formatted_date            = date_i18n( $date_modifiers['php_date_format'], $date );
+				$labels[ $formatted_date ] = date_i18n( $date_modifiers['php_pretty_date_format'], $date );
 
-			// increment at the end so the first will still be zero.
-			$date += $date_modifiers['interval_in_seconds'];
+				foreach ( $metrics as $metric_key => $metric ) {
+					$datasets[ $metric_key ]['data'][ $formatted_date ] = 0;
+				}
+
+				$date += $date_modifiers['interval_in_seconds'];
+			}
 		}
 
 		$hits = $this->get_results( $qd, ARRAY_A );
@@ -435,7 +450,7 @@ class Statistics {
 			}
 		}
 
-		// strip keys from array $labels to make it a simple array and work with ChartJS.
+		// Strip keys from array $labels to make it a simple indexed array.
 		$labels = array_values( $labels );
 		foreach ( $metrics as $metric_key => $metric_name ) {
 			// strip keys from array $datasets to make it a simple array.
@@ -719,10 +734,10 @@ class Statistics {
 		];
 
 		$query_args['select']                   = [ 'device_id' ];
-		$query_args['custom_select']            = '%s device_id, COUNT(device_id) AS count';
+		$query_args['custom_select']            = '%s sessions.device_id, COUNT(sessions.device_id) AS count';
 		$query_args['custom_select_parameters'] = [ '' ];
 		$query_args['group_by']                 = 'device_id';
-		$query_args['having']                   = [ 'device_id > 0' ];
+		$query_args['having']                   = [ 'sessions.device_id > 0' ];
 
 		$qd             = new Query_Data( $query_args );
 		$devices_result = $this->get_results( $qd, ARRAY_A );
@@ -804,10 +819,10 @@ class Statistics {
 			];
 
 			$query_args['select']                   = [ 'browser_id', 'platform_id' ];
-			$query_args['custom_select']            = '%s browser_id, platform_id, COUNT(*) as count';
+			$query_args['custom_select']            = '%s sessions.browser_id, sessions.platform_id, COUNT(*) as count';
 			$query_args['custom_select_parameters'] = [ '' ];
 			$query_args['group_by']                 = [ 'browser_id', 'platform_id' ];
-			$query_args['having']                   = [ 'browser_id > 0' ];
+			$query_args['having']                   = [ 'sessions.browser_id > 0' ];
 			$query_args['order_by']                 = 'count DESC';
 
 			$qd      = new Query_Data( $query_args );
@@ -952,7 +967,10 @@ class Statistics {
 	/**
 	 * Get the number of periods between two dates.
 	 *
-	 * @param string $period   The period to calculate (e.g., 'day', 'week', 'month').
+	 * For months the calculation is calendar-aware so that every
+	 * month in the range is counted correctly regardless of length.
+	 *
+	 * @param string $period     The period to calculate (e.g., 'day', 'week', 'month').
 	 * @param int    $date_start Start date as a Unix timestamp.
 	 * @param int    $date_end   End date as a Unix timestamp.
 	 * @return int The number of periods between the two dates.
@@ -962,6 +980,16 @@ class Statistics {
 		int $date_start,
 		int $date_end
 	): int {
+		if ( 'month' === $period ) {
+			$start = new \DateTime( '@' . $date_start );
+			$end   = new \DateTime( '@' . $date_end );
+			$start->setTimezone( wp_timezone() );
+			$end->setTimezone( wp_timezone() );
+			$diff = $start->diff( $end );
+
+			return $diff->y * 12 + $diff->m + 1;
+		}
+
 		$range_in_seconds  = $date_end - $date_start;
 		$period_in_seconds = defined( strtoupper( $period ) . '_IN_SECONDS' ) ? constant( strtoupper( $period ) . '_IN_SECONDS' ) : DAY_IN_SECONDS;
 
@@ -970,6 +998,10 @@ class Statistics {
 
 	/**
 	 * Get color for a graph.
+	 *
+	 * @param string $metric The metric key.
+	 * @param string $type   The color type (background or border).
+	 * @return string RGBA color string.
 	 */
 	private function get_metric_color(
 		string $metric = 'visitors',
@@ -1049,15 +1081,15 @@ class Statistics {
 			[
 				'bounces'          => 'session_bounces.bounce',
 				'host'             => 'sessions.host',
-				'new_visitor'      => 'statistics.first_time_visit',
+				'new_visitor'      => 'sessions.first_time_visit',
 				'page_url'         => 'statistics.page_url',
 				'referrer'         => 'sessions.referrer',
-				'browser'          => 'statistics.browser_id',
-				'platform'         => 'statistics.platform_id',
-				'platform_id'      => 'statistics.platform_id',
-				'browser_id'       => 'statistics.browser_id',
-				'device'           => 'statistics.device_id',
-				'device_id'        => 'statistics.device_id',
+				'browser'          => 'sessions.browser_id',
+				'platform'         => 'sessions.platform_id',
+				'platform_id'      => 'sessions.platform_id',
+				'browser_id'       => 'sessions.browser_id',
+				'device'           => 'sessions.device_id',
+				'device_id'        => 'sessions.device_id',
 				'entry_exit_pages' => 'entry_exit_pages',
 				'parameter'        => 'parameter',
 				'parameters'       => 'statistics.parameters',
@@ -1088,44 +1120,58 @@ class Statistics {
 		foreach ( $filters as $filter => $value ) {
 			if ( array_key_exists( $filter, $possible_filters_with_prefix ) ) {
 				$qualified_name = $possible_filters_with_prefix[ $filter ];
+				$is_exclude     = ( $data->filter_exclusions[ $filter ] ?? 'include' ) === 'exclude';
+				$eq_operator    = $is_exclude ? '!=' : '=';
+				$like_keyword   = $is_exclude ? 'NOT LIKE' : 'LIKE';
+
 				// Special handling for include/exclude values.
 				if ( $filter === 'entry_exit_pages' && $value !== '' ) {
 					$where_clauses[] = $value === 'entry' ?
-						'statistics.first_time_visit = 1 ' :
+						'sessions.first_time_visit = 1 ' :
 						"statistics.ID IN ( SELECT MAX(ID) FROM {$wpdb->prefix}burst_statistics GROUP BY session_id)";
 				} elseif ( $value === 'include' ) {
-					$where_clauses[] = "{$qualified_name} = 1";
+					$where_clauses[] = "$qualified_name = 1";
 				} elseif ( $value === 'exclude' ) {
-					$where_clauses[] = "{$qualified_name} = 0";
+					$where_clauses[] = "$qualified_name = 0";
 				} elseif ( is_numeric( $value ) ) {
-					$where_clauses[] = "{$qualified_name} = " . intval( $value );
+					$where_clauses[] = "$qualified_name $eq_operator " . intval( $value );
 				} elseif ( substr( $value, -1 ) === '*' ) {
 					// remove asterisk.
 					$value = substr( $value, 0, -1 );
 					$like  = $wpdb->esc_like( $value ) . '%';
                     // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $qualified_name is a from a trusted array.
-					$where_clauses[] = $wpdb->prepare( "{$qualified_name} LIKE %s", $like );
+					$where_clauses[] = $wpdb->prepare( "$qualified_name $like_keyword %s", $wpdb->esc_like( $like ) );
 				} elseif ( strpos( $value, ',' ) !== false ) {
 					// explode comma separated values.
-					$values          = explode( ',', $value );
-					$values          = array_map( 'intval', $values );
-					$where_clauses[] = "( $qualified_name= " . implode( " OR $qualified_name = ", $values ) . ')';
+					$values = explode( ',', $value );
+					$values = array_map( 'intval', $values );
+					if ( $is_exclude ) {
+						$where_clauses[] = "( $qualified_name != " . implode( " AND $qualified_name != ", $values ) . ')';
+					} else {
+						$where_clauses[] = "( $qualified_name= " . implode( " OR $qualified_name = ", $values ) . ')';
+					}
 				} elseif ( $filter === 'parameter' ) {
 					$include_value = str_contains( $value, '=' );
 					$value         = esc_sql( sanitize_text_field( $value ) );
 					if ( $include_value ) {
-						$where_clauses[] = $wpdb->prepare( "CONCAT(params.parameter, '=', params.value) = %s", "{$value}" );
+						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $eq_operator is defined in this function and not from user input.
+						$where_clauses[] = $wpdb->prepare( "CONCAT(params.parameter, '=', params.value) $eq_operator %s", "$value" );
+					} elseif ( $is_exclude ) {
+							$where_clauses[] = $wpdb->prepare( ' (params.parameter != %s AND params.value != %s) ', "$value", "$value" );
 					} else {
-						$where_clauses[] = $wpdb->prepare( ' (params.parameter = %s OR params.value = %s) ', "{$value}", "{$value}" );
+						$where_clauses[] = $wpdb->prepare( ' (params.parameter = %s OR params.value = %s) ', "$value", "$value" );
 					}
 				} else {
 					$value = esc_sql( sanitize_text_field( $value ) );
 					if ( $filter === 'referrer' ) {
-                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $qualified_name is a from a trusted array.
-						$where_clauses[] = $wpdb->prepare( "{$qualified_name} LIKE %s", "%{$value}" );
+						$where_clauses[] = $wpdb->prepare(
+							// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $qualified_name is from a trusted array.
+							"( $qualified_name $like_keyword %s OR $qualified_name IS NULL )",
+							'%' . $wpdb->esc_like( "$value" ) . '%'
+						);
 					} else {
                         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $qualified_name is a from a trusted array.
-						$where_clauses[] = $wpdb->prepare( "{$qualified_name} = %s", $value );
+						$where_clauses[] = $wpdb->prepare( "$qualified_name $eq_operator %s", $value );
 					}
 				}
 			}
@@ -1183,8 +1229,8 @@ class Statistics {
 				break;
 			case 'first_time_visitors':
 				$sql = $exclude_bounces
-					? "COALESCE( COUNT(DISTINCT CASE WHEN {$non_bounce} AND statistics.first_time_visit = 1 THEN statistics.uid END), 0)"
-					: 'COUNT(DISTINCT CASE WHEN statistics.first_time_visit = 1 THEN statistics.uid END)';
+					? "COALESCE( COUNT(DISTINCT CASE WHEN {$non_bounce} AND sessions.first_time_visit = 1 THEN statistics.uid END), 0)"
+					: 'COUNT(DISTINCT CASE WHEN sessions.first_time_visit = 1 THEN statistics.uid END)';
 				break;
 			case 'visitors':
 				$sql = $exclude_bounces
@@ -1208,11 +1254,13 @@ class Statistics {
 			case 'browser_id':
 			case 'platform_id':
 			case 'browser_version_id':
+			case 'first_time_visit':
+				$sql = 'sessions.' . $metric;
+				break;
 			case 'device_resolution_id':
 			case 'session_id':
 			case 'time':
 			case 'time_on_page':
-			case 'first_time_visit':
 				$sql = 'statistics.' . $metric;
 				break;
 			default:
@@ -1436,13 +1484,7 @@ class Statistics {
         `time_on_page` int,
         `parameters` TEXT NOT NULL,
         `fragment` varchar(255) NOT NULL,
-        `browser_id` int(11) NOT NULL,
-        `browser_version_id` int(11) NOT NULL,
-        `platform_id` int(11) NOT NULL,
-        `device_id` int(11) NOT NULL,
         `session_id` int,
-        `first_time_visit` tinyint,
-        `bounce` tinyint DEFAULT 1,
         PRIMARY KEY (ID)
     ) $charset_collate;",
 			'burst_browsers'         => "CREATE TABLE {$wpdb->prefix}burst_browsers (
@@ -1518,25 +1560,21 @@ class Statistics {
 			[ 'last_updated' ],
 		];
 
-		$table_name = $wpdb->prefix . 'burst_query_stats';
 		foreach ( $indexes as $index ) {
-			$this->add_index( $table_name, $index );
+			$this->add_index( 'burst_query_stats', $index );
 		}
 
 		$indexes = [
 			[ 'time' ],
-			[ 'bounce' ],
 			[ 'page_url' ],
 			[ 'session_id' ],
 			[ 'time', 'page_url' ],
 			[ 'uid', 'time' ],
 			[ 'page_id', 'page_type' ],
-			[ 'first_time_visit', 'time', 'uid' ],
 		];
 
-		$table_name = $wpdb->prefix . 'burst_statistics';
 		foreach ( $indexes as $index ) {
-			$this->add_index( $table_name, $index );
+			$this->add_index( 'burst_statistics', $index );
 		}
 
 		$indexes = [
@@ -1544,19 +1582,16 @@ class Statistics {
 			[ 'uid', 'first_seen' ],
 		];
 
-		$table_name = $wpdb->prefix . 'burst_known_uids';
 		foreach ( $indexes as $index ) {
-			$this->add_index( $table_name, $index );
+			$this->add_index( 'burst_known_uids', $index );
 		}
 
-		// server_side property to be removed after 2.2 update.
-		$table_name = $wpdb->prefix . 'burst_goals';
-		$indexes    = [
+		$indexes = [
 			[ 'status' ],
 		];
 
 		foreach ( $indexes as $index ) {
-			$this->add_index( $table_name, $index );
+			$this->add_index( 'burst_goals', $index );
 		}
 	}
 
@@ -1624,7 +1659,6 @@ class Statistics {
 
 		$execution_time = $end - $start;
 		$sql_hash       = hash( 'fnv1a64', $sql );
-		$table_name     = $wpdb->prefix . 'burst_query_stats';
 
 		// Check if query exists and was updated recently.
 		$existing = $wpdb->get_row(
@@ -1636,13 +1670,13 @@ class Statistics {
 
 		if ( $existing ) {
 			// Only update if last update was more than 7 days ago.
-			$last_updated = strtotime( $existing->last_updated );
-			if ( ( time() - $last_updated ) < WEEK_IN_SECONDS ) {
+			$time_since_last_update = time() - $existing->last_updated;
+			if ( $time_since_last_update < WEEK_IN_SECONDS ) {
 				return;
 			}
 
 			$wpdb->update(
-				$table_name,
+				$wpdb->prefix . 'burst_query_stats',
 				[
 					'avg_execution_time' => ( $existing->avg_execution_time * $existing->execution_count + $execution_time ) / ( $existing->execution_count + 1 ),
 					'max_execution_time' => max( $existing->max_execution_time, $execution_time ),
@@ -1655,20 +1689,38 @@ class Statistics {
 				[ '%s' ]
 			);
 		} else {
-			$wpdb->insert(
-				$table_name,
-				[
-					'sql_hash'           => $sql_hash,
-					'sql_query'          => $sql,
-					'avg_execution_time' => $execution_time,
-					'max_execution_time' => $execution_time,
-					'min_execution_time' => $execution_time,
-					'execution_count'    => 1,
-					'last_updated'       => time(),
-				],
-				[ '%s', '%s', '%f', '%f', '%f', '%d', '%s' ]
+			// INSERT IGNORE prevents a duplicate entry error on concurrent requests.
+			$wpdb->query(
+				$wpdb->prepare(
+					"INSERT IGNORE INTO {$wpdb->prefix}burst_query_stats
+                (sql_hash, sql_query, avg_execution_time, max_execution_time, min_execution_time, execution_count, last_updated)
+                VALUES (%s, %s, %f, %f, %f, %d, %d)",
+					$sql_hash,
+					$sql,
+					$execution_time,
+					$execution_time,
+					$execution_time,
+					1,
+					time()
+				)
 			);
 		}
+
+		$execution_count = $existing ? (int) $existing->execution_count + 1 : 1;
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT IGNORE INTO {$wpdb->prefix}burst_query_stats
+        (sql_hash, sql_query, avg_execution_time, max_execution_time, min_execution_time, execution_count, last_updated)
+        VALUES (%s, %s, %f, %f, %f, %d, %d)",
+				$sql_hash,
+				$sql,
+				$execution_time,
+				$execution_time,
+				$execution_time,
+				$execution_count,
+				time()
+			)
+		);
 	}
 
 	/**
@@ -1699,8 +1751,7 @@ class Statistics {
 	 */
 	public function get_results( Query_Data $qd, string $output_type = 'OBJECT' ): array|object {
 		global $wpdb;
-		$sql = $this->build_raw_sql( $qd );
-
+		$sql        = $this->build_raw_sql( $qd );
 		$start_time = microtime( true );
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is built and sanitized in Query_Data.
 		$result   = $wpdb->get_results( $sql, $output_type );
@@ -1729,9 +1780,9 @@ class Statistics {
 		// if we use joins, use a pre-filtered subquery to improve performance.
 		if ( ! empty( $data->joins ) ) {
 			$table_name = " (
-                SELECT 
+                SELECT
                     *
-                FROM {$wpdb->prefix}burst_statistics 
+                FROM {$wpdb->prefix}burst_statistics
                 WHERE time BETWEEN {$data->date_start} AND {$data->date_end}
             ) AS statistics ";
 		}
@@ -1754,7 +1805,7 @@ class Statistics {
 
 		if ( $this->is_parameter_conversion_query( $data ) ) {
 			$table_name = " (
-                SELECT 
+                SELECT
                     p.parameter,
                     p.value,
                     s.uid,
@@ -1768,10 +1819,10 @@ class Statistics {
 		} elseif ( in_array( 'parameter', $data->select, true ) ) {
 			// make a faster parameters query by filtering out statistics without parameters first.
 			$table_name = " (
-                SELECT * 
-                FROM {$wpdb->prefix}burst_statistics 
+                SELECT *
+                FROM {$wpdb->prefix}burst_statistics
                 WHERE time BETWEEN {$data->date_start} AND {$data->date_end}
-                    AND parameters IS NOT NULL 
+                    AND parameters IS NOT NULL
                     AND parameters != ''
             ) AS statistics";
 		}
@@ -1781,7 +1832,7 @@ class Statistics {
 			$empty_referrers_sql = empty( $data->custom_select ) ? "AND sess.referrer != '' AND sess.referrer IS NOT NULL " : '';
 			// old versions have referrer in the burst_statistics table, so we can't use select *.
 			$table_name = " (
-                            SELECT 
+                            SELECT
                                 s.ID,
                                 s.page_url,
                                 s.page_id,
@@ -1791,13 +1842,7 @@ class Statistics {
                                 s.time_on_page,
                                 s.parameters,
                                 s.fragment,
-                                s.browser_id,
-                                s.browser_version_id,
-                                s.platform_id,
-                                s.device_id,
                                 s.session_id,
-                                s.first_time_visit,
-                                s.bounce,
                                 sess.referrer
                             FROM {$wpdb->prefix}burst_statistics AS s
                             JOIN {$wpdb->prefix}burst_sessions AS sess ON s.session_id = sess.ID
@@ -1833,7 +1878,7 @@ class Statistics {
               FROM {$wpdb->prefix}burst_campaigns AS ca
               JOIN {$wpdb->prefix}burst_statistics AS s ON s.ID = ca.statistic_id
               WHERE s.time BETWEEN {$data->date_start} AND {$data->date_end}
-              GROUP BY $parameter_sql s.uid 
+              GROUP BY $parameter_sql s.uid
             ) AS campaigns ";
 		}
 
@@ -1974,7 +2019,10 @@ class Statistics {
 
 		// If we're filtering by goal_id, we need to add it to the join clause. We don't filter in the where clause.
 		if ( isset( $data->filters['goal_id'] ) ) {
-			$goal_sql = $wpdb->prepare( ' AND goals.goal_id = %d ', (int) $data->filters['goal_id'] );
+			$is_exclude_goal = ( $data->filter_exclusions['goal_id'] ?? 'include' ) === 'exclude';
+			$goal_operator   = $is_exclude_goal ? '!=' : '=';
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $goal_operator is from a trusted ternary.
+			$goal_sql = $wpdb->prepare( " AND goals.goal_id $goal_operator %d ", (int) $data->filters['goal_id'] );
 		}
 
 		$available_joins = apply_filters(
@@ -1992,9 +2040,9 @@ class Statistics {
 					'type'       => 'LEFT',
 					'depends_on' => [],
 				],
-				// we can have multiple bounces per session, so we need to use a subquery to get the bounce status.
+				// Updated query to directly get bounce information from sessions table, eliminating the need for a separate subquery join.
 				'session_bounces' => [
-					'table'      => "( SELECT session_id, CASE WHEN MAX(bounce) = 1 THEN 1 ELSE 0 END AS bounce FROM {$wpdb->prefix}burst_statistics WHERE time > {$data->date_start} AND time < {$data->date_end} GROUP BY session_id )",
+					'table'      => "( SELECT ID as session_id, bounce FROM {$wpdb->prefix}burst_sessions )",
 					'on'         => 'statistics.session_id = session_bounces.session_id ',
 					'type'       => 'LEFT',
 					'depends_on' => [],

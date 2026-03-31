@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { doAction } from '@/utils/api';
+import { getAction } from '@/utils/api';
 import useGoalsData from '@/hooks/useGoalsData';
 import { useCallback } from 'react';
 
@@ -8,7 +8,7 @@ export const useFiltersData = () => {
 	const { goals, getGoalAsync } = useGoalsData();
 
 	const fetchFilterData = async( type, search ) => {
-		const response = await doAction( 'get_filter_options', {
+		const response = await getAction( 'get_filter_options', {
 			data_type: type,
 			search
 		});

@@ -299,9 +299,16 @@ class Frontend {
 	 * Also handles the force logged out functionality for previewing click goals.
 	 */
 	public function use_logged_out_state_for_tests(): void {
-		// No form data processed, no action connected, only not showing logged in state for testing purposes.
+		// Verify nonce while user is still authenticated.
+		// This is the nonce verification, unslash done in verify_nonce().
+        // phpcs:ignore
+        if ( ! isset( $_GET['nonce'] ) || ! $this->verify_nonce( $_GET['nonce'], 'burst_nonce' ) ) {
+			return;
+		}
+
+		// Nonce is verified above.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( isset( $_GET['burst_test_hit'] ) || isset( $_GET['burst_nextpage'] ) || ( isset( $_GET['burst_force_logged_out'] ) && $_GET['burst_force_logged_out'] === '1' ) ) {
+		if ( isset( $_GET['burst_test_hit'] ) || ( isset( $_GET['burst_force_logged_out'] ) && $_GET['burst_force_logged_out'] === '1' ) ) {
 			add_filter( 'determine_current_user', '__return_null', 100 );
 			wp_set_current_user( 0 );
 		}

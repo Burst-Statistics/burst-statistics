@@ -2,12 +2,13 @@ import { clsx } from 'clsx';
 import Icon from '../../../utils/Icon';
 import { safeDecodeURI } from '../../../utils/lib';
 import { __ } from '@wordpress/i18n';
+import { isExcluding } from '@/config/filterConfig';
 
 /**
  * Reusable FilterChip component for displaying active filters
  *
  * @param {Object}   props                  - Component props
- * @param {Object}   props.filter           - Filter object with key, value, displayValue, and config
+ * @param {Object}   props.filter           - Filter object with key, value, displayValue, exclusion, and config
  * @param {Function} props.onRemove         - Callback function when remove button is clicked
  * @param {Function} props.onClick          - Callback function when chip is clicked to edit
  * @param {string}   props.className        - Additional CSS classes
@@ -17,14 +18,22 @@ import { __ } from '@wordpress/i18n';
  * @return {JSX.Element} FilterChip component
  */
 const FilterChip = ({
-						filter,
-						onRemove,
-						onClick,
-						className = '',
-						showRemoveButton = true,
-						disabled = false,
-						smallLabels = false
-					}) => {
+	filter,
+	onRemove,
+	onClick,
+	className = '',
+	showRemoveButton = true,
+	disabled = false,
+	smallLabels = false
+}) => {
+	let exclusionAllowed = false;
+
+	if ( filter?.config?.exclusion_allowed ) {
+		exclusionAllowed = true;
+	}
+
+	const isExcluded = exclusionAllowed && isExcluding( filter.value );
+
 	const chipClasses = clsx(
 
 		// Base styles.
@@ -39,7 +48,8 @@ const FilterChip = ({
 		// State-specific styles.
 		{
 			'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60': disabled,
-			'bg-white border-gray-300 hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)] cursor-pointer': ! disabled
+			'bg-white border-gray-300 hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)] cursor-pointer': ! disabled && ! isExcluded,
+			'bg-red-50 border-red-200 hover:bg-red-100 hover:[box-shadow:0_0_0_3px_rgba(220,38,38,0.08)] cursor-pointer': ! disabled && isExcluded
 		},
 
 		className
@@ -107,15 +117,22 @@ const FilterChip = ({
 			{/* Filter Icon */}
 			<Icon name={filter.config.icon} size={smallLabels ? 14 : 16} />
 
-			{/* Filter Label */}
-			<p className={clsx(
-				'font-medium',
-				{ 'text-gray-800': disabled }
-			)}>
-				{filter.config.label}
-			</p>
+		{/* Filter Label */}
+		<p className={clsx(
+			'font-medium',
+			{ 'text-gray-800': disabled }
+		)}>
+			{filter.config.label}
+		</p>
 
-			{/* Separator */}
+		{/* Exclusion Mode Indicator */}
+		{
+			isExcluded && (
+				<span className={clsx( 'font-medium text-red-600', smallLabels ? 'text-[10px]' : 'text-xs' )}> ≠ </span>
+			)
+		}
+
+		{/* Separator */}
 			<span className={clsx(
 				'w-px',
 				smallLabels ? 'h-3' : 'h-4',

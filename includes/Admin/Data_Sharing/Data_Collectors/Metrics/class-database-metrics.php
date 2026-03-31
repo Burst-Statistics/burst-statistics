@@ -2,6 +2,8 @@
 
 namespace Burst\Admin\Data_Sharing\Data_Collectors\Metrics;
 
+use Burst\Traits\Database_Helper;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -10,6 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Database_Metrics
  */
 class Database_Metrics {
+	use Database_Helper;
+
 	/**
 	 * Collect database metrics
 	 *
@@ -32,7 +36,7 @@ class Database_Metrics {
 	private function get_table_row_count( string $table_suffix ): int {
 		global $wpdb;
 
-		$table_suffix = esc_sql( $table_suffix );
+		$table_suffix = $this->validate_table_name( $table_suffix );
 
 		$count = $wpdb->get_var(
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name cannot be parameterized, but it's controlled and sanitized within the method.

@@ -764,8 +764,8 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 			$error   = false;
 			$params  = $request->get_params();
 			$nonce   = $params['token'] ?? '';
-			$license = $params['license'] ? $this->sanitize_license_key( $params['license'] ) : '';
-			$item_id = $params['item_id'] ? (int) $params['item_id'] : 0;
+			$license = isset( $params['license'] ) ? $this->sanitize_license_key( $params['license'] ) : '';
+			$item_id = isset( $params['item_id'] ) ? (int) $params['item_id'] : 0;
 
 			if ( ! $this->has_permission()
 				|| empty( $nonce )
