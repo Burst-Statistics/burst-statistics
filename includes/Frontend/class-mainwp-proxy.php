@@ -88,7 +88,7 @@ class MainWP_Proxy {
 	 * this is a preflight request.
 	 */
 	private function send_cors_headers(): void {
-		if ( isset( $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'] ) && ! str_contains( $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'], 'x-burstmainwp' ) ) {
+		if ( isset( $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'] ) && ! str_contains( sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'] ) ), 'x-burstmainwp' ) ) {
 			return;
 		}
 
