@@ -1,5 +1,6 @@
 import { Link, useSearch } from '@tanstack/react-router';
 import { ReactComponent as Logo } from '@/../img/burst-logo.svg';
+import { ReactComponent as LogoDark } from '@/../img/burst-logo-dark.svg';
 import { __, setLocaleData } from '@wordpress/i18n';
 import ButtonInput from '../Inputs/ButtonInput';
 import { burst_get_website_url } from '@/utils/lib';
@@ -9,7 +10,7 @@ import { useRef, useState, useEffect, useMemo } from 'react';
 import useLicenseData from '@/hooks/useLicenseData';
 import SubscriptionHeader from '../Common/Pro/SubscriptionHeader';
 import useSettingsData from '@/hooks/useSettingsData';
-import {useAttachmentUrl} from '@/hooks/useAttachmentUrl';
+import { useAttachmentUrl } from '@/hooks/useAttachmentUrl';
 import useShareableLinkStore from '@/store/useShareableLinkStore';
 import {
 	isFilterEnabledRoute,
@@ -46,6 +47,13 @@ const getMenuItemUrl = ( menuItem ) => {
 	return `/${menuItem.id}/`;
 };
 
+const BurstLogo = () => (
+	<>
+		<Logo className="h-11 w-auto px-0 py-2 dark:hidden" />
+		<LogoDark className="hidden h-11 w-auto px-0 py-2 dark:block" />
+	</>
+);
+
 /**
  * Header component. Renders the header section with logo, navigation menu, and action buttons.
  *
@@ -74,6 +82,7 @@ const Header = () => {
 		'rounded-sm',
 		'relative',
 		'text-md',
+		'text-[#1a1a1ae5]',
 		'hover:border-gray-500 hover:bg-gray-100',
 		'transition-border duration-150',
 		'transition-background duration-150'
@@ -118,64 +127,95 @@ const Header = () => {
 			<div className="mx-auto flex max-w-screen-2xl items-center gap-5 px-5 max-xxs:gap-0">
 				<div className="max-xxs:w-16 max-xxs:h-auto max-xxs:hidden">
 					{isWhiteLabel && ! isLoading && attachmentUrl ? (
-						<img alt="logo" src={attachmentUrl} className="h-11 w-auto px-0 py-2" />
+						<img
+							alt="logo"
+							src={attachmentUrl}
+							className="h-11 w-auto px-0 py-2"
+						/>
 					) : isShareableLinkViewer ? (
-
-						<a href={burst_get_website_url( '', {
-						utm_source: 'share-link',
-						utm_medium: 'header',
-						utm_campaign: 'free-branding'
-					})}
-						target="_blank"
-						rel="noopener noreferrer"
+						<a
+							href={burst_get_website_url( '', {
+								utm_source: 'share-link',
+								utm_medium: 'header',
+								utm_campaign: 'free-branding'
+							})}
+							target="_blank"
+							rel="noopener noreferrer"
 						>
-						<Logo className="h-11 w-auto px-0 py-2"/>
+							<BurstLogo />
 						</a>
-						) : (
+					) : (
 						<Link className="flex gap-3 align-middle" from="/" to="/">
-						<Logo className="h-11 w-auto px-0 py-2"/>
+							<BurstLogo />
 						</Link>
-						)}
+					)}
 				</div>
 
 				<div className="hidden md:flex items-center flex-1">
-					{
-						leftMenuItems.map( ( menuItem ) => (
+					{leftMenuItems.map( ( menuItem ) => (
+						<MenuItemLink
+							key={'menu-item-link' + menuItem.id}
+							menuItem={menuItem}
+							linkClassName={linkClassName}
+							activeClassName={activeClassName}
+							isTrial={isTrial}
+						/>
+					) )}
+				</div>
+
+				{isShareableLinkViewer && ! isWhiteLabel && (
+					<div className="flex items-center gap-4">
+						<TransparencyModal />
+
+						<a
+							href={burst_get_website_url( '', {
+								utm_source: 'share-link',
+								utm_medium: 'header',
+								utm_campaign: 'free-branding'
+							})}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-light rounded-lg border border-primary/20 hover:border-primary/40 transition-all duration-200"
+						>
+							<span className="text-sm font-medium text-gray-700">
+								Data collected with{' '}
+								<span className="text-primary font-semibold">
+									Burst Statistics
+								</span>
+							</span>
+						</a>
+					</div>
+				)}
+
+				<div className="overflow-x-auto scrollbar-hide md:hidden">
+					<div className="flex flex-1 items-center animate-scrollIndicator">
+						{leftMenuItems.map( ( menuItem ) => (
 							<MenuItemLink
-								key={'menu-item-link' + menuItem.id}
+								key={'menu-item-link-' + menuItem.id}
 								menuItem={menuItem}
 								linkClassName={linkClassName}
 								activeClassName={activeClassName}
 								isTrial={isTrial}
 							/>
-						) )
-					}
+						) )}
+
+						{! isShareableLinkViewer &&
+							rightMenuItems.map( ( menuItem ) => (
+								<MenuItemLink
+									key={'menu-item-link' + menuItem.id}
+									menuItem={menuItem}
+									linkClassName={linkClassName}
+									activeClassName={activeClassName}
+									isTrial={isTrial}
+								/>
+							) )}
+					</div>
 				</div>
 
-				{ isShareableLinkViewer && ! isWhiteLabel && (
-					<div className="flex items-center gap-4">
-						<TransparencyModal />
-
-						<a href={burst_get_website_url( '', {
-						utm_source: 'share-link',
-						utm_medium: 'header',
-						utm_campaign: 'free-branding'
-					})}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-light rounded-lg border border-primary/20 hover:border-primary/40 transition-all duration-200"
-						>
-						<span className="text-sm font-medium text-gray-700">
-								Data collected with <span className="text-primary font-semibold">Burst Statistics</span>
-							</span>
-					</a>
-					</div>
-					)}
-
-				<div className="overflow-x-auto scrollbar-hide md:hidden">
-					<div className="flex flex-1 items-center animate-scrollIndicator">
-						{
-							leftMenuItems.map( ( menuItem ) => (
+				{! isShareableLinkViewer && (
+					<div className="flex items-center gap-2.5 lg:gap-5">
+						<div className="hidden md:flex">
+							{rightMenuItems.map( ( menuItem ) => (
 								<MenuItemLink
 									key={'menu-item-link-' + menuItem.id}
 									menuItem={menuItem}
@@ -183,64 +223,28 @@ const Header = () => {
 									activeClassName={activeClassName}
 									isTrial={isTrial}
 								/>
-							) )
-						}
-
-						{
-							! isShareableLinkViewer && (
-								rightMenuItems.map( ( menuItem ) => (
-									<MenuItemLink
-										key={'menu-item-link' + menuItem.id}
-										menuItem={menuItem}
-										linkClassName={linkClassName}
-										activeClassName={activeClassName}
-										isTrial={isTrial}
-									/>
-								) )
-							)
-						}
-					</div>
-				</div>
-
-				{
-					! isShareableLinkViewer && (
-						<div className="flex items-center gap-2.5 lg:gap-5">
-							<div className="hidden md:flex">
-								{
-									rightMenuItems.map( ( menuItem ) => (
-										<MenuItemLink
-											key={'menu-item-link-' + menuItem.id}
-											menuItem={menuItem}
-											linkClassName={linkClassName}
-											activeClassName={activeClassName}
-											isTrial={isTrial}
-										/>
-									) )
-								}
-							</div>
-
-							<ButtonInput
-								className="hidden sm:block"
-								link={{ to: supportUrl }}
-								btnVariant="tertiary"
-							>
-								{__( 'Support', 'burst-statistics' )}
-							</ButtonInput>
-
-							{
-								upgradeUrl && (
-									<ButtonInput
-										className="max-xxs:ml-4"
-										link={{ to: upgradeUrl }}
-										btnVariant="primary"
-									>
-										{__( 'Upgrade to Pro', 'burst-statistics' )}
-									</ButtonInput>
-								)
-							}
+							) )}
 						</div>
-					)
-				}
+
+						<ButtonInput
+							className="hidden sm:block"
+							link={{ to: supportUrl }}
+							btnVariant="tertiary"
+						>
+							{__( 'Support', 'burst-statistics' )}
+						</ButtonInput>
+
+						{upgradeUrl && (
+							<ButtonInput
+								className="max-xxs:ml-4"
+								link={{ to: upgradeUrl }}
+								btnVariant="primary"
+							>
+								{__( 'Upgrade to Pro', 'burst-statistics' )}
+							</ButtonInput>
+						)}
+					</div>
+				)}
 			</div>
 		</div>
 	);

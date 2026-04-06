@@ -2,6 +2,39 @@ import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 import { toast } from 'react-toastify';
 
+if ( burst_settings.is_mainwp && burst_settings.root ) {
+    apiFetch.use.bind( apiFetch );
+
+    // Force-register a root URL override by using the fetch handler directly
+    apiFetch.use( ( options, next ) => {
+		if ( options.path ) {
+			const root = burst_settings.root.replace( /\/$/, '' );
+			const path = options.path.replace( /^\//, '' );
+			options.url = `${root}/${path}`;
+			delete options.path;
+		}
+
+		options.headers = {
+			...( options.headers || {}),
+			'Authorization': 'Basic ' + burst_settings.child_token,
+			'X-BURSTMAINWP': '1'
+		};
+		delete options.headers['X-WP-Nonce'];
+
+		// Inject burst_nonce into POST data
+		if ( options.data ) {
+			options.data = {
+				...options.data,
+				nonce: burst_settings.burst_nonce
+			};
+		}
+
+		return next( options );
+	});
+
+    burst_settings.rest_url = burst_settings.root;
+}
+
 const usesPlainPermalinks = () => {
 	return -1 !== burst_settings.rest_url.indexOf( '?' );
 };

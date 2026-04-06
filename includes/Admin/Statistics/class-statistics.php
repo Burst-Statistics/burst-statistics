@@ -1560,8 +1560,9 @@ class Statistics {
 			[ 'last_updated' ],
 		];
 
+		$table_name = $wpdb->prefix . 'burst_query_stats';
 		foreach ( $indexes as $index ) {
-			$this->add_index( 'burst_query_stats', $index );
+			$this->add_index( $table_name, $index );
 		}
 
 		$indexes = [
@@ -1573,8 +1574,9 @@ class Statistics {
 			[ 'page_id', 'page_type' ],
 		];
 
+		$table_name = $wpdb->prefix . 'burst_statistics';
 		foreach ( $indexes as $index ) {
-			$this->add_index( 'burst_statistics', $index );
+			$this->add_index( $table_name, $index );
 		}
 
 		$indexes = [
@@ -1582,16 +1584,19 @@ class Statistics {
 			[ 'uid', 'first_seen' ],
 		];
 
+		$table_name = $wpdb->prefix . 'burst_known_uids';
 		foreach ( $indexes as $index ) {
-			$this->add_index( 'burst_known_uids', $index );
+			$this->add_index( $table_name, $index );
 		}
 
-		$indexes = [
+		// server_side property to be removed after 2.2 update.
+		$table_name = $wpdb->prefix . 'burst_goals';
+		$indexes    = [
 			[ 'status' ],
 		];
 
 		foreach ( $indexes as $index ) {
-			$this->add_index( 'burst_goals', $index );
+			$this->add_index( $table_name, $index );
 		}
 	}
 

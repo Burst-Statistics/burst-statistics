@@ -30,7 +30,7 @@ const MapStatisticsInfo = memo( ({dataStatistics, missingDataCount}) => {
                     'right-3 top-3'
             }`}
         >
-            <div className="duration-400 group rounded-lg border border-gray-200 bg-white/95 px-3 py-2 text-sm shadow-sm transition-all hover:shadow-md z-[1] relative">
+            <div className="duration-400 group rounded-lg border border-gray-200 bg-white/95 px-3 py-2 text-sm shadow-sm transition-all hover:shadow-md z-[1] relative map-statistics-info">
                 <div className="font-semibold text-black">
                     {sprintf(
                         'world' === currentView.level ||

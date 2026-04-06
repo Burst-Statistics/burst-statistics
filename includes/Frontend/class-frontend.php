@@ -7,7 +7,6 @@ use Burst\Frontend\Share\Share_Expired;
 use Burst\Frontend\Tracking\Tracking;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
-use function Burst\burst_loader;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -59,6 +58,9 @@ class Frontend {
 
 		$share = new Share_Expired();
 		$share->init();
+
+		$mainwp_proxy = new MainWP_Proxy();
+		$mainwp_proxy->init();
 	}
 
 	/**

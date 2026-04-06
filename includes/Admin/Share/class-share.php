@@ -3,7 +3,6 @@ namespace Burst\Admin\Share;
 
 use Burst\Admin\App\App;
 use Burst\Admin\Capability\Capability;
-use Burst\Admin\Reports\Report;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Sanitize;
 use Burst\Traits\Save;
@@ -64,7 +63,6 @@ class Share {
 		add_filter( 'burst_share_link_permissions', [ $this, 'get_current_share_link_permissions' ] );
 		add_filter( 'burst_menu', [ $this, 'shareable_menu_items' ] );
 		add_action( 'admin_init', [ $this, 'maybe_flush_rewrite_rules' ] );
-		add_action( 'burst_daily', [ $this, 'cleanup_viewer_sessions' ] );
 	}
 
 	/**
@@ -385,7 +383,7 @@ class Share {
 			$this->revoke_token( $token );
 			$output = [
 				'success'     => true,
-				'share_links' => $this->get_share_links( 'link' ),
+				'share_links' => self::get_share_links(),
 			];
 		}
 
@@ -406,7 +404,7 @@ class Share {
 
 		if ( $action === 'get_share_links' ) {
 			return [
-				'share_links'    => $this->get_share_links( 'link' ),
+				'share_links'    => self::get_share_links(),
 				'shareable_tabs' => self::get_shareable_tabs(),
 			];
 		}
@@ -426,30 +424,12 @@ class Share {
 	/**
 	 * Get all valid share links with their metadata.
 	 *
-	 * @param string $type Type of token. all, report or link.
 	 * @param string $token Optional token to filter by.
 	 * @param int    $report_id Optional report_id to filter by.
 	 * @return array Array of share link data.
 	 */
-	public function get_share_links( string $type = 'all', string $token = '', int $report_id = 0 ): array {
-		$tokens = get_option( 'burst_share_tokens', [] );
-		// if this is requested for a report, we should check if it has a connected share url. If not, generate the token.
-		if ( $type === 'report' && $report_id > 0 ) {
-			$tokens = array_filter(
-				$tokens,
-				function ( $link ) use ( $report_id ) {
-					return $link['report_id'] === $report_id;
-				}
-			);
-			// if there are no tokens for this report, we should generate them now.
-			if ( empty( $tokens ) ) {
-				$burst_scheme = wp_parse_url( BURST_URL, PHP_URL_SCHEME );
-				$view_url     = set_url_scheme( site_url( '/burst-dashboard/#story' ), $burst_scheme );
-				$this->generate_token( '7d', $view_url, [], [], [], $report_id );
-				$tokens = get_option( 'burst_share_tokens', [] );
-			}
-		}
-
+	public static function get_share_links( string $token = '', int $report_id = 0 ): array {
+		$tokens       = get_option( 'burst_share_tokens', [] );
 		$share_links  = [];
 		$current_time = time();
 		// Clean up expired tokens while we're at it.
@@ -507,7 +487,7 @@ class Share {
 			);
 		}
 
-		if ( $report_id !== 0 ) {
+		if ( $report_id > 0 ) {
 			return array_filter(
 				$share_links,
 				function ( $link ) use ( $report_id ) {
@@ -516,27 +496,13 @@ class Share {
 			);
 		}
 
-		// If we only need link types, filter out tokens where report_id >0.
-		if ( $type === 'link' ) {
-			return array_filter(
-				$share_links,
-				function ( $link ) {
-					return $link['report_id'] === 0;
-				}
-			);
-		}
-
-		if ( $type === 'report' ) {
-			return array_filter(
-				$share_links,
-				function ( $link ) {
-					return $link['report_id'] !== 0;
-				}
-			);
-		}
-
-		// type===all, return all items.
-		return $share_links;
+		// filter out tokens where report_id >0.
+		return array_filter(
+			$share_links,
+			function ( $link ) {
+				return $link['report_id'] === 0;
+			}
+		);
 	}
 
 	/**
@@ -553,7 +519,7 @@ class Share {
 			$token = self::sanitize_token( wp_unslash( $_GET['burst_share_token'] ) );
 		}
 		if ( ! empty( $token ) ) {
-			$share_links = $this->get_share_links( 'all', $token );
+			$share_links = self::get_share_links( $token );
 			if ( ! empty( $share_links ) ) {
 				// get first share link.
 				$share_links = array_values( $share_links );
@@ -578,7 +544,7 @@ class Share {
 			'can_filter'               => false,
 			'is_shareable_link_viewer' => false,
 		];
-		$share_links    = $this->get_share_links( 'all' );
+		$share_links    = self::get_share_links();
 		if ( ! empty( $token ) ) {
 			foreach ( $share_links as $link ) {
 				if ( $link['token'] === $token ) {
@@ -599,7 +565,7 @@ class Share {
 	public function get_current_share_link_allowed_tabs(): array {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The token is our nonce, and is sanitized.
 		$token       = isset( $_GET['burst_share_token'] ) ? self::sanitize_token( wp_unslash( $_GET['burst_share_token'] ) ) : '';
-		$share_links = $this->get_share_links( 'all' );
+		$share_links = self::get_share_links();
 		foreach ( $share_links as $link ) {
 			if ( $link['token'] === $token ) {
 				return $link['shared_tabs'] ?? [];
@@ -671,11 +637,8 @@ class Share {
 	 * @return string The complete share URL.
 	 */
 	private static function build_share_url( string $token, ?string $view_url = null, int $report_id = 0 ): string {
-		// During cron, home_url() may return http:// while the site runs on https://.
-		// Normalize to the same scheme as BURST_URL to ensure the link is correct.
-		$burst_scheme = wp_parse_url( BURST_URL, PHP_URL_SCHEME );
-		$base_url     = set_url_scheme( home_url( '/burst-dashboard/' ), $burst_scheme );
-		$share_url    = add_query_arg( 'burst_share_token', $token, $base_url );
+		$base_url  = home_url( '/burst-dashboard/' );
+		$share_url = add_query_arg( 'burst_share_token', $token, $base_url );
 
 		// in case of the report id, filter data and date ranges are pulled from the report.
 		if ( $report_id > 0 ) {
@@ -825,7 +788,6 @@ class Share {
 
 		// if we haven't found it, generate a new one.
 		if ( empty( $token ) ) {
-
 			$token               = bin2hex( random_bytes( 16 ) );
 			$token_data['token'] = $token;
 			$existing_tokens[]   = $token_data;
@@ -833,20 +795,6 @@ class Share {
 
 		update_option( 'burst_share_tokens', $existing_tokens );
 		return $token;
-	}
-
-	/**
-	 * Delete all sessions for the burst_statistics_viewer user.
-	 * Runs daily via burst_daily cron to ensure viewer sessions never exceed 24 hours.
-	 */
-	public function cleanup_viewer_sessions(): void {
-		$user = get_user_by( 'login', 'burst_statistics_viewer' );
-		if ( ! $user ) {
-			return;
-		}
-
-		$manager = \WP_Session_Tokens::get_instance( $user->ID );
-		$manager->destroy_all();
 	}
 
 	/**

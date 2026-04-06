@@ -164,7 +164,7 @@ class Report_Logs {
 		];
 
 		foreach ( $indexes as $index ) {
-			$this->add_index( 'burst_report_logs', $index );
+			$this->add_index( "{$wpdb->prefix}burst_report_logs", $index );
 		}
 	}
 

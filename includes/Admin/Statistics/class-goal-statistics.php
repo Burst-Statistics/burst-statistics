@@ -308,7 +308,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 			];
 
 			foreach ( $indexes as $index ) {
-				$this->add_index( 'burst_goal_statistics', $index );
+				$this->add_index( $wpdb->prefix . 'burst_goal_statistics', $index );
 			}
 		}
 	}

@@ -1433,7 +1433,562 @@ img[src*="burst-wink.svg"]{
   }
 	}
 
+.mainwp-ui .burst {
+		margin-left: 0 !important;
+	}
+
 /* Responsive adjustment */
+
+body.dashboard-default-theme {
+		.burst-statistics-wrapper {
+			background: #f0f0f1 !important;
+			color: #151615;
+		}
+	}
+
+body.dashboard-default-dark-theme {
+		background-color: #121313 !important;
+
+		.burst-statistics-wrapper {
+			background: #121313 !important;
+			color: #F2F2F2;
+		}
+
+		.burst-statistics-wrapper .ui.header,
+		.burst-statistics-wrapper .ui.header .sub.header,
+		.burst-statistics-wrapper h3,
+		.burst-statistics-wrapper h2,
+		.burst-statistics-wrapper p {
+			color: #F2F2F2 !important;
+		}
+	}
+
+/* Shared share-link dark mode rules for both portal and in-app paths. */
+
+body.dashboard-default-dark-theme,
+	#burst-statistics.dark {
+		.burst-share-link-panel,
+		.burst-share-link-card {
+			background-color: #1c1d1b !important;
+			border-color: rgb(242 242 242 / 18%) !important;
+		}
+
+		.burst-share-link-card--copied {
+			background-color: rgb(108 152 0 / 16%) !important;
+			border-color: #2B8133 !important;
+		}
+
+		.burst-share-link-card {
+			/* Prevent light color interpolation flicker on mount/copy state. */
+			transition-property: opacity, transform !important;
+		}
+
+		.burst-share-link-output {
+			background-color: #121313 !important;
+			color: #F2F2F2 !important;
+			border-color: rgb(242 242 242 / 20%) !important;
+		}
+
+		.burst-share-link-copy-btn:hover {
+			background-color: rgb(242 242 242 / 12%) !important;
+			color: #F2F2F2 !important;
+		}
+
+		.burst-share-link-revoke-btn:hover {
+			background-color: rgb(217 94 94 / 16%) !important;
+			color: #c6273b !important;
+		}
+	}
+
+#burst-statistics.dark {
+		background-color: #121313;
+		color: #F2F2F2;
+
+		.bg-white,
+		[class*=' bg-white'] {
+			background-color: #1c1d1b !important;
+		}
+
+		.bg-gray-50,
+		.bg-gray-100,
+		.bg-gray-200,
+		.bg-gray-300,
+		.bg-primary-light,
+		.bg-primary-lightest,
+		.bg-brand-lightest,
+		.bg-blue-light {
+			background-color: #1c1d1b !important;
+		}
+
+		/* Tabs: keep inactive tabs muted while preserving active tab contrast. */
+		button[role='tab'][class*='bg-white'] {
+			background-color: #1c1d1b !important;
+		}
+
+		button[role='tab'][data-active='true'][class*='data-[active="true"]:bg-blue-lighter'] {
+			background-color: #142963 !important;
+		}
+
+		button[role='tab'][data-active='true'][class*='data-[active="true"]:bg-brand-lightest'] {
+			background-color: #233525 !important;
+		}
+
+		.text-black,
+		.text-gray,
+		.text-gray-300,
+		.text-gray-400,
+		.text-gray-500,
+		.text-gray-600,
+		.text-gray-700,
+		.text-gray-800,
+		.text-gray-900,
+		.text-\[\#1a1a1ae5\] {
+			color: #F2F2F2 !important;
+		}
+
+		.text-primary,
+		.text-green,
+		.text-button-accent {
+			color: #2B8133 !important;
+		}
+
+		.text-red,
+		.text-red-600,
+		.text-red-700,
+		.text-wp-orange {
+			color: #c6273b !important;
+		}
+
+		.burst-theme-toggle {
+			background-color: #121313 !important;
+			border-color: rgb(242 242 242 / 18%) !important;
+			color: #F2F2F2 !important;
+		}
+
+		.burst-theme-toggle:hover {
+			background-color: rgb(242 242 242 / 10%) !important;
+			color: #2B8133 !important;
+		}
+
+		a {
+			color: #F2F2F2 !important;
+		}
+
+		a.text-blue,
+		a.text-button-accent,
+		.hover\:text-blue:hover {
+			color: #2B8133 !important;
+		}
+
+		.border,
+		.border-gray-200,
+		.border-gray-300,
+		.border-gray-400,
+		.border-divider {
+			border-color: rgb(242 242 242 / 18%) !important;
+		}
+
+		/* Tabs: override generic border tint so active tab remains clearly selected. */
+		button[role='tab'][class*='border-transparent'] {
+			border-color: transparent !important;
+		}
+
+		button[role='tab'][data-active='true'][class*='data-[active="true"]:border-blue-darker'] {
+			border-color: #1E73BE !important;
+		}
+
+		button[role='tab'][data-active='true'][class*='data-[active="true"]:border-brand'] {
+			border-color: #2B8133 !important;
+		}
+
+		.shadow-sm,
+		.shadow-rsp,
+		.shadow-layered-low-b,
+		.shadow-layered-mid-b,
+		.shadow-layered-high-b {
+			box-shadow: 0 10px 24px rgb(0 0 0 / 45%) !important;
+		}
+
+		/* Status chips */
+		.bg-green-100 {
+			background-color: rgb(108 152 0 / 20%) !important;
+		}
+
+		.bg-green-light {
+			background-color: rgb(108 152 0 / 20%) !important;
+		}
+
+		.bg-yellow-light {
+			background-color: rgb(255 195 0 / 16%) !important;
+		}
+
+		.text-green-700,
+		.text-green-dark {
+			color: #2B8133 !important;
+		}
+
+		/* Alert/warning cards */
+		.bg-red-light {
+			background-color: rgb(217 94 94 / 16%) !important;
+		}
+
+		.text-red-dark,
+		.text-red {
+			color: #c6273b !important;
+		}
+
+		/* Form fields */
+		input:not([type='checkbox']):not([type='radio']),
+		textarea,
+		select {
+			background-color: #1c1d1b !important;
+			color: #F2F2F2 !important;
+			border-color: rgb(242 242 242 / 22%) !important;
+		}
+
+		input::-moz-placeholder, textarea::-moz-placeholder {
+			color: rgb(242 242 242 / 62%) !important;
+		}
+
+		input::placeholder,
+		textarea::placeholder {
+			color: rgb(242 242 242 / 62%) !important;
+		}
+
+		/* Keep SVGs/icons readable in dark mode */
+		svg.text-black,
+		.lucide.text-black,
+		i.text-black {
+			color: #F2F2F2 !important;
+		}
+
+		/* Updraft logo should be white in dark mode. */
+		svg[data-updraft-logo='true'] #udp-logo-text,
+		svg[data-updraft-logo='true'] #udp-logo-icon {
+			fill: #F2F2F2 !important;
+		}
+
+		/* Inline fill="#000000" attribute on SVG paths (e.g. close/cross button) */
+		path[fill="#000000"],
+		path[fill="black"] {
+			fill: #F2F2F2 !important;
+		}
+
+		/* Radix/select trigger buttons */
+		button[role='combobox'].bg-white,
+		button[role='combobox'][class*='bg-white'] {
+			background-color: #1c1d1b !important;
+			color: #F2F2F2 !important;
+		}
+
+		button[role='combobox'][class*='outline-gray-400'] {
+			outline-color: rgb(242 242 242 / 24%) !important;
+		}
+
+		button[role='combobox'][class*='hover:bg-gray-100']:hover {
+			background-color: rgb(108 152 0 / 16%) !important;
+			color: #2B8133 !important;
+		}
+
+		/* Keep checkbox checkmark white only in dark mode. */
+		button[role='checkbox'][data-state='checked'] svg,
+		button[role='checkbox'][data-state='checked'] path,
+		button[role='checkbox'][data-state='checked'] i,
+		button[role='checkbox'][data-state='checked'] [class*='text-'] {
+			color: #fff !important;
+			stroke: currentColor;
+		}
+
+		/* No-custom table empty-state and pager blocks */
+		.burst-data-table.no-custom-burst-style,
+		.burst-data-table.no-custom-burst-style .rdt_Table,
+		.burst-data-table.no-custom-burst-style [role='table'] {
+			background-color: #1c1d1b !important;
+			color: #F2F2F2 !important;
+		}
+
+		.burst-data-table.no-custom-burst-style .opacity-40 {
+			opacity: 1 !important;
+		}
+
+		.burst-data-table.no-custom-burst-style .border-gray-200,
+		.burst-data-table.no-custom-burst-style .border-gray-300,
+		.burst-data-table.no-custom-burst-style .border-gray-400 {
+			border-color: rgb(242 242 242 / 18%) !important;
+		}
+
+		.burst-data-table.no-custom-burst-style .bg-gray-100,
+		.burst-data-table.no-custom-burst-style .bg-white {
+			background-color: #121313 !important;
+		}
+
+		.burst-data-table.no-custom-burst-style [class*='text-gray-300'],
+		.burst-data-table.no-custom-burst-style [class*='text-gray-400'],
+		.burst-data-table.no-custom-burst-style [class*='text-gray-600'] {
+			color: #F2F2F2 !important;
+		}
+
+		.burst-data-table.no-custom-burst-style h1,
+		.burst-data-table.no-custom-burst-style h2,
+		.burst-data-table.no-custom-burst-style h3,
+		.burst-data-table.no-custom-burst-style h4,
+		.burst-data-table.no-custom-burst-style h5,
+		.burst-data-table.no-custom-burst-style h6,
+		.burst-data-table.no-custom-burst-style p,
+		.burst-data-table.no-custom-burst-style span,
+		.burst-data-table.no-custom-burst-style div {
+			color: #F2F2F2;
+		}
+
+		.burst-data-table.no-custom-burst-style svg,
+		.burst-data-table.no-custom-burst-style path {
+			color: #F2F2F2 !important;
+			stroke: currentColor;
+		}
+
+		/* Handle Tailwind variant utilities that don't match plain .bg-* selectors. */
+		[class*='even:bg-gray-100']:nth-child(even),
+		[class*='even:bg-gray-50']:nth-child(even),
+		[class*='even:bg-white']:nth-child(even),
+		[class*='odd:bg-gray-100']:nth-child(odd),
+		[class*='odd:bg-gray-50']:nth-child(odd),
+		[class*='odd:bg-white']:nth-child(odd) {
+			background-color: #121313 !important;
+			color: #F2F2F2 !important;
+		}
+
+		/* Today/tooltip rows should never fall back to white in dark mode. */
+		[class*='burst-tooltip-'] {
+			color: #F2F2F2 !important;
+		}
+
+		[class*='burst-tooltip-'] p,
+		[class*='burst-tooltip-'] .font-semibold,
+		[class*='burst-tooltip-'] .burst-today-list-item-text,
+		[class*='burst-tooltip-'] svg,
+		[class*='burst-tooltip-'] path {
+			color: #F2F2F2 !important;
+			stroke: currentColor;
+		}
+
+		/* Opacity variants of bg-white (e.g. bg-white/90 on inline action buttons) — use transparent so the SVG icon has no white bg box. */
+		[class*='bg-white/'] {
+			background-color: transparent !important;
+		}
+
+		/* Skeleton loading bars — must stay visible on dark background. */
+		.bg-gray-200.animate-pulseSlow,
+		.bg-gray-100.animate-pulseSlow {
+			background-color: rgb(242 242 242 / 12%) !important;
+		}
+
+		/* react-data-table-component (rdt_*) universal dark overrides.
+			These elements are styled by styled-components hash classes so
+			plain Tailwind utility overrides do not reach them. */
+		.burst-data-table .rdt_Table,
+		.burst-data-table .rdt_Table > div,
+		.burst-data-table .rdt_TableBody .rdt_TableRow,
+		.burst-data-table .rdt_TableCol,
+		.burst-data-table .rdt_TableCol_Sortable,
+		.burst-data-table .rdt_TableCell {
+			background-color: #1c1d1b !important;
+			color: #F2F2F2 !important;
+			border-color: rgb(242 242 242 / 10%) !important;
+		}
+
+		/* Table header — slightly darker than rows */
+		.burst-data-table .rdt_TableHead,
+		.burst-data-table .rdt_TableHeadRow {
+			background-color: #1c1d1b !important;
+			color: #F2F2F2 !important;
+			border-color: rgb(242 242 242 / 14%) !important;
+		}
+
+		/* Alternating rows */
+		.burst-data-table .rdt_TableBody .rdt_TableRow:nth-child(even) {
+			background-color: #1c1d1b !important;
+		}
+
+		/* Pagination bar */
+		.rdt_Pagination {
+			background-color: #1c1d1b !important;
+			color: #F2F2F2 !important;
+			border-color: rgb(242 242 242 / 14%) !important;
+		}
+
+		.rdt_Pagination button {
+			color: #F2F2F2 !important;
+			fill: #F2F2F2 !important;
+			background-color: transparent !important;
+		}
+
+		.rdt_Pagination button:disabled {
+			color: rgb(242 242 242 / 38%) !important;
+			fill: rgb(242 242 242 / 38%) !important;
+			background-color: transparent !important;
+		}
+
+		.rdt_Pagination select {
+			background-color: #1c1d1b !important;
+			color: #F2F2F2 !important;
+			border-color: rgb(242 242 242 / 20%) !important;
+		}
+
+		/* Prevent unreadable white/light hover states in dark mode. */
+		[class*='hover:bg-white']:hover,
+		[class*='hover:bg-white/90']:hover,
+		[class*='hover:bg-gray-50']:hover,
+		[class*='hover:bg-gray-100']:hover {
+			background-color: #1c1d1b !important;
+			color: #2B8133 !important;
+		}
+
+		.group:hover [class*='group-hover:bg-white'],
+		.group:hover [class*='group-hover:bg-gray-50'],
+		.group:hover [class*='group-hover:bg-gray-100'] {
+			background-color: #1c1d1b !important;
+			color: #2B8133 !important;
+		}
+
+		.map-statistics-info {
+			background-color: #1c1d1b !important;
+		}
+
+		/* Icon buttons (circular, e.g. delete/trash) */
+		.burst-button-icon {
+			background-color: rgb(242 242 242 / 10%) !important;
+			color: #F2F2F2 !important;
+		}
+
+		.burst-button-icon--delete:hover {
+			background-color: rgb(217 94 94 / 20%) !important;
+			color: #c6273b !important;
+		}
+
+		/* Secondary buttons */
+		a.burst-button--secondary,
+		button.burst-button--secondary,
+		input.burst-button--secondary {
+			background-color: #1c1d1b !important;
+			color: #F2F2F2 !important;
+			border-color: rgb(242 242 242 / 25%) !important;
+		}
+
+		a.burst-button--secondary:hover,
+		button.burst-button--secondary:hover,
+		input.burst-button--secondary:hover {
+			background-color: rgb(108 152 0 / 16%) !important;
+			color: #2B8133 !important;
+			border-color: #2B8133 !important;
+			box-shadow: none !important;
+		}
+
+		/* Date range picker (react-date-range rdr* classes use compiled bg not utility classes) */
+		.rdrCalendarWrapper,
+		.rdrDefinedRangesWrapper {
+			background-color: #1c1d1b !important;
+			color: #F2F2F2 !important;
+		}
+
+		.rdrDefinedRangesWrapper {
+			border-color: rgb(242 242 242 / 15%) !important;
+		}
+
+		.rdrStaticRange {
+			background-color: #1c1d1b !important;
+			border-color: rgb(242 242 242 / 10%) !important;
+			color: #F2F2F2 !important;
+		}
+
+		.rdrStaticRange:hover .rdrStaticRangeLabel,
+		.rdrStaticRange:focus .rdrStaticRangeLabel {
+			background-color: #121313 !important;
+		}
+
+		.rdrStaticRangeLabel {
+			color: #F2F2F2 !important;
+		}
+
+		.rdrDateDisplayWrapper {
+			background-color: rgb(108 152 0 / 12%) !important;
+		}
+
+		.rdrDateDisplayItem {
+			background-color: #121313 !important;
+			border-color: rgb(242 242 242 / 20%) !important;
+		}
+
+		.rdrDateDisplayItem input {
+			color: #F2F2F2 !important;
+		}
+
+		.rdrMonthAndYearPickers select {
+			color: #F2F2F2 !important;
+			background-color: transparent !important;
+		}
+
+		.rdrMonthAndYearPickers select:hover {
+			background-color: rgb(242 242 242 / 8%) !important;
+		}
+
+		.rdrMonthName,
+		.rdrWeekDay {
+			color: rgb(242 242 242 / 55%) !important;
+		}
+
+		.rdrDayNumber span {
+			color: #F2F2F2 !important;
+		}
+
+		.rdrDay:not(.rdrDayPassive) .rdrInRange ~ .rdrDayNumber span,
+		.rdrDay:not(.rdrDayPassive) .rdrStartEdge ~ .rdrDayNumber span,
+		.rdrDay:not(.rdrDayPassive) .rdrEndEdge ~ .rdrDayNumber span,
+		.rdrDay:not(.rdrDayPassive) .rdrSelected ~ .rdrDayNumber span {
+			color: #fff !important;
+		}
+
+		.rdrDayPassive .rdrDayNumber span {
+			color: rgb(242 242 242 / 25%) !important;
+		}
+
+		.rdrDayDisabled {
+			background-color: rgb(242 242 242 / 4%) !important;
+		}
+
+		.rdrDayDisabled .rdrDayNumber span {
+			color: rgb(242 242 242 / 22%) !important;
+		}
+
+		.rdrNextPrevButton {
+			background-color: rgb(242 242 242 / 12%) !important;
+		}
+
+		.rdrNextPrevButton:hover {
+			background-color: rgb(242 242 242 / 22%) !important;
+		}
+
+		.rdrPprevButton i {
+			/* Arrow pointing left */
+			border-color: transparent #F2F2F2 transparent transparent !important;
+		}
+
+		.rdrNextButton i {
+			/* Arrow pointing right */
+			border-color: transparent transparent transparent #F2F2F2 !important;
+		}
+
+		/* Radio option selected label — bg-primary-light is already overridden above,
+			but the border-primary highlight also needs adjustment. */
+		.border-primary {
+			border-color: #2B8133 !important;
+		}
+
+		/* Inner radio dot (bg-white inside a radio circle) */
+		.rounded-full .bg-white,
+		.w-2.h-2.rounded-full.bg-white {
+			background-color: #121313 !important;
+		}
+	}
 
 /* Hide nags from other plugins */
 
@@ -1538,10 +2093,6 @@ input[type=radio]:checked::before {
 
 #burst-statistics .left-4 {
   left: 1rem;
-}
-
-#burst-statistics .left-\[160px\] {
-  left: 160px;
 }
 
 #burst-statistics .right-0 {
@@ -2040,8 +2591,8 @@ input[type=radio]:checked::before {
   height: 5px;
 }
 
-#burst-statistics .h-\[96vh\] {
-  height: 96vh;
+#burst-statistics .h-\[95vh\] {
+  height: 95vh;
 }
 
 #burst-statistics .h-fit {
@@ -2085,8 +2636,8 @@ input[type=radio]:checked::before {
   max-height: 90vh;
 }
 
-#burst-statistics .max-h-\[96vh\] {
-  max-height: 96vh;
+#burst-statistics .max-h-\[95vh\] {
+  max-height: 95vh;
 }
 
 #burst-statistics .max-h-toastify-toast-max-height {
@@ -2139,6 +2690,10 @@ input[type=radio]:checked::before {
 
 #burst-statistics .w-10 {
   width: 2.5rem;
+}
+
+#burst-statistics .w-11 {
+  width: 2.75rem;
 }
 
 #burst-statistics .w-12 {
@@ -2434,6 +2989,11 @@ input[type=radio]:checked::before {
 
 #burst-statistics .translate-x-1 {
   --tw-translate-x: 0.25rem;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+
+#burst-statistics .translate-x-5 {
+  --tw-translate-x: 1.25rem;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
@@ -3383,10 +3943,6 @@ input[type=radio]:checked::before {
 
 #burst-statistics .rounded {
   border-radius: 0.25rem;
-}
-
-#burst-statistics .rounded-2xl {
-  border-radius: 1rem;
 }
 
 #burst-statistics .rounded-\[9px\] {
@@ -4799,6 +5355,10 @@ input[type=radio]:checked::before {
 #burst-statistics .text-\[\#1E73BE\] {
   --tw-text-opacity: 1;
   color: rgb(30 115 190 / var(--tw-text-opacity, 1));
+}
+
+#burst-statistics .text-\[\#1a1a1ae5\] {
+  color: #1a1a1ae5;
 }
 
 #burst-statistics .text-black {
@@ -8838,6 +9398,29 @@ a.burst-button,
   outline-offset: 2px;
 }
 
+#burst-statistics .dark\:block:is(.dark *) {
+  display: block;
+}
+
+#burst-statistics .dark\:hidden:is(.dark *) {
+  display: none;
+}
+
+#burst-statistics .dark\:border-gray-600:is(.dark *) {
+  --tw-border-opacity: 1;
+  border-color: rgb(108 117 125 / var(--tw-border-opacity, 1));
+}
+
+#burst-statistics .dark\:bg-dashboard-dark-surface:is(.dark *) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(28 29 27 / var(--tw-bg-opacity, 1));
+}
+
+#burst-statistics .dark\:bg-gray-600:is(.dark *) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(108 117 125 / var(--tw-bg-opacity, 1));
+}
+
 @media not all and (min-width: 1280px) {
 
   #burst-statistics .max-xl\:hidden {
@@ -8974,10 +9557,6 @@ a.burst-button,
     display: block;
   }
 
-  #burst-statistics .sm\:w-64 {
-    width: 16rem;
-  }
-
   #burst-statistics .sm\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -9081,10 +9660,6 @@ a.burst-button,
 
   #burst-statistics .lg\:col-span-9 {
     grid-column: span 9 / span 9;
-  }
-
-  #burst-statistics .lg\:ml-\[80px\] {
-    margin-left: 80px;
   }
 
   #burst-statistics .lg\:w-4\/6 {

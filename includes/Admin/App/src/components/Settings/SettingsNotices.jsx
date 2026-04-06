@@ -20,8 +20,8 @@ const SettingsNotices = ({ settingsGroup }) => {
 
 	const toggleAllNotices = () => {
 		const openCount = openStates.filter( ( isOpen ) => isOpen ).length;
-		const shouldOpenAll = openCount <= notices.length / 2; // eslint-disable-line no-undef
-		setOpenStates( notices.map( () => shouldOpenAll ) ); // eslint-disable-line no-undef
+		const shouldOpenAll = openCount <= settingsWithNotices.length / 2;
+		setOpenStates( settingsWithNotices.map( () => shouldOpenAll ) );
 	};
 
 	const handleToggle = ( index, isOpen ) => {
@@ -62,19 +62,18 @@ const SettingsNotices = ({ settingsGroup }) => {
 						onToggle={( isOpen ) => handleToggle( index, isOpen )}
 					>
 						<div className="flex flex-col justify-start">
-							<p className="text-base font-normal">
+							<p className="text-base font-normal break-all">
 								{setting.notice.description}
 							</p>
-							{setting.notice.url &&
-								'' !== setting.notice.url && (
-									<Link
-										className="mt-2 text-base text-gray underline"
-										to={setting.notice.url}
-										from={'/'}
-									>
-										{__( 'Learn more', 'burst-statistics' )}
-									</Link>
-								)}
+							{setting.notice.url && '' !== setting.notice.url && (
+								<Link
+									className="mt-2 text-base text-gray underline"
+									to={setting.notice.url}
+									from={'/'}
+								>
+									{__( 'Learn more', 'burst-statistics' )}
+								</Link>
+							)}
 						</div>
 					</CollapsableBlock>
 				) )}

@@ -21,6 +21,9 @@ interface HelpTooltipProps {
 
 	/** Children to display in the trigger */
 	children?: React.ReactNode;
+
+	/** Render trigger as child to preserve wrapped element layout */
+	asChild?: boolean;
 }
 
 const HelpTooltip: React.FC<HelpTooltipProps> = ({
@@ -28,7 +31,8 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
 	side = 'top',
 	hasArrow = true,
 	delayDuration = 300,
-	children
+	children,
+	asChild = false
 }) => {
 	const handleClick = ( e: React.MouseEvent ) => {
 		e.preventDefault();
@@ -39,6 +43,7 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
 		<Tooltip.Provider delayDuration={delayDuration}>
 			<Tooltip.Root>
 				<Tooltip.Trigger
+					asChild={asChild}
 					aria-label={__( 'Help information', 'burst-statistics' )}
 					onClick={handleClick}
 					onMouseDown={( e ) => e.stopPropagation()}
@@ -62,11 +67,7 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
 						content}
 
 					{hasArrow && (
-						<Tooltip.Arrow
-							className="fill-gray-300"
-							width={10}
-							height={5}
-						/>
+						<Tooltip.Arrow className="fill-gray-300" width={10} height={5} />
 					)}
 				</Tooltip.Content>
 			</Tooltip.Root>

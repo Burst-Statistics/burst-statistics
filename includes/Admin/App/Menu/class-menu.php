@@ -39,7 +39,7 @@ class Menu {
 		$menu_items = $this->menu;
 		// remove items where capabilities are not met.
 		foreach ( $menu_items as $key => $menu_item ) {
-			if ( ! $this->current_user_can( $menu_item['capabilities'] ) ) {
+			if ( ! current_user_can( $menu_item['capabilities'] ) ) {
 				unset( $menu_items[ $key ] );
 				continue;
 			}
@@ -64,20 +64,5 @@ class Menu {
 		}
 
 		return apply_filters( 'burst_menu', $menu_items );
-	}
-
-	/**
-	 * Check the capability for the current user using our wrapper functions.
-	 * This ensures that any overrides in these functions are respected.
-	 */
-	private function current_user_can( string $capability ): bool {
-		if ( $capability === 'view_burst_statistics' ) {
-			return $this->user_can_view();
-		} elseif ( $capability === 'manage_burst_statistics' ) {
-			return $this->user_can_manage();
-		} elseif ( $capability === 'view_sales_burst_statistics' ) {
-			return $this->user_can_view_sales();
-		}
-		return false;
 	}
 }

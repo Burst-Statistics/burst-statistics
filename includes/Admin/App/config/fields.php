@@ -181,6 +181,16 @@ return [
 		'default'  => false,
 	],
 	[
+		'id'       => 'theme_toggle',
+		'menu_id'  => 'general',
+		'group_id' => 'general',
+		'type'     => 'theme_toggle',
+		'label'    => __( 'Theme', 'burst-statistics' ),
+		'context'  => __( 'Switch between light and dark mode for this dashboard.', 'burst-statistics' ),
+		'disabled' => false,
+		'default'  => '',
+	],
+	[
 		'id'       => 'tips_tricks_mailinglist',
 		'menu_id'  => 'general',
 		'group_id' => 'general',

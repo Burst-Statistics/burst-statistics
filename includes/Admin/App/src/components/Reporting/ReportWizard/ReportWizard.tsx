@@ -84,7 +84,7 @@ const ReportWizard: React.FC = () => {
 		<FormProvider {...methods}>
 			<motion.div
 				id="report-wizard-modal"
-				className="fixed inset-0 left-[160px] max-[960px]:left-9 max-[782px]:left-0 z-50 bg-gray-800 bg-opacity-90 flex items-end justify-center px-4"
+				className="fixed inset-0 left-0 max-[960px]:left-9 max-[782px]:left-0 z-[9999] bg-gray-800 bg-opacity-90 flex items-end justify-center px-4"
 				initial={{ opacity: 0 }}
 				animate={{ opacity: 1 }}
 				exit={{ opacity: 0 }}
@@ -107,7 +107,7 @@ const ReportWizard: React.FC = () => {
 							ease: 'easeOut'
 						}
 					}}
-					className="w-full h-[96vh] max-h-[96vh] max-w-screen-2xl"
+					className="w-full h-[95vh] max-h-[95vh] max-w-screen-2xl"
 				>
 					{/* inside container div */}
 					<div className="h-full bg-gray-100 rounded-t-2xl shadow-2xl overflow-hidden flex flex-col">

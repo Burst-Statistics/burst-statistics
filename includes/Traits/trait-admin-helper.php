@@ -204,6 +204,18 @@ trait Admin_Helper {
 			}
 		}
 
+		if ( isset( $_SERVER['HTTP_X_BURSTMAINWP'] ) && $_SERVER['HTTP_X_BURSTMAINWP'] === '1' ) {
+			$mainwp_proxy = new \Burst\Frontend\MainWP_Proxy();
+
+			if ( $mainwp_proxy->is_mainwp_authenticated() ) {
+				return burst_loader()->has_admin_access = true;
+			}
+
+			if ( $mainwp_proxy->is_mainwp_signed_request() ) {
+				return burst_loader()->has_admin_access = true;
+			}
+		}
+
 		return burst_loader()->has_admin_access = false;
 	}
 

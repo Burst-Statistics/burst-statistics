@@ -442,17 +442,19 @@ const ShareLinkItem = ({ link, copiedId, onCopy, onRevoke, isRevoking }) => {
 			initial={{ opacity: 0, y: -10 }}
 			animate={{ opacity: 1, y: 0 }}
 			exit={{ opacity: 0, y: -10 }}
-			className={`rounded-md border p-3 ${isCopied ? 'border-green bg-green-50' : 'border-gray-200 bg-white'} transition-colors duration-200`}
+			className={`burst-share-link-card rounded-md border p-3 ${isCopied ? 'burst-share-link-card--copied border-green bg-green-50' : 'border-gray-200 bg-white'} transition-colors duration-200`}
 		>
 			{/* Tags row. */}
 			<div className="flex gap-2 mb-2 flex-col">
 				<div className="flex flex-row gap-1.5">
 					{/* use Intl.ListFormat to format the shared tabs */}
 					<span className="text-base font-medium text-gray-700">
-						{new Intl.ListFormat( undefined, { style: 'long' }).format( sharedTabsDisplay )}
+						{new Intl.ListFormat( undefined, { style: 'long' }).format(
+							sharedTabsDisplay
+						)}
 					</span>
-							{/* Date range. */}
-							{dateRangeDisplay && (
+					{/* Date range. */}
+					{dateRangeDisplay && (
 						<span className="inline-flex items-center gap-1 text-xs font-light text-gray-800">
 							<Icon name="calendar" size={10} />
 							{dateRangeDisplay}
@@ -477,10 +479,16 @@ const ShareLinkItem = ({ link, copiedId, onCopy, onRevoke, isRevoking }) => {
 						className="burst-share-link-output max-w-full truncate text-sm text-gray-800 font-mono w-full bg-gray-50 px-2 py-1.5 rounded border border-gray-300 cursor-text focus:border-wp-blue focus:ring-1 focus:ring-wp-blue/20"
 					/>
 
-					<Tooltip content={isCopied ? __( 'Copied!', 'burst-statistics' ) : __( 'Copy link', 'burst-statistics' )}>
+					<Tooltip
+						content={
+							isCopied ?
+								__( 'Copied!', 'burst-statistics' ) :
+								__( 'Copy link', 'burst-statistics' )
+						}
+					>
 						<button
 							onClick={() => onCopy( link )}
-							className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600"
+							className="burst-share-link-copy-btn rounded p-1 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600"
 						>
 							{isCopied ? (
 								<Icon name="check" size={14} color="green" />
@@ -494,42 +502,41 @@ const ShareLinkItem = ({ link, copiedId, onCopy, onRevoke, isRevoking }) => {
 						<button
 							onClick={() => onRevoke( link.token )}
 							disabled={isRevoking}
-							className="rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red disabled:opacity-50"
+							className="burst-share-link-revoke-btn rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red disabled:opacity-50"
 						>
 							<Icon name="times" size={14} />
 						</button>
 					</Tooltip>
 				</div>
 
+				{0 < filtersDisplay.length ||
+					( 0 < enabledPermissions.length && (
+						<div className="flex flex-wrap items-center gap-1.5">
+							{/* Filters. */}
+							{filtersDisplay.map( ( filter ) => (
+								<Tooltip
+									key={filter.key}
+									content={`${filter.label}: ${filter.value}`}
+								>
+									<span className="inline-flex items-center gap-1 rounded bg-gray-100 border border-gray-300 px-1.5 py-0.5 text-xs font-light text-gray-800">
+										<Icon name="filter" size={10} />
+										{filter.label}
+									</span>
+								</Tooltip>
+							) )}
 
-				{0 < filtersDisplay.length || 0 < enabledPermissions.length && (
-					<div className="flex flex-wrap items-center gap-1.5">
-
-					{/* Filters. */}
-					{filtersDisplay.map( ( filter ) => (
-						<Tooltip
-							key={filter.key}
-							content={`${filter.label}: ${filter.value}`}
-						>
-							<span className="inline-flex items-center gap-1 rounded bg-gray-100 border border-gray-300 px-1.5 py-0.5 text-xs font-light text-gray-800">
-								<Icon name="filter" size={10} />
-								{filter.label}
-							</span>
-						</Tooltip>
+							{/* Permissions. */}
+							{enabledPermissions.map( ( label ) => (
+								<span
+									key={label}
+									className="inline-flex items-center gap-1 rounded bg-gray-100 border border-gray-300 px-1.5 py-0.5 text-xs font-light text-gray-800"
+								>
+									<Icon name="check" size={10} />
+									{label}
+								</span>
+							) )}
+						</div>
 					) )}
-
-					{/* Permissions. */}
-					{enabledPermissions.map( ( label ) => (
-						<span
-							key={label}
-							className="inline-flex items-center gap-1 rounded bg-gray-100 border border-gray-300 px-1.5 py-0.5 text-xs font-light text-gray-800"
-						>
-							<Icon name="check" size={10} />
-							{label}
-						</span>
-					) )}
-				</div>
-				)}
 			</div>
 		</motion.div>
 	);
@@ -886,11 +893,14 @@ export const ShareButton = () => {
 					<div className="space-y-4">
 						{/* Description. */}
 						<p className="text-gray text-sm">
-							{__( 'Generate a private, shareable link to a live view of this dashboard.', 'burst-statistics' )}
+							{__(
+								'Generate a private, shareable link to a live view of this dashboard.',
+								'burst-statistics'
+							)}
 						</p>
 
 						{/* Create new link section. */}
-						<div className="rounded-lg border border-gray-200 bg-white p-4 space-y-4">
+						<div className="burst-share-link-panel rounded-lg border border-gray-200 bg-white p-4 space-y-4">
 							{/* Link configuration summary. */}
 							<LinkConfigurationSummary
 								currentTab={currentTab}

@@ -39,6 +39,7 @@ const TodayFilterItem = memo(
 			filterValue={filterValue}
 			label={label}
 			startDate={startDate}
+			useContainerForFilter
 		>
 			<div className="rounded-md flex flex-col justify-center items-center text-center flex-wrap bg-white py-4 [&.active]:shadow-greenShadow [&.active]:border-2 [&.active]:border-green">
 				<Icon name={icon} size="26" />
@@ -62,13 +63,13 @@ const TotalFilterItem = memo(
 			label={label}
 			startDate={startDate}
 			endDate={endDate}
+			useContainerForFilter
 		>
 			<div className="rounded-md flex flex-col justify-center items-center text-center flex-wrap bg-white py-4 [&.active]:shadow-greenShadow [&.active]:border-2 [&.active]:border-green">
 				<Icon name={icon} size="26" />
 				<h2 className="mt-1.5 font-extrabold">{count}</h2>
 				<span className="flex gap-[3px] justify-center text-xs">
-					<Icon name="calendar" size="13" />{' '}
-					{__( 'Total', 'burst-statistics' )}
+					<Icon name="calendar" size="13" /> {__( 'Total', 'burst-statistics' )}
 				</span>
 			</div>
 		</ClickToFilter>
@@ -211,7 +212,7 @@ const GoalsBlock = () => {
 	const onGoalsInfoClick = useCallback( () => {
 		burst_settings.goals_information_shown = '1';
 		setOption( 'goals_information_shown', true );
-		window.location.hash = '#settings/goals';
+		window.location.hash = '#/settings/goals';
 	}, []);
 
 	// Safely extract data from queries
@@ -397,7 +398,7 @@ const GoalsBlock = () => {
 				<BlockFooter>
 					{burst_settings.manage_burst_statistics && <a
 						className={'burst-button burst-button--secondary'}
-						href={'#settings/goals'}
+						href={'#/settings/goals'}
 					>
 						{__( 'View setup', 'burst-statistics' )}
 					</a> }

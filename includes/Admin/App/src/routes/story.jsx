@@ -27,7 +27,7 @@ function Story() {
     const getStartDate = useWizardStore( ( state ) => state.getStartDate );
     const getEndDate = useWizardStore( ( state ) => state.getEndDate );
     const reportBlocks = useWizardStore( ( state ) => state.wizard.content );
-    const [ errorMessage, setErrorMessage ] = React.useState( '' );
+
     const setReports = useReportsStore( ( state ) => state.setReports );
     const loadReportIntoWizard = useReportsStore( ( state ) => state.loadReportIntoWizard );
     const queryClient = useQueryClient();
@@ -50,48 +50,42 @@ function Story() {
     useEffect( () => {
         if ( reportData?.report ) {
 
-            // if there's no id, there is a permissions issue, or it is not enabled.
-            if ( reportData?.report?.id ) {
+            // Pre-populate the query cache with logo data resolved server-side.
+            // On the story/frontend page, settings fields are empty for the burst_viewer
+            // user (capability check in PHP), so getValue('logo_attachment_id') returns
+            // undefined. We use a fixed sentinel ID as the linking key between
+            // settings_fields and the attachment cache, so no real attachment ID is needed.
+            if ( reportData.logo_url ) {
+                const STORY_LOGO_SENTINEL = 'story-logo';
 
-                // Pre-populate the query cache with logo data resolved server-side.
-                // On the story/frontend page, settings fields are empty for the burst_viewer
-                // user (capability check in PHP), so getValue('logo_attachment_id') returns
-                // undefined. We use a fixed sentinel ID as the linking key between
-                // settings_fields and the attachment cache, so no real attachment ID is needed.
-                if ( reportData.logo_url ) {
-                    const STORY_LOGO_SENTINEL = 'story-logo';
-
-                    // Make logo_attachment_id available to useSettingsData / getValue().
-                    queryClient.setQueryData(
-                        [ 'settings_fields' ],
-                        ( oldData ) => {
-                            const currentFields = Array.isArray( oldData ) ? oldData : [];
-                            const alreadyPresent = currentFields.some( ( f ) => 'logo_attachment_id' === f.id );
-                            if ( alreadyPresent ) {
-                                return currentFields;
-                            }
-                            return [ ...currentFields, {id: 'logo_attachment_id', value: STORY_LOGO_SENTINEL} ];
+                // Make logo_attachment_id available to useSettingsData / getValue().
+                queryClient.setQueryData(
+                    [ 'settings_fields' ],
+                    ( oldData ) => {
+                        const currentFields = Array.isArray( oldData ) ? oldData : [];
+                        const alreadyPresent = currentFields.some( ( f ) => 'logo_attachment_id' === f.id );
+                        if ( alreadyPresent ) {
+                            return currentFields;
                         }
-                    );
+                        return [ ...currentFields, { id: 'logo_attachment_id', value: STORY_LOGO_SENTINEL } ];
+                    }
+                );
 
-                    // Pre-populate the resolved attachment URL so useAttachmentUrl skips wp.media.
-                    queryClient.setQueryData(
-                        [ 'attachment', STORY_LOGO_SENTINEL ],
-                        {
-                            attachmentUrl: reportData.logo_url,
-                            attachment: null
-                        }
-                    );
-                }
-
-                // Store the report in the reports array
-                setReports([ reportData.report ]);
-
-                // Load it into the wizard
-                loadReportIntoWizard( reportData.report.id, false );
-            } else {
-                setErrorMessage( 'The report could not load. Check if the report is enabled.' );
+                // Pre-populate the resolved attachment URL so useAttachmentUrl skips wp.media.
+                queryClient.setQueryData(
+                    [ 'attachment', STORY_LOGO_SENTINEL ],
+                    {
+                        attachmentUrl: reportData.logo_url,
+                        attachment: null
+                    }
+                );
             }
+
+            // Store the report in the reports array
+            setReports([ reportData.report ]);
+
+            // Load it into the wizard
+            loadReportIntoWizard( reportData.report.id, false );
             setIsWizardLoaded( true );
         }
     }, [ reportData?.report, setReports, loadReportIntoWizard, queryClient, reportData?.logo_url ]);
@@ -111,16 +105,6 @@ function Story() {
         return (
             <div className="col-span-12 flex justify-center items-center p-8">
                 <Icon name="loading" color="gray" />
-            </div>
-        );
-    }
-
-    if ( 0 < errorMessage.length ) {
-        return (
-            <div className="col-span-12 flex justify-center items-center p-8">
-                <div className="text-red-500 text-center">
-                    {errorMessage}
-                </div>
             </div>
         );
     }

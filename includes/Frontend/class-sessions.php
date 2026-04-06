@@ -62,7 +62,7 @@ class Sessions {
 
 		// Try to create indexes with full length.
 		foreach ( $indexes as $index ) {
-			$this->add_index( 'burst_sessions', $index );
+			$this->add_index( $table_name, $index );
 		}
 	}
 }

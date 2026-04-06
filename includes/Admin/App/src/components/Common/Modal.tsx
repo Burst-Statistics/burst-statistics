@@ -40,8 +40,8 @@ const Modal: React.FC<ModalProps> = ({
 				</Dialog.Trigger>
 			)}
 			<Dialog.Portal container={document.getElementById( 'modal-root' )}>
-				<Dialog.Overlay className="bg-black/50 fixed inset-0 z-50" />
-				<Dialog.Content className="fixed top-[calc(var(--wp-admin--admin-bar--height)+12px)] left-1/2 -translate-x-1/2 w-[calc(100%-20px)] max-h-[90vh] m-0 px-4 py-3 rounded-md z-50 bg-gray-100 shadow-md focus:outline-none data-[state=open]:animate-contentShow flex flex-col overflow-x-visible md:w-full md:max-w-[720px] lg:ml-[80px]">
+				<Dialog.Overlay className="bg-black/50 fixed inset-0 z-[9999]" />
+				<Dialog.Content className="fixed top-[calc(var(--wp-admin--admin-bar--height)+12px)] left-1/2 -translate-x-1/2 w-[calc(100%-20px)] max-h-[90vh] m-0 px-4 py-3 rounded-md z-[9999] bg-gray-100 shadow-md focus:outline-none data-[state=open]:animate-contentShow flex flex-col overflow-x-visible md:w-full md:max-w-[720px]">
 					<div className="flex flex-row justify-between items-center flex-shrink-0">
 						{customHeader ? (
 							<>
