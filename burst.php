@@ -33,6 +33,8 @@
 
 namespace Burst;
 
+use Burst\Admin\Capability\Capability;
+
 defined( 'ABSPATH' ) || die();
 if ( defined( 'BURST_PRO_FILE' ) ) {
     return;
@@ -70,6 +72,8 @@ try {
          */
         function burst_on_activation(): void {
             update_option( 'burst_run_activation', true, false );
+            Capability::add_capability( 'view', [ 'administrator', 'editor' ] );
+            Capability::add_capability( 'manage' );
 
             // ensure that defaults are set only once.
             if ( ! get_option( 'burst_activation_time' ) ) {
