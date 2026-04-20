@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.0
-Stable tag: 3.3.0
+Stable tag: 3.4.0
 
 Analytics you'll actually use. Privacy-friendly, zero config, and designed to be actionable. Get insights, not just raw data.
 
@@ -201,6 +201,19 @@ Absolutely! Both free and premium plugins can be managed with Composer. Read the
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.4.0 =
+* April 22nd 2026
+* New: dark mode support for the Burst Statistics dashboard.
+* New: support for MainWP integration.
+* New: all time date range for datepicker selection.
+* New: support for application passwords. It is now possible to use the Burst Rest API endpoints with application passwords.
+* Improvement: add detection for ad blockers. If an ad blocker breaks the Burst dashboard, show a warning about this.
+* Improvement: PHP warning about not existing referrers table when clearing the table.
+* Fix: restore bounces filter, allowing overriding the default time used to decide if a visit is a bounce.
+* Fix: fixed a bug in the visitor calculation for referrers, caused by changes for the "exclude" option in filters, props @bikew1se.
+* Fix: Share links sessions are now cleaned up daily, to prevent extended access to the link for longer than the set expiration time, Props Sanjay Singh Jhala.
+* Security: ajax fallback for get_reports endpoint unintentionally allowed users with burst_view capability to see reports configuration, props Sanjay Singh Jhala.
+
 = 3.3.0 =
 * April 1st 2026
 * New: Time per session filter, allowing filtering by visit duration.
