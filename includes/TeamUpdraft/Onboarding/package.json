@@ -4,12 +4,13 @@
     "description": "Team Updraft Onboarding App",
     "scripts": {
         "build": "wp-scripts build && npm run build:css",
-        "build:css": "tailwindcss -i ./src/onboarding.css -o ./build/index.css",
-        "start": "wp-scripts start && npm run watch:css",
+        "build:css": "postcss ./src/styles/tailwind.css -o ./build/index.css",
+        "watch:css": "postcss ./src/styles/tailwind.css -o ./build/index.css --watch",
+        "start:js": "wp-scripts start",
+        "start": "npm-run-all --parallel start:js watch:css",
         "lint:js": "wp-scripts lint-js",
         "lint:style": "wp-scripts lint-style",
-        "packages-update": "wp-scripts packages-update --dist-tag=wp-6.2",
-        "@wordpress/scripts": "^25.3.6"
+        "packages-update": "wp-scripts packages-update --dist-tag=wp-6.2"
     },
     "dependencies": {
         "@radix-ui/react-checkbox": "^1.3.1",
@@ -26,9 +27,11 @@
         "zustand": "^4.5.0"
     },
     "devDependencies": {
+        "@tailwindcss/postcss": "^4.2.2",
         "@wordpress/scripts": "^25.3.6",
-        "autoprefixer": "^10.4.17",
+        "npm-run-all": "^4.1.5",
         "postcss": "^8.4.35",
-        "tailwindcss": "^3.4.1"
+        "postcss-cli": "^11.0.1",
+        "tailwindcss": "^4.2.2"
     }
 }
