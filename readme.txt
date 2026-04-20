@@ -5,7 +5,7 @@ Tags: analytics, statistics, stats, privacy, GDPR
 Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
-Tested up to: 6.9
+Tested up to: 7.0
 Stable tag: 3.3.0
 
 Analytics you'll actually use. Privacy-friendly, zero config, and designed to be actionable. Get insights, not just raw data.

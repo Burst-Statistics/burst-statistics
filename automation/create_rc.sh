@@ -142,6 +142,8 @@ create_rc_zip() {
     "--exclude=/dist-build/"
     "--exclude=/dist/"
     "--exclude=/.idea/"
+    "--exclude=**/.npm"
+    "--exclude=**/.tanstack"
   )
 
     EXCLUDES+=("--exclude=languages/*.po")
