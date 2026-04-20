@@ -20,11 +20,11 @@ export const FunnelStepLabels: React.FC<{ steps: StepStatistics[] }> = ({
 		>
 			{steps.map( ( step, index ) => (
 				<div key={index} className="flex flex-col px-2 pt-2 min-w-0">
-					<span className="text-xxs text-gray-600 uppercase tracking-wide">
+					<span className="text-xxs text-text-gray-light uppercase tracking-wide">
 						{sprintf( __( 'Step %d', 'burst-statistics' ), index + 1 )}
 					</span>
 					<span
-						className="text-sm font-semibold text-black truncate"
+						className="text-sm font-semibold text-text-black truncate"
 						title={step.label}
 					>
 						{step.label}

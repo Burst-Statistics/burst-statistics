@@ -280,8 +280,16 @@ class Upgrade {
 			}
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.3.0', '<' ) ) {
+		if ( $prev_version && version_compare( $prev_version, '3.3.0-beta1', '<' ) ) {
 			update_option( 'burst_db_upgrade_move_columns_to_sessions', true, false );
+		}
+
+		if ( $prev_version && version_compare( $prev_version, '3.4.0', '<' ) ) {
+			// Truncate query_stats table because SQL normalization changed (timestamps are now replaced with placeholders).
+			if ( $this->table_exists( 'burst_query_stats' ) ) {
+				global $wpdb;
+				$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}burst_query_stats" );
+			}
 		}
 
 		$admin = new Admin();

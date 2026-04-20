@@ -181,15 +181,6 @@ return [
 		'default'  => false,
 	],
 	[
-		'id'       => 'tips_tricks_mailinglist',
-		'menu_id'  => 'general',
-		'group_id' => 'general',
-		'type'     => 'hidden',
-		'label'    => '',
-		'disabled' => false,
-		'default'  => '',
-	],
-	[
 		'id'       => 'goals',
 		'menu_id'  => 'goals',
 		'group_id' => 'goals',

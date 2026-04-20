@@ -46,7 +46,7 @@ const Plugins = ({
     }
     return (
         <FieldWrapper inputId={field.id} label={field.label}>
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col gap-2">
                 {options.map((option) => {
                     const key = option.id || option.value;
                     const label = option.title || key;

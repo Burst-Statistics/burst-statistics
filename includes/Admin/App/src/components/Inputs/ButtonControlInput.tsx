@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { __ } from '@wordpress/i18n';
 import Modal from '@/components/Common/Modal';
-import { toast } from 'react-toastify';
+import { toast } from '@/utils/toast';
 import * as burstApi from '@/utils/api'; // Adjust the import path as needed
 import ButtonInput from '@/components/Inputs/ButtonInput'; // New import
 

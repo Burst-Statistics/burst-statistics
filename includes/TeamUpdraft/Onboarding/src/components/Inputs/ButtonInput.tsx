@@ -43,8 +43,8 @@ const ButtonInput: React.FC<ButtonInputProps> = ({
     // Variant-specific styles
     {
       "bg-primary text-white hover:bg-primary hover:[box-shadow:0_0_0_3px_rgba(43,129,51,0.5)]": btnVariant === "primary",
-      "bg-wp-blue text-white border border-accent-dark hover:bg-wp-blue hover:[box-shadow:0_0_0_3px_rgba(34,113,177,0.5)]": btnVariant === "secondary",
-      "border border-gray-400 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.1)]": btnVariant === "tertiary",
+      "bg-blue text-white border border-accent-dark hover:bg-blue-700 hover:[box-shadow:0_0_0_3px_rgba(34,113,177,0.5)]": btnVariant === "secondary",
+      "border border-gray-400 bg-gray-100 text-text-gray hover:bg-gray-200 hover:text-text-gray hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.1)]": btnVariant === "tertiary",
       "bg-red text-white hover:bg-red hover:[box-shadow:0_0_0_3px_rgba(198,39,59,0.5)]": btnVariant === "danger",
     },
     // Size-specific styles

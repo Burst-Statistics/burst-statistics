@@ -13,7 +13,7 @@ import Icon from '@/utils/Icon';
 import { Root, Trigger, Content, Close } from '@radix-ui/react-popover';
 import { useMemo } from 'react';
 import { doAction } from '@/utils/api';
-import { toast } from 'react-toastify';
+import { toast } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatUnixToDate } from '@/utils/formatting';
 import Tooltip from '@/components/Common/Tooltip';
@@ -190,7 +190,7 @@ const QuickWins = (): JSX.Element => {
 					'Identifying meaningful trends is a demanding process. To ensure your WordPress dashboard remains fast and responsive, we calculate these opportunities periodically. This gives you valuable insights from the past 30 days without slowing down your website.'
 				)}
 			>
-				<span className="cursor-help text-sm text-gray-900 flex items-center gap-2 bg-gray-100 p-2 rounded-md border border-gray-200">
+				<span className="cursor-help text-sm text-text-gray flex items-center gap-2 bg-gray-100 p-2 rounded-md border border-gray-200">
 					<Icon name="calendar" color="black" size={16} />
 					{formattedDateStart} - {formattedDateEnd}
 				</span>
@@ -200,7 +200,8 @@ const QuickWins = (): JSX.Element => {
 
 	const blockHeadingProps = {
 		title: __( 'Opportunities', 'burst-statistics' ),
-		controls: dateControl
+		controls: dateControl,
+		isLoading: quickWinsQuery.isFetching
 	};
 
 	const quickWinVariants = {
@@ -215,7 +216,7 @@ const QuickWins = (): JSX.Element => {
 
 			<BlockContent {...blockContentProps}>
 				{quickWinsQuery.isFetching ? (
-					<p className="p-6 text-sm text-gray-500">
+					<p className="p-6 text-sm text-text-gray-light">
 						{__( 'Loading…', 'burst-statistics' )}
 					</p>
 				) : quickWinsData.quickWins &&
@@ -270,7 +271,7 @@ const QuickWins = (): JSX.Element => {
 													</h3>
 												</div>
 
-												<p className="text-base text-gray-600">
+												<p className="text-base text-text-gray-light">
 													{message}
 												</p>
 											</div>
@@ -298,7 +299,7 @@ const QuickWins = (): JSX.Element => {
 												>
 													<Close asChild>
 														<button
-															className="w-full px-6 py-3 text-left text-sm font-medium text-gray-800 hover:bg-gray-100 transition-colors"
+															className="w-full px-6 py-3 text-left text-sm font-medium text-text-gray hover:bg-gray-100 transition-colors"
 															onClick={() =>
 																dismissMutation.mutate(
 																	key
@@ -314,7 +315,7 @@ const QuickWins = (): JSX.Element => {
 
 													<Close asChild>
 														<button
-															className="w-full px-6 py-3 text-left text-sm font-medium text-gray-800 hover:bg-gray-100 transition-colors"
+															className="w-full px-6 py-3 text-left text-sm font-medium text-text-gray hover:bg-gray-100 transition-colors"
 															onClick={() =>
 																snoozeMutation.mutate(
 																	key
@@ -332,14 +333,14 @@ const QuickWins = (): JSX.Element => {
 										</div>
 
 										{recommendation && (
-											<div className="items-center bg-blue-lightest pt-2 pb-2 pl-3 pr-3 rounded flex gap-3">
+											<div className="items-center bg-blue-50 pt-2 pb-2 pl-3 pr-3 rounded flex gap-3">
 												<Icon
 													name="graph"
 													color="blue"
 													size={24}
 												/>
 
-												<p className="flex-1 text-sm font-semibold text-black">
+												<p className="flex-1 text-sm font-semibold text-text-black">
 													{recommendation}
 												</p>
 
@@ -348,7 +349,7 @@ const QuickWins = (): JSX.Element => {
 														href={url}
 														target="_blank"
 														rel="noopener noreferrer"
-														className="shrink-0 text-base font-semibold text-black-light flex gap-1 items-center"
+														className="shrink-0 text-base font-semibold text-text-black-light flex gap-1 items-center"
 													>
 														{__(
 															'Read our guide',
@@ -370,7 +371,7 @@ const QuickWins = (): JSX.Element => {
 						</AnimatePresence>
 					</div>
 				) : (
-					<p className="p-6 text-sm text-gray-500">
+					<p className="p-6 text-sm text-text-gray-light">
 						{__(
 							'Crunching data. Check back later to see if there are quick wins!',
 							'burst-statistics'

@@ -40,7 +40,7 @@ export const BlockComment: React.FC<BlockCommentProps> = ({ reportBlockIndex, is
 			return (
 				<button
 					onClick={() => setIsExpanded( true )}
-					className="w-full p-4 rounded-xl bg-wp-gray shadow-sm border border-gray-300 hover:border-gray-400 hover:bg-white transition-colors duration-200 flex items-center justify-center gap-2 text-gray-600 hover:text-gray-800"
+					className="w-full p-4 rounded-xl bg-transparent shadow-sm border border-gray-300 hover:border-gray-400 hover:bg-white transition-colors duration-200 flex items-center justify-center gap-2 text-text-gray-light hover:text-gray-800"
 				>
 					<Icon name="plus" size={16} />
 					<span className="text-sm font-medium">{__( 'Add comment', 'burst-statistics' )}</span>
@@ -65,18 +65,18 @@ export const BlockComment: React.FC<BlockCommentProps> = ({ reportBlockIndex, is
 						ref={textareaRef}
 						onChange={( e ) => updateCommentText( reportBlockIndex, e.target.value )}
 						placeholder={__( 'Add your insights or comments about this data...', 'burst-statistics' )}
-						className="w-full min-h-[100px] p-2 text-sm text-gray-600 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+						className="w-full min-h-[100px] p-2 text-sm text-text-gray-light border border-gray-200 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
 						rows={4}
 					/>
 				</div>
 				<div className="flex flex-col gap-2 mt-2">
-					<p className="text-xs text-gray-500">
+					<p className="text-xs text-text-gray-light">
 						{__( 'This comment will appear next to the block in the report. If there is not enough space, the comment will be shown below the block.', 'burst-statistics' )}
 					</p>
 
 					<button
 						onClick={() => removeComment()}
-						className="ml-auto text-xs text-gray-600 hover:text-gray-700 bg-gray-50 border border-gray-300 rounded-md p-1 hover:bg-gray-100 hover:border-gray-400 transition-colors duration-200 whitespace-nowrap flex items-center gap-1"
+						className="ml-auto text-xs text-text-gray-light hover:text-text-gray bg-gray-50 border border-gray-300 rounded-md p-1 hover:bg-gray-100 hover:border-gray-400 transition-colors duration-200 whitespace-nowrap flex items-center gap-1"
 					>
 						<Icon name="trash" size={13} className='opacity-50' />
 						{__( 'Remove comment', 'burst-statistics' )}
@@ -90,12 +90,12 @@ export const BlockComment: React.FC<BlockCommentProps> = ({ reportBlockIndex, is
 	return (
 		<div className="p-4 rounded-xl bg-white shadow-sm relative border border-gray-300 w-full">
 			{commentTitle && (
-				<p className="text-gray-700 text-sm font-semibold mb-2">
+				<p className="text-text-gray text-sm font-semibold mb-2">
 					{commentTitle}
 				</p>
 			)}
 			{commentText && (
-				<p className="text-gray-600 text-sm whitespace-pre-wrap">
+				<p className="text-text-gray-light text-sm whitespace-pre-wrap">
 					{commentText}
 				</p>
 			)}

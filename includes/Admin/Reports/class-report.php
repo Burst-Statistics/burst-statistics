@@ -579,7 +579,12 @@ class Report {
 			}
 			$filters = isset( $block['filters'] ) ? $block['filters'] : [];
 			// let Query_Data handle filter sanitizing.
-			$qd = new Query_Data( [ 'filters' => $filters ] );
+			$qd = new Query_Data(
+				'report_sanitize_content_filters',
+				[
+					'filters' => $filters,
+				]
+			);
 
 			// Sanitize block properties.
 			$sanitized[] = [

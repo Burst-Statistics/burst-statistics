@@ -700,6 +700,10 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 * Check if we need to send a report.
 		 */
 		public function maybe_send_report(): void {
+			if ( ! $this->table_exists( 'burst_reports' ) ) {
+				return;
+			}
+
 			global $wpdb;
 
 			$ids = $wpdb->get_col(
@@ -1027,9 +1031,11 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					$query_data_args = $block;
 				}
 
-				$qd      = new Query_Data( $query_data_args );
-				$results = $this->get_top_results( $date_range->start, $date_range->end, $qd );
-				// prepend header row to results.
+				$query_id = sprintf( 'report_block_%s', sanitize_key( (string) $key ) );
+				$qd       = new Query_Data( $query_id, $query_data_args );
+				$results  = $this->get_top_results( $date_range->start, $date_range->end, $qd );
+
+				// Prepend header row to results.
 				array_unshift( $results, $block['header'] );
 
 				$blocks[ $key ] = [

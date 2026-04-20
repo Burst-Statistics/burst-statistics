@@ -48,8 +48,8 @@ const FilterChip = ({
 		// State-specific styles.
 		{
 			'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60': disabled,
-			'bg-white border-gray-300 hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)] cursor-pointer': ! disabled && ! isExcluded,
-			'bg-red-50 border-red-200 hover:bg-red-100 hover:[box-shadow:0_0_0_3px_rgba(220,38,38,0.08)] cursor-pointer': ! disabled && isExcluded
+			'bg-white border-gray-300 hover:bg-gray-50 hover:shadow-ringSubtle cursor-pointer': ! disabled && ! isExcluded,
+			'bg-red-50 border-red-200 hover:bg-red-100 hover:shadow-ringExcluded cursor-pointer': ! disabled && isExcluded
 		},
 
 		className
@@ -120,7 +120,7 @@ const FilterChip = ({
 		{/* Filter Label */}
 		<p className={clsx(
 			'font-medium',
-			{ 'text-gray-800': disabled }
+			{ 'text-text-gray': disabled }
 		)}>
 			{filter.config.label}
 		</p>
@@ -141,7 +141,7 @@ const FilterChip = ({
 
 			{/* Filter Value */}
 			<p className={clsx(
-				{ 'text-gray-800': disabled, 'text-gray': ! disabled }
+				{ 'text-text-gray': disabled, 'text-text-gray-light': ! disabled }
 			)}>
 				{safeDecodeURI( filter.displayValue )}
 			</p>

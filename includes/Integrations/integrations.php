@@ -6,24 +6,38 @@ defined( 'ABSPATH' ) || die( 'you do not have access to this page!' );
  * Good to know for goals:
  * - The goals should always be user trigger-able, otherwise the goal can not be tracked as it requires a UID at least for now.
  * -
+ *
+ * Integration properties:
+ * - php_scripts: Array containing script locations
+ *   - admin_scripts: Array of file names to load only in admin context
+ *   - frontend_scripts: Array of file names to load only in frontend context
  */
 return [
 	// Consent plugins.
-	'complianz'                        => [
+	'complianz'                  => [
 		'constant_or_function' => 'cmplz_version',
 		'label'                => 'Complianz GDPR/CCPA',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [ 'frontend.php' ],
+		],
 	],
-
-	'duplicate-post'                   => [
+	'duplicate-post'             => [
 		'constant_or_function' => 'DUPLICATE_POST_CURRENT_VERSION',
 		'label'                => 'Yoast Duplicate Post',
-		'admin_only'           => true,
+		'php_scripts'          => [
+			'admin_scripts'    => [ 'admin.php' ],
+			'frontend_scripts' => [],
+		],
 	],
-
 	// Pagebuilders.
-	'elementor'                        => [
+	'elementor'                  => [
 		'constant_or_function' => 'ELEMENTOR_VERSION',
 		'label'                => 'Elementor Website Builder',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [],
+		],
 		'goals'                =>
 			[
 				[
@@ -39,10 +53,14 @@ return [
 			],
 	],
 	// eCommerce plugins.
-	'woocommerce'                      => [
+	'woocommerce'                => [
 		'constant_or_function'       => 'WC_VERSION',
 		'label'                      => 'WooCommerce',
 		'load_ecommerce_integration' => true,
+		'php_scripts'                => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [ 'frontend.php' ],
+		],
 		'goals'                      =>
 			[
 				[
@@ -72,17 +90,25 @@ return [
 				],
 			],
 	],
-	'woocommerce-payments'             => [
+	'woocommerce-payments'       => [
 		'constant_or_function' => 'WCPAY_PLUGIN_FILE',
 		'label'                => 'WooCommerce Payments',
 		'required_plugins'     => [
 			'woocommerce',
 		],
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [ 'frontend.php' ],
+		],
 	],
-	'easy-digital-downloads'           => [
+	'easy-digital-downloads'     => [
 		'constant_or_function'       => 'EDD_PLUGIN_FILE',
 		'label'                      => 'Easy Digital Downloads',
 		'load_ecommerce_integration' => true,
+		'php_scripts'                => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [ 'frontend.php' ],
+		],
 		'goals'                      =>
 			[
 				[
@@ -107,10 +133,14 @@ return [
 				],
 			],
 	],
-	'easy-digital-downloads-pro'       => [
+	'easy-digital-downloads-pro' => [
 		'constant_or_function'       => 'EDD_PLUGIN_FILE',
 		'label'                      => 'Easy Digital Downloads',
 		'load_ecommerce_integration' => true,
+		'php_scripts'                => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [ 'frontend.php' ],
+		],
 		'goals'                      =>
 			[
 				[
@@ -135,33 +165,24 @@ return [
 				],
 			],
 	],
-	'edd-multi-currency'               => [
+	'edd-multi-currency'         => [
 		'constant_or_function' => 'EDD_MULTI_CURRENCY_FILE',
 		'label'                => 'Easy Digital Downloads - Multi Currency',
 		'required_plugins'     => [
 			'easy-digital-downloads',
 		],
-	],
-	'easy-digital-downloads-recurring' => [
-		'constant_or_function' => 'EDD_RECURRING_VERSION',
-		'label'                => 'Easy Digital Downloads - Recurring Payments',
-		'goals'                => [
-			[
-				'id'   => 'edd_subscription_post_create',
-				'type' => 'hook',
-				'hook' => 'edd_subscription_post_create',
-
-			],
-			[
-				'id'   => 'edd_subscription_cancelled',
-				'type' => 'hook',
-				'hook' => 'edd_subscription_cancelled',
-			],
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [ 'frontend.php' ],
 		],
 	],
-	'give-wp'                          => [
+	'give-wp'                    => [
 		'constant_or_function' => 'GIVE_VERSION',
 		'label'                => 'Give - Donation Plugin',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [],
+		],
 		'goals'                => [
 			[
 				'id'       => 'give_click_donation_open_modal',
@@ -181,9 +202,13 @@ return [
 		],
 	],
 	// Contact from plugins.
-	'contact-form-7'                   => [
+	'contact-form-7'             => [
 		'constant_or_function' => 'WPCF7_VERSION',
 		'label'                => 'Contact Form 7',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [],
+		],
 		'goals'                =>
 			[
 				[
@@ -198,9 +223,13 @@ return [
 				],
 			],
 	],
-	'wpforms'                          => [
+	'wpforms'                    => [
 		'constant_or_function' => 'WPFORMS_VERSION',
 		'label'                => 'WPForms',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [],
+		],
 		'goals'                =>
 			[
 				[
@@ -215,7 +244,7 @@ return [
 				],
 			],
 	],
-	'fluentform'                       => [
+	'fluentform'                 => [
 		'constant_or_function' => 'FLUENTFORM',
 		'label'                => 'Fluent Forms',
 		'goals'                =>
@@ -232,7 +261,7 @@ return [
 				],
 			],
 	],
-	'happy-forms'                      => [
+	'happy-forms'                => [
 		'constant_or_function' => 'HAPPYFORMS_VERSION',
 		'label'                => 'Happyforms',
 		'goals'                =>
@@ -244,9 +273,13 @@ return [
 				],
 			],
 	],
-	'ws-form'                          => [
+	'ws-form'                    => [
 		'constant_or_function' => 'WS_FORM_VERSION',
 		'label'                => 'WS Form',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [],
+		],
 		'goals'                =>
 			[
 				[
@@ -256,9 +289,13 @@ return [
 				],
 			],
 	],
-	'gravity_forms'                    => [
+	'gravity_forms'              => [
 		'constant_or_function' => 'gravity_form',
 		'label'                => 'Gravity Forms',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [],
+		],
 		'goals'                =>
 			[
 				[
@@ -273,9 +310,13 @@ return [
 				],
 			],
 	],
-	'formidable-forms'                 => [
+	'formidable-forms'           => [
 		'constant_or_function' => 'frm_forms_autoloader',
 		'label'                => 'Formidable Forms',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [],
+		],
 		'goals'                =>
 			[
 				[
@@ -285,9 +326,13 @@ return [
 				],
 			],
 	],
-	'ninja-forms'                      => [
+	'ninja-forms'                => [
 		'constant_or_function' => 'Ninja_Forms',
 		'label'                => 'Ninja Forms',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [],
+		],
 		'goals'                =>
 			[
 				[
@@ -298,8 +343,61 @@ return [
 			],
 	],
 	// caching plugins.
-	'wp-rocket'                        => [
+	'wp-rocket'                  => [
 		'constant_or_function' => 'WP_ROCKET_VERSION',
 		'label'                => 'WP Rocket',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [ 'frontend.php' ],
+		],
+	],
+	'woocommerce-subscriptions'  => [
+		'constant_or_function'       => 'WC_Subscriptions',
+		'load_ecommerce_integration' => true,
+		'required_plugins'           => [
+			'woocommerce',
+		],
+		'label'                      => 'WooCommerce Subscriptions',
+		'php_scripts'                => [
+			'admin_scripts'    => [ 'admin.php' ],
+			'frontend_scripts' => [ 'event-listener.php' ],
+		],
+	],
+	'edd-recurring'              => [
+		'constant_or_function'       => 'EDD_RECURRING_VERSION',
+		'load_ecommerce_integration' => true,
+		'label'                      => 'Easy Digital Downloads - Recurring Payments',
+		'required_plugins'           => [
+			'easy-digital-downloads',
+		],
+		'php_scripts'                => [
+			'admin_scripts'    => [ 'admin.php' ],
+			'frontend_scripts' => [ 'event-listener.php' ],
+		],
+		'goals'                      => [
+			[
+				'id'   => 'edd_subscription_post_create',
+				'type' => 'hook',
+				'hook' => 'edd_subscription_post_create',
+
+			],
+			[
+				'id'   => 'edd_subscription_cancelled',
+				'type' => 'hook',
+				'hook' => 'edd_subscription_cancelled',
+			],
+		],
+	],
+	'subscriben'                 => [
+		'constant_or_function'       => 'SUBSCRIBEN_VERSION',
+		'load_ecommerce_integration' => true,
+		'required_plugins'           => [
+			'woocommerce',
+		],
+		'label'                      => 'Subscriben - WooCommerce Subscription Management',
+		'php_scripts'                => [
+			'admin_scripts'    => [ 'admin.php' ],
+			'frontend_scripts' => [ 'event-listener.php' ],
+		],
 	],
 ];

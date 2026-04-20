@@ -149,7 +149,9 @@ class Posts {
 			case '1_year':
 				return $start_of_today - YEAR_IN_SECONDS;
 			case 'all_time':
-				return 0;
+				// earliest possible start timestamp, is date of burs release.
+				$first_burst_release = 1640995200;
+				return get_option( 'burst_activation_time', $first_burst_release );
 			default:
 				return $start_of_today - 30 * DAY_IN_SECONDS;
 		}

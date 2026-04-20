@@ -36,7 +36,7 @@ export const Steps = () => {
 							<div
 								className={`flex items-center justify-center w-6 h-6 rounded-full border-2 transition-all duration-300 ease-in-out ${
 									step.number <= currentStep ?
-										'bg-brand-lightest border-brand' :
+										'bg-green-50 border-green' :
 										'border-gray-400 bg-gray-200'
 								}`}
 							>
@@ -62,11 +62,11 @@ export const Steps = () => {
 							</div>
 
 							<div className="flex flex-col">
-								<p className="text-xs text-gray-600 uppercase tracking-[0.05em] whitespace-nowrap">
+								<p className="text-xs text-text-gray-light uppercase tracking-[0.05em] whitespace-nowrap">
 									{sprintf( __( 'Step %d', 'burst-statistics' ), step.number )}
 								</p>
 
-								<p className={clsx( 'text-md font-medium whitespace-nowrap transition-all duration-300 ease-in-out group-hover:text-gray-700', step.number === currentStep ? 'text-gray-700' : 'text-gray-500' )}>
+								<p className={clsx( 'text-md font-medium whitespace-nowrap transition-all duration-300 ease-in-out group-hover:text-text-gray', step.number === currentStep ? 'text-text-gray' : 'text-text-gray-light' )}>
 									{step.label}
 								</p>
 							</div>

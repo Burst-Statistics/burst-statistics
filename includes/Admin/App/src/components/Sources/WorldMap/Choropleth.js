@@ -35,12 +35,12 @@ const Choropleth = memo(
             projectionRotation = [ 0, 0, 0 ],
             colors = 'greens',
             domain,
-            unknownColor = '#dee2e6',
+            unknownColor = 'var(--color-gray-300)',
             borderWidth = 0,
-            borderColor = '#000000',
+            borderColor = 'var(--color-gray-500)',
             enableGraticule = false,
             graticuleLineWidth = 0.5,
-            graticuleLineColor = '#999999',
+            graticuleLineColor = 'var(--color-gray-300)',
             baseMapFeatures = [],
             baseMapFeatureColor = false,
             overlayFeatures = [],
@@ -493,12 +493,12 @@ const Choropleth = memo(
                                             fillColor={
                                                 baseMapFeatureColor ?
                                                     baseMapFeatureColor :
-                                                    '#e9ecef'
+                                                    'var(--color-gray-100)'
                                             }
                                             borderWidth={getBorderWidth(
                                                 feature
                                             )}
-                                            borderColor="rgb(249 249 249)"
+                                            borderColor="var(--color-gray-200)"
                                         />
                                     ) )}
                                 </g>

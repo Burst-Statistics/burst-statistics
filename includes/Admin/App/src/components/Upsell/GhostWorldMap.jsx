@@ -31,7 +31,7 @@ const GhostWorldMap = () => {
 				baseMapFeatures={simplifiedWorldGeoJson.features}
 				transform={simplifiedWorldGeoJson.transform}
 				baseLayerOpacity={1}
-				baseMapFeatureColor="#006d2c" // green
+				baseMapFeatureColor="var(--color-green-900)" // green
 				// Basic required props
 				match="id"
 				value="value"
@@ -47,9 +47,9 @@ const GhostWorldMap = () => {
 
 				// Disable graticule and interactions
 				enableGraticule={true}
-				graticuleLineColor="#dddddd"
+				graticuleLineColor="var(--color-gray-200)"
 				borderWidth={0.5}
-				borderColor="#adb5bd"
+				borderColor="var(--color-gray-500)"
 				isInteractive={false}
 
 				// Only render the layers we need

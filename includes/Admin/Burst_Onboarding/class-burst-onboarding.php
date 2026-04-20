@@ -25,7 +25,6 @@ class Burst_Onboarding {
 		add_filter( 'burst_license_is_valid', [ $this, 'license_is_valid' ], 10, 1 );
 		add_filter( 'burst_license_activation', [ $this, 'activate_license' ], 10, 2 );
 		add_action( 'burst_onboarding_update_options', [ $this, 'update_step_settings' ], 10, 2 );
-		add_action( 'burst_onboarding_update_single_option', [ $this, 'update_plugin_option' ], 10, 2 );
 		add_filter( 'burst_onboarding_steps', [ $this, 'load_steps' ] );
 	}
 
@@ -46,7 +45,13 @@ class Burst_Onboarding {
 	 */
 	public function load_steps( array $steps ): array {
 		unset( $steps );
-		return include __DIR__ . '/steps.php';
+		$steps = include __DIR__ . '/steps.php';
+		// if defined( 'BURST_HEADLESS_DOMAIN'), remove the step with id='tracking', as the tracking target is now another website.
+		if ( defined( 'BURST_HEADLESS_DOMAIN' ) ) {
+			$steps = array_filter( $steps, fn( $step ) => $step['id'] !== 'tracking' );
+			$steps = array_values( $steps );
+		}
+		return $steps;
 	}
 
 	/**
@@ -85,13 +90,6 @@ class Burst_Onboarding {
 	public function get_plugin_option( string $id ) {
 		//return the option value for the given id.
 		return $this->get_option( $id );
-	}
-
-	/**
-	 * Wrapper for plugin specific option update.
-	 */
-	public function update_plugin_option( string $id, $value ): void {
-		$this->update_option( $id, $this->maybe_transform( $id, $value ) );
 	}
 	//phpcs:enable
 

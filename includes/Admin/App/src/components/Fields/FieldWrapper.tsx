@@ -60,7 +60,7 @@ const FieldWrapper = memo(
 			className,
 			'w-full py-4 box-border',
 			! fullWidthContent && 'px-6',
-			error && 'bg-red-light'
+			error && 'bg-red-100'
 		);
 
 		// Use a flex container that is row when aligning side-by-side and column otherwise.
@@ -97,13 +97,13 @@ const FieldWrapper = memo(
 				)}
 			>
 				<Label.Root
-					className="cursor-pointer text-md font-medium text-black"
+					className="cursor-pointer text-md font-medium text-text-black"
 					htmlFor={inputId}
 				>
 					{label}
 				</Label.Root>
 				{required && (
-					<span className="ml-1 text-xs font-normal text-gray">
+					<span className="ml-1 text-xs font-normal text-text-gray">
 						({__( 'Required', 'burst-statistics' )})
 					</span>
 				)}
@@ -114,7 +114,7 @@ const FieldWrapper = memo(
 				)}
 				{help && (
 					<HelpTooltip content={help}>
-						<span className="inline-flex h-5 w-5 cursor-default items-center justify-center rounded-full border border-gray-400 bg-gray-200 text-center text-base leading-none text-gray hover:bg-gray-300 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary">
+						<span className="inline-flex h-5 w-5 cursor-default items-center justify-center rounded-full border border-gray-400 bg-gray-200 text-center text-base leading-none text-text-gray hover:bg-gray-300 hover:text-primary focus:outline-hidden focus:ring-2 focus:ring-primary">
 							?
 						</span>
 					</HelpTooltip>
@@ -179,7 +179,7 @@ const FieldWrapper = memo(
 
 
 				{context && (
-					<p className="mt-2 text-sm font-normal text-gray">
+					<p className="mt-2 text-sm font-normal text-text-gray">
 						{isContextObject( context ) ? context.text : context}
 						{isContextObject( context ) && context.url && ' '}
 						{isContextObject( context ) && context.url && (

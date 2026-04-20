@@ -40,9 +40,9 @@ const Modal: React.FC<ModalProps> = ({
 				</Dialog.Trigger>
 			)}
 			<Dialog.Portal container={document.getElementById( 'modal-root' )}>
-				<Dialog.Overlay className="bg-black/50 fixed inset-0 z-50" />
-				<Dialog.Content className="fixed top-[calc(var(--wp-admin--admin-bar--height)+12px)] left-1/2 -translate-x-1/2 w-[calc(100%-20px)] max-h-[90vh] m-0 px-4 py-3 rounded-md z-50 bg-gray-100 shadow-md focus:outline-none data-[state=open]:animate-contentShow flex flex-col overflow-x-visible md:w-full md:max-w-[720px] lg:ml-[80px]">
-					<div className="flex flex-row justify-between items-center flex-shrink-0">
+				<Dialog.Overlay className="bg-black/50 fixed inset-0 z-9999" />
+				<Dialog.Content className="fixed top-[calc(var(--wp-admin--admin-bar--height)+12px)] left-1/2 -translate-x-1/2 w-[calc(100%-20px)] max-h-[90vh] m-0 px-4 py-3 rounded-md z-9999 bg-gray-100 shadow-md focus:outline-hidden data-[state=open]:animate-contentShow flex flex-col overflow-x-visible md:w-full md:max-w-[720px]">
+					<div className="flex flex-row justify-between items-center shrink-0">
 						{customHeader ? (
 							<>
 								<Dialog.Title className="sr-only">{title}</Dialog.Title>
@@ -64,11 +64,11 @@ const Modal: React.FC<ModalProps> = ({
 						) : (
 							<>
 								<div>
-									<Dialog.Title className="text-lg font-semibold text-black">
+									<Dialog.Title className="text-lg font-semibold text-text-black">
 										{title}
 									</Dialog.Title>
 									{subtitle && (
-										<p className="text-sm text-gray-600">
+										<p className="text-sm text-text-gray">
 											{subtitle}
 										</p>
 									)}
@@ -89,11 +89,11 @@ const Modal: React.FC<ModalProps> = ({
 							</>
 						)}
 					</div>
-					<Dialog.Description className="text-base text-black mb-6 mt-4 flex-1 overflow-y-auto overflow-x-visible min-h-0">
+					<Dialog.Description className="text-base text-text-black mb-6 mt-4 flex-1 overflow-y-auto overflow-x-visible min-h-0">
 						{content}
 					</Dialog.Description>
 					{footer && (
-						<div className="flex flex-row justify-end gap-2 flex-shrink-0 bottom-0 bg-gray-100 pt-4 border-t border-gray-200 mx-4 px-4">
+						<div className="flex flex-row justify-end gap-2 shrink-0 bottom-0 bg-gray-100 pt-4 border-t border-gray-200 mx-4 px-4">
 							{footer}
 						</div>
 					)}

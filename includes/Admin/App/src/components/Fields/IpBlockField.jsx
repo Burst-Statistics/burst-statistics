@@ -100,7 +100,7 @@ const IpBlockField = forwardRef(
 				disabled={props.disabled}
 				{...props}
 			>
-				<div className="space-y-2 w-full">
+				<div className="w-full flex flex-col gap-2">
 					<TextAreaInput
 						ref={ref}
 						id={inputId}

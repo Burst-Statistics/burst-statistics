@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import * as Checkbox from '@radix-ui/react-checkbox';
+import clsx from 'clsx';
 
 interface CheckboxInputProps {
 
@@ -44,10 +45,10 @@ const CheckboxInput: React.FC<CheckboxInputProps> = ({
 	disabled
 }) => {
 	return (
-		<div className="flex flex-col space-y-1">
+		<div className="flex flex-col gap-1">
 			<div className="flex items-center">
 				<Checkbox.Root
-					className="w-4 h-4 border border-gray-400 rounded flex-shrink-0 disabled:opacity-50"
+					className={clsx( 'w-4 h-4 border border-gray-400 rounded shrink-0 disabled:opacity-50', value ? 'bg-red' : 'bg-white' )}
 					id={id}
 					checked={value}
 					aria-label={label}

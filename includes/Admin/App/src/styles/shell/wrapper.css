@@ -1,0 +1,12 @@
+.burst-statistics-wrapper{
+	margin: 0;
+	/* Hide nags from other plugins */
+	.error, .notice, .update-nag, .notice-info {
+		&:not(.burst-review) {
+			@apply hidden!;
+		}
+		&.burst-review {
+			margin: var(--rsp-grid-gap);
+		}
+	}
+}

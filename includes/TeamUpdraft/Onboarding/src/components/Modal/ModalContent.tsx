@@ -12,8 +12,8 @@ const ModalContent: FC<{
     settings: SettingField[],
     onFieldChange: (fieldId: string, value: string | boolean) => void
 }) => (
-    <div className="space-y-2 max-w-[70ch] mx-auto flex flex-col gap-2">
-        <p className="text-gray-600 text-lg leading-relaxed font-light text-center">
+    <div className="max-w-[70ch] mx-auto flex flex-col gap-2">
+        <p className="text-text-gray text-lg leading-relaxed font-light text-center">
             {step.subtitle}
         </p>
         <Premium bullets={step.bullets || []} stepId={step.id} />

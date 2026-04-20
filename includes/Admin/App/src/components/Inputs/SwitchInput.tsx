@@ -51,7 +51,7 @@ const SwitchInput = forwardRef<HTMLButtonElement, SwitchInputProps>(
 			<div className="flex items-center">
 				<Switch.Root
 					ref={ref}
-					className={`${rootSizeClasses} bg-gray-400 rounded-full relative focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed data-[state=checked]:bg-primary ${className}`}
+					className={`${rootSizeClasses} bg-gray-400 rounded-full relative focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed data-[state=checked]:bg-primary ${className}`}
 					checked={checkedVal}
 					onCheckedChange={onChange}
 					disabled={disabled}

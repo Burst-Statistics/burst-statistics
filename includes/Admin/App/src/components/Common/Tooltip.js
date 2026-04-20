@@ -13,7 +13,7 @@ const Tooltip = ({ children, content, delayDuration = 400 }) => {
 				<TooltipUI.Trigger asChild>{children}</TooltipUI.Trigger>
 
 				<TooltipUI.Content
-					className="z-[99999] max-w-xs bg-gray-200 text-gray border border-gray-300 px-3 py-2 text-base rounded shadow-md
+					className="z-99999 max-w-xs bg-gray-200 text-text-gray border border-gray-300 px-3 py-2 text-base rounded shadow-md
 					animate-in fade-in-50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0
 					data-[state=delayed-open]:data-[side=top]:slide-in-from-bottom-2
 					data-[state=delayed-open]:data-[side=bottom]:slide-in-from-top-2

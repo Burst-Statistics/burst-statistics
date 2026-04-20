@@ -247,10 +247,10 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 	};
 
 	return (
-		<div className="space-y-4">
+		<div className="flex flex-col gap-4">
 
-			<div className="space-y-2 relative">
-				<label className="block text-sm font-medium text-gray-700">
+			<div className="relative flex flex-col gap-2">
+				<label className="block text-sm font-medium text-text-gray">
 					{ __( 'Filter value', 'burst-statistics' ) }
 				</label>
 

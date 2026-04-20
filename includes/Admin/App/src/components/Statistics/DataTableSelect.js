@@ -57,16 +57,16 @@ const DataTableSelect = ({ value, onChange, options }) => {
 			</Select.Trigger>
 			<Select.Content
 				className="bg-gray-100
-          z-[99]
+          z-99
           border border-gray-400
           rounded
           flex flex-col flex-wrap
           gap-4
           left-0 right-0
-          shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px]
+          shadow-[hsl(206_22%_7%/35%)_0px_10px_38px_-10px,hsl(206_22%_7%/20%)_0px_10px_20px_-15px]
           [animation-duration:600ms]
           [animation-timing-function:cubic-bezier(0.16,1,0.3,1)]
-          [will-change:transform,opacity]
+          will-change-[transform,opacity]
           data-[state=open]:animate-slideDownAndFade"
 				position={'popper'}
 				alignOffset={-10}
@@ -78,19 +78,19 @@ const DataTableSelect = ({ value, onChange, options }) => {
 							value={option.key}
 							className="min-w-[min(100vw,150px)]
                 cursor-pointer
-                text-black
+                text-text-black
                 text-md
                 px-3 py-2.5
                 rounded
                 flex items-center
-                data-[disabled]:text-gray
-                data-[disabled]:bg-gray-100
-                data-[disabled]:cursor-not-allowed
-                data-[highlighted]:text-black
-                data-[highlighted]:outline-none
-                data-[highlighted]:bg-brand-lightest
-                data-[state=selected]:text-gray
-                data-[state=selected]:outline-none"
+                data-disabled:text-gray
+                data-disabled:bg-gray-100
+                data-disabled:cursor-not-allowed
+                data-highlighted:text-text-black
+                data-highlighted:outline-hidden
+                data-highlighted:bg-green-50
+                data-[state=selected]:text-text-gray
+                data-[state=selected]:outline-hidden"
 							disabled={option.pro && ! isPro}
 						>
 							<Select.ItemText>{option.label}</Select.ItemText>

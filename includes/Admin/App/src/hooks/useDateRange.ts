@@ -20,6 +20,7 @@ const RANGE_KEYS = [
 	'month-to-date',
 	'year-to-date',
 	'last-year',
+	'all-time',
 	'custom'
 ] as const;
 

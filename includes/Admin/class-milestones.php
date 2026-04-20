@@ -76,10 +76,10 @@ class Milestones {
 	 * @return int Number of pageviews.
 	 */
 	private static function get_pageviews( int $start, int $end ): int {
-		global $wpdb;
-
 		$qd = new Query_Data(
+			'milestones_pageviews',
 			[
+				'id'         => 'milestones_pageviews',
 				'date_start' => $start,
 				'date_end'   => $end,
 				'select'     => [ 'pageviews' ],

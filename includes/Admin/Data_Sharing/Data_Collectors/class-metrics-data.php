@@ -85,7 +85,7 @@ class Metrics_Data extends Data_Collector {
 	 * Query performance metrics
 	 */
 	private function collect_query_stats_metrics(): array {
-		$collector = new Query_Stats_Metrics( $this->capture_data_from, $this->capture_data_to );
+		$collector = new Query_Stats_Metrics();
 
 		return $collector->collect();
 	}

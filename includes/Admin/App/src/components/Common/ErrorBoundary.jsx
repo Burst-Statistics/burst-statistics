@@ -39,24 +39,24 @@ class ErrorBoundary extends Component {
 	render() {
 		if ( this.state.hasError ) {
 			return (
-				<div className="rounded-md bg-white p-5 text-black shadow-sm">
-					<h3 className="mb-4 text-xl font-bold text-black">
+				<div className="rounded-md bg-white p-5 text-text-black shadow-sm">
+					<h3 className="mb-4 text-xl font-bold text-text-black">
 						{__(
 							'Uh-oh! We stumbled upon an error.',
 							'burst-statistics'
 						)}
 					</h3>
 					<div className="mb-6 rounded-sm border bg-gray-50 p-4">
-						<p className="mb-2 text-base text-black">
+						<p className="mb-2 text-base text-text-black">
 							{this.state.error && this.state.error.toString()}
 						</p>
-						<p className="max-h-48 overflow-x-scroll text-xs text-black">
+						<p className="max-h-48 overflow-x-scroll text-xs text-text-black">
 							Stack trace:{' '}
 							{this.state.errorInfo &&
 								this.state.errorInfo.componentStack}
 						</p>
 						<button
-							className={`mt-4 rounded-md px-4 py-2 font-medium text-white ${this.state.copied ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+							className={`mt-4 rounded-md px-4 py-2 font-medium text-white ${this.state.copied ? 'bg-green-500' : 'bg-blue-500 hover:bg-blue-600'} focus:outline-hidden focus:ring-2 focus:ring-blue-500`}
 							onClick={this.copyError}
 						>
 							{this.state.copied ?
@@ -64,13 +64,13 @@ class ErrorBoundary extends Component {
 								__( 'Copy Error', 'burst-statistics' )}
 						</button>
 					</div>
-					<p className="mb-4 text-black">
+					<p className="mb-4 text-text-black">
 						{__(
 							'We\'re sorry for the trouble. Please take a moment to report this issue on the WordPress forums so we can work on fixing it. Here’s how you can report the issue:',
 							'burst-statistics'
 						)}
 					</p>
-					<ol className="list-inside list-decimal space-y-2 text-black">
+					<ol className="list-inside list-decimal flex flex-col gap-2 text-text-black">
 						<li>
 							{sprintf(
 								__(

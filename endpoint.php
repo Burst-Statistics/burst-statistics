@@ -17,9 +17,21 @@ if ( ! file_exists( BASE_PATH . 'wp-load.php' ) ) {
 }
 require_once BASE_PATH . 'wp-load.php';
 
-if ( defined( 'BURST_ALLOWED_ORIGINS' ) ) {
-	$burst_allowed_origins = explode( ',', BURST_ALLOWED_ORIGINS );
-	$burst_origin          = isset( $_SERVER['HTTP_ORIGIN'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_ORIGIN'] ) ) : '';
+if ( defined( 'BURST_ALLOWED_ORIGINS' ) || defined( 'BURST_HEADLESS_DOMAIN' ) ) {
+	$burst_allowed_origins = defined( 'BURST_ALLOWED_ORIGINS' ) ? explode( ',', BURST_ALLOWED_ORIGINS ) : [];
+
+	if ( defined( 'BURST_HEADLESS_DOMAIN' ) ) {
+		$burst_allowed_origins[] = BURST_HEADLESS_DOMAIN;
+	}
+
+	// Strip protocol from all entries, so both 'https://example.com' and 'example.com' are accepted.
+	$burst_allowed_origins = array_map(
+        // phpcs:ignore
+        fn( $origin ) => parse_url( trim( $origin ), PHP_URL_HOST ) ?: trim( $origin ),
+		$burst_allowed_origins
+	);
+
+	$burst_origin = isset( $_SERVER['HTTP_ORIGIN'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_ORIGIN'] ) ) : '';
     // phpcs:ignore
 	$burst_origin_host     = parse_url( $burst_origin, PHP_URL_HOST );
 	if ( in_array( $burst_origin_host, $burst_allowed_origins, true ) ) {

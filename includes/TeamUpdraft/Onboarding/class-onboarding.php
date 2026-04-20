@@ -441,10 +441,6 @@ class Onboarding {
 						}
 						if ( ! empty( $mailinglist_signup_field_name ) ) {
 							$include_tips = isset( $data['tips_tricks'] ) && (bool) $data['tips_tricks'];
-							// Using prefixed hook.
-                            // phpcs:ignore
-							do_action( $this->prefix . '_onboarding_update_single_option', 'tips_tricks_mailinglist', $email );
-
 							if ( $include_tips ) {
 								$this->signup_for_mailinglist( $email );
 							}

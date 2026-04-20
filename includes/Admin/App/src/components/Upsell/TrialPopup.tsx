@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { toast, ToastContentProps, Id } from 'react-toastify';
+import { toast, type ToastContentProps } from '@/utils/toast';
 import { __, sprintf } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
 import { getLocalStorage, setLocalStorage } from '@/utils/api';
@@ -18,13 +18,13 @@ const TrialToastContent: React.FC<
 }
 > = ({ title, description, url }) => (
 	<div className="flex items-start gap-3">
-		<div className="inline-flex rounded-full bg-green-light border border-gray-100 transition-colors p-1">
+		<div className="inline-flex rounded-full bg-green-300 border border-gray-100 transition-colors p-1">
 			<Icon color="green" name="sprout" size={14} strokeWidth={2} />
 		</div>
 
 		<div className="flex-1">
-			<h5 className="font-semibold text-gray-900 mb-1">{title}</h5>
-			<p className="text-sm text-gray-600 mb-2">
+			<h5 className="font-semibold text-text-gray mb-1">{title}</h5>
+			<p className="text-sm text-text-gray-light mb-2">
 				{sprintf(
 
 					// translators: %s is description of the trial feature.
@@ -75,9 +75,10 @@ const TrialPopup: React.FC<TrialPopupProps> = ({ type = 'sources' }) => {
 			utm_content: type
 		});
 
-		const toastId: Id = toast( ({ toastProps }) => (
+		const toastId: string = toast( ( props ) => (
 			<TrialToastContent
-				toastProps={toastProps}
+				closeToast={ props.closeToast }
+				toastProps={ props.toastProps }
 				title={title}
 				description={description}
 				url={url}

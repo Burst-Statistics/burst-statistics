@@ -31,7 +31,7 @@ const GoalStatus = ({ data }) => {
 	return (
 		<div className="flex items-center gap-1.5">
 			<Icon name="dot" color={iconColor} size={12} />
-			<p className="text-gray text-sm">{statusLabel}</p>
+			<p className="text-text-gray text-sm">{statusLabel}</p>
 		</div>
 	);
 };

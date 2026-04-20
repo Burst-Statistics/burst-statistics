@@ -236,16 +236,16 @@ const UpsellCopy: React.FC<UpsellCopyProps> = ({
 	// if this is premium, but user has not activated the license, or has a not sufficient tier
 	if ( isPro ) {
 		return (
-			<div className="text-center space-y-6">
-				<h2 className="text-2xl font-semibold text-gray-900">
+			<div className="text-center flex flex-col gap-6">
+				<h2 className="text-2xl font-semibold text-text-gray">
 					{upsellConfig.upgradePlan.header}
 				</h2>
 
-				<p className="text-lg text-gray-600 max-w-md mx-auto">
+				<p className="text-lg text-text-gray-light max-w-md mx-auto">
 					{upsellConfig.upgradePlan.subTitle}
 				</p>
 
-				<p className="text-base text-gray-500">
+				<p className="text-base text-text-gray-light">
 					{! licenseActivated &&
 						__(
 							'Already have a license? Activate it to access these features.',
@@ -290,16 +290,16 @@ const UpsellCopy: React.FC<UpsellCopyProps> = ({
 			className={`mx-auto flex justify-center max-w-3xl gap-8 flex-wrap${className}`}
 		>
 			<div className="text-center">
-				<h2 className="mb-4 text-2xl font-bold leading-tight text-black md:text-3xl">
+				<h2 className="mb-4 text-2xl font-bold leading-tight text-text-black md:text-3xl">
 					{content.title}
 				</h2>
 
-				<p className="text-base leading-relaxed text-gray">
+				<p className="text-base leading-relaxed text-text-gray">
 					{content.description}
 				</p>
 			</div>
 
-			<div className="max-w-content mx-auto flex flex-col space-y-4">
+			<div className="max-w-content mx-auto flex flex-col gap-4">
 				{content.bullets.map( ( bullet, index ) => {
 					const parts = bullet.text.split( ':' );
 					const hasColon = 1 < parts.length;
@@ -309,8 +309,8 @@ const UpsellCopy: React.FC<UpsellCopyProps> = ({
 							key={index}
 							className="flex max-w-fit items-center space-x-4"
 						>
-							<div className="mt-0.5 flex-shrink-0">
-								<div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-light">
+							<div className="mt-0.5 shrink-0">
+								<div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100">
 									<Icon
 										name={bullet.icon}
 										color="black"
@@ -321,10 +321,10 @@ const UpsellCopy: React.FC<UpsellCopyProps> = ({
 							</div>
 
 							<div className="pt-1">
-								<p className="m-0 whitespace-nowrap text-md leading-relaxed text-gray">
+								<p className="m-0 whitespace-nowrap text-md leading-relaxed text-text-gray">
 									{hasColon ? (
 										<>
-											<span className="font-semibold text-gray">
+											<span className="font-semibold text-text-gray">
 												{parts[0]}:
 											</span>
 
@@ -333,7 +333,7 @@ const UpsellCopy: React.FC<UpsellCopyProps> = ({
 											</span>
 										</>
 									) : (
-										<span className="font-semibold text-gray">
+										<span className="font-semibold text-text-gray">
 											{bullet.text}
 										</span>
 									)}
@@ -344,7 +344,7 @@ const UpsellCopy: React.FC<UpsellCopyProps> = ({
 				})}
 			</div>
 
-			<div className="flex w-full flex-col items-center space-y-3 text-center">
+			<div className="flex w-full flex-col items-center gap-3 text-center">
 				<ButtonInput
 					btnVariant="primary"
 					size="lg"
@@ -373,7 +373,7 @@ const UpsellCopy: React.FC<UpsellCopyProps> = ({
 							size={14}
 							className="mr-1"
 						/>
-						<span className="text-xs text-gray">
+						<span className="text-xs text-text-gray">
 							{sprintf(
 								__( 'Variation: %s', 'burst-statistics' ),
 								variation

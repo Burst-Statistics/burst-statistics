@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import Flag from '@/components/Statistics/Flag';
+import { ChartTooltip } from '@/components/Common/ChartTooltip';
 import {
 	createValueFormatter,
 	formatNumber,
@@ -48,10 +49,10 @@ const ChoroplethTooltip = memo(
 				null;
 
 		return (
-			<div className="min-w-[10em] max-w-xs rounded-md border border-gray-200 bg-white p-3 text-sm shadow-lg">
+			<ChartTooltip className="min-w-[10em] max-w-xs">
 				{/* Location Header */}
 				{isProvinceOrState && feature.properties.name_en && (
-					<span className="text-xs text-gray">
+					<span className="text-xs text-text-gray">
 						{feature.properties.name_en} (
 						{feature.properties.type_en})
 					</span>
@@ -74,14 +75,14 @@ const ChoroplethTooltip = memo(
 					! isProvinceOrState &&
 					feature.properties.continent && (
 						<div className="flex items-center gap-1">
-							<div className="text-xs text-gray">
+							<div className="text-xs text-text-gray">
 								{feature.properties.continent}
 							</div>
 							{feature.properties.continent !==
 								feature.properties.subregion && (
 								<>
-									<span className="text-xs text-gray">•</span>
-									<div className="text-xs text-gray">
+									<span className="text-xs text-text-gray">•</span>
+									<div className="text-xs text-text-gray">
 										{feature.properties.subregion}
 									</div>
 								</>
@@ -92,18 +93,18 @@ const ChoroplethTooltip = memo(
 				{/* Primary Metric */}
 				<div className="mb-2 mt-3 rounded-lg border border-gray-100 bg-gray-50 p-2">
 					<div className="flex items-center justify-between">
-						<div className="text-xs font-medium uppercase tracking-wide text-gray">
+						<div className="text-xs font-medium uppercase tracking-wide text-text-gray">
 							{metric.label}
 						</div>
 						{metric.isPercentage && (
 							<div className="bg-blue-500 h-2 w-2 rounded-full"></div>
 						)}
 					</div>
-					<div className="mt-1 text-xl font-bold text-black">
+					<div className="mt-1 text-xl font-bold text-text-black">
 						{formattedValue}
 					</div>
 					{showPercentageOfTotal && percentage && (
-						<div className="mt-1 flex items-center gap-1 text-xs text-gray">
+						<div className="mt-1 flex items-center gap-1 text-xs text-text-gray">
 							<div className="h-1 w-1 rounded-full bg-gray-400"></div>
 							{sprintf(
 
@@ -118,7 +119,7 @@ const ChoroplethTooltip = memo(
 				{/* Population data */}
 				{! isSimpleTooltip && feature.properties.pop_est && (
 					<>
-						<div className="text-xs text-gray">
+						<div className="text-xs text-text-gray">
 							{sprintf(
 
 								/* translators: 1: Population number, 2: Year */
@@ -136,7 +137,7 @@ const ChoroplethTooltip = memo(
 				{/* gdp data. gdp_md and gdp_year. If gdp is not available, don't show it. add gdp_year to show the year of the gdp data. Nicely format the number. */}
 				{/* {!isSimpleTooltip && feature.properties.gdp_md && (
                 <>
-                    <div className="text-xs text-gray">
+                    <div className="text-xs text-text-gray">
                         GDP: {formatNumber(feature.properties.gdp_md)} ({feature.properties.gdp_year})
                     </div>
                 </>
@@ -144,14 +145,14 @@ const ChoroplethTooltip = memo(
 
 				{/* Click to see country specific data - Only for city database type */}
 				{! isProvinceOrState && 'city' === geoIpDatabaseType && (
-					<div className="mt-2 text-xs font-semibold text-gray">
+					<div className="mt-2 text-xs font-semibold text-text-gray">
 						{__(
 							'Click to see country specific data',
 							'burst-statistics'
 						)}
 					</div>
 				)}
-			</div>
+			</ChartTooltip>
 		);
 	}
 );

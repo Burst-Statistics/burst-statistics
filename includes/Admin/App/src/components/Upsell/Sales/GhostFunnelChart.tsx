@@ -50,7 +50,7 @@ const GhostFunnelChart = (): JSX.Element => {
 			<BlockHeading {...blockHeadingProps} />
 
 			<BlockContent {...blockContentProps}>
-				<div className="h-96 border-t border-t-divider pt-4">
+				<div className="h-96 border-t border-gray-300 pt-4">
 					<ResponsiveFunnel
 						data={data}
 						spacing={4}
@@ -60,6 +60,14 @@ const GhostFunnelChart = (): JSX.Element => {
 							bottom: 140,
 							top: 50
 						}}
+						theme={{
+							grid: {
+								line: {
+									stroke: 'var(--color-gray-400)', // separator color
+									strokeWidth: 1
+								}
+							}
+						}}
 						shapeBlending={0.6}
 						valueFormat=">-.4~s"
 						direction="horizontal"
@@ -67,7 +75,7 @@ const GhostFunnelChart = (): JSX.Element => {
 						enableBeforeSeparators={false}
 						enableAfterSeparators={false}
 						borderWidth={20}
-						labelColor="#fff"
+						labelColor="var(--color-text-white)"
 						currentPartSizeExtension={5}
 						animate={true}
 						borderColor={{
@@ -75,7 +83,7 @@ const GhostFunnelChart = (): JSX.Element => {
 							modifiers: [ [ 'brighter', 0.6 ] ]
 						}}
 						interpolation="smooth"
-						colors="#2E8A37"
+						colors="var(--color-green-500)"
 						motionConfig="gently"
 						layers={[ 'parts', 'labels' ]}
 					/>

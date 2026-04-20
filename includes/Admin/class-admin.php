@@ -8,7 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Burst\Admin\App\App;
 use Burst\Admin\Archive\Archive;
 use Burst\Admin\Burst_Wp_Cli\Burst_Wp_Cli;
-use Burst\Admin\Capability\Capability;
 use Burst\Admin\Cron\Cron;
 use Burst\Admin\Dashboard_Widget\Dashboard_Widget;
 use Burst\Admin\Data_Sharing\Data_Sharing;
@@ -65,7 +64,7 @@ class Admin {
 		add_action( 'burst_dismiss_task', [ $this, 'dismiss_malicious_data_notice' ], 10, 1 );
 		add_action( 'burst_dismiss_task', [ $this, 'dismiss_php_error_notice' ], 10, 1 );
 		add_action( 'wp_initialize_site', [ $this, 'create_js_file' ], 10, 1 );
-		add_action( 'admin_init', [ $this, 'activation' ] );
+		add_action( 'admin_init', [ $this, 'activation' ], 3, 1 );
 		add_action( 'burst_activation', [ $this, 'setup_defaults' ], 20, 1 );
 
 		add_action( 'burst_activation', [ $this, 'run_table_init_hook' ], 10, 1 );
@@ -87,7 +86,6 @@ class Admin {
 		add_action( 'burst_recalculate_known_uids_cron', [ $this, 'update_known_uids_table' ] );
 		add_action( 'burst_recalculate_bounces_cron', [ $this, 'recalculate_bounces' ] );
 		add_action( 'burst_recalculate_first_time_visits_cron', [ $this, 'recalculate_first_time_visits' ] );
-		add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
 
 		$this->maybe_update_site_scheme();
 
@@ -265,6 +263,7 @@ class Admin {
 
 		global $wpdb;
 
+		$bounce_time_milliseconds = apply_filters( 'burst_bounce_time', 5000 );
 		// Find sessions with >1 pageview or long time_on_page (engaged), then mark them as not bounced.
 		$wpdb->query(
 			$wpdb->prepare(
@@ -275,56 +274,16 @@ class Admin {
                 WHERE time > %d
                 GROUP BY session_id
                 HAVING COUNT(*) > 1
-                    OR MAX(time_on_page) > 5000
+                    OR MAX(time_on_page) > %d
             ) nb ON sess.ID = nb.session_id
             SET sess.bounce = 0
             WHERE sess.bounce = 1",
-				$time_cutoff
+				$time_cutoff,
+				$bounce_time_milliseconds
 			)
 		);
 
 		update_option( 'burst_last_bounces_update', time(), false );
-	}
-
-	/**
-	 * Add ecommerce menu item to the admin menu
-	 *
-	 * @param array $menu_items The existing menu items.
-	 * @return array The modified menu items including the ecommerce menu item.
-	 */
-	public function add_ecommerce_menu_item( array $menu_items ): array {
-		$should_load_ecommerce = \Burst\burst_loader()->integrations->should_load_ecommerce();
-		if ( ! $should_load_ecommerce || ! $this->has_admin_access() || ! $this->user_can_view_sales() ) {
-			return $menu_items;
-		}
-		$ecommerce_menu_item = [
-			'id'             => 'sales',
-			'title'          => __( 'Sales', 'burst-statistics' ),
-			'default_hidden' => false,
-			'menu_items'     => [],
-			'capabilities'   => 'view_sales_burst_statistics',
-			'menu_slug'      => 'burst#/sales',
-			'show_in_admin'  => true,
-			'pro'            => true,
-			'shareable'      => true,
-		];
-
-		// Put ecommerce menu item before the id: settings menu item.
-		$settings_index = null;
-		foreach ( $menu_items as $index => $item ) {
-			if ( isset( $item['id'] ) && 'reporting' === $item['id'] ) {
-				$settings_index = $index;
-				break;
-			}
-		}
-
-		if ( null !== $settings_index ) {
-			array_splice( $menu_items, $settings_index, 0, [ $ecommerce_menu_item ] );
-		} else {
-			$menu_items[] = $ecommerce_menu_item;
-		}
-
-		return $menu_items;
 	}
 
 	/**
@@ -779,11 +738,9 @@ class Admin {
 			return;
 		}
 
-		if ( get_option( 'burst_run_activation' ) ) {
-			Capability::add_capability( 'view', [ 'administrator', 'editor' ] );
-			Capability::add_capability( 'manage' );
+		if ( get_option( 'burst_finalize_activation' ) ) {
 			do_action( 'burst_activation' );
-			update_option( 'burst_run_activation', false );
+			delete_option( 'burst_finalize_activation' );
 		}
 	}
 
@@ -901,7 +858,6 @@ class Admin {
 	 */
 	public function setup_defaults(): void {
 		if ( get_option( 'burst_set_defaults' ) ) {
-			set_transient( 'burst_redirect_to_settings_page', true, 5 * MINUTE_IN_SECONDS );
 			update_option( 'burst_activation_time', time(), false );
 			update_option( 'burst_last_cron_hit', time(), false );
 			$this->update_option( 'combine_vars_and_script', true );

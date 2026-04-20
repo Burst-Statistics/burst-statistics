@@ -71,11 +71,11 @@ const RadioInput = forwardRef<HTMLInputElement, RadioInputProps>(
 					checked={checked}
 					disabled={disabled}
 					onChange={( e ) => onChange( e.target.value )}
-					className="h-4 w-4 text-primary focus:ring-primary border-gray-300 my-1 mx-0 relative before:content-[''] before:m-0 before:absolute before:left-1/2 before:top-1/2 before:-translate-x-1/2 before:-translate-y-1/2"
+					className="h-4 w-4 text-primary focus:ring-primary rounded-full border border-gray-400 my-1 mx-0 relative before:content-[''] before:m-0 before:absolute before:left-1/2 before:top-1/2 before:-translate-x-1/2 before:-translate-y-1/2"
 				/>
 				<label
 					htmlFor={id}
-					className="text-sm text-gray cursor-pointer"
+					className="text-sm text-text-gray cursor-pointer"
 				>
 					{label} {children}{' '}
 					{recommended && (
@@ -90,7 +90,7 @@ const RadioInput = forwardRef<HTMLInputElement, RadioInputProps>(
 						color="blue"
 						name="help"
 						size={16}
-						className="bg-blue-light rounded-full"
+						className="bg-blue-50 rounded-full"
 					/>
 				)}
 			</div>

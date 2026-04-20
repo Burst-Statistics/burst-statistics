@@ -48,7 +48,7 @@ const RadioField =
 				disabled={disabled}
 				{...props}
 			>
-				<div className="space-y-4">
+				<div className="flex flex-col gap-4">
 					{Object.entries( options ).map( ([ value, option ]) => {
 
 						// Handle both simple string labels and object format with label and context
@@ -65,7 +65,7 @@ const RadioField =
 						return (
 							<div
 								key={`${inputId}-${value}`}
-								className="space-y-1"
+								className="flex flex-col gap-1"
 							>
 								<div className="flex items-start gap-2 rounded-md border border-gray-400 bg-gray-100 px-3 py-2">
 									<RadioInput
@@ -83,7 +83,7 @@ const RadioField =
 										{isRecommended && <RecommendBadge />}
 
 										{optionContext && (
-											<div className="text-sm font-light text-gray">
+											<div className="text-sm font-light text-text-gray">
 												{optionContext}
 											</div>
 										)}

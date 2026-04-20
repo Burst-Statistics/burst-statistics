@@ -7,6 +7,7 @@ import {
 	ShoppingCart,
 	UserRoundCheck,
 	UserRoundPlus,
+	UserRoundX,
 	TriangleAlert,
 	Download,
 	Zap,
@@ -19,7 +20,9 @@ import {
 	Ban,
 	Braces,
 	Building,
+	Banknote,
 	Calendar,
+	CalendarSync,
 	CalendarX,
 	Car,
 	Check,
@@ -32,6 +35,7 @@ import {
 	CircleDot,
 	CircleOff,
 	Clock,
+	Cog,
 	Copy,
 	Cpu,
 	Eye,
@@ -41,6 +45,7 @@ import {
 	FileText,
 	FileX,
 	Filter,
+	Gem,
 	Globe,
 	Goal,
 	Grid3x3,
@@ -50,17 +55,20 @@ import {
 	Layers,
 	LineChart,
 	Link,
-	Loader,
+	LoaderCircle,
 	LogOut,
 	MapPin,
 	Megaphone,
 	Minus,
 	Monitor,
+	Moon,
 	Mouse,
+	MousePointerClick,
 	PanelTop,
 	PieChart,
 	Plus,
 	Radio,
+	Receipt,
 	RefreshCw,
 	Search,
 	Settings,
@@ -72,6 +80,7 @@ import {
 	Tag,
 	Target,
 	Trash,
+	TrendingDown,
 	Trophy,
 	User,
 	UserCircle,
@@ -96,14 +105,18 @@ import {
 	Upload,
 	Pencil,
 	GripVertical,
-	Image
+	Image,
+	Settings2,
+	Key,
+	SlidersVertical,
+	HardDrive
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
 // Color mapping from our custom colors to CSS variables
 const iconColors = {
 	'black-light': 'black-light',
-	black: 'black',
+	black: 'text-black',
 	green: 'green',
 	yellow: 'yellow',
 	red: 'red',
@@ -111,6 +124,8 @@ const iconColors = {
 	gray: 'gray-500',
 	lightgray: 'gray-300',
 	white: 'white',
+	'text-white': 'text-white',
+
 	gold: 'gold'
 };
 
@@ -148,6 +163,7 @@ const iconComponents = {
 	'calendar-error': CalendarX,
 	website: PanelTop,
 	help: HelpCircle,
+	cog: Cog,
 	copy: Copy,
 	trash: Trash,
 	visitor: User,
@@ -169,7 +185,7 @@ const iconComponents = {
 	conversions: Goal,
 	'goals-empty': CircleDot,
 	filter: SlidersHorizontal,
-	loading: Loader,
+	loading: LoaderCircle,
 	desktop: Monitor,
 	tablet: Tablet,
 	mobile: Smartphone,
@@ -179,6 +195,7 @@ const iconComponents = {
 	page: File,
 	hashtag: Hash,
 	sun: Sun,
+	moon: Moon,
 	world: Earth,
 	filters: Filter,
 	referrers: ExternalLink,
@@ -219,6 +236,7 @@ const iconComponents = {
 	grid: Grid3x3,
 	'user-check': UserRoundCheck,
 	'user-plus': UserRoundPlus,
+	'user-x': UserRoundX,
 	'line-squiggle': LineSquiggle,
 	'shopping-cart': ShoppingCart,
 	'party-popper': PartyPopper,
@@ -230,12 +248,25 @@ const iconComponents = {
 	bulb: Lightbulb,
 	'right-arrow': MoveRight,
 	ellipsis: Ellipsis,
-    download: Download,
-    ban: Ban,
-    'external-link': ExternalLink,
+	download: Download,
+	ban: Ban,
+	'external-link': ExternalLink,
 	'arrow-down-up': ArrowDownUp,
 	pencil: Pencil,
-	'grip-vertical': GripVertical
+	'grip-vertical': GripVertical,
+	'move-right': MoveRight,
+	'preferences': Settings2,
+	'key': Key,
+	'sliders-vertical': SlidersVertical,
+	'hard-drive': HardDrive,
+
+	// Sales & subscription metric icons
+	banknote: Banknote,
+	'calendar-sync': CalendarSync,
+	gem: Gem,
+	'mouse-pointer-click': MousePointerClick,
+	receipt: Receipt,
+	'trending-down': TrendingDown
 };
 
 // Define types for icon names and colors
@@ -312,13 +343,13 @@ const Icon = memo(
 			}
 
 			// Special handling for loading icon - should spin
-			if ( 'loading' === name && IconComponent === Loader ) {
+			if ( 'loading' === name && IconComponent === LoaderCircle ) {
 				return (
-					<Loader
+					<LoaderCircle
 						{...iconProps}
 						className={clsx(
 							className,
-							'animate-spin [animation-duration:2s]',
+							'animate-spin [animation-duration:1s]',
 							colorVal && `text-${colorVal}`
 						)}
 					/>

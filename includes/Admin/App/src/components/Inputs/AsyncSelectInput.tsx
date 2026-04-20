@@ -352,7 +352,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 				{/* Combobox container with integrated selected items */}
 				<div
 					{...getComboboxProps()}
-					className="flex min-h-[2.5rem] w-full rounded-md border border-gray-400 bg-white focus-within:border-primary-dark focus-within:ring disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-200"
+					className="flex min-h-[2.5rem] w-full rounded-md border border-gray-400 bg-white focus-within:border-primary-700 focus-within:ring-3 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-200"
 				>
 					{/* Container for selected items and input */}
 					<div className="flex flex-1 flex-wrap items-center gap-1 p-1">
@@ -364,7 +364,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 									selectedItem,
 									index
 								})}
-								className="inline-flex items-center gap-1 rounded bg-primary-light px-2 py-1 text-base text-primary-dark focus:bg-primary focus:text-white focus:outline-none"
+								className="inline-flex items-center gap-1 rounded bg-primary-100 px-2 py-1 text-base text-primary-700 focus:bg-primary focus:text-text-white focus:outline-hidden"
 							>
 								{selectedItem.label}
 								{showRemoveButton && (
@@ -374,7 +374,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 											e.stopPropagation();
 											handleRemoveItem( selectedItem );
 										}}
-										className="ml-1 rounded-full hover:bg-primary hover:text-white focus:bg-primary focus:text-white focus:outline-none"
+										className="ml-1 rounded-full hover:bg-primary hover:text-text-white focus:bg-primary focus:text-text-white focus:outline-hidden"
 										aria-label={`Remove ${selectedItem.label}`}
 									>
 										<svg
@@ -414,7 +414,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 										...props
 									})
 								)}
-								className="flex-1 min-w-[120px] border-none bg-transparent p-1 focus:outline-none disabled:cursor-not-allowed"
+								className="flex-1 min-w-[120px] border-none bg-transparent p-1 focus:outline-hidden disabled:cursor-not-allowed"
 								style={{ outline: 'none' }}
 							/>
 						)}
@@ -424,7 +424,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 					<div className="flex items-center border-l border-gray-300">
 						{/* Max selections indicator */}
 						{0 < maxSelections && (
-							<span className="px-2 text-xs text-gray-500 border-r border-gray-200">
+							<span className="px-2 text-xs text-text-gray-light border-r border-gray-200">
 								{currentSelectedItems.length}/{maxSelections}
 							</span>
 						)}
@@ -435,7 +435,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 							{...getToggleButtonProps({
 								disabled
 							})}
-							className="flex items-center justify-center bg-transparent px-2 py-2 hover:bg-gray-100 focus:border-primary-dark focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-200"
+							className="flex items-center justify-center bg-transparent px-2 py-2 hover:bg-gray-100 focus:border-primary-700 focus:outline-hidden disabled:cursor-not-allowed disabled:bg-gray-200"
 							aria-label="Toggle menu"
 						>
 							{loading ? (
@@ -465,7 +465,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 					className={`w-full ${insideModal ? 'fixed' : ''} ${! isOpen ? 'hidden' : ''}`}
 				>
 					<ul
-						className={`relative top-0 z-[9999] max-h-60 overflow-y-auto w-full rounded-md border border-gray-300 bg-white shadow-lg ${
+						className={`relative top-0 z-9999 max-h-60 overflow-y-auto w-full rounded-md border border-gray-300 bg-white shadow-lg ${
 							! ( isOpen && availableItems.length ) ? 'hidden' : ''
 						}`}
 					>
@@ -475,7 +475,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 								{...getItemProps({ item, index })}
 								className={`cursor-pointer px-3 py-2 text-base first:rounded-t-md last:rounded-b-md ${
 									highlightedIndex === index ?
-										'bg-primary-light text-primary-dark' :
+										'bg-primary-300 text-primary-700' :
 										'hover:bg-gray-100'
 								}`}
 							>
@@ -503,7 +503,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 							</li>
 						) )}
 						{0 === availableItems.length && ! loading && (
-							<li className="px-3 py-2 text-sm text-gray-500">
+							<li className="px-3 py-2 text-sm text-text-gray-light">
 								{currentSelectedItems.length >= maxSelections ?
 									`Maximum ${maxSelections} selection${1 < maxSelections ? 's' : ''} reached` :
 									'No options found'}

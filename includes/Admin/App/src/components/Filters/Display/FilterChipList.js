@@ -33,7 +33,7 @@ const FilterChipList = ({
 
 	// If no filters but there's an empty message, show it
 	if ( 0 === filters.length && emptyMessage ) {
-		return <div className="text-gray-500 text-sm">{emptyMessage}</div>;
+		return <div className="text-text-gray-light text-sm">{emptyMessage}</div>;
 	}
 	return (
 		<div className={className}>

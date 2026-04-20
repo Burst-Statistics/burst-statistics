@@ -13,17 +13,17 @@ const Premium: FC<{ bullets: string[], stepId: string }> = memo(({ bullets, step
 
     return (
         <>
-            <p className="text-gray-600 text-lg leading-relaxed font-light text-center">
+            <p className="text-text-gray text-lg leading-relaxed font-light text-center">
                 { !!onboardingData.is_pro && __("The below features have automatically been enabled for you as a Pro user!", "burst-statistics")}
                 { !onboardingData.is_pro && __("Get the most out of Burst Statistics with our Premium features:", "burst-statistics")}
             </p>
-            <div className="space-y-2 mx-auto flex flex-col ">
+            <div className="mx-auto flex flex-col gap-2">
                 {bullets.map((bullet: string, index: number) => (
                     <div key={`${stepId}-bullet-${index}`} className="flex items-center  gap-2 ml-2">
                     <span className="flex-shrink-0 ">
                         <Icon name="check" color="green" size="25"/>
                     </span>
-                        <p className="text-gray-700 text-md font-normal leading-relaxed">{bullet}</p>
+                        <p className="text-text-gray text-md font-normal leading-relaxed">{bullet}</p>
                     </div>
                 ))}
             </div>

@@ -8,8 +8,6 @@
 spl_autoload_register(
 	function ( $burst_class ): void {
 		$prefix              = 'Burst\\';
-		$is_burst            = false;
-		$is_updraft          = false;
 		$team_updraft_prefix = 'TeamUpdraft\\';
 		if ( strpos( $burst_class, $prefix ) === 0 ) {
 			$strlen    = strlen( $prefix );

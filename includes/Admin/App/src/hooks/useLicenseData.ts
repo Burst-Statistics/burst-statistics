@@ -239,7 +239,7 @@ const useLicenseData = (): UseLicenseDataReturn => {
 			return isLicenseValid;
 		}
 
-		if ( 'sales' === id ) {
+		if ( 'sales' === id || 'subscriptions' === id ) {
 			return 'agency' === tier || 'business' === tier;
 		}
 

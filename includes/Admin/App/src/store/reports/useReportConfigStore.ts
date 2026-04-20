@@ -143,10 +143,10 @@ const AVAILABLE_CONTENT: ContentItems = [
 ];
 
 const STATUS_SEVERITY_CLASSES = {
-	success: 'bg-green-light text-green',
-	error: 'bg-red-light text-red',
-	warning: 'bg-gray-200 text-black',
-	info: 'bg-blue-light text-blue'
+	success: 'bg-green-50 text-green',
+	error: 'bg-red-50 text-red',
+	warning: 'bg-gray-200 text-text-black',
+	info: 'bg-blue-50 text-blue'
 };
 
 const REPORT_LOG_STATUS_CONFIG: Record<

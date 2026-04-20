@@ -14,11 +14,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Burst\Frontend\Endpoint;
 use Burst\Frontend\Goals\Goal;
 use Burst\Frontend\Ip\Ip;
+use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
 use Burst\UserAgentParser\UserAgentParser;
 
 class Tracking {
+	use Database_Helper;
 	use Helper;
 	use Sanitize;
 
@@ -698,6 +700,10 @@ class Tracking {
 			defined( 'BURST_INSTALL_TABLES_RUNNING' ) ||
 			defined( 'BURST_UNINSTALLING' )
 		) {
+			return [];
+		}
+
+		if ( ! $this->table_exists( 'burst_goals' ) ) {
 			return [];
 		}
 

@@ -5,7 +5,7 @@ import { useReportConfigStore } from '@/store/reports/useReportConfigStore';
 import { useReportsStore } from '@/store/reports/useReportsStore';
 import { useEffect, useCallback } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { toast } from 'react-toastify';
+import { toast } from '@/utils/toast';
 
 export const StepControls = () => {
 	const { nextStep, prevStep, resetWizard, closeWizard, wizard } = useWizardStore();
@@ -114,7 +114,7 @@ export const StepControls = () => {
 	};
 
 	return (
-		<div className="relative z-[100] flex justify-center bg-gray-50 px-10 pt-5 pb-4 gap-4 w-full shadow-layered-high-t">
+		<div className="relative z-100 flex justify-center bg-gray-50 px-10 pt-5 pb-4 gap-4 w-full shadow-layered-high-t">
 			{/* vertical line grey surounding the buttons */}
 			<span className="block h-6 w-px bg-gray-400 mt-1"></span>
 			<div className="flex gap-2 max-w-4xl w-full">

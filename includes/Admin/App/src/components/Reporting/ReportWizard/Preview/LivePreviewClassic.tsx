@@ -48,13 +48,13 @@ export const LivePreviewClassic = ({ className }: { className?: string }) => {
     return (
         <div className={className}>
             { ! hasSelectedContent && (
-                <p className="text-gray-500 text-center">
+                <p className="text-text-gray-light text-center">
                     { __( 'No content selected for preview.', 'burst-statistics' ) }
                 </p>
             ) }
 
             { hasSelectedContent && isFetching && (
-                <p className="text-gray-500 text-center">
+                <p className="text-text-gray-light text-center">
                     { __( 'Loading preview…', 'burst-statistics' ) }
                 </p>
             ) }

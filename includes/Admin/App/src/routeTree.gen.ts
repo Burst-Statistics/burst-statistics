@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
 import { Route as StoryRouteImport } from './routes/story'
 import { Route as StatisticsRouteImport } from './routes/statistics'
 import { Route as SourcesRouteImport } from './routes/sources'
@@ -19,6 +20,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsSettingsIdRouteImport } from './routes/settings.$settingsId'
 import { Route as ReportingReportingIdRouteImport } from './routes/reporting.$reportingId'
 
+const SubscriptionsRoute = SubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoryRoute = StoryRouteImport.update({
   id: '/story',
   path: '/story',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/sources': typeof SourcesRoute
   '/statistics': typeof StatisticsRoute
   '/story': typeof StoryRoute
+  '/subscriptions': typeof SubscriptionsRoute
   '/reporting/$reportingId': typeof ReportingReportingIdRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/sources': typeof SourcesRoute
   '/statistics': typeof StatisticsRoute
   '/story': typeof StoryRoute
+  '/subscriptions': typeof SubscriptionsRoute
   '/reporting/$reportingId': typeof ReportingReportingIdRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/sources': typeof SourcesRoute
   '/statistics': typeof StatisticsRoute
   '/story': typeof StoryRoute
+  '/subscriptions': typeof SubscriptionsRoute
   '/reporting/$reportingId': typeof ReportingReportingIdRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/sources'
     | '/statistics'
     | '/story'
+    | '/subscriptions'
     | '/reporting/$reportingId'
     | '/settings/$settingsId'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/sources'
     | '/statistics'
     | '/story'
+    | '/subscriptions'
     | '/reporting/$reportingId'
     | '/settings/$settingsId'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/sources'
     | '/statistics'
     | '/story'
+    | '/subscriptions'
     | '/reporting/$reportingId'
     | '/settings/$settingsId'
   fileRoutesById: FileRoutesById
@@ -143,10 +155,18 @@ export interface RootRouteChildren {
   SourcesRoute: typeof SourcesRoute
   StatisticsRoute: typeof StatisticsRoute
   StoryRoute: typeof StoryRoute
+  SubscriptionsRoute: typeof SubscriptionsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/subscriptions': {
+      id: '/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/subscriptions'
+      preLoaderRoute: typeof SubscriptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/story': {
       id: '/story'
       path: '/story'
@@ -245,6 +265,7 @@ const rootRouteChildren: RootRouteChildren = {
   SourcesRoute: SourcesRoute,
   StatisticsRoute: StatisticsRoute,
   StoryRoute: StoryRoute,
+  SubscriptionsRoute: SubscriptionsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

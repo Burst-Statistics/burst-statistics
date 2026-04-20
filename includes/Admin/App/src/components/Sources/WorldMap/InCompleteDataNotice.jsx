@@ -23,16 +23,16 @@ const InCompleteDataNotice = memo( () => {
     }
     return (
         <div className="absolute left-3 top-16 z-10 max-w-md">
-            <div className="rounded-lg border border-gray-200 bg-white/95 px-4 py-3 text-sm shadow-sm transition-all hover:shadow-md">
+            <div className="rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 text-sm shadow-sm transition-all hover:shadow-md">
                 <div className="flex items-start gap-3">
                     <Icon
                         name="help"
                         size={16}
                         color="blue"
-                        className="mt-0.5 flex-shrink-0"
+                        className="mt-0.5 shrink-0"
                     />
                     <div className="flex-1">
-                        <div className="mb-2 text-black">
+                        <div className="mb-2 text-text-black">
                             <p className="font-semibold">
                                 {sprintf(
                                     __(
@@ -76,7 +76,7 @@ const InCompleteDataNotice = memo( () => {
                                 onClick={
                                     dismissIncompleteDataNotice
                                 }
-                                className="rounded bg-gray-200 px-3 py-1 text-gray hover:bg-gray-300 hover:text-gray"
+                                className="rounded bg-gray-200 px-3 py-1 text-text-gray hover:bg-gray-300 hover:text-gray"
                                 title={__(
                                     'Dismiss for 30 days',
                                     'burst-statistics'

@@ -39,9 +39,9 @@ export const ContentListView = () => {
 		return (
 			<div className="flex flex-col items-center justify-center py-12 px-6">
 				<div className="w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-gray-100">
-					<Icon name="file-alt" size={24} className="text-gray-400" />
+					<Icon name="file-alt" size={24} className="text-text-gray-light" />
 				</div>
-				<p className="text-gray-500 text-center text-sm">
+				<p className="text-text-gray-light text-center text-sm">
 					{__( 'No content selected yet. Add content blocks to get started.', 'burst-statistics' )}
 				</p>
 			</div>
@@ -54,7 +54,7 @@ export const ContentListView = () => {
 				axis="y"
 				values={content}
 				onReorder={reorderContent}
-				className="space-y-2"
+				className="flex flex-col gap-2"
 			>
 				{content.map( ( block: ContentBlock, index: number ) => {
 					const contentItem = getContentItem( block.id );
@@ -112,18 +112,18 @@ export const ContentListView = () => {
 
 								{/* Content icon. */}
 								{contentItem?.icon && (
-									<div className="flex-shrink-0 text-gray-600">
+									<div className="shrink-0 text-text-gray-light">
 										<Icon name={contentItem.icon} size={18} />
 									</div>
 								)}
 
 								{/* Content label. */}
 								<div className="flex-1 flex items-center gap-2">
-									<span className="text-sm text-gray-700">
+									<span className="text-sm text-text-gray">
 										{contentItem?.label || block.id}
 									</span>
 									{( block.comment_title || block.comment_text ) && (
-										<span className="text-xs text-gray-400 italic" title={block.comment_text}>
+										<span className="text-xs text-text-gray-light italic" title={block.comment_text}>
 											{__( '(has comment)', 'burst-statistics' )}
 										</span>
 									)}
@@ -136,7 +136,7 @@ export const ContentListView = () => {
 										e.stopPropagation();
 										removeContent( index );
 									}}
-									className="p-2 rounded-md hover:bg-red-50 text-gray-600 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100 focus:ring-2 focus:ring-red-500 focus:ring-inset focus:opacity-100"
+									className="p-2 rounded-md hover:bg-red-50 text-text-gray-light hover:text-red-600 transition-all opacity-0 group-hover:opacity-100 focus:ring-2 focus:ring-red-500 focus:ring-inset focus:opacity-100"
 									aria-label={__( 'Remove', 'burst-statistics' )}
 									title={__( 'Remove', 'burst-statistics' )}
 								>
@@ -150,7 +150,7 @@ export const ContentListView = () => {
 
 			{/* Count summary. */}
 			<div className="mt-6 pt-4 border-t border-gray-200">
-				<p className="text-xs text-gray-500 text-center">
+				<p className="text-xs text-text-gray-light text-center">
 					{content.length} {1 === content.length ?
 						__( 'content block', 'burst-statistics' ) :
 						__( 'content blocks', 'burst-statistics' )}

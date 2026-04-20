@@ -23,7 +23,7 @@ class Data_Aggregation {
 
 	private string $site_hash;
 	private array $collectors    = [];
-	private const CACHE_KEY      = 'burst_aggregated_data';
+	private const CACHE_KEY      = 'burst_aggregated_data_v2';
 	private const CACHE_DURATION = WEEK_IN_SECONDS;
 
 	private int $capture_data_from;

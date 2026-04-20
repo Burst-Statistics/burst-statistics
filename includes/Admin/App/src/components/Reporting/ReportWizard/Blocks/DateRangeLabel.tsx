@@ -18,7 +18,7 @@ const DateRangeLabel = ({index = -1, isBlock = false}) => {
         );
     }
     return (
-        <div className="text-gray-700 text-md font-bold mb-2 text-center">
+        <div className="text-text-gray text-md font-bold mb-2 text-center">
         {startDate} - {endDate}
         </div>
     );

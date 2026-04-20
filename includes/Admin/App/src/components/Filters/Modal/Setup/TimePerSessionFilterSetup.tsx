@@ -258,10 +258,10 @@ const TimePerSessionFilterSetup: React.FC<TimePerSessionFilterSetupProps> = ({
 	};
 
 	return (
-		<div className="space-y-5">
+		<div className="flex flex-col gap-5">
 			{/* Preset pills */}
 			<div>
-				<label className="block text-sm font-medium text-gray-700 mb-2">
+				<label className="block text-sm font-medium text-text-gray mb-2">
 					{__( 'Quick select', 'burst-statistics' )}
 				</label>
 
@@ -275,10 +275,10 @@ const TimePerSessionFilterSetup: React.FC<TimePerSessionFilterSetupProps> = ({
 								aria-pressed={selectedPreset === index}
 								className={clsx(
 								'inline-flex flex-col items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border',
-									'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1',
+									'focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-1',
 									selectedPreset === index ?
 										'bg-primary border-primary text-white shadow-sm' :
-										'bg-white border-gray-300 text-gray-700 hover:border-primary hover:bg-primary-light'
+										'bg-white border-gray-300 text-text-gray hover:border-primary hover:bg-primary-100'
 								)}
 							>
 								<span className="font-semibold leading-tight">{preset.label}</span>
@@ -286,7 +286,7 @@ const TimePerSessionFilterSetup: React.FC<TimePerSessionFilterSetupProps> = ({
 								<span
 									className={clsx( 'text-xs leading-tight', {
 										'text-white opacity-80': selectedPreset === index,
-										'text-gray-500': selectedPreset !== index
+										'text-text-gray-light': selectedPreset !== index
 									})}
 								>
 									{preset.description}
@@ -300,11 +300,11 @@ const TimePerSessionFilterSetup: React.FC<TimePerSessionFilterSetupProps> = ({
 			{/* Custom range */}
 			<div>
 				<div className="mb-2">
-					<label className="text-sm font-medium text-gray-700">
+					<label className="text-sm font-medium text-text-gray">
 						{__( 'Custom range', 'burst-statistics' )}
 					</label>
 
-					<p className="text-xs text-gray-500 mt-1">
+					<p className="text-xs text-text-gray-light mt-1">
 						{__( 'Use values like 30s, 2m, 10m, 1h.', 'burst-statistics' )}
 					</p>
 				</div>
@@ -312,7 +312,7 @@ const TimePerSessionFilterSetup: React.FC<TimePerSessionFilterSetupProps> = ({
 				<div className="flex items-start gap-3">
 					{/* Min input */}
 					<div className="flex-1">
-						<label className="block text-xs text-gray-500 mb-1">
+						<label className="block text-xs text-text-gray-light mb-1">
 							{__( 'Minimum', 'burst-statistics' )}
 						</label>
 
@@ -331,11 +331,11 @@ const TimePerSessionFilterSetup: React.FC<TimePerSessionFilterSetupProps> = ({
 						}
 					</div>
 
-					<span className="mt-7 text-gray-400 select-none">–</span>
+					<span className="mt-7 text-text-gray-light select-none">–</span>
 
 					{/* Max input */}
 					<div className="flex-1">
-						<label className="block text-xs text-gray-500 mb-1">
+						<label className="block text-xs text-text-gray-light mb-1">
 							{
 								isOpenEnded ?
 									__( 'No upper limit', 'burst-statistics' ) :
@@ -366,7 +366,7 @@ const TimePerSessionFilterSetup: React.FC<TimePerSessionFilterSetupProps> = ({
 
 				{
 					summaryText() && (
-						<p className="mt-2 text-xs text-gray-500">
+						<p className="mt-2 text-xs text-text-gray-light">
 							{summaryText()}
 						</p>
 					)
@@ -374,7 +374,7 @@ const TimePerSessionFilterSetup: React.FC<TimePerSessionFilterSetupProps> = ({
 
 				{
 					! summaryText() && (
-						<p className="mt-2 text-xs text-gray-500">
+						<p className="mt-2 text-xs text-text-gray-light">
 							{__( 'Leave maximum empty for no upper limit.', 'burst-statistics' )}
 						</p>
 					)

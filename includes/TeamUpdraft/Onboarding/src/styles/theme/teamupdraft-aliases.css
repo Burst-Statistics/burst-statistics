@@ -1,0 +1,14 @@
+#teamupdraft-onboarding {
+	/* Keep legacy custom property API stable for existing icon helpers. */
+	--teamupdraft-black: var(--color-text-black);
+	--teamupdraft-white: var(--color-white);
+	--teamupdraft-yellow: var(--color-yellow-500);
+	--teamupdraft-blue: var(--color-blue-500);
+	--teamupdraft-dark-blue: var(--color-blue-700);
+	--teamupdraft-green: var(--color-green-500);
+	--teamupdraft-red: var(--color-red-500);
+	--teamupdraft-orange: var(--color-orange-500);
+	--teamupdraft-grey-300: var(--color-gray-300);
+	--teamupdraft-grey-400: var(--color-gray-400);
+	--teamupdraft-fs-600: var(--text-xl);
+}

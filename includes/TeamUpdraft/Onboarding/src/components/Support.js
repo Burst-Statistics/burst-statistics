@@ -23,7 +23,7 @@ const Support = ({handleManualRetry, isRunning}) => {
     const solutions = getCurrentStepSolutions();
     return (
         <div className="mt-4 max-w-md mx-auto bg-gray-200 border border-gray-300 rounded-lg p-4">
-            <ul className="text-sm text-gray-600 space-y-2 list-disc list-inside">
+            <ul className="text-sm text-text-gray flex flex-col gap-2 list-disc list-inside">
                 {solutions.map((text, index) => (
                     <li key={index}>{text}</li>
                 ))}

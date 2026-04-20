@@ -2,7 +2,7 @@
 import React from 'react';
 import {__} from '@wordpress/i18n';
 import {copyToClipboard} from '@/utils/copyToClipboard';
-import {toast} from 'react-toastify';
+import { toast } from '@/utils/toast';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import {useReportsStore} from '@/store/reports/useReportsStore';
 import useLicenseData from '@/hooks/useLicenseData';
@@ -33,14 +33,14 @@ export const ReportStoryUrl: React.FC<ReportStoryUrlProps> = ({ reportId }) => {
         <div className="flex flex-col gap-2 w-full">
             <div className="flex gap-2">
                 <ButtonInput disabled={ ! isLicenseValidFor( 'share-link-advanced' ) } onClick={ generateAndCopyUrl } btnVariant="tertiary"
-                             className="flex items-center gap-2 !px-3 py-1.5 h-fit text-sm leading-none text-gray bg-gray-100 border border-gray-400 rounded-md hover:bg-gray-50 transition-colors"
+                             className="flex items-center gap-2 !px-3 py-1.5 h-fit text-sm leading-none text-text-gray bg-gray-100 border border-gray-400 rounded-md hover:bg-gray-50 transition-colors"
                 >
                     { isGenerating &&
                         <Icon name="loading" size={14} color="gray" />
                     }{__( 'Copy URL', 'burst-statistics' )}
                 </ButtonInput>
                 <ButtonInput disabled={ ! isLicenseValidFor( 'share-link-advanced' ) } onClick={ () => openPreview( reportId, true ) } btnVariant="tertiary"
-                             className="flex items-center gap-2 !px-3 py-1.5 h-fit text-sm leading-none text-gray bg-gray-100 border border-gray-400 rounded-md hover:bg-gray-50 transition-colors"
+                             className="flex items-center gap-2 !px-3 py-1.5 h-fit text-sm leading-none text-text-gray bg-gray-100 border border-gray-400 rounded-md hover:bg-gray-50 transition-colors"
                 >
                     { isGenerating &&
                         <Icon name="loading" size={14} color="gray" />
@@ -56,13 +56,13 @@ export const ReportStoryUrl: React.FC<ReportStoryUrlProps> = ({ reportId }) => {
                     title={link}
                     value={link}
                     onClick={( e ) => ( e.target as HTMLInputElement ).select()}
-                    className="burst-story-report-url max-w-full truncate text-sm text-gray-800 font-mono w-full bg-gray-50 px-2 py-1.5 rounded border border-gray-300 cursor-text focus:border-wp-blue focus:ring-1 focus:ring-wp-blue/20"
+                    className="burst-story-report-url max-w-full truncate text-sm text-text-gray font-mono w-full bg-gray-50 px-2 py-1.5 rounded border border-gray-300 cursor-text focus:border-wp-blue focus:ring-1 focus:ring-wp-blue/20"
                 />
 
                 <Tooltip content={isCopied ? __( 'Copied!', 'burst-statistics' ) : __( 'Copy link', 'burst-statistics' )}>
                     <button
                         onClick={() => copyToClipboard( link )}
-                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600"
+                        className="rounded p-1 text-text-gray-light transition-colors hover:bg-gray-200 hover:text-text-gray-light"
                     >
                         {isCopied ? (
                             <Icon name="check" size={14} color="green" />

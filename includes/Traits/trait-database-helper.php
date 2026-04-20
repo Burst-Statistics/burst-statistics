@@ -29,6 +29,7 @@ trait Database_Helper {
 
 	/**
 	 * Check if table exists
+	 * $table should include the burst prefix, but not the WordPress prefix. E.g. burst_sessions.
 	 */
 	protected function table_exists( string $table ): bool {
 		global $wpdb;

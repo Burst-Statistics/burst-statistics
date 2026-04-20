@@ -66,7 +66,7 @@ export const BlockContent = memo( ({ children, className = '' }: BlockContentPro
 	return (
 		<div
 			className={clsx(
-				'flex-grow',
+				'grow',
 				resolvePaddingClasses( className ),
 				className
 			)}

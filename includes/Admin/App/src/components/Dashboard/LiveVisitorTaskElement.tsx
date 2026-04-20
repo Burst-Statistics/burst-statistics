@@ -64,7 +64,7 @@ export const LiveVisitorTaskElement = ({
 				/>
 			</div>
 
-			<p className="flex-1 text-base text-black">{msg}</p>
+			<p className="flex-1 text-base text-text-black">{msg}</p>
 
 			<span
 				className="text-blue underline cursor-pointer"
