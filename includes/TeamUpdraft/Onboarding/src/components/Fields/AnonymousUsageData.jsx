@@ -27,14 +27,14 @@ const AnonymousUsageData = ( { field, onChange, value } ) => {
 
 	return (
 		<FieldWrapper label="" inputId={ field.id }>
-			<div className="w-full space-y-5">
+			<div className="w-full flex flex-col gap-5">
 				{/* Toggle control */ }
 				<div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white p-4">
 					<div className="flex flex-col gap-1">
-						<span className="text-md font-medium text-gray-800">
+						<span className="text-md font-medium text-text-gray">
 							{ __( 'Share anonymous usage data', 'burst-statistics' ) }
 						</span>
-						<span className={ `text-sm ${ value ? 'text-green-600' : 'text-gray-500' }` }>
+						<span className={ `text-sm ${ value ? 'text-green-600' : 'text-text-gray' }` }>
 							{ value
 								? __( 'Enabled — thank you for helping us improve!', 'burst-statistics' )
 								: __( 'Disabled', 'burst-statistics' )

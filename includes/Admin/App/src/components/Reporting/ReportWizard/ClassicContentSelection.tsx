@@ -83,26 +83,26 @@ const ClassicContentSelection = () => {
 									onClick={() => handleToggle( block )}
 									className={`
 										flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all
-										${isBlockSelected ? 'border-brand bg-brand/5' : 'border-gray-200 hover:border-gray-300 bg-white'}
+										${isBlockSelected ? 'border-green bg-green-50' : 'border-gray-200 hover:border-gray-300 bg-white'}
 										${isBlockProDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}
 									`}
 								>
 									{block.icon && (
-										<div className={`flex-shrink-0 ${isBlockSelected ? 'text-brand' : 'text-gray-600'}`}>
+										<div className={`shrink-0 ${isBlockSelected ? 'text-green' : 'text-text-gray-light'}`}>
 											<Icon name={block.icon} size={18} />
 										</div>
 									)}
-									<label htmlFor={block.id} className="flex-1 text-sm text-gray-700 cursor-pointer">
+									<label htmlFor={block.id} className="flex-1 text-sm text-text-gray cursor-pointer">
 										{block.label}
 									</label>
 									{
 										block.pro && ! isLicenseValid && (
-											<div className="flex-shrink-0">
+											<div className="shrink-0">
 												<ProBadge label={'Pro'}/>
 											</div>
 										)
 									}
-									<div className="flex-shrink-0">
+									<div className="shrink-0">
 										<input
 											type="checkbox"
 											id={block.id}
@@ -113,7 +113,7 @@ handleToggle( block );
 											onClick={( e ) => {
 												e.stopPropagation();
 											}}
-											className="h-4 w-4 text-brand border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+											className="h-4 w-4 text-green border-gray-300 rounded focus:ring-2 focus:ring-blue"
 											disabled={ isBlockProDisabled }
 										/>
 									</div>

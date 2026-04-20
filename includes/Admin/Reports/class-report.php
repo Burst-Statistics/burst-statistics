@@ -98,6 +98,11 @@ class Report {
 	public string $date_range = '';
 
 	/**
+	 * If the report data is requests for a shared link..
+	 */
+	public bool $is_shared_link = false;
+
+	/**
 	 * Set report ID.
 	 *
 	 * @param int $id ID.
@@ -289,7 +294,8 @@ class Report {
 	/**
 	 * Constructor
 	 */
-	public function __construct( ?int $id = null ) {
+	public function __construct( ?int $id = null, bool $is_shared_link = false ) {
+		$this->is_shared_link = $is_shared_link;
 		if ( ! empty( $id ) ) {
 			$this->load( $id );
 		}
@@ -313,6 +319,9 @@ class Report {
 		$this->set_id( absint( $row['ID'] ) )
 			->set_name( (string) $row['name'] )
 			->set_format( (string) $row['format'] )
+			->set_date_range( Report_Date_range::from_string( $row['date_range'] ) )
+			->set_content( json_decode( $row['content'], true ) ?: [] )
+			->set_recipients( json_decode( $row['recipients'], true ) ?: [] )
 			->set_frequency( (string) $row['frequency'] )
 			->set_fixed_end_date( (string) $row['fixed_end_date'] )
 			->set_week_of_month( Report_Week_Of_Month::from_int( $row['week_of_month'] ) )
@@ -321,9 +330,6 @@ class Report {
 			->set_last_edit( absint( $row['last_edit'] ) )
 			->set_enabled( (bool) $row['enabled'] )
 			->set_scheduled( (bool) $row['scheduled'] )
-			->set_date_range( Report_Date_range::from_string( $row['date_range'] ) )
-			->set_content( json_decode( $row['content'], true ) ?: [] )
-			->set_recipients( json_decode( $row['recipients'], true ) ?: [] )
 			->set_next_send_timestamp( $this->get_next_send_timestamp() );
 
 		return true;
@@ -573,7 +579,12 @@ class Report {
 			}
 			$filters = isset( $block['filters'] ) ? $block['filters'] : [];
 			// let Query_Data handle filter sanitizing.
-			$qd = new Query_Data( [ 'filters' => $filters ] );
+			$qd = new Query_Data(
+				'report_sanitize_content_filters',
+				[
+					'filters' => $filters,
+				]
+			);
 
 			// Sanitize block properties.
 			$sanitized[] = [
@@ -647,25 +658,49 @@ class Report {
 	 * Convert to array (API safe).
 	 */
 	public function to_array(): array {
-		$last_send_status = Report_Logs::instance()->get_report_status( $this->id );
-		return [
+		// if a report is not enabled, a visitor for a shared link should not be able to see it.
+		if ( $this->is_shared_link && ! $this->enabled ) {
+			self::error_log( 'Report is not enabled, returning empty array' );
+			return [];
+		}
+
+		$array = [
 			'id'              => $this->id,
 			'name'            => $this->name,
 			'format'          => $this->format,
-			'frequency'       => $this->frequency,
-			'fixedEndDate'    => $this->fixed_end_date,
-			'weekOfMonth'     => $this->week_of_month,
-			'dayOfWeek'       => $this->day_of_week,
-			'sendTime'        => $this->send_time,
-			'lastEdit'        => $this->last_edit,
 			'enabled'         => $this->enabled,
-			'scheduled'       => $this->scheduled,
 			'content'         => $this->content,
 			'reportDateRange' => $this->date_range,
-			'recipients'      => $this->recipients,
-			'lastSendStatus'  => $last_send_status['status'],
-			'lastSendMessage' => $last_send_status['message'],
+			'fixedEndDate'    => $this->fixed_end_date,
+			'frequency'       => Report_Frequency::DEFAULT,
+			'weekOfMonth'     => Report_Week_Of_Month::DEFAULT,
+			'dayOfWeek'       => Report_Day_Of_Week::DEFAULT,
+			'sendTime'        => '',
+			'lastEdit'        => '',
+			'scheduled'       => false,
+			'recipients'      => [],
+			'lastSendStatus'  => '',
+			'lastSendMessage' => '',
 		];
+
+		if ( ! $this->is_shared_link ) {
+			$last_send_status = Report_Logs::instance()->get_report_status( $this->id );
+			$array            = array_merge(
+				$array,
+				[
+					'frequency'       => $this->frequency,
+					'weekOfMonth'     => $this->week_of_month,
+					'dayOfWeek'       => $this->day_of_week,
+					'sendTime'        => $this->send_time,
+					'lastEdit'        => $this->last_edit,
+					'scheduled'       => $this->scheduled,
+					'recipients'      => $this->recipients,
+					'lastSendStatus'  => $last_send_status['status'],
+					'lastSendMessage' => $last_send_status['message'],
+				]
+			);
+		}
+		return $array;
 	}
 
 	/**

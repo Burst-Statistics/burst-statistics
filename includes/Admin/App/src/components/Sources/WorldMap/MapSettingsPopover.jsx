@@ -131,7 +131,7 @@ const UnifiedMapPopover = () => {
 				onClick={() => setIsOpen( ! isOpen )}
 			>
 				<div
-					className={`${isOpen ? 'bg-gray-300 shadow-lg' : 'bg-gray-100 shadow-sm'} border border-gray-400 focus:ring-blue-500 cursor-pointer rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 opacity-30 group-hover/root:opacity-100`}
+					className={`${isOpen ? 'bg-gray-300 shadow-lg' : 'bg-gray-100 shadow-sm'} border border-gray-400 focus:ring-blue-500 cursor-pointer rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2 opacity-30 group-hover/root:opacity-100`}
 				>
 					<Icon name="filter" />
 				</div>
@@ -147,7 +147,7 @@ const UnifiedMapPopover = () => {
 					<ReactPopover.Arrow className="fill-white drop-shadow-sm" />
 
 					<div className="border-b border-gray-100 px-4 py-3">
-						<h5 className="m-0 text-base font-semibold text-black">
+						<h5 className="m-0 text-base font-semibold text-text-black">
 							{__( 'Metrics & options', 'burst-statistics' )}
 						</h5>
 					</div>
@@ -155,7 +155,7 @@ const UnifiedMapPopover = () => {
 					<div className="max-h-[80vh] overflow-y-auto px-4 py-4">
 						{/* Metric Selection Section */}
 						<div className="mb-6">
-							<label className="mb-3 block text-sm font-medium text-gray">
+							<label className="mb-3 block text-sm font-medium text-text-gray">
 								{__( 'Select metric', 'burst-statistics' )}
 							</label>
 							<div className="flex flex-col">
@@ -179,7 +179,7 @@ const UnifiedMapPopover = () => {
 						<div className="mb-6">
 							<div className="mb-3 flex items-center justify-between">
 								<div className="flex items-center gap-2">
-									<label className="block text-sm font-medium text-gray">
+									<label className="block text-sm font-medium text-text-gray">
 										{__(
 											'Classification method',
 											'burst-statistics'
@@ -190,7 +190,7 @@ const UnifiedMapPopover = () => {
 										color="blue"
 										name="help"
 										size={16}
-										className="rounded-full bg-blue-light"
+										className="rounded-full bg-blue-lighest"
 										tooltip={__(
 											'A classification method determines how data values are grouped into ranges or categories to color regions on a choropleth map. The recommended method is based on the selected metric. For more information for each method, see the help icon next to each method.',
 											'burst-statistics'
@@ -201,7 +201,7 @@ const UnifiedMapPopover = () => {
 								<div className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-100 px-2 py-1">
 									<label
 										htmlFor="auto-select"
-										className="text-sm text-gray"
+										className="text-sm text-text-gray"
 									>
 										{__( 'Auto-select', 'burst-statistics' )}
 									</label>
@@ -253,18 +253,18 @@ const UnifiedMapPopover = () => {
 
 						{/* Accessibility Section */}
 						<div className="mb-6">
-							<label className="mb-3 block text-sm font-medium text-gray">
+							<label className="mb-3 block text-sm font-medium text-text-gray">
 								{__( 'Accessibility', 'burst-statistics' )}
 							</label>
 							<div className="flex items-center justify-between">
 								<div className="flex-1">
-									<div className="mb-1 text-sm text-black">
+									<div className="mb-1 text-sm text-text-black">
 										{__(
 											'Colorblind Patterns',
 											'burst-statistics'
 										)}
 									</div>
-									<div className="text-xs text-gray">
+									<div className="text-xs text-text-gray">
 										{__(
 											'Add patterns for colorblind accessibility',
 											'burst-statistics'
@@ -281,7 +281,7 @@ const UnifiedMapPopover = () => {
 					</div>
 
 					<div className="rounded-b-lg border-t border-gray-100 bg-gray-50 px-4 py-3">
-						<div className="space-y-2">
+						<div className="flex flex-col gap-2">
 							<div className="flex gap-2">
 								<ButtonInput
 									onClick={handleApply}

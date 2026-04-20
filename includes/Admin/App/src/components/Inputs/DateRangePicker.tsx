@@ -7,7 +7,8 @@ import {
 	getDateWithOffset,
 	getAvailableRanges,
 	getDisplayDates,
-	availableRanges
+	availableRanges,
+	BURST_START_DATE
 } from '@/utils/formatting';
 import * as ReactPopover from '@radix-ui/react-popover';
 
@@ -27,7 +28,6 @@ type AvailableRangesType = Record<string, RangeConfig>;
 
 // Extract configuration.
 const DATE_FORMAT = 'yyyy-MM-dd';
-const MIN_DATE = new Date( 2022, 0, 1 );
 const CLICKS_TO_CLOSE = 2;
 
 /**
@@ -94,8 +94,8 @@ const DateRangeTrigger = ({ range, display, isOpen, setIsOpen, disabled, smallLa
 
 				// State-specific styles.
 				{
-					'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-800 opacity-60': disabled,
-					'border-gray-300 bg-white hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)]': ! disabled
+					'cursor-not-allowed border-gray-200 bg-gray-100 text-text-gray opacity-60': disabled,
+					'border-gray-300 bg-white hover:bg-gray-50 hover:shadow-ringSubtle': ! disabled
 				}
 			)}
 			onClick={() => ! disabled && setIsOpen( ! isOpen )}
@@ -228,7 +228,7 @@ export const DateRangePicker = ({
 					smallLabels={smallLabels}
 				/>
 
-				<div className="burst-date-range-popover-container relative z-[2]">
+				<div className="burst-date-range-popover-container relative z-2">
 					<ReactPopover.Portal
 						container={document.querySelector(
 							'.burst-date-range-popover-container'
@@ -240,19 +240,19 @@ export const DateRangePicker = ({
 							arrowPadding={10}
 							id="burst-statistics"
 						>
-							<span className="absolute right-4 mt-1 h-4 w-4 -translate-y-2 rotate-45 transform bg-green-light" />
+							<span className="absolute right-4 mt-1 h-4 w-4 -translate-y-2 rotate-45 transform bg-green-50" />
 
 							<div className="z-50 rounded-lg border border-gray-200 bg-white shadow-md">
 								<ReactDateRangePicker
 									ranges={[ selectionRange ]}
-									rangeColors={[ '#2b8133' ]}
+									rangeColors={[ 'var(--color-green)' ]}
 									dateDisplayFormat="dd MMMM yyyy"
 									monthDisplayFormat="MMMM"
 									onChange={updateDateRange}
 									inputRanges={[]}
 									months={2}
 									direction="horizontal"
-									minDate={MIN_DATE}
+									minDate={BURST_START_DATE}
 									maxDate={getDateWithOffset()}
 									staticRanges={dateRanges}
 								/>

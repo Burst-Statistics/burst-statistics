@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { doAction, getAction } from '../utils/api';
-import { toast } from 'react-toastify';
+import { toast } from '@/utils/toast';
 import { __ } from '@wordpress/i18n';
 const useArchiveStore = create( ( set, get ) => ({
 	fetching: false,

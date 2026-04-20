@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFields, setFields } from '@/utils/api';
-import { toast } from 'react-toastify';
+import { toast } from '@/utils/toast';
 import useLicenseData from '@/hooks/useLicenseData';
 import { __ } from '@wordpress/i18n';
 

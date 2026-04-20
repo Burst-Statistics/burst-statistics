@@ -109,14 +109,14 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 	// catch fatal errors when no valid data is provided.
 	if ( ! data || 0 === data.length || ! formattedData || 0 === formattedData.length ) {
 		return (
-			<div className="border-t border-t-divider p-4">
+			<div className="border-t border-gray-300 p-4">
 				{__( 'No funnel data available', 'burst-statistics' )}
 			</div>
 		);
 	}
 
 	return (
-		<div className="border-t border-t-divider">
+		<div className="border-t border-gray-300">
 			<div
 				className="grid"
 				style={{
@@ -148,6 +148,15 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 							bottom: 0,
 							top: 0
 						}}
+						theme={{
+							grid: {
+								line: {
+									stroke: 'var(--color-gray-400)', // separator color
+									strokeWidth: 1
+								}
+							}
+						}}
+						labelColor="var(--color-text-black)"
 						shapeBlending={0.35}
 						direction="horizontal"
 						enableLabel={false}
@@ -158,9 +167,9 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 						borderWidth={0}
 						currentPartSizeExtension={5}
 						animate={true}
-						borderColor="#2E8A37"
+						borderColor="var(--color-green-500)"
 						interpolation="smooth"
-						colors="#2E8A37"
+						colors="var(--color-green-500)"
 						motionConfig="gently"
 						tooltip={({ part }) => {
 

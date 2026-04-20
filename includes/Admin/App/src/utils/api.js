@@ -1,6 +1,8 @@
 import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
-import { toast } from 'react-toastify';
+
+//we have to use a relative path here, as api.js is also used by Dashboard_Widget.
+import { toast } from './toast';
 
 if ( burst_settings.is_mainwp && burst_settings.root ) {
     apiFetch.use.bind( apiFetch );
@@ -374,7 +376,7 @@ const buildQueryString = ( params ) => {
 export const getData = async( type, startDate, endDate, range, args = {}) => {
 
 	// Extract filters and metrics from args if they exist.
-	const { filters, metrics, group_by, currentView, selectedPages } = args;
+	const { filters, metrics, group_by, currentView, selectedPages, id, chart_mode, distribution_view, product_id } = args;
 
 	// Combine all query parameters.
 	const queryParams = {
@@ -392,7 +394,11 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
 		...( filters && { filters }), // type is object
 		...( metrics && { metrics }), // type is array
 		...( group_by && { group_by }), // type is array
-		...( currentView && { currentView }) // type is object
+		...( currentView && { currentView }), // type is object
+		...( id && { id }), // type is string
+		...( chart_mode && { chart_mode }), // type is string
+		...( distribution_view && { distribution_view }), // type is string
+		...( product_id && { product_id }) // type is string
 	};
 
 	const queryString = buildQueryString( queryParams );
@@ -400,8 +406,6 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
 
 	return await makeRequest( path, 'GET' );
 };
-
-export const getMenu = () => makeRequest( 'burst/v1/menu/' + glue() + getNonce() );
 
 export const getReportPreview = ( blocks, frequency ) => {
 	const data = {
@@ -462,6 +466,20 @@ export const getLocalStorage = ( key, defaultValue ) => {
 export const setLocalStorage = ( key, value ) => {
 	if ( 'undefined' !== typeof Storage ) {
 		localStorage.setItem( 'burst_' + key, JSON.stringify( value ) );
+	}
+};
+
+/**
+ * Removes a value from local storage using a 'burst_' prefix.
+ *
+ * @param {string} key - The key to remove from local storage, without the
+ *                     'burst_' prefix.
+ *
+ * @return {void}
+ */
+export const removeLocalStorage = ( key ) => {
+	if ( 'undefined' !== typeof Storage ) {
+		localStorage.removeItem( 'burst_' + key );
 	}
 };
 

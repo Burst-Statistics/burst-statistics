@@ -19,7 +19,7 @@ export const FunnelStepStatistics: React.FC<{
 
 	return (
 		<div
-			className="grid gap-[1px] z-2 items-start"
+			className="grid gap-px z-2 items-start"
 			style={{ gridTemplateColumns: `repeat(${steps.length}, 1fr)` }}
 		>
 			{displaySteps.map( ( step, index ) => (
@@ -30,7 +30,7 @@ export const FunnelStepStatistics: React.FC<{
 								<div
 									className={`relative z-2 w-20 h-20 mx-auto rounded-full flex flex-col items-center justify-center gap-0.5 shadow-sm ${
 										step.isHighestDropOff ?
-											'bg-red-light' :
+											'bg-red-100' :
 											'bg-gray-200'
 									}`}
 								>
@@ -38,7 +38,7 @@ export const FunnelStepStatistics: React.FC<{
 										className={`text-xl font-bold text-center ${
 											step.isHighestDropOff ?
 												'text-red' :
-												'text-gray-700'
+												'text-text-gray'
 										}`}
 									>
 										{step.dropOffPercentage.toFixed(
@@ -49,14 +49,14 @@ export const FunnelStepStatistics: React.FC<{
 										)}
 										%
 									</span>
-									<span className="text-xxs uppercase tracking-wide text-gray-600">
+									<span className="text-xxs uppercase tracking-wide text-text-gray-light">
 										drop-off
 									</span>
 								</div>
 
 								{/* Secondary Metric: Lost sessions (smaller font) */}
 								{null !== step.dropOff && 0 <= step.dropOff && (
-									<span className="text-xs text-center text-gray mt-1">
+									<span className="text-xs text-center text-text-gray mt-1">
 										{sprintf(
 											__(
 												'%d lost visitors',
@@ -75,18 +75,18 @@ export const FunnelStepStatistics: React.FC<{
 			{lastStep && (
 				<div className="flex flex-col gap-2 px-2 py-3 self-end">
 					<div className="flex flex-col gap-1">
-						<div className="relative z-2 w-12 h-12 mx-auto rounded-full flex flex-col items-center justify-center gap-0.5 shadow-sm bg-green-light">
+						<div className="relative z-2 w-12 h-12 mx-auto rounded-full flex flex-col items-center justify-center gap-0.5 shadow-sm bg-green-300">
 							<Icon name="check" color="green" size={24} />
 						</div>
 
-						<p className="mt-2 text-xs text-center text-gray">
+						<p className="mt-2 text-xs text-center text-text-gray">
 							{sprintf(
 								__( '%d visitors purchased', 'burst-statistics' ),
 								lastStep.value
 							)}
 						</p>
 
-						<p className="text-xs text-center text-gray">
+						<p className="text-xs text-center text-text-gray">
 							{sprintf(
 								__( '%d%% conversion rate', 'burst-statistics' ),
 								lastStep.percentage

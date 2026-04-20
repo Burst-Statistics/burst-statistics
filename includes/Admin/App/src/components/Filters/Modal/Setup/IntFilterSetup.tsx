@@ -133,9 +133,9 @@ const IntFilterSetup: React.FC<IntFilterSetupProps> = ({
 	};
 
 	return (
-		<div className="space-y-4">
+		<div className="flex flex-col gap-4">
 			{/* Range Slider */}
-			<div className="space-y-4">
+			<div className="flex flex-col gap-4">
 				<RangeSliderInput
 					min={min}
 					max={max}
@@ -149,8 +149,8 @@ const IntFilterSetup: React.FC<IntFilterSetupProps> = ({
 				/>
 
 				{/* Number Inputs for Min/Max */}
-				<div className="space-y-2">
-					<label className="block text-sm font-medium text-gray-700">
+				<div className="flex flex-col gap-2">
+					<label className="block text-sm font-medium text-text-gray">
 						{__( 'Exact range values', 'burst-statistics' )}
 					</label>
 					<div className="flex space-x-2">
@@ -167,7 +167,7 @@ const IntFilterSetup: React.FC<IntFilterSetupProps> = ({
 								max={max}
 								className="w-full"
 							/>
-							<p className="text-xs text-gray-500 mt-1">
+							<p className="text-xs text-text-gray-light mt-1">
 								{__( 'Minimum value', 'burst-statistics' )}
 							</p>
 						</div>
@@ -184,19 +184,19 @@ const IntFilterSetup: React.FC<IntFilterSetupProps> = ({
 								max={max}
 								className="w-full"
 							/>
-							<p className="text-xs text-gray-500 mt-1">
+							<p className="text-xs text-text-gray-light mt-1">
 								{__( 'Maximum value', 'burst-statistics' )}
 							</p>
 						</div>
 						<button
 							type="button"
 							onClick={handleClear}
-							className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+							className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-primary focus:border-transparent"
 						>
 							{__( 'Clear', 'burst-statistics' )}
 						</button>
 					</div>
-					<p className="text-xs text-gray-500">
+					<p className="text-xs text-text-gray-light">
 						{__( 'Clear to remove this filter', 'burst-statistics' )}
 					</p>
 				</div>

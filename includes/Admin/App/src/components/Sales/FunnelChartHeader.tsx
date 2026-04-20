@@ -52,7 +52,7 @@ export const FunnelChartHeader: React.FC = () => {
 		<Popover.Root open={isOpen} onOpenChange={openOrClosePopover}>
 			<Popover.Trigger onClick={() => setIsOpen( ! isOpen )} asChild>
 				<div
-					className={`${isOpen ? 'bg-gray-300 shadow-lg' : 'bg-gray-100 shadow-sm'} border border-gray-400 focus:ring-blue-500 cursor-pointer rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 opacity-30 group-hover/root:opacity-100`}
+					className={`${isOpen ? 'bg-gray-300 shadow-lg' : 'bg-gray-100 shadow-sm'} border border-gray-400 focus:ring-blue-500 cursor-pointer rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2 opacity-30 group-hover/root:opacity-100`}
 				>
 					<Icon name="filter" />
 				</div>
@@ -67,14 +67,14 @@ export const FunnelChartHeader: React.FC = () => {
 				<Popover.Arrow className="fill-white drop-shadow-sm" />
 
 				<div className="border-b border-gray-100 px-4 py-3">
-					<h5 className="m-0 text-base font-semibold text-black">
+					<h5 className="m-0 text-base font-semibold text-text-black">
 						{__( 'Product pages', 'burst-statistics' )}
 					</h5>
 				</div>
 
 				<div className="max-h-[80vh] overflow-y-auto px-4 py-4">
 					<div className="mb-6">
-						<label className="mb-3 block text-sm font-medium text-gray">
+						<label className="mb-3 block text-sm font-medium text-text-gray">
 							{__( 'Select pages', 'burst-statistics' )}
 						</label>
 
@@ -126,7 +126,7 @@ export const FunnelChartHeader: React.FC = () => {
 				</div>
 
 				<div className="rounded-b-lg border-t border-gray-100 bg-gray-50 px-4 py-3">
-					<div className="space-y-2">
+					<div className="flex flex-col gap-2">
 						<div className="flex gap-2">
 							<ButtonInput
 								onClick={handleApply}

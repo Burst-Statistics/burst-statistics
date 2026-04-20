@@ -173,12 +173,11 @@ const Onboarding: FC = () => {
             <div id="onboarding-modal-root"></div>
 
             <Modal
-                logo={onboardingData.logo}
                 title={__('Onboarding', 'burst-statistics')}
                 content={
                     <div className="flex flex-col gap-2 my-6 mx-10">
                         <div className="flex flex-col gap-2 my-6 justify-center items-center">
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-text-gray-light">
                                 {sprintf(__('Step %1$d of %2$d', 'burst-statistics'), currentStepIndex + 1, steps.length)}
                             </div>
 
@@ -187,7 +186,7 @@ const Onboarding: FC = () => {
                                 totalSteps={steps.length}
                             />
 
-                            <div className="text-2xl font-bold text-gray-800 text-center mt-4">
+                            <div className="text-2xl font-bold text-text-gray text-center mt-4">
                                 {currentStep.title}
                             </div>
 
@@ -265,7 +264,7 @@ const Onboarding: FC = () => {
                             )}
                         </div>
                         {footerMessage && (
-                            <div className="text-sm text-gray-600 text-center">
+                            <div className="text-sm text-text-gray-light text-center">
                                 {footerMessage}
                             </div>
                         )}

@@ -79,7 +79,7 @@ const TimeAgo = memo( ({ timestamp }) => {
 		return () => clearInterval( interval );
 	}, [ timestamp ]);
 
-	return <span className="text-gray font-light break-all shrink-0">{timeText}</span>;
+	return <span className="text-text-gray font-light break-all shrink-0">{timeText}</span>;
 });
 
 TimeAgo.displayName = 'TimeAgo';
@@ -133,15 +133,15 @@ const getTooltipContent = ( uid, colorClass, entry, exit, live, checkout ) => {
 	}
 
 	return (
-		<div className="space-y-2 text-sm">
-			<div className="font-medium text-gray-700">{iconDescription}</div>
+		<div className="flex flex-col gap-2 text-sm">
+			<div className="font-medium text-text-gray">{iconDescription}</div>
 
-			<div className="space-y-1 text-gray-600">
+			<div className="flex flex-col gap-1 text-text-gray-light">
 				<div className="flex items-center gap-2">
-					<span className="font-medium text-gray-700">
+					<span className="font-medium text-text-gray">
 						{__( 'User ID:', 'burst-statistics' )}
 					</span>
-					<code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-800">
+					<code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-text-gray">
 						{uid}
 					</code>
 				</div>
@@ -277,14 +277,14 @@ const LiveTraffic = () => {
 							/>
 						</div>
 
-						<p className="font-semibold text-gray mb-2">
+						<p className="font-semibold text-text-gray mb-2">
 							{__(
 								'No live visitors right now',
 								'burst-statistics'
 							)}
 						</p>
 
-						<p className="text-gray">
+						<p className="text-text-gray">
 							{__(
 								'When someone visits your site, you’ll see them here instantly.',
 								'burst-statistics'
@@ -328,19 +328,19 @@ const LiveTraffic = () => {
 										checkout={traffic.checkout}
 									/>
 
-									<span className="font-medium text-black break-all shrink-0">
+									<span className="font-medium text-text-black break-all shrink-0">
 										{traffic.page_url}
 									</span>
 
 									{
 										utm_source && (
 											<>
-												<span className="text-gray font-light break-all shrink-0">
+												<span className="text-text-gray font-light break-all shrink-0">
 													-
 												</span>
 
 												<OverflowTooltip>
-													<span className="text-gray font-light break-all">
+													<span className="text-text-gray font-light break-all">
 														{ utm_source }
 													</span>
 												</OverflowTooltip>
@@ -348,7 +348,7 @@ const LiveTraffic = () => {
 										)
 									}
 
-									<span className="text-gray font-light break-all">
+									<span className="text-text-gray font-light break-all">
 										-
 									</span>
 

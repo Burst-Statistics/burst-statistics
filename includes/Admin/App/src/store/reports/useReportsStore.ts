@@ -3,7 +3,7 @@ import type { Report } from './types';
 import { useWizardStore } from './useWizardStore';
 import { doAction } from '@/utils/api';
 import { __ } from '@wordpress/i18n';
-import {toast} from 'react-toastify';
+import { toast } from '@/utils/toast';
 const DEFAULT_PERMISSIONS = {
 	can_change_date: false,
 	can_filter: false

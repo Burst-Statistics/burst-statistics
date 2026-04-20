@@ -11,18 +11,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Query_Stats_Metrics {
 
-	private int $capture_data_from;
-
-	private int $capture_data_to;
-
-	/**
-	 * Constructor
-	 */
-	public function __construct( int $capture_data_from, int $capture_data_to ) {
-		$this->capture_data_from = $capture_data_from;
-		$this->capture_data_to   = $capture_data_to;
-	}
-
 	/**
 	 * Collect query performance statistics
 	 */
@@ -37,20 +25,16 @@ class Query_Stats_Metrics {
 		global $wpdb;
 
 		$results = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT 
+			"SELECT 
                 sql_query,
                 avg_execution_time,
                 max_execution_time,
                 min_execution_time,
-                execution_count
-            FROM {$wpdb->prefix}burst_query_stats
-            WHERE last_updated >= %d
-            AND last_updated <= %d
-            ORDER BY avg_execution_time DESC",
-				$this->capture_data_from,
-				$this->capture_data_to
-			),
+                execution_count,
+                date_range_days
+				FROM {$wpdb->prefix}burst_query_stats
+            	ORDER BY avg_execution_time DESC
+            	LIMIT 10",
 			ARRAY_A
 		);
 
@@ -66,6 +50,7 @@ class Query_Stats_Metrics {
 					'max_execution_time' => (float) $row['max_execution_time'],
 					'min_execution_time' => (float) $row['min_execution_time'],
 					'execution_count'    => (int) $row['execution_count'],
+					'date_range_days'    => isset( $row['date_range_days'] ) ? (int) $row['date_range_days'] : 0,
 				];
 			},
 			$results

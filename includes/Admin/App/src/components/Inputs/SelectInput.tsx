@@ -66,7 +66,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
 					ref={ref}
 					disabled={rootDisabled}
 					className={clsx(
-						'inline-flex items-center justify-center gap-1 rounded bg-white text-base leading-none outline outline-gray-400 px-2 py-2 focus:shadow-[0_0_0_2px]',
+						'inline-flex items-center justify-center gap-1 rounded bg-white text-base leading-none outline-solid outline-gray-400 px-2 py-2 focus:shadow-[0_0_0_2px]',
 						rootDisabled ?
 							'opacity-50 cursor-not-allowed bg-gray-100' :
 							'hover:bg-gray-100 cursor-pointer'
@@ -86,7 +86,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
 
 				<Select.Portal container={document.getElementById( 'modal-root' )}>
 					<Select.Content
-						className="bg-gray-100 text-black border border-gray-400 rounded-md shadow-lg ring-1 ring-black/5 z-[100] shadow-gray-400/50"
+						className="bg-gray-100 text-text-black border border-gray-400 rounded-md shadow-lg ring-1 ring-black/5 z-100 shadow-gray-400/50"
 						position="item-aligned"
 					>
 						<Select.ScrollUpButton className="">
@@ -150,7 +150,7 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
 					'cursor-default px-2 py-2 text-base select-none flex items-center gap-1 flex-row overflow-hidden',
 					disabled ?
 						'opacity-50 cursor-not-allowed' :
-						'hover:bg-gray-300 hover:text-black focus:bg-gray-300',
+						'hover:bg-gray-300 hover:text-text-black focus:bg-gray-300',
 					'transition-all duration-200',
 					className
 				)}

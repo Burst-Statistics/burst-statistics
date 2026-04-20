@@ -97,6 +97,46 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 		 * }
 		 */
 		public function get_goals_data( array $args = [] ): array {
+			if ( ! self::database_upgrade_completed() ) {
+				return [
+					'today'                => [
+						'value'   => 0,
+						'tooltip' => '',
+					],
+					'total'                => [
+						'value'   => 0,
+						'tooltip' => '',
+					],
+					'topPerformer'         => [
+						'title'   => '',
+						'value'   => 0,
+						'tooltip' => '',
+					],
+					'conversionMetric'     => [
+						'title'   => '',
+						'value'   => 0,
+						'tooltip' => '',
+						'icon'    => '',
+					],
+					'conversionPercentage' => [
+						'title'   => '',
+						'value'   => 0,
+						'tooltip' => '',
+					],
+					'bestDevice'           => [
+						'title'   => '',
+						'value'   => 0,
+						'tooltip' => '',
+						'icon'    => null,
+					],
+					'dateCreated'          => 0,
+					'dateStart'            => 0,
+					'dateEnd'              => 0,
+					'status'               => '',
+					'goalId'               => 0,
+				];
+			}
+
 			global $wpdb;
 
 			// Define default arguments.
@@ -308,7 +348,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 			];
 
 			foreach ( $indexes as $index ) {
-				$this->add_index( $wpdb->prefix . 'burst_goal_statistics', $index );
+				$this->add_index( 'burst_goal_statistics', $index );
 			}
 		}
 	}

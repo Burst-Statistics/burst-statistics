@@ -16,7 +16,7 @@ export default function ThemeToggleButton() {
 			role="switch"
 			aria-checked={isDarkTheme}
 			aria-label={__( 'Toggle dark theme', 'burst-statistics' )}
-			className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
+			className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors duration-200 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
 				isDarkTheme ?
 					'bg-primary border-primary' :
 					'bg-gray-400 border-gray-400 dark:bg-gray-600 dark:border-gray-600'
@@ -35,7 +35,7 @@ export default function ThemeToggleButton() {
 				<Icon
 					name={isDarkTheme ? 'moon' : 'sun'}
 					size={12}
-					className={isDarkTheme ? 'text-gray-700' : 'text-yellow-500'}
+					className={isDarkTheme ? 'text-text-gray' : 'text-yellow-500'}
 				/>
 			</span>
 		</button>

@@ -115,10 +115,10 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 							<label
 								htmlFor={optionId}
 								className={clsx(
-									'flex gap-2.5 m-[1px] items-start p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer',
+									'flex gap-2.5 m-px items-start p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer',
 									'focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 items-center',
 									{
-										'border-primary bg-primary-light':
+										'border-primary bg-primary-100':
 											isSelected,
 										'border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50':
 											! isSelected,
@@ -128,7 +128,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 								)}
 							>
 								{/* Custom styled radio button */}
-								<div className="flex-shrink-0">
+								<div className="shrink-0">
 									<div
 										className={clsx(
 											'w-4 h-4 rounded-full border-2 transition-all duration-200 flex items-center justify-center',
@@ -154,13 +154,13 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 												<Icon
 													name={option.icon}
 													size={18}
-													className="flex-shrink-0"
+													className="shrink-0"
 												/>
 											)
 										}
 										<h5
 											className={clsx(
-												'text-base font-medium transition-colors text-gray-900'
+												'text-base font-medium transition-colors text-text-gray'
 											)}
 										>
 											{option.label}
@@ -180,13 +180,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 												<div className="w-px bg-gray-400 mx-3 h-5"></div>
 												<p
 													className={clsx(
-														'text-sm transition-colors truncate',
-														{
-															'text-gray-600':
-																isSelected,
-															'text-gray-500':
-																! isSelected
-														}
+														'text-sm transition-colors truncate text-text-gray-light'
 													)}
 												>
 													{option.description}

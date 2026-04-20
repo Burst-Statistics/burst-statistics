@@ -6,15 +6,18 @@ import {
 	useMemo,
 	useState
 } from 'react';
-import { getLocalStorage, setLocalStorage } from '@/utils/api';
+import { getLocalStorage, removeLocalStorage, setLocalStorage } from '@/utils/api';
 
 type ThemeMode = 'light' | 'dark';
+type ThemePreference = ThemeMode | 'system';
 
 interface ThemeContextValue {
 	theme: ThemeMode;
+	themePreference: ThemePreference;
 	isDarkTheme: boolean;
 	isHostManagedContext: boolean;
 	setTheme: ( theme: ThemeMode ) => void;
+	setThemePreference: ( preference: ThemePreference ) => void;
 	toggleTheme: () => void;
 }
 
@@ -140,6 +143,7 @@ const applyThemeToDom = ( theme: ThemeMode ) => {
 
 const getInitialTheme = (): {
 	theme: ThemeMode;
+	themePreference: ThemePreference;
 	hasStoredPreference: boolean;
 	isHostManagedContext: boolean;
 } => {
@@ -149,14 +153,17 @@ const getInitialTheme = (): {
 	if ( ! isHostManagedContext && storedTheme ) {
 		return {
 			theme: storedTheme,
+			themePreference: storedTheme,
 			hasStoredPreference: true,
 			isHostManagedContext
 		};
 	}
 
 	if ( ! isHostManagedContext ) {
+		const systemTheme = getSystemThemePreference();
 		return {
-			theme: getSystemThemePreference(),
+			theme: systemTheme,
+			themePreference: 'system',
 			hasStoredPreference: false,
 			isHostManagedContext
 		};
@@ -164,13 +171,14 @@ const getInitialTheme = (): {
 
 	return {
 		theme: getBodyTheme(),
+		themePreference: 'system',
 		hasStoredPreference: false,
 		isHostManagedContext
 	};
 };
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-	const [ { theme, hasStoredPreference, isHostManagedContext }, setThemeState ] =
+	const [ { theme, themePreference, hasStoredPreference, isHostManagedContext }, setThemeState ] =
 		useState( getInitialTheme );
 
 	useEffect( () => {
@@ -200,6 +208,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
 					return {
 						theme: bodyTheme,
+						themePreference: 'system',
 						hasStoredPreference: false,
 						isHostManagedContext: true
 					};
@@ -221,6 +230,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 					if ( storedTheme ) {
 						return {
 							theme: storedTheme,
+							themePreference: storedTheme,
 							hasStoredPreference: true,
 							isHostManagedContext: false
 						};
@@ -229,6 +239,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 					if ( current.theme === bodyTheme ) {
 						return {
 							...current,
+							themePreference: 'system',
 							hasStoredPreference: false,
 							isHostManagedContext: false
 						};
@@ -236,6 +247,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
 					return {
 						theme: getSystemThemePreference(),
+						themePreference: 'system',
 						hasStoredPreference: false,
 						isHostManagedContext: false
 					};
@@ -247,6 +259,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
 				return {
 					...current,
+					themePreference: current.hasStoredPreference ? current.theme : 'system',
 					theme: bodyTheme
 				};
 			});
@@ -285,6 +298,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
 				return {
 					...current,
+					themePreference: 'system',
 					theme: preferredTheme
 				};
 			});
@@ -305,23 +319,41 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 		};
 	}, [ hasStoredPreference, isHostManagedContext ]);
 
-	const setTheme = useCallback( ( nextTheme: ThemeMode ) => {
+	const setThemePreference = useCallback( ( preference: ThemePreference ) => {
 		if ( getIsHostManagedContext() ) {
 			setThemeState({
 				theme: getBodyTheme(),
+				themePreference: 'system',
 				hasStoredPreference: false,
 				isHostManagedContext: true
 			});
 			return;
 		}
 
-		setLocalStorage( THEME_STORAGE_KEY, nextTheme );
+		if ( 'system' === preference ) {
+			removeLocalStorage( THEME_STORAGE_KEY );
+			setThemeState({
+				theme: getSystemThemePreference(),
+				themePreference: 'system',
+				hasStoredPreference: false,
+				isHostManagedContext: false
+			});
+			return;
+		}
+
+		setLocalStorage( THEME_STORAGE_KEY, preference );
 		setThemeState({
-			theme: nextTheme,
+			theme: preference,
+			themePreference: preference,
 			hasStoredPreference: true,
 			isHostManagedContext: false
 		});
 	}, []);
+
+	const setTheme = useCallback(
+		( nextTheme: ThemeMode ) => setThemePreference( nextTheme ),
+		[ setThemePreference ]
+	);
 
 	const toggleTheme = useCallback( () => {
 		setTheme( 'dark' === theme ? 'light' : 'dark' );
@@ -330,12 +362,21 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 	const value = useMemo(
 		() => ({
 			theme,
+			themePreference,
 			isDarkTheme: 'dark' === theme,
 			isHostManagedContext,
 			setTheme,
+			setThemePreference,
 			toggleTheme
 		}),
-		[ isHostManagedContext, setTheme, theme, toggleTheme ]
+		[
+			isHostManagedContext,
+			setTheme,
+			setThemePreference,
+			theme,
+			themePreference,
+			toggleTheme
+		]
 	);
 
 	return (

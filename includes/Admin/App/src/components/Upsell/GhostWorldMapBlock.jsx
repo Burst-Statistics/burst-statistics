@@ -14,7 +14,7 @@ const GhostWorldMapBlock = () => {
 			<ErrorBoundary>
 				<BlockHeading
 					className="border-b border-gray-200"
-					title={__( 'World View', 'burst-statistics' )}
+					title={__( 'World view', 'burst-statistics' )}
 
 					// controls={<WorldMapHeader />}
 				/>

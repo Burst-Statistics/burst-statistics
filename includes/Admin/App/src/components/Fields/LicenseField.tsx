@@ -89,7 +89,7 @@ const TIER_DISPLAY_MAP: Record<string, string> = {
 
 const VARIANT_STYLES = {
 	urgent: {
-		container: 'bg-red-light',
+		container: 'bg-red-100',
 		button: 'primary' as const
 	},
 	warning: {
@@ -115,7 +115,7 @@ const LicenseActivationForm: React.FC<LicenseActivationFormProps> = ({
 }) => {
 	return (
 		<div className="w-full p-6 border-b border-gray-300">
-			<h2 className="text-xl font-semibold text-black mb-4">
+			<h2 className="text-xl font-semibold text-text-black mb-4">
 				{__( 'Activate Burst Pro', 'burst-statistics' )}
 			</h2>
 
@@ -146,13 +146,13 @@ const LicenseActivationForm: React.FC<LicenseActivationFormProps> = ({
 					{isLicenseMutationPending && <Icon name="loading" size={20} />}
 				</div>
 
-				<p className="text-sm text-gray">
+				<p className="text-sm text-text-gray">
 					{__(
 						'Activating your license gives you automatic updates and support.',
 						'burst-statistics'
 					)}{' '}
 					<Hyperlink
-						className="underline text-sm text-gray"
+						className="underline text-sm text-text-gray"
 						url={burst_get_website_url( 'account', {
 							utm_source: 'license-activation',
 							utm_content: 'find-license-key'
@@ -165,7 +165,7 @@ const LicenseActivationForm: React.FC<LicenseActivationFormProps> = ({
 						)}
 					/>{' '}
 					<Hyperlink
-						className="underline text-sm text-gray"
+						className="underline text-sm text-text-gray"
 						url={burst_get_website_url( 'how-to-install-burst-pro', {
 							utm_source: 'license-activation',
 							utm_content: 'installation-guide'
@@ -178,7 +178,7 @@ const LicenseActivationForm: React.FC<LicenseActivationFormProps> = ({
 						)}
 					/>{' '}
 					<Hyperlink
-						className="underline text-sm text-gray"
+						className="underline text-sm text-text-gray"
 						url={burst_get_website_url( 'support', {
 							utm_source: 'license-activation',
 							utm_content: 'support-ticket'
@@ -284,7 +284,7 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 		if ( isLifetime ) {
 			return {
 				text: __( 'Never', 'burst-statistics' ),
-				color: 'text-black'
+				color: 'text-text-black'
 			};
 		}
 
@@ -303,7 +303,7 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 					__( 'Trial - %d days remaining', 'burst-statistics' ),
 					trialRemainingDays
 				),
-				color: 'text-green-dark'
+				color: 'text-green-700'
 			};
 		}
 
@@ -316,7 +316,7 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 						__( 'Expires on %s', 'burst-statistics' ),
 					expiresDate
 				),
-				color: 'text-black'
+				color: 'text-text-black'
 			};
 		}
 
@@ -330,7 +330,7 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 						__( 'Auto-renews on %s', 'burst-statistics' ),
 						expiresDate
 					),
-					color: 'text-black'
+					color: 'text-text-black'
 				};
 			case 'cancelled':
 				return {
@@ -355,7 +355,7 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 							__( 'Expires on %s', 'burst-statistics' ),
 						expiresDate
 					),
-					color: 'text-black'
+					color: 'text-text-black'
 				};
 		}
 	};
@@ -443,7 +443,7 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 			{/* Card Header - Plan Name & Status. */}
 			<div className="w-full p-6 border-b border-gray-300">
 				<div className="flex items-center gap-3 mb-6">
-					<h2 className="text-xl font-semibold text-black">
+					<h2 className="text-xl font-semibold text-text-black">
 						{tier ?
 							`Burst Pro — ${getTierDisplayName( tier )}` :
 							'Burst Pro'
@@ -453,8 +453,8 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 						className={clsx(
 							'inline-flex items-center px-3 py-1 text-sm font-medium rounded-full',
 							isActive ?
-								'text-green-dark bg-green-light' :
-								'text-red bg-red-light'
+								'text-green-700 bg-green-300' :
+								'text-red bg-red-100'
 						)}
 					>
 						{isActive ?
@@ -468,23 +468,23 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 				<div className="flex flex-col gap-3 text-sm mb-6">
 					{/* License Status - Active on THIS website. */}
 					<div className="flex items-center justify-between">
-						<span className="font-medium text-gray">
+						<span className="font-medium text-text-gray">
 							{__( 'License status', 'burst-statistics' )}
 						</span>
-						<span className="text-black">{getLicenseStatusDisplay()}</span>
+						<span className="text-text-black">{getLicenseStatusDisplay()}</span>
 					</div>
 
 					{/* Site Activations. */}
 					<div className="flex items-center justify-between">
-						<span className="font-medium text-gray">
+						<span className="font-medium text-text-gray">
 							{__( 'Site activations', 'burst-statistics' )}
 						</span>
-						<span className="text-black">{getActivationDisplay()}</span>
+						<span className="text-text-black">{getActivationDisplay()}</span>
 					</div>
 
 					{/* Subscription Status - Auto-renewal status. */}
 					<div className="flex items-center justify-between">
-						<span className="font-medium text-gray">
+						<span className="font-medium text-text-gray">
 							{__( 'Subscription status', 'burst-statistics' )}
 						</span>
 						<span className={subscriptionDisplay.color}>
@@ -514,7 +514,7 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 							type="button"
 							onClick={onDeactivate}
 							disabled={isLicenseMutationPending}
-							className="text-sm text-gray hover:text-red underline focus:outline-none focus:ring-2 focus:ring-red focus:ring-offset-2 rounded transition-colors"
+							className="text-sm text-text-gray hover:text-red underline focus:outline-hidden focus:ring-2 focus:ring-red focus:ring-offset-2 rounded transition-colors"
 						>
 							{__( 'Deactivate license on this site', 'burst-statistics' )}
 						</button>
@@ -548,7 +548,7 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 			{/* Available Upgrades Section - Hide if there's an urgent action required. Only shown when active. */}
 			{isActive && 0 < upgrades.length && ! contextualAction && (
 				<div className="w-full p-6 bg-gray-50 border-t border-gray-200">
-					<h3 className="text-md font-semibold text-gray-900 mb-4">
+					<h3 className="text-md font-semibold text-text-gray mb-4">
 						{__( 'Available upgrades', 'burst-statistics' )}
 					</h3>
 					<div className="flex flex-col gap-3">
@@ -571,22 +571,22 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 									className={clsx(
 										'flex items-center justify-between p-4 bg-white border rounded-lg transition-colors',
 										isRecommended ?
-											'border-green-light hover:border-green' :
+											'border-green-300 hover:border-green' :
 											'border-gray-200 hover:border-gray-300'
 									)}
 								>
 									<div className="flex-1">
 										<div className="flex items-center gap-2 mb-1">
-											<h4 className="font-medium text-black">
+											<h4 className="font-medium text-text-black">
 												{upgrade.tier}
 											</h4>
 											{isRecommended && (
-												<span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-green-dark bg-green-light rounded-full">
+												<span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-green-700 bg-green-300 rounded-full">
 													{__( 'Recommended for you', 'burst-statistics' )}
 												</span>
 											)}
 										</div>
-										<p className="text-sm text-gray">
+										<p className="text-sm text-text-gray">
 											{'unlimited' === upgrade.sites ?
 												__( 'Unlimited sites', 'burst-statistics' ) :
 												sprintf(

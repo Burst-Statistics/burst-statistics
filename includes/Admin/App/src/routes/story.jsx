@@ -27,7 +27,7 @@ function Story() {
     const getStartDate = useWizardStore( ( state ) => state.getStartDate );
     const getEndDate = useWizardStore( ( state ) => state.getEndDate );
     const reportBlocks = useWizardStore( ( state ) => state.wizard.content );
-
+    const [ errorMessage, setErrorMessage ] = React.useState( '' );
     const setReports = useReportsStore( ( state ) => state.setReports );
     const loadReportIntoWizard = useReportsStore( ( state ) => state.loadReportIntoWizard );
     const queryClient = useQueryClient();
@@ -50,42 +50,48 @@ function Story() {
     useEffect( () => {
         if ( reportData?.report ) {
 
-            // Pre-populate the query cache with logo data resolved server-side.
-            // On the story/frontend page, settings fields are empty for the burst_viewer
-            // user (capability check in PHP), so getValue('logo_attachment_id') returns
-            // undefined. We use a fixed sentinel ID as the linking key between
-            // settings_fields and the attachment cache, so no real attachment ID is needed.
-            if ( reportData.logo_url ) {
-                const STORY_LOGO_SENTINEL = 'story-logo';
+            // if there's no id, there is a permissions issue, or it is not enabled.
+            if ( reportData?.report?.id ) {
 
-                // Make logo_attachment_id available to useSettingsData / getValue().
-                queryClient.setQueryData(
-                    [ 'settings_fields' ],
-                    ( oldData ) => {
-                        const currentFields = Array.isArray( oldData ) ? oldData : [];
-                        const alreadyPresent = currentFields.some( ( f ) => 'logo_attachment_id' === f.id );
-                        if ( alreadyPresent ) {
-                            return currentFields;
+                // Pre-populate the query cache with logo data resolved server-side.
+                // On the story/frontend page, settings fields are empty for the burst_viewer
+                // user (capability check in PHP), so getValue('logo_attachment_id') returns
+                // undefined. We use a fixed sentinel ID as the linking key between
+                // settings_fields and the attachment cache, so no real attachment ID is needed.
+                if ( reportData.logo_url ) {
+                    const STORY_LOGO_SENTINEL = 'story-logo';
+
+                    // Make logo_attachment_id available to useSettingsData / getValue().
+                    queryClient.setQueryData(
+                        [ 'settings_fields' ],
+                        ( oldData ) => {
+                            const currentFields = Array.isArray( oldData ) ? oldData : [];
+                            const alreadyPresent = currentFields.some( ( f ) => 'logo_attachment_id' === f.id );
+                            if ( alreadyPresent ) {
+                                return currentFields;
+                            }
+                            return [ ...currentFields, {id: 'logo_attachment_id', value: STORY_LOGO_SENTINEL} ];
                         }
-                        return [ ...currentFields, { id: 'logo_attachment_id', value: STORY_LOGO_SENTINEL } ];
-                    }
-                );
+                    );
 
-                // Pre-populate the resolved attachment URL so useAttachmentUrl skips wp.media.
-                queryClient.setQueryData(
-                    [ 'attachment', STORY_LOGO_SENTINEL ],
-                    {
-                        attachmentUrl: reportData.logo_url,
-                        attachment: null
-                    }
-                );
+                    // Pre-populate the resolved attachment URL so useAttachmentUrl skips wp.media.
+                    queryClient.setQueryData(
+                        [ 'attachment', STORY_LOGO_SENTINEL ],
+                        {
+                            attachmentUrl: reportData.logo_url,
+                            attachment: null
+                        }
+                    );
+                }
+
+                // Store the report in the reports array
+                setReports([ reportData.report ]);
+
+                // Load it into the wizard
+                loadReportIntoWizard( reportData.report.id, false );
+            } else {
+                setErrorMessage( 'The report could not load. Check if the report is enabled.' );
             }
-
-            // Store the report in the reports array
-            setReports([ reportData.report ]);
-
-            // Load it into the wizard
-            loadReportIntoWizard( reportData.report.id, false );
             setIsWizardLoaded( true );
         }
     }, [ reportData?.report, setReports, loadReportIntoWizard, queryClient, reportData?.logo_url ]);
@@ -109,6 +115,16 @@ function Story() {
         );
     }
 
+    if ( 0 < errorMessage.length ) {
+        return (
+            <div className="col-span-12 flex justify-center items-center p-8">
+                <div className="text-red-500 text-center">
+                    {errorMessage}
+                </div>
+            </div>
+        );
+    }
+
     const handlePrintPdf = () => {
         window.print();
     };
@@ -121,7 +137,7 @@ function Story() {
     return (
         <div className="col-span-12 flex flex-col">
             {isPdfMode && <div className="flex justify-end">
-                <button onClick={handlePrintPdf} className=" print:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900 font-medium rounded-lg shadow-sm hover:shadow transition-all duration-200">
+                <button onClick={handlePrintPdf} className=" print:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:border-gray-400 text-text-gray font-medium rounded-lg shadow-sm hover:shadow transition-all duration-200">
                     <Icon name="download" size={18} />
                     <span>{__( 'Download PDF', 'burst-statistics' )}</span>
                 </button>

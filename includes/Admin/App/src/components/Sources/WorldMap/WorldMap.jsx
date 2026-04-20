@@ -304,7 +304,7 @@ const WorldMap = ( props ) => {
 
 	if ( isGeoSimpleLoading ) {
 		return (
-			<div className="p-4 text-gray">
+			<div className="p-4 text-text-gray">
 				{__( 'Loading map data…', 'burst-statistics' )}
 			</div>
 		);
@@ -312,7 +312,7 @@ const WorldMap = ( props ) => {
 
 	if ( ! selectedMetric ) {
 		return (
-			<div className="p-4 text-gray">
+			<div className="p-4 text-text-gray">
 				{__( 'No metrics available for display.', 'burst-statistics' )}
 			</div>
 		);
@@ -370,7 +370,7 @@ const WorldMap = ( props ) => {
 					margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
 					colors={colorScheme}
 					domain={colorDomain}
-					unknownColor="#dee2e6"
+					unknownColor="var(--color-gray-300)"
 					label={labelAccessor}
 					valueFormat={valueFormatter}
 					projectionType="naturalEarth1"
@@ -380,9 +380,9 @@ const WorldMap = ( props ) => {
 					projectionTranslation={projection.translation}
 					projectionRotation={projection.rotation}
 					enableGraticule={true}
-					graticuleLineColor="#dddddd"
+					graticuleLineColor="var(--color-gray-300)"
 					borderWidth={0.5}
-					borderColor="#adb5bd"
+					borderColor="var(--color-gray-500)"
 					metric={selectedMetric}
 					metricOptions={metricOptions}
 					patternsEnabled={patternsEnabled}
@@ -401,14 +401,14 @@ const WorldMap = ( props ) => {
 							itemWidth: 94,
 							itemHeight: 18,
 							itemDirection: 'left-to-right',
-							itemTextColor: '#444444',
+							itemTextColor: 'var(--color-text-gray)',
 							itemOpacity: 0.85,
 							symbolSize: 18,
 							effects: [
 								{
 									on: 'hover',
 									style: {
-										itemTextColor: '#000000',
+										itemTextColor: 'var(--color-text-black)',
 										itemOpacity: 1
 									}
 								}

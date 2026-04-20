@@ -54,7 +54,7 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
 				<Tooltip.Content
 					side={side}
 					sideOffset={5}
-					className="z-[99999] max-w-xs bg-gray-200 text-gray border border-gray-300 px-2 py-1.5 text-base rounded shadow-md
+					className="z-99999 max-w-xs bg-gray-200 text-text-gray border border-gray-300 px-2 py-1.5 text-base rounded shadow-md
             animate-in fade-in-50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0
             data-[state=delayed-open]:data-[side=top]:slide-in-from-bottom-2
             data-[state=delayed-open]:data-[side=bottom]:slide-in-from-top-2

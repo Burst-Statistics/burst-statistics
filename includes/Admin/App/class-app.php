@@ -13,6 +13,7 @@ use Burst\Frontend\Goals\Goal;
 use Burst\Frontend\Goals\Goals;
 use Burst\TeamUpdraft\Installer\Installer;
 use Burst\Traits\Admin_Helper;
+use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
 use Burst\Traits\Save;
@@ -30,6 +31,7 @@ require_once BURST_PATH . 'includes/Admin/App/media/media-override.php';
 class App {
 	use Helper;
 	use Admin_Helper;
+	use Database_Helper;
 	use Save;
 	use Sanitize;
 
@@ -64,8 +66,6 @@ class App {
 
 		$onboarding = new Burst_Onboarding();
 		$onboarding->init();
-
-		add_action( 'admin_init', [ $this, 'maybe_redirect_to_settings_page' ] );
 	}
 
 	/**
@@ -76,24 +76,6 @@ class App {
 		$current_path = BURST_PATH;
 		if ( $stored_path !== $current_path ) {
 			update_option( 'burst_plugin_path', $current_path, true );
-		}
-	}
-
-	/**
-	 * After activation, redirect the user to the settings page.
-	 */
-	public function maybe_redirect_to_settings_page(): void {
-		// not processing form data, only a conditional redirect, which is available only temporarily.
-		// phpcs:ignore
-		if ( get_transient( 'burst_redirect_to_settings_page' ) && ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'burst' ) ) {
-			delete_transient( 'burst_redirect_to_settings_page' );
-			// we don't redirect when installed through the onboarding of another plugin.
-			if ( get_site_option( 'teamupdraft_installation_source_burst-statistics' ) ) {
-				return;
-			}
-
-			wp_safe_redirect( $this->admin_url( 'burst' ) );
-			exit;
 		}
 	}
 
@@ -364,6 +346,7 @@ class App {
 				'week-to-date',
 				'month-to-date',
 				'year-to-date',
+				'all-time',
 			]
 		);
 	}
@@ -537,7 +520,7 @@ class App {
 		?>
 		<style id="burst-skeleton-styles">
 			/* Hide notices in the Burst menu */
-			.toplevel_page_burst .notice {
+			.toplevel_page_burst .notice, .toplevel_page_burst .error {
 				display: none;
 			}
 
@@ -545,195 +528,22 @@ class App {
 			#burst-statistics {
 				/* Add any base styles for the container */
 			}
-
-			/* Background colors */
-			#burst-statistics .bg-white {
-				--tw-bg-opacity: 1;
-				background-color: rgb(255 255 255 / var(--tw-bg-opacity));
-			}
-
-			#burst-statistics .bg-gray-200 {
-				--tw-bg-opacity: 1;
-				background-color: rgb(229 231 235 / var(--tw-bg-opacity));
-			}
-
-			/* Layout */
-			#burst-statistics .mx-auto {
-				margin-left: auto;
-				margin-right: auto;
-			}
-
-			#burst-statistics .flex {
-				display: flex;
-			}
-
-			#burst-statistics .grid {
-				display: grid;
-			}
-
-			#burst-statistics .grid-cols-12 {
-				grid-template-columns: repeat(12, minmax(0, 1fr));
-			}
-
-			#burst-statistics .grid-rows-5 {
-				grid-template-rows: repeat(5, minmax(0, 1fr));
-			}
-
-			#burst-statistics .col-span-6 {
-				grid-column: span 6 / span 6;
-			}
-
-			#burst-statistics .col-span-3 {
-				grid-column: span 3 / span 3;
-			}
-
-			#burst-statistics .row-span-2 {
-				grid-row: span 2 / span 2;
-			}
-
-			#burst-statistics .items-center {
-				align-items: center;
-			}
-
-			/* Spacing */
-			#burst-statistics .gap-5 {
-				gap: 1.25rem;
-			}
-
-			#burst-statistics .px-5 {
-				padding-left: 1.25rem;
-				padding-right: 1.25rem;
-			}
-
-			#burst-statistics .py-2 {
-				padding-top: 0.5rem;
-				padding-bottom: 0.5rem;
-			}
-
-			#burst-statistics .py-6 {
-				padding-top: 1.5rem;
-				padding-bottom: 1.5rem;
-			}
-
-			#burst-statistics .p-5 {
-				padding: 1.25rem;
-			}
-
-			#burst-statistics .m-5 {
-				margin: 1.25rem;
-			}
-
-			#burst-statistics .mb-5 {
-				margin-bottom: 1.25rem;
-			}
-
-			#burst-statistics .ml-2 {
-				margin-left: 0.5rem;
-			}
-
-			/* Sizing */
-			#burst-statistics .h-6 {
-				height: 1.5rem;
-			}
-
-			#burst-statistics .h-11 {
-				height: 2.75rem;
-			}
-
-			#burst-statistics .w-auto {
-				width: auto;
-			}
-
-			#burst-statistics .w-1\/2 {
-				width: 50%;
-			}
-
-			#burst-statistics .w-4\/5 {
-				width: 80%;
-			}
-
-			#burst-statistics .w-5\/6 {
-				width: 83.333333%;
-			}
-
-			#burst-statistics .w-full {
-				width: 100%;
-			}
-
-			#burst-statistics .min-h-full {
-				min-height: 100%;
-			}
-
-			#burst-statistics .max-w-screen-2xl {
-				max-width: 1600px;
-			}
-
-			/* Effects */
-			#burst-statistics .shadow-md {
-				--tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-				--tw-shadow-colored: 0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);
-				box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-			}
-
-			#burst-statistics .rounded-md {
-				border-radius: 0.375rem;
-			}
-
-			#burst-statistics .rounded-xl {
-				border-radius: 0.75rem;
-			}
-
-			#burst-statistics .animate-pulse {
-				animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-			}
-
-			@keyframes pulse {
-				0%, 100% {
-					opacity: 1;
-				}
-				50% {
-					opacity: .5;
-				}
-			}
-
-			#burst-statistics .blur-sm {
-				--tw-blur: blur(4px);
-				filter: var(--tw-blur);
-			}
-
-			/* Borders */
-			#burst-statistics .border-b-4 {
-				border-bottom-width: 4px;
-			}
-
-			#burst-statistics .border-transparent {
-				border-color: transparent;
-			}
-
-			#burst-statistics .overflow-x-hidden {
-				overflow-x: hidden;
-			}
-
-			@media not all and (min-width: 640px) {
-				#burst-statistics .max-sm\:w-32 {
-					width: 8rem;
-				}
-			}
-
-			@media not all and (min-width: 640px) {
-				#burst-statistics .max-sm\:col-span-12 {
-					grid-column: span 12 / span 12;
-				}
-
-				#burst-statistics .max-sm\:row-span-1 {
-					grid-row: span 1 / span 1;
-				}
-			}
 		</style>
 		<div id="burst-statistics" class="burst">
+			<script>
+				// Apply dark class from stored preference or system preference to prevent white flash
+				(function() {
+					var stored = localStorage.getItem( 'burst_theme_preference' );
+					var prefersDark = window.matchMedia && window.matchMedia( '(prefers-color-scheme: dark)' ).matches;
+					var isDark = stored === 'dark' || ( !stored && prefersDark );
+					if ( isDark ) {
+						document.getElementById( 'burst-statistics' ).classList.add( 'dark' );
+					}
+				})();
+			</script>
 			<div class="bg-white">
-				<div class="mx-auto flex max-w-screen-2xl items-center gap-5 px-5">
-					<div class="max-xxs:w-16 max-xxs:h-auto flex-shrink-0">
+				<div class="mx-auto flex max-w-(--breakpoint-2xl) items-center gap-5 px-5">
+					<div class="max-xxs:w-16 max-xxs:h-auto shrink-0">
 						<img width="100" src="<?php echo esc_url_raw( BURST_URL ) . 'assets/img/burst-logo.svg'; ?>" alt="Logo Burst" class="h-11 w-auto px-0 py-2">
 					</div>
 					<div class="flex items-center blur-sm animate-pulse overflow-x-hidden">
@@ -745,7 +555,7 @@ class App {
 			</div>
 
 			<!-- Content Grid -->
-			<div class="mx-auto flex max-w-screen-2xl">
+			<div class="mx-auto flex max-w-(--breakpoint-2xl)">
 				<div class="m-5 grid min-h-full w-full grid-cols-12 grid-rows-5 gap-5">
 					<!-- Left Block -->
 					<div class="col-span-6 row-span-2 bg-white shadow-md rounded-xl p-5 max-sm:col-span-12 max-sm:row-span-1">
@@ -785,6 +595,40 @@ class App {
 				</div>
 			</div>
 		</div>
+		<div id="burst-adblocker-modal" style="display:none;">
+			<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100000;display:flex;align-items:center;justify-content:center;">
+				<div style="background:#fff;border-radius:12px;padding:32px;max-width:520px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+					<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+						<h2 style="margin:0;font-size:18px;font-weight:600;color:#111827;"><?php esc_html_e( 'Burst Statistics could not load', 'burst-statistics' ); ?></h2>
+					</div>
+					<p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#4b5563;">
+						<?php esc_html_e( 'It looks like an ad blocker or browser extension is preventing Burst Statistics from loading. Burst Statistics does not display ads, but some ad blockers may block analytics tools.', 'burst-statistics' ); ?>
+					</p>
+					<p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#4b5563;">
+						<?php esc_html_e( 'Please disable your ad blocker for this site and reload the page.', 'burst-statistics' ); ?>
+					</p>
+					<div style="display:flex;gap:12px;">
+						<button onclick="location.reload();" style="padding:8px 20px;background:#4f46e5;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">
+							<?php esc_html_e( 'Reload page', 'burst-statistics' ); ?>
+						</button>
+						<button onclick="document.getElementById('burst-adblocker-modal').style.display='none';" style="padding:8px 20px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">
+							<?php esc_html_e( 'Dismiss', 'burst-statistics' ); ?>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>
+			setTimeout( function() {
+				if ( ! window.burstLoaded ) {
+					var modal = document.getElementById( 'burst-adblocker-modal' );
+					if ( modal ) {
+						modal.style.display = 'block';
+					}
+				}
+			}, 2000 );
+		</script>
 		<?php
 	}
 
@@ -802,18 +646,6 @@ class App {
 			// sleep for 0.5 seconds to allow the database installation to finish.
 			usleep( 500000 );
 		}
-
-		register_rest_route(
-			'burst/v1',
-			'menu',
-			[
-				'methods'             => 'GET',
-				'callback'            => [ $this, 'rest_api_menu' ],
-				'permission_callback' => function () {
-					return $this->user_can_manage();
-				},
-			]
-		);
 
 		register_rest_route(
 			'burst/v1',
@@ -1286,6 +1118,11 @@ class App {
 		if ( ! $this->user_can_manage() ) {
 			return;
 		}
+
+		if ( ! $this->table_exists( 'burst_referrers' ) ) {
+			return;
+		}
+
 		global $wpdb;
 		$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}burst_referrers" );
 	}

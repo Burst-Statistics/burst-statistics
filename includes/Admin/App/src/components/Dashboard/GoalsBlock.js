@@ -301,17 +301,18 @@ const GoalsBlock = () => {
 				</Overlay>
 			)}
 
-			<BlockHeading
-				title={__( 'Goals', 'burst-statistics' )}
-				controls={
-					<GoalsHeader
-						goalId={goalId}
-						goals={goals}
-						setGoalId={setGoalId}
-					/>
-				}
-				className="border-b border-gray-200"
-			/>
+		<BlockHeading
+			title={__( 'Goals', 'burst-statistics' )}
+			controls={
+				<GoalsHeader
+					goalId={goalId}
+					goals={goals}
+					setGoalId={setGoalId}
+				/>
+			}
+			className="border-b border-gray-200"
+			isLoading={isLoading}
+		/>
 			<BlockContent className="px-0 py-0 relative">
 				{isError ? (
 					<div className="text-red p-4">
@@ -322,7 +323,7 @@ const GoalsBlock = () => {
 					</div>
 				) : (
 					<>
-						<div className="px-2.5 py-5 md:px-6 grid w-full grid-cols-2 gap-4 bg-yellow-light">
+						<div className="px-2.5 py-5 md:px-6 grid w-full grid-cols-2 gap-4 bg-yellow-50">
 							<TodayFilterItem {...todayFilterProps} />
 							<TotalFilterItem {...totalFilterProps} />
 						</div>
@@ -396,12 +397,10 @@ const GoalsBlock = () => {
 
 			{0 !== goals.length && (
 				<BlockFooter>
-					{burst_settings.manage_burst_statistics && <a
-						className={'burst-button burst-button--secondary'}
-						href={'#/settings/goals'}
-					>
+					{burst_settings.manage_burst_statistics && <ButtonInput btnVariant={'tertiary'} link={{ to: '/settings/goals' }}>
 						{__( 'View setup', 'burst-statistics' )}
-					</a> }
+					</ButtonInput>
+					}
 					<div className="ml-auto">
 						{! isLoading && ! isError && <GoalStatus data={data} />}
 					</div>

@@ -78,7 +78,7 @@ const CheckboxGroupInput: React.FC<CheckboxGroupInputProps> = ({
   }
 
   return (
-    <div className="flex flex-col space-y-2">
+    <div className="flex flex-col gap-2">
       {Object.entries(options).map(([key, optionLabel], i) => (
         <div
           key={key}

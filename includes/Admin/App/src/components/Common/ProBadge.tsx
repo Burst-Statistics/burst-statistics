@@ -54,7 +54,7 @@ const ProBadge: React.FC<ProBadgeProps> = ({
 
     if ( 'icon' === type ) {
         const iconContent = <Icon color="green" name="sprout" size={14} strokeWidth={1.5}/>;
-        const iconClassName = 'inline-flex items-center px-0.5 py-0.5 inline-flex rounded-full bg-green-light border border-gray-100 transition-colors';
+        const iconClassName = 'inline-flex items-center px-0.5 py-0.5 inline-flex rounded-full bg-green-300 border border-gray-100 transition-colors';
 
         return hasLink ? (
             <a href={finalUrl} className={iconClassName} title={altText}>
@@ -67,7 +67,7 @@ const ProBadge: React.FC<ProBadgeProps> = ({
         );
     }
 
-    const badgeClassName = `inline-flex items-center rounded bg-primary px-2 py-0.5 text-xs font-medium text-white transition-colors ${className}`;
+    const badgeClassName = `inline-flex items-center rounded bg-primary px-2 py-0.5 text-xs font-medium text-text-white transition-colors ${className}`;
 
     // Not translated because it's a brand name
     const badgeContent = label || 'Burst Pro';

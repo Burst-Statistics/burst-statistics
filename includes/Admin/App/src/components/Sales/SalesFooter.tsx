@@ -27,7 +27,7 @@ const SalesFooter = ({ startDate, endDate }: SalesFooterProps ) => {
 	const text = textStr.replace( '%s', days + '' );
 
 	return (
-		<p className="text-sm font-medium leading-[1.5] text-gray">{text}</p>
+		<p className="text-sm font-medium leading-[1.5] text-text-gray">{text}</p>
 	);
 };
 

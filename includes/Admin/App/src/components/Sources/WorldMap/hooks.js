@@ -566,7 +566,7 @@ export const useQuantizeColorScaleLegendData = ({
 	reverse = false,
 	valueFormat = ( v ) => v,
 	separator = ' - ',
-	unknownColor = '#dee2e6',
+	unknownColor = 'var(--color-gray-300)',
 	patternsEnabled = false,
 	patternFills = []
 }) => {

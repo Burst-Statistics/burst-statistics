@@ -1,4 +1,14 @@
-@import "react-toastify/dist/ReactToastify.css";
-@import "./base/index.css";
+/* Dark mode variant: activated when #burst-statistics has the .dark class. */
+@custom-variant dark (&:is(#burst-statistics.dark *));
+
+@import "./theme/tokens.css";
+@import "./theme/dark-scope-tokens.css";
+
+#burst-statistics {
+	@import "tailwindcss";
+	@import "./base/index.css";
+}
 @import "./utilities/index.css";
 @import "./components/index.css";
+/* @import "./theme/dark-component-overrides.css"; */
+@import "./shell/wrapper.css";

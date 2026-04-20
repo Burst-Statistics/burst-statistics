@@ -73,14 +73,14 @@ const RangeSliderInput = forwardRef<HTMLDivElement, RangeSliderInputProps>(
 		};
 
 		return (
-			<div ref={ref} className={`space-y-3 ${className}`} {...props}>
+			<div ref={ref} className={`flex flex-col gap-3 ${className}`} {...props}>
 				{label && (
-					<label className="block text-sm font-medium text-gray-700">
+					<label className="block text-sm font-medium text-text-gray">
 						{label}
 					</label>
 				)}
 
-				<div className="space-y-2">
+				<div className="flex flex-col gap-2">
 					<Slider.Root
 						className="relative flex items-center select-none touch-none w-full h-5"
 						value={getSliderValue()}
@@ -95,14 +95,14 @@ const RangeSliderInput = forwardRef<HTMLDivElement, RangeSliderInputProps>(
 						</Slider.Track>
 
 						<Slider.Thumb
-							className="block w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+							className="block w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 							aria-label={__( 'Minimum value', 'burst-statistics' )}
 						/>
 
 						{( ! allowSingleValue ||
 							localValue[0] !== localValue[1]) && (
 							<Slider.Thumb
-								className="block w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+								className="block w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 								aria-label={__(
 									'Maximum value',
 									'burst-statistics'
@@ -112,7 +112,7 @@ const RangeSliderInput = forwardRef<HTMLDivElement, RangeSliderInputProps>(
 					</Slider.Root>
 
 					{showLabels && (
-						<div className="flex justify-between text-xs text-gray-500">
+						<div className="flex justify-between text-xs text-text-gray-light">
 							<span>{formatValue( min )}</span>
 							{showCurrentValue && (
 								<span className="font-medium text-primary">

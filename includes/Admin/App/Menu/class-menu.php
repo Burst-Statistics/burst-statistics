@@ -18,11 +18,13 @@ class Menu {
 	 * @return array<int, array{
 	 *     id: string,
 	 *     title: string,
+	 *     icon?: string,
 	 *     default_hidden?: bool,
 	 *     menu_items?: array<int, array{
 	 *         id: string,
 	 *         group_id: string,
 	 *         title: string,
+	 *         icon?: string,
 	 *         groups: array<int, array{
 	 *             id: string,
 	 *             title: string,

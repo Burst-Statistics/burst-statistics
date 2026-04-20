@@ -84,7 +84,7 @@ const ReportWizard: React.FC = () => {
 		<FormProvider {...methods}>
 			<motion.div
 				id="report-wizard-modal"
-				className="fixed inset-0 left-0 max-[960px]:left-9 max-[782px]:left-0 z-[9999] bg-gray-800 bg-opacity-90 flex items-end justify-center px-4"
+				className="fixed inset-0 left-0 max-[960px]:left-9 max-[782px]:left-0 z-9999 dark:bg-gray-400 bg-gray-700 bg-opacity-90 flex items-end justify-center px-4"
 				initial={{ opacity: 0 }}
 				animate={{ opacity: 1 }}
 				exit={{ opacity: 0 }}
@@ -107,7 +107,7 @@ const ReportWizard: React.FC = () => {
 							ease: 'easeOut'
 						}
 					}}
-					className="w-full h-[95vh] max-h-[95vh] max-w-screen-2xl"
+					className="w-full h-[95vh] max-h-[95vh] max-w-(--breakpoint-2xl)"
 				>
 					{/* inside container div */}
 					<div className="h-full bg-gray-100 rounded-t-2xl shadow-2xl overflow-hidden flex flex-col">
@@ -121,7 +121,7 @@ const ReportWizard: React.FC = () => {
 							</div>
 							<div className="col-span-3 flex items-center justify-end gap-3">
 								{! currentReport || null !== currentReport.id && <ReportActionMenu row={currentReport} />}
-								<button type="button" className="bg-gray-100 border border-gray-400 focus:ring-blue-500 rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2" onClick={() => {
+								<button type="button" className="bg-gray-100 border border-gray-400 focus:ring-blue-500 rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2" onClick={() => {
 									closeWizard();
 								}}
 								aria-label={__( 'Close', 'burst-statistics' )}

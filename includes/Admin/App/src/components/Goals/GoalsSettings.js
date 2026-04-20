@@ -2,10 +2,11 @@ import useGoalsData from '@/hooks/useGoalsData';
 import { __ } from '@wordpress/i18n';
 import Icon from '../../utils/Icon';
 import GoalSetup from './GoalSetup';
-import { useState } from 'react';
 import { burst_get_website_url } from '../../utils/lib';
 import * as Popover from '@radix-ui/react-popover';
 import useLicenseData from '@/hooks/useLicenseData';
+import ButtonInput from '../Inputs/ButtonInput';
+import IconButton from '../Inputs/IconButton';
 
 const GoalsSettings = () => {
 	const {
@@ -20,10 +21,12 @@ const GoalsSettings = () => {
 		saveGoalTitle
 	} = useGoalsData();
 	const { isLicenseValid } = useLicenseData();
-	const [ predefinedGoalsVisible, setPredefinedGoalsVisible ] = useState( false );
+	const popoverContainer =
+		'undefined' !== typeof document ?
+			document.querySelector( '.burst' ) :
+			null;
 
 	const handleAddPredefinedGoal = async( goal ) => {
-		setPredefinedGoalsVisible( false );
 		await addPredefinedGoal( goal.id );
 	};
 
@@ -76,102 +79,83 @@ const GoalsSettings = () => {
 
 				{( isLicenseValid || 0 === goals.length ) && (
 					<div className="flex items-center gap-2">
-						<button
-							className="burst-button burst-button--secondary"
-							type={'button'}
-							onClick={addGoal}
-						>
+						<ButtonInput btnVariant={'tertiary'} onClick={addGoal}>
 							{__( 'Add goal', 'burst-statistics' )}
-						</button>
+						</ButtonInput>
+
 						{predefinedGoals && (
-							<Popover.Root
-								open={predefinedGoalsVisible}
-								onOpenChange={() => {
-									setPredefinedGoalsVisible(
-										! predefinedGoalsVisible
-									);
-								}}
-							>
-								<Popover.Trigger
-									type={'button'}
-									className={
-										predefinedGoalsButtonClass +
-										' burst-button burst-button--secondary burst-add-predefined-goal'
-									}
-									onClick={() => {
-										setPredefinedGoalsVisible(
-											! predefinedGoalsVisible
-										);
-									}}
-								>
-									{__(
-										'Add predefined goal',
-										'burst-statistics'
-									)}{' '}
-									<Icon
-										name={
-											predefinedGoalsVisible ?
-												'chevron-up' :
-												'chevron-down'
+							<Popover.Root>
+								<Popover.Trigger asChild>
+									<IconButton
+										label={__(
+											'Add predefined goal',
+											'burst-statistics'
+										)}
+										icon={'chevron-down'}
+										className={
+											predefinedGoalsButtonClass +
+											' burst-button burst-button--secondary burst-add-predefined-goal'
 										}
-										color={'gray'}
 									/>
 								</Popover.Trigger>
 
-								<Popover.Content
-									sideOffset={5}
-									align={'end'}
-									className="burst-predefined-goals-list z-50 flex flex-col gap-2 rounded-lg border border-gray-400 bg-white p-2"
-								>
-									{predefinedGoals.map( ( goal, index ) => {
-										return (
-											<div
-												key={index}
-												className={
-													'relative z-50 flex cursor-pointer flex-row gap-1 rounded-lg border border-gray-400 bg-gray-100 p-2'
-												}
-												onClick={() =>
-													handleAddPredefinedGoal(
-														goal
-													)
-												}
-											>
-												<Icon
-													name={'plus'}
-													size={18}
-													color="gray"
-												/>
-												{goal.title +
-													' (' +
-													getGoalTypeNice( goal.type ) +
-													')'}
-											</div>
-										);
-									})}
-									{__(
-										'Plug-in you\'re looking for not listed?',
-										'burst-statistics'
-									) + ' '}
-									<a
-										className="underline"
-										href={burst_get_website_url(
-											'/request-goal-integration/',
-											{
-												utm_source:
-													'goals-integration-request'
-											}
-										)}
+								<Popover.Portal container={popoverContainer}>
+									<Popover.Content
+										sideOffset={5}
+										align={'end'}
+										className="burst-predefined-goals-list z-50 flex flex-col gap-2 rounded-lg border border-gray-400 bg-white p-2"
 									>
+										{predefinedGoals.map( ( goal, index ) => {
+											return (
+												<Popover.Close asChild key={index}>
+													<div
+														className={
+															'relative z-50 flex cursor-pointer flex-row gap-1 rounded-lg border border-gray-400 bg-gray-100 hover:bg-gray-200 p-2'
+														}
+														onClick={() =>
+															handleAddPredefinedGoal(
+																goal
+															)
+														}
+													>
+														<Icon
+															name={'plus'}
+															size={18}
+															color="gray"
+														/>
+														{goal.title +
+															' (' +
+															getGoalTypeNice( goal.type ) +
+															')'}
+													</div>
+												</Popover.Close>
+											);
+										})}
 										{__(
-											'Request it here!',
+											'Plug-in you\'re looking for not listed?',
 											'burst-statistics'
-										)}
-									</a>
-								</Popover.Content>
+										) + ' '}
+										<a
+											className="underline"
+											href={burst_get_website_url(
+												'/request-goal-integration/',
+												{
+													utm_source:
+														'goals-integration-request'
+												}
+											)}
+										>
+											{__(
+												'Request it here!',
+												'burst-statistics'
+											)}
+										</a>
+									</Popover.Content>
+								</Popover.Portal>
 							</Popover.Root>
 						)}
 						<div className="ml-auto text-right">
-							<p className="rounded-lg bg-gray-300 p-1 px-3 text-sm text-gray">
+							<p className="rounded-lg bg-gray-300 p-1 px-3 text-sm text-text-gray">
 								{isLicenseValid ? (
 									<> {goals.length} / &#8734; </>
 								) : (
@@ -186,7 +170,7 @@ const GoalsSettings = () => {
 						<Icon name={'goals'} size={24} color="gray" />
 						<h4>{__( 'Want more goals?', 'burst-statistics' )}</h4>
 						<div className="burst-divider" />
-						<p className="text-sm text-gray">
+						<p className="text-sm text-text-gray">
 							{__( 'Upgrade to Burst Pro', 'burst-statistics' )}
 						</p>
 						<a

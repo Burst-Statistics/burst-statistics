@@ -252,7 +252,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 				<div className="flex items-center space-x-3 mb-4">
 					<button
 						onClick={handleBack}
-						className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded transition-all duration-200"
+						className="flex items-center space-x-2 text-sm text-text-gray-light hover:text-text-gray focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded transition-all duration-200"
 						aria-label={__( 'Back to filters', 'burst-statistics' )}
 						type="button"
 					>
@@ -267,7 +267,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
 				{/* Filter Header */}
 				<div className="flex items-center space-x-3">
-					<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-light">
+					<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100">
 						<Icon
 							name={selectedConfig.icon}
 							color="gray"
@@ -275,10 +275,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
 						/>
 					</div>
 					<div>
-						<h3 className="text-lg font-semibold text-gray-900">
+						<h3 className="text-lg font-semibold text-text-gray">
 							{selectedConfig.label}
 						</h3>
-						<p className="text-sm text-gray-600">
+						<p className="text-sm text-text-gray-light">
 							{getFilterDescription()}
 						</p>
 					</div>

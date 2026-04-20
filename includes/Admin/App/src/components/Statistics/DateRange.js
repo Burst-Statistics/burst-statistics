@@ -7,14 +7,14 @@ import {
 	getDateWithOffset,
 	getAvailableRanges,
 	getDisplayDates,
-	availableRanges
+	availableRanges,
+	BURST_START_DATE
 } from '@/utils/formatting';
 import * as ReactPopover from '@radix-ui/react-popover';
 import useShareableLinkStore from '@/store/useShareableLinkStore';
 
 // Extract configuration
 const DATE_FORMAT = 'yyyy-MM-dd';
-const MIN_DATE = new Date( 2022, 0, 1 ); // This is the first date for a first Burst plugin on a live enviroment.
 const CLICKS_TO_CLOSE = 2;
 
 /**
@@ -32,8 +32,8 @@ const DateRangeTrigger = ({ range, display, isOpen, setIsOpen, disabled }) => (
 	<ReactPopover.Trigger
 		className={`burst-date-button flex min-w-[200px] items-center gap-2 rounded-md border px-3 py-2 shadow-sm transition-all duration-200 ${
 			disabled ?
-				'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-800 opacity-60' :
-				'border-gray-300 bg-white hover:bg-gray-50 hover:[box-shadow:0_0_0_3px_rgba(0,0,0,0.05)]'
+				'cursor-not-allowed border-gray-200 bg-gray-100 text-text-gray opacity-60' :
+				'border-gray-300 bg-white hover:bg-gray-50 hover:shadow-ringSubtle'
 		}`}
 		onClick={() => ! disabled && setIsOpen( ! isOpen )}
 		disabled={disabled}
@@ -79,8 +79,8 @@ const DateRange = () => {
 	const updateDateRange = useCallback(
 		( ranges ) => {
 			if ( ! userCanFilterDateRange ) {
-return;
-}
+				return;
+			}
 
 			try {
 				countClicks.current++;
@@ -138,7 +138,7 @@ return;
 					disabled={! userCanFilterDateRange}
 				/>
 
-				<div className="burst-date-range-popover-container relative z-[2]">
+				<div className="burst-date-range-popover-container relative z-2">
 					<ReactPopover.Portal
 						container={document.querySelector(
 							'.burst-date-range-popover-container'
@@ -150,12 +150,12 @@ return;
 							arrowPadding={10}
 							id="burst-statistics"
 						>
-							<span className="absolute right-4 mt-1 h-4 w-4 -translate-y-2 rotate-45 transform bg-green-light" />
+							<span className="absolute right-4 mt-1 h-4 w-4 -translate-y-2 rotate-45 transform bg-green-50" />
 
 							<div className="z-50 rounded-lg border border-gray-200 bg-white shadow-md">
 								<DateRangePicker
 									ranges={[ selectionRange ]}
-									rangeColors={[ '#2b8133' ]}
+									rangeColors={[ 'var(--color-green)' ]}
 									dateDisplayFormat="dd MMMM yyyy"
 									monthDisplayFormat="MMMM"
 									onChange={updateDateRange}
@@ -163,7 +163,7 @@ return;
 									showSelectionPreview={true}
 									months={2}
 									direction="horizontal"
-									minDate={MIN_DATE}
+									minDate={BURST_START_DATE}
 									maxDate={getDateWithOffset()}
 									staticRanges={dateRanges}
 								/>

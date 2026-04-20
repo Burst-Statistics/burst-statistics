@@ -77,7 +77,7 @@ export const ReportLogsField = ({ field, fieldState, help, context, ...props }: 
 							{ row.message }
 						</OverflowTooltip>
 					) : (
-						<span className="text-gray text-right">—</span>
+						<span className="text-text-gray text-right">—</span>
 					),
 				right: true,
 				grow: 1
@@ -92,6 +92,7 @@ export const ReportLogsField = ({ field, fieldState, help, context, ...props }: 
 			help={help}
 			error={fieldState?.error?.message}
 			context={context}
+			fullWidthContent={true}
 			label=""
 			{...props}
 		>
@@ -126,12 +127,6 @@ export const ReportLogsField = ({ field, fieldState, help, context, ...props }: 
 				}
 				expandableRows
 				expandableRowsComponent={ ExpandedComponent }
-				customStyles={{
-					headCells: { style: { fontWeight: '600', fontSize: '12px', color: '#1c252c', padding: 0 } },
-					cells: { style: { padding: 0 } },
-					headRow: { style: { paddingLeft: '0 !important', paddingRight: '0 !important', gap: '12px', fontSize: '12px' } },
-					rows: { style: { paddingLeft: '0 !important', paddingRight: '0 !important', gap: '12px', fontSize: '12px' } }
-				}}
 			/>
 		</FieldWrapper>
 	);
@@ -141,12 +136,12 @@ const ExpandedComponent = ({ data }: { data: ReportLogEntry }) => {
 	const statusSeverityClasses = useReportConfigStore( ( state ) => state.statusSeverityClasses );
 
 	return (
-		<div className = "px-6 py-4 bg-gray-50 space-y-2">
+		<div className = "px-6 py-4 bg-gray-50 flex flex-col gap-2">
 			<h4 className = "text-sm font-semibold">
 				{__( 'Batch details', 'burst-statistics' )}
 			</h4>
 
-			<ul className = "space-y-1">
+			<ul className = "flex flex-col gap-1">
 				{
 					data.batches.map( ( batch: ReportLogBatch ) => {
 						const severity: ReportLogSeverity = reportLogStatusConfig[batch.status].severity;
@@ -166,7 +161,7 @@ const ExpandedComponent = ({ data }: { data: ReportLogEntry }) => {
 									{batch.message}
 								</span>
 
-								<span className = "text-gray whitespace-nowrap">
+								<span className = "text-text-gray whitespace-nowrap">
 									{formatUnixToDateTime( batch.time )}
 								</span>
 							</li>

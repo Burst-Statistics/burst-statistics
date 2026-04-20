@@ -1,6 +1,5 @@
 import { Suspense, StrictMode } from 'react';
 import { createRoot, render } from '@wordpress/element';
-import { ToastContainer } from 'react-toastify';
 import {
 	QueryClient,
 	QueryCache,
@@ -18,7 +17,7 @@ import {
 // passes to styled components, which causes warnings in styled-components v6
 import { StyleSheetManager } from 'styled-components';
 import isPropValid from '@emotion/is-prop-valid';
-import { ThemeProvider, useTheme } from './hooks/useTheme';
+import { ThemeProvider } from './hooks/useTheme';
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
@@ -52,14 +51,52 @@ const shouldForwardProp = ( prop: string ) => {
 	return isPropValid( prop );
 };
 
+export interface BurstMenuPro {
+	url: string;
+	text: string;
+}
+
+export interface BurstMenuGroup {
+	id: string;
+	title: string;
+	pro?: BurstMenuPro;
+}
+
+export interface BurstMenuItem {
+	id: string;
+	group_id: string;
+	title: string;
+	groups: BurstMenuGroup[];
+	hidden?: boolean;
+	capabilities?: string;
+}
+
+export interface BurstMenuPage {
+	id: string;
+	title: string;
+	default_hidden: boolean;
+	menu_items: BurstMenuItem[];
+	capabilities: string;
+	menu_slug: string;
+	show_in_admin: boolean;
+	show_in_plugin_overview?: boolean;
+	shareable?: boolean;
+	pro?: boolean;
+	location?: 'left' | 'right';
+}
+
+export type BurstMenuConfig = BurstMenuPage[] | Record<number, BurstMenuPage>;
+
 // Add type declaration for window.burst_settings
 declare global {
 	interface Window {
 		burst_settings?: {
 			is_pro?: string;
 			view_sales_burst_statistics?: string;
+			menu: BurstMenuConfig;
 			[key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 		};
+		burstLoaded?: boolean;
 	}
 }
 
@@ -97,6 +134,17 @@ config = { ...config, ...{ queryCache } };
 const queryClient = new QueryClient( config );
 const isPro = window.burst_settings?.is_pro;
 const canViewSales = window.burst_settings?.view_sales_burst_statistics;
+const menus = window.burst_settings?.menu;
+
+const normalizedMenus = Array.isArray( menus ) ?
+	menus :
+	Object.values( menus ?? {});
+
+if ( window.burst_settings ) {
+
+	// Normalize menu here itself.
+	window.burst_settings.menu = normalizedMenus;
+}
 
 // Create the router with improved loading state
 const router = createRouter({
@@ -104,7 +152,8 @@ const router = createRouter({
 	context: {
 		queryClient,
 		isPro,
-		canViewSales
+		canViewSales,
+		menus: normalizedMenus
 	},
 	defaultPendingComponent: () => <PendingComponent />,
 	defaultErrorComponent: ({ error }) => (
@@ -164,24 +213,13 @@ const PendingComponent = () => {
 };
 
 const AppShell = () => {
-	const { isDarkTheme } = useTheme();
-
 	return (
 		<StyleSheetManager shouldForwardProp={shouldForwardProp}>
 			<QueryClientProvider client={queryClient}>
 				<Suspense fallback={<PendingComponent />}>
 					<RouterProvider router={router} />
-					<div id="modal-root" />
 				</Suspense>
-				<ToastContainer
-					position="bottom-right"
-					autoClose={2000}
-					hideProgressBar={true}
-					newestOnTop={false}
-					theme={isDarkTheme ? 'dark' : 'light'}
-					pauseOnFocusLoss={false}
-					pauseOnHover={false}
-				/>
+				<div id="modal-root" />
 			</QueryClientProvider>
 		</StyleSheetManager>
 	);
@@ -216,6 +254,9 @@ const initApp = () => {
 	} else {
 		render( app, container );
 	}
+
+	// Signal that the React app has loaded (used by ad blocker detection)
+	window.burstLoaded = true;
 
 	// Remove the skeleton styles after React app is mounted
 	setTimeout( () => {

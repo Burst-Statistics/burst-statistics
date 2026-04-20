@@ -46,7 +46,7 @@ const Sales = ( props:BlockComponentProps ): JSX.Element => {
 			subtitle: '-',
 			changeStatus: null,
 			change: '-',
-			icon: 'eye',
+			icon: 'mouse-pointer-click',
 			tooltipText: null
 		},
 		'abandonment-rate': {
@@ -56,7 +56,7 @@ const Sales = ( props:BlockComponentProps ): JSX.Element => {
 			subtitle: '-',
 			changeStatus: null,
 			change: '-',
-			icon: 'sessions',
+			icon: 'shopping-cart',
 			tooltipText: null
 		},
 		'average-order': {
@@ -66,7 +66,7 @@ const Sales = ( props:BlockComponentProps ): JSX.Element => {
 			subtitle: '-',
 			changeStatus: null,
 			change: '-',
-			icon: 'visitors',
+			icon: 'receipt',
 			tooltipText: null
 		},
 		revenue: {
@@ -76,7 +76,7 @@ const Sales = ( props:BlockComponentProps ): JSX.Element => {
 			subtitle: '-',
 			changeStatus: null,
 			change: '-',
-			icon: 'log-out',
+			icon: 'banknote',
 			tooltipText: null
 		}
 	};
@@ -93,7 +93,8 @@ const Sales = ( props:BlockComponentProps ): JSX.Element => {
 	const blockHeadingProps = {
 		title: __( 'Sales', 'burst-statistics' ),
 		isReport: props.isReport,
-		reportBlockIndex: index
+		reportBlockIndex: index,
+		isLoading: salesQuery.isFetching
 	};
 
 	return (

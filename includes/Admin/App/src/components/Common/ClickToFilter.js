@@ -6,7 +6,7 @@ import { useDate } from '@/store/useDateStore';
 import HelpTooltip from '@/components/Common/HelpTooltip';
 import Icon from '@/utils/Icon';
 import { __ } from '@wordpress/i18n';
-import { toast } from 'react-toastify';
+import { toast } from '@/utils/toast';
 import { isValidDate } from '@/utils/formatting';
 import useSettingsData from '@/hooks/useSettingsData';
 
@@ -286,7 +286,7 @@ const ClickToFilter = ({
 						<HelpTooltip content={filterTooltip}>
 							<div
 								onClick={handleFilterClick}
-								className="flex items-center justify-center w-6 h-6 bg-white/90 hover:bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
+								className="flex items-center justify-center w-6 h-6 bg-gray-100 hover:bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
 							>
 								<Icon name="filter" size={14} color="black" />
 							</div>
@@ -298,7 +298,7 @@ const ClickToFilter = ({
 						<HelpTooltip content={externalLinkTooltip}>
 							<div
 								onClick={handleExternalLinkClick}
-								className="flex items-center justify-center w-6 h-6 bg-white/90 hover:bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
+								className="flex items-center justify-center w-6 h-6 bg-gray-100 hover:bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
 							>
 								<Icon name="referrers" size={14} color="black" />
 							</div>

@@ -45,7 +45,7 @@ const SettingsNotices = ({ settingsGroup }) => {
 					{__( 'Notifications', 'burst-statistics' )}
 				</h2>
 				<button
-					className="cursor-pointer text-sm text-gray underline"
+					className="cursor-pointer text-sm text-text-gray underline"
 					onClick={toggleAllNotices}
 				>
 					{toggleButtonText}
@@ -57,7 +57,7 @@ const SettingsNotices = ({ settingsGroup }) => {
 					<CollapsableBlock
 						key={index}
 						title={setting.notice.title}
-						className="mb-4 w-full flex-1 !bg-accent-light"
+						className="mb-4 w-full flex-1 bg-blue-50!"
 						isOpen={openStates[index]}
 						onToggle={( isOpen ) => handleToggle( index, isOpen )}
 					>
@@ -67,7 +67,7 @@ const SettingsNotices = ({ settingsGroup }) => {
 							</p>
 							{setting.notice.url && '' !== setting.notice.url && (
 								<Link
-									className="mt-2 text-base text-gray underline"
+									className="mt-2 text-base text-text-gray underline"
 									to={setting.notice.url}
 									from={'/'}
 								>

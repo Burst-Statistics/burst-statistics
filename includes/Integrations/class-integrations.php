@@ -13,11 +13,13 @@ class Integrations {
 	 * Constructor
 	 */
 	public function init(): void {
-		add_action( 'plugins_loaded', [ $this, 'load_integrations' ] );
-		add_action( 'plugins_loaded', [ $this, 'register_for_consent_api' ] );
+		$this->integrations = apply_filters( 'burst_integrations', $this->default_integrations() );
+
 		add_action( 'init', [ $this, 'load_translations' ] );
 
-		$this->integrations = apply_filters( 'burst_integrations', $this->default_integrations() );
+		// We can load integrations here directly, because our main plugin file instantiating this on plugins_loaded hook with priority 9.
+		$this->load_integrations();
+		$this->register_for_consent_api();
 	}
 
 	/**
@@ -35,6 +37,15 @@ class Integrations {
 		}
 
 		return apply_filters( 'burst_load_ecommerce_integration', $should_load );
+	}
+
+	/**
+	 * Check if there are any subscriptions
+	 *
+	 * @return bool True if there are subscriptions, false otherwise.
+	 */
+	public function has_subscription_integrations_enabled(): bool {
+		return apply_filters( 'burst_subscription_integrations_enabled', false );
 	}
 
 	/**
@@ -58,34 +69,123 @@ class Integrations {
 	 * Load the integrations
 	 */
 	public function load_integrations(): void {
-		foreach ( $this->integrations as $plugin => $details ) {
-			if ( $this->plugin_is_active( $plugin ) ) {
+		$non_dependent_integrations = array_filter(
+			$this->integrations,
+			function ( $details ) {
+				return empty( $details['required_plugins'] );
+			}
+		);
 
-				if ( isset( $details['required_plugins'] ) ) {
-					$all_required_active = true;
+		$dependent_integrations = array_filter(
+			$this->integrations,
+			function ( $details ) {
+				return ! empty( $details['required_plugins'] );
+			}
+		);
 
-					foreach ( $details['required_plugins'] as $required_plugin ) {
-						if ( ! $this->plugin_is_active( $required_plugin ) ) {
-							$all_required_active = false;
-							break;
-						}
-					}
+		foreach ( $non_dependent_integrations as $plugin => $details ) {
+			if ( ! $this->plugin_is_active( $plugin ) ) {
+				continue;
+			}
 
-					if ( ! $all_required_active ) {
-						continue;
-					}
-				}
+			if ( empty( $details['php_scripts'] ) ) {
+				continue;
+			}
 
-				$file          = apply_filters( 'burst_integration_path', BURST_PATH . "includes/Integrations/plugins/$plugin.php", $plugin );
-				$is_admin_only = $details['admin_only'] ?? false;
-				$can_load      = ( $is_admin_only && $this->has_admin_access() ) || ! $is_admin_only;
+			$php_scripts_to_load = $this->get_integrations_to_load( $details['php_scripts'], $plugin );
 
-				if ( $can_load && file_exists( $file ) ) {
-					require_once $file;
-				}
+			if ( empty( $php_scripts_to_load ) ) {
+				continue;
+			}
+
+			foreach ( $php_scripts_to_load as $php_script ) {
+				require_once $php_script['file'];
+			}
+		}
+
+		foreach ( $dependent_integrations as $plugin => $details ) {
+			if ( ! $this->plugin_is_active( $plugin ) ) {
+				continue;
+			}
+
+			if ( isset( $details['required_plugins'] ) && ! $this->are_all_required_plugins_active( $details['required_plugins'] ) ) {
+				continue;
+			}
+
+			if ( empty( $details['php_scripts'] ) ) {
+				continue;
+			}
+
+			$php_scripts_to_load = $this->get_integrations_to_load( $details['php_scripts'], $plugin );
+
+			if ( empty( $php_scripts_to_load ) ) {
+				continue;
+			}
+
+			foreach ( $php_scripts_to_load as $php_script ) {
+				require_once $php_script['file'];
 			}
 		}
 	}
+
+	/**
+	 * Get the integrations to load
+	 *
+	 * @param array $php_script_lists Integration details.
+	 * @return array List of integrations to load.
+	 */
+	public function get_integrations_to_load( array $php_script_lists, string $plugin ): array {
+		$integrations = [];
+
+		if ( ! empty( $php_script_lists['admin_scripts'] ) && is_array( $php_script_lists['admin_scripts'] ) ) {
+			foreach ( $php_script_lists['admin_scripts'] as $script ) {
+				$file = apply_filters( 'burst_integration_path', BURST_PATH . "includes/Integrations/plugins/{$plugin}/{$script}", $plugin );
+
+				if ( ! file_exists( $file ) || ! $this->has_admin_access() ) {
+					continue;
+				}
+
+				$integrations[] = [
+					'type' => 'admin',
+					'file' => $file,
+				];
+			}
+		}
+
+		if ( ! empty( $php_script_lists['frontend_scripts'] ) && is_array( $php_script_lists['frontend_scripts'] ) ) {
+			foreach ( $php_script_lists['frontend_scripts'] as $script ) {
+				$file = apply_filters( 'burst_integration_path', BURST_PATH . "includes/Integrations/plugins/{$plugin}/{$script}", $plugin );
+
+				if ( ! file_exists( $file ) ) {
+					continue;
+				}
+
+				$integrations[] = [
+					'type' => 'frontend',
+					'file' => $file,
+				];
+			}
+		}
+
+		return $integrations;
+	}
+
+	/**
+	 * Are all required plugins active for a given integration
+	 *
+	 * @param array $required_plugins List of required plugins.
+	 * @return bool True if all required plugins are active, false otherwise.
+	 */
+	public function are_all_required_plugins_active( array $required_plugins ): bool {
+		foreach ( $required_plugins as $plugin ) {
+			if ( ! $this->plugin_is_active( $plugin ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	/**
 	 * Check if the plugin is active
 	 *

@@ -23,6 +23,26 @@ class Statistics {
 	public function init(): void {
 		add_action( 'burst_install_tables', [ $this, 'install_statistics_table' ], 10 );
 		add_action( 'burst_clear_test_visit', [ $this, 'clear_test_visit' ] );
+
+		// Add support for ID argument.
+		add_filter( 'burst_get_data_available_args', [ $this, 'add_subscription_datatable_available_args' ], 10, 2 );
+	}
+
+	/**
+	 * Add subscription datatable available args to the allow-list for validation.
+	 *
+	 * @param array  $available_args Existing available args (key ⇒ description).
+	 * @param string $data_type The type of data being requested.
+	 * @return array Extended available args.
+	 */
+	public function add_subscription_datatable_available_args( array $available_args, string $data_type ): array {
+		if ( 'datatable' !== $data_type ) {
+			return $available_args;
+		}
+
+		$available_args[] = 'id';
+
+		return $available_args;
 	}
 
 	/**
@@ -78,7 +98,7 @@ class Statistics {
 			'select'                   => [ 'referrer' ],
 		];
 
-		$qd      = new Query_Data( $args );
+		$qd      = new Query_Data( 'live_traffic_data', $args );
 		$traffic = $this->get_results( apply_filters( 'burst_live_traffic_args', $qd ) );
 		if ( ! is_array( $traffic ) ) {
 			$traffic = [];
@@ -164,7 +184,7 @@ class Statistics {
 			'custom_where'             => 'AND ( (time + time_on_page / 1000 + %d + %d) > %d)',
 			'custom_where_parameters'  => [ $on_page_offset, $exit_margin, $now ],
 		];
-		$qd         = new Query_Data( $args );
+		$qd         = new Query_Data( 'live_visitors_data', $args );
 		$live_value = $this->get_var( $qd );
 
 		// check if the plugin was activated in the last hour. If so, this could be a call coming from the onboarding.
@@ -239,6 +259,7 @@ class Statistics {
 
 		// Query today's data.
 		$qd = new Query_Data(
+			'today_summary',
 			[
 				'date_start' => $start,
 				'date_end'   => $end,
@@ -261,6 +282,7 @@ class Statistics {
 			] as $key => $fields
 		) {
 			$qd     = new Query_Data(
+				"today_$key",
 				[
 					'date_start' => $start,
 					'date_end'   => $end,
@@ -284,58 +306,60 @@ class Statistics {
 	/**
 	 * Get date modifiers for insights charts, based on the date range.
 	 *
-	 * @param int $date_start Unix timestamp marking the start of the period.
-	 * @param int $date_end   Unix timestamp marking the end of the period.
+	 * @param int    $date_start Unix timestamp marking the start of the period.
+	 * @param int    $date_end   Unix timestamp marking the end of the period.
+	 * @param string $group_by   Explicit grouping interval ('hour'|'day'|'week'|'month'), or 'auto' to derive from range length.
 	 * @return array{
 	 *     interval: string,
 	 *     interval_in_seconds: mixed,
 	 *     nr_of_intervals: int,
 	 *     sql_date_format: string,
 	 *     php_date_format: string,
-	 *     php_pretty_date_format: string
+	 *     spans_multiple_years: bool
 	 * }
 	 */
-	public function get_insights_date_modifiers( int $date_start, int $date_end ): array {
-		$nr_of_days = $this->get_nr_of_periods( 'day', $date_start, $date_end );
-
+	public function get_insights_date_modifiers( int $date_start, int $date_end, string $group_by = 'auto' ): array {
 		// Define intervals and corresponding settings.
 		$intervals = [
-			'hour'  => [ '%Y-%m-%d %H', 'Y-m-d H', 'd M H:00', HOUR_IN_SECONDS ],
-			'day'   => [ '%Y-%m-%d', 'Y-m-d', 'D d M', DAY_IN_SECONDS ],
+			'hour'  => [ '%Y-%m-%d %H', 'Y-m-d H', HOUR_IN_SECONDS ],
+			'day'   => [ '%Y-%m-%d', 'Y-m-d', DAY_IN_SECONDS ],
 			// Use %x (ISO year) and %v (ISO week), to prevent 0 hits on week 1 of a leap year.
-			'week'  => [ '%x-%v', 'o-W', 'M j', WEEK_IN_SECONDS ],
-			'month' => [ '%Y-%m', 'Y-m', 'M', MONTH_IN_SECONDS ],
+			'week'  => [ '%x-%v', 'o-W', WEEK_IN_SECONDS ],
+			'month' => [ '%Y-%m', 'Y-m', MONTH_IN_SECONDS ],
 		];
 
-		// Determine the interval based on how many days are selected.
-		if ( $nr_of_days > 364 ) {
-			$interval = 'month';
-		} elseif ( $nr_of_days > 48 ) {
-			$interval = 'week';
-		} elseif ( $nr_of_days > 2 ) {
-			$interval = 'day';
+		// When group_by is 'auto', determine the best interval from the range length.
+		if ( 'auto' === $group_by || ! isset( $intervals[ $group_by ] ) ) {
+			$nr_of_days = $this->get_nr_of_periods( 'day', $date_start, $date_end );
+
+			if ( $nr_of_days > 364 ) {
+				$interval = 'month';
+			} elseif ( $nr_of_days > 48 ) {
+				$interval = 'week';
+			} elseif ( $nr_of_days > 2 ) {
+				$interval = 'day';
+			} else {
+				$interval = 'hour';
+			}
 		} else {
-			$interval = 'hour';
+			$interval = $group_by;
 		}
 
 		// Extract settings based on the determined interval.
-		list( $sql_date_format, $php_date_format, $php_pretty_date_format, $interval_in_seconds ) = $intervals[ $interval ];
+		list( $sql_date_format, $php_date_format, $interval_in_seconds ) = $intervals[ $interval ];
 
 		$nr_of_intervals = $this->get_nr_of_periods( $interval, $date_start, $date_end );
 
 		// Check if the date range spans multiple years.
 		$spans_multiple_years = gmdate( 'Y', $date_start ) !== gmdate( 'Y', $date_end );
 
-		// Add year to format if we span multiple years.
-		$php_pretty_date_format .= $spans_multiple_years ? ' y' : '';
-
 		return [
-			'interval'               => $interval,
-			'interval_in_seconds'    => $interval_in_seconds,
-			'nr_of_intervals'        => $nr_of_intervals,
-			'sql_date_format'        => $sql_date_format,
-			'php_date_format'        => $php_date_format,
-			'php_pretty_date_format' => $php_pretty_date_format,
+			'interval'             => $interval,
+			'interval_in_seconds'  => $interval_in_seconds,
+			'nr_of_intervals'      => $nr_of_intervals,
+			'sql_date_format'      => $sql_date_format,
+			'php_date_format'      => $php_date_format,
+			'spans_multiple_years' => $spans_multiple_years,
 		];
 	}
 
@@ -344,13 +368,16 @@ class Statistics {
 	 *
 	 * @param array $args {
 	 *     Optional. Parameters to define time range and metrics.
-	 * @type int $date_start Start of the data range (timestamp).
-	 * @type int $date_end End of the data range (timestamp).
-	 * @type string[] $metrics List of metrics to retrieve (e.g., 'pageviews', 'visitors').
-	 * @type array $filters Filters to apply to the query.
+	 * @type int    $date_start Start of the data range (timestamp).
+	 * @type int    $date_end   End of the data range (timestamp).
+	 * @type string[] $metrics  List of metrics to retrieve (e.g., 'pageviews', 'visitors').
+	 * @type array  $filters    Filters to apply to the query.
+	 * @type string $group_by   Grouping interval ('auto'|'hour'|'day'|'week'|'month').
 	 * }
 	 * @return array{
-	 *     labels: string[],
+	 *     timestamps: int[],
+	 *     interval: string,
+	 *     spans_multiple_years: bool,
 	 *     datasets: array<int, array{
 	 *         data: list<int|float>,
 	 *         backgroundColor: string,
@@ -366,9 +393,17 @@ class Statistics {
 			'date_start' => 0,
 			'date_end'   => 0,
 			'metrics'    => [ 'pageviews', 'visitors' ],
+			'group_by'   => 'auto',
 		];
 		$args     = wp_parse_args( $args, $defaults );
-		$qd       = new Query_Data(
+
+		// normalize_value() in class-app.php always wraps group_by in an array (e.g. ['day']).
+		// Extract the first element so we get a plain string to pass to get_insights_date_modifiers().
+		$group_by_raw = $args['group_by'] ?? 'auto';
+		$group_by     = is_array( $group_by_raw ) ? (string) ( $group_by_raw[0] ?? 'auto' ) : (string) $group_by_raw;
+
+		$qd = new Query_Data(
+			'insights_data',
 			[
 				'date_start'     => (int) $args['date_start'],
 				'date_end'       => (int) $args['date_end'],
@@ -377,12 +412,13 @@ class Statistics {
 				'group_by'       => 'period',
 				'order_by'       => 'period',
 				'limit'          => 0,
-				'date_modifiers' => $this->get_insights_date_modifiers( (int) $args['date_start'], (int) $args['date_end'] ),
+				'date_modifiers' => $this->get_insights_date_modifiers(
+					(int) $args['date_start'],
+					(int) $args['date_end'],
+					$group_by
+				),
 			]
 		);
-
-		// generate labels for dataset.
-		$labels = [];
 
 		$metric_labels  = $qd->get_allowed_metrics_labels();
 		$date_start     = $qd->get_date_start();
@@ -401,65 +437,51 @@ class Statistics {
 			];
 		}
 
-		// We have a UTC timestamp corrected for timezone offset to query the statistics table.
-		// To show the correct labels, we convert this back with the timezone offset.
+		// We have a UTC timestamp corrected for the timezone offset used to query the statistics table.
+		// Add the offset back to compute the local-time equivalent for key generation.
 		$timezone_offset = self::get_wp_timezone_offset();
 		$date            = $date_start + $timezone_offset;
 
-		if ( 'month' === $date_modifiers['interval'] ) {
-			// Use calendar-aware iteration so every month is represented.
-			$dt = new \DateTime( '@' . $date );
-			$dt->setTimezone( wp_timezone() );
+		// $timestamps maps the period key (e.g. '2024-01-03') to the raw UTC Unix timestamp
+		// of that period's start, so the frontend can format dates with Intl.DateTimeFormat().
+		$timestamps = [];
 
-			for ( $i = 0; $i < $date_modifiers['nr_of_intervals']; $i++ ) {
-				$formatted_date            = $dt->format( $date_modifiers['php_date_format'] );
-				$labels[ $formatted_date ] = date_i18n( $date_modifiers['php_pretty_date_format'], $dt->getTimestamp() );
+		for ( $i = 0; $i < $date_modifiers['nr_of_intervals']; $i++ ) {
+			$formatted_date = date_i18n( $date_modifiers['php_date_format'], $date );
 
-				foreach ( $metrics as $metric_key => $metric ) {
-					$datasets[ $metric_key ]['data'][ $formatted_date ] = 0;
-				}
+			// Store the UTC start timestamp for this period slot.
+			$timestamps[ $formatted_date ] = $date - $timezone_offset;
 
-				$dt->modify( '+1 month' );
+			foreach ( $metrics as $metric_key => $metric ) {
+				$datasets[ $metric_key ]['data'][ $formatted_date ] = 0;
 			}
-		} else {
-			for ( $i = 0; $i < $date_modifiers['nr_of_intervals']; $i++ ) {
-				$formatted_date            = date_i18n( $date_modifiers['php_date_format'], $date );
-				$labels[ $formatted_date ] = date_i18n( $date_modifiers['php_pretty_date_format'], $date );
 
-				foreach ( $metrics as $metric_key => $metric ) {
-					$datasets[ $metric_key ]['data'][ $formatted_date ] = 0;
-				}
-
-				$date += $date_modifiers['interval_in_seconds'];
-			}
+			$date += $date_modifiers['interval_in_seconds'];
 		}
 
 		$hits = $this->get_results( $qd, ARRAY_A );
 
-		// match data from db to labels.
+		// Match DB results to period slots.
 		foreach ( $hits as $hit ) {
-			// Get the period from the hit.
 			$period = $hit['period'];
-			// Loop through each metric.
 			foreach ( $metrics as $metric_key => $metric_name ) {
-				// Check if the period and the metric exist in the dataset.
 				if ( isset( $datasets[ $metric_key ]['data'][ $period ] ) && isset( $hit[ $metric_name ] ) ) {
-					// Update the value for the corresponding metric and period.
 					$datasets[ $metric_key ]['data'][ $period ] = $hit[ $metric_name ];
 				}
 			}
 		}
 
-		// Strip keys from array $labels to make it a simple indexed array.
-		$labels = array_values( $labels );
+		// Strip associative keys so the frontend receives plain indexed arrays.
+		$timestamps = array_values( $timestamps );
 		foreach ( $metrics as $metric_key => $metric_name ) {
-			// strip keys from array $datasets to make it a simple array.
 			$datasets[ $metric_key ]['data'] = array_values( $datasets[ $metric_key ]['data'] );
 		}
 
 		return [
-			'labels'   => $labels,
-			'datasets' => $datasets,
+			'timestamps'           => $timestamps,
+			'interval'             => $date_modifiers['interval'],
+			'spans_multiple_years' => $date_modifiers['spans_multiple_years'],
+			'datasets'             => $datasets,
 		];
 	}
 	/**
@@ -661,6 +683,7 @@ class Statistics {
 	 */
 	public function get_data( array $select, int $start, int $end, array $filters ): array {
 		$qd     = new Query_Data(
+			'statistics_get_data',
 			[
 				'date_start' => $start,
 				'date_end'   => $end,
@@ -678,6 +701,7 @@ class Statistics {
 	 */
 	private function get_bounces( int $start, int $end, array $filters ): int {
 		$qd = new Query_Data(
+			'statistics_bounces',
 			[
 				'date_start' => $start,
 				'date_end'   => $end,
@@ -696,6 +720,7 @@ class Statistics {
 
 		// filter is goal id so pageviews returned are the conversions.
 		$qd = new Query_Data(
+			'statistics_conversions',
 			[
 				'date_start' => $start,
 				'date_end'   => $end,
@@ -739,7 +764,7 @@ class Statistics {
 		$query_args['group_by']                 = 'device_id';
 		$query_args['having']                   = [ 'sessions.device_id > 0' ];
 
-		$qd             = new Query_Data( $query_args );
+		$qd             = new Query_Data( 'devices_title_and_value', $query_args );
 		$devices_result = $this->get_results( $qd, ARRAY_A );
 
 		$total   = 0;
@@ -825,7 +850,7 @@ class Statistics {
 			$query_args['having']                   = [ 'sessions.browser_id > 0' ];
 			$query_args['order_by']                 = 'count DESC';
 
-			$qd      = new Query_Data( $query_args );
+			$qd      = new Query_Data( "devices_subtitle_$device", $query_args );
 			$results = $this->get_row( $qd, ARRAY_A );
 
 			$browser_id      = $results['browser_id'] ?? 0;
@@ -910,21 +935,28 @@ class Statistics {
 			];
 		}
 
-		$last_metric_count = count( $metrics ) - 1;
-		$order_by          = isset( $metrics[ $last_metric_count ] ) ? sprintf( '%s DESC', $metrics[ $last_metric_count ] ) : 'pageviews DESC';
-		$qd                = new Query_Data(
-			[
-				'date_start' => $start,
-				'date_end'   => $end,
-				'select'     => $metrics,
-				'filters'    => $filters,
-				'group_by'   => $group_by,
-				'order_by'   => $order_by,
-				'limit'      => $limit,
-			]
-		);
-		$data              = $this->get_results( $qd, ARRAY_A );
-		$metric_labels     = $qd->get_allowed_metrics_labels();
+		$data = apply_filters( 'burst_datatable_pre_data', null, $args );
+		$qd   = new Query_Data( 'datatables_data' );
+
+		if ( null === $data ) {
+			$last_metric_count = count( $metrics ) - 1;
+			$order_by          = isset( $metrics[ $last_metric_count ] ) ? sprintf( '%s DESC', $metrics[ $last_metric_count ] ) : 'pageviews DESC';
+			$qd                = new Query_Data(
+				'datatables_data',
+				[
+					'date_start' => $start,
+					'date_end'   => $end,
+					'select'     => $metrics,
+					'filters'    => $filters,
+					'group_by'   => $group_by,
+					'order_by'   => $order_by,
+					'limit'      => $limit,
+				]
+			);
+			$data              = $this->get_results( $qd, ARRAY_A );
+		}
+
+		$metric_labels = $qd->get_allowed_metrics_labels();
 
 		foreach ( $metrics as $metric ) {
 			// If goal_id isset then metric is a conversion.
@@ -1007,26 +1039,29 @@ class Statistics {
 		string $metric = 'visitors',
 		string $type = 'default'
 	): string {
+		// CSS custom property strings; the frontend's METRIC_COLORS map takes precedence,
+		// but these values serve as a consistent fallback for any context that reads
+		// borderColor directly from the API response.
 		$colors = [
 			'visitors'    => [
-				'background' => 'rgba(41, 182, 246, 0.2)',
-				'border'     => 'rgba(41, 182, 246, 1)',
+				'background' => 'var(--color-blue-400)',
+				'border'     => 'var(--color-blue-400)',
 			],
 			'pageviews'   => [
-				'background' => 'rgba(244, 191, 62, 0.2)',
-				'border'     => 'rgba(244, 191, 62, 1)',
+				'background' => 'var(--color-yellow-500)',
+				'border'     => 'var(--color-yellow-500)',
 			],
 			'bounces'     => [
-				'background' => 'rgba(215, 38, 61, 0.2)',
-				'border'     => 'rgba(215, 38, 61, 1)',
+				'background' => 'var(--color-red-500)',
+				'border'     => 'var(--color-red-500)',
 			],
 			'sessions'    => [
-				'background' => 'rgba(128, 0, 128, 0.2)',
-				'border'     => 'rgba(128, 0, 128, 1)',
+				'background' => 'var(--color-orange-500)',
+				'border'     => 'var(--color-orange-500)',
 			],
 			'conversions' => [
-				'background' => 'rgba(46, 138, 55, 0.2)',
-				'border'     => 'rgba(46, 138, 55, 1)',
+				'background' => 'var(--color-primary-700)',
+				'border'     => 'var(--color-primary-700)',
 			],
 		];
 		if ( ! isset( $colors[ $metric ] ) ) {
@@ -1164,11 +1199,19 @@ class Statistics {
 				} else {
 					$value = esc_sql( sanitize_text_field( $value ) );
 					if ( $filter === 'referrer' ) {
-						$where_clauses[] = $wpdb->prepare(
-							// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $qualified_name is from a trusted array.
-							"( $qualified_name $like_keyword %s OR $qualified_name IS NULL )",
-							'%' . $wpdb->esc_like( "$value" ) . '%'
-						);
+						if ( $is_exclude ) {
+							$where_clauses[] = $wpdb->prepare(
+								// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $qualified_name is from a trusted array.
+								"( $qualified_name $like_keyword %s OR $qualified_name IS NULL )",
+								'%' . $wpdb->esc_like( $value ) . '%'
+							);
+						} else {
+							$where_clauses[] = $wpdb->prepare(
+								// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $qualified_name is from a trusted array.
+								"( $qualified_name $like_keyword %s )",
+								'%' . $wpdb->esc_like( $value ) . '%'
+							);
+						}
 					} else {
                         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $qualified_name is a from a trusted array.
 						$where_clauses[] = $wpdb->prepare( "$qualified_name $eq_operator %s", $value );
@@ -1542,6 +1585,7 @@ class Statistics {
         `min_execution_time` float NOT NULL,
         `last_updated` int NOT NULL,
         `execution_count` int NOT NULL,
+        `date_range_days` int NOT NULL DEFAULT 0,
         PRIMARY KEY (ID),
         UNIQUE KEY sql_hash (sql_hash)
     ) $charset_collate;",
@@ -1560,9 +1604,8 @@ class Statistics {
 			[ 'last_updated' ],
 		];
 
-		$table_name = $wpdb->prefix . 'burst_query_stats';
 		foreach ( $indexes as $index ) {
-			$this->add_index( $table_name, $index );
+			$this->add_index( 'burst_query_stats', $index );
 		}
 
 		$indexes = [
@@ -1574,9 +1617,8 @@ class Statistics {
 			[ 'page_id', 'page_type' ],
 		];
 
-		$table_name = $wpdb->prefix . 'burst_statistics';
 		foreach ( $indexes as $index ) {
-			$this->add_index( $table_name, $index );
+			$this->add_index( 'burst_statistics', $index );
 		}
 
 		$indexes = [
@@ -1584,19 +1626,16 @@ class Statistics {
 			[ 'uid', 'first_seen' ],
 		];
 
-		$table_name = $wpdb->prefix . 'burst_known_uids';
 		foreach ( $indexes as $index ) {
-			$this->add_index( $table_name, $index );
+			$this->add_index( 'burst_known_uids', $index );
 		}
 
-		// server_side property to be removed after 2.2 update.
-		$table_name = $wpdb->prefix . 'burst_goals';
-		$indexes    = [
+		$indexes = [
 			[ 'status' ],
 		];
 
 		foreach ( $indexes as $index ) {
-			$this->add_index( $table_name, $index );
+			$this->add_index( 'burst_goals', $index );
 		}
 	}
 
@@ -1648,22 +1687,34 @@ class Statistics {
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is built and sanitized in Query_Data.
 		$result   = $wpdb->get_var( $sql );
 		$end_time = microtime( true );
-		$this->store_query_execution_time( $sql, $start_time, $end_time );
+		$this->store_query_execution_time( $sql, $start_time, $end_time, $qd );
 		return $result;
 	}
 
 	/**
 	 * Store query execution time for slow query analysis.
 	 *
-	 * @param string $sql The executed SQL query.
-	 * @param float  $start The start time in seconds.
-	 * @param float  $end The end time in seconds.
+	 * @param string     $sql The executed SQL query.
+	 * @param float      $start The start time in seconds.
+	 * @param float      $end The end time in seconds.
+	 * @param Query_Data $query_data Query metadata used for deterministic hashing.
 	 */
-	private function store_query_execution_time( string $sql, float $start, float $end ): void {
+	private function store_query_execution_time( string $sql, float $start, float $end, Query_Data $query_data ): void {
 		global $wpdb;
 
 		$execution_time = $end - $start;
-		$sql_hash       = hash( 'fnv1a64', $sql );
+		$date_start     = $query_data->date_start;
+		$date_end       = $query_data->date_end;
+		$sql_hash       = $query_data->get_fingerprint_hash();
+
+		$date_range_days = $date_start > 0 && $date_end > 0
+			? (int) ceil( ( $date_end - $date_start ) / DAY_IN_SECONDS )
+			: 0;
+
+		// only store queries for date ranges below one year.
+		if ( $date_range_days > 365 ) {
+			return;
+		}
 
 		// Check if query exists and was updated recently.
 		$existing = $wpdb->get_row(
@@ -1688,9 +1739,10 @@ class Statistics {
 					'min_execution_time' => min( $existing->min_execution_time, $execution_time ),
 					'execution_count'    => $existing->execution_count + 1,
 					'last_updated'       => time(),
+					'date_range_days'    => $date_range_days,
 				],
 				[ 'sql_hash' => $sql_hash ],
-				[ '%f', '%f', '%f', '%d', '%s' ],
+				[ '%f', '%f', '%f', '%d', '%s', '%d' ],
 				[ '%s' ]
 			);
 		} else {
@@ -1698,34 +1750,34 @@ class Statistics {
 			$wpdb->query(
 				$wpdb->prepare(
 					"INSERT IGNORE INTO {$wpdb->prefix}burst_query_stats
-                (sql_hash, sql_query, avg_execution_time, max_execution_time, min_execution_time, execution_count, last_updated)
-                VALUES (%s, %s, %f, %f, %f, %d, %d)",
+                (sql_hash, sql_query, avg_execution_time, max_execution_time, min_execution_time, execution_count, last_updated, date_range_days)
+                VALUES (%s, %s, %f, %f, %f, %d, %d, %d)",
 					$sql_hash,
 					$sql,
 					$execution_time,
 					$execution_time,
 					$execution_time,
 					1,
-					time()
+					time(),
+					$date_range_days
 				)
 			);
 		}
 
-		$execution_count = $existing ? (int) $existing->execution_count + 1 : 1;
-		$wpdb->query(
-			$wpdb->prepare(
-				"INSERT IGNORE INTO {$wpdb->prefix}burst_query_stats
-        (sql_hash, sql_query, avg_execution_time, max_execution_time, min_execution_time, execution_count, last_updated)
-        VALUES (%s, %s, %f, %f, %f, %d, %d)",
-				$sql_hash,
-				$sql,
-				$execution_time,
-				$execution_time,
-				$execution_time,
-				$execution_count,
-				time()
-			)
-		);
+		// Prune to keep only the 100 slowest queries.
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_query_stats" );
+		if ( $count > 100 ) {
+			$wpdb->query(
+				"DELETE FROM {$wpdb->prefix}burst_query_stats
+				WHERE ID NOT IN (
+					SELECT ID FROM (
+						SELECT ID FROM {$wpdb->prefix}burst_query_stats
+						ORDER BY avg_execution_time DESC
+						LIMIT 100
+					) AS top
+				)"
+			);
+		}
 	}
 
 	/**
@@ -1743,7 +1795,7 @@ class Statistics {
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is built and sanitized in Query_Data.
 		$result   = $wpdb->get_row( $sql, $output_type );
 		$end_time = microtime( true );
-		$this->store_query_execution_time( $sql, $start_time, $end_time );
+		$this->store_query_execution_time( $sql, $start_time, $end_time, $qd );
 		return $result;
 	}
 
@@ -1761,7 +1813,7 @@ class Statistics {
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is built and sanitized in Query_Data.
 		$result   = $wpdb->get_results( $sql, $output_type );
 		$end_time = microtime( true );
-		$this->store_query_execution_time( $sql, $start_time, $end_time );
+		$this->store_query_execution_time( $sql, $start_time, $end_time, $qd );
 		return $result;
 	}
 
@@ -2309,7 +2361,7 @@ class Statistics {
 					$query_config['enhanced_args']
 				);
 
-				$qd                = new Query_Data( $enhanced_args );
+				$qd                = new Query_Data( 'base_data_enhanced', $enhanced_args );
 				$result['current'] = $this->get_results( $qd, ARRAY_A );
 				break;
 			default:

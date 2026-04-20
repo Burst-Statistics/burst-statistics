@@ -726,7 +726,7 @@ trait Sanitize {
 		$date = trim( sanitize_text_field( $date ) );
 
 		// Try to create DateTime object from Y-m-d format.
-		$datetime = \DateTime::createFromFormat( 'Y-m-d H:i:s', $date );
+		$datetime = \DateTime::createFromFormat( 'Y-m-d H:i:s', $date, wp_timezone() );
 		// Check if the date was parsed successfully and matches the input exactly.
 		if ( ! $datetime || $datetime->format( 'Y-m-d H:i:s' ) !== $date ) {
 			return '';

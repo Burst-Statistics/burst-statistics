@@ -8,6 +8,7 @@ use Burst\Frontend\Tracking\Tracking;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -27,6 +28,7 @@ class Frontend {
 	 * Constructor
 	 */
 	public function init(): void {
+		add_action( 'admin_init', [ $this, 'maybe_redirect_to_settings_page' ], 1 );
 
 		add_action( 'init', [ $this, 'register_pageviews_block' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_time_tracking_script' ], 0 );
@@ -61,6 +63,35 @@ class Frontend {
 
 		$mainwp_proxy = new MainWP_Proxy();
 		$mainwp_proxy->init();
+	}
+
+	/**
+	 * After activation, redirect the user to the settings page.
+	 */
+	public function maybe_redirect_to_settings_page(): void {
+		if ( ! is_admin() || wp_doing_ajax() || wp_doing_cron() || wp_is_serving_rest_request() ) {
+			return;
+		}
+
+		// not processing form data, only a conditional redirect, which is available only temporarily.
+		// phpcs:ignore
+		if ( ! get_transient( 'burst_redirect_to_settings_page' ) || ( isset( $_GET['page'] ) && $_GET['page'] === 'burst' ) ) {
+			return;
+		}
+
+		if ( ! $this->user_can_view() ) {
+			return;
+		}
+
+		delete_transient( 'burst_redirect_to_settings_page' );
+
+		// we don't redirect when installed through the onboarding of another plugin.
+		if ( get_site_option( 'teamupdraft_installation_source_burst-statistics' ) ) {
+			return;
+		}
+
+		wp_safe_redirect( $this->admin_url( 'burst' ) );
+		exit;
 	}
 
 	/**
@@ -323,7 +354,7 @@ class Frontend {
 		// fix phpcs warning.
 		unset( $hook );
 		// don't enqueue if headless.
-		if ( defined( 'BURST_HEADLESS' ) || $this->get_option_bool( 'headless' ) ) {
+		if ( defined( 'BURST_HEADLESS_DOMAIN' ) || $this->get_option_bool( 'headless' ) ) {
 			return;
 		}
 

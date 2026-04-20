@@ -5,8 +5,8 @@ const UpdraftPlusLogo = ({ size = 24, color = 'currentColor' }) => {
 		yellow: 'var(--rsp-yellow)',
 		red: 'var(--rsp-red)',
 		blue: 'var(--rsp-blue)',
-		gray: 'var(--rsp-grey-600)',
-		white: 'var(--rsp-white)'
+		gray: 'var(--color-text-gray)',
+		white: 'var(--color-text-white)'
 	};
 	const colorVal = iconColors[color] || color;
 
@@ -22,7 +22,7 @@ const UpdraftPlusLogo = ({ size = 24, color = 'currentColor' }) => {
 		>
 			<g id="udp-logo-text" fill={colorVal}>
 				<g>
-					<path
+					<path fill={colorVal}
 						d="M214.17,38.15h18.01v63.53c0,13.27,8.66,20.81,21.92,20.81s22.06-7.54,22.06-20.95V38.15h18.01v63.53
 										c0,22.2-16.06,37.28-39.94,37.28c-24.02,0-40.07-15.08-40.07-37.28V38.15z M306.33,66.08h16.2v5.17c0,2.65-0.28,4.89-0.28,4.89
 										h0.28c0,0,6.14-11.73,22.9-11.73c19.27,0,31.56,15.22,31.56,37.28c0,22.62-13.82,37.28-32.53,37.28c-14.1,0-20.39-9.77-20.39-9.77

@@ -1,0 +1,15 @@
+/* Dark mode variant: activated when #teamupdraft-onboarding has the .dark class. */
+@custom-variant dark (&:is(#teamupdraft-onboarding.dark *));
+
+/* Shared Tailwind v4 theme tokens from the Admin app. */
+@import "../../../../Admin/App/src/styles/theme/tokens.css";
+@import "./theme/dark-scope-tokens.css";
+@import "./theme/teamupdraft-aliases.css";
+
+#teamupdraft-onboarding {
+	@import "tailwindcss";
+}
+
+@source "../**/*.{js,jsx,ts,tsx}";
+
+@import "./components/switch.css";

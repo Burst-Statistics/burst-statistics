@@ -2,7 +2,7 @@
  * Ecommerce Notices
  */
 import React, { useEffect } from 'react';
-import { toast, ToastContentProps } from 'react-toastify';
+import { toast, type ToastContentProps } from '@/utils/toast';
 import { __, sprintf } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
 import { getLocalStorage, setLocalStorage } from '@/utils/api';
@@ -36,13 +36,13 @@ const EcommerceNoticeToast: React.FC<
 	color = 'blue'
 }) => (
 	<div className="flex items-start gap-3">
-		<div className="inline-flex rounded-full bg-green-light border border-gray-100 transition-colors p-1">
+		<div className="inline-flex rounded-full bg-green-300 border border-gray-100 transition-colors p-1">
 			<Icon color={color} name={icon} size={16} strokeWidth={2} />
 		</div>
 
 		<div className="flex-1">
-			<h5 className="font-semibold text-gray-900 mb-1">{title}</h5>
-			<p className="text-sm text-gray-600 mb-2">{description}</p>
+			<h5 className="font-semibold text-text-gray mb-1">{title}</h5>
+			<p className="text-sm text-text-gray-light mb-2">{description}</p>
 
 			{url && (
 				<a
@@ -86,9 +86,10 @@ export const EcommerceNotices: React.FC = () => {
 	 */
 	const showEcommerceToast = ( notice: EcommerceNotice ) => {
 		toast(
-			({ toastProps }) => (
+			( props ) => (
 				<EcommerceNoticeToast
-					toastProps={toastProps}
+					closeToast={ props.closeToast }
+					toastProps={ props.toastProps }
 					title={notice.title}
 					description={notice.description}
 					linkText={notice.linkText}

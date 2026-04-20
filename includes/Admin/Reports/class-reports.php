@@ -419,15 +419,16 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			$token       = $data['token'];
 			$share       = new Share();
 			$report      = null;
-			$share_links = $share::get_share_links( $token );
+			$share_links = $share->get_share_links( 'report', $token );
+
 			if ( ! empty( $share_links ) ) {
 				// get first share link.
-				$share_links = array_values( $share_links );
-				$share_link  = $share_links[0];
-				$report_id   = $share_link['report_id'];
-				$report      = new Report( $report_id );
+				$share_links           = array_values( $share_links );
+				$share_link            = $share_links[0];
+				$report_id             = $share_link['report_id'];
+				$is_share_link_request = $this->is_shared_link_request();
+				$report                = new Report( $report_id, $is_share_link_request );
 			}
-
 			if ( ob_get_length() ) {
 				ob_clean();
 			}
@@ -443,7 +444,6 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					$logo_url = $image_src[0];
 				}
 			}
-
 			return [
 				'request_success' => true,
 				'report'          => $report?->to_array(),
@@ -487,6 +487,15 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 * @return \WP_REST_Response The REST response containing the list of reports.
 		 */
 		public function get_reports( \WP_REST_Request $request ): \WP_REST_Response {
+			if ( ! $this->user_can_manage() ) {
+				return new \WP_REST_Response(
+					[
+						'success' => false,
+						'message' => 'You do not have permission to manage reports.',
+					]
+				);
+			}
+
 			$nonce = $request->get_param( 'nonce' );
 			if ( ! $this->verify_nonce( $nonce, 'burst_nonce' ) ) {
 				return new \WP_REST_Response(
@@ -570,9 +579,8 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			];
 
 			foreach ( $indexes as $table => $table_indexes ) {
-				$table_name = $wpdb->prefix . $table;
 				foreach ( $table_indexes as $index ) {
-					$this->add_index( $table_name, $index );
+					$this->add_index( 'burst_reports', $index );
 				}
 			}
 		}
@@ -645,6 +653,16 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 
 			// Do not schedule test reports on cron, but send immediately.
 			if ( $is_test ) {
+				if ( ! Report_Logs::instance()->parent_processing_exists( $report_id, $queue_id ) ) {
+					Report_Logs::instance()->insert_log(
+						$report_id,
+						$queue_id,
+						null,
+						Report_Log_Status::PROCESSING,
+						Report_Log_Status::get_log_message( Report_Log_Status::PROCESSING )
+					);
+				}
+
 				$this->handle_email_batch( $report_id, $queue_id, $batch_id );
 				return [
 					'success' => true,
@@ -682,6 +700,10 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 * Check if we need to send a report.
 		 */
 		public function maybe_send_report(): void {
+			if ( ! $this->table_exists( 'burst_reports' ) ) {
+				return;
+			}
+
 			global $wpdb;
 
 			$ids = $wpdb->get_col(
@@ -1009,9 +1031,11 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					$query_data_args = $block;
 				}
 
-				$qd      = new Query_Data( $query_data_args );
-				$results = $this->get_top_results( $date_range->start, $date_range->end, $qd );
-				// prepend header row to results.
+				$query_id = sprintf( 'report_block_%s', sanitize_key( (string) $key ) );
+				$qd       = new Query_Data( $query_id, $query_data_args );
+				$results  = $this->get_top_results( $date_range->start, $date_range->end, $qd );
+
+				// Prepend header row to results.
 				array_unshift( $results, $block['header'] );
 
 				$blocks[ $key ] = [
@@ -1058,12 +1082,16 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 */
 		public function get_story_url( int $report_id ): string {
 			$share       = new Share();
-			$share_links = $share::get_share_links( '', $report_id );
+			$share_links = $share->get_share_links( 'report', '', $report_id );
+
 			if ( ! empty( $share_links ) ) {
 				$share_links = array_values( $share_links );
 				$share_link  = $share_links[0];
 				$token       = $share_link['token'];
-				return site_url( '/burst-dashboard/?burst_share_token=' . $token . '#/story' );
+				// During cron, site_url() may return http:// while the site runs on https://.
+				// Normalize to the same scheme as BURST_URL to ensure the link is correct.
+				$burst_scheme = wp_parse_url( BURST_URL, PHP_URL_SCHEME );
+				return set_url_scheme( site_url( '/burst-dashboard/?burst_share_token=' . $token . '#/story' ), $burst_scheme );
 			}
 			return '';
 		}

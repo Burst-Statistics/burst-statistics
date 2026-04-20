@@ -150,7 +150,7 @@ const DownloadCsvButton = ({
 		>
 			<div className={`relative ${className}`}>
 				<button
-					className={`bg-gray-100 border border-gray-400 focus:ring-blue-500 rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 opacity-30 group-hover/root:opacity-100 ${isButtonDisabled ? 'opacity-30 group-hover/root:opacity-30 cursor-not-allowed hover:bg-gray-100' : ''}`}
+					className={`bg-gray-100 border border-gray-400 focus:ring-blue-500 rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2 opacity-30 group-hover/root:opacity-100 ${isButtonDisabled ? 'opacity-30 group-hover/root:opacity-30 cursor-not-allowed hover:bg-gray-100' : ''}`}
 					onClick={handleDownload}
 					onKeyDown={( e ) => {
 						if ( 'Enter' === e.key ) {

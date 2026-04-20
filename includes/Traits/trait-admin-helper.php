@@ -185,11 +185,6 @@ trait Admin_Helper {
 			return burst_loader()->has_admin_access = true;
 		}
 
-		// during activation, we need to load some additional files.
-		if ( get_option( 'burst_run_activation' ) ) {
-			return burst_loader()->has_admin_access = true;
-		}
-
 		// the share token is a nonce in itself with an expiry.
         // phpcs:ignore
 		if ( isset( $_GET['burst_share_token'] ) && self::validate_share_token( wp_unslash( $_GET['burst_share_token'] ) ) ) {
@@ -272,6 +267,7 @@ trait Admin_Helper {
 	 *     json_translations: list<array<string, mixed>>,
 	 *     date_format: string,
 	 *     gmt_offset: float|int|string,
+	 *     burst_activation_time: int,
 	 *     date_ranges: array<int, string>,
 	 *     tour_shown: int
 	 * }
@@ -289,7 +285,7 @@ trait Admin_Helper {
 
 				// URLs and endpoints.
 				'rest_url'                    => get_rest_url(),
-				'site_url'                    => get_site_url(),
+				'site_url'                    => defined( 'BURST_HEADLESS_DOMAIN' ) ? esc_url_raw( BURST_HEADLESS_DOMAIN ) : get_site_url(),
 				'admin_ajax_url'              => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
 				'dashboard_url'               => $this->admin_url( 'burst' ),
 				'network_link'                => network_site_url( 'plugins.php' ),
@@ -310,6 +306,7 @@ trait Admin_Helper {
 				'json_translations'           => $js_data['json_translations'],
 				'date_format'                 => get_option( 'date_format' ),
 				'gmt_offset'                  => get_option( 'gmt_offset' ),
+				'burst_activation_time'       => (int) get_option( 'burst_activation_time', 1640995200 ),
 
 				// Configuration and options.
 				'date_ranges'                 => $this->get_date_ranges(),
@@ -363,12 +360,6 @@ trait Admin_Helper {
 			return burst_loader()->user_can_manage;
 		}
 
-		// During activation, allow access.
-		if ( (bool) get_option( 'burst_run_activation' ) ) {
-			burst_loader()->user_can_manage = true;
-			return true;
-		}
-
 		// Allow access during cron jobs and WP-CLI.
 		$is_wpli = ( defined( 'WP_CLI' ) && WP_CLI );
 		if ( wp_doing_cron() || $is_wpli ) {
@@ -416,10 +407,18 @@ trait Admin_Helper {
 	}
 
 	/**
-	 * Add some additional sanitizing
+	 * Add some additional sanitizing.
 	 * https://developer.wordpress.org/news/2023/08/understand-and-use-wordpress-nonces-properly/#verifying-the-nonce
+	 *
+	 * @param string|null $nonce  The nonce value to verify.
+	 * @param string      $action The nonce action string.
+	 * @return bool Whether the nonce is valid.
 	 */
 	protected function verify_nonce( ?string $nonce, string $action ): bool {
+		// Application Passwords authenticate via HTTP Basic Auth, making CSRF nonces redundant.
+		if ( (bool) did_action( 'wp_application_passwords_did_authenticate' ) ) {
+			return true;
+		}
 		if ( empty( $nonce ) ) {
 			return false;
 		}

@@ -37,26 +37,26 @@ export const Overview = () => {
 			{
 				scheduled && (
 					<>
-						<div className="text-gray-600 font-medium">
+						<div className="text-text-gray-light font-medium">
 							{__( 'Delivers:', 'burst-statistics' )}
 						</div>
 
-					<div className="text-black font-medium">{getDeliveryText()}</div>
+					<div className="text-text-black font-medium">{getDeliveryText()}</div>
 
-					<div className="text-gray-600 font-medium">
+					<div className="text-text-gray-light font-medium">
 						{__( 'Scheduled:', 'burst-statistics' )}
 					</div>
 
-						<div className="text-black font-medium">{getScheduleLabel( scheduled, frequency, dayOfWeek, weekOfMonth, sendTime )}</div>
+						<div className="text-text-black font-medium">{getScheduleLabel( scheduled, frequency, dayOfWeek, weekOfMonth, sendTime )}</div>
 					</>
 				)
 			}
 
-			<div className="text-gray-600 font-medium">
+			<div className="text-text-gray-light font-medium">
 				{__( 'Recipients:', 'burst-statistics' )}
 			</div>
 
-			<div className="text-black font-medium">
+			<div className="text-text-black font-medium">
 				{
 					0 < emails.length ? (
 						<ul className="list-disc list-inside">
@@ -74,11 +74,11 @@ export const Overview = () => {
 				}
 			</div>
 
-			<div className="text-gray-600 font-medium">
+			<div className="text-text-gray-light font-medium">
 				{__( 'Content:', 'burst-statistics' )}
 			</div>
 
-			<div className="text-black font-medium">
+			<div className="text-text-black font-medium">
 				{
 					0 < content.length ? (
 						<ul className="list-disc list-inside">
@@ -102,7 +102,7 @@ export const Overview = () => {
 				id ? (
 					<>
 						{'story' === format && <>
-							<div className="text-gray-600 font-medium">
+							<div className="text-text-gray-light font-medium">
 								{__( 'Story URL:', 'burst-statistics' )}
 							</div>
 							<div className="flex gap-2.5">

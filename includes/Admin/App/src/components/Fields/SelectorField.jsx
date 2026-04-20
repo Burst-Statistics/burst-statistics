@@ -352,7 +352,7 @@ const SelectorField = forwardRef(
 					{isLoading && (
 						<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
 							<svg
-								className="animate-spin h-4 w-4 text-gray-600"
+								className="animate-spin h-4 w-4 text-text-gray-light"
 								viewBox="0 0 24 24"
 							>
 								<circle
@@ -403,7 +403,7 @@ const SelectorField = forwardRef(
 									<button
 										type="button"
 										onClick={() => navigatePreview( 'prev' )}
-										className="bg-white text-gray-600 hover:bg-gray-100 px-3 py-1 border-r"
+										className="bg-white text-text-gray-light hover:bg-gray-100 px-3 py-1 border-r"
 										aria-label={__(
 											'Previous match',
 											'burst-statistics'
@@ -418,7 +418,7 @@ const SelectorField = forwardRef(
 									<button
 										type="button"
 										onClick={() => navigatePreview( 'next' )}
-										className="bg-white text-gray-600 hover:bg-gray-100 px-3 py-1 border-l"
+										className="bg-white text-text-gray-light hover:bg-gray-100 px-3 py-1 border-l"
 										aria-label={__(
 											'Next match',
 											'burst-statistics'
@@ -452,7 +452,7 @@ const SelectorField = forwardRef(
 											! previewDisplayLoggedOut
 										)
 									}
-									className="bg-white text-gray-600 hover:bg-gray-100 border-gray-400 px-2 py-2 border rounded-md"
+									className="bg-white text-text-gray-light hover:bg-gray-100 border-gray-400 px-2 py-2 border rounded-md"
 								>
 									{previewDisplayLoggedOut ? (
 										<Icon name="log-out" />

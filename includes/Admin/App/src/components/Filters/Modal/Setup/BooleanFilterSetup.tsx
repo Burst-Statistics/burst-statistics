@@ -130,10 +130,10 @@ const BooleanFilterSetup: React.FC<BooleanFilterSetupProps> = ({
 	const radioOptions = getFilterOptions();
 
 	return (
-		<div className="space-y-6">
+		<div className="flex flex-col gap-6">
 			{/* Radio Options */}
-			<div className="space-y-3">
-				<label className="block text-sm font-medium text-gray-700">
+			<div className="flex flex-col gap-3">
+				<label className="block text-sm font-medium text-text-gray">
 					{__( 'Filter option', 'burst-statistics' )}
 				</label>
 				<RadioButtonsInput
