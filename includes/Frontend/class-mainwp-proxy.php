@@ -135,9 +135,43 @@ class MainWP_Proxy {
 	public function handle_auth_request(): WP_REST_Response {
 		$user = wp_get_current_user();
 
+		$request_body = file_get_contents( 'php://input' );
+		$body         = json_decode( $request_body, true );
+
+		if ( (int) $user->ID <= 0 ) {
+			if ( empty( $body ) || ! is_array( $body ) ) {
+				return new WP_REST_Response( [ 'error' => 'Invalid MainWP auth body.' ], 403 );
+			}
+
+			if ( ! $this->verify_signature( $body ) ) {
+				return new WP_REST_Response( [ 'error' => 'MainWP signature verification failed.' ], 403 );
+			}
+
+			$username      = sanitize_user( $body['user'] ?? '' );
+			$resolved_user = get_user_by( 'login', $username );
+
+			if ( ! $resolved_user ) {
+				return new WP_REST_Response( [ 'error' => 'MainWP user not found on child site.' ], 403 );
+			}
+
+			if ( ! user_can( $resolved_user, 'manage_burst_statistics' ) ) {
+				return new WP_REST_Response( [ 'error' => 'MainWP user lacks Burst capability.' ], 403 );
+			}
+
+			wp_set_current_user( (int) $resolved_user->ID );
+			$user = wp_get_current_user();
+		}
+
 		$token = $this->get_or_create_app_token( $user->ID );
 		if ( is_wp_error( $token ) ) {
-			return new WP_REST_Response( [ 'error' => $token->get_error_message() ], 500 );
+			return new WP_REST_Response(
+				[
+					'error'      => $token->get_error_message(),
+					'error_code' => $token->get_error_code(),
+					'user_id'    => (int) $user->ID,
+				],
+				500
+			);
 		}
 
 		// Store dashboard origin for CORS validation.
@@ -291,6 +325,10 @@ class MainWP_Proxy {
 	 * @return string|\WP_Error Base64 `user:password` token, or WP_Error on failure.
 	 */
 	private function get_or_create_app_token( int $user_id ): string|\WP_Error {
+		if ( $user_id <= 0 ) {
+			return new \WP_Error( 'invalid_mainwp_user', 'Could not resolve MainWP user for app password generation.' );
+		}
+
 		$transient_key = self::APP_TOKEN_META_KEY . '_' . $user_id;
 		$cached        = get_transient( $transient_key );
 
