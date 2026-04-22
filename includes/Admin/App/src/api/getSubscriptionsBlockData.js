@@ -183,6 +183,13 @@ const isInvertedMetric = ( key ) => {
 const calculateChange = ( key, current, previous, rateChange ) => {
 	const isInverted = isInvertedMetric( key );
 
+	if ( METRIC_KEYS.REVENUE_CHURN === key && ! hasRevenueChurnBaseline( current ) ) {
+		return {
+			change: '-',
+			changeStatus: null
+		};
+	}
+
 	// Use rate_change if provided
 	if ( null !== rateChange && undefined !== rateChange ) {
 		return calculateChangeFromRate( rateChange, isInverted );
@@ -359,6 +366,16 @@ const getRevenueChurnData = ( metric ) => {
 	}
 
 	const { current, previous, rate_change: rateChange } = metric;
+	if ( ! hasRevenueChurnBaseline( current ) ) {
+		return {
+			...data,
+			value: __( 'N/A', 'burst-statistics' ),
+			exactValue: null,
+			tooltipText: __( 'N/A', 'burst-statistics' ),
+			subtitle: __( 'Not available for this period', 'burst-statistics' )
+		};
+	}
+
 	const churnPercentage = getRevenueChurnPercentage( current );
 
 	return {
@@ -387,6 +404,17 @@ const getRevenueChurnPercentage = ( churnData ) => {
 	}
 
 	return 0;
+};
+
+/**
+ * Whether churn can be calculated for this period.
+ *
+ * @param {Object|null} churnData Churn payload.
+ * @return {boolean} True when baseline exists.
+ */
+const hasRevenueChurnBaseline = ( churnData ) => {
+	const baseline = parseInt( churnData?.previously_active_count, 10 ) || 0;
+	return 0 < baseline;
 };
 
 /**

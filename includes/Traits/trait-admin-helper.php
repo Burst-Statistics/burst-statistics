@@ -278,41 +278,43 @@ trait Admin_Helper {
 			'burst_localize_script',
 			[
 				// Core plugin information.
-				'burst_version'               => BURST_VERSION,
-				'is_pro'                      => defined( 'BURST_PRO' ),
-				'plugin_url'                  => BURST_URL,
-				'installed_by'                => get_site_option( 'teamupdraft_installation_source_burst-statistics', '' ),
+				'burst_version'                => BURST_VERSION,
+				'is_pro'                       => defined( 'BURST_PRO' ),
+				'plugin_url'                   => BURST_URL,
+				'installed_by'                 => get_site_option( 'teamupdraft_installation_source_burst-statistics', '' ),
 
 				// URLs and endpoints.
-				'rest_url'                    => get_rest_url(),
-				'site_url'                    => defined( 'BURST_HEADLESS_DOMAIN' ) ? esc_url_raw( BURST_HEADLESS_DOMAIN ) : get_site_url(),
-				'admin_ajax_url'              => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
-				'dashboard_url'               => $this->admin_url( 'burst' ),
-				'network_link'                => network_site_url( 'plugins.php' ),
+				'rest_url'                     => get_rest_url(),
+				'site_url'                     => defined( 'BURST_HEADLESS_DOMAIN' ) ? esc_url_raw( BURST_HEADLESS_DOMAIN ) : get_site_url(),
+				'admin_ajax_url'               => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
+				'dashboard_url'                => $this->admin_url( 'burst' ),
+				'network_link'                 => network_site_url( 'plugins.php' ),
 
 				// Security and authentication.
-				'nonce'                       => wp_create_nonce( 'wp_rest' ),
-				'burst_nonce'                 => wp_create_nonce( 'burst_nonce' ),
-				'current_ip'                  => Ip::get_ip_address(),
+				'nonce'                        => wp_create_nonce( 'wp_rest' ),
+				'burst_nonce'                  => wp_create_nonce( 'burst_nonce' ),
+				'current_ip'                   => Ip::get_ip_address(),
 
 				// User permissions and capabilities.
-				'user_roles'                  => $this->get_user_roles(),
-				'view_sales_burst_statistics' => $this->user_can_view_sales(),
-				'manage_burst_statistics'     => $this->user_can_manage(),
-				'can_install_plugins'         => $user_can_install,
-				'share_link_permissions'      => self::get_share_link_permissions(),
+				'user_roles'                   => $this->get_user_roles(),
+				'view_sales_burst_statistics'  => $this->user_can_view_sales(),
+				'manage_burst_statistics'      => $this->user_can_manage(),
+				'can_install_plugins'          => $user_can_install,
+				'share_link_permissions'       => self::get_share_link_permissions(),
 
 				// Localization and internationalization.
-				'json_translations'           => $js_data['json_translations'],
-				'date_format'                 => get_option( 'date_format' ),
-				'gmt_offset'                  => get_option( 'gmt_offset' ),
-				'burst_activation_time'       => (int) get_option( 'burst_activation_time', 1640995200 ),
+				'json_translations'            => $js_data['json_translations'],
+				'date_format'                  => get_option( 'date_format' ),
+				'gmt_offset'                   => get_option( 'gmt_offset' ),
+				'burst_activation_time'        => (int) get_option( 'burst_activation_time', 1640995200 ),
 
 				// Configuration and options.
-				'date_ranges'                 => $this->get_date_ranges(),
-				'time_format'                 => get_option( 'time_format' ),
-				'tour_shown'                  => $this->get_option_int( 'burst_tour_shown_once' ),
+				'date_ranges'                  => $this->get_date_ranges(),
+				'time_format'                  => get_option( 'time_format' ),
+				'tour_shown'                   => $this->get_option_int( 'burst_tour_shown_once' ),
 
+				// Date picker's starting date.
+				'burst_date_picker_start_date' => (int) get_option( 'burst_activation_time', 1640995200 ),
 			]
 		);
 	}
@@ -416,7 +418,10 @@ trait Admin_Helper {
 	 */
 	protected function verify_nonce( ?string $nonce, string $action ): bool {
 		// Application Passwords authenticate via HTTP Basic Auth, making CSRF nonces redundant.
-		if ( (bool) did_action( 'wp_application_passwords_did_authenticate' ) ) {
+		// Scope the skip to the actual auth mechanism of *this* request: the `did_action` flag
+		// is global per request, so on its own it would also skip nonce checks in cookie-auth
+		// paths that happen after an earlier app-password authentication in the same request.
+		if ( self::is_http_basic_auth_request() && (bool) did_action( 'wp_application_passwords_did_authenticate' ) ) {
 			return true;
 		}
 		if ( empty( $nonce ) ) {
@@ -424,6 +429,24 @@ trait Admin_Helper {
 		}
 		$valid = wp_verify_nonce( sanitize_text_field( wp_unslash( $nonce ) ), $action );
 		return apply_filters( 'burst_verify_nonce', $valid, $nonce, $action );
+	}
+
+	/**
+	 * Whether the current request carries an HTTP Basic Authorization header.
+	 *
+	 * Used to confirm that the *current* request is being authenticated by credentials
+	 * (e.g. an Application Password) rather than by cookies — so a CSRF nonce is not
+	 * required to prove user intent.
+	 */
+	private static function is_http_basic_auth_request(): bool {
+		// unslashed and sanitized later in this function.
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+		$raw = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+		if ( ! is_string( $raw ) || $raw === '' ) {
+			return false;
+		}
+		$header = sanitize_text_field( wp_unslash( $raw ) );
+		return stripos( $header, 'basic ' ) === 0;
 	}
 
 	/**

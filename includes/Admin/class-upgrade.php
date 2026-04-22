@@ -292,6 +292,11 @@ class Upgrade {
 			}
 		}
 
+		if ( $prev_version && version_compare( $prev_version, '3.5.0', '<' ) ) {
+			// Reinstalling rest API optimizer for new REST API endpoint `get_action/ecommerce/<action>`.
+			burst_reinstall_rest_api_optimizer();
+		}
+
 		$admin = new Admin();
 		$admin->run_table_init_hook();
 		$admin->create_js_file();

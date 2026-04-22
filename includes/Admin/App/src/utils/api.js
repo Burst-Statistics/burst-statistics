@@ -63,10 +63,37 @@ const getNonce = () => {
 
 let lastErrorMessage = '';
 let lastErrorTime = 0;
+const NONCE_TOAST_ID = 'burst-nonce-expired';
 const generateError = ( error, path = false ) => {
-	let message = __( 'Server error', 'burst-statistics' );
-	error = error.replace( /(<([^>]+)>)/gi, '' );
+	const rawError = ( error || '' ).replace( /(<([^>]+)>)/gi, '' );
 
+	if ( /nonce|expired/i.test( rawError ) ) {
+		if ( toast.isActive( NONCE_TOAST_ID ) ) {
+			return;
+		}
+		const nonceDiv = (
+			<div>
+				<div>
+					{__( 'Connection to server expired', 'burst-statistics' )}
+				</div>
+				<button
+					type="button"
+					className="rounded transition-all duration-200 min-w-fit focus:outline-hidden focus:ring-2 focus:ring-offset-2 bg-blue text-text-white border border-blue-700 hover:bg-wp-blue hover:shadow-ringSecondary focus:ring-blue py-2 px-6 text-m"
+					style={{ marginTop: '8px' }}
+					onClick={() => window.location.reload()}
+				>
+					{__( 'Refresh connection', 'burst-statistics' )}
+				</button>
+			</div>
+		);
+		toast.error( nonceDiv, {
+			toastId: NONCE_TOAST_ID,
+			autoClose: false
+		});
+		return;
+	}
+
+	let message = __( 'Server error', 'burst-statistics' );
 	if ( path ) {
 		const urlWithoutQueryParams = path.split( '?' )[0];
 
@@ -79,7 +106,7 @@ const generateError = ( error, path = false ) => {
 			'/' +
 			urlParts[index + 1];
 	}
-	message += ': ' + error;
+	message += ': ' + rawError;
 
 	// Skip if same message was shown in the last 3 seconds
 	const now = Date.now();

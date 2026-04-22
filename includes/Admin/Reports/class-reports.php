@@ -722,6 +722,16 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				if ( $now < $report->next_send_timestamp || $now > $report->next_send_timestamp + DAY_IN_SECONDS ) {
 					continue;
 				}
+
+				// Skip if this report was already handled in the current window.
+				$transient_key = 'burst_report_sent_' . $report->id;
+				if ( get_transient( $transient_key ) ) {
+					continue;
+				}
+
+				// Mark as handled before sending, so a parallel cron cannot enter here.
+				set_transient( $transient_key, $report->next_send_timestamp, DAY_IN_SECONDS );
+
 				$this->send_report_instance( $report );
 			}
 		}

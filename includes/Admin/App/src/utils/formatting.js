@@ -381,7 +381,17 @@ const currentDateWithOffset = getDateWithOffset();
 const DEFAULT_BURST_START_TIMESTAMP = 1640995200;
 
 const getBurstStartDate = () => {
-	const activationTimestamp = Number( burst_settings.burst_activation_time );
+	let activationTimestamp = DEFAULT_BURST_START_TIMESTAMP;
+	if ( burst_settings.burst_date_picker_start_date ) {
+		activationTimestamp = Number( burst_settings.burst_date_picker_start_date );
+	} else if ( burst_settings.burst_activation_time ) {
+		activationTimestamp = Number( burst_settings.burst_activation_time );
+	}
+
+	if ( isNaN( activationTimestamp ) ) {
+		activationTimestamp = DEFAULT_BURST_START_TIMESTAMP;
+	}
+
 	const startTimestamp =
 		Number.isFinite( activationTimestamp ) && 0 < activationTimestamp ?
 			activationTimestamp :

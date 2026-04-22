@@ -11,6 +11,7 @@ import SalesUpsellBackground from '@/components/Upsell/Sales/SalesUpsellBackgrou
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
 import UnauthorizedModal from '@/components/Common/UnauthorizedModal';
 import SubscriptionsBlock from '@/components/Subscriptions/SubscriptionsBlock';
+import SubscriptionsProgressBar from '@/components/Subscriptions/SubscriptionsProgressBar';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import { RevenueChartBlock } from '@/components/Subscriptions/RevenueChart';
 import { RetentionChartBlock } from '@/components/Subscriptions/RetentionChart';
@@ -97,6 +98,7 @@ function SubscriptionsComponent() {
 	return (
 		<>
 			<PageHeader />
+			<SubscriptionsProgressBar />
 
 			<ErrorBoundary>
 				<RevenueChartBlock />
