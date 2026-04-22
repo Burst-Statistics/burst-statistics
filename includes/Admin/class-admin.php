@@ -60,7 +60,8 @@ class Admin {
 		add_action( 'burst_after_updated_goals', [ $this, 'create_js_file' ], 10, 1 );
 		add_action( 'burst_after_saved_fields', [ $this, 'create_js_file' ], 10, 1 );
 		add_action( 'burst_daily', [ $this, 'create_js_file' ] );
-		add_action( 'burst_daily', [ $this, 'detect_malicious_data' ] );
+		add_action( 'burst_daily', [ $this, 'schedule_detect_malicious_data_cron' ] );
+		add_action( 'burst_detect_malicious_data', [ $this, 'detect_malicious_data' ] );
 		add_action( 'burst_dismiss_task', [ $this, 'dismiss_malicious_data_notice' ], 10, 1 );
 		add_action( 'burst_dismiss_task', [ $this, 'dismiss_php_error_notice' ], 10, 1 );
 		add_action( 'wp_initialize_site', [ $this, 'create_js_file' ], 10, 1 );
@@ -87,6 +88,7 @@ class Admin {
 		add_action( 'burst_recalculate_bounces_cron', [ $this, 'recalculate_bounces' ] );
 		add_action( 'burst_recalculate_first_time_visits_cron', [ $this, 'recalculate_first_time_visits' ] );
 		add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
+		add_filter( 'burst_menu', [ $this, 'add_subscriptions_menu_item' ] );
 
 		$this->maybe_update_site_scheme();
 
@@ -288,47 +290,6 @@ class Admin {
 	}
 
 	/**
-	 * Add ecommerce menu item to the admin menu
-	 *
-	 * @param array $menu_items The existing menu items.
-	 * @return array The modified menu items including the ecommerce menu item.
-	 */
-	public function add_ecommerce_menu_item( array $menu_items ): array {
-		$should_load_ecommerce = \Burst\burst_loader()->integrations->should_load_ecommerce();
-		if ( ! $should_load_ecommerce || ! $this->has_admin_access() || ! $this->user_can_view_sales() ) {
-			return $menu_items;
-		}
-		$ecommerce_menu_item = [
-			'id'             => 'sales',
-			'title'          => __( 'Sales', 'burst-statistics' ),
-			'default_hidden' => false,
-			'menu_items'     => [],
-			'capabilities'   => 'view_sales_burst_statistics',
-			'menu_slug'      => 'burst#/sales',
-			'show_in_admin'  => true,
-			'pro'            => true,
-			'shareable'      => true,
-		];
-
-		// Put ecommerce menu item before the id: settings menu item.
-		$settings_index = null;
-		foreach ( $menu_items as $index => $item ) {
-			if ( isset( $item['id'] ) && 'reporting' === $item['id'] ) {
-				$settings_index = $index;
-				break;
-			}
-		}
-
-		if ( null !== $settings_index ) {
-			array_splice( $menu_items, $settings_index, 0, [ $ecommerce_menu_item ] );
-		} else {
-			$menu_items[] = $ecommerce_menu_item;
-		}
-
-		return $menu_items;
-	}
-
-	/**
 	 * Remove CM and BF tasks from the permanently dismissed array if it is february.
 	 */
 	public function cleanup_bf_dismissed_tasks(): void {
@@ -407,6 +368,15 @@ class Admin {
 		\WP_CLI::add_command( 'burst', Burst_Wp_Cli::class );
 	}
 
+	/**
+	 * Offload the malicious data detection two minutes later in the future.
+	 * This also resolves a missing table error right after deactivating, and activating the plugin again with data reset.
+	 */
+	public function schedule_detect_malicious_data_cron(): void {
+		if ( ! wp_next_scheduled( 'burst_detect_malicious_data' ) ) {
+			wp_schedule_single_event( time() + 2 * MINUTE_IN_SECONDS, 'burst_detect_malicious_data' );
+		}
+	}
 	/**
 	 * Check if there is anomalous data in the past 24 hours, over 1000 requests from one visitor.
 	 */
@@ -1339,6 +1309,10 @@ class Admin {
 
 		// delete tables.
 		foreach ( $table_names as $table_name ) {
+			// guard against deleting tables from other plugins, as these can be added using the tables filter.
+			if ( ! str_starts_with( $table_name, 'burst_' ) ) {
+				continue;
+			}
 			$sql = "DROP TABLE IF EXISTS {$wpdb->prefix}$table_name";
             // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name is from a predefined list.
 			$wpdb->query( $sql );
@@ -1418,5 +1392,87 @@ class Admin {
 		$tables[] = $wpdb->get_blog_prefix( $blog_id ) . 'burst_summary';
 
 		return $tables;
+	}
+
+	/**
+	 * Add ecommerce subscriptions menu item to the admin menu
+	 *
+	 * @param array $menu_items The existing menu items.
+	 * @return array The modified menu items including the ecommerce menu item.
+	 */
+	public function add_subscriptions_menu_item( array $menu_items ): array {
+		if ( ! $this->has_admin_access() ) {
+			return $menu_items;
+		}
+
+		$subscriptions_menu_item = [
+			'id'             => 'subscriptions',
+			'title'          => __( 'Subscriptions', 'burst-statistics' ),
+			'default_hidden' => false,
+			'menu_items'     => [],
+			'capabilities'   => 'view_sales_burst_statistics',
+			'menu_slug'      => 'burst#/subscriptions',
+			'show_in_admin'  => true,
+			'pro'            => true,
+			'shareable'      => true,
+		];
+
+		// Put ecommerce menu item before the id: settings menu item.
+		$settings_index = null;
+		foreach ( $menu_items as $index => $item ) {
+			if ( isset( $item['id'] ) && 'reporting' === $item['id'] ) {
+				$settings_index = $index;
+				break;
+			}
+		}
+
+		if ( null !== $settings_index ) {
+			array_splice( $menu_items, $settings_index, 0, [ $subscriptions_menu_item ] );
+		} else {
+			$menu_items[] = $subscriptions_menu_item;
+		}
+
+		return $menu_items;
+	}
+
+	/**
+	 * Add ecommerce menu item to the admin menu
+	 *
+	 * @param array $menu_items The existing menu items.
+	 * @return array The modified menu items including the ecommerce menu item.
+	 */
+	public function add_ecommerce_menu_item( array $menu_items ): array {
+		if ( ! $this->has_admin_access() ) {
+			return $menu_items;
+		}
+
+		$ecommerce_menu_item = [
+			'id'             => 'sales',
+			'title'          => __( 'Sales', 'burst-statistics' ),
+			'default_hidden' => false,
+			'menu_items'     => [],
+			'capabilities'   => 'view_sales_burst_statistics',
+			'menu_slug'      => 'burst#/sales',
+			'show_in_admin'  => true,
+			'pro'            => true,
+			'shareable'      => true,
+		];
+
+		// Put ecommerce menu item before the id: settings menu item.
+		$settings_index = null;
+		foreach ( $menu_items as $index => $item ) {
+			if ( isset( $item['id'] ) && 'reporting' === $item['id'] ) {
+				$settings_index = $index;
+				break;
+			}
+		}
+
+		if ( null !== $settings_index ) {
+			array_splice( $menu_items, $settings_index, 0, [ $ecommerce_menu_item ] );
+		} else {
+			$menu_items[] = $ecommerce_menu_item;
+		}
+
+		return $menu_items;
 	}
 }

@@ -742,8 +742,8 @@ class Report {
 	private function matches_schedule( int $timestamp ): bool {
 		return match ( $this->frequency ) {
 			Report_Frequency::DAILY   => true,
-			// Checks if the current day matches the report's day_of_week.
-			Report_Frequency::WEEKLY  => strtolower( gmdate( 'l', $timestamp ) ) === strtolower( $this->day_of_week ),
+			// Check if the current day in site timezone matches the report's day_of_week.
+			Report_Frequency::WEEKLY  => strtolower( wp_date( 'l', $timestamp ) ) === strtolower( (string) $this->day_of_week ),
 			Report_Frequency::MONTHLY => $this->matches_monthly_schedule( $timestamp ),
 			default   => false,
 		};
@@ -755,25 +755,34 @@ class Report {
 	 * @param int $timestamp The timestamp to check against.
 	 * @return bool True if it matches the monthly schedule, false otherwise.
 	 */
+
+	/**
+	 * Check if the report matches the monthly schedule for the given timestamp.
+	 *
+	 * @param int $timestamp The timestamp to check against.
+	 * @return bool True if it matches the monthly schedule, false otherwise.
+	 */
 	private function matches_monthly_schedule( int $timestamp ): bool {
-		// Checks if the current day matches the report's current day_of_week.
-		$weekday = strtolower( gmdate( 'l', $timestamp ) );
-		if ( $weekday !== strtolower( $this->day_of_week ) ) {
+		// Check if the current day in site timezone matches the report's day_of_week.
+		$weekday = strtolower( wp_date( 'l', $timestamp ) );
+		if ( $weekday !== strtolower( (string) $this->day_of_week ) ) {
 			return false;
 		}
 
-		$year  = (int) gmdate( 'Y', $timestamp );
-		$month = (int) gmdate( 'm', $timestamp );
+		$year  = (int) wp_date( 'Y', $timestamp );
+		$month = (int) wp_date( 'm', $timestamp );
 
 		$weekday_timestamps = [];
 
-		// Gets days of the current month that match the report's day_of_week.
-		$days_in_month = (int) gmdate( 't', gmmktime( 0, 0, 0, $month, 1, $year ) );
+		// Days in the current month in site timezone.
+		$days_in_month = (int) wp_date( 't', $timestamp );
 
 		for ( $day = 1; $day <= $days_in_month; $day++ ) {
+			// gmmktime + gmdate stay consistent in UTC: used here only to determine the calendar weekday
+			// of the (year, month, day) triple, which is timezone-independent.
 			$ts = gmmktime( 0, 0, 0, $month, $day, $year );
 			if ( strtolower( gmdate( 'l', $ts ) ) === $weekday ) {
-				// Create list of timestamps for the weekdays in the month.
+				// List of timestamps for the weekdays in the month.
 				$weekday_timestamps[] = $ts;
 			}
 		}
@@ -783,14 +792,15 @@ class Report {
 		}
 
 		$ordinal = (int) $this->week_of_month;
+		$today   = gmmktime( 0, 0, 0, $month, (int) wp_date( 'j', $timestamp ), $year );
 
 		// -1 indicates the last occurrence of the weekday in the month.
 		if ( $ordinal === Report_Week_Of_Month::LAST ) {
-			return end( $weekday_timestamps ) === gmmktime( 0, 0, 0, $month, (int) gmdate( 'j', $timestamp ), $year );
+			return end( $weekday_timestamps ) === $today;
 		}
 
 		// Check if the current date matches the nth occurrence of the weekday in the month.
 		$index = $ordinal - 1;
-		return isset( $weekday_timestamps[ $index ] ) && $weekday_timestamps[ $index ] === gmmktime( 0, 0, 0, $month, (int) gmdate( 'j', $timestamp ), $year );
+		return isset( $weekday_timestamps[ $index ] ) && $weekday_timestamps[ $index ] === $today;
 	}
 }
