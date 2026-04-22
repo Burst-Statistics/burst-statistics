@@ -101,6 +101,18 @@ class MainWP_Proxy {
 			return;
 		}
 
+		// Only reflect known dashboard origins once pairing has completed.
+		$allowed_origin = $this->get_allowed_dashboard_origin();
+		$request_origin = $this->normalize_origin( $origin );
+
+		if ( $allowed_origin === '' ) {
+			if ( ! $this->is_mainwp_auth_endpoint() ) {
+				return;
+			}
+		} elseif ( $request_origin === '' || ! hash_equals( $allowed_origin, $request_origin ) ) {
+			return;
+		}
+
 		header_remove( 'Access-Control-Allow-Origin' );
 		header_remove( 'Access-Control-Allow-Headers' );
 		header_remove( 'Access-Control-Allow-Methods' );
@@ -117,6 +129,56 @@ class MainWP_Proxy {
 			status_header( 204 );
 			exit;
 		}
+	}
+
+	/**
+	 * Normalized dashboard origin stored from the last verified signed request.
+	 *
+	 * Returns an empty string when no dashboard has paired yet.
+	 */
+	private function get_allowed_dashboard_origin(): string {
+		$stored = (string) get_option( 'burst_mainwp_dashboard_url', '' );
+		return $stored === '' ? '' : $this->normalize_origin( $stored );
+	}
+
+	/**
+	 * Reduce a URL to scheme://host[:port] for stable origin comparison.
+	 */
+	private function normalize_origin( string $url ): string {
+		$parts = wp_parse_url( $url );
+		if ( empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+			return '';
+		}
+
+		$origin = strtolower( $parts['scheme'] . '://' . $parts['host'] );
+		if ( ! empty( $parts['port'] ) ) {
+			$origin .= ':' . (int) $parts['port'];
+		}
+
+		return $origin;
+	}
+
+	/**
+	 * Whether this request targets the mainwp-auth bootstrap endpoint.
+	 *
+	 * Supports both pretty permalinks and the `?rest_route=` fallback.
+	 */
+	private function is_mainwp_auth_endpoint(): bool {
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		if ( $request_uri !== '' && str_contains( $request_uri, '/burst/v1/mainwp-auth' ) ) {
+			return true;
+		}
+
+		$query = wp_parse_url( $request_uri, PHP_URL_QUERY );
+		if ( ! is_string( $query ) || $query === '' ) {
+			return false;
+		}
+
+		$query_params = [];
+		parse_str( $query, $query_params );
+
+		$rest_route = isset( $query_params['rest_route'] ) ? sanitize_text_field( (string) $query_params['rest_route'] ) : '';
+		return $rest_route === '/burst/v1/mainwp-auth';
 	}
 
 	/**
@@ -176,8 +238,14 @@ class MainWP_Proxy {
 
 		// Store dashboard origin for CORS validation.
 		$origin = isset( $_SERVER['HTTP_ORIGIN'] ) ? sanitize_url( wp_unslash( $_SERVER['HTTP_ORIGIN'] ) ) : '';
-		if ( ! empty( $origin ) ) {
-			update_option( 'burst_mainwp_dashboard_url', $origin );
+
+		if ( empty( $origin ) && ! empty( $body['dashboard_origin'] ) && is_string( $body['dashboard_origin'] ) ) {
+			$origin = sanitize_url( $body['dashboard_origin'] );
+		}
+
+		$normalized_origin = $this->normalize_origin( $origin );
+		if ( $normalized_origin !== '' ) {
+			update_option( 'burst_mainwp_dashboard_url', $normalized_origin );
 		}
 
 		return new WP_REST_Response(
@@ -270,6 +338,10 @@ class MainWP_Proxy {
 	 * The child verifies with the matching public key stored in
 	 * `mainwp_child_pubkey` (base64-encoded PEM).
 	 *
+	 * Newer dashboard builds may sign `$function|$nonce|$user`. To support
+	 * staggered rollouts, we verify that format first and then fall back to the
+	 * legacy payload when necessary.
+	 *
 	 * `verifylib` == 1 means the dashboard used phpseclib (SHA-1 + PKCS#1 v1.5).
 	 * `verifylib` == 0 means standard OpenSSL with SHA-256.
 	 *
@@ -281,6 +353,7 @@ class MainWP_Proxy {
 		$signature_b64 = $body['mainwpsignature'] ?? '';
 		$nonce         = $body['nonce'] ?? '';
 		$function      = $body['function'] ?? '';
+		$user_raw      = is_string( $body['user'] ?? null ) ? $body['user'] : '';
 		$use_seclib    = ! empty( $body['verifylib'] );
 
 		if ( empty( $pubkey_stored ) || empty( $signature_b64 ) || $nonce === '' || empty( $function ) ) {
@@ -295,21 +368,41 @@ class MainWP_Proxy {
 			return false;
 		}
 
-		$sign_payload = $function . $nonce;
+		$public_key = openssl_pkey_get_public( $pubkey_pem );
+		if ( false === $public_key ) {
+			self::error_log( 'OpenSSL could not parse the stored MainWP public key.' );
+			return false;
+		}
+
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
 		$signature = base64_decode( $signature_b64, true );
-		$algorithm = $use_seclib ? OPENSSL_ALGO_SHA1 : OPENSSL_ALGO_SHA256;
-		$result    = openssl_verify( $sign_payload, $signature, $pubkey_pem, $algorithm );
+		if ( false === $signature ) {
+			return false;
+		}
 
-		if ( $result !== 1 ) {
-			$msg = openssl_error_string();
-			while ( $msg ) {
-				self::error_log( 'OpenSSL verification error: ' . $msg );
-				$msg = openssl_error_string();
+		$algorithm = $use_seclib ? OPENSSL_ALGO_SHA1 : OPENSSL_ALGO_SHA256;
+
+		$payloads = [];
+		if ( $user_raw !== '' ) {
+			$payloads[] = $function . '|' . $nonce . '|' . $user_raw;
+		}
+		$payloads[] = $function . $nonce;
+
+		$result = 0;
+		foreach ( $payloads as $sign_payload ) {
+			$result = openssl_verify( $sign_payload, $signature, $public_key, $algorithm );
+			if ( 1 === $result ) {
+				return true;
 			}
 		}
 
-		return $result === 1;
+		$msg = openssl_error_string();
+		while ( $msg ) {
+			self::error_log( 'OpenSSL verification error: ' . $msg );
+			$msg = openssl_error_string();
+		}
+
+		return false;
 	}
 
 	/**

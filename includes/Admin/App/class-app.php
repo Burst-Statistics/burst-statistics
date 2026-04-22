@@ -796,6 +796,18 @@ class App {
 
 		register_rest_route(
 			'burst/v1',
+			'get_action/ecommerce/(?P<action>[a-z\_\-]+)',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'get_action' ],
+				'permission_callback' => function () {
+					return $this->user_can_view_sales();
+				},
+			]
+		);
+
+		register_rest_route(
+			'burst/v1',
 			'/posts/',
 			[
 				'methods'             => 'GET',

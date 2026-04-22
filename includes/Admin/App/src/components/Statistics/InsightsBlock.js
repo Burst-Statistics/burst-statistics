@@ -107,17 +107,19 @@ const InsightsBlock = (props) => {
 					</div>
 				}
 			/>
-			<BlockContent className="px-0 py-0">
-				{query.data && InsightsGraph && (
-					<InsightsGraph
-						loading={loading}
-						data={query.data}
-						timestamps={query.data.timestamps}
-						interval={query.data.interval}
-						spansMultipleYears={query.data.spans_multiple_years}
-						metrics={metrics}
-					/>
-				)}
+			<BlockContent className="px-0 py-0 h-75">
+				{
+					query.data && InsightsGraph && (
+						<InsightsGraph
+							loading={loading}
+							data={query.data}
+							timestamps={query.data.timestamps}
+							interval={query.data.interval}
+							spansMultipleYears={query.data.spans_multiple_years}
+							metrics={metrics}
+						/>
+					)
+				}
 			</BlockContent>
 		</Block>
 	);

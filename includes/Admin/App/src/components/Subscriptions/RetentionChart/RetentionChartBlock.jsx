@@ -14,7 +14,7 @@ import {
 	fetchRetentionData
 } from './retentionData';
 
-const PLACEHOLDER_COLUMNS = [ 'M+1', 'M+2', 'M+3', 'M+4', 'M+5', 'M+6' ];
+const PLACEHOLDER_COLUMNS = [ 'M+0', 'M+1', 'M+2', 'M+3', 'M+4', 'M+5', 'M+6' ];
 const PLACEHOLDER_ROWS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun' ];
 
 const createPlaceholderRows = () => {
@@ -204,61 +204,62 @@ export function RetentionChartBlock() {
 	}, []);
 
 	const showEmptyState =
-		! isFetching &&
-		! retentionQuery.isError &&
-		( 1 > retentionData.max_offset || 0 === data.length );
+		! isFetching && ! retentionQuery.isError && 0 === data.length;
 
 	return (
-		<Block className="row-span-1 lg:col-span-12 xl:col-span-6">
+		<Block className="row-span-2 lg:col-span-12 xl:col-span-6">
 			<BlockHeading
-				title={ __( 'Customer retention', 'burst-statistics' ) }
+				title={__( 'Customer retention', 'burst-statistics' )}
 				className="border-b border-gray-200"
 				controls={
 					<div className="flex items-center gap-3 flex-wrap justify-end">
 						<RetentionLegend />
 
 						<SelectInput
-							options={ productOptions }
-							value={ retentionProductId }
-							onChange={ setRetentionProductId }
+							options={productOptions}
+							value={retentionProductId}
+							onChange={setRetentionProductId}
 						/>
 					</div>
 				}
-				isLoading={ isFetching }
+				isLoading={isFetching}
 			/>
 
 			<BlockContent className="px-0 py-0">
-				{ retentionQuery.isError && (
+				{retentionQuery.isError && (
 					<p className="px-6 py-4 text-sm text-red-600">
-						{ __( 'Failed to load retention data.', 'burst-statistics' ) }
+						{__( 'Failed to load retention data.', 'burst-statistics' )}
 					</p>
-				) }
+				)}
 
-				{ showEmptyState ? (
+				{showEmptyState ? (
 					<div className="h-[440px] flex items-center justify-center px-6 py-8 text-center">
 						<div className="max-w-md">
 							<h3 className="mb-1 text-base font-medium text-gray-600">
-								{ __( 'Not enough renewal history yet', 'burst-statistics' ) }
+								{__( 'Not enough renewal history yet', 'burst-statistics' )}
 							</h3>
 
 							<p className="text-sm text-gray-400">
-								{ __( 'Select a wider date range to see completed monthly retention cohorts.', 'burst-statistics' ) }
+								{__(
+									'Select a wider date range to see completed monthly retention cohorts.',
+									'burst-statistics'
+								)}
 							</p>
 						</div>
 					</div>
 				) : (
 					<div
 						style={{ height: 440 }}
-						aria-busy={ isFetching }
-						className={ isFetching ? 'animate-pulse' : undefined }
+						aria-busy={isFetching}
+						className={isFetching ? 'animate-pulse' : undefined}
 					>
 						<ResponsiveHeatMap
-							data={ data }
+							data={data}
 							margin={{ top: 24, right: 24, bottom: 44, left: 104 }}
 							valueFormat=">-.0f"
 							emptyColor="var(--color-gray-100)"
-						colors={ retentionColorScale }
-							axisTop={ null }
+							colors={retentionColorScale}
+							axisTop={null}
 							axisLeft={{
 								tickSize: 0,
 								tickPadding: 15,
@@ -270,21 +271,25 @@ export function RetentionChartBlock() {
 								tickPadding: 8,
 								tickValues: getDynamicTickValues( data, width )
 							}}
-							animate={ true }
-							xInnerPadding={ 0.08 }
-							yInnerPadding={ 0.1 }
-							borderRadius={ 3 }
-							enableLabels={ false }
-							tooltip={ isFetching ? () => null : RetentionTooltip }
+							animate={true}
+							xInnerPadding={0.08}
+							yInnerPadding={0.1}
+							borderRadius={3}
+							enableLabels={false}
+							tooltip={isFetching ? () => null : RetentionTooltip}
 							theme={{
 								axis: {
-									ticks: { text: { fill: 'var(--color-gray-600)', fontSize: 12 } },
-									legend: { text: { fill: 'var(--color-gray-500)', fontSize: 11 } }
+									ticks: {
+										text: { fill: 'var(--color-gray-600)', fontSize: 12 }
+									},
+									legend: {
+										text: { fill: 'var(--color-gray-500)', fontSize: 11 }
+									}
 								}
 							}}
 						/>
 					</div>
-				) }
+				)}
 			</BlockContent>
 		</Block>
 	);

@@ -10,7 +10,7 @@
  *   - Dark greys (700–900) + black → full light text.
  *   - Border/divider tokens → subtle alpha-white hairlines.
  */
- body.dashboard-default-dark-theme, #burst-statistics.dark {
+body.dashboard-default-dark-theme, #burst-statistics.dark {
 	background-color: var(--color-gray-50);
 	min-height: 100vh;
 

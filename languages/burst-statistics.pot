@@ -4041,13 +4041,13 @@ msgstr ""
 #: dist-build/includes/Pro/Admin/Licensing/class-licensing.php:1073
 #: dist/includes/Pro/Admin/Licensing/class-licensing.php:1073
 #: includes/Pro/Admin/Licensing/class-licensing.php:1073
-msgid "Your Burst Statistics Pro license hasn't been activated."
+msgid "Your Burst Pro license hasn't been activated."
 msgstr ""
 
 #: dist-build/includes/Pro/Admin/Licensing/class-licensing.php:1074
 #: dist/includes/Pro/Admin/Licensing/class-licensing.php:1074
 #: includes/Pro/Admin/Licensing/class-licensing.php:1074
-msgid "Your Burst Statistics Pro license is not valid."
+msgid "Your Burst Pro license is not valid."
 msgstr ""
 
 #: dist-build/includes/Pro/Admin/Statistics/class-statistics.php:558

@@ -218,7 +218,7 @@ trait Helper {
 	/**
 	 * Log error to error_log
 	 */
-	protected static function error_log( $message ): void {
+	protected static function error_log( $message, bool $print_stack_trace = false ): void {
 		// @phpstan-ignore-next-line.
 		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
 			return;
@@ -239,6 +239,13 @@ trait Helper {
 				error_log( $before_text . print_r( $message, true ) );
 			} else {
 				error_log( $before_text . $message );
+			}
+
+			if ( $print_stack_trace ) {
+				ob_start();
+				debug_print_backtrace();
+				$backtrace = ob_get_clean();
+				error_log( $backtrace );
 			}
 		}
 	}
