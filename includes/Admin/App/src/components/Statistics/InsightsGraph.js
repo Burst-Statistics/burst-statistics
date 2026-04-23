@@ -22,7 +22,7 @@ function transformToNivoFormat( data, timestamps, metrics ) {
 	}
 
 	return data.datasets.map( ( dataset, i ) => ({
-		id: dataset.label,
+		id: metrics?.[ i ] ?? dataset.label,
 		color: METRIC_COLORS[ metrics?.[ i ] ] ?? dataset.borderColor,
 		data: timestamps.map( ( ts, j ) => ({
 			x: new Date( ts * 1000 ),
@@ -71,10 +71,10 @@ const InsightsGraph = ({ data, timestamps, interval, spansMultipleYears, metrics
 		[ interval, spansMultipleYears ]
 	);
 
-	// Slice tooltip wrapper so we can pass interval and metrics down without prop-drilling through Nivo.
+	// Slice tooltip wrapper so we can pass interval down without prop-drilling through Nivo.
 	const sliceTooltip = useCallback(
-		({ slice }) => <InsightsTooltip slice={slice} interval={interval ?? 'day'} metrics={metrics} />,
-		[ interval, metrics ]
+		({ slice }) => <InsightsTooltip slice={slice} interval={interval ?? 'day'} />,
+		[ interval ]
 	);
 
 	return (

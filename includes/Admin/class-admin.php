@@ -1404,6 +1404,11 @@ class Admin {
 			return $menu_items;
 		}
 
+		$should_load_ecommerce = \Burst\burst_loader()->integrations->should_load_ecommerce();
+		if ( ! $should_load_ecommerce ) {
+			return $menu_items;
+		}
+
 		$ecommerce_menu_item = [
 			'id'             => 'sales',
 			'title'          => __( 'Sales', 'burst-statistics' ),
