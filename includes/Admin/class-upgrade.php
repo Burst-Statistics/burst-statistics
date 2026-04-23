@@ -290,6 +290,9 @@ class Upgrade {
 				global $wpdb;
 				$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}burst_query_stats" );
 			}
+
+			// Reinstalling rest API optimizer for new REST API endpoint `get_action/ecommerce/<action>`.
+			burst_reinstall_rest_api_optimizer();
 		}
 
 		if ( $prev_version && version_compare( $prev_version, '3.5.0', '<' ) ) {
