@@ -524,18 +524,234 @@ class App {
 				display: none;
 			}
 
-			/* Base styles for the Burst statistics container */
+			/* Skeleton color tokens. Dark values are single-sourced on :root so both
+				the .dark class path and the media-query path reuse the same literals. */
+			:root {
+				--burst-skeleton-dark-page: oklch(0.184 0.015 144.76);
+				--burst-skeleton-dark-panel: oklch(0.234 0.0095 144.76);
+				--burst-skeleton-dark-pulse: oklch(0.34 0.0147 144.76);
+			}
+
 			#burst-statistics {
-				/* Add any base styles for the container */
+				--burst-skeleton-panel: rgb(255 255 255);
+				--burst-skeleton-pulse: rgb(229 231 235);
+			}
+
+			/* Background colors */
+			#burst-statistics .bg-white {
+				background-color: var(--burst-skeleton-panel);
+			}
+
+			#burst-statistics .bg-gray-200 {
+				background-color: var(--burst-skeleton-pulse);
+			}
+
+			/* Layout */
+			#burst-statistics .mx-auto {
+				margin-left: auto;
+				margin-right: auto;
+			}
+
+			#burst-statistics .flex {
+				display: flex;
+			}
+
+			#burst-statistics .grid {
+				display: grid;
+			}
+
+			#burst-statistics .grid-cols-12 {
+				grid-template-columns: repeat(12, minmax(0, 1fr));
+			}
+
+			#burst-statistics .grid-rows-5 {
+				grid-template-rows: repeat(5, minmax(0, 1fr));
+			}
+
+			#burst-statistics .col-span-6 {
+				grid-column: span 6 / span 6;
+			}
+
+			#burst-statistics .col-span-3 {
+				grid-column: span 3 / span 3;
+			}
+
+			#burst-statistics .row-span-2 {
+				grid-row: span 2 / span 2;
+			}
+
+			#burst-statistics .items-center {
+				align-items: center;
+			}
+
+			/* Spacing */
+			#burst-statistics .gap-5 {
+				gap: 1.25rem;
+			}
+
+			#burst-statistics .px-5 {
+				padding-left: 1.25rem;
+				padding-right: 1.25rem;
+			}
+
+			#burst-statistics .py-2 {
+				padding-top: 0.5rem;
+				padding-bottom: 0.5rem;
+			}
+
+			#burst-statistics .py-6 {
+				padding-top: 1.5rem;
+				padding-bottom: 1.5rem;
+			}
+
+			#burst-statistics .p-5 {
+				padding: 1.25rem;
+			}
+
+			#burst-statistics .m-5 {
+				margin: 1.25rem;
+			}
+
+			#burst-statistics .mb-5 {
+				margin-bottom: 1.25rem;
+			}
+
+			#burst-statistics .ml-2 {
+				margin-left: 0.5rem;
+			}
+
+			/* Sizing */
+			#burst-statistics .h-6 {
+				height: 1.5rem;
+			}
+
+			#burst-statistics .h-11 {
+				height: 2.75rem;
+			}
+
+			#burst-statistics .w-auto {
+				width: auto;
+			}
+
+			#burst-statistics .w-1\/2 {
+				width: 50%;
+			}
+
+			#burst-statistics .w-4\/5 {
+				width: 80%;
+			}
+
+			#burst-statistics .w-5\/6 {
+				width: 83.333333%;
+			}
+
+			#burst-statistics .w-full {
+				width: 100%;
+			}
+
+			#burst-statistics .min-h-full {
+				min-height: 100%;
+			}
+
+			#burst-statistics .max-w-(--breakpoint-2xl) {
+				max-width: 1600px;
+			}
+
+			/* Effects */
+			#burst-statistics .shadow-md {
+				box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+			}
+
+			#burst-statistics .rounded-md {
+				border-radius: 0.375rem;
+			}
+
+			#burst-statistics .rounded-xl {
+				border-radius: 0.75rem;
+			}
+
+			#burst-statistics .animate-pulse {
+				animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+			}
+
+			@keyframes pulse {
+				0%, 100% {
+					opacity: 1;
+				}
+				50% {
+					opacity: .5;
+				}
+			}
+
+			#burst-statistics .blur-sm {
+				filter: blur(4px);
+			}
+
+			/* Borders */
+			#burst-statistics .border-b-4 {
+				border-bottom-width: 4px;
+			}
+
+			#burst-statistics .border-transparent {
+				border-color: transparent;
+			}
+
+			#burst-statistics .overflow-x-hidden {
+				overflow-x: hidden;
+			}
+
+			@media not all and (min-width: 640px) {
+				#burst-statistics .max-sm\:w-32 {
+					width: 8rem;
+				}
+
+				#burst-statistics .max-sm\:col-span-12 {
+					grid-column: span 12 / span 12;
+				}
+
+				#burst-statistics .max-sm\:row-span-1 {
+					grid-row: span 1 / span 1;
+				}
+			}
+
+			/* Dark mode overrides — mirror token values from dark-scope-tokens.css so the
+				skeleton renders correctly before Tailwind loads. Utility rules keep using
+				--burst-skeleton-panel/pulse; we just swap those to the dark literals here.
+				background-color on #burst-statistics itself covers the container bg. */
+			#burst-statistics.dark {
+				--burst-skeleton-panel: var(--burst-skeleton-dark-panel);
+				--burst-skeleton-pulse: var(--burst-skeleton-dark-pulse);
+				background-color: var(--burst-skeleton-dark-page);
+			}
+
+			/* System dark preference — applies from first paint, independent of JS,
+				and also covers the WP admin body bg around the skeleton to prevent flash.
+				The JS above can still override via stored preference after the fact. */
+			@media (prefers-color-scheme: dark) {
+				body.toplevel_page_burst {
+					background-color: var(--burst-skeleton-dark-page);
+				}
+
+				#burst-statistics {
+					--burst-skeleton-panel: var(--burst-skeleton-dark-panel);
+					--burst-skeleton-pulse: var(--burst-skeleton-dark-pulse);
+					background-color: var(--burst-skeleton-dark-page);
+				}
 			}
 		</style>
 		<div id="burst-statistics" class="burst">
 			<script>
-				// Apply dark class from stored preference or system preference to prevent white flash
+				// Apply dark class from stored preference or system preference to prevent white flash.
+				// Stored value is JSON-stringified by the React app (setLocalStorage) and may be
+				// '"light"', '"dark"', or '"system"'. Treat 'system' and missing value as "follow OS".
 				(function() {
-					var stored = localStorage.getItem( 'burst_theme_preference' );
+					var raw = localStorage.getItem( 'burst_theme_preference' );
+					var pref = null;
+					if ( raw ) {
+						try { pref = JSON.parse( raw ); } catch ( e ) { pref = raw; }
+					}
 					var prefersDark = window.matchMedia && window.matchMedia( '(prefers-color-scheme: dark)' ).matches;
-					var isDark = stored === 'dark' || ( !stored && prefersDark );
+					var isDark = pref === 'dark' || ( ( !pref || pref === 'system' ) && prefersDark );
 					if ( isDark ) {
 						document.getElementById( 'burst-statistics' ).classList.add( 'dark' );
 					}
