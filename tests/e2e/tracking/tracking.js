@@ -9,6 +9,7 @@ import {getTableData} from "../helpers/getTableData";
 import {debugHasError} from "../helpers/debugHasError";
 import {visitPage} from "../helpers/visitPage";
 import {dismissOnboarding} from "../helpers/dismissOnboarding";
+import {waitForActivation} from "../helpers/waitForActivation";
 const { test, expect } = require('@playwright/test');
 
 async function runTrackingTest(typeKey, config){
@@ -17,6 +18,9 @@ async function runTrackingTest(typeKey, config){
         test( 'Test track hit and update hit', async ({ page }) => {
             console.log("login to WP");
             await login(page);
+            console.log("wait for burst activation to complete");
+            await waitForActivation(page);
+            console.log("burst activation completed");
             //ensure that a page is visited so the defaults are set before we write any options. 
             await page.goto('wp-admin/admin.php?page=burst');
             await dismissOnboarding(page);
