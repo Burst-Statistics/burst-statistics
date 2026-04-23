@@ -8,7 +8,9 @@ use Burst\Traits\Admin_Helper;
 class Integrations {
 	use Admin_Helper;
 
-	public array $integrations = [];
+	public array $integrations              = [];
+	public ?bool $should_load_ecommerce     = null;
+	public ?bool $should_load_subscriptions = null;
 	/**
 	 * Constructor
 	 */
@@ -28,15 +30,20 @@ class Integrations {
 	 * @return bool True if any active integration requires ecommerce features.
 	 */
 	public function should_load_ecommerce(): bool {
-		$should_load = false;
+		if ( $this->should_load_ecommerce !== null ) {
+			return $this->should_load_ecommerce;
+		}
+
+		$this->should_load_ecommerce = false;
 		foreach ( $this->integrations as $plugin => $details ) {
 			if ( isset( $details['load_ecommerce_integration'] ) && $details['load_ecommerce_integration'] && $this->plugin_is_active( $plugin ) ) {
-				$should_load = true;
+				$this->should_load_ecommerce = true;
 				break;
 			}
 		}
 
-		return apply_filters( 'burst_load_ecommerce_integration', $should_load );
+		$this->should_load_ecommerce = (bool) apply_filters( 'burst_load_ecommerce_integration', $this->should_load_ecommerce );
+		return $this->should_load_ecommerce;
 	}
 
 	/**
@@ -45,7 +52,11 @@ class Integrations {
 	 * @return bool True if there are subscriptions, false otherwise.
 	 */
 	public function has_subscription_integrations_enabled(): bool {
-		return apply_filters( 'burst_subscription_integrations_enabled', false );
+		if ( $this->should_load_subscriptions !== null ) {
+			return $this->should_load_subscriptions;
+		}
+		$this->should_load_subscriptions = (bool) apply_filters( 'burst_subscription_integrations_enabled', false );
+		return $this->should_load_subscriptions;
 	}
 
 	/**

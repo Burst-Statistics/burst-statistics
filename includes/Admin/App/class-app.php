@@ -1431,6 +1431,42 @@ class App {
 	}
 
 	/**
+	 * Populate the referrers table from the sessions table if it is empty.
+	 * Used both by the filter UI (lazy populate on first read) and by data sharing
+	 * (which otherwise sees an empty table right after the weekly TRUNCATE).
+	 */
+	public function maybe_populate_referrers_table(): void {
+		global $wpdb;
+
+		if ( ! $this->table_exists( 'burst_referrers' ) ) {
+			return;
+		}
+
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_referrers" );
+		if ( $count > 0 ) {
+			return;
+		}
+
+		$wpdb->query(
+			"INSERT IGNORE INTO {$wpdb->prefix}burst_referrers (name)
+             SELECT TRIM(TRAILING '/' FROM domain) AS domain
+             FROM (
+               SELECT
+                 LOWER(SUBSTRING_INDEX(referrer, '/', 1)) AS domain
+               FROM {$wpdb->prefix}burst_sessions
+               WHERE referrer IS NOT NULL
+                 AND referrer != ''
+                 AND referrer NOT LIKE '/%'
+             ) AS derived
+             WHERE domain != ''
+               AND SUBSTRING_INDEX(domain, ':', 1) NOT REGEXP '^[0-9]{1,3}(\\.[0-9]{1,3}){3}$'
+             GROUP BY domain
+             ORDER BY COUNT(*) DESC
+             LIMIT 2000;"
+		);
+	}
+
+	/**
 	 * Get referrer options for the advanced filter. The table is cleared weekly, to ensure up to date data.
 	 *
 	 * @param string $search the optional search string.
@@ -1439,33 +1475,13 @@ class App {
 	private function get_referrer_options( string $search = '' ): array {
 		global $wpdb;
 
+		$this->maybe_populate_referrers_table();
+
 		$search = sanitize_text_field( $search );
 		$like   = '%' . $wpdb->esc_like( $search ) . '%';
 		$where  = strlen( $search ) > 0 ? $wpdb->prepare( 'WHERE name LIKE %s ', $like ) : '';
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where is prepared above.
-		$referrers = $wpdb->get_results( "SELECT TRIM(TRAILING '/' FROM name) as name FROM {$wpdb->prefix}burst_referrers $where ORDER BY ID ASC limit 1000", ARRAY_A );
-		if ( empty( $referrers ) ) {
-			$wpdb->query(
-				"INSERT IGNORE INTO {$wpdb->prefix}burst_referrers (name)
-                 SELECT TRIM(TRAILING '/' FROM domain) AS domain
-                 FROM (
-                   SELECT
-                     LOWER(SUBSTRING_INDEX(referrer, '/', 1)) AS domain
-                   FROM {$wpdb->prefix}burst_sessions
-                   WHERE referrer IS NOT NULL
-                     AND referrer != ''
-                     AND referrer NOT LIKE '/%'
-                 ) AS derived
-                 WHERE domain != ''
-                   AND SUBSTRING_INDEX(domain, ':', 1) NOT REGEXP '^[0-9]{1,3}(\\.[0-9]{1,3}){3}$'
-                 GROUP BY domain
-                 ORDER BY COUNT(*) DESC
-                 LIMIT 2000;"
-			);
-
-			$referrers = $wpdb->get_results( "select name from {$wpdb->prefix}burst_referrers ORDER BY ID ASC", ARRAY_A );
-		}
-		return $referrers;
+		return $wpdb->get_results( "SELECT TRIM(TRAILING '/' FROM name) as name FROM {$wpdb->prefix}burst_referrers $where ORDER BY ID ASC limit 1000", ARRAY_A );
 	}
 
 	/**

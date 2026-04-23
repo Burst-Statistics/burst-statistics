@@ -7,13 +7,12 @@ import { METRIC_LABELS } from './insightsConfig';
  * Shows all series values at the hovered x position, with the date header
  * formatted according to the active grouping interval.
  *
- * @param {Object}   props          - Nivo slice tooltip props.
- * @param {Object}   props.slice    - The x-axis slice containing all points at that position.
- * @param {string}   props.interval - Active grouping interval: 'hour'|'day'|'week'|'month'.
- * @param {string[]} props.metrics  - Ordered array of active metric keys (e.g. ['pageviews', 'visitors']).
+ * @param {Object} props          - Nivo slice tooltip props.
+ * @param {Object} props.slice    - The x-axis slice containing all points at that position.
+ * @param {string} props.interval - Active grouping interval: 'hour'|'day'|'week'|'month'.
  * @return {JSX.Element} The rendered tooltip.
  */
-export function InsightsTooltip({ slice, interval, metrics }) {
+export function InsightsTooltip({ slice, interval }) {
 	const { points } = slice;
 
 	// x is a Date object when using Nivo's time scale.
@@ -28,11 +27,12 @@ export function InsightsTooltip({ slice, interval, metrics }) {
 				<p className="font-semibold text-gray-700 mb-1.5">{ xLabel }</p>
 			) }
 			<div className="flex flex-col gap-1">
-				{ points.map( ( point, i ) => {
+				{ points.map( ( point ) => {
 
-					// Prefer the metrics prop for a reliable label, fall back to serieId
-					// in case it was set directly by the server, then fall back to the raw serieId.
-					const label = METRIC_LABELS[ metrics?.[ i ] ] ?? METRIC_LABELS[ point.serieId ] ?? point.serieId;
+					// serieId is the metric key set in InsightsGraph.transformToNivoFormat.
+					// Using it here keeps the label aligned with the point's actual series,
+					// regardless of the order Nivo uses for slice points.
+					const label = METRIC_LABELS[ point.serieId ] ?? point.serieId;
 					return (
 						<div key={ point.id } className="flex items-center gap-2">
 							<span
