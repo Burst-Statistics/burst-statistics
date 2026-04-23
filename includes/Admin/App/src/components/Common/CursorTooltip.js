@@ -29,7 +29,7 @@ const CursorTooltip = ({ children, content, delayDuration = 400 }) => {
                 select-none
                 will-change-transform will-change-opacity
                 max-w-[40ch]
-                animate-[none]
+                animate-none
                 data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade
                 data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade
                 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade

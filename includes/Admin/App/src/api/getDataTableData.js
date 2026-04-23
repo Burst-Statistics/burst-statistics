@@ -239,6 +239,9 @@ const createCellFormatter = ( format, columnId ) => {
 	return ( row ) => {
 		try {
 			const value = row[columnId] ?? '';
+			if ( format === FORMATS.PERCENTAGE && ( null === row[columnId] || undefined === row[columnId] || '' === row[columnId]) ) {
+				return __( 'N/A', 'burst-statistics' );
+			}
 			const formatted = formatter( value, columnId, row );
 
 			// Add a-b test icon when conversion_rate or conversions column are present, but not both.

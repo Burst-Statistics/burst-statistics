@@ -45,14 +45,14 @@ const MapBreadcrumbs = () => {
 	return (
 		<div className="flex items-stretch gap-2">
 			{/* Back Button - Always visible */}
-			<div className="flex items-center rounded-lg border border-gray-200 bg-white/95 text-sm shadow-sm transition-all hover:shadow-md">
+			<div className="flex items-center rounded-lg border border-gray-300 bg-gray-50 text-sm shadow-sm transition-all hover:shadow-md">
 				<button
 					onClick={canGoBack ? handleBackClick : undefined}
 					disabled={! canGoBack}
-					className={`focus:ring-blue-500 flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+					className={`focus:ring-blue-500 flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus:outline-hidden focus:ring-2 focus:ring-offset-1 ${
 						canGoBack ?
 							'cursor-pointer text-white hover:bg-gray-100' :
-							'cursor-not-allowed text-gray'
+							'cursor-not-allowed text-text-gray'
 					}`}
 					title={
 						canGoBack ?
@@ -73,7 +73,7 @@ const MapBreadcrumbs = () => {
 			</div>
 
 			{/* Breadcrumb Navigation */}
-			<div className="flex items-center rounded-lg border border-gray-200 bg-white/95 px-3 py-2 text-sm shadow-sm transition-all hover:shadow-md">
+			<div className="flex items-center rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm shadow-sm transition-all hover:shadow-md">
 				<nav
 					className="flex items-center"
 					aria-label={_x(
@@ -90,13 +90,13 @@ const MapBreadcrumbs = () => {
 										name="chevron-right"
 										size={14}
 										color="gray"
-										className="mx-1 flex-shrink-0"
+										className="mx-1 shrink-0"
 									/>
 								)}
 								{item.isClickable ? (
 									<button
 										onClick={item.onClick}
-										className="text-blue-600 hover:text-blue-800 focus:ring-blue-500 rounded px-1 py-0.5 text-sm transition-colors hover:underline focus:outline-none focus:ring-2 focus:ring-offset-1"
+										className="text-blue-600 hover:text-blue-800 focus:ring-blue-500 rounded px-1 py-0.5 text-sm transition-colors hover:underline focus:outline-hidden focus:ring-2 focus:ring-offset-1"
 									>
 										{item.label}
 									</button>
@@ -104,8 +104,8 @@ const MapBreadcrumbs = () => {
 									<span
 										className={`rounded px-1 py-0.5 text-sm ${
 											item.isActive ?
-												'font-medium text-black' :
-												'bg-gray-200 text-gray'
+												'font-medium text-text-black' :
+												'bg-gray-200 text-text-gray'
 										}`}
 									>
 										<Flag

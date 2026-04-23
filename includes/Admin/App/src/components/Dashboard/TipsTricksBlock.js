@@ -6,13 +6,13 @@ import { BlockContent } from '@/components/Blocks/BlockContent';
 import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import { useQuery } from '@tanstack/react-query';
-import { doAction } from '@/utils/api';
+import { getAction } from '@/utils/api';
 import he from 'he';
 
 const TipsTricksBlock = () => {
 	const articlesQuery = useQuery({
 		queryKey: [ 'articles' ],
-		queryFn: () => doAction( 'get_article_data' ),
+		queryFn: () => getAction( 'get_article_data' ),
 
 		// Only fetch once when component mounts
 		staleTime: Infinity,
@@ -36,7 +36,7 @@ const TipsTricksBlock = () => {
 	const items = pickRandomArticles( articlesQuery.data );
 	return (
 		<Block className="row-span-1 lg:col-span-6">
-			<BlockHeading title={__( 'Tips & Tricks', 'burst-statistics' )} />
+			<BlockHeading title={__( 'Tips & tricks', 'burst-statistics' )} isLoading={articlesQuery.isFetching} />
 
 			<BlockContent className="py-0">
 				<div className="flex flex-row flex-wrap mb-2.5 text-base leading-[1.7] gap-1.5 max-[992px]:overflow-hidden">
@@ -44,8 +44,8 @@ const TipsTricksBlock = () => {
 						items.map( ( item, index ) => (
 							<div key={index} className="w-[calc(50%-4px)] max-[576px]:w-full">
 
-								<a href={item.link} target="_blank" title={he.decode( item.title.rendered )} className="group text-gray transition-colors duration-300 ease-in-out flex items-center gap-2.5 min-w-0 no-underline hover:text-primary hover:underline">
-									<div className="h-[13px] w-[13px] flex-none rounded-full transition-colors duration-300 ease-in-out group-[:visited]:bg-gray-300 bg-primary group-hover:!bg-primary medium" />
+								<a href={item.link} target="_blank" title={he.decode( item.title.rendered )} className="group text-text-gray transition-colors duration-300 ease-in-out flex items-center gap-2.5 min-w-0 no-underline hover:text-primary hover:underline">
+									<div className="h-[13px] w-[13px] flex-none rounded-full transition-colors duration-300 ease-in-out group-visited:bg-gray-300 bg-primary group-hover:bg-primary! medium" />
 
 									<div className="whitespace-nowrap overflow-hidden text-ellipsis hover:underline">
 										{he.decode( item.title.rendered )}

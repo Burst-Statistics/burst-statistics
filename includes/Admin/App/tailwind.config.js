@@ -54,6 +54,14 @@ const orangeColor = {
 	dark: '#631a25'
 };
 
+const dashboardDarkColor = {
+	base: "#121313",
+	surface: "#1c1d1b",
+	text: "#F2F2F2",
+	accent: "#2B8133",
+	danger: "#c6273b",
+};
+
 /**
  * Toastify colors mapped to CSS variables.
  */
@@ -92,79 +100,81 @@ const toastifyProgressColors = {
 };
 
 module.exports = {
-	mode: 'jit',
-	content: [ './src/**/*.{js,jsx,ts,tsx}' ],
+	mode: "jit",
+	darkMode: "class",
+	content: ["./src/**/*.{js,jsx,ts,tsx}"],
 	safelist: [
-		'animate-spin',
-		'animate-pulseSlow',
-		'animate-shimmer',
+		"animate-spin",
+		"animate-pulseSlow",
+		"animate-shimmer",
 		{
 			pattern: /(yellow|green|blue|black|gray-400)$/,
-			variants: [ 'hover', '[&_a:hover]', '[&_a>.burst-bullet:hover]' ]
+			variants: ["hover", "[&_a:hover]", "[&_a>.burst-bullet:hover]"],
 		},
 		{ pattern: /^rdr/ },
 		{ pattern: /^rdt/ },
-		{ pattern: /^Toastify/ }
+		{ pattern: /^Toastify/ },
 	],
 	theme: {
 		extend: {
 			screens: {
-				'toast-mobile': '480px',
-				xxs: '576px',
-				'2xl': '1600px'
+				"toast-mobile": "480px",
+				xxs: "576px",
+				"2xl": "1600px",
 			},
 			spacing: {
-				'toastify-toast-width': '320px',
-				'toastify-toast-min-height': '42px',
-				'toastify-toast-max-height': '800px'
+				"toastify-toast-width": "320px",
+				"toastify-toast-min-height": "42px",
+				"toastify-toast-max-height": "800px",
 			},
 			zIndex: {
-				toastify: '9999'
+				toastify: "9999",
 			},
 			borderColor: {
-				'toastify-spinner': '#616161',
-				'toastify-spinner-empty': '#e0e0e0'
+				"toastify-spinner": "#616161",
+				"toastify-spinner-empty": "#e0e0e0",
 			},
 			boxShadow: {
-				rsp: 'rgba(0,0,0,0.1) 0 4px 6px -1px, rgba(0,0,0,0.06) 0 2px 4px -1px',
+				rsp: "rgba(0,0,0,0.1) 0 4px 6px -1px, rgba(0,0,0,0.06) 0 2px 4px -1px",
 				greenShadow: `inset 0 0 3px 2px ${greenColor.light}`,
-				primaryButtonHover: '0 0 0 3px rgba(34, 113, 177, 0.3)',
-				secondaryButtonHover: '0 0 0 3px rgba(0, 0, 0, 0.1)',
-				tertiaryButtonHover: '0 0 0 3px rgba(255, 0, 0, 0.3)',
+				primaryButtonHover: "0 0 0 3px rgba(34, 113, 177, 0.3)",
+				secondaryButtonHover: "0 0 0 3px rgba(0, 0, 0, 0.1)",
+				tertiaryButtonHover: "0 0 0 3px rgba(255, 0, 0, 0.3)",
 				proButtonHover: `0 0 0 3px ${brandColor.light}`,
 
-				 // LEVEL 1: LOW
+				// LEVEL 1: LOW
 				// Tighter spread (max 4px). Best for list items, buttons, or small inputs.
 				// --------------------------------------------------------------------------
-				'layered-low-b':
-				'0 1px 1px rgb(0 0 0 / 0.05), 0 2px 2px rgb(0 0 0 / 0.05), 0 4px 4px rgb(0 0 0 / 0.03)',
-				'layered-low-t':
-				'0 -1px 1px rgb(0 0 0 / 0.05), 0 -2px 2px rgb(0 0 0 / 0.05), 0 -4px 4px rgb(0 0 0 / 0.03)',
+				"layered-low-b":
+					"0 1px 1px rgb(0 0 0 / 0.05), 0 2px 2px rgb(0 0 0 / 0.05), 0 4px 4px rgb(0 0 0 / 0.03)",
+				"layered-low-t":
+					"0 -1px 1px rgb(0 0 0 / 0.05), 0 -2px 2px rgb(0 0 0 / 0.05), 0 -4px 4px rgb(0 0 0 / 0.03)",
 
 				// LEVEL 2: MID (Your Baseline)
 				// Balanced spread (max 16px). Best for content cards, headers, and panels.
 				// --------------------------------------------------------------------------
-				'layered-mid-b':
-				'0 1px 1px rgb(0 0 0 / 0.05), 0 2px 2px rgb(0 0 0 / 0.05), 0 4px 4px rgb(0 0 0 / 0.03), 0 8px 8px rgb(0 0 0 / 0.025)',
-				'layered-mid-t':
-				'0 -1px 1px rgb(0 0 0 / 0.05), 0 -2px 2px rgb(0 0 0 / 0.05), 0 -4px 4px rgb(0 0 0 / 0.03), 0 -8px 8px rgb(0 0 0 / 0.025)',
+				"layered-mid-b":
+					"0 1px 1px rgb(0 0 0 / 0.05), 0 2px 2px rgb(0 0 0 / 0.05), 0 4px 4px rgb(0 0 0 / 0.03), 0 8px 8px rgb(0 0 0 / 0.025)",
+				"layered-mid-t":
+					"0 -1px 1px rgb(0 0 0 / 0.05), 0 -2px 2px rgb(0 0 0 / 0.05), 0 -4px 4px rgb(0 0 0 / 0.03), 0 -8px 8px rgb(0 0 0 / 0.025)",
 
 				// LEVEL 3: HIGH
 				// Wide spread (max 32px). Best for modals, dialogs, or floating actions.
 				// --------------------------------------------------------------------------
-				'layered-high-b':
-				'0 1px 1px rgb(0 0 0 / 0.06), 0 2px 2px rgb(0 0 0 / 0.05), 0 4px 4px rgb(0 0 0 / 0.03), 0 8px 8px rgb(0 0 0 / 0.025), 0 16px 16px rgb(0 0 0 / 0.025)',
-				'layered-high-t':
-				'0 -1px 1px rgb(0 0 0 / 0.06), 0 -2px 2px rgb(0 0 0 / 0.05), 0 -4px 4px rgb(0 0 0 / 0.03), 0 -8px 8px rgb(0 0 0 / 0.025), 0 -16px 16px rgb(0 0 0 / 0.025)'
+				"layered-high-b":
+					"0 1px 1px rgb(0 0 0 / 0.06), 0 2px 2px rgb(0 0 0 / 0.05), 0 4px 4px rgb(0 0 0 / 0.03), 0 8px 8px rgb(0 0 0 / 0.025), 0 16px 16px rgb(0 0 0 / 0.025)",
+				"layered-high-t":
+					"0 -1px 1px rgb(0 0 0 / 0.06), 0 -2px 2px rgb(0 0 0 / 0.05), 0 -4px 4px rgb(0 0 0 / 0.03), 0 -8px 8px rgb(0 0 0 / 0.025), 0 -16px 16px rgb(0 0 0 / 0.025)",
 			},
 			gridTemplateColumns: {
-				'auto-1fr-auto': 'auto 1fr auto'
+				"auto-1fr-auto": "auto 1fr auto",
 			},
 			keyframes: { ...keyFrames },
 			animation: { ...animations },
 			colors: {
-				transparent: 'transparent',
-				current: 'currentColor',
+				transparent: "transparent",
+				current: "currentColor",
+				"dashboard-dark": dashboardDarkColor,
 				primary: greenColor,
 				secondary: yellowColor,
 				accent: blueColor,
@@ -177,93 +187,91 @@ module.exports = {
 				brand: brandColor,
 				toastify: toastifyColors,
 
-				white: '#fff',
-				black: '#151615',
+				white: "#fff",
+				black: "#151615",
 
 				gray: {
-					50: '#f9f9f9',
-					100: '#f8f9fa',
-					200: '#e9ecef',
-					300: '#dee2e6',
-					400: '#ced4da',
-					500: '#adb5bd',
-					600: '#6c757d',
-					700: '#495057',
-					800: '#343a40',
-					900: '#212529'
+					50: "#f9f9f9",
+					100: "#f8f9fa",
+					200: "#e9ecef",
+					300: "#dee2e6",
+					400: "#ced4da",
+					500: "#adb5bd",
+					600: "#6c757d",
+					700: "#495057",
+					800: "#343a40",
+					900: "#212529",
 				},
 
-				'button-accent': '#2271b1',
-				'border': '#dfdfdf',
-				'divider': '#ccc',
+				"button-accent": "#2271b1",
+				border: "#dfdfdf",
+				divider: "#ccc",
 
 				wp: {
-					blue: '#2271b1',
-					gray: '#f0f0f1',
-					orange: '#d63638',
-					black: '#1d2327'
-				}
+					blue: "#2271b1",
+					gray: "#f0f0f1",
+					orange: "#d63638",
+					black: "#1d2327",
+				},
 			},
 			backgroundImage: {
-				'toastify-progress-light': toastifyProgressColors.light
+				"toastify-progress-light": toastifyProgressColors.light,
 			},
 			backgroundColor: {
-				'toastify-progress-dark': toastifyProgressColors.dark,
-				'toastify-progress-info': toastifyProgressColors.info,
-				'toastify-progress-success': toastifyProgressColors.success,
-				'toastify-progress-warning': toastifyProgressColors.warning,
-				'toastify-progress-error': toastifyProgressColors.error
+				"toastify-progress-dark": toastifyProgressColors.dark,
+				"toastify-progress-info": toastifyProgressColors.info,
+				"toastify-progress-success": toastifyProgressColors.success,
+				"toastify-progress-warning": toastifyProgressColors.warning,
+				"toastify-progress-error": toastifyProgressColors.error,
 			},
-			textColor: ( theme ) => ({
-				black: '#1a1a1ae5',
-				'black-light': '#1A1A1AB2',
-				white: '#ffffffe5',
-				primary: theme( 'colors.primary.DEFAULT' ),
-				secondary: theme( 'colors.secondary.DEFAULT' ),
-				yellow: theme( 'colors.yellow.DEFAULT' ),
-				blue: theme( 'colors.blue.DEFAULT' ),
-				green: theme( 'colors.green.DEFAULT' ),
-				red: theme( 'colors.red.DEFAULT' ),
-				orange: theme( 'colors.orange.DEFAULT' ),
+			textColor: (theme) => ({
+				black: "#1a1a1ae5",
+				"black-light": "#1A1A1AB2",
+				white: "#ffffffe5",
+				primary: theme("colors.primary.DEFAULT"),
+				secondary: theme("colors.secondary.DEFAULT"),
+				yellow: theme("colors.yellow.DEFAULT"),
+				blue: theme("colors.blue.DEFAULT"),
+				green: theme("colors.green.DEFAULT"),
+				red: theme("colors.red.DEFAULT"),
+				orange: theme("colors.orange.DEFAULT"),
 				toastify: toastifyTextColors,
 
-				'button-contrast': '#000',
-				'button-secondary': '#fff',
-				'button-accent': theme( 'colors.button-accent' ),
+				"button-contrast": "#000",
+				"button-secondary": "#fff",
+				"button-accent": theme("colors.button-accent"),
 				gray: {
-					DEFAULT: '#454552e5',
-					50: '#f9f9f9',
-					100: '#f8f9fa',
-					200: '#e9ecef',
-					300: '#dee2e6',
-					400: '#ced4da',
-					500: '#adb5bd',
-					600: '#6c757d',
-					700: '#495057',
-					800: '#343a40',
-					900: '#212529'
-				}
-			})
+					DEFAULT: "#454552e5",
+					50: "#f9f9f9",
+					100: "#f8f9fa",
+					200: "#e9ecef",
+					300: "#dee2e6",
+					400: "#ced4da",
+					500: "#adb5bd",
+					600: "#6c757d",
+					700: "#495057",
+					800: "#343a40",
+					900: "#212529",
+				},
+			}),
 		},
 		fontSize: {
-			xxs: [ '0.5625rem', '0.8125rem' ], // 9px with ~13px line-height
-			xs: [ '0.625rem', '0.875rem' ], // 10px with 14px line-height
-			sm: [ '0.75rem', '1.125rem' ], // 12px with 18px line-height
-			base: [ '0.8125rem', '1.25rem' ], // 13px with 20px line-height
-			md: [ '0.875rem', '1.375rem' ], // 14px with 22px line-height
-			lg: [ '1rem', '1.625rem' ], // 16px with 26px line-height
-			xl: [ '1.125rem', '1.625rem' ], // 18px with 26px line-height
-			'2xl': [ '1.25rem', '1.75rem' ], // 20px with 28px line-height
-			'3xl': [ '1.5rem', '2rem' ], // 24px with 32px line-height
-			'4xl': [ '1.875rem', '2.25rem' ], // 30px with 36px line-height
-			'5xl': [ '3.5rem', '1' ] // 56px / normal line-height
-		}
+			xxs: ["0.5625rem", "0.8125rem"], // 9px with ~13px line-height
+			xs: ["0.625rem", "0.875rem"], // 10px with 14px line-height
+			sm: ["0.75rem", "1.125rem"], // 12px with 18px line-height
+			base: ["0.8125rem", "1.25rem"], // 13px with 20px line-height
+			md: ["0.875rem", "1.375rem"], // 14px with 22px line-height
+			lg: ["1rem", "1.625rem"], // 16px with 26px line-height
+			xl: ["1.125rem", "1.625rem"], // 18px with 26px line-height
+			"2xl": ["1.25rem", "1.75rem"], // 20px with 28px line-height
+			"3xl": ["1.5rem", "2rem"], // 24px with 32px line-height
+			"4xl": ["1.875rem", "2.25rem"], // 30px with 36px line-height
+			"5xl": ["3.5rem", "1"], // 56px / normal line-height
+		},
 	},
 	variants: {
-		extend: {}
+		extend: {},
 	},
-	plugins: [
-		ToastComponents
-	],
-	important: '#burst-statistics'
+	plugins: [ToastComponents],
+	important: "#burst-statistics",
 };

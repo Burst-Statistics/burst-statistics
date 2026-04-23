@@ -39,10 +39,10 @@ const TopPerformerStats = ({
 	return (
 		<div className={`flex items-center gap-3 py-2 ${className}`}>
 			<div className="flex-1 flex flex-col justify-center label">
-				<h3 className="text-sm font-normal text-gray">{title}</h3>
+				<h3 className="text-sm font-normal text-text-gray">{title}</h3>
 
 				{subtitle && (
-					<p className="text-base font-semibold text-black">
+					<p className="text-base font-semibold text-text-black">
 						{subtitle}
 					</p>
 				)}
@@ -52,12 +52,12 @@ const TopPerformerStats = ({
 				{
 					exactValue && 1000 < exactValue ? (
 						<HelpTooltip content={ tooltipText } delayDuration={1000}>
-							<span className="text-xl font-bold text-black value">
+							<span className="text-xl font-bold text-text-black value">
 								{value}
 							</span>
 						</HelpTooltip>
 					) : (
-						<span className="text-xl font-bold text-black value">
+						<span className="text-xl font-bold text-text-black value">
 							{value}
 						</span>
 					)
@@ -67,7 +67,7 @@ const TopPerformerStats = ({
 					className={`text-sm ${
 						'positive' === changeStatus ? 'text-green' :
 						'negative' === changeStatus ? 'text-red' :
-						'text-gray'
+						'text-text-gray'
 					}`}
 				>
 					{change ?? '-'}

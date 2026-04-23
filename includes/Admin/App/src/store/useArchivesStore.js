@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { doAction } from '../utils/api';
-import { toast } from 'react-toastify';
+import { doAction, getAction } from '../utils/api';
+import { toast } from '@/utils/toast';
 import { __ } from '@wordpress/i18n';
 const useArchiveStore = create( ( set, get ) => ({
 	fetching: false,
@@ -44,7 +44,7 @@ const useArchiveStore = create( ( set, get ) => ({
 
 		const data = {};
 
-		const { archives, downloadUrl } = await doAction( 'get_archives', data )
+		const { archives, downloadUrl } = await getAction( 'get_archives', data )
 			.then( ( response ) => {
 				return response;
 			})
@@ -92,7 +92,7 @@ const useArchiveStore = create( ( set, get ) => ({
 	},
 	fetchRestoreArchivesProgress: async() => {
 		set({ restoring: true });
-		const { progress, noData } = await doAction( 'get_restore_progress', {})
+		const { progress, noData } = await getAction( 'get_restore_progress', {})
 			.then( ( response ) => {
 				return response;
 			})

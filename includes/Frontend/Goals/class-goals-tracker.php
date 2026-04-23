@@ -54,9 +54,14 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 		/**
 		 * Process the execution of a hook as goal achieved
 		 */
-		public function handle_hook( string $hook_name ): void {
-			// get cookie burst_uid.
-			$burst_uid = $this->get_burst_uid();
+		public function handle_hook( string $hook_name, string $uid = '' ): void {
+
+			// get cookie burst_uid. If this is a headless website, the uid is passed through the api as a parameter.
+			if ( ! defined( 'BURST_HEADLESS_DOMAIN' ) ) {
+				$burst_uid = $this->get_burst_uid();
+			} else {
+				$burst_uid = $uid;
+			}
 
 			// we assume there has at least been one interaction clientside, so there should be a uid.
 			if ( ! empty( $burst_uid ) ) {

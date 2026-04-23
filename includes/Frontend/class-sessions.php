@@ -35,6 +35,12 @@ class Sessions {
             `referrer` varchar(255) DEFAULT NULL,
             `goal_id` int,
             `city_code` int DEFAULT 0,
+            `browser_id` int NOT NULL DEFAULT 0,
+            `browser_version_id` int NOT NULL DEFAULT 0,
+            `platform_id` int NOT NULL DEFAULT 0,
+            `device_id` int NOT NULL DEFAULT 0,
+            `first_time_visit` tinyint NOT NULL DEFAULT 0,
+            `bounce` tinyint DEFAULT 1,
             PRIMARY KEY (ID)
         ) $charset_collate;";
 
@@ -47,11 +53,16 @@ class Sessions {
 		$indexes = [
 			[ 'goal_id' ],
 			[ 'city_code' ],
+			[ 'browser_id' ],
+			[ 'platform_id' ],
+			[ 'device_id' ],
+			[ 'first_time_visit' ],
+			[ 'bounce' ],
 		];
 
 		// Try to create indexes with full length.
 		foreach ( $indexes as $index ) {
-			$this->add_index( $table_name, $index );
+			$this->add_index( 'burst_sessions', $index );
 		}
 	}
 }

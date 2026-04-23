@@ -1,4 +1,4 @@
-import { dateI18n } from '@wordpress/date';
+import {dateI18n, getSettings} from '@wordpress/date';
 import {
 	addDays,
 	addMonths,
@@ -11,7 +11,7 @@ import {
 	startOfMonth,
 	startOfYear
 } from 'date-fns';
-import { __ } from '@wordpress/i18n';
+import {__} from '@wordpress/i18n';
 
 /**
  * Returns a formatted string that represents the relative time between two dates
@@ -168,17 +168,45 @@ const formatUnixToDate = ( unixTimestamp ) => {
  * @return {string}
  */
 const formatUnixToTime = ( unixTimestamp ) => {
-	const date = new Date(
-		unixTimestamp * 1000
-	);
+	const date = new Date( unixTimestamp * 1000 );
 
-	return new Intl.DateTimeFormat(
-		undefined,
-		{
-			timeStyle: 'short'
-		}
-	).format( date );
+	return new Intl.DateTimeFormat( undefined, {
+		timeZone: getWpTimezone(),
+		timeStyle: 'short'
+	}).format( date );
 };
+
+const DEFAULT_X_AXIS_TICK_COUNT = 5;
+
+/**
+ * Reduces a full x-axis value list to a stable, evenly spaced subset.
+ * Keeps the first and last values so charts align on range boundaries.
+ *
+ * @param {Array}  values   - Ordered x-axis values.
+ * @param {number} maxTicks - Maximum number of labels to display.
+ *
+ * @return {Array} Sparse tick values.
+ */
+function getChartXAxisTickValues( values, maxTicks = DEFAULT_X_AXIS_TICK_COUNT ) {
+	if ( ! Array.isArray( values ) || 0 === values.length ) {
+		return [];
+	}
+
+	if ( values.length <= maxTicks ) {
+		return values;
+	}
+
+	const lastIndex = values.length - 1;
+	const tickIndexes = new Set([ 0, lastIndex ]);
+
+	for ( let index = 1; index < maxTicks - 1; index++ ) {
+		tickIndexes.add( Math.round( ( index * lastIndex ) / ( maxTicks - 1 ) ) );
+	}
+
+	return Array.from( tickIndexes )
+		.sort( ( left, right ) => left - right )
+		.map( ( index ) => values[ index ]);
+}
 
 /**
  * Formats a Unix timestamp as a date and time string, using the site's locale and wp date/time format
@@ -346,11 +374,33 @@ function getDateWithOffset( currentDate = new Date() ) {
 		burst_settings.gmt_offset * 3600 -
 		clientTimezoneOffsetSeconds;
 
-	const currentDateWithOffset = new Date( currentUnixWithOffsets * 1000 );
-
-	return currentDateWithOffset;
+	return new Date( currentUnixWithOffsets * 1000 );
 }
 const currentDateWithOffset = getDateWithOffset();
+
+const DEFAULT_BURST_START_TIMESTAMP = 1640995200;
+
+const getBurstStartDate = () => {
+	let activationTimestamp = DEFAULT_BURST_START_TIMESTAMP;
+	if ( burst_settings.burst_date_picker_start_date ) {
+		activationTimestamp = Number( burst_settings.burst_date_picker_start_date );
+	} else if ( burst_settings.burst_activation_time ) {
+		activationTimestamp = Number( burst_settings.burst_activation_time );
+	}
+
+	if ( isNaN( activationTimestamp ) ) {
+		activationTimestamp = DEFAULT_BURST_START_TIMESTAMP;
+	}
+
+	const startTimestamp =
+		Number.isFinite( activationTimestamp ) && 0 < activationTimestamp ?
+			activationTimestamp :
+			DEFAULT_BURST_START_TIMESTAMP;
+
+	return startOfDay( getDateWithOffset( new Date( startTimestamp * 1000 ) ) );
+};
+
+export const BURST_START_DATE = getBurstStartDate();
 
 const availableRanges = {
 	today: {
@@ -434,6 +484,13 @@ const availableRanges = {
 		range: () => ({
 			startDate: startOfYear( addYears( currentDateWithOffset, -1 ) ),
 			endDate: endOfYear( addYears( currentDateWithOffset, -1 ) )
+		})
+	},
+	'all-time': {
+		label: __( 'All time', 'burst-statistics' ),
+		range: () => ({
+			startDate: BURST_START_DATE,
+			endDate: endOfDay( currentDateWithOffset )
 		})
 	}
 };
@@ -535,16 +592,18 @@ function formatCurrency( currency, value ) {
  *
  * @param {string} currency - The currency code (e.g., 'USD', 'EUR').
  * @param {number} value    - The currency value to format.
+ * @param {Object} args     - Additional formatting options.
  *
  * @return {string} The compact formatted currency value.
  */
-function formatCurrencyCompact( currency, value ) {
+function formatCurrencyCompact( currency, value, args = {}) {
 	return new Intl.NumberFormat( undefined, {
 		style: 'currency',
 		currency,
 		notation: 'compact',
 		compactDisplay: 'short',
-		maximumFractionDigits: 1
+		maximumFractionDigits: 1,
+		...args
 	}).format( value );
 }
 
@@ -641,6 +700,201 @@ function formatDateShort( dateInput ) {
 	}
 }
 
+/**
+ * Format a duration in seconds to a human-readable string.
+ *
+ * Examples:
+ *   0     → "0s"
+ *   30    → "30s"
+ *   90    → "1m 30s"
+ *   120   → "2m"
+ *   3600  → "1h"
+ *   3660  → "1h 1m"
+ *
+ * @param {number} seconds - Duration in seconds.
+ * @return {string} Human-readable duration.
+ */
+const formatDuration = ( seconds ) => {
+	if ( 0 === seconds ) {
+		return '0s';
+	}
+	if ( 0 === seconds % 3600 ) {
+		return `${seconds / 3600}h`;
+	}
+	if ( 0 === seconds % 60 ) {
+		return `${seconds / 60}m`;
+	}
+	if ( 60 > seconds ) {
+		return `${seconds}s`;
+	}
+	const m = Math.floor( seconds / 60 );
+	const s = seconds % 60;
+	return `${m}m ${s}s`;
+};
+
+/**
+ * Returns the IANA timezone string configured in WordPress (e.g. 'America/New_York').
+ * Falls back to an Etc/GMT offset zone when WP only exposes a numeric UTC offset,
+ * and to the browser's own timezone when @wordpress/date is unavailable.
+ *
+ * @return {string} IANA timezone identifier.
+ */
+function getWpTimezone() {
+	try {
+		const { timezone } = getSettings();
+
+		// Validate IANA timezone string
+		if ( timezone?.string && ! timezone.string.startsWith( 'UTC' ) ) {
+			try {
+				new Intl.DateTimeFormat( 'en-US', { timeZone: timezone.string });
+				return timezone.string;
+			} catch {
+
+				// Invalid timezone string, fallback below
+			}
+		}
+
+		// Handle UTC offset (e.g. UTC+5)
+		const offsetHours = parseFloat( timezone?.offset ?? '0' );
+
+		if ( ! isNaN( offsetHours ) && 0 !== offsetHours ) {
+			const sign = 0 < offsetHours ? '-' : '+';
+			const tz = `Etc/GMT${ sign }${ Math.abs( offsetHours ) }`;
+
+			try {
+				new Intl.DateTimeFormat( 'en-US', { timeZone: tz });
+				return tz;
+			} catch {
+
+				// Invalid offset conversion, fallback below
+			}
+		}
+	} catch {
+
+		// Ignore and fallback
+	}
+
+	// Final safe fallback
+	try {
+		const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+		// 🚨 Critical fix: filter invalid timezone
+		if ( fallback && 'Etc/Unknown' !== fallback ) {
+			new Intl.DateTimeFormat( 'en-US', { timeZone: fallback });
+			return fallback;
+		}
+	} catch {
+
+		// Ignore
+	}
+
+	// Absolute fallback
+	return 'UTC';
+}
+
+/**
+ * Formats a Unix timestamp as a short label for chart x-axis ticks.
+ * Uses the WordPress site timezone so labels match server-side grouping.
+ *
+ * @param {number}  timestamp          - Unix timestamp in seconds (UTC).
+ * @param {string}  interval           - Grouping interval: 'hour'|'day'|'week'|'month'.
+ * @param {boolean} spansMultipleYears - Whether the chart range covers more than one year.
+ * @return {string} Short formatted label (e.g. '2 PM', 'Mon 3', '3 Jan', 'Jan 24').
+ */
+function formatAxisLabel( timestamp, interval, spansMultipleYears = false ) {
+	const date = new Date( timestamp * 1000 );
+	const timeZone = getWpTimezone();
+
+	switch ( interval ) {
+		case 'hour':
+			return new Intl.DateTimeFormat( undefined, { timeZone, hour: 'numeric' }).format( date );
+
+		case 'day':
+			return new Intl.DateTimeFormat( undefined, {
+				timeZone,
+				weekday: 'short',
+				day: 'numeric'
+			}).format( date );
+
+		case 'week':
+
+			// Show the week-start date; a compact day + short month is most readable.
+			return new Intl.DateTimeFormat( undefined, {
+				timeZone,
+				day: 'numeric',
+				month: 'short'
+			}).format( date );
+
+		case 'month':
+			return new Intl.DateTimeFormat( undefined, {
+				timeZone,
+				month: 'short',
+				...( spansMultipleYears ? { year: '2-digit' } : {})
+			}).format( date );
+
+		default:
+			return new Intl.DateTimeFormat( undefined, { timeZone, dateStyle: 'short' }).format( date );
+	}
+}
+
+/**
+ * Formats a Unix timestamp as a detailed label for chart tooltips.
+ * Uses the WordPress site timezone so labels match server-side grouping.
+ *
+ * @param {number} timestamp - Unix timestamp in seconds (UTC).
+ * @param {string} interval  - Grouping interval: 'hour'|'day'|'week'|'month'.
+ * @return {string} Detailed formatted label (e.g. 'Mon 3 Jan 2024, 2:00 PM', '3 Jan – 9 Jan 2024').
+ */
+function formatTooltipLabel( timestamp, interval ) {
+	const date = new Date( timestamp * 1000 );
+	const timeZone = getWpTimezone();
+
+	switch ( interval ) {
+		case 'hour':
+			return new Intl.DateTimeFormat( undefined, {
+				timeZone,
+				weekday: 'short',
+				day: 'numeric',
+				month: 'short',
+				year: 'numeric',
+				hour: 'numeric',
+				minute: '2-digit'
+			}).format( date );
+
+		case 'day':
+			return new Intl.DateTimeFormat( undefined, {
+				timeZone,
+				weekday: 'long',
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric'
+			}).format( date );
+
+		case 'week': {
+
+			// Show the full week range: start date – end date (week start + 6 days).
+			const weekEnd = new Date( ( timestamp + 6 * 24 * 60 * 60 ) * 1000 );
+			const fmt = new Intl.DateTimeFormat( undefined, {
+				timeZone,
+				day: 'numeric',
+				month: 'short',
+				year: 'numeric'
+			});
+			return `${ fmt.format( date ) } \u2013 ${ fmt.format( weekEnd ) }`;
+		}
+
+		case 'month':
+			return new Intl.DateTimeFormat( undefined, {
+				timeZone,
+				month: 'long',
+				year: 'numeric'
+			}).format( date );
+
+		default:
+			return new Intl.DateTimeFormat( undefined, { timeZone, dateStyle: 'long' }).format( date );
+	}
+}
+
 export {
 	getRelativeTime,
 	getPercentage,
@@ -667,5 +921,10 @@ export {
 	formatDateShort,
 	formatDate,
 	formatDateAndTime,
-	formatUnixToTime
+	formatUnixToTime,
+	formatDuration,
+	getWpTimezone,
+	formatAxisLabel,
+	formatTooltipLabel,
+	getChartXAxisTickValues
 };

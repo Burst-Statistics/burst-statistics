@@ -7,7 +7,7 @@ use Burst\Frontend\Share\Share_Expired;
 use Burst\Frontend\Tracking\Tracking;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
-use function Burst\burst_loader;
+
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -28,6 +28,7 @@ class Frontend {
 	 * Constructor
 	 */
 	public function init(): void {
+		add_action( 'admin_init', [ $this, 'maybe_redirect_to_settings_page' ], 1 );
 
 		add_action( 'init', [ $this, 'register_pageviews_block' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_time_tracking_script' ], 0 );
@@ -59,6 +60,38 @@ class Frontend {
 
 		$share = new Share_Expired();
 		$share->init();
+
+		$mainwp_proxy = new MainWP_Proxy();
+		$mainwp_proxy->init();
+	}
+
+	/**
+	 * After activation, redirect the user to the settings page.
+	 */
+	public function maybe_redirect_to_settings_page(): void {
+		if ( ! is_admin() || wp_doing_ajax() || wp_doing_cron() || wp_is_serving_rest_request() ) {
+			return;
+		}
+
+		// not processing form data, only a conditional redirect, which is available only temporarily.
+		// phpcs:ignore
+		if ( ! get_transient( 'burst_redirect_to_settings_page' ) || ( isset( $_GET['page'] ) && $_GET['page'] === 'burst' ) ) {
+			return;
+		}
+
+		if ( ! $this->user_can_view() ) {
+			return;
+		}
+
+		delete_transient( 'burst_redirect_to_settings_page' );
+
+		// we don't redirect when installed through the onboarding of another plugin.
+		if ( get_site_option( 'teamupdraft_installation_source_burst-statistics' ) ) {
+			return;
+		}
+
+		wp_safe_redirect( $this->admin_url( 'burst' ) );
+		exit;
 	}
 
 	/**
@@ -299,9 +332,16 @@ class Frontend {
 	 * Also handles the force logged out functionality for previewing click goals.
 	 */
 	public function use_logged_out_state_for_tests(): void {
-		// No form data processed, no action connected, only not showing logged in state for testing purposes.
+		// Verify nonce while user is still authenticated.
+		// This is the nonce verification, unslash done in verify_nonce().
+        // phpcs:ignore
+        if ( ! isset( $_GET['nonce'] ) || ! $this->verify_nonce( $_GET['nonce'], 'burst_nonce' ) ) {
+			return;
+		}
+
+		// Nonce is verified above.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( isset( $_GET['burst_test_hit'] ) || isset( $_GET['burst_nextpage'] ) || ( isset( $_GET['burst_force_logged_out'] ) && $_GET['burst_force_logged_out'] === '1' ) ) {
+		if ( isset( $_GET['burst_test_hit'] ) || ( isset( $_GET['burst_force_logged_out'] ) && $_GET['burst_force_logged_out'] === '1' ) ) {
 			add_filter( 'determine_current_user', '__return_null', 100 );
 			wp_set_current_user( 0 );
 		}
@@ -314,7 +354,7 @@ class Frontend {
 		// fix phpcs warning.
 		unset( $hook );
 		// don't enqueue if headless.
-		if ( defined( 'BURST_HEADLESS' ) || $this->get_option_bool( 'headless' ) ) {
+		if ( defined( 'BURST_HEADLESS_DOMAIN' ) || $this->get_option_bool( 'headless' ) ) {
 			return;
 		}
 

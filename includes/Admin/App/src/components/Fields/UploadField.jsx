@@ -1,8 +1,8 @@
-import { forwardRef, useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { __ } from '@wordpress/i18n';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import Icon from '@/utils/Icon';
-import { toast } from 'react-toastify';
+import { toast } from '@/utils/toast';
 import useSettingsData from '@/hooks/useSettingsData';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import { clsx } from 'clsx';
@@ -40,7 +40,7 @@ const EXCLUDED_FIELDS = [
  * @param {Object} props      - Additional props.
  * @return {JSX.Element}
  */
-	const UploadField = forwardRef(
+	const UploadField = (
 	({ field, fieldState, label, help, context, className, ...props }) => {
 		const { settings, saveSettings, isSavingSettings } = useSettingsData();
 		const [ file, setFile ] = useState( false );
@@ -251,7 +251,7 @@ const EXCLUDED_FIELDS = [
 								'flex-1 text-sm font-medium',
 								'success' === importStatus && 'text-green-700',
 								'error' === importStatus && 'text-red-700',
-								! importStatus && 'text-gray-700'
+								! importStatus && 'text-text-gray'
 							)}>
 								{file.name}
 							</span>

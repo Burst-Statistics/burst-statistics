@@ -2,60 +2,65 @@ import { scaleQuantize, scaleThreshold } from 'd3-scale';
 
 export const quantizeColorScales = {
 
+	// max 7 scales, so we need to use colours that have the most contrast.
 	// Sequential scheme: good for low-to-high data
-	blues: [
-		'#f7fbff',
-		'#deebf7',
-		'#9ecae1',
-		'#6baed6',
-		'#3182bd',
-		'#08519c',
-		'#08306b'
-	],
+	// blues: [
+	// 	'var(--color-blue-50)',
+	// 	'var(--color-blue-200)',
+	// 	'var(--color-blue-300)',
+	// 	'var(--color-blue-400)',
+	// 	'var(--color-blue-600)',
+	// 	'var(--color-blue-800)',
+	// 	'var(--color-blue-950)',
+	// ],
 
 	// Sequential scheme: good for low-to-high data
 	greens: [
-		'#d5edce',
-		'#c1e2ba',
-		'#a1d99b',
-		'#41ab5d',
-		'#238b45',
-		'#006d2c',
-		'#00441b'
+		'var(--color-green-50)',
+		'var(--color-green-200)',
+		'var(--color-green-300)',
+		'var(--color-green-400)',
+		'var(--color-green-600)',
+		'var(--color-green-800)',
+		'var(--color-green-950)'
 	],
 
-	// A sequential red scheme with a cooler, less orange tone
-	reds: [
-		'#ffebee',
-		'#ffcdd2',
-		'#ef9a9a',
-		'#e53935',
-		'#cb181d',
-		'#a50f15',
-		'#67000d'
-	],
+	// // A sequential red scheme with a cooler, less orange tone
+	// reds: [
+	// 	'var(--color-red-50)',
+	// 	'var(--color-red-200)',
+	// 	'var(--color-red-300)',
+	// 	'var(--color-red-400)',
+	// 	'var(--color-red-600)',
+	// 	'var(--color-red-800)',
+	// 	'var(--color-red-950)'
+	// ],
 
 	// Diverging scheme with a yellow center to avoid white
 	blueRedDiverging: [
-		'#313695',
-		'#74add1',
-		'#e0f3f8',
-		'#ffffbf',
-		'#fee090',
-		'#f46d43',
-		'#a50026'
-	],
-
-	// Diverging scheme from green to red with a yellow center
-	greenRedDiverging: [
-		'#006837',
-		'#66bd63',
-		'#d9ef8b',
-		'#ffffbf',
-		'#fee08b',
-		'#f46d43',
-		'#a50026'
+		'var(--color-blue-600)',
+		'var(--color-blue-400)',
+		'var(--color-blue-200)',
+		'var(--color-yellow-200)',
+		'var(--color-red-200)',
+		'var(--color-red-400)',
+		'var(--color-red-700)'
 	]
+
+	// // Diverging scheme from green to red with a yellow center
+	// greenRedDiverging: [
+	// 	'var(--color-green-500)',
+	// 	'var(--color-green-400)',
+	// 	'var(--color-green-300)',
+	// 	'var(--color-yellow-300)',
+	// 	'var(--color-yellow-400)',
+	// 	'var(--color-yellow-500)',
+	// 	'var(--color-red-600)',
+	// 	'var(--color-red-700)',
+	// 	'var(--color-red-800)',
+	// 	'var(--color-red-900)',
+	// 	'var(--color-red-950)'
+	// ]
 };
 
 /**

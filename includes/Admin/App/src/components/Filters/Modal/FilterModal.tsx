@@ -6,14 +6,7 @@ import FilterSetupView from './FilterSetupView';
 import { useFilters } from '@/hooks/useFilters';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import Icon from '@/utils/Icon';
-
-interface FilterConfig {
-	label: string;
-	icon: string;
-	type: string;
-	pro?: boolean;
-	options?: string;
-}
+import { type FilterConfig } from '@/config/filterConfig';
 
 interface FilterModalProps {
 	isOpen: boolean;
@@ -23,7 +16,7 @@ interface FilterModalProps {
 		config: FilterConfig;
 		value: string;
 	};
-	reportBlockIndex:number;
+	reportBlockIndex: number;
 }
 
 type ModalStep = 'selection' | 'setup';
@@ -32,10 +25,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
 	isOpen,
 	setIsOpen,
 	initialFilter,
-    reportBlockIndex
+	reportBlockIndex
 }) => {
-	const { setFilters, deleteFilter, clearAllFilters, getActiveFilters } =
-		useFilters( reportBlockIndex );
+	const { setFilters, deleteFilter, clearAllFilters, getActiveFilters } = useFilters( reportBlockIndex );
 
 	const [ currentStep, setCurrentStep ] = useState<ModalStep>( 'selection' );
 	const [ selectedFilter, setSelectedFilter ] = useState<string | null>( null );
@@ -136,7 +128,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
 				filterKey={selectedFilter}
 				config={selectedConfig}
 				onBack={handleBack}
-				tempValue={tempValue}
+
+				// Type casting it to string as child component expects this as string.
+				tempValue={tempValue + ''}
 				onTempValueChange={handleTempValueChange}
 			/>
 		);
@@ -258,7 +252,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 				<div className="flex items-center space-x-3 mb-4">
 					<button
 						onClick={handleBack}
-						className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded transition-all duration-200"
+						className="flex items-center space-x-2 text-sm text-text-gray-light hover:text-text-gray focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded transition-all duration-200"
 						aria-label={__( 'Back to filters', 'burst-statistics' )}
 						type="button"
 					>
@@ -273,7 +267,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
 				{/* Filter Header */}
 				<div className="flex items-center space-x-3">
-					<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-light">
+					<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100">
 						<Icon
 							name={selectedConfig.icon}
 							color="gray"
@@ -281,10 +275,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
 						/>
 					</div>
 					<div>
-						<h3 className="text-lg font-semibold text-gray-900">
+						<h3 className="text-lg font-semibold text-text-gray">
 							{selectedConfig.label}
 						</h3>
-						<p className="text-sm text-gray-600">
+						<p className="text-sm text-text-gray-light">
 							{getFilterDescription()}
 						</p>
 					</div>

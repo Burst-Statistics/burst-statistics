@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
 const RecommendBadge = ({ className = '' }) => {
 	return (
 		<span
-			className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary bg-opacity-10 text-primary ${className}`}
+			className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary bg-opacity-10 text-text-white ${className}`}
 		>
 			{__( 'Recommended', 'burst-statistics' )}
 		</span>

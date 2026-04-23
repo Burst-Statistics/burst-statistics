@@ -17,7 +17,7 @@ const OverviewFooter = () => {
 	// disabled
 	const [ lastChecked, setLastChecked ] = useState( 0 );
 	useMemo( () => {
-		burst_api.doAction( 'tracking' ).then( ( response ) => {
+		burst_api.getAction( 'tracking' ).then( ( response ) => {
 			if (
 				'beacon' === response.status ||
 				'rest' === response.status ||
@@ -99,7 +99,7 @@ const OverviewFooter = () => {
 			</ButtonInput>
 
 			<Tooltip content={trackingTooltipText}>
-				<div className="w-max text-gray flex items-center min-w-0 leading-none gap-1.5 no-underline burst-tooltip-trackingtext">
+				<div className="w-max text-text-gray flex items-center min-w-0 leading-none gap-1.5 no-underline burst-tooltip-trackingtext">
 					<Icon name={trackingIcon} color={trackingIconColor} />
 					<div>{trackingText}</div>
 				</div>

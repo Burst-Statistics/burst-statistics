@@ -110,7 +110,8 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 			if (
 				(
 					strpos( $request_uri, 'burst/v1/data/ecommerce' ) !== false ||
-					strpos( $request_uri, 'burst/v1/do_action/ecommerce' ) !== false
+					strpos( $request_uri, 'burst/v1/do_action/ecommerce' ) !== false ||
+					strpos( $request_uri, 'burst/v1/get_action/ecommerce' ) !== false
 				) ||
 				$should_load_ecommerce
 			) {

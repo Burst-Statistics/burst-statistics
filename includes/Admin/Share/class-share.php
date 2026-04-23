@@ -3,6 +3,7 @@ namespace Burst\Admin\Share;
 
 use Burst\Admin\App\App;
 use Burst\Admin\Capability\Capability;
+use Burst\Admin\Reports\Report;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Sanitize;
 use Burst\Traits\Save;
@@ -54,6 +55,7 @@ class Share {
 	 */
 	public function init(): void {
 		add_action( 'burst_do_action', [ $this, 'do_rest_action' ], 10, 3 );
+		add_action( 'burst_get_action', [ $this, 'get_rest_action' ], 10, 2 );
 		add_action( 'template_redirect', [ $this, 'check_for_share_token' ] );
 		add_action( 'init', [ $this, 'add_rewrite_rules' ] );
 		add_action( 'admin_init', [ $this, 'lock_viewer_user_capabilities' ] );
@@ -62,6 +64,28 @@ class Share {
 		add_filter( 'burst_share_link_permissions', [ $this, 'get_current_share_link_permissions' ] );
 		add_filter( 'burst_menu', [ $this, 'shareable_menu_items' ] );
 		add_action( 'admin_init', [ $this, 'maybe_flush_rewrite_rules' ] );
+		add_action( 'burst_daily', [ $this, 'cleanup_viewer_sessions' ] );
+	}
+
+	/**
+	 * Get shareable tabs from the menu configuration.
+	 * Reads from burst_menu filter and returns only items with shareable => true.
+	 *
+	 * @return array Array of shareable tab configurations with id and title.
+	 */
+	public static function get_shareable_tabs(): array {
+		$menu_items = \Burst\burst_loader()->admin->app->menu->get();
+
+		$shareable_tabs = [];
+		foreach ( $menu_items as $item ) {
+			if ( ! empty( $item['shareable'] ) && ! empty( $item['id'] ) ) {
+				$shareable_tabs[] = [
+					'id'    => $item['id'],
+					'title' => $item['title'] ?? $item['id'],
+				];
+			}
+		}
+		return $shareable_tabs;
 	}
 
 	/**
@@ -119,7 +143,7 @@ class Share {
 
 		if ( isset( $_SERVER['HTTP_X_BURST_SHARE_TOKEN'] ) ) {
 			$token = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_BURST_SHARE_TOKEN'] ) );
-			if ( $this->validate_share_token( $token ) ) {
+			if ( self::validate_share_token( $token ) ) {
 				return true;
 			}
 		}
@@ -151,7 +175,6 @@ class Share {
 		$user_caps    = array_keys( array_filter( (array) $user->allcaps ) );
 		$allowed_caps = [
 			'view_burst_statistics',
-			'view_sales_burst_statistics',
 			'burst_viewer',
 		];
 
@@ -172,7 +195,6 @@ class Share {
 
 			$user->add_role( 'burst_viewer' );
 			Capability::add_capability( 'view', [ 'burst_viewer' ] );
-			Capability::add_capability( 'view_sales', [ 'burst_viewer' ] );
 		}
 	}
 
@@ -217,7 +239,7 @@ class Share {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$token = sanitize_text_field( wp_unslash( $_GET['burst_share_token'] ) );
 		// This is a "just in case" check, if the token is invalid, we should never end up here anyway. It's already validated by this point.
-		if ( ! $this->validate_share_token( $token ) ) {
+		if ( ! self::validate_share_token( $token ) ) {
 			wp_die( esc_html__( 'This share link has expired or is invalid.', 'burst-statistics' ) );
 		}
 
@@ -306,7 +328,6 @@ class Share {
 				]
 			);
 			Capability::add_capability( 'view', [ 'burst_viewer' ] );
-			Capability::add_capability( 'view_sales', [ 'burst_viewer' ] );
 		}
 	}
 
@@ -324,46 +345,6 @@ class Share {
 		}
 
 		return $user->ID;
-	}
-
-	/**
-	 * Get shareable tabs from the menu configuration.
-	 * Reads from burst_menu filter and returns only items with shareable => true.
-	 *
-	 * @return array Array of shareable tab configurations with id and title.
-	 */
-	public static function get_shareable_tabs(): array {
-		$menu_items = apply_filters( 'burst_menu', require BURST_PATH . 'includes/Admin/App/config/menu.php' );
-
-		$shareable_tabs = [];
-		foreach ( $menu_items as $item ) {
-			if ( ! empty( $item['shareable'] ) && ! empty( $item['id'] ) ) {
-				$shareable_tabs[] = [
-					'id'    => $item['id'],
-					'title' => $item['title'] ?? $item['id'],
-				];
-			}
-		}
-
-		return $shareable_tabs;
-	}
-
-	/**
-	 * Get array of shareable tab IDs.
-	 *
-	 * @return array Array of shareable tab IDs.
-	 */
-	private static function get_shareable_tab_ids(): array {
-		$menu_items = require BURST_PATH . 'includes/Admin/App/config/menu.php';
-
-		$shareable_ids = [];
-		foreach ( $menu_items as $item ) {
-			if ( ! empty( $item['shareable'] ) && ! empty( $item['id'] ) ) {
-				$shareable_ids[] = $item['id'];
-			}
-		}
-
-		return $shareable_ids;
 	}
 
 	/**
@@ -399,22 +380,36 @@ class Share {
 			];
 		}
 
-		if ( $action === 'get_share_links' ) {
-			$output = [
-				'share_links'    => self::get_share_links(),
-				'shareable_tabs' => self::get_shareable_tabs(),
-			];
-		}
-
 		if ( $action === 'revoke_share_link' ) {
 			$token = isset( $data['token'] ) ? sanitize_text_field( $data['token'] ) : '';
 			$this->revoke_token( $token );
 			$output = [
 				'success'     => true,
-				'share_links' => self::get_share_links(),
+				'share_links' => $this->get_share_links( 'link' ),
 			];
 		}
 
+		return $output;
+	}
+
+	/**
+	 * Get share links for REST actions.
+	 *
+	 * @param array  $output The output array.
+	 * @param string $action The action being performed.
+	 * @return array The modified output array.
+	 */
+	public function get_rest_action( array $output, string $action ): array {
+		if ( ! $this->user_can_view() ) {
+			return $output;
+		}
+
+		if ( $action === 'get_share_links' ) {
+			return [
+				'share_links'    => $this->get_share_links( 'link' ),
+				'shareable_tabs' => self::get_shareable_tabs(),
+			];
+		}
 		return $output;
 	}
 
@@ -431,12 +426,30 @@ class Share {
 	/**
 	 * Get all valid share links with their metadata.
 	 *
+	 * @param string $type Type of token. all, report or link.
 	 * @param string $token Optional token to filter by.
 	 * @param int    $report_id Optional report_id to filter by.
 	 * @return array Array of share link data.
 	 */
-	public static function get_share_links( string $token = '', int $report_id = 0 ): array {
-		$tokens       = get_option( 'burst_share_tokens', [] );
+	public function get_share_links( string $type = 'all', string $token = '', int $report_id = 0 ): array {
+		$tokens = get_option( 'burst_share_tokens', [] );
+		// if this is requested for a report, we should check if it has a connected share url. If not, generate the token.
+		if ( $type === 'report' && $report_id > 0 ) {
+			$tokens = array_filter(
+				$tokens,
+				function ( $link ) use ( $report_id ) {
+					return $link['report_id'] === $report_id;
+				}
+			);
+			// if there are no tokens for this report, we should generate them now.
+			if ( empty( $tokens ) ) {
+				$burst_scheme = wp_parse_url( BURST_URL, PHP_URL_SCHEME );
+				$view_url     = set_url_scheme( site_url( '/burst-dashboard/#story' ), $burst_scheme );
+				$this->generate_token( '7d', $view_url, [], [], [], $report_id );
+				$tokens = get_option( 'burst_share_tokens', [] );
+			}
+		}
+
 		$share_links  = [];
 		$current_time = time();
 		// Clean up expired tokens while we're at it.
@@ -494,7 +507,7 @@ class Share {
 			);
 		}
 
-		if ( $report_id > 0 ) {
+		if ( $report_id !== 0 ) {
 			return array_filter(
 				$share_links,
 				function ( $link ) use ( $report_id ) {
@@ -503,13 +516,52 @@ class Share {
 			);
 		}
 
-		// filter out tokens where report_id >0.
-		return array_filter(
-			$share_links,
-			function ( $link ) {
-				return $link['report_id'] === 0;
+		// If we only need link types, filter out tokens where report_id >0.
+		if ( $type === 'link' ) {
+			return array_filter(
+				$share_links,
+				function ( $link ) {
+					return $link['report_id'] === 0;
+				}
+			);
+		}
+
+		if ( $type === 'report' ) {
+			return array_filter(
+				$share_links,
+				function ( $link ) {
+					return $link['report_id'] !== 0;
+				}
+			);
+		}
+
+		// type===all, return all items.
+		return $share_links;
+	}
+
+	/**
+	 * Check if the current request is allowed to view the ecommerce tab.
+	 */
+	public function ecommerce_tab_is_shared(): bool {
+		$token = '';
+		if ( isset( $_SERVER['HTTP_X_BURST_SHARE_TOKEN'] ) ) {
+            //phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The token is our nonce, and is sanitized.			$token = self::sanitize_token( wp_unslash( $_SERVER['HTTP_X_BURST_SHARE_TOKEN'] ) );
+			$token = self::sanitize_token( wp_unslash( $_SERVER['HTTP_X_BURST_SHARE_TOKEN'] ) );
+            //phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The token is our nonce, and is sanitized.			$token = self::sanitize_token( wp_unslash( $_SERVER['HTTP_X_BURST_SHARE_TOKEN'] ) );
+		} elseif ( isset( $_GET['burst_share_token'] ) ) {
+            //phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The token is our nonce, and is sanitized.			$token = self::sanitize_token( wp_unslash( $_SERVER['HTTP_X_BURST_SHARE_TOKEN'] ) );
+			$token = self::sanitize_token( wp_unslash( $_GET['burst_share_token'] ) );
+		}
+		if ( ! empty( $token ) ) {
+			$share_links = $this->get_share_links( 'all', $token );
+			if ( ! empty( $share_links ) ) {
+				// get first share link.
+				$share_links = array_values( $share_links );
+				$shared_tabs = $share_links[0]['shared_tabs'] ?? [];
+				return in_array( 'sales', $shared_tabs, true );
 			}
-		);
+		}
+		return false;
 	}
 
 	/**
@@ -526,7 +578,7 @@ class Share {
 			'can_filter'               => false,
 			'is_shareable_link_viewer' => false,
 		];
-		$share_links    = self::get_share_links();
+		$share_links    = $this->get_share_links( 'all' );
 		if ( ! empty( $token ) ) {
 			foreach ( $share_links as $link ) {
 				if ( $link['token'] === $token ) {
@@ -547,7 +599,7 @@ class Share {
 	public function get_current_share_link_allowed_tabs(): array {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The token is our nonce, and is sanitized.
 		$token       = isset( $_GET['burst_share_token'] ) ? self::sanitize_token( wp_unslash( $_GET['burst_share_token'] ) ) : '';
-		$share_links = self::get_share_links();
+		$share_links = $this->get_share_links( 'all' );
 		foreach ( $share_links as $link ) {
 			if ( $link['token'] === $token ) {
 				return $link['shared_tabs'] ?? [];
@@ -619,8 +671,11 @@ class Share {
 	 * @return string The complete share URL.
 	 */
 	private static function build_share_url( string $token, ?string $view_url = null, int $report_id = 0 ): string {
-		$base_url  = home_url( '/burst-dashboard/' );
-		$share_url = add_query_arg( 'burst_share_token', $token, $base_url );
+		// During cron, home_url() may return http:// while the site runs on https://.
+		// Normalize to the same scheme as BURST_URL to ensure the link is correct.
+		$burst_scheme = wp_parse_url( BURST_URL, PHP_URL_SCHEME );
+		$base_url     = set_url_scheme( home_url( '/burst-dashboard/' ), $burst_scheme );
+		$share_url    = add_query_arg( 'burst_share_token', $token, $base_url );
 
 		// in case of the report id, filter data and date ranges are pulled from the report.
 		if ( $report_id > 0 ) {
@@ -660,7 +715,7 @@ class Share {
 			return [];
 		}
 
-		$valid_tab_ids = self::get_shareable_tab_ids();
+		$valid_tab_ids = [ 'sales', 'dashboard', 'statistics', 'sources', 'subscriptions' ];
 		$sanitized     = [];
 
 		foreach ( $tabs as $tab ) {
@@ -770,6 +825,7 @@ class Share {
 
 		// if we haven't found it, generate a new one.
 		if ( empty( $token ) ) {
+
 			$token               = bin2hex( random_bytes( 16 ) );
 			$token_data['token'] = $token;
 			$existing_tokens[]   = $token_data;
@@ -777,6 +833,20 @@ class Share {
 
 		update_option( 'burst_share_tokens', $existing_tokens );
 		return $token;
+	}
+
+	/**
+	 * Delete all sessions for the burst_statistics_viewer user.
+	 * Runs daily via burst_daily cron to ensure viewer sessions never exceed 24 hours.
+	 */
+	public function cleanup_viewer_sessions(): void {
+		$user = get_user_by( 'login', 'burst_statistics_viewer' );
+		if ( ! $user ) {
+			return;
+		}
+
+		$manager = \WP_Session_Tokens::get_instance( $user->ID );
+		$manager->destroy_all();
 	}
 
 	/**

@@ -31,7 +31,7 @@ export const useInsightsStore = create(
 			}),
 			onRehydrateStorage: () => ( state ) => {
 
-				// On rehydration, filter out conversions if they exist
+				// On rehydration, filter out conversions if they exist.
 				if ( state && state.metrics ) {
 					state.metrics = state.metrics.filter(
 						( metric ) => 'conversions' !== metric

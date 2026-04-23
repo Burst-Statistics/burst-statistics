@@ -52,6 +52,13 @@ class Query_Data {
 	private array $allowed_order_by;
 
 	/**
+	 * Stable identifier for query family/source.
+	 *
+	 * @var string $id Query id used for deterministic fingerprinting.
+	 */
+	public string $id;
+
+	/**
 	 * Start date for the query (timestamp).
 	 *
 	 * @var int $date_start Start date for the query (timestamp).
@@ -78,6 +85,15 @@ class Query_Data {
 	 * @var array $filters Filters to apply in the query.
 	 */
 	public array $filters = [];
+
+	/**
+	 * Per-filter exclusion mode.
+	 *
+	 * Maps filter key → 'include' | 'exclude'.
+	 *
+	 * @var array<string, string> $filter_exclusions
+	 */
+	public array $filter_exclusions = [];
 
 	/**
 	 * Group by clause for the query.
@@ -198,9 +214,13 @@ class Query_Data {
 	/**
 	 * Constructor to initialize the Query_Data object with sanitizing arguments.
 	 *
-	 * @param array $args   Associative array of query parameters matching public properties.
+	 * Preferred usage: new Query_Data( 'my_query_id', [ ...args ] ).
+	 * Legacy usage with array-only input is still accepted temporarily.
+	 *
+	 * @param string              $id   Query id, or legacy args array.
+	 * @param array<string,mixed> $args Associative array of query parameters.
 	 */
-	public function __construct( array $args = [] ) {
+	public function __construct( string $id, array $args = [] ) {
 		$this->strict  = ! $this->has_admin_access();
 		$this->metrics = [
 			'host'                 => 'Domain',
@@ -229,9 +249,14 @@ class Query_Data {
 			'time'                 => 'Time',
 			'uid'                  => 'UID',
 			'page_id'              => 'Page ID',
-
 		];
 		$this->initialize_allowlists();
+
+		$this->id = sanitize_key( $id );
+
+		if ( empty( $this->id ) ) {
+			self::error_log( 'ID property is required for Query Data class.' );
+		}
 
 		// these parameters are used for prepared statements in custom SQL clauses.
 		$this->custom_where_parameters  = isset( $args['custom_where_parameters'] ) && is_array( $args['custom_where_parameters'] ) ? $args['custom_where_parameters'] : [];
@@ -296,6 +321,7 @@ class Query_Data {
 				'device_id',
 				'browser_id',
 				'platform_id',
+				'time_per_session',
 			];
 
 			$keys = array_merge( $keys, $extra );
@@ -351,8 +377,17 @@ class Query_Data {
 	 * @param mixed  $value Property value.
 	 */
 	private function assign_property( string $key, mixed $value ): void {
+		if ( $key === 'id' ) {
+			$this->id = sanitize_key( (string) $value );
+			if ( empty( $this->id ) ) {
+				self::error_log( 'ID property is required for Query Data class.' );
+			}
+			return;
+		}
+
 		if ( $key === 'filters' ) {
-			$this->filters = $this->sanitize_filters( is_array( $value ) ? $value : [] );
+			$this->filters = $this->normalize_filter_values( is_array( $value ) ? $value : [] );
+			$this->filters = $this->sanitize_filters( $this->filters );
 			return;
 		}
 
@@ -484,7 +519,7 @@ class Query_Data {
 		foreach ( $filters as $key => $value ) {
 			// Only allow filters with whitelisted keys.
 			if ( in_array( $key, $this->get_allowed_filter_keys(), true ) ) {
-				$sanitized_key = sanitize_key( $key );
+				$sanitized_key = $key;
 
 				// Use appropriate sanitization based on filter type.
 				switch ( $key ) {
@@ -527,6 +562,10 @@ class Query_Data {
 	/**
 	 * Sanitize filters for statistics queries.
 	 *
+	 * Normalizes the new { value, exclusion } filter shape from the frontend
+	 * into flat string values (backward compatible) while storing per-filter
+	 * exclusion modes in $this->filter_exclusions.
+	 *
 	 * @param array $filters Array of filters to sanitize.
 	 * @return array<string, mixed> Sanitized filters.
 	 */
@@ -536,6 +575,29 @@ class Query_Data {
 		} else {
 			return $this->sanitize_filters_flexibly( $filters );
 		}
+	}
+
+	/**
+	 * Normalize filter values: detect '!' prefix indicating exclusion,
+	 * strip it, and record the exclusion mode. All filters are passed through.
+	 *
+	 * @param array $filters Raw filters array.
+	 * @return array<string, mixed> Filters with '!' prefix stripped where applicable.
+	 */
+	private function normalize_filter_values( array $filters ): array {
+		$normalized = [];
+
+		foreach ( $filters as $key => $value ) {
+			if ( is_string( $value ) && str_starts_with( $value, '!' ) ) {
+				$normalized[ $key ]              = substr( $value, 1 );
+				$this->filter_exclusions[ $key ] = 'exclude';
+			} else {
+				$normalized[ $key ]              = $value;
+				$this->filter_exclusions[ $key ] = 'include';
+			}
+		}
+
+		return $normalized;
 	}
 
 	/**
@@ -799,6 +861,143 @@ class Query_Data {
 	 */
 	public function get_date_end(): int {
 		return $this->date_end;
+	}
+
+	/**
+	 * Get the query id used by stats fingerprinting.
+	 */
+	public function get_id(): string {
+		$id = sanitize_key( $this->id );
+
+		return $id !== '' ? $id : 'unknown_query';
+	}
+
+	/**
+	 * Build canonical payload for deterministic query fingerprinting.
+	 *
+	 * Absolute timestamps are intentionally excluded to avoid hash drift.
+	 * We use date_range_days to keep range granularity in the key.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function get_fingerprint_payload(): array {
+		$date_range_days = 0;
+		if ( $this->date_start > 0 && $this->date_end > 0 && $this->date_end >= $this->date_start ) {
+			$date_range_days = (int) ceil( ( $this->date_end - $this->date_start ) / DAY_IN_SECONDS );
+		}
+
+		$payload = [
+			'id'                => $this->get_id(),
+			'select'            => $this->normalize_list_for_fingerprint( $this->select ),
+			'filters'           => $this->normalize_for_fingerprint( $this->filters ),
+			'filter_exclusions' => $this->normalize_for_fingerprint( $this->filter_exclusions ),
+			'group_by'          => $this->normalize_list_for_fingerprint( $this->group_by ),
+			'order_by'          => $this->normalize_list_for_fingerprint( $this->order_by ),
+			'limit'             => $this->limit,
+			'distinct'          => $this->distinct,
+			'exclude_bounces'   => $this->exclude_bounces,
+			'date_range_days'   => $date_range_days,
+		];
+
+		ksort( $payload );
+
+		return $payload;
+	}
+
+	/**
+	 * Get deterministic hash for this query payload.
+	 */
+	public function get_fingerprint_hash(): string {
+		$payload_json = wp_json_encode( $this->get_fingerprint_payload(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+
+		if ( ! is_string( $payload_json ) || $payload_json === '' ) {
+			$payload_json = $this->get_id();
+		}
+
+		// Use 64-bit hash to stay compatible with existing sql_hash column length.
+		return hash( 'fnv1a64', $payload_json );
+	}
+
+	/**
+	 * Normalize a list where element order is not semantically relevant.
+	 *
+	 * @param array<mixed> $values List values.
+	 * @return array<mixed>
+	 */
+	private function normalize_list_for_fingerprint( array $values ): array {
+		$values = array_map( [ $this, 'normalize_for_fingerprint' ], $values );
+		usort( $values, [ $this, 'compare_normalized_values' ] );
+
+		return $values;
+	}
+
+	/**
+	 * Recursively normalize values for deterministic hashing.
+	 */
+	private function normalize_for_fingerprint( mixed $value ): mixed {
+		if ( is_array( $value ) ) {
+			if ( $this->is_list_array( $value ) ) {
+				$normalized = array_map( [ $this, 'normalize_for_fingerprint' ], $value );
+				usort( $normalized, [ $this, 'compare_normalized_values' ] );
+
+				return $normalized;
+			}
+
+			ksort( $value );
+			foreach ( $value as $key => $item ) {
+				$value[ $key ] = $this->normalize_for_fingerprint( $item );
+			}
+
+			return $value;
+		}
+
+		if ( is_bool( $value ) || is_int( $value ) || is_float( $value ) || $value === null ) {
+			return $value;
+		}
+
+		if ( is_numeric( $value ) && ! str_contains( $value, '.' ) ) {
+			return (int) $value;
+		}
+
+		if ( is_numeric( $value ) ) {
+			return (float) $value;
+		}
+
+		return (string) $value;
+	}
+
+	/**
+	 * Polyfill for list array detection (for PHP < 8.1 compatibility).
+	 *
+	 * @param array<mixed> $value Array to inspect.
+	 */
+	private function is_list_array( array $value ): bool {
+		$expected_key = 0;
+		foreach ( array_keys( $value ) as $key ) {
+			if ( $key !== $expected_key ) {
+				return false;
+			}
+			++$expected_key;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Compare normalized values for deterministic list sorting.
+	 */
+	private function compare_normalized_values( mixed $a, mixed $b ): int {
+		$encoded_a = wp_json_encode( $a, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		$encoded_b = wp_json_encode( $b, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+
+		if ( ! is_string( $encoded_a ) ) {
+			$encoded_a = (string) $a;
+		}
+		if ( ! is_string( $encoded_b ) ) {
+			$encoded_b = (string) $b;
+		}
+
+		return strcmp( $encoded_a, $encoded_b );
 	}
 
 	/**

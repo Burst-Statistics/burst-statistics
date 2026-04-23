@@ -176,7 +176,7 @@ const transformSalesData = ( data ) => {
 
 		switch ( key ) {
 			case 'conversion-rate': {
-				transformed[key].icon = 'eye';
+				transformed[key].icon = 'mouse-pointer-click';
 
 				if ( ! current ) {
 					transformed[key].subtitle = __(
@@ -261,7 +261,7 @@ const transformSalesData = ( data ) => {
 			}
 
 			case 'abandonment-rate': {
-				transformed[key].icon = 'sessions';
+				transformed[key].icon = 'shopping-cart';
 
 				if ( ! current ) {
 					transformed[key].subtitle = __(
@@ -298,7 +298,7 @@ const transformSalesData = ( data ) => {
 			}
 
 			case 'average-order': {
-				transformed[key].icon = 'visitors';
+				transformed[key].icon = 'receipt';
 
 				if ( ! current ) {
 					transformed[key].subtitle = __(
@@ -359,7 +359,7 @@ const transformSalesData = ( data ) => {
 			}
 
 			case 'revenue': {
-				transformed[key].icon = 'log-out';
+				transformed[key].icon = 'banknote';
 
 				if ( ! current ) {
 					transformed[key].subtitle = __(

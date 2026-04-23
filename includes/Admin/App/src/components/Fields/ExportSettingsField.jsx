@@ -1,6 +1,6 @@
 import { forwardRef, useState } from 'react';
 import { __ } from '@wordpress/i18n';
-import { toast } from 'react-toastify';
+import { toast } from '@/utils/toast';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import Icon from '@/utils/Icon';

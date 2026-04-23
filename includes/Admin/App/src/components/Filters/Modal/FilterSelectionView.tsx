@@ -5,15 +5,7 @@ import FilterCard from './FilterCard';
 import { useFilters } from '@/hooks/useFilters';
 import Icon from '@/utils/Icon';
 import useSettingsData from '@/hooks/useSettingsData';
-
-interface FilterConfig {
-	label: string;
-	icon: string;
-	type: string;
-	pro?: boolean;
-	category?: string;
-	coming_soon?: boolean;
-}
+import { type FilterConfig } from '@/config/filterConfig';
 
 interface FilterSelectionViewProps {
 	onSelectFilter: ( filterKey: string, config: FilterConfig ) => void;
@@ -129,19 +121,12 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 	const searchResults = searchFilters( searchQuery );
 
 	const renderFilters = (
-		filters: Array<{
-			key: string;
-			label: string;
-			icon: string;
-			type: string;
-			pro?: boolean;
-			category?: string;
-		}>,
+		filters: Array<{ key: string } & FilterConfig>,
 		searchInfo?: { source: string; isFromCurrentTab: boolean }
 	) => {
 		if ( 0 === filters.length ) {
 			return (
-				<div className="text-center py-8 text-gray-500">
+				<div className="text-center py-8 text-text-gray-light">
 					<Icon name="empty" size={48} color="gray" />
 					<p className="mt-2">
 						{searchQuery.trim() ?
@@ -172,7 +157,7 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 			<div>
 				{/* Search info message */}
 				{searchInfo && ! searchInfo.isFromCurrentTab && (
-					<div className="mb-4 p-3 bg-blue-light border border-blue-200 rounded-lg">
+					<div className="mb-4 p-3 bg-blue-300 border border-blue-200 rounded-lg">
 						<div className="flex items-center space-x-2">
 							<Icon name="help" size={16} color="blue" />
 							<span className="text-sm text-blue-700">
@@ -220,7 +205,7 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 						<Icon
 							name="search"
 							size={16}
-							className="text-gray-400"
+							className="text-text-gray-light"
 							aria-hidden="true"
 						/>
 					</div>
@@ -239,7 +224,7 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 					{searchQuery && (
 						<button
 							onClick={() => setSearchQuery( '' )}
-							className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-900"
+							className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-gray-light hover:text-text-gray-light focus:outline-hidden focus:text-text-gray"
 							aria-label={__( 'Clear search', 'burst-statistics' )}
 							type="button"
 						>
@@ -266,12 +251,12 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 								aria-selected={activeTab === tab.key}
 								aria-controls={`tabpanel-${tab.key}`}
 								className={clsx(
-									'flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap flex-shrink-0',
-									'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+									'flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap shrink-0',
+									'focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2',
 									{
 										'border-primary text-primary':
 											activeTab === tab.key,
-										'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300':
+										'border-transparent text-text-gray-light hover:text-text-gray hover:border-gray-300':
 											activeTab !== tab.key
 									}
 								)}
@@ -280,7 +265,7 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 									className={clsx(
 										'flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200',
 										{
-											'bg-primary-light text-white shadow-sm border-primary border-0.5':
+											'bg-primary-100 text-white shadow-sm border-primary border-0.5':
 												activeTab === tab.key,
 											'bg-transparent':
 												activeTab !== tab.key

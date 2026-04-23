@@ -101,6 +101,7 @@ const TopPerformers = ( props:BlockComponentProps ): JSX.Element => {
 		title: __( 'Top performers', 'burst-statistics' ),
 		isReport: props.isReport,
 		reportBlockIndex: index,
+		isLoading,
 		controls: allowBlockFilters ? (
 			<div className="flex items-center gap-2.5">
 				<SelectInput

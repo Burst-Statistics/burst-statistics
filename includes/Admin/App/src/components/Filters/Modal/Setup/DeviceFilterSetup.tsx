@@ -3,14 +3,7 @@ import { __ } from '@wordpress/i18n';
 import clsx from 'clsx';
 import Icon from '@/utils/Icon';
 import useFiltersData from '@/hooks/useFiltersData';
-
-interface FilterConfig {
-	label: string;
-	icon: string;
-	type: string;
-	pro?: boolean;
-	options?: string;
-}
+import { type FilterConfig } from '@/config/filterConfig';
 
 interface DeviceFilterSetupProps {
 	filterKey: string;
@@ -107,7 +100,7 @@ const DeviceFilterSetup: React.FC<DeviceFilterSetupProps> = ({
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="flex flex-col gap-6">
 			{/* Device Options Grid */}
 			<div
 				className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-items-center"
@@ -124,10 +117,10 @@ const DeviceFilterSetup: React.FC<DeviceFilterSetupProps> = ({
 							onKeyDown={( e ) => handleDeviceKeyDown( e, device.id )}
 							className={clsx(
 								'relative rounded-lg border-2 p-4 transition-all duration-200 bg-white w-full group',
-								'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+								'focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2',
 								'hover:shadow-md',
 								{
-									'border-primary bg-primary-light': selected,
+									'border-primary bg-primary-100': selected,
 									'border-gray-300 hover:border-gray-400':
 										! selected
 								}
@@ -147,13 +140,13 @@ const DeviceFilterSetup: React.FC<DeviceFilterSetupProps> = ({
 							)}
 
 							{/* Device Content */}
-							<div className="flex flex-col items-center space-y-3">
+							<div className="flex flex-col items-center gap-3">
 								{/* Icon */}
 								<div
 									className={clsx(
 										'flex h-12 w-12 items-center justify-center rounded-lg transition-colors',
 										{
-											'bg-primary-light': selected,
+											'bg-primary-100': selected,
 											'bg-gray-100 group-hover:bg-gray-200':
 												! selected
 										}
@@ -172,11 +165,7 @@ const DeviceFilterSetup: React.FC<DeviceFilterSetupProps> = ({
 								<div className="text-center">
 									<h3
 										className={clsx(
-											'text-sm font-medium transition-colors',
-											{
-												'text-gray-900': selected,
-												'text-gray-700': ! selected
-											}
+											'text-sm font-medium transition-colors text-text-gray'
 										)}
 									>
 										{device.title}

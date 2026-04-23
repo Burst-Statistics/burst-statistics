@@ -34,7 +34,7 @@ const SubscriptionHeader = () => {
 
 	//defaults for trial.
 	let iconColor = 'red';
-	let bgColor = 'bg-red-light';
+	let bgColor = 'bg-red-100';
 	let icon = 'warning-triangle';
 	let text = createInterpolateElement(
 		sprintf(
@@ -45,13 +45,13 @@ const SubscriptionHeader = () => {
 			trialRemainingDays
 		),
 		{
-			highlight: <strong className="font-semibold text-emerald-700" />
+			highlight: <strong className="font-semibold text-green-800" />
 		}
 	);
 
 	if ( isTrial ) {
 		iconColor = 'green';
-		bgColor = 'bg-green-light';
+		bgColor = 'bg-green-100';
 		icon = 'sprout';
 		showSubscriptionHeader = true;
 	} else if ( 'cancelled' === subscriptionStatus && trialExpired ) {
@@ -108,8 +108,8 @@ const SubscriptionHeader = () => {
 					ease: 'easeOut'
 				}}
 			>
-				<div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-5 px-5 py-2.5">
-					<div className="flex items-center gap-2.5 text-sm text-gray-700">
+				<div className="mx-auto flex max-w-(--breakpoint-2xl) items-center justify-between gap-5 px-5 py-2.5">
+					<div className="flex items-center gap-2.5 text-sm text-text-gray">
 						<motion.div
 							className="flex items-center justify-center w-5 h-5 rounded-full bg-white border border-gray-100"
 							initial={{ scale: 0, rotate: -180 }}

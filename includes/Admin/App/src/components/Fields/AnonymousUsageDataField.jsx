@@ -36,14 +36,14 @@ const AnonymousUsageDataField = forwardRef(
 				disabled={ props.disabled }
 				{ ...props }
 			>
-				<div className="w-full space-y-5 px-6">
+				<div className="w-full flex flex-col gap-5 px-6">
 					{/* Control: Toggle with label and status */ }
 					<div className="flex items-center justify-between gap-4">
 						<div className="flex flex-col gap-1">
-							<span className="text-md font-medium text-black">
+							<span className="text-md font-medium text-text-black">
 								{ __( 'Share anonymous usage data', 'burst-statistics' ) }
 							</span>
-							<span className={ `text-sm ${ isEnabled ? 'text-primary' : 'text-gray' }` }>
+							<span className={ `text-sm ${ isEnabled ? 'text-primary' : 'text-text-gray' }` }>
 								{ isEnabled ?
 									__( 'Enabled — thank you for helping us improve!', 'burst-statistics' ) :
 									__( 'Disabled', 'burst-statistics' )
@@ -60,7 +60,7 @@ const AnonymousUsageDataField = forwardRef(
 					</div>
 
 					{/* Explanation */ }
-					<p className="text-sm leading-relaxed text-gray">
+					<p className="text-sm leading-relaxed text-text-gray">
 						{ __(
 							'Help us build better features, prioritize integrations, and improve recommendations by sharing anonymous usage data. We never collect personal information, your site URL, or IP addresses. Everything stays completely anonymous.',
 							'burst-statistics'
@@ -70,40 +70,40 @@ const AnonymousUsageDataField = forwardRef(
 					{/* Details: Always visible for transparency */ }
 					<div className="grid gap-4 sm:grid-cols-2">
 						{/* What we collect */ }
-						<div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
-							<h4 className="flex items-center gap-2 text-sm font-semibold text-black">
+						<div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+							<h4 className="flex items-center gap-2 text-sm font-semibold text-text-black">
 								<Icon name="circle-check" color="green" size={ 16 } />
 								{ __( 'What we collect', 'burst-statistics' ) }
 							</h4>
-							<ul className="space-y-1.5 text-sm text-gray">
+							<ul className="flex flex-col gap-1.5 text-sm text-text-gray">
 								<li className="flex items-start gap-2">
-									<span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-gray-400"></span>
+									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400"></span>
 									{ __( 'General site metrics (e.g., monthly visitors, bounce rate)', 'burst-statistics' ) }
 								</li>
 								<li className="flex items-start gap-2">
-									<span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-gray-400"></span>
+									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400"></span>
 									{ __( 'Active plugins & WordPress/PHP versions', 'burst-statistics' ) }
 								</li>
 								<li className="flex items-start gap-2">
-									<span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-gray-400"></span>
+									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400"></span>
 									{ __( 'Burst settings you use', 'burst-statistics' ) }
 								</li>
 							</ul>
 						</div>
 
 						{/* What we don't collect */ }
-						<div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
-							<h4 className="flex items-center gap-2 text-sm font-semibold text-black">
+						<div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+							<h4 className="flex items-center gap-2 text-sm font-semibold text-text-black">
 								<Icon name="ban" color="red" size={ 16 } />
 								{ __( 'What we never collect', 'burst-statistics' ) }
 							</h4>
-							<ul className="space-y-1.5 text-sm text-gray">
+							<ul className="flex flex-col gap-1.5 text-sm text-text-gray">
 								<li className="flex items-start gap-2">
-									<span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-gray-400"></span>
+									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400"></span>
 									{ __( 'Your site URL, admin emails, or user data', 'burst-statistics' ) }
 								</li>
 								<li className="flex items-start gap-2">
-									<span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-gray-400"></span>
+									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400"></span>
 									{ __( 'Visitor IP addresses or specific page URLs', 'burst-statistics' ) }
 								</li>
 							</ul>

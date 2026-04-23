@@ -26,7 +26,7 @@ const OtherPluginsBlock = () => {
 	const { data: pluginData = [], isLoading } = useQuery({
 		queryKey: [ 'otherPluginsData' ],
 		queryFn: async() => {
-			let response = await burst_api.doAction( 'otherpluginsdata' );
+			let response = await burst_api.getAction( 'otherpluginsdata' );
 			response = Object.values( response );
 
 			// Process the plugin data
@@ -231,7 +231,7 @@ const OtherPluginsBlock = () => {
 	if ( isLoading ) {
 		const n = 3;
 		return (
-			<Block className="bg-wp-gray row-span-1 shadow-transparent border-wp-gray lg:col-span-6">
+			<Block className="bg-transparent! row-span-1 shadow-transparent border-transparent lg:col-span-6">
 				<BlockHeading
 					className={'burst-column-2 no-border no-background'}
 					title={__( 'Other plugins', 'burst-statistics' )}
@@ -239,7 +239,7 @@ const OtherPluginsBlock = () => {
 				/>
 
 				<BlockContent>
-					<div className="!flex flex-row flex-wrap mb-[10px] text-base gap-1.5 max-[992px]:flex-row max-[992px]:overflow-hidden">
+					<div className="flex! flex-row flex-wrap mb-[10px] text-base gap-1.5 max-[992px]:flex-row max-[992px]:overflow-hidden">
 						{[ ...Array( n ) ].map( ( e, i ) => (
 							<div key={i}>
 								<a>
@@ -263,14 +263,14 @@ const OtherPluginsBlock = () => {
 		);
 	}
 	return (
-		<Block className="bg-wp-gray row-span-1 shadow-transparent border-wp-gray lg:col-span-6">
+		<Block className="bg-trabs bg-transparent! row-span-1 shadow-transparent border-transparent lg:col-span-6">
 			<BlockHeading
 				title={__( 'Other plugins', 'burst-statistics' )}
 				controls={<UpdraftPlusLogo size={24} color="gray" />}
 			/>
 
 			<BlockContent>
-				<div className="!flex flex-row flex-wrap mb-[10px] text-base gap-1.5 max-[992px]:flex-row max-[992px]:overflow-hidden">
+				<div className="flex! flex-row flex-wrap mb-[10px] text-base gap-1.5 max-[992px]:flex-row max-[992px]:overflow-hidden">
 					{pluginData.map( ( plugin ) => otherPluginElement( plugin ) )}
 				</div>
 			</BlockContent>

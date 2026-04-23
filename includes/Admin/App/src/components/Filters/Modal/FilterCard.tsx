@@ -3,16 +3,10 @@ import { __ } from '@wordpress/i18n';
 import clsx from 'clsx';
 import Icon from '@/utils/Icon';
 import ProBadge from '@/components/Common/ProBadge';
+import NewBadge from '@/components/Common/NewBadge';
 import { useFilters } from '@/hooks/useFilters';
 import useLicenseData from '@/hooks/useLicenseData';
-
-interface FilterConfig {
-	label: string;
-	icon: string;
-	type: string;
-	pro?: boolean;
-	coming_soon?: boolean;
-}
+import { type FilterConfig } from '@/config/filterConfig';
 
 interface FilterCardProps {
 	filterKey: string;
@@ -83,6 +77,10 @@ const FilterCard: React.FC<FilterCardProps> = ({
 			description += `, ${__( 'coming soon', 'burst-statistics' )}`;
 		}
 
+		if ( config.new_badge ) {
+			description += `, ${__( 'new', 'burst-statistics' )}`;
+		}
+
 		if ( isDisabled ) {
 			description += `, ${__( 'disabled', 'burst-statistics' )}`;
 		}
@@ -96,7 +94,7 @@ const FilterCard: React.FC<FilterCardProps> = ({
 				'relative rounded-lg border-2 p-4 transition-all duration-200 bg-white w-full group',
 				'focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2',
 				{
-					'border-primary bg-primary-light': isActive,
+					'border-primary bg-primary-100': isActive,
 					'border-gray-300 shadow-sm hover:border-gray-400':
 						! isActive && ! isDisabled,
 					'bg-gray-100 border-gray-200': isDisabled,
@@ -116,10 +114,10 @@ const FilterCard: React.FC<FilterCardProps> = ({
 				aria-pressed={isActive}
 				className={clsx(
 					'w-full h-full absolute inset-0 rounded-lg transition-all duration-200',
-					'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+					'focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2',
 					{
 						'cursor-not-allowed': isDisabled,
-						'cursor-pointer hover:bg-black hover:bg-opacity-5':
+						'cursor-pointer hover:bg-opacity-5':
 							! isDisabled
 					}
 				)}
@@ -134,11 +132,11 @@ const FilterCard: React.FC<FilterCardProps> = ({
 					disabled={isDisabled}
 					className={clsx(
 						'p-1 rounded-full transition-all duration-200',
-						'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1',
+						'focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-1',
 						'hover:bg-gray-200 active:bg-gray-300',
 						{
 							'text-yellow-500': isFav,
-							'text-gray-400 hover:text-gray-600': ! isFav,
+							'text-text-gray-light hover:text-text-gray-light': ! isFav,
 							'cursor-not-allowed opacity-50': isDisabled
 						}
 					)}
@@ -173,14 +171,14 @@ const FilterCard: React.FC<FilterCardProps> = ({
 			)}
 
 			{/* Card Content */}
-			<div className="flex flex-col items-center space-y-3 relative z-10 pointer-events-none">
+			<div className="relative z-10 pointer-events-none flex flex-col items-center gap-3">
 				{/* Icon */}
 				<div
 					className={clsx(
 						'flex h-12 w-12 items-center justify-center rounded-lg',
 						{
 							'bg-gray-100': ! isActive,
-							'bg-primary-light': isActive
+							'bg-primary-100': isActive
 						}
 					)}
 					aria-hidden="true"
@@ -195,22 +193,40 @@ const FilterCard: React.FC<FilterCardProps> = ({
 
 				{/* Label */}
 				<div className="text-center">
-					<h3 className="text-sm font-medium text-gray-900">
+					<h3 className="text-sm font-medium text-text-gray">
 						{config.label}
 					</h3>
+
 					{/* Pro Badge */}
-					{config.pro && (
-						<div className="mt-2">
-							<ProBadge label={__( 'Pro', 'burst-statistics' )} />
-						</div>
-					)}
-					{config.coming_soon && (
-						<div className="mt-2">
-							<span className="inline-flex items-center rounded bg-blue-light px-2 py-0.5 text-xs font-medium text-gray">
-								{__( 'Coming soon', 'burst-statistics' )}
-							</span>
-						</div>
-					)}
+					{
+						config.pro && (
+							<div className="mt-2">
+								<ProBadge label={__( 'Pro', 'burst-statistics' )} />
+							</div>
+						)
+					}
+
+					{
+						config.coming_soon && (
+							<div className="mt-2">
+								<span className="inline-flex items-center rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-text-gray">
+									{__( 'Coming soon', 'burst-statistics' )}
+								</span>
+							</div>
+						)
+					}
+
+					{
+						config.new_badge && (
+							<div className="mt-2">
+								<NewBadge
+									version={config.new_badge.version}
+									days={config.new_badge.days}
+									tooltipContent={config.new_badge.tooltip}
+								/>
+							</div>
+						)
+					}
 				</div>
 			</div>
 		</div>

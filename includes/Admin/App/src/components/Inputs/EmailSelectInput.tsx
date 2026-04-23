@@ -77,17 +77,17 @@ export const EmailSelectInput = forwardRef<HTMLInputElement, EmailSelectInputPro
 
 		const containerClass =
 			'flex min-h-[2.5rem] w-full rounded-md border border-gray-400 bg-white ' +
-			'focus-within:border-primary-dark focus-within:ring disabled:cursor-not-allowed ' +
+			'focus-within:border-primary-700 focus-within:ring-3 disabled:cursor-not-allowed ' +
 			'disabled:border-gray-200 disabled:bg-gray-200';
 
 		const innerClass =
 			'flex flex-1 flex-wrap items-center gap-1 p-1';
 
 		const tagClass =
-			'flex items-center gap-1 rounded bg-primary-light px-2 py-1 text-base text-primary-dark';
+			'flex items-center gap-1 rounded bg-primary-100 px-2 py-1 text-base text-primary-700';
 
 		const inputClass =
-			'flex-1 min-w-[120px] bg-transparent p-1 text-base outline-none disabled:cursor-not-allowed';
+			'flex-1 min-w-[120px] bg-transparent p-1 text-base outline-hidden disabled:cursor-not-allowed';
 
 		return (
 			<div className={containerClass}>
@@ -99,7 +99,7 @@ export const EmailSelectInput = forwardRef<HTMLInputElement, EmailSelectInputPro
 								<button
 									type="button"
 									onClick={() => handleRemove( email )}
-									className="ml-1 rounded-full hover:bg-primary hover:text-white"
+									className="ml-1 rounded-full hover:bg-primary hover:text-text-white"
 								>
 									✕
 								</button>
@@ -124,7 +124,7 @@ export const EmailSelectInput = forwardRef<HTMLInputElement, EmailSelectInputPro
 
 				{maxSelections && (
 					<div className="flex items-center border-l border-gray-300">
-						<span className="px-2 text-xs text-gray-500 border-r border-gray-200">
+						<span className="px-2 text-xs text-text-gray-light border-r border-gray-200">
 							{value.length}/{maxSelections}
 						</span>
 					</div>

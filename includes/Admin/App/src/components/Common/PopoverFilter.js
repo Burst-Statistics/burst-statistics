@@ -158,10 +158,10 @@ const PopoverFilter = ({
 
 				// Radio button mode for single selection
 				<div className="flex flex-col gap-2">
-					{Object.keys( options ).map( ( value ) => {
+					{Object.keys( options ).map( ( value, index ) => {
 						return (
 							<RadioInput
-								key={value}
+								key={'radio-popover' + value + index }
 								id={id + '_' + value}
 								name={id + '_radio_group'}
 								value={value}
@@ -198,11 +198,11 @@ const PopoverFilter = ({
 					// Render function for a single option.
 					const renderOption = ( value ) => (
 						<div
-							key={value}
+							key={'checkbox-popover' + value}
 							className="flex items-center gap-2.5 py-1"
 						>
 							<Checkbox.Root
-								className="focus:ring-blue-500 flex h-4 w-4 items-center justify-center rounded border-2 border-gray-300 bg-white transition-colors hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2"
+								className="focus:ring-blue-500 flex h-4 w-4 items-center justify-center rounded border-2 border-gray-300 bg-white transition-colors hover:border-gray-400 focus:outline-hidden focus:ring-2 focus:ring-offset-2"
 								id={id + '_' + value}
 								checked={pendingMetrics.includes( value )}
 								aria-label={__(
@@ -225,12 +225,12 @@ const PopoverFilter = ({
 								</Checkbox.Indicator>
 							</Checkbox.Root>
 							<label
-								className="flex-1 cursor-pointer text-sm text-gray"
+								className="flex-1 cursor-pointer text-sm text-text-gray"
 								htmlFor={id + '_' + value}
 							>
 								{options[value].label}
 							</label>
-							<div className="flex-shrink-0">
+							<div className="shrink-0">
 								{options[value].pro && ! isLicenseValid && (
 									<ProBadge label={'Pro'} />
 								)}
@@ -258,13 +258,13 @@ const PopoverFilter = ({
 							)}
 
 							{/* Render categorized options. */}
-							{categoryOrder.map( ( category ) => {
+							{categoryOrder.map( ( category, index ) => {
 								if ( ! categories[category] || 0 === categories[category].length ) {
 									return null;
 								}
 								return (
-									<div key={category} className="flex flex-col">
-										<div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 mt-2 first:mt-0">
+									<div key={'cat-' + category + index} className="flex flex-col">
+										<div className="text-xs font-semibold text-text-gray uppercase tracking-wide mb-1 mt-2 first:mt-0">
 											{categoryLabels[category] || category}
 										</div>
 										{categories[category].map( renderOption )}

@@ -20,6 +20,7 @@ import RadioField from './RadioField';
 import UploadField from './UploadField';
 import ExportSettingsField from './ExportSettingsField';
 import AnonymousUsageDataField from './AnonymousUsageDataField';
+import ThemeToggleField from './ThemeToggleField';
 import useLicenseData from '@/hooks/useLicenseData';
 import { ReportLogsField } from '@/components/Fields/ReportLogsField';
 
@@ -43,7 +44,8 @@ const fieldComponents = {
 	upload: UploadField,
 	export_settings: ExportSettingsField,
 	report_logs: ReportLogsField,
-    anonymous_usage_data: AnonymousUsageDataField
+	anonymous_usage_data: AnonymousUsageDataField,
+	theme_toggle: ThemeToggleField
 };
 
 const Field = memo( ({ setting, control, ...props }) => {

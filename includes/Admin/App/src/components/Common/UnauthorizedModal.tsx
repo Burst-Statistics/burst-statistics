@@ -36,11 +36,11 @@ const UnauthorizedModal: React.FC<UnauthorizedModalProps> = ({
 							</div>
 						</div>
 
-						<h2 className="text-2xl font-semibold text-gray-900 mb-3">
+						<h2 className="text-2xl font-semibold text-text-gray mb-3">
 							{header}
 						</h2>
 
-						<p className="text-gray-600 text-base mb-8 whitespace-pre-line">
+						<p className="text-text-gray-light text-base mb-8 whitespace-pre-line">
 							{message}
 						</p>
 

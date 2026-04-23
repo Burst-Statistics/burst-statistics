@@ -1,0 +1,76 @@
+/*
+ * react-data-table-component (rdt_*) light mode base overrides.
+ * These elements are styled by styled-components hash classes so
+ * plain Tailwind utility overrides do not reach them.
+ */
+@layer base {
+	.rdt_Table,
+	.rdt_Table>div,
+	.rdt_TableBody .rdt_TableRow,
+	.rdt_TableCol,
+	.rdt_TableCol_Sortable,
+	.rdt_TableCell {
+		background-color: var(--color-white) !important;
+		color: var(--color-text-black) !important;
+	}
+
+	.rdt_TableHead,
+	.rdt_TableHeadRow {
+		background-color: var(--color-gray-100) !important;
+		color: var(--color-text-gray) !important;
+		& > .rdt_TableCol, & > .rdt_TableCol_Sortable {
+			background-color: var(--color-gray-100) !important;
+			color: var(--color-text-gray) !important;
+			& > * {
+				background-color: var(--color-gray-100) !important;
+				color: var(--color-text-gray) !important;
+			}
+		}
+	}
+
+	/* Pagination bar — align with table surface in light mode. */
+	.rdt_Pagination {
+		background-color: var(--color-white) !important;
+		color: var(--color-text-gray) !important;
+
+		&>* {
+			margin-block: 0;
+			margin-inline: 1rem;
+		}
+	}
+
+	.rdt_Pagination button {
+		color: var(--color-text-black) !important;
+		fill: var(--color-text-black) !important;
+	}
+
+	div .rdt_Pagination button:disabled {
+		color: var(--color-text-gray-light) !important;
+		fill: var(--color-text-gray-light) !important;
+	}
+
+	.rdt_Pagination select {
+		background-color: var(--color-white) !important;
+		color: var(--color-text-black) !important;
+		padding-inline: 0.5rem;
+		padding-block: 0.25rem;
+		border-radius: 0.25rem;
+		border: 1px solid var(--color-gray-200) !important;
+		background-color: var(--color-white) !important;
+		color: var(--color-text-black) !important;
+		font-size: 0.875rem;
+		font-weight: 400;
+		line-height: 1.5;
+		/* add space between text and select arrow */
+
+		& + svg {
+			display: none;
+		}
+
+	}
+
+	div .rdt_Pagination select:disabled {
+		color: var(--color-text-gray-light) !important;
+		fill: var(--color-text-gray-light) !important;
+	}
+}

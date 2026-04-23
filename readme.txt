@@ -1,12 +1,12 @@
 === Burst Statistics - Privacy-Friendly WordPress Analytics (Google Analytics Alternative) ===
-Contributors: hesseldejong, RogierLankhorst, sh4lin
+Contributors: hesseldejong, RogierLankhorst, sh4lin, parthnvaswani
 Donate link: paypal.me/Burststatistics
 Tags: analytics, statistics, stats, privacy, GDPR
-Requires at least: 6.4
+Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
-Tested up to: 6.9
-Stable tag: 3.2.0
+Tested up to: 7.0
+Stable tag: 3.4.0
 
 Analytics you'll actually use. Privacy-friendly, zero config, and designed to be actionable. Get insights, not just raw data.
 
@@ -201,6 +201,49 @@ Absolutely! Both free and premium plugins can be managed with Composer. Read the
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.4.0 =
+* April 22nd 2026
+* New: dark mode support for the Burst Statistics dashboard.
+* New: support for MainWP integration.
+* New: all time date range for datepicker selection.
+* New: support for application passwords. It is now possible to use the Burst Rest API endpoints with application passwords.
+* Improvement: add detection for ad blockers. If an ad blocker breaks the Burst dashboard, show a warning about this.
+* Improvement: PHP warning about not existing referrers table when clearing the table.
+* Fix: restore bounces filter, allowing overriding the default time used to decide if a visit is a bounce.
+* Fix: fixed a bug in the visitor calculation for referrers, caused by changes for the "exclude" option in filters, props @bikew1se.
+* Fix: Share links sessions are now cleaned up daily, to prevent extended access to the link for longer than the set expiration time, Props Sanjay Singh Jhala.
+* Security: ajax fallback for get_reports endpoint unintentionally allowed users with burst_view capability to see reports configuration, props Sanjay Singh Jhala.
+
+= 3.3.0 =
+* April 1st 2026
+* New: Time per session filter, allowing filtering by visit duration.
+* New: Dark mode support for email reports.
+* Improvement: Move columns from statistics to sessions table, reducing data storage and improving query performance.
+* Improvement: Session data included in archive CSV exports.
+* Improvement: Add missing database indexes for improved performance.
+* Security: Share link viewers could view report data (recipient email addresses, scheduling configuration). Props Sanjay Singh Jhala.
+* Security: Share link viewers could view ecommerce/sales data, even when the share link was scoped to non-sales tabs only. Props Sanjay Singh Jhala.
+* Fix: Insights chart grouping by month was incorrect.
+* Fix: Cron URL protocol mismatch could cause a http link to be included in the email report, even when the site url is https..
+* Fix: Filter type issue breaking the filtering on the devices block, props Andrew.
+* Fix: Duplicate key error in SQL hash update query.
+* Fix: Email report logo centering and dark mode styling.
+* Fix: A burst test hit could be used to bypass the built-in IP block, props Sanjay Singh Jhala.
+
+= 3.2.3 =
+* March 12th 2026
+* Fix: share link for non logged in users not loading page.
+
+= 3.2.1 =
+* March 9th 2026
+* Security fix: Fixed a missing authorization check that allowed users with Burst View privilege to manage reports. Props Sanjay Singh Jhala.
+* Improvement: set turbo default to enabled, and add notice to recommend enabling it when cookieless tracking is enabled.
+* Improvement: check if PharData class is installed on the server to prevent fatal errors.
+* Fix: Store scheme for usage during cron jobs. During cron, the site_url is http. For the javascript generation, we need it to reflect the actual scheme, usually https.
+* Fix: duplicate fields in the reporting settings when the share link is opened by an admin user.
+* Fix: url not found warning when classic premium report is generated.
+* Fix: too strict use of sanitizers causing table prefixes to get lowercase. props @parkentosh
+
 = 3.2.0 =
 * February 25rd 2026
 * New: anonymously share data to help us improve Burst Statistics: build industry benchmarks, targeted feature development, and performance improvements.

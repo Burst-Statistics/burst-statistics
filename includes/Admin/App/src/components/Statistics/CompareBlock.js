@@ -41,6 +41,7 @@ const CompareBlock = (props) => {
 		placeholderData: emptyData
 	});
 
+	const isLoading = query.isLoading || query.isFetching;
 	const data = query.data || {};
 
 	// if query is fetched and all .change values are empty, set compareNotAvailable to true
@@ -50,7 +51,7 @@ const CompareBlock = (props) => {
 
 	return (
 		<Block className="row-span-1 lg:col-span-6 xl:col-span-3">
-			<BlockHeading title={__( 'Compare', 'burst-statistics' )} isReport={isReport} reportBlockIndex={index} />
+			<BlockHeading title={__( 'Compare', 'burst-statistics' )} isReport={isReport} reportBlockIndex={index} isLoading={isLoading} />
 			<BlockContent>
 				{Object.keys( data ).map( ( key, i ) => {
 					const m = data[key];
@@ -77,38 +78,6 @@ const CompareBlock = (props) => {
 			</BlockFooter>
 		</Block>
 	);
-
-	//
-	// return (
-	//   <GridItem
-	//     title={__("Compare", "burst-statistics")}
-	//     footer={
-	//       <CompareFooter
-	//         noCompare={compareNotAvailable}
-	//         startDate={startDate}
-	//         endDate={endDate}
-	//       />
-	//     }
-	//   >
-	//     <div className={"burst-loading-container " + loadingClass}>
-	//       {Object.keys(data).map((key, i) => {
-	//         let m = data[key];
-	//         return (
-	//           <ExplanationAndStatsItem
-	//             key={i}
-	//             iconKey={key}
-	//             title={m.title}
-	//             subtitle={m.subtitle}
-	//             value={m.value}
-	//             exactValue={m.exactValue}
-	//             change={m.change}
-	//             changeStatus={m.changeStatus}
-	//           />
-	//         );
-	//       })}
-	//     </div>
-	//   </GridItem>
-	// );
 };
 
 export default CompareBlock;

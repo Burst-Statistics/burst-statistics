@@ -70,7 +70,7 @@ const SearchButton = ({
 		<div className={`relative ${className}`}>
 			{! shouldBeOpen ? (
 				<div
-					className="bg-gray-100 border border-gray-400 focus:ring-blue-500 cursor-pointer rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 opacity-30 group-hover/root:opacity-100"
+					className="bg-gray-100 border border-gray-400 focus:ring-blue-500 cursor-pointer rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2 opacity-30 group-hover/root:opacity-100"
 					onClick={toggleSearch}
 					onKeyDown={( e ) => {
 						if ( 'Enter' === e.key || ' ' === e.key ) {
@@ -88,7 +88,7 @@ const SearchButton = ({
 				<div className="relative">
 					<input
 						ref={searchInputRef}
-						className="bg-white border border-gray-300 rounded-full px-2.5 py-1 pr-10 min-w-48 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none focus:shadow-sm"
+						className="bg-white border border-gray-300 rounded-full px-2.5 py-1 pr-10 min-w-48 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden focus:shadow-sm"
 						type="text"
 						placeholder={placeholder}
 						value={value}
@@ -103,7 +103,7 @@ const SearchButton = ({
 					/>
 					{value && (
 						<button
-							className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+							className="absolute right-3 top-1/2 -translate-y-1/2 text-text-gray transition-colors duration-200"
 							onClick={handleClearSearch}
 							onMouseDown={( e ) => e.preventDefault()} // Prevent input blur
 							tabIndex={-1}

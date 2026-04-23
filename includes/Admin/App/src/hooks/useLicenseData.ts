@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { doAction } from '@/utils/api';
+import { doAction, getAction } from '@/utils/api';
 
 /**
  * Interface for license notice object
@@ -95,7 +95,7 @@ const useLicenseData = (): UseLicenseDataReturn => {
     // Fetch license notices and status
     const { data, isFetching } = useQuery<LicenseData>({
         queryKey: [ 'licenseNotices' ],
-        queryFn: () => doAction( 'license_notices', {}),
+        queryFn: () => getAction( 'license_notices', {}),
         enabled: isPro,
 
         // Use initial data from window object to avoid flash of loading state
@@ -239,7 +239,7 @@ const useLicenseData = (): UseLicenseDataReturn => {
 			return isLicenseValid;
 		}
 
-		if ( 'sales' === id ) {
+		if ( 'sales' === id || 'subscriptions' === id ) {
 			return 'agency' === tier || 'business' === tier;
 		}
 

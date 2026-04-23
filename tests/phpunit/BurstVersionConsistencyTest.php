@@ -3,6 +3,63 @@ use PHPUnit\Framework\TestCase;
 
 class BurstVersionConsistencyTest extends TestCase {
 
+    /**
+     * Verifies that the "Tested up to" version in the free plugin's readme.txt is
+     * greater than or equal to the latest WordPress release when ignoring patch
+     * versions. The free repo only requires a major.minor match, so "Tested up to: 6.9"
+     * covers all 6.9.x releases. A warning only appears when the major.minor of the
+     * latest WP version exceeds the tested up to value.
+     */
+    public function test_free_tested_up_to_version() {
+        $plugin_dir = dirname( __FILE__, 3 );
+        $readme_path = $plugin_dir . '/readme.txt';
+
+        // Get "Tested up to" from free readme.txt
+        $tested_up_to = $this->get_tested_up_to( $readme_path );
+        $this->assertNotNull( $tested_up_to, 'Could not find "Tested up to" in readme.txt' );
+
+        // Fetch latest WordPress version from the official API
+        $response = file_get_contents( 'https://api.wordpress.org/core/version-check/1.7/' );
+        $this->assertNotFalse( $response, 'Could not fetch WordPress version from API' );
+
+        $data = json_decode( $response, true );
+        $this->assertNotNull( $data, 'Could not parse WordPress version API response' );
+
+        $latest_wp_version = $data['offers'][0]['version'] ?? null;
+        $this->assertNotNull( $latest_wp_version, 'Could not find version in WordPress API response' );
+
+        // Strip patch version from both values, leaving only major.minor (e.g. 6.9.1 -> 6.9)
+        $tested_up_to_normalized  = $this->normalize_to_minor( $tested_up_to );
+        $latest_wp_normalized     = $this->normalize_to_minor( $latest_wp_version );
+
+        // Tested up to major.minor must be >= latest WP major.minor
+        $this->assertGreaterThanOrEqual(
+            0,
+            version_compare( $tested_up_to_normalized, $latest_wp_normalized ),
+            "\"Tested up to\" ($tested_up_to) must be greater than or equal to the latest WordPress major.minor version ($latest_wp_normalized)."
+        );
+    }
+
+    private function normalize_to_minor( string $version ): string {
+        $parts = explode( '.', $version );
+
+        // Return only major.minor (first two segments)
+        return implode( '.', array_slice( $parts, 0, 2 ) );
+    }
+
+    private function get_tested_up_to( string $file_path ): ?string {
+        if ( ! file_exists( $file_path ) ) {
+            return null;
+        }
+
+        $content = file_get_contents( $file_path );
+        if ( preg_match( '/^Tested up to:\s*(\d+\.\d+(?:\.\d+)?)/mi', $content, $matches ) ) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
     public function test_version_consistency() {
         $plugin_dir = dirname( __FILE__, 3 );
 

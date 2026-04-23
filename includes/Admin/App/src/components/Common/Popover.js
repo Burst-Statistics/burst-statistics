@@ -17,7 +17,7 @@ const Popover = ({
 			>
 				{showFilterIcon && (
 					<div
-						className={`${isOpen ? 'bg-gray-300 shadow-lg' : 'bg-gray-100 shadow-sm'} border border-gray-400 focus:ring-blue-500 cursor-pointer rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 opacity-30 group-hover/root:opacity-100`}
+						className={`${isOpen ? 'bg-gray-300 shadow-lg' : 'bg-gray-100 shadow-sm'} border border-gray-400 focus:ring-blue-500 cursor-pointer rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2 opacity-30 group-hover/root:opacity-100`}
 					>
 						<Icon name="filter" />
 					</div>
@@ -27,14 +27,14 @@ const Popover = ({
 			<ReactPopover.Portal container={document.querySelector( '.burst' )}>
 				<ReactPopover.Content
 					className="z-50 min-w-[280px] max-w-[600px] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"
-					align="start"
+					align="end"
 					sideOffset={10}
 					arrowPadding={10}
 				>
 					<ReactPopover.Arrow className="fill-white drop-shadow-sm" />
 
 					<div className="border-b border-gray-100 px-4 py-3">
-						<h5 className="m-0 text-base font-semibold text-black">
+						<h5 className="m-0 text-base font-semibold text-text-black">
 							{title}
 						</h5>
 					</div>

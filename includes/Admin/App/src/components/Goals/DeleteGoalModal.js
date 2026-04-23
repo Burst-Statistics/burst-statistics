@@ -1,9 +1,10 @@
 import Modal from '@/components/Common/Modal';
 import { formatUnixToDate } from '../../utils/formatting';
 import { __ } from '@wordpress/i18n';
-import Icon from '../../utils/Icon';
 import { Close } from '@radix-ui/react-dialog';
 import { useState } from 'react';
+import ButtonInput from '../Inputs/ButtonInput';
+import IconButton from '../Inputs/IconButton';
 
 const Content = ({ goal }) => (
 	<>
@@ -25,20 +26,14 @@ const Footer = ({ deleteGoal, onClose, isDisabled }) => {
 	return (
 		<>
 			<Close asChild aria-label="Close">
-				<button
-					className={'burst-button burst-button--secondary'}
-					onClick={onClose}
-				>
-					{__( 'Cancel', 'burst-statistics' )}
-				</button>
+			<ButtonInput btnVariant={'tertiary'} onClick={onClose}>
+				{__( 'Cancel', 'burst-statistics' )}
+			</ButtonInput>
+
 			</Close>
-			<button
-				disabled={isDisabled}
-				className={'burst-button burst-button--tertiary'}
-				onClick={() => deleteGoal()}
-			>
+			<ButtonInput btnVariant={'secondary'} onClick={deleteGoal} disabled={isDisabled}>
 				{__( 'Delete goal', 'burst-statistics' )}
-			</button>
+			</ButtonInput>
 		</>
 	);
 };
@@ -76,12 +71,14 @@ const DeleteGoalModal = ({ goal, deleteGoal }) => {
 					/>
 				}
 			></Modal>
-			<button
-				className="burst-button-icon burst-button-icon--delete"
+			<IconButton
+				icon={'trash'}
+				size={'md'}
 				onClick={( e ) => handleOpen( e )}
-			>
-				<Icon name={'trash'} size={18} />
-			</button>
+				ariaLabel={__( 'Delete goal', 'burst-statistics' )}
+				variant={'solid'}
+				disabled={isDisabled}
+			/>
 		</>
 	);
 };

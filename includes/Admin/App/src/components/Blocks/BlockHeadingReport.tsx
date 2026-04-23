@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { useBlockHeadingData } from '@/hooks/useBlockHeadingData';
 
 type BlockHeadingReportProps = {
-	title: string;
+	title: ReactNode;
 	controls?: ReactNode;
 	className?: string;
 	reportBlockIndex?: number;
@@ -45,7 +45,7 @@ export const BlockHeadingReport = memo( ({ title, controls, className = '', repo
 		>
 			<div className="flex flex-col">
 				<h2 className="text-lg font-semibold">{title}</h2>
-				{subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}
+				{subtitle && <p className="text-sm text-text-gray">{subtitle}</p>}
 			</div>
 			{controls}
 		</div>

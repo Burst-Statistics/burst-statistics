@@ -138,7 +138,7 @@ const ServerTasks = ({ tasks }: { tasks: TaskProp[] }) => {
 		return (
 			<motion.div
 				layout
-				key={task.id}
+				key={'task-' + index + task.id}
 				variants={listSlideAnimation( index ) as Variants}
 				initial="initial"
 				animate="animate"
@@ -168,7 +168,7 @@ const ClientTasks = ({ tasks }: { tasks: TaskProp[] }) => {
 			return (
 				<motion.div
 					layout
-					key={task.id}
+					key={task.id + index}
 					variants={listSlideAnimation( index ) as Variants}
 					initial="initial"
 					animate="animate"

@@ -30,7 +30,6 @@ return [
 		'group_id' => 'logs',
 		'type'     => 'report_logs',
 		'label'    => __( 'Email report logs', 'burst-statistics' ),
-		'context'  => __( 'View detailed logs for sent email reports, including delivery status, errors, and cron execution results.', 'burst-statistics' ),
 		'disabled' => false,
 		'default'  => false,
 	],

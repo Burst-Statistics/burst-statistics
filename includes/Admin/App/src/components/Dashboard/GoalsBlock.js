@@ -39,6 +39,7 @@ const TodayFilterItem = memo(
 			filterValue={filterValue}
 			label={label}
 			startDate={startDate}
+			useContainerForFilter
 		>
 			<div className="rounded-md flex flex-col justify-center items-center text-center flex-wrap bg-white py-4 [&.active]:shadow-greenShadow [&.active]:border-2 [&.active]:border-green">
 				<Icon name={icon} size="26" />
@@ -62,13 +63,13 @@ const TotalFilterItem = memo(
 			label={label}
 			startDate={startDate}
 			endDate={endDate}
+			useContainerForFilter
 		>
 			<div className="rounded-md flex flex-col justify-center items-center text-center flex-wrap bg-white py-4 [&.active]:shadow-greenShadow [&.active]:border-2 [&.active]:border-green">
 				<Icon name={icon} size="26" />
 				<h2 className="mt-1.5 font-extrabold">{count}</h2>
 				<span className="flex gap-[3px] justify-center text-xs">
-					<Icon name="calendar" size="13" />{' '}
-					{__( 'Total', 'burst-statistics' )}
+					<Icon name="calendar" size="13" /> {__( 'Total', 'burst-statistics' )}
 				</span>
 			</div>
 		</ClickToFilter>
@@ -211,7 +212,7 @@ const GoalsBlock = () => {
 	const onGoalsInfoClick = useCallback( () => {
 		burst_settings.goals_information_shown = '1';
 		setOption( 'goals_information_shown', true );
-		window.location.hash = '#settings/goals';
+		window.location.hash = '#/settings/goals';
 	}, []);
 
 	// Safely extract data from queries
@@ -300,17 +301,18 @@ const GoalsBlock = () => {
 				</Overlay>
 			)}
 
-			<BlockHeading
-				title={__( 'Goals', 'burst-statistics' )}
-				controls={
-					<GoalsHeader
-						goalId={goalId}
-						goals={goals}
-						setGoalId={setGoalId}
-					/>
-				}
-				className="border-b border-gray-200"
-			/>
+		<BlockHeading
+			title={__( 'Goals', 'burst-statistics' )}
+			controls={
+				<GoalsHeader
+					goalId={goalId}
+					goals={goals}
+					setGoalId={setGoalId}
+				/>
+			}
+			className="border-b border-gray-200"
+			isLoading={isLoading}
+		/>
 			<BlockContent className="px-0 py-0 relative">
 				{isError ? (
 					<div className="text-red p-4">
@@ -321,7 +323,7 @@ const GoalsBlock = () => {
 					</div>
 				) : (
 					<>
-						<div className="px-2.5 py-5 md:px-6 grid w-full grid-cols-2 gap-4 bg-yellow-light">
+						<div className="px-2.5 py-5 md:px-6 grid w-full grid-cols-2 gap-4 bg-yellow-50">
 							<TodayFilterItem {...todayFilterProps} />
 							<TotalFilterItem {...totalFilterProps} />
 						</div>
@@ -395,12 +397,10 @@ const GoalsBlock = () => {
 
 			{0 !== goals.length && (
 				<BlockFooter>
-					{burst_settings.manage_burst_statistics && <a
-						className={'burst-button burst-button--secondary'}
-						href={'#settings/goals'}
-					>
+					{burst_settings.manage_burst_statistics && <ButtonInput btnVariant={'tertiary'} link={{ to: '/settings/goals' }}>
 						{__( 'View setup', 'burst-statistics' )}
-					</a> }
+					</ButtonInput>
+					}
 					<div className="ml-auto">
 						{! isLoading && ! isError && <GoalStatus data={data} />}
 					</div>

@@ -98,6 +98,11 @@ class Report {
 	public string $date_range = '';
 
 	/**
+	 * If the report data is requests for a shared link..
+	 */
+	public bool $is_shared_link = false;
+
+	/**
 	 * Set report ID.
 	 *
 	 * @param int $id ID.
@@ -289,7 +294,8 @@ class Report {
 	/**
 	 * Constructor
 	 */
-	public function __construct( ?int $id = null ) {
+	public function __construct( ?int $id = null, bool $is_shared_link = false ) {
+		$this->is_shared_link = $is_shared_link;
 		if ( ! empty( $id ) ) {
 			$this->load( $id );
 		}
@@ -313,6 +319,9 @@ class Report {
 		$this->set_id( absint( $row['ID'] ) )
 			->set_name( (string) $row['name'] )
 			->set_format( (string) $row['format'] )
+			->set_date_range( Report_Date_range::from_string( $row['date_range'] ) )
+			->set_content( json_decode( $row['content'], true ) ?: [] )
+			->set_recipients( json_decode( $row['recipients'], true ) ?: [] )
 			->set_frequency( (string) $row['frequency'] )
 			->set_fixed_end_date( (string) $row['fixed_end_date'] )
 			->set_week_of_month( Report_Week_Of_Month::from_int( $row['week_of_month'] ) )
@@ -321,9 +330,6 @@ class Report {
 			->set_last_edit( absint( $row['last_edit'] ) )
 			->set_enabled( (bool) $row['enabled'] )
 			->set_scheduled( (bool) $row['scheduled'] )
-			->set_date_range( Report_Date_range::from_string( $row['date_range'] ) )
-			->set_content( json_decode( $row['content'], true ) ?: [] )
-			->set_recipients( json_decode( $row['recipients'], true ) ?: [] )
 			->set_next_send_timestamp( $this->get_next_send_timestamp() );
 
 		return true;
@@ -573,7 +579,12 @@ class Report {
 			}
 			$filters = isset( $block['filters'] ) ? $block['filters'] : [];
 			// let Query_Data handle filter sanitizing.
-			$qd = new Query_Data( [ 'filters' => $filters ] );
+			$qd = new Query_Data(
+				'report_sanitize_content_filters',
+				[
+					'filters' => $filters,
+				]
+			);
 
 			// Sanitize block properties.
 			$sanitized[] = [
@@ -647,25 +658,49 @@ class Report {
 	 * Convert to array (API safe).
 	 */
 	public function to_array(): array {
-		$last_send_status = Report_Logs::instance()->get_report_status( $this->id );
-		return [
+		// if a report is not enabled, a visitor for a shared link should not be able to see it.
+		if ( $this->is_shared_link && ! $this->enabled ) {
+			self::error_log( 'Report is not enabled, returning empty array' );
+			return [];
+		}
+
+		$array = [
 			'id'              => $this->id,
 			'name'            => $this->name,
 			'format'          => $this->format,
-			'frequency'       => $this->frequency,
-			'fixedEndDate'    => $this->fixed_end_date,
-			'weekOfMonth'     => $this->week_of_month,
-			'dayOfWeek'       => $this->day_of_week,
-			'sendTime'        => $this->send_time,
-			'lastEdit'        => $this->last_edit,
 			'enabled'         => $this->enabled,
-			'scheduled'       => $this->scheduled,
 			'content'         => $this->content,
 			'reportDateRange' => $this->date_range,
-			'recipients'      => $this->recipients,
-			'lastSendStatus'  => $last_send_status['status'],
-			'lastSendMessage' => $last_send_status['message'],
+			'fixedEndDate'    => $this->fixed_end_date,
+			'frequency'       => Report_Frequency::DEFAULT,
+			'weekOfMonth'     => Report_Week_Of_Month::DEFAULT,
+			'dayOfWeek'       => Report_Day_Of_Week::DEFAULT,
+			'sendTime'        => '',
+			'lastEdit'        => '',
+			'scheduled'       => false,
+			'recipients'      => [],
+			'lastSendStatus'  => '',
+			'lastSendMessage' => '',
 		];
+
+		if ( ! $this->is_shared_link ) {
+			$last_send_status = Report_Logs::instance()->get_report_status( $this->id );
+			$array            = array_merge(
+				$array,
+				[
+					'frequency'       => $this->frequency,
+					'weekOfMonth'     => $this->week_of_month,
+					'dayOfWeek'       => $this->day_of_week,
+					'sendTime'        => $this->send_time,
+					'lastEdit'        => $this->last_edit,
+					'scheduled'       => $this->scheduled,
+					'recipients'      => $this->recipients,
+					'lastSendStatus'  => $last_send_status['status'],
+					'lastSendMessage' => $last_send_status['message'],
+				]
+			);
+		}
+		return $array;
 	}
 
 	/**
@@ -707,8 +742,8 @@ class Report {
 	private function matches_schedule( int $timestamp ): bool {
 		return match ( $this->frequency ) {
 			Report_Frequency::DAILY   => true,
-			// Checks if the current day matches the report's day_of_week.
-			Report_Frequency::WEEKLY  => strtolower( gmdate( 'l', $timestamp ) ) === strtolower( $this->day_of_week ),
+			// Check if the current day in site timezone matches the report's day_of_week.
+			Report_Frequency::WEEKLY  => strtolower( wp_date( 'l', $timestamp ) ) === strtolower( (string) $this->day_of_week ),
 			Report_Frequency::MONTHLY => $this->matches_monthly_schedule( $timestamp ),
 			default   => false,
 		};
@@ -720,25 +755,34 @@ class Report {
 	 * @param int $timestamp The timestamp to check against.
 	 * @return bool True if it matches the monthly schedule, false otherwise.
 	 */
+
+	/**
+	 * Check if the report matches the monthly schedule for the given timestamp.
+	 *
+	 * @param int $timestamp The timestamp to check against.
+	 * @return bool True if it matches the monthly schedule, false otherwise.
+	 */
 	private function matches_monthly_schedule( int $timestamp ): bool {
-		// Checks if the current day matches the report's current day_of_week.
-		$weekday = strtolower( gmdate( 'l', $timestamp ) );
-		if ( $weekday !== strtolower( $this->day_of_week ) ) {
+		// Check if the current day in site timezone matches the report's day_of_week.
+		$weekday = strtolower( wp_date( 'l', $timestamp ) );
+		if ( $weekday !== strtolower( (string) $this->day_of_week ) ) {
 			return false;
 		}
 
-		$year  = (int) gmdate( 'Y', $timestamp );
-		$month = (int) gmdate( 'm', $timestamp );
+		$year  = (int) wp_date( 'Y', $timestamp );
+		$month = (int) wp_date( 'm', $timestamp );
 
 		$weekday_timestamps = [];
 
-		// Gets days of the current month that match the report's day_of_week.
-		$days_in_month = (int) gmdate( 't', gmmktime( 0, 0, 0, $month, 1, $year ) );
+		// Days in the current month in site timezone.
+		$days_in_month = (int) wp_date( 't', $timestamp );
 
 		for ( $day = 1; $day <= $days_in_month; $day++ ) {
+			// gmmktime + gmdate stay consistent in UTC: used here only to determine the calendar weekday
+			// of the (year, month, day) triple, which is timezone-independent.
 			$ts = gmmktime( 0, 0, 0, $month, $day, $year );
 			if ( strtolower( gmdate( 'l', $ts ) ) === $weekday ) {
-				// Create list of timestamps for the weekdays in the month.
+				// List of timestamps for the weekdays in the month.
 				$weekday_timestamps[] = $ts;
 			}
 		}
@@ -748,14 +792,15 @@ class Report {
 		}
 
 		$ordinal = (int) $this->week_of_month;
+		$today   = gmmktime( 0, 0, 0, $month, (int) wp_date( 'j', $timestamp ), $year );
 
 		// -1 indicates the last occurrence of the weekday in the month.
 		if ( $ordinal === Report_Week_Of_Month::LAST ) {
-			return end( $weekday_timestamps ) === gmmktime( 0, 0, 0, $month, (int) gmdate( 'j', $timestamp ), $year );
+			return end( $weekday_timestamps ) === $today;
 		}
 
 		// Check if the current date matches the nth occurrence of the weekday in the month.
 		$index = $ordinal - 1;
-		return isset( $weekday_timestamps[ $index ] ) && $weekday_timestamps[ $index ] === gmmktime( 0, 0, 0, $month, (int) gmdate( 'j', $timestamp ), $year );
+		return isset( $weekday_timestamps[ $index ] ) && $weekday_timestamps[ $index ] === $today;
 	}
 }

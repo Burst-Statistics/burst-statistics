@@ -24,12 +24,12 @@ export const CollapsableBlock = memo(
 					open={isOpen}
 					onToggle={( e ) => onToggle( e.currentTarget.open )}
 				>
-					<summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-gray-50 hover:rounded-xl">
-						<span className="text-base font-medium text-black">
+					<summary className="flex cursor-pointer items-center justify-between p-4">
+						<span className="text-base font-medium">
 							{title}
 						</span>
 						<svg
-							className="h-5 w-5 text-gray transition-transform group-open:rotate-180"
+							className="h-5 w-5 text-text-gray transition-transform group-open:rotate-180"
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
 							viewBox="0 0 24 24"

@@ -112,7 +112,7 @@ class Debug {
 			'BURST_VERSION'                => defined( 'BURST_VERSION' ) ? BURST_VERSION : 'undefined',
 			'BURST_PRO'                    => defined( 'BURST_PRO' ) ? BURST_PRO : 'undefined',
 			'BURST_DO_NOT_UPDATE_GEO_IP'   => defined( 'BURST_DO_NOT_UPDATE_GEO_IP' ) ? ( BURST_DO_NOT_UPDATE_GEO_IP ? 'true' : 'false' ) : 'undefined',
-			'BURST_HEADLESS'               => defined( 'BURST_HEADLESS' ) ? ( BURST_HEADLESS ? 'true' : 'false' ) : 'undefined',
+			'BURST_HEADLESS_DOMAIN'        => defined( 'BURST_HEADLESS_DOMAIN' ) ? BURST_HEADLESS_DOMAIN : 'undefined',
 			'BURST_DONT_USE_SUMMARY_TABLE' => defined( 'BURST_DONT_USE_SUMMARY_TABLE' ) ? ( BURST_DONT_USE_SUMMARY_TABLE ? 'true' : 'false' ) : 'undefined',
 		];
 

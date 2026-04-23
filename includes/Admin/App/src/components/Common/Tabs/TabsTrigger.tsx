@@ -58,14 +58,14 @@ export function TabsTrigger({
 	};
 	const activeClassesByVariant = {
 		blue: [
-			'data-[active="true"]:bg-blue-lighter',
-			'data-[active="true"]:border-blue-darker',
-			'data-[active="true"]:text-[#1E73BE]'
+			'data-[active="true"]:bg-blue-50',
+			'data-[active="true"]:border-blue-700',
+			'data-[active="true"]:text-blue'
 		],
 		green: [
-			'data-[active="true"]:bg-brand-lightest',
-			'data-[active="true"]:border-brand',
-			'data-[active="true"]:text-brand'
+			'data-[active="true"]:bg-green-50',
+			'data-[active="true"]:border-green',
+			'data-[active="true"]:text-green'
 		]
 	} as const;
 
@@ -74,7 +74,7 @@ export function TabsTrigger({
 	return (
 		<button
 			className={clsx(
-				'text-base px-4 py-1 transition-colors rounded-sm bg-white focus:outline-none text-gray-600 hover:text-gray-900 font-medium border border-transparent',
+				'text-base px-4 py-1 transition-colors rounded-sm bg-white focus:outline-hidden text-text-gray-light hover:text-text-gray font-medium border border-transparent',
 				activeClassesByVariant[activeVariant],
 				className
 			)}

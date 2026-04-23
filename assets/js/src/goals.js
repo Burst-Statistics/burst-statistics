@@ -188,8 +188,8 @@ const burst_goal_triggered = (goal) => {
 };
 
 /**
- * Default export for goals.
+ * Run goals setup directly when the script is loaded.
+ * This file is loaded via a dynamic <script> tag (not ES module import),
+ * so it cannot use export default.
  */
-export default () => {
-  burst_goals_setup();
-};
+burst_goals_setup();

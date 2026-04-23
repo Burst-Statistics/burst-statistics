@@ -44,7 +44,7 @@ export const LivePreviewBlocks = ({ className }: { className?: string }) => {
     };
 
     return (
-        <div ref={containerRef} className={`flex h-full ${className || ''}`}>
+        <div ref={containerRef} className={`burst-story-preview-container flex h-full ${className || ''}`}>
             {/* Preview content area. */}
             <div
                 ref={previewRef}
@@ -77,7 +77,7 @@ export const LivePreviewBlocks = ({ className }: { className?: string }) => {
 
                 {
                     0 === contents.length && (
-                        <p className="text-gray-500 text-center">
+                        <p className="text-text-gray-light text-center">
                             {__( 'Select content to see preview', 'burst-statistics' )}
                         </p>
                     )

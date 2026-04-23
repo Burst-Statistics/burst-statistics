@@ -67,9 +67,13 @@ const pageIsRendered = new Promise(resolve => {
     resolve();
   }
 });
-// Import goals if applicable
+// Inject goals script as a regular script tag to avoid CORS issues in headless setups.
+// Dynamic import() enforces CORS; a script tag does not.
 if (burst.goals?.active?.some(goal => !goal.page_url || goal.page_url === '' || goal.page_url === burst.options.pageUrl)) {
-  import(burst.goals.scriptUrl).then(goals => goals.default());
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = burst.goals.scriptUrl;
+  document.head.appendChild(script);
 }
 
 /**

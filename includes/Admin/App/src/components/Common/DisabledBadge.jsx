@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
 const DisabledBadge = ({ className = '' }) => {
 	return (
 		<span
-			className={`inline-flex items-center rounded bg-gray-300 px-2 py-0.5 text-xs font-medium text-gray ${className}`}
+			className={`inline-flex items-center rounded bg-gray-300 px-2 py-0.5 text-xs font-medium texttext-gray ${className}`}
 		>
 			{__( 'Disabled', 'burst-statistics' )}
 		</span>

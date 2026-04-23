@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect } from 'react';
+import React, {  useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import ButtonInput from '@/components/Inputs/ButtonInput';
@@ -19,7 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getReportsData } from '@/api/getReportsData';
 import EmptyDataTable from '@/components/Statistics/EmptyDataTable';
 
-const ReportingField = forwardRef( ({ field, fieldState, help, context, ...props }) => {
+const ReportingField = ({ field, fieldState, help, context, ...props }) => {
 	const inputId = props.id || field.name;
 
 	const { data, isFetching } = useQuery({
@@ -88,7 +88,7 @@ const ReportingField = forwardRef( ({ field, fieldState, help, context, ...props
 					onClick={ () => handleEditReport( row.id ) }
 					className=""
 				>
-					<OverflowTooltip className="text-left text-blue hover:text-blue-dark hover:underline font-semibold transition-colors cursor-pointer">
+					<OverflowTooltip className="text-left text-blue hover:text-blue-700 hover:underline font-semibold transition-colors cursor-pointer">
 						{ row.name }
 					</OverflowTooltip>
 				</button>
@@ -118,7 +118,7 @@ const ReportingField = forwardRef( ({ field, fieldState, help, context, ...props
 			cell: ( row ) => {
 				const formatObj = formats.find( ( f ) => f.key === row.format );
 				return (
-					<span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-light text-blue">
+					<span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue">
 						{formatObj?.label ?? row.format}
 					</span>
 				);
@@ -168,7 +168,7 @@ const ReportingField = forwardRef( ({ field, fieldState, help, context, ...props
 						__( 'This report is active and will be sent on schedule. Toggle to pause.', 'burst-statistics' ) :
 						__( 'This report is paused. Toggle to activate and resume scheduled sending.', 'burst-statistics' )
 					}>
-						<div>
+						<div className="report-activate-toggle">
 							<SwitchInput
 								onChange={() => toggleReportActive( row.id )}
 								checked={row.enabled}
@@ -202,20 +202,20 @@ const ReportingField = forwardRef( ({ field, fieldState, help, context, ...props
 				{...props}
 				label=""
 			>
-				<div className="w-full lg:w-4/6 space-y-4">
-					<p className="px-6 text-base text-black">
+				<div className="w-full lg:w-4/6 flex flex-col gap-4">
+					<p className="px-6 text-base text-text-black">
 						{__( 'Share Burst Insights with your team on a schedule that works for them. All reports are generated locally on your site and sent directly to your chosen emails.', 'burst-statistics' )}
 					</p>
 				</div>
 
-				<div className="px-6 w-full space-y-4 flex flex-col mt-4">
-					<ButtonInput onClick={() => handleAddReport()} className="mt-2 w-fit self-end" type="button">
+				<div className="w-full flex flex-col gap-4 mt-4">
+					<ButtonInput onClick={() => handleAddReport()} className="mt-2 w-fit self-end mr-6" type="button">
 						{__( 'New report', 'burst-statistics' )}
 					</ButtonInput>
 
 					{
 						isFetching ? (
-							<p className="text-center text-gray">{__( 'Loading reports...', 'burst-statistics' )}</p>
+							<p className="text-center text-text-gray">{__( 'Loading reports...', 'burst-statistics' )}</p>
 						) : (
 							<DataTable
 								noDataComponent={
@@ -226,7 +226,7 @@ const ReportingField = forwardRef( ({ field, fieldState, help, context, ...props
 										emptyStateMessage={ __( 'There are no reports available.', 'burst-statistics' ) }
 									/>
 								}
-								className="burst-data-table no-custom-burst-style"
+								className="burst-data-table"
 								pagination
 								columns={columns}
 								data={reports}
@@ -238,37 +238,6 @@ const ReportingField = forwardRef( ({ field, fieldState, help, context, ...props
 										isLoading={isFetching}
 									/>
 								}
-								customStyles={{
-									headCells: {
-										style: {
-											fontWeight: '600',
-											fontSize: '12px',
-											color: '#1c252c',
-											padding: 0
-										}
-									},
-									cells: {
-										style: {
-											padding: 0
-										}
-									},
-									headRow: {
-										style: {
-											paddingLeft: '0 !important',
-											paddingRight: '0 !important',
-											gap: '18px',
-											fontSize: '12px'
-										}
-									},
-									rows: {
-										style: {
-											paddingLeft: '0 !important',
-											paddingRight: '0 !important',
-											gap: '18px',
-											fontSize: '12px'
-										}
-									}
-								}}
 							/>
 						)
 					}
@@ -282,7 +251,7 @@ const ReportingField = forwardRef( ({ field, fieldState, help, context, ...props
 			</AnimatePresence>
 		</>
 	);
-});
+};
 
 ReportingField.displayName = 'ReportingField';
 

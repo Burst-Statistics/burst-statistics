@@ -143,10 +143,10 @@ const AVAILABLE_CONTENT: ContentItems = [
 ];
 
 const STATUS_SEVERITY_CLASSES = {
-	success: 'bg-green-light text-green',
-	error: 'bg-red-light text-red',
-	warning: 'bg-gray-200 text-black',
-	info: 'bg-blue-light text-blue'
+	success: 'bg-green-50 text-green',
+	error: 'bg-red-50 text-red',
+	warning: 'bg-gray-200 text-text-black',
+	info: 'bg-blue-50 text-blue'
 };
 
 const REPORT_LOG_STATUS_CONFIG: Record<
@@ -155,7 +155,7 @@ const REPORT_LOG_STATUS_CONFIG: Record<
 		severity: ReportLogSeverity;
 	}
 > = {
-	ready_to_send: {
+	ready_to_share: {
 		severity: 'info'
 	},
 	sending_successful: {
@@ -190,7 +190,7 @@ const REPORT_LOG_STATUS_CONFIG: Record<
 const STEPS: WizardStep[] = [
 	{ number: 1, label: __( 'Create', 'burst-statistics' ), fields: [ 'create' ] },
 	{ number: 2, label: __( 'Edit', 'burst-statistics' ), fields: [ 'editContent' ] },
-	{ number: 3, label: __( 'Schedule', 'burst-statistics' ), fields: [ 'recipients' ] },
+	{ number: 3, label: __( 'Recipients', 'burst-statistics' ), fields: [ 'recipients' ] },
 	{ number: 4, label: __( 'Review', 'burst-statistics' ), fields: [ 'reportName' ] }
 ];
 

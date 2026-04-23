@@ -50,6 +50,32 @@ class Fields {
 			];
 		}
 
+		if ( defined( 'BURST_HEADLESS_DOMAIN' ) ) {
+			$fields[] = [
+				'id'          => 'download_client_plugin',
+				'menu_id'     => 'advanced',
+				'group_id'    => 'scripts',
+				'type'        => 'button',
+				'url'         => BURST_URL . 'includes/Pro/Admin/Headless/download.php?action=download_client&token=' . wp_create_nonce( 'download_burst_client' ),
+				'button_text' => __( 'Download', 'burst-statistics' ),
+				'label'       => __( 'Download Burst Client plugin', 'burst-statistics' ),
+				'context'     => __( 'This will generate a zip file that can be installed as client plugin.', 'burst-statistics' ),
+				'disabled'    => false,
+				'default'     => false,
+			];
+
+			foreach ( $fields as $key => $field ) {
+				if ( ! isset( $field['id'] ) ) {
+					continue;
+				}
+				if ( $field['id'] === 'ghost_mode' || $field['id'] === 'combine_vars_and_script' ) {
+					unset( $fields[ $key ] );
+					break;
+				}
+			}
+			$fields = array_values( $fields );
+		}
+
 		$fields = apply_filters( 'burst_fields', $fields );
 		foreach ( $fields as $key => $field ) {
 			$field = wp_parse_args(
@@ -108,6 +134,14 @@ class Fields {
 			$this->goal_fields = require BURST_PATH . 'includes/Admin/App/config/goal-fields.php';
 		}
 		$goals = $this->goal_fields;
+		if ( defined( 'BURST_HEADLESS_DOMAIN' ) && $this->get_option_bool( 'enable_cookieless_tracking' ) ) {
+			foreach ( $goals as $key => $field ) {
+				if ( isset( $field['id'] ) && $field['id'] === 'type' && isset( $field['options']['hook'] ) ) {
+					unset( $goals[ $key ]['options']['hook'] );
+				}
+			}
+			$goals = array_values( $goals );
+		}
 		return apply_filters( 'burst_goal_fields', $goals );
 	}
 }

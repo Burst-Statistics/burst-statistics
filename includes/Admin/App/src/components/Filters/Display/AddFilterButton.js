@@ -27,7 +27,7 @@ const AddFilterButton = ({
 			onClick={onClick}
 			className={className}
 			ariaLabel={label}
-			size={smallLabels ? 'sm' : 'md'}
+			size={smallLabels ? 'sm' : 'lg'}
 		/>
 	);
 };

@@ -1,9 +1,44 @@
 import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
-import { toast } from 'react-toastify';
+
+//we have to use a relative path here, as api.js is also used by Dashboard_Widget.
+import { toast } from './toast';
+
+if ( burst_settings.is_mainwp && burst_settings.root ) {
+    apiFetch.use.bind( apiFetch );
+
+    // Force-register a root URL override by using the fetch handler directly
+    apiFetch.use( ( options, next ) => {
+		if ( options.path ) {
+			const root = burst_settings.root.replace( /\/$/, '' );
+			const path = options.path.replace( /^\//, '' );
+			options.url = `${root}/${path}`;
+			delete options.path;
+		}
+
+		options.headers = {
+			...( options.headers || {}),
+			'Authorization': 'Basic ' + burst_settings.child_token,
+			'X-BURSTMAINWP': '1'
+		};
+		delete options.headers['X-WP-Nonce'];
+
+		// Inject burst_nonce into POST data
+		if ( options.data ) {
+			options.data = {
+				...options.data,
+				nonce: burst_settings.burst_nonce
+			};
+		}
+
+		return next( options );
+	});
+
+    burst_settings.rest_url = burst_settings.root;
+}
 
 const usesPlainPermalinks = () => {
-	return -1 !== burst_settings.site_url.indexOf( '?' );
+	return -1 !== burst_settings.rest_url.indexOf( '?' );
 };
 
 const glue = () => {
@@ -28,10 +63,37 @@ const getNonce = () => {
 
 let lastErrorMessage = '';
 let lastErrorTime = 0;
+const NONCE_TOAST_ID = 'burst-nonce-expired';
 const generateError = ( error, path = false ) => {
-	let message = __( 'Server error', 'burst-statistics' );
-	error = error.replace( /(<([^>]+)>)/gi, '' );
+	const rawError = ( error || '' ).replace( /(<([^>]+)>)/gi, '' );
 
+	if ( /nonce|expired/i.test( rawError ) ) {
+		if ( toast.isActive( NONCE_TOAST_ID ) ) {
+			return;
+		}
+		const nonceDiv = (
+			<div>
+				<div>
+					{__( 'Connection to server expired', 'burst-statistics' )}
+				</div>
+				<button
+					type="button"
+					className="rounded transition-all duration-200 min-w-fit focus:outline-hidden focus:ring-2 focus:ring-offset-2 bg-blue text-text-white border border-blue-700 hover:bg-wp-blue hover:shadow-ringSecondary focus:ring-blue py-2 px-6 text-m"
+					style={{ marginTop: '8px' }}
+					onClick={() => window.location.reload()}
+				>
+					{__( 'Refresh connection', 'burst-statistics' )}
+				</button>
+			</div>
+		);
+		toast.error( nonceDiv, {
+			toastId: NONCE_TOAST_ID,
+			autoClose: false
+		});
+		return;
+	}
+
+	let message = __( 'Server error', 'burst-statistics' );
 	if ( path ) {
 		const urlWithoutQueryParams = path.split( '?' )[0];
 
@@ -44,7 +106,7 @@ const generateError = ( error, path = false ) => {
 			'/' +
 			urlParts[index + 1];
 	}
-	message += ': ' + error;
+	message += ': ' + rawError;
 
 	// Skip if same message was shown in the last 3 seconds
 	const now = Date.now();
@@ -205,7 +267,7 @@ const stripControls = ( key, value ) => {
 const siteUrl = ( type ) => {
 	let url;
 	if ( 'undefined' === typeof type ) {
-		url = burst_settings.site_url;
+		url = burst_settings.rest_url;
 	} else {
 		url = burst_settings.admin_ajax_url;
 	}
@@ -266,6 +328,28 @@ export const doAction = ( action, data = {}) =>
 	});
 
 /**
+ * Perform a read-only GET action via the get_action endpoint.
+ * Use this for actions that only require burst_viewer capability.
+ *
+ * @param {string} action     - The action name
+ * @param {Object} actionData - Optional data to pass as query params
+ * @return {Promise}
+ */
+export const getAction = ( action, actionData = {}) => {
+    const params = new URLSearchParams({
+        nonce: burst_settings.burst_nonce,
+        ...actionData
+    }).toString();
+
+    return makeRequest(
+        `burst/v1/get_action/${action}${glue()}${params}`,
+        'GET'
+    ).then( ( response ) => {
+        return Object.prototype.hasOwnProperty.call( response, 'data' ) ? response.data : [];
+    });
+};
+
+/**
  * Serialize value for URL parameters, handling arrays and objects
  * @param {*} value - Value to serialize
  * @return {string} Serialized value
@@ -319,7 +403,7 @@ const buildQueryString = ( params ) => {
 export const getData = async( type, startDate, endDate, range, args = {}) => {
 
 	// Extract filters and metrics from args if they exist.
-	const { filters, metrics, group_by, currentView, selectedPages } = args;
+	const { filters, metrics, group_by, currentView, selectedPages, id, chart_mode, distribution_view, product_id } = args;
 
 	// Combine all query parameters.
 	const queryParams = {
@@ -337,7 +421,11 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
 		...( filters && { filters }), // type is object
 		...( metrics && { metrics }), // type is array
 		...( group_by && { group_by }), // type is array
-		...( currentView && { currentView }) // type is object
+		...( currentView && { currentView }), // type is object
+		...( id && { id }), // type is string
+		...( chart_mode && { chart_mode }), // type is string
+		...( distribution_view && { distribution_view }), // type is string
+		...( product_id && { product_id }) // type is string
 	};
 
 	const queryString = buildQueryString( queryParams );
@@ -345,8 +433,6 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
 
 	return await makeRequest( path, 'GET' );
 };
-
-export const getMenu = () => makeRequest( 'burst/v1/menu/' + glue() + getNonce() );
 
 export const getReportPreview = ( blocks, frequency ) => {
 	const data = {
@@ -407,6 +493,20 @@ export const getLocalStorage = ( key, defaultValue ) => {
 export const setLocalStorage = ( key, value ) => {
 	if ( 'undefined' !== typeof Storage ) {
 		localStorage.setItem( 'burst_' + key, JSON.stringify( value ) );
+	}
+};
+
+/**
+ * Removes a value from local storage using a 'burst_' prefix.
+ *
+ * @param {string} key - The key to remove from local storage, without the
+ *                     'burst_' prefix.
+ *
+ * @return {void}
+ */
+export const removeLocalStorage = ( key ) => {
+	if ( 'undefined' !== typeof Storage ) {
+		localStorage.removeItem( 'burst_' + key );
 	}
 };
 

@@ -29,23 +29,47 @@
       }
     }
   </style>
+  <style>
+    /* Light mode: set message text to medium grey */
+    .email-message { color: #696969; }
+    /* Logo switching for dark mode */
+    .email-logo-light { display: inline; }
+    .email-logo-dark  { display: none; }
+
+    @media (prefers-color-scheme: dark) {
+      body,
+      .email-body    { background-color: #1a1a1a !important; }
+      .email-wrapper { background-color: #1a1a1a !important; color: #e0e0e0 !important; }
+      .email-card    { background-color: #2d2d2d !important; color: #e0e0e0 !important; }
+      .email-wrapper h1,
+      .email-wrapper h2,
+      .email-wrapper h3 { color: #e0e0e0 !important; }
+      .email-message { color: #e0e0e0; }
+      .email-muted   { color: #a0a0a0 !important; }
+      .email-link    { color: #a0a0a0 !important; }
+      .email-divider { background-color: #505050 !important; }
+      .email-logo-light { display: none !important; }
+      .email-logo-dark  { display: inline !important; }
+    }
+  </style>
 </head>
-<body style="margin: 0; width: 100%; background-color: #f0f0f1; padding: 0; -webkit-font-smoothing: antialiased; word-break: break-word">
-<div style="display: none">
+<body class="email-body" style="margin: 0; width: 100%; background-color: #f0f0f1; padding: 0; -webkit-font-smoothing: antialiased; word-break: break-word">
+<div style="display: none" >
   {message}
 </div>
 <div role="article" aria-roledescription="email" aria-label="Your weekly insights for {domain} are here!" lang="en">
-  <div style="background-color: #f0f0f1; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #333">
+  <div class="email-wrapper" style="background-color: #f0f0f1; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #333">
     <table align="center" cellpadding="0" cellspacing="0" role="none">
       <tr>
         <td style="width: 552px; max-width: 100%">
           <div class="sm-my-8" style="margin-top: 48px; margin-bottom: 48px; text-align: center">
-            <img src="{logo}" height="40" alt="Logo" style="max-width: 100%; vertical-align: middle; line-height: 1">
+            <img src="{logo}" class="email-logo-light" height="40" alt="Logo" style="max-width: 100%; vertical-align: middle; line-height: 1">
+            <img src="{logo_dark}" class="email-logo-dark" height="40" alt="Logo" style="max-width: 100%; vertical-align: middle; line-height: 1; display: none">
           </div>
           <h1 style="text-align: center; font-size: 24px; line-height: 1.25; font-weight: 400; color: #333">
             {title}
           </h1>
-          <h2 style="margin: 32px 0 0; text-align: center; font-size: 16px; font-weight: 400">
+          <h2 class="email-message" style="margin: 32px 0 0; text-align: center; font-size: 16px; font-weight: 400">
             {message}
           </h2>
           <table style="width: 100%; padding: 24px" cellpadding="0" cellspacing="0" role="none">
@@ -56,7 +80,7 @@
 
                 {read_more}
 
-                <div role="separator" style="background-color: #a6a6a8; height: 1px; line-height: 1px; margin: 32px 0">&zwj;</div>
+                <div class="email-divider" role="separator" style="background-color: #a6a6a8; height: 1px; line-height: 1px; margin: 32px 0">&zwj;</div>
                 <p style="margin: 0; font-style: italic; line-height: 18px">
                  {sent_by_text}
                 </p>

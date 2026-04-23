@@ -2,6 +2,7 @@ import { memo, useState } from 'react';
 import { __ } from '@wordpress/i18n';
 import * as Checkbox from '@radix-ui/react-checkbox';
 import Icon from '@/utils/Icon';
+import clsx from 'clsx';
 
 interface CheckboxGroupInputProps {
 
@@ -128,14 +129,14 @@ const CheckboxGroupInput: React.FC<CheckboxGroupInputProps> = ({
 	}
 
 	return (
-		<div className="flex flex-col space-y-2">
+		<div className="flex flex-col gap-2">
 			{Object.entries( options ).map( ([ key, optionLabel ], i ) => (
 				<div
 					key={key}
 					className={`${! loadMoreExpanded && i > loadMoreCount - 1 ? 'hidden' : ''} flex items-center`}
 				>
 					<Checkbox.Root
-						className="w-4 h-4 border border-gray-400 rounded flex-shrink-0 disabled:opacity-50"
+						className={clsx( 'w-4 h-4 border border-gray-400 rounded shrink-0 disabled:opacity-50', isEnabled( key ) ? 'dark:bg-gray-200' : '' )}
 						id={`${id}_${key}`}
 						checked={isEnabled( key )}
 						aria-label={label}
@@ -153,7 +154,7 @@ const CheckboxGroupInput: React.FC<CheckboxGroupInputProps> = ({
 							<Icon
 								name={indeterminate ? 'indeterminate' : 'check'}
 								size={14}
-								color="blue"
+								color="black"
 							/>
 						</Checkbox.Indicator>
 					</Checkbox.Root>

@@ -110,16 +110,16 @@ const StoryContentSelection = () => {
 									`}
 								>
 									{block.icon && (
-										<div className="flex-shrink-0 text-gray-600">
+										<div className="shrink-0 text-text-gray-light">
 											<Icon name={block.icon} size={18} />
 										</div>
 									)}
-									<p className="flex-1 text-sm text-gray-700 cursor-pointer">
+									<p className="flex-1 text-sm text-text-gray cursor-pointer">
 										{block.label}
 									</p>
 									{
 										block.pro && ! isLicenseValid && (
-											<div className="flex-shrink-0">
+											<div className="shrink-0">
 												<ProBadge label={'Pro'}/>
 											</div>
 										)
@@ -156,11 +156,11 @@ const StoryContentSelection = () => {
 							style={{ width: 'calc(50% - 6px)' }}
 						>
 							{animatingBlock.block.icon && (
-								<div className="flex-shrink-0 text-gray-600">
+								<div className="shrink-0 text-text-gray-light">
 									<Icon name={animatingBlock.block.icon} size={18} />
 								</div>
 							)}
-							<p className="flex-1 text-sm text-gray-700">
+							<p className="flex-1 text-sm text-text-gray">
 								{animatingBlock.block.label}
 							</p>
 						</motion.div>

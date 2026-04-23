@@ -9,7 +9,7 @@ workflow:
   variables:
     BASE_URL: "http://localhost"
   image:
-    name: source.updraftplus.com:5050/ci/playwright-e2e:php-8.2-wp-6.8.0
+    name: source.updraftplus.com:5050/ci/playwright-e2e:php-8.4-wp-7.0-beta1
     entrypoint: [""]
   cache:
     - key:
@@ -24,8 +24,8 @@ workflow:
     - bash /usr/local/bin/entrypoint.sh
     - cp -R . /var/www/html/wp-content/plugins/burst-statistics/
     # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
-    - chown -R www-data:www-data /var/www/html/wp-content/
-    - mkdir -p /var/www/html/wp-content/uploads/burst && chown -R www-data:www-data /var/www/html/wp-content/uploads/burst
+    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
+    - chown -R www-data:www-data /var/www/html/
     - wp plugin activate burst-statistics --path=/var/www/html
   after_script:
     - cp /var/log/php_errors.log error.log || true
@@ -78,7 +78,7 @@ workflow:
 #  <<: *e2e_base
 #  script:
 #    - npm run e2e:archive
-      
+
 #test:goal:click:
 #  <<: *e2e_base
 #  script:
@@ -113,6 +113,50 @@ test:tracking:beacon:
 #    entrypoint: [""]
 #  script:
 #    - npm run e2e
+    - npm run e2e
+
+test:onboarding:
+  <<: *e2e_base
+  before_script:
+    - npm ci --no-audit --cache .npm --prefer-offline
+    - bash /usr/local/bin/entrypoint.sh
+    - cp -R . /var/www/html/wp-content/plugins/burst-statistics/
+    # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
+    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
+    - curl -sS https://getcomposer.org/installer | php
+    - php composer.phar install
+  script:
+    - npm run e2e:onboarding
+
+test:archive:
+  <<: *e2e_base
+  script:
+    - npm run e2e:archive
+
+test:data-sharing:
+  <<: *e2e_base
+  script:
+    - npm run e2e:data-sharing
+
+test:e2e:upgrade:
+  <<: *e2e_base
+  before_script:
+    - npm ci --no-audit --cache .npm --prefer-offline
+    - bash /usr/local/bin/entrypoint.sh
+    - cp -R . /var/www/html/wp-content/plugins/burst-statistics-new/
+    # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
+    - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics-new/
+    - wp plugin install burst-statistics --activate --path=/var/www/html
+  script:
+    - npm run e2e:upgrade
+
+test:e2e:lowest_versions:
+  <<: *e2e_base
+  image:
+    name: source.updraftplus.com:5050/ci/playwright-e2e:php-8.0-wp-6.6.0
+    entrypoint: [""]
+  script:
+    - npm run e2e
 
 
 

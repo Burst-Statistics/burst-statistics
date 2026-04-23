@@ -2,7 +2,9 @@
 
 namespace Burst\Traits;
 
+use Burst\Admin\Share\Share;
 use Burst\Frontend\Ip\Ip;
+use Burst\Frontend\Share\Share_Expired;
 use function Burst\burst_loader;
 use function burst_is_logged_in_rest;
 
@@ -41,13 +43,18 @@ trait Admin_Helper {
 	}
 
 	/**
-	 * Check if user has Burst view permissions
+	 * Check if user has Burst view sales permissions
 	 *
 	 * @return boolean true or false
 	 */
 	protected function user_can_view_sales(): bool {
 		if ( isset( burst_loader()->user_can_view_sales ) ) {
 			return burst_loader()->user_can_view_sales;
+		}
+
+		// For shared links, access is determined solely by the sharing settings.
+		if ( $this->is_shared_link_request() ) {
+			return burst_loader()->user_can_view_sales = burst_loader()->admin->share->ecommerce_tab_is_shared();
 		}
 
 		if ( ! is_user_logged_in() ) {
@@ -59,6 +66,14 @@ trait Admin_Helper {
 		}
 
 		return burst_loader()->user_can_view_sales = true;
+	}
+
+	/**
+	 * Check if the request is a shared link request.
+	 */
+	protected function is_shared_link_request(): bool {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- only checking existence of a property, not processing the value.
+		return isset( $_SERVER['HTTP_X_BURST_SHARE_TOKEN'] ) || isset( $_GET['burst_share_token'] );
 	}
 
 	/**
@@ -123,7 +138,7 @@ trait Admin_Helper {
 	/**
 	 * Validate a share token
 	 */
-	public function validate_share_token( string $token ): bool {
+	public static function validate_share_token( string $token ): bool {
 		if ( ! preg_match( '/^[a-f0-9]{32}$/i', $token ) ) {
 			return false;
 		}
@@ -132,7 +147,7 @@ trait Admin_Helper {
 		$valid           = false;
 		$current_time    = time();
 		foreach ( $existing_tokens as $key => $token_data ) {
-			if ( $token_data['expires'] < $current_time ) {
+			if ( $token_data['expires'] !== 0 && $token_data['expires'] < $current_time ) {
 				// Token expired, remove it.
 				unset( $existing_tokens[ $key ] );
 				continue;
@@ -170,14 +185,9 @@ trait Admin_Helper {
 			return burst_loader()->has_admin_access = true;
 		}
 
-		// during activation, we need to load some additional files.
-		if ( get_option( 'burst_run_activation' ) ) {
-			return burst_loader()->has_admin_access = true;
-		}
-
 		// the share token is a nonce in itself with an expiry.
         // phpcs:ignore
-		if ( isset( $_GET['burst_share_token'] ) && $this->validate_share_token( wp_unslash( $_GET['burst_share_token'] ) ) ) {
+		if ( isset( $_GET['burst_share_token'] ) && self::validate_share_token( wp_unslash( $_GET['burst_share_token'] ) ) ) {
 			return burst_loader()->has_admin_access = true;
 		}
 
@@ -185,6 +195,18 @@ trait Admin_Helper {
 		if ( is_admin() ) {
 			// Avoids double calls; still loads user once if needed.
 			if ( is_user_logged_in() && current_user_can( 'view_burst_statistics' ) ) {
+				return burst_loader()->has_admin_access = true;
+			}
+		}
+
+		if ( isset( $_SERVER['HTTP_X_BURSTMAINWP'] ) && $_SERVER['HTTP_X_BURSTMAINWP'] === '1' ) {
+			$mainwp_proxy = new \Burst\Frontend\MainWP_Proxy();
+
+			if ( $mainwp_proxy->is_mainwp_authenticated() ) {
+				return burst_loader()->has_admin_access = true;
+			}
+
+			if ( $mainwp_proxy->is_mainwp_signed_request() ) {
 				return burst_loader()->has_admin_access = true;
 			}
 		}
@@ -245,6 +267,7 @@ trait Admin_Helper {
 	 *     json_translations: list<array<string, mixed>>,
 	 *     date_format: string,
 	 *     gmt_offset: float|int|string,
+	 *     burst_activation_time: int,
 	 *     date_ranges: array<int, string>,
 	 *     tour_shown: int
 	 * }
@@ -255,39 +278,43 @@ trait Admin_Helper {
 			'burst_localize_script',
 			[
 				// Core plugin information.
-				'burst_version'               => BURST_VERSION,
-				'is_pro'                      => defined( 'BURST_PRO' ),
-				'plugin_url'                  => BURST_URL,
-				'installed_by'                => get_site_option( 'teamupdraft_installation_source_burst-statistics', '' ),
+				'burst_version'                => BURST_VERSION,
+				'is_pro'                       => defined( 'BURST_PRO' ),
+				'plugin_url'                   => BURST_URL,
+				'installed_by'                 => get_site_option( 'teamupdraft_installation_source_burst-statistics', '' ),
 
 				// URLs and endpoints.
-				'site_url'                    => get_rest_url(),
-				'admin_ajax_url'              => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
-				'dashboard_url'               => $this->admin_url( 'burst' ),
-				'network_link'                => network_site_url( 'plugins.php' ),
+				'rest_url'                     => get_rest_url(),
+				'site_url'                     => defined( 'BURST_HEADLESS_DOMAIN' ) ? esc_url_raw( BURST_HEADLESS_DOMAIN ) : get_site_url(),
+				'admin_ajax_url'               => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
+				'dashboard_url'                => $this->admin_url( 'burst' ),
+				'network_link'                 => network_site_url( 'plugins.php' ),
 
 				// Security and authentication.
-				'nonce'                       => wp_create_nonce( 'wp_rest' ),
-				'burst_nonce'                 => wp_create_nonce( 'burst_nonce' ),
-				'current_ip'                  => Ip::get_ip_address(),
+				'nonce'                        => wp_create_nonce( 'wp_rest' ),
+				'burst_nonce'                  => wp_create_nonce( 'burst_nonce' ),
+				'current_ip'                   => Ip::get_ip_address(),
 
 				// User permissions and capabilities.
-				'user_roles'                  => $this->get_user_roles(),
-				'view_sales_burst_statistics' => $this->user_can_view_sales(),
-				'manage_burst_statistics'     => $this->user_can_manage(),
-				'can_install_plugins'         => $user_can_install,
-				'share_link_permissions'      => self::get_share_link_permissions(),
+				'user_roles'                   => $this->get_user_roles(),
+				'view_sales_burst_statistics'  => $this->user_can_view_sales(),
+				'manage_burst_statistics'      => $this->user_can_manage(),
+				'can_install_plugins'          => $user_can_install,
+				'share_link_permissions'       => self::get_share_link_permissions(),
 
 				// Localization and internationalization.
-				'json_translations'           => $js_data['json_translations'],
-				'date_format'                 => get_option( 'date_format' ),
-				'gmt_offset'                  => get_option( 'gmt_offset' ),
+				'json_translations'            => $js_data['json_translations'],
+				'date_format'                  => get_option( 'date_format' ),
+				'gmt_offset'                   => get_option( 'gmt_offset' ),
+				'burst_activation_time'        => (int) get_option( 'burst_activation_time', 1640995200 ),
 
 				// Configuration and options.
-				'date_ranges'                 => $this->get_date_ranges(),
-				'time_format'                 => get_option( 'time_format' ),
-				'tour_shown'                  => $this->get_option_int( 'burst_tour_shown_once' ),
+				'date_ranges'                  => $this->get_date_ranges(),
+				'time_format'                  => get_option( 'time_format' ),
+				'tour_shown'                   => $this->get_option_int( 'burst_tour_shown_once' ),
 
+				// Date picker's starting date.
+				'burst_date_picker_start_date' => (int) get_option( 'burst_activation_time', 1640995200 ),
 			]
 		);
 	}
@@ -333,12 +360,6 @@ trait Admin_Helper {
 		// Check if we already have a cached result.
 		if ( isset( burst_loader()->user_can_manage ) ) {
 			return burst_loader()->user_can_manage;
-		}
-
-		// During activation, allow access.
-		if ( (bool) get_option( 'burst_run_activation' ) ) {
-			burst_loader()->user_can_manage = true;
-			return true;
 		}
 
 		// Allow access during cron jobs and WP-CLI.
@@ -388,15 +409,44 @@ trait Admin_Helper {
 	}
 
 	/**
-	 * Add some additional sanitizing
+	 * Add some additional sanitizing.
 	 * https://developer.wordpress.org/news/2023/08/understand-and-use-wordpress-nonces-properly/#verifying-the-nonce
+	 *
+	 * @param string|null $nonce  The nonce value to verify.
+	 * @param string      $action The nonce action string.
+	 * @return bool Whether the nonce is valid.
 	 */
 	protected function verify_nonce( ?string $nonce, string $action ): bool {
+		// Application Passwords authenticate via HTTP Basic Auth, making CSRF nonces redundant.
+		// Scope the skip to the actual auth mechanism of *this* request: the `did_action` flag
+		// is global per request, so on its own it would also skip nonce checks in cookie-auth
+		// paths that happen after an earlier app-password authentication in the same request.
+		if ( self::is_http_basic_auth_request() && (bool) did_action( 'wp_application_passwords_did_authenticate' ) ) {
+			return true;
+		}
 		if ( empty( $nonce ) ) {
 			return false;
 		}
 		$valid = wp_verify_nonce( sanitize_text_field( wp_unslash( $nonce ) ), $action );
-		return apply_filters( 'burst_verify_nonce', wp_verify_nonce( sanitize_text_field( wp_unslash( $nonce ) ), $action ), $nonce, $action );
+		return apply_filters( 'burst_verify_nonce', $valid, $nonce, $action );
+	}
+
+	/**
+	 * Whether the current request carries an HTTP Basic Authorization header.
+	 *
+	 * Used to confirm that the *current* request is being authenticated by credentials
+	 * (e.g. an Application Password) rather than by cookies — so a CSRF nonce is not
+	 * required to prove user intent.
+	 */
+	private static function is_http_basic_auth_request(): bool {
+		// unslashed and sanitized later in this function.
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+		$raw = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+		if ( ! is_string( $raw ) || $raw === '' ) {
+			return false;
+		}
+		$header = sanitize_text_field( wp_unslash( $raw ) );
+		return stripos( $header, 'basic ' ) === 0;
 	}
 
 	/**

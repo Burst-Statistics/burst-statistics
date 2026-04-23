@@ -1,5 +1,5 @@
-import React from 'react';
 import { __, sprintf } from '@wordpress/i18n';
+import { ChartTooltip } from '@/components/Common/ChartTooltip';
 
 /**
  * Props interface for the FunnelTooltip component.
@@ -35,10 +35,12 @@ export const FunnelTooltip: React.FC<FunnelTooltipProps> = ({ data }) => {
 	} = data;
 
 	return (
-		<div className="bg-white p-4 rounded-lg shadow-lg max-w-xs z-[3] relative">
+        <ChartTooltip className="max-w-xs p-4 z-[3] relative">
+
+        <div className="bg-white p-4 rounded-lg shadow-lg max-w-xs z-3 relative">
 			{/* Header */}
 			<div className="mb-3 flex flex-col gap-1">
-				<p className="text-sm font-light text-gray-600">
+				<p className="text-sm font-light text-text-gray-light">
 					{sprintf(
 						__( '%s visitors (%s%%)', 'burst-statistics' ),
 						sessionCount.toLocaleString(),
@@ -49,7 +51,7 @@ export const FunnelTooltip: React.FC<FunnelTooltipProps> = ({ data }) => {
 						)
 					)}
 				</p>
-				<h3 className="text-md font-semibold text-gray-900">
+				<h3 className="text-md font-semibold text-text-gray">
 					{stepTitle}
 				</h3>
 			</div>
@@ -59,7 +61,7 @@ export const FunnelTooltip: React.FC<FunnelTooltipProps> = ({ data }) => {
 				<div className="flex flex-col gap-1">
 					<div className="flex items-center gap-1">
 						<span className="text-green font-semibold">▲</span>
-						<span className="text-base font-semibold text-gray-900">
+						<span className="text-base font-semibold text-text-gray">
 							{sprintf(
 								__(
 									'%d%% conversion from previous step',
@@ -71,8 +73,8 @@ export const FunnelTooltip: React.FC<FunnelTooltipProps> = ({ data }) => {
 					</div>
 					<div className="flex items-center gap-1">
 						<span className="text-red font-semibold">▼</span>
-						<span className="text-base font-semibold text-gray-900">
-							<span className="text-gray-700">
+						<span className="text-base font-semibold text-text-gray">
+							<span className="text-text-gray">
 								{sprintf(
 									__(
 										'%d%% drop-off to next step',
@@ -87,17 +89,18 @@ export const FunnelTooltip: React.FC<FunnelTooltipProps> = ({ data }) => {
 			</div>
 			<div>
 				<div className="flex flex-col gap-1">
-					<p className="text-sm font-semibold text-gray-900">
+					<p className="text-sm font-semibold text-text-gray">
 						{sprintf(
 							__( '%d lost visitors', 'burst-statistics' ),
 							lostSessions.toLocaleString()
 						)}
 					</p>
-					<p className="text-sm font-light text-gray-700">
+					<p className="text-sm font-light text-text-gray">
 						{potentialGainText}
 					</p>
 				</div>
 			</div>
-		</div>
+        </div>
+		</ChartTooltip>
 	);
 };

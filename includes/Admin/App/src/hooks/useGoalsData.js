@@ -6,7 +6,7 @@ import {
 	deleteGoal,
 	addPredefinedGoal
 } from '@/utils/api';
-import { toast } from 'react-toastify';
+import { toast } from '@/utils/toast';
 import { __ } from '@wordpress/i18n';
 import { produce } from 'immer';
 import useLicenseData from '@/hooks/useLicenseData';

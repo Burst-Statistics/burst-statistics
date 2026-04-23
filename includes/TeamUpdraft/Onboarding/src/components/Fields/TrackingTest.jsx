@@ -70,28 +70,28 @@ const ConnectionAnimation = ({ isRunning, isSuccess, testCompleted, isFailed, re
             classes += ' transition-all duration-500 ease-in-out';
         }
         
-        if (testCompleted && isSuccess && !showSuccessAnimation) return `${classes} bg-green-light border-green`;
-        if (testCompleted && isFailed) return `${classes} bg-red-light border-red`;
+        if (testCompleted && isSuccess && !showSuccessAnimation) return `${classes} bg-green-100 border-green`;
+        if (testCompleted && isFailed) return `${classes} bg-red-100 border-red`;
         if (isRunning) {
-            if (position === 'left') return `${classes} bg-blue-light border-blue`;
+            if (position === 'left') return `${classes} bg-blue-100 border-blue`;
             if (position === 'right') {
-                if (retryCount === 0) return `${classes} bg-blue-light border-blue`;
-                if (retryCount === 1) return `${classes} bg-yellow-light border-yellow`;
-                if (retryCount === 2) return `${classes} bg-orange-light border-orange`;
+                if (retryCount === 0) return `${classes} bg-blue-100 border-blue`;
+                if (retryCount === 1) return `${classes} bg-yellow-100 border-yellow`;
+                if (retryCount === 2) return `${classes} bg-orange-100 border-orange`;
             }
         }
         return `${classes} bg-gray-100 border-gray-300`;
     };
 
     const getIconColor = (position) => {
-        if (testCompleted && isSuccess) return '#2B8133';
-        if (testCompleted && isFailed) return '#c6273b';
+        if (testCompleted && isSuccess) return 'var(--color-green)';
+        if (testCompleted && isFailed) return 'var(--color-red)';
         if (isRunning) {
-            if (position === 'left') return '#1D3C8F'; // Left icon always blue
+            if (position === 'left') return 'var(--color-blue)'; // Left icon always blue
             if (position === 'right') {
-                if (retryCount === 0) return '#1D3C8F'; // blue
-                if (retryCount === 1) return '#D97706'; // yellow
-                if (retryCount === 2) return '#EA580C'; // orange
+                if (retryCount === 0) return 'var(--color-blue)'; // blue
+                if (retryCount === 1) return 'var(--color-yellow)'; // yellow
+                if (retryCount === 2) return 'var(--color-orange)'; // orange
             }
         }
         return '#6c757d';
@@ -231,15 +231,15 @@ const ConnectionAnimation = ({ isRunning, isSuccess, testCompleted, isFailed, re
             </div>
             {/* display grid all items in same row and center */}
             <div className="grid">
-                <p className={`row-start-1 row-end-2 col-start-1 col-end-2 mt-2 text-center text-gray font-semibold text-lg opacity-0 transition-opacity duration-500 ${isRunning ? 'opacity-100' : 'opacity-0'}`}>
+                <p className={`row-start-1 row-end-2 col-start-1 col-end-2 mt-2 text-center text-text-gray font-semibold text-lg opacity-0 transition-opacity duration-500 ${isRunning ? 'opacity-100' : 'opacity-0'}`}>
                     {isRunning && retryCount === 0 && __("Running test, please wait...", "burst-statistics")}
                     {isRunning && retryCount === 1 && __("Hmm, let's try that again...", "burst-statistics")}
                     {isRunning && retryCount === 2 && __("One more attempt, hang tight...", "burst-statistics")}
                 </p>                
-                <p className={`row-start-1 row-end-2 col-start-1 col-end-2 mt-2 text-center text-gray font-semibold text-lg opacity-0 transition-opacity duration-500 ${isFailed ? 'opacity-100' : 'opacity-0'}`}>
+                <p className={`row-start-1 row-end-2 col-start-1 col-end-2 mt-2 text-center text-text-gray font-semibold text-lg opacity-0 transition-opacity duration-500 ${isFailed ? 'opacity-100' : 'opacity-0'}`}>
                     {__("Unfortunately, Burst could not detect the test visit.", "burst-statistics")}
                 </p>
-                <p className={`row-start-1 row-end-2 col-start-1 col-end-2 mt-2 text-center text-gray font-semibold text-lg opacity-0 transition-opacity duration-500 ${isSuccess ? 'opacity-100' : 'opacity-0'}`}>
+                <p className={`row-start-1 row-end-2 col-start-1 col-end-2 mt-2 text-center text-text-gray font-semibold text-lg opacity-0 transition-opacity duration-500 ${isSuccess ? 'opacity-100' : 'opacity-0'}`}>
                     {__("Successfully detected a visit on your site!", "burst-statistics")}
                 </p>
             </div>
@@ -288,7 +288,7 @@ const TrackingTest = () => {
                 const handleLoad = () => {
                     if (stage === 0) {
                         // Load second page
-                        iframe.src = onboardingData.site_url + '/404' + glue(onboardingData.site_url) + 'burst_test_hit&burst_nextpage';
+                        iframe.src = onboardingData.site_url + '/404' + glue(onboardingData.site_url) + 'burst_test_hit&burst_nextpage&nonce='+onboardingData.token;
                         stage = 1;
                     } else {
                         // Both stages complete
@@ -299,7 +299,7 @@ const TrackingTest = () => {
                 };
                 
                 iframe.addEventListener('load', handleLoad);
-                iframe.src = onboardingData.site_url + glue(onboardingData.site_url) + 'burst_test_hit';
+                iframe.src = onboardingData.site_url + glue(onboardingData.site_url) + 'burst_test_hit&nonce='+onboardingData.token;
             });
 
             // Check if tracking worked

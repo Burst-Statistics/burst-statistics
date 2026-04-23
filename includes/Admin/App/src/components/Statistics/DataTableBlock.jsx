@@ -33,7 +33,19 @@ import {useBlockConfig} from '@/hooks/useBlockConfig';
  * @return {JSX.Element} The DataTableBlock component.
  */
 const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
-	const { allowedConfigs = [], id, isEcommerce, startDate, endDate, range, filters, allowBlockFilters, isReport, index } = useBlockConfig( props );
+	const {
+		allowedConfigs = [],
+		id,
+		isEcommerce,
+		startDate,
+		endDate,
+		range,
+		filters,
+		allowBlockFilters,
+		isReport,
+		index
+	} = useBlockConfig( props );
+
 	const defaultConfig = allowedConfigs[0];
 	const { getValue } = useSettingsData();
 	const filterByDomain = getValue( 'filtering_by_domain' );
@@ -543,10 +555,52 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				// 	align: 'right'
 				// }
 			}
+		},
+		subscription_products: {
+			label: __( 'Plan performance', 'burst-statistics' ),
+			pro: true,
+			searchable: true,
+			defaultColumns: [ 'plan', 'active_subscribers' ],
+			columnsOptions: {
+				plan: {
+					label: __( 'Plan', 'burst-statistics' ),
+					default: true,
+					format: 'text',
+					align: 'left',
+					group_by: true
+				},
+				active_subscribers: {
+					label: __( 'Active subs', 'burst-statistics' ),
+					pro: true,
+					align: 'right'
+				},
+				canceled_subscribers: {
+					label: __( 'Canceled subs', 'burst-statistics' ),
+					pro: true,
+					align: 'right'
+				},
+			trialling_subscribers: {
+				label: __( 'Trialling subs', 'burst-statistics' ),
+				pro: true,
+				align: 'right'
+			},
+			monthly_recurring_revenue: {
+				label: __( 'MRR', 'burst-statistics' ),
+				pro: true,
+				format: 'currency',
+				align: 'right'
+			},
+			product_churn_value: {
+				label: __( 'Product churn value', 'burst-statistics' ),
+				pro: true,
+				format: 'percentage',
+				align: 'right'
+			}
 		}
-	};
+	}
+};
 
-	// Use the DataTable store
+	// Use the DataTable store.
 	const {
 		getSelectedConfig,
 		setSelectedConfig: setSelectedConfigStore,
@@ -556,32 +610,24 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		setSortConfig
 	} = useDataTableStore();
 
-	const [ selectedConfig, setSelectedConfigState ] = useState( () =>
-		getSelectedConfig( id, defaultConfig )
-	);
+	const [ selectedConfig, setSelectedConfigState ] = useState( () => getSelectedConfig( id, defaultConfig ) );
 
-	const configDetails = useMemo(
-		() => config[selectedConfig],
-		[ selectedConfig ] // eslint-disable-line react-hooks/exhaustive-deps
-	);
-	const columnsOptions = useMemo(
-		() => configDetails?.columnsOptions || {},
-		[ configDetails ]
-	);
-	const defaultColumns = useMemo(
-		() => configDetails?.defaultColumns || [],
-		[ configDetails ]
-	);
+	const configDetails = useMemo( () => config[selectedConfig], [ selectedConfig ]); // eslint-disable-line react-hooks/exhaustive-deps
+
+	const columnsOptions = useMemo( () => configDetails?.columnsOptions || {}, [ configDetails ]);
+
+	const defaultColumns = useMemo( () => configDetails?.defaultColumns || [], [ configDetails ]);
 
 	const [ columns, setColumnsState ] = useState( () => {
 		const initialColumns = getColumnsStore( selectedConfig, defaultColumns );
 		const availableColumns = Object.keys( columnsOptions );
+
 		return initialColumns.filter( ( column ) =>
 			availableColumns.includes( column )
 		);
 	});
 
-	// Sort state: initialise from localStorage
+	// Sort state: initialize from localStorage
 	const [ sortField, setSortFieldState ] = useState( () => {
 		const saved = getSortConfig( selectedConfig );
 		return saved?.fieldId ?? 2;
@@ -597,6 +643,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			const orderedColumns = value.filter( ( key ) =>
 				Object.keys( columnsOptions ).includes( key )
 			);
+
 			if ( JSON.stringify( orderedColumns ) !== JSON.stringify( columns ) ) {
 				setColumnsState( orderedColumns );
 				setColumnsStore( selectedConfig, orderedColumns );
@@ -646,10 +693,9 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		[ selectedConfig, setSortConfig ]
 	);
 
-	// search
 	const [ filterText, setFilterText ] = useState( '' );
 
-	// only add select options that are allowed, only allow key and label
+	// Only add select options that are allowed, only allow key and label.
 	const selectOptions = useMemo( () => {
 		return Object.keys( config )
 			.filter( ( key ) => allowedConfigs.includes( key ) )
@@ -661,17 +707,17 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			}) );
 	}, [ allowedConfigs ]); // eslint-disable-line react-hooks/exhaustive-deps
 
-	// query
 	const args = useMemo( () => {
 		const queryArgs = {
 			filters,
 			metrics: Object.keys( columnsOptions ).filter( ( column ) =>
 				columns.includes( column )
 			),
+			id: id,
 			group_by: []
 		};
 
-		// add group by based on the columnOptions
+		// Add group by based on the columnOptions.
 		columns.forEach( ( column ) => {
 			if ( columnsOptions[column]?.group_by ) {
 				queryArgs.group_by.push( column );
@@ -679,7 +725,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		});
 
 		return queryArgs;
-	}, [ filters, columnsOptions, columns ]);
+	}, [ filters, columnsOptions, columns, id ]);
 
 	const query = useQuery({
 		queryKey: [ selectedConfig, startDate, endDate, args ],
@@ -701,10 +747,12 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 
 	/**
 	 * To enable searching on formatted values, we need to get the formatted value.
-	 * @param value
-	 * @param format
-	 * @param columnId
-	 * @returns {*|string|string}
+	 *
+	 * @param value - the original value from the data
+	 * @param format - the format of the column, used to determine which formatter to use
+	 * @param columnId - the column id, used for some specific formatters that need it (e.g. url)
+	 *
+	 * @returns {*|string|string} - the formatted value to be used for searching, or the original value as a string if no formatter is found
 	 */
 	const getSearchableValue = ( value, format, columnId ) => {
 		if ( null === value || value === undefined ) {
@@ -734,18 +782,18 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		return formatted.toString();
 	};
 
-	// Add a useMemo to sort columnsData based on columnsOptions order
+	// Add a useMemo to sort columnsData based on columnsOptions order.
 	const sortedColumnsData = useMemo( () => {
 
-		// Check if columnsData and columnsOptions are valid
+		// Check if columnsData and columnsOptions are valid.
 		if ( ! columnsData || ! columnsOptions ) {
 			return [];
 		}
 
-		// Create an array from columnsOptions keys to define the order
+		// Create an array from columnsOptions keys to define the order.
 		const order = Object.keys( columnsOptions );
 
-		// Sort columnsData based on the order of columns in columnsOptions
+		// Sort columnsData based on the order of columns in columnsOptions.
 		return columnsData.sort( ( a, b ) => {
 			const orderA = order.indexOf( a.selector );
 			const orderB = order.indexOf( b.selector );
@@ -755,7 +803,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 	}, [ columnsData, columnsOptions ]);
 
 
-	// Memoize the filtered data to avoid recalculations
+	// Memoize the filtered data to avoid recalculations.
 	const filteredData = useMemo( () => {
 		let filtered = [];
 		if ( configDetails?.searchable && Array.isArray( tableData ) ) {
@@ -764,14 +812,14 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			} else {
 				const searchTerm = filterText.toLowerCase();
 
-				// Get searchable columns (those with group_by: true)
+				// Get searchable columns (those with group_by: true).
 				const searchableColumns = Object.keys( columnsOptions ).filter(
 					( column ) => columnsOptions[column]?.group_by
 				);
 
 				filtered = tableData.filter( ( item ) => {
 
-					// Search through all searchable columns
+					// Search through all searchable columns.
 					return searchableColumns.some( ( column ) => {
 						const value = item[column];
 						if ( null === value || value === undefined ) {
@@ -788,7 +836,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		}
 
 		// Sort the filtered data.
-		// Safety check: ensure sortedColumnsData exists and has items
+		// Safety check: ensure sortedColumnsData exists and has items.
 		if ( ! sortedColumnsData || ! Array.isArray( sortedColumnsData ) || 0 === sortedColumnsData.length ) {
 			return filtered;
 		}
@@ -796,7 +844,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		filtered = [ ...filtered ].sort( ( a, b ) => {
 			let actualSortField = sortField;
 
-			//if sortField is not in sortedColumnsData, use the second column as default
+			// If sortField is not in sortedColumnsData, use the second column as default.
 			if ( ! actualSortField && 1 < sortedColumnsData.length ) {
 				actualSortField = sortedColumnsData[1].id;
 			}
@@ -804,7 +852,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			const aValue = a[actualSortField];
 			const bValue = b[actualSortField];
 
-			// Handle null/undefined values
+			// Handle null/undefined values.
 			if ( null === aValue || aValue === undefined ) {
 				return 1;
 			}
@@ -813,7 +861,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				return -1;
 			}
 
-			// Check if both values are numeric (including numeric strings)
+			// Check if both values are numeric (including numeric strings).
 			const aNum = Number( aValue );
 			const bNum = Number( bValue );
 			const aIsNumeric = ! isNaN( aNum ) && '' !== aValue && null !== aValue;
@@ -824,7 +872,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				return 'asc' === sortDirection ? aNum - bNum : bNum - aNum;
 			}
 
-			// String comparison for non-numeric values
+			// String comparison for non-numeric values.
 			const aStr = String( aValue ).toLowerCase();
 			const bStr = String( bValue ).toLowerCase();
 
@@ -852,7 +900,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		};
 	}
 
-	// Memoize DataTable props to prevent unnecessary re-renders
+	// Memoize DataTable props to prevent unnecessary re-renders.
 	const dataTableProps = useMemo(
 
 		() => {
@@ -864,60 +912,58 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			const sortFieldId = -1 !== sortColumnIndex ? sortColumnIndex + 1 : 2;
 
 			return {
-            className: 'burst-data-table',
-			columns: sortedColumnsData,
-			data: filteredData,
-			sortServer: true,
-			defaultSortFieldId: sortFieldId,
-			defaultSortAsc: 'asc' === sortDirection,
-			onSort: handleSort,
-			pagination: true,
-			paginationRowsPerPageOptions: [ 10, 25, 50, 100, 200 ],
-			paginationPerPage: 10,
-			paginationComponentOptions: {
-				rowsPerPageText: '',
-				rangeSeparatorText: __( 'of', 'burst-statistics' ),
-				noRowsPerPage: false,
-				selectAllRowsItem: true,
-				selectAllRowsItemText: __( 'All', 'burst-statistics' )
-			},
-			noDataComponent: (
-				<EmptyDataTable
-					noData={noData}
-					data={[]}
-					isLoading={isLoading}
-					error={error}
-				/>
-			),
+				className: 'burst-data-table',
+				columns: sortedColumnsData,
+				data: filteredData,
+				sortServer: true,
+				defaultSortFieldId: sortFieldId,
+				defaultSortAsc: 'asc' === sortDirection,
+				onSort: handleSort,
+				pagination: true,
+				paginationRowsPerPageOptions: [ 10, 25, 50, 100, 200 ],
+				paginationPerPage: 10,
+				paginationComponentOptions: {
+					rowsPerPageText: '',
+					rangeSeparatorText: __( 'of', 'burst-statistics' ),
+					noRowsPerPage: false,
+					selectAllRowsItem: true,
+					selectAllRowsItemText: __( 'All', 'burst-statistics' )
+				},
+				noDataComponent: (
+					<EmptyDataTable
+						noData={noData}
+						data={[]}
+						isLoading={isLoading}
+						error={error}
+					/>
+				),
 
-			// Additional optimization
-			progressPending: isLoading,
-			progressComponent: (
-				<EmptyDataTable
-					noData={noData}
-					data={[]}
-					isLoading={isLoading}
-					error={error}
-				/>
-			)
-		};
-},
+				// Additional optimization.
+				progressPending: isLoading,
+				progressComponent: (
+					<EmptyDataTable
+						noData={noData}
+						data={[]}
+						isLoading={isLoading}
+						error={error}
+					/>
+				)
+			};
+		},
 		[ sortedColumnsData, filteredData, sortField, sortDirection, handleSort, noData, isLoading, error ]
 	);
 
-	// Early return if config details are not available
+	// Early return if config details are not available.
 	if ( ! configDetails ) {
 		return null;
 	}
 
-	const siteUrl = window.burst_admin?.site_url || window.location.origin;
-
+	const siteUrl = window.burst_settings?.site_url || window.location.origin;
 	const safeDomain = new URL( siteUrl ).hostname
 		.replace( /\./g, '-' )
 		.replace( /[^a-zA-Z0-9-]/g, '' );
 
 	const fileName = `${safeDomain}-${selectedConfig}-${startDate}-${endDate}`;
-
 
 	return (
 		<Block className="row-span-2 overflow-hidden xl:col-span-6 group/root">
@@ -925,6 +971,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				className="border-b border-gray-200"
 				isReport={isReport}
 				reportBlockIndex={index}
+				isLoading={isLoading}
 				title={
 					<DataTableSelect
 						value={selectedConfig}

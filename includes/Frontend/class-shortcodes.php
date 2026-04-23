@@ -315,6 +315,7 @@ class Shortcodes {
 
 		try {
 			$qd = new Query_Data(
+				'shortcode_' . sanitize_key( $atts['type'] ),
 				[
 					'date_start' => $start,
 					'date_end'   => $end,
@@ -469,7 +470,7 @@ class Shortcodes {
 		// Apply format.
 		if ( $atts['format'] === 'text' ) {
 			// Get metric labels from our Frontend_Statistics class.
-			$query_data    = new Query_Data();
+			$query_data    = new Query_Data( 'shortcode_metric_labels' );
 			$metric_labels = $query_data->get_allowed_metrics_labels();
 			$metric_label  = isset( $metric_labels[ $atts['type'] ] ) ? $metric_labels[ $atts['type'] ] : '';
 			$output        = sprintf(

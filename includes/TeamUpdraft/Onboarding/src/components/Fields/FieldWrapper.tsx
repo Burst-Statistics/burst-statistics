@@ -60,16 +60,16 @@ const FieldWrapper = memo(({
 
     const labelBlock = (
         <div className={clsx("flex items-center gap-2", labelMargin)}>
-            <Label.Root className="cursor-pointer text-md font-medium text-black" htmlFor={inputId}>
+            <Label.Root className="cursor-pointer text-md font-medium text-text-black" htmlFor={inputId}>
                 {label}
             </Label.Root>
             {required && (
-                <span className="text-gray ml-1 text-xs font-normal">
+                <span className="text-text-gray ml-1 text-xs font-normal">
                     ({__("Required", "burst-statistics")})
                 </span>
             )}
             {help && (
-                <span className="text-gray ml-2 text-sm font-light">
+                <span className="text-text-gray ml-2 text-sm font-light text-text-gray">
                     {help}
                 </span>
             )}
@@ -100,7 +100,7 @@ const FieldWrapper = memo(({
             )}
 
             {context && (
-                <p className="text-gray mt-2 text-sm font-normal">
+                <p className="text-text-gray mt-2 text-sm font-normal">
                     {isContextObject(context) ? context.text : context}
                     {isContextObject(context) && context.url && ' '}
                     {isContextObject(context) && context.url && (

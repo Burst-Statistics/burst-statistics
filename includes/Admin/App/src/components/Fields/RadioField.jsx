@@ -1,4 +1,3 @@
-import { forwardRef } from 'react';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import RadioInput from '@/components/Inputs/RadioInput';
 import RecommendBadge from '@/components/Common/RecommendBadge';
@@ -19,7 +18,7 @@ import RecommendBadge from '@/components/Common/RecommendBadge';
  * @param {Object}  options    - Radio options as key-value pairs or objects with label, context, and recommended flag.
  * @return {JSX.Element}
  */
-const RadioField = forwardRef(
+const RadioField =
 	(
 		{
 			field,
@@ -49,7 +48,7 @@ const RadioField = forwardRef(
 				disabled={disabled}
 				{...props}
 			>
-				<div className="space-y-4">
+				<div className="flex flex-col gap-4">
 					{Object.entries( options ).map( ([ value, option ]) => {
 
 						// Handle both simple string labels and object format with label and context
@@ -66,7 +65,7 @@ const RadioField = forwardRef(
 						return (
 							<div
 								key={`${inputId}-${value}`}
-								className="space-y-1"
+								className="flex flex-col gap-1"
 							>
 								<div className="flex items-start gap-2 rounded-md border border-gray-400 bg-gray-100 px-3 py-2">
 									<RadioInput
@@ -84,7 +83,7 @@ const RadioField = forwardRef(
 										{isRecommended && <RecommendBadge />}
 
 										{optionContext && (
-											<div className="text-sm font-light text-gray">
+											<div className="text-sm font-light text-text-gray">
 												{optionContext}
 											</div>
 										)}
@@ -96,8 +95,8 @@ const RadioField = forwardRef(
 				</div>
 			</FieldWrapper>
 		);
-	}
-);
+	};
+
 
 RadioField.displayName = 'RadioField';
 

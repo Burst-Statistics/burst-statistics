@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { doAction } from '../utils/api';
+import { doAction, getAction } from '../utils/api';
 
 const useTasks = create(
 	persist(
@@ -30,7 +30,7 @@ const useTasks = create(
 			},
 			getTasks: async() => {
 				try {
-					const { tasks } = await doAction( 'tasks' );
+					const { tasks } = await getAction( 'tasks' );
 					let tasksArray;
 					if ( Array.isArray( tasks ) ) {
 						tasksArray = tasks;
