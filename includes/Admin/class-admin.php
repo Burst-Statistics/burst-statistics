@@ -88,7 +88,6 @@ class Admin {
 		add_action( 'burst_recalculate_bounces_cron', [ $this, 'recalculate_bounces' ] );
 		add_action( 'burst_recalculate_first_time_visits_cron', [ $this, 'recalculate_first_time_visits' ] );
 		add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
-		add_filter( 'burst_menu', [ $this, 'add_subscriptions_menu_item' ] );
 
 		$this->maybe_update_site_scheme();
 
@@ -1392,47 +1391,6 @@ class Admin {
 		$tables[] = $wpdb->get_blog_prefix( $blog_id ) . 'burst_summary';
 
 		return $tables;
-	}
-
-	/**
-	 * Add ecommerce subscriptions menu item to the admin menu
-	 *
-	 * @param array $menu_items The existing menu items.
-	 * @return array The modified menu items including the ecommerce menu item.
-	 */
-	public function add_subscriptions_menu_item( array $menu_items ): array {
-		if ( ! $this->has_admin_access() ) {
-			return $menu_items;
-		}
-
-		$subscriptions_menu_item = [
-			'id'             => 'subscriptions',
-			'title'          => __( 'Subscriptions', 'burst-statistics' ),
-			'default_hidden' => false,
-			'menu_items'     => [],
-			'capabilities'   => 'view_sales_burst_statistics',
-			'menu_slug'      => 'burst#/subscriptions',
-			'show_in_admin'  => true,
-			'pro'            => true,
-			'shareable'      => true,
-		];
-
-		// Put ecommerce menu item before the id: settings menu item.
-		$settings_index = null;
-		foreach ( $menu_items as $index => $item ) {
-			if ( isset( $item['id'] ) && 'reporting' === $item['id'] ) {
-				$settings_index = $index;
-				break;
-			}
-		}
-
-		if ( null !== $settings_index ) {
-			array_splice( $menu_items, $settings_index, 0, [ $subscriptions_menu_item ] );
-		} else {
-			$menu_items[] = $subscriptions_menu_item;
-		}
-
-		return $menu_items;
 	}
 
 	/**
