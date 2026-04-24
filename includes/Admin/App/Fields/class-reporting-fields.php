@@ -76,24 +76,6 @@ class Reporting_Fields {
 				$fields[ $key ] = apply_filters( 'burst_field', $field, $field['id'] );
 			}
 
-			foreach ( [ 'notice', 'pro', 'context' ] as $type ) {
-				if ( isset( $field[ $type ]['url'] ) ) {
-					$source = 'setting-notice';
-					if ( $type === 'pro' ) {
-						$source = 'setting-upgrade';
-					} elseif ( $type === 'context' ) {
-						$source = 'setting-context';
-					}
-					$fields[ $key ][ $type ]['url'] = $this->get_website_url(
-						$field[ $type ]['url'],
-						[
-							'utm_source'  => $source,
-							'utm_content' => $field['id'],
-						]
-					);
-				}
-			}
-
 			// parse options.
 			if ( isset( $field['options'] ) && is_string( $field['options'] ) && strpos( $field['options'], '()' ) !== false ) {
 				$func = str_replace( '()', '', $field['options'] );
