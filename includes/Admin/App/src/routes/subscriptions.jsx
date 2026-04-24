@@ -5,10 +5,7 @@ import { createFileRoute, notFound } from '@tanstack/react-router';
 import { __ } from '@wordpress/i18n';
 import { PageHeader } from '@/components/Common/PageHeader';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
-import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
 import useLicenseData from '@/hooks/useLicenseData';
-import SalesUpsellBackground from '@/components/Upsell/Sales/SalesUpsellBackground';
-import UpsellCopy from '@/components/Upsell/UpsellCopy';
 import UnauthorizedModal from '@/components/Common/UnauthorizedModal';
 import SubscriptionsBlock from '@/components/Subscriptions/SubscriptionsBlock';
 import SubscriptionsProgressBar from '@/components/Subscriptions/SubscriptionsProgressBar';
@@ -83,15 +80,19 @@ function SubscriptionsComponent() {
 		return null;
 	}
 
+	// As we are not showing upsell for subscription, if it is accessed we will show Unauthorized access modal
 	if ( ! isLicenseValidFor( 'sales' ) ) {
 		return (
-			<>
-				<SalesUpsellBackground />
-
-				<UpsellOverlay>
-					<UpsellCopy type="sales" />
-				</UpsellOverlay>
-			</>
+			<UnauthorizedModal
+				header={__( 'Unauthorized Access', 'burst-statistics' )}
+				message={
+					__(
+						'You do not have permission to view sales data.',
+						'burst-statistics'
+					)
+				}
+				actionLabel={__( 'Go Back', 'burst-statistics' )}
+			/>
 		);
 	}
 
