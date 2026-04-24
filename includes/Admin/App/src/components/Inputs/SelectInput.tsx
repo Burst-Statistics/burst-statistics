@@ -86,7 +86,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
 
 				<Select.Portal container={document.getElementById( 'modal-root' )}>
 					<Select.Content
-						className="bg-gray-100 text-text-black border border-gray-400 rounded-md shadow-lg ring-1 ring-black/5 z-100 shadow-gray-400/50"
+						className="bg-gray-100 text-text-black border border-gray-400 rounded-md shadow-lg ring-1 ring-black/5 z-99999 shadow-gray-400/50"
 						position="item-aligned"
 					>
 						<Select.ScrollUpButton className="">
