@@ -1,6 +1,6 @@
 {
-  "core": "WordPress/WordPress#6.2.1",
-  "phpVersion": "7.4",
+  "core": "WordPress/WordPress#6.9",
+  "phpVersion": "8.0",
   "plugins": [
     "./",
     "https://downloads.wordpress.org/plugin/query-monitor.zip",
