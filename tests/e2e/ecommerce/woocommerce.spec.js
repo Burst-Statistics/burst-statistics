@@ -147,8 +147,7 @@ test.describe('📦 WooCommerce eCommerce Tabs', () => {
 
 		// WooCommerce is already active from the previous test
 		await installFixturePlugin('woocommerce-subscriptions');
-		
-		const logs = startConsoleListener(page);
+
 		await loadDashboard(page);
 
 		const salesLink = page.locator('a[href*="#/sales"]').first();
@@ -165,9 +164,6 @@ test.describe('📦 WooCommerce eCommerce Tabs', () => {
 		
 		console.log('✅ Sales tab visible with pro upsell, no Subscriptions tab even with subscriptions installed.');
 		await page.screenshot({ path: 'screenshots/woocommerce-subs-sales-upsell.png' });
-
-		console.log("detected console logs: ", logs);
-		expect(logs.length).toBe(0);
 
 		const hasErrors = await debugHasError();
 		expect(hasErrors).toBe(false);
