@@ -25,7 +25,7 @@ const FIXTURES = {
 };
 
 async function getFixturePath(zipName) {
-	return path.resolve(__dirname, '../../fixtures/plugins', zipName);
+	return path.resolve(__dirname, '../fixtures/plugins', zipName);
 }
 
 async function installFixturePlugin(key) {
