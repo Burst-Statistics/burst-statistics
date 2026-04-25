@@ -97,7 +97,7 @@ test.describe('📦 WooCommerce eCommerce Tabs', () => {
 		const salesLink = page.locator('a[href*="#/sales"]');
 		await expect(salesLink).toHaveCount(0);
 
-		const subscriptionsLink = page.locator('a[href*="subscriptions"]');
+		const subscriptionsLink = page.locator('a[href*="#/subscriptions"]');
 		await expect(subscriptionsLink).toHaveCount(0);
 
 		console.log('✅ No Sales tab and no Subscriptions tab without any ecommerce plugin.');
@@ -125,7 +125,7 @@ test.describe('📦 WooCommerce eCommerce Tabs', () => {
 		const salesLink = page.locator('a[href*="#/sales"]').first();
 		await expect(salesLink).toBeVisible({ timeout: 10000 });
 
-		const subscriptionsLink = page.locator('a[href*="subscriptions"]');
+		const subscriptionsLink = page.locator('a[href*="#/subscriptions"]');
 		await expect(subscriptionsLink).toHaveCount(0);
 
 		await salesLink.click();
@@ -153,7 +153,7 @@ test.describe('📦 WooCommerce eCommerce Tabs', () => {
 		const salesLink = page.locator('a[href*="#/sales"]').first();
 		await expect(salesLink).toBeVisible({ timeout: 10000 });
 
-		const subscriptionsLink = page.locator('a[href*="subscriptions"]');
+		const subscriptionsLink = page.locator('a[href*="#/subscriptions"]');
 		await page.screenshot({ path: 'screenshots/woo-subs-debug-failed.png', fullPage: true });
 		await expect(subscriptionsLink).toHaveCount(0);
 
