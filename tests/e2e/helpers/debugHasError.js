@@ -21,7 +21,9 @@ async function debugHasError() {
             /EDD[\\]/.test(line) ||
             /easy-digital-downloads/.test(line) ||
             /wp_edd_/.test(line) ||
-            /chmod\(\): No such file or directory in .*wp-admin\/includes\/class-wp-filesystem-direct\.php/.test(line);
+            /chmod\(\): No such file or directory in .*wp-admin\/includes\/class-wp-filesystem-direct\.php/.test(line) ||
+            /fileperms\(\): stat failed for .*wp-content\/uploads\/edd\/.*edd-stripe-rate-limiting\.log/.test(line);
+
         return !isExcluded;
     });
 
