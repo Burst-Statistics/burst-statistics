@@ -20,25 +20,27 @@ test.describe.configure({
 	retries: 0,
 });
 
-async function createMuPluginStub(slug, name) {
-	const dir = path.resolve(__dirname, '../../../../', 'mu-plugins');
-	if (!fs.existsSync(dir)) {
-		fs.mkdirSync(dir, { recursive: true });
-	}
-	let extraCode = '';
-	if (slug === 'edd-recurring') {
-		extraCode = 'define("EDD_RECURRING_VERSION", "2.11");';
-	}
-	fs.writeFileSync(path.join(dir, `${slug}.php`), `<?php\n/*\nPlugin Name: ${name}\n*/\n${extraCode}\n`);
-	console.log(`🛠 ${name} mu-plugin stub created.`);
+const FIXTURES = {
+	'edd-recurring': 'edd-recurring.zip',
+};
+
+async function getFixturePath(zipName) {
+	return path.resolve(__dirname, '../../fixtures/plugins', zipName);
 }
 
-function removeMuPluginStub(slug) {
-	const dir = path.resolve(__dirname, '../../../../', 'mu-plugins');
-	const file = path.join(dir, `${slug}.php`);
-	if (fs.existsSync(file)) {
-		fs.unlinkSync(file);
-		console.log(`🗑 ${slug} mu-plugin stub removed.`);
+async function installFixturePlugin(key) {
+	const zipPath = await getFixturePath(FIXTURES[key]);
+	await wpCli(`plugin install "${zipPath}" --activate --force`);
+	console.log(`🛠 ${key} installed and activated from fixture.`);
+}
+
+async function removeFixturePlugin(key) {
+	await deactivatePlugin(key);
+	try {
+		await wpCli(`plugin delete ${key}`, { allowFailure: true });
+		console.log(`🗑 ${key} removed.`);
+	} catch (error) {
+		console.log(`🗑 ${key} remove skipped (not found).`);
 	}
 }
 
@@ -73,7 +75,7 @@ test.beforeAll(async () => {
 	test.setTimeout(120000);
 	await deactivatePlugin('woocommerce');
 	await deactivatePlugin('easy-digital-downloads');
-	removeMuPluginStub('edd-recurring');
+	await removeFixturePlugin('edd-recurring');
 	await clearDebugLog();
 });
 
@@ -83,7 +85,7 @@ test.afterEach(async () => {
 
 test.afterAll(async () => {
 	await deactivatePlugin('easy-digital-downloads');
-	removeMuPluginStub('edd-recurring');
+	await removeFixturePlugin('edd-recurring');
 });
 
 test.describe('📦 EDD eCommerce Tabs', () => {
@@ -144,7 +146,7 @@ test.describe('📦 EDD eCommerce Tabs', () => {
 		test.setTimeout(120000);
 
 		// EDD is already active from the previous test
-		createMuPluginStub('edd-recurring', 'EDD Recurring');
+		await installFixturePlugin('edd-recurring');
 
 		await loadDashboard(page);
 

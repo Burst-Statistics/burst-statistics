@@ -20,25 +20,27 @@ test.describe.configure({
 	retries: 0,
 });
 
-async function createMuPluginStub(slug, name) {
-	const dir = path.resolve(__dirname, '../../../../', 'mu-plugins');
-	if (!fs.existsSync(dir)) {
-		fs.mkdirSync(dir, { recursive: true });
-	}
-	let extraCode = '';
-	if (slug === 'woocommerce-subscriptions') {
-		extraCode = 'class WC_Subscriptions {}';
-	}
-	fs.writeFileSync(path.join(dir, `${slug}.php`), `<?php\n/*\nPlugin Name: ${name}\n*/\n${extraCode}\n`);
-	console.log(`🛠 ${name} mu-plugin stub created.`);
+const FIXTURES = {
+	'woocommerce-subscriptions': 'woocommerce-subscriptions.zip',
+};
+
+async function getFixturePath(zipName) {
+	return path.resolve(__dirname, '../../fixtures/plugins', zipName);
 }
 
-function removeMuPluginStub(slug) {
-	const dir = path.resolve(__dirname, '../../../../', 'mu-plugins');
-	const file = path.join(dir, `${slug}.php`);
-	if (fs.existsSync(file)) {
-		fs.unlinkSync(file);
-		console.log(`🗑 ${slug} mu-plugin stub removed.`);
+async function installFixturePlugin(key) {
+	const zipPath = await getFixturePath(FIXTURES[key]);
+	await wpCli(`plugin install "${zipPath}" --activate --force`);
+	console.log(`🛠 ${key} installed and activated from fixture.`);
+}
+
+async function removeFixturePlugin(key) {
+	await deactivatePlugin(key);
+	try {
+		await wpCli(`plugin delete ${key}`, { allowFailure: true });
+		console.log(`🗑 ${key} removed.`);
+	} catch (error) {
+		console.log(`🗑 ${key} remove skipped (not found).`);
 	}
 }
 
@@ -73,7 +75,7 @@ test.beforeAll(async () => {
 	test.setTimeout(120000);
 	await deactivatePlugin('easy-digital-downloads');
 	await deactivatePlugin('woocommerce');
-	removeMuPluginStub('woocommerce-subscriptions');
+	await removeFixturePlugin('woocommerce-subscriptions');
 	await clearDebugLog();
 });
 
@@ -83,7 +85,7 @@ test.afterEach(async () => {
 
 test.afterAll(async () => {
 	await deactivatePlugin('woocommerce');
-	removeMuPluginStub('woocommerce-subscriptions');
+	await removeFixturePlugin('woocommerce-subscriptions');
 });
 
 test.describe('📦 WooCommerce eCommerce Tabs', () => {
@@ -144,7 +146,7 @@ test.describe('📦 WooCommerce eCommerce Tabs', () => {
 		test.setTimeout(120000);
 
 		// WooCommerce is already active from the previous test
-		createMuPluginStub('woocommerce-subscriptions', 'WooCommerce Subscriptions');
+		await installFixturePlugin('woocommerce-subscriptions');
 		
 		const logs = startConsoleListener(page);
 		await loadDashboard(page);
