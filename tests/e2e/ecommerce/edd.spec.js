@@ -154,6 +154,7 @@ test.describe('📦 EDD eCommerce Tabs', () => {
 		await expect(salesLink).toBeVisible({ timeout: 10000 });
 
 		const subscriptionsLink = page.locator('a[href*="subscriptions"]');
+		await page.screenshot({ path: 'screenshots/edd-subs-debug-failed.png', fullPage: true });
 		await expect(subscriptionsLink).toHaveCount(0);
 
 		await salesLink.click();
