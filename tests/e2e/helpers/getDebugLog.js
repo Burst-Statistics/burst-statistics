@@ -10,4 +10,18 @@ async function getDebugLog () {
         return null;
     }
 }
-module.exports = { getDebugLog };
+
+
+async function clearDebugLog () {
+    try {
+        await wpCli('eval "file_put_contents( WP_CONTENT_DIR . \'/debug.log\', \'\' );"');
+        console.log('✅ debug.log cleared successfully.');
+    } catch (error) {
+        console.error('❌ Failed to clear debug.log:', error.message || error);
+    }
+}
+
+module.exports = {
+    getDebugLog,
+    clearDebugLog
+};
