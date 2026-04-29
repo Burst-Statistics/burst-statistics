@@ -18,7 +18,7 @@
   --blue-hue: 258.55;
   --red-hue: 29.23;
   --orange-hue: 50.56;
-  --gray-hue: var(--blue-hue);
+  --gray-hue: var(--yellow-hue);
   --color-primary-50: oklch(0.95 0.0125 var(--brand-hue) / 0.90);
   --color-primary-100: oklch(0.94 0.02 var(--brand-hue) / 0.90);
   --color-primary-200: oklch(0.89 0.035 var(--brand-hue) / 0.90);
@@ -59,10 +59,10 @@
   --color-text-gray-light: oklch(0.7 0.0072 var(--gray-hue) / 0.95);
   --color-white: #ffffff;
   --color-black: #151615;
-  --color-gray-50: oklch(0.9773 0.003 var(--gray-hue));
-  --color-gray-100: oklch(0.9752 0.004 var(--gray-hue));
-  --color-gray-200: oklch(0.924 0.01 var(--gray-hue));
-  --color-gray-300: oklch(0.894 0.01 var(--gray-hue));
+  --color-gray-50: oklch(0.9773 0.0017 var(--gray-hue));
+  --color-gray-100: oklch(0.9752 0.0017 var(--gray-hue));
+  --color-gray-200: oklch(0.924 0.0052 var(--gray-hue));
+  --color-gray-300: oklch(0.894 0.007 var(--gray-hue));
   --color-gray-400: oklch(0.850 0.0106 var(--gray-hue));
   --color-gray-500: oklch(0.735 0.0145 var(--gray-hue));
   --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
@@ -1163,11 +1163,6 @@
     &[data-state="checked"] {
       --tw-translate-x: calc(var(--spacing) * 5);
       translate: var(--tw-translate-x) var(--tw-translate-y);
-    }
-  }
-  .data-\[state\=checked\]\:bg-primary {
-    &[data-state="checked"] {
-      background-color: var(--color-primary);
     }
   }
 }

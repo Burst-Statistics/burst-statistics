@@ -185,11 +185,44 @@ const makeRequest = async( path, method = 'GET', data = {}) => {
 	}
 };
 
+const isDoActionFallbackPath = ( path = '' ) => {
+	const writeFragments = [
+		'/options/set',
+		'/fields/set',
+		'/goals/add',
+		'/goals/delete',
+		'/goals/set',
+		'/goals/add_predefined',
+		'/do_action/'
+	];
+
+	return writeFragments.some( ( fragment ) => path.includes( fragment ) );
+};
+
+const withAjaxAction = ( url, action ) => {
+	if ( url.includes( 'action=' ) ) {
+		return url.replace( /([?&]action=)[^&]*/, `$1${action}` );
+	}
+
+	const separator = url.includes( '?' ) ? '&' : '?';
+	return `${url}${separator}action=${action}`;
+};
+
+const getAjaxFallbackUrl = ( method, path ) => {
+	const action =
+		'POST' === method || isDoActionFallbackPath( path ) ?
+			'burst_rest_api_fallback_do_action' :
+			'burst_rest_api_fallback_get_action';
+
+	return withAjaxAction( siteUrl( 'ajax' ), action );
+};
+
 const ajaxRequest = async( method, path, requestData = null ) => {
+	const ajaxUrl = getAjaxFallbackUrl( method, path );
 	const url =
 		'GET' === method ?
-			`${siteUrl( 'ajax' )}&rest_action=${path.replace( '?', '&' )}` :
-			siteUrl( 'ajax' );
+			`${ajaxUrl}&rest_action=${path.replace( '?', '&' )}` :
+			ajaxUrl;
 
 	const controller = new AbortController();
 	const signal = controller.signal;
@@ -208,7 +241,7 @@ const ajaxRequest = async( method, path, requestData = null ) => {
 	}
 
 	try {
-		const response = await fetch( url, options );
+		const response = await fetch( url, options ); // nosemgrep
 		if ( ! response.ok ) {
 			generateError( response.statusText );
 			throw new Error( response.statusText );

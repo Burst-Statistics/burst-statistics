@@ -60,9 +60,10 @@ class MainWP_Proxy {
 	/**
 	 * Register the `burst/v1/mainwp-auth` endpoint.
 	 *
-	 * Permission callback is `__return_true` — authentication is handled inside
-	 * the callback via MainWP signature verification, not via WP's cookie/token
-	 * system, because the request originates from a server-to-server call.
+	 * The permission callback accepts either a valid MainWP-signed body (the
+	 * server-to-server / unauthenticated bootstrap path) or a logged-in user
+	 * with the Burst management capability. Subscribers and unauthenticated
+	 * unsigned callers are rejected before the route callback runs.
 	 */
 	public function register_routes(): void {
 		register_rest_route(
@@ -71,9 +72,52 @@ class MainWP_Proxy {
 			[
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => [ $this, 'handle_auth_request' ],
-				'permission_callback' => '__return_true',
+				'permission_callback' => [ $this, 'check_auth_permission' ],
 			]
 		);
+	}
+
+	/**
+	 * Permission gate for the mainwp-auth endpoint.
+	 *
+	 * Two acceptance paths:
+	 *  1. Valid MainWP signature in the body — used during pairing and by
+	 *     server-to-server calls. We resolve the target user from the body,
+	 *     confirm the Burst capability, switch to that user, and persist the
+	 *     verified browser-set Origin (the only place this option is written).
+	 *  2. Already-logged-in user holding `manage_burst_statistics` — used for
+	 *     subsequent same-session calls from a paired dashboard origin.
+	 *
+	 * Anything else (subscribers, anonymous, forged signatures) is rejected
+	 * before `handle_auth_request()` runs, so the app-password mint path is
+	 * unreachable to lower-privileged actors.
+	 */
+	public function check_auth_permission( \WP_REST_Request $request ): bool {
+		$body = $request->get_json_params();
+		if ( is_array( $body ) && $this->verify_signature( $body ) ) {
+			$username      = sanitize_user( $body['user'] ?? '' );
+			$resolved_user = $username !== '' ? get_user_by( 'login', $username ) : false;
+			if ( ! $resolved_user || ! user_can( $resolved_user, 'manage_burst_statistics' ) ) {
+				return false;
+			}
+			wp_set_current_user( (int) $resolved_user->ID );
+
+			// Persist the dashboard origin for CORS reflection on subsequent
+			// browser requests from the React app. The dashboard calls this
+			// endpoint server-to-server (no browser Origin header is present),
+			// so the body field is the only available source. This is safe
+			// here because we only reach this branch after a successful
+			// signature verification: only the holder of the MainWP private
+			// key can supply the body in the first place.
+			$body_origin       = is_string( $body['dashboard_origin'] ?? null ) ? sanitize_url( $body['dashboard_origin'] ) : '';
+			$normalized_origin = $this->normalize_origin( $body_origin );
+			if ( $normalized_origin !== '' ) {
+				update_option( 'burst_mainwp_dashboard_url', $normalized_origin );
+			}
+			return true;
+		}
+
+		return current_user_can( 'manage_burst_statistics' );
 	}
 
 	/**
@@ -104,12 +148,16 @@ class MainWP_Proxy {
 		// Only reflect known dashboard origins once pairing has completed.
 		$allowed_origin = $this->get_allowed_dashboard_origin();
 		$request_origin = $this->normalize_origin( $origin );
+		$origin_matches = $allowed_origin !== '' && $request_origin !== '' && hash_equals( $allowed_origin, $request_origin );
 
 		if ( $allowed_origin === '' ) {
+			// Unpaired bootstrap: only the mainwp-auth endpoint may negotiate CORS,
+			// and credentials are NOT permitted — the very first call is signed and
+			// must not depend on a logged-in cookie.
 			if ( ! $this->is_mainwp_auth_endpoint() ) {
 				return;
 			}
-		} elseif ( $request_origin === '' || ! hash_equals( $allowed_origin, $request_origin ) ) {
+		} elseif ( ! $origin_matches ) {
 			return;
 		}
 
@@ -119,7 +167,9 @@ class MainWP_Proxy {
 		header_remove( 'Access-Control-Allow-Credentials' );
 
 		header( 'Access-Control-Allow-Origin: ' . $origin );
-		header( 'Access-Control-Allow-Credentials: true' );
+		if ( $origin_matches ) {
+			header( 'Access-Control-Allow-Credentials: true' );
+		}
 		header( 'Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS' );
 		header( 'Access-Control-Allow-Headers: Authorization, Content-Type, X-WP-Nonce, X-Burst-Auth-Cookie, X-Requested-With, X-Burst-Share-Token, X-BurstMainWP' );
 		header( 'Access-Control-Expose-Headers: X-WP-Total, X-WP-TotalPages, Link' );
@@ -184,46 +234,15 @@ class MainWP_Proxy {
 	/**
 	 * Handle an incoming auth request from the MainWP dashboard.
 	 *
-	 * Steps:
-	 *  1. Decode and validate the JSON body.
-	 *  2. Verify the MainWP asymmetric signature.
-	 *  3. Resolve the admin user; confirm Burst management capability.
-	 *  4. Switch to that user context and generate a REST nonce.
-	 *  5. Retrieve or create an Application Password token.
-	 *  6. Return token + nonce + capabilities + localization data.
+	 * Authentication, capability check, user-switching, and origin persistence
+	 * all happen in `check_auth_permission()`. By the time we get here the
+	 * current user is the resolved admin and we only need to mint (or reuse)
+	 * the short-lived Application Password.
 	 *
-	 * @return WP_REST_Response 200 on success; 401/403/500 on failure.
+	 * @return WP_REST_Response 200 on success; 500 on token creation failure.
 	 */
 	public function handle_auth_request(): WP_REST_Response {
-		$user = wp_get_current_user();
-
-		$request_body = file_get_contents( 'php://input' );
-		$body         = json_decode( $request_body, true );
-
-		if ( (int) $user->ID <= 0 ) {
-			if ( empty( $body ) || ! is_array( $body ) ) {
-				return new WP_REST_Response( [ 'error' => 'Invalid MainWP auth body.' ], 403 );
-			}
-
-			if ( ! $this->verify_signature( $body ) ) {
-				return new WP_REST_Response( [ 'error' => 'MainWP signature verification failed.' ], 403 );
-			}
-
-			$username      = sanitize_user( $body['user'] ?? '' );
-			$resolved_user = get_user_by( 'login', $username );
-
-			if ( ! $resolved_user ) {
-				return new WP_REST_Response( [ 'error' => 'MainWP user not found on child site.' ], 403 );
-			}
-
-			if ( ! user_can( $resolved_user, 'manage_burst_statistics' ) ) {
-				return new WP_REST_Response( [ 'error' => 'MainWP user lacks Burst capability.' ], 403 );
-			}
-
-			wp_set_current_user( (int) $resolved_user->ID );
-			$user = wp_get_current_user();
-		}
-
+		$user  = wp_get_current_user();
 		$token = $this->get_or_create_app_token( $user->ID );
 		if ( is_wp_error( $token ) ) {
 			return new WP_REST_Response(
@@ -234,18 +253,6 @@ class MainWP_Proxy {
 				],
 				500
 			);
-		}
-
-		// Store dashboard origin for CORS validation.
-		$origin = isset( $_SERVER['HTTP_ORIGIN'] ) ? sanitize_url( wp_unslash( $_SERVER['HTTP_ORIGIN'] ) ) : '';
-
-		if ( empty( $origin ) && ! empty( $body['dashboard_origin'] ) && is_string( $body['dashboard_origin'] ) ) {
-			$origin = sanitize_url( $body['dashboard_origin'] );
-		}
-
-		$normalized_origin = $this->normalize_origin( $origin );
-		if ( $normalized_origin !== '' ) {
-			update_option( 'burst_mainwp_dashboard_url', $normalized_origin );
 		}
 
 		return new WP_REST_Response(
@@ -323,6 +330,9 @@ class MainWP_Proxy {
 				return false;
 			}
 			$user = get_user_by( 'login', $username );
+			if ( ! $user || ! user_can( $user, 'manage_burst_statistics' ) ) {
+				return false;
+			}
 			wp_set_current_user( $user->ID );
 
 			return true;
