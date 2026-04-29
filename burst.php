@@ -71,7 +71,7 @@ try {
          * This function has te have a different name, to ensure that it runs and deactivates free, if required.
          */
         function burst_on_activation(): void {
-            Bootstrap::on_activation( true );
+            Bootstrap::on_activation( false );
         }
         register_activation_hook( __FILE__, '\Burst\burst_on_activation' );
     }
