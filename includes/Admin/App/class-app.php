@@ -50,7 +50,8 @@ class App {
 	 */
 	public function init(): void {
 		add_action( 'admin_menu', [ $this, 'add_menu' ] );
-		add_action( 'wp_ajax_burst_rest_api_fallback', [ $this, 'rest_api_fallback' ] );
+		add_action( 'wp_ajax_burst_rest_api_fallback_do_action', [ $this, 'rest_api_fallback_do_action' ] );
+		add_action( 'wp_ajax_burst_rest_api_fallback_get_action', [ $this, 'rest_api_fallback_get_action' ] );
 		add_action( 'admin_footer', [ $this, 'fix_duplicate_menu_item' ], 1 );
 		add_action( 'burst_after_save_field', [ $this, 'update_for_multisite' ], 10, 4 );
 		add_action( 'rest_api_init', [ $this, 'settings_rest_route' ], 8 );
@@ -364,9 +365,77 @@ class App {
 	}
 
 	/**
+	 * AJAX fallback handler for write actions (manage capability).
+	 */
+	public function rest_api_fallback_do_action(): void {
+		if ( ! $this->user_can_manage() ) {
+			$this->send_ajax_fallback_forbidden_response();
+		}
+
+		$this->rest_api_fallback( 'do_action' );
+	}
+
+	/**
+	 * AJAX fallback handler for read actions (view capability).
+	 */
+	public function rest_api_fallback_get_action(): void {
+		if ( ! $this->user_can_view() ) {
+			$this->send_ajax_fallback_forbidden_response();
+		}
+
+		$this->rest_api_fallback( 'get_action' );
+	}
+
+	/**
+	 * Return a standardized forbidden response for AJAX fallback requests.
+	 */
+	private function send_ajax_fallback_forbidden_response(): void {
+		$response = new \WP_REST_Response(
+			[
+				'success' => false,
+				'message' => 'You do not have permission to perform this action.',
+			]
+		);
+
+		if ( ob_get_length() ) {
+			ob_clean();
+		}
+		header( 'Content-Type: application/json' );
+		echo wp_json_encode( $response );
+		exit;
+	}
+
+	/**
+	 * Determine whether a fallback action belongs to the write/do_action scope.
+	 */
+	private function is_do_action_fallback_request( string $action ): bool {
+		if ( $action === '' ) {
+			return false;
+		}
+
+		$do_action_fragments = [
+			'/options/set',
+			'/fields/set',
+			'/goals/add',
+			'/goals/delete',
+			'/goals/set',
+			'/goals/add_predefined',
+			'/do_action/',
+		];
+
+		foreach ( $do_action_fragments as $fragment ) {
+			if ( str_contains( $action, $fragment ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * If the rest api is blocked, the code will try an admin ajax call as fall back.
 	 */
-	public function rest_api_fallback(): void {
+	public function rest_api_fallback( string $context = '' ): void {
 		$response  = [];
 		$error     = false;
 		$action    = false;
@@ -411,6 +480,15 @@ class App {
 
 			if ( strpos( $action, 'burst/v1/do_action/' ) !== false ) {
 				$do_action = strtolower( str_replace( 'burst/v1/do_action/', '', $action ) );
+			}
+		}
+
+		// Enforce read/write split for fallback handlers.
+		if ( $context !== '' ) {
+			$is_do_action = $this->is_do_action_fallback_request( (string) $action );
+
+			if ( ( $context === 'do_action' && ! $is_do_action ) || ( $context === 'get_action' && $is_do_action ) ) {
+				$this->send_ajax_fallback_forbidden_response();
 			}
 		}
 
@@ -2370,7 +2448,7 @@ class App {
 	 */
 	//phpcs:ignore
 	public function get_posts( \WP_REST_Request $request, array $ajax_data = [] ) {
-		if ( ! $this->user_can_view() ) {
+		if ( ! $this->user_can_manage() ) {
 			return new \WP_Error( 'rest_forbidden', 'You do not have permission to perform this action.', [ 'status' => 403 ] );
 		}
 

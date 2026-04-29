@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.0
-Stable tag: 3.4.0
+Stable tag: 3.4.1
 
 Analytics you'll actually use. Privacy-friendly, zero config, and designed to be actionable. Get insights, not just raw data.
 
@@ -201,6 +201,17 @@ Absolutely! Both free and premium plugins can be managed with Composer. Read the
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.4.1 =
+* April 29th 2026
+* New: automated tests for subscription statistics dashboard.
+* New: abilities API integration.
+* Improvement: move plugin activation logic to bootstrap class.
+* Improvement: split ajax fallback logic into do_action and get_action.
+* Fix: broken upgrade url in report settings.
+* Fix: When both Story report and share links are generated, the UX could generate an error.
+* Security: increase minimum required capability from view to manage in get_posts endpoint, Props Sanjay Singh Jhala.
+* Security: hardened MainWP proxy authentication and CORS origin validation, Props Sanjay Singh Jhala.
+
 = 3.4.0 =
 * April 22nd 2026
 * New: dark mode support for the Burst Statistics dashboard.

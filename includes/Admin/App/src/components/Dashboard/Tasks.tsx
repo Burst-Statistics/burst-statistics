@@ -103,8 +103,8 @@ const Tasks = (): React.ReactElement | Array<React.ReactElement> => {
 
 	return (
 		<AnimatePresence mode="popLayout">
-			<ClientTasks tasks={clientTasks} />
-			<ServerTasks tasks={serverTasks} />
+			<ClientTasks key='client-tasks' tasks={clientTasks} />
+			<ServerTasks key='server-tasks' tasks={serverTasks} />
 		</AnimatePresence>
 	);
 };

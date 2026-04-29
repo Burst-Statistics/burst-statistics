@@ -2,7 +2,7 @@ import {useState, useCallback, useEffect, useMemo, createInterpolateElement} fro
 import {__, _n, sprintf} from '@wordpress/i18n';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLocation } from '@tanstack/react-router';
-import { doAction, getAction } from '@/utils/api';
+import { doAction } from '@/utils/api';
 import { toast } from '@/utils/toast';
 import useLicenseData from '@/hooks/useLicenseData';
 import useDateRange from '@/hooks/useDateRange';
@@ -594,7 +594,6 @@ const ActiveLinksSection = ({
 	if ( ! isLoading && 0 === linkCount ) {
 		return null;
 	}
-
 	return (
 		<div className="border-t border-gray-200 pt-4 mt-4">
 			{/* Header / Toggle. */}
@@ -749,8 +748,8 @@ export const ShareButton = () => {
 	const fetchShareLinks = useCallback( async() => {
 		setIsLoading( true );
 		try {
-			const response = await getAction( 'get_share_links' );
-			setShareLinks( response.share_links || []);
+			const response = await doAction( 'list_share_links' );
+			setShareLinks( Object.values( response.share_links || {}) );
 		} catch ( error ) {
 			console.error( 'Failed to fetch share links:', error );
 		} finally {
@@ -886,7 +885,7 @@ export const ShareButton = () => {
 			const response = await doAction( 'revoke_share_link', { token });
 
 			if ( response.success ) {
-				setShareLinks( response.share_links || []);
+				setShareLinks( Object.values( response.share_links || {}) );
 				toast.success( __( 'Link revoked', 'burst-statistics' ) );
 			}
 		} catch ( error ) {

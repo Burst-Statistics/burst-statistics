@@ -332,6 +332,19 @@ return [
 		'disabled'         => false,
 		'default'          => false,
 	],
+	[
+		'id'       => 'enable_abilities_api',
+		'menu_id'  => 'advanced',
+		'group_id' => 'scripts',
+		'type'     => function_exists( 'wp_register_ability' ) ? 'checkbox' : 'hidden',
+		'label'    => __( 'Enable Abilities API (for AI agents and automation)', 'burst-statistics' ),
+		'context'  => [
+			'text' => __( 'Allow trusted AI agents and automation tools to read Burst statistics via WordPress abilities.', 'burst-statistics' ),
+			'url'  => 'abilities-api',
+		],
+		'disabled' => false,
+		'default'  => false,
+	],
 
 	[
 		'id'          => 'export_settings',

@@ -5,7 +5,6 @@ use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
-use PhpParser\Node\Expr\Cast\Object_;
 
 defined( 'ABSPATH' ) || die();
 
@@ -960,7 +959,7 @@ class Statistics {
 
 		foreach ( $metrics as $metric ) {
 			// If goal_id isset then metric is a conversion.
-			$title = $metric_labels[ $metric ];
+			$title = $metric_labels[ $metric ] ?? ucwords( str_replace( '_', ' ', (string) $metric ) );
 
 			$columns[] = [
 				'name'     => $title,
