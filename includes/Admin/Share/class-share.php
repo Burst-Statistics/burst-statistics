@@ -55,7 +55,6 @@ class Share {
 	 */
 	public function init(): void {
 		add_action( 'burst_do_action', [ $this, 'do_rest_action' ], 10, 3 );
-		add_action( 'burst_get_action', [ $this, 'get_rest_action' ], 10, 2 );
 		add_action( 'template_redirect', [ $this, 'check_for_share_token' ] );
 		add_action( 'init', [ $this, 'add_rewrite_rules' ] );
 		add_action( 'admin_init', [ $this, 'lock_viewer_user_capabilities' ] );
@@ -389,27 +388,13 @@ class Share {
 			];
 		}
 
-		return $output;
-	}
-
-	/**
-	 * Get share links for REST actions.
-	 *
-	 * @param array  $output The output array.
-	 * @param string $action The action being performed.
-	 * @return array The modified output array.
-	 */
-	public function get_rest_action( array $output, string $action ): array {
-		if ( ! $this->user_can_view() ) {
-			return $output;
-		}
-
-		if ( $action === 'get_share_links' ) {
-			return [
+		if ( $action === 'list_share_links' ) {
+			$output = [
 				'share_links'    => $this->get_share_links( 'link' ),
 				'shareable_tabs' => self::get_shareable_tabs(),
 			];
 		}
+
 		return $output;
 	}
 
@@ -499,39 +484,47 @@ class Share {
 
 		// if a token is passed, we're looking for a share link for the story view. In that case we don't filter out the report_ids.
 		if ( ! empty( $token ) ) {
-			return array_filter(
-				$share_links,
-				function ( $link ) use ( $token ) {
-					return $link['token'] === $token;
-				}
+			return array_values(
+				array_filter(
+					$share_links,
+					function ( $link ) use ( $token ) {
+						return $link['token'] === $token;
+					}
+				)
 			);
 		}
 
 		if ( $report_id !== 0 ) {
-			return array_filter(
-				$share_links,
-				function ( $link ) use ( $report_id ) {
-					return $link['report_id'] === $report_id;
-				}
+			return array_values(
+				array_filter(
+					$share_links,
+					function ( $link ) use ( $report_id ) {
+						return $link['report_id'] === $report_id;
+					}
+				)
 			);
 		}
 
 		// If we only need link types, filter out tokens where report_id >0.
 		if ( $type === 'link' ) {
-			return array_filter(
-				$share_links,
-				function ( $link ) {
-					return $link['report_id'] === 0;
-				}
+			return array_values(
+				array_filter(
+					$share_links,
+					function ( $link ) {
+						return $link['report_id'] === 0;
+					}
+				)
 			);
 		}
 
 		if ( $type === 'report' ) {
-			return array_filter(
-				$share_links,
-				function ( $link ) {
-					return $link['report_id'] !== 0;
-				}
+			return array_values(
+				array_filter(
+					$share_links,
+					function ( $link ) {
+						return $link['report_id'] !== 0;
+					}
+				)
 			);
 		}
 

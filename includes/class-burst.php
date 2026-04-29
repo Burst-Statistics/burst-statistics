@@ -2,6 +2,7 @@
 namespace Burst;
 
 use Burst\Admin\Admin;
+use Burst\Admin\Abilities_Api\Abilities_Api;
 use Burst\Admin\Capability\Capability;
 use Burst\Frontend\Frontend;
 use Burst\Frontend\Frontend_Admin;
@@ -20,6 +21,7 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 	private bool $booted            = false;
 
 	public Admin $admin;
+	public Abilities_Api $abilities_api;
 	public Pro $pro;
 	public Frontend $frontend;
 	public Frontend_Admin $frontend_admin;
@@ -69,7 +71,7 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 		define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 		define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 		define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
-		define( 'BURST_VERSION', '3.4.0' );
+		define( 'BURST_VERSION', '3.4.1' );
 		define( 'BURST_PUBLIC_KEY', 'bst_7k9mQpX2vL4nWzR8jYhF6tGcU5eBxN3dS1aM0iKoHgJfVq' );
 		// deprecated constant.
         //phpcs:ignore
@@ -104,6 +106,9 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 
 		$this->integrations = new Integrations();
 		$this->integrations->init();
+
+		$this->abilities_api = new Abilities_Api();
+		$this->abilities_api->init();
 
 		if ( is_user_logged_in() ) {
 			$this->frontend_admin = new Frontend_Admin();
