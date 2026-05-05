@@ -29,7 +29,7 @@
   "license": "ISC",
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",
-    "@tailwindcss/postcss": "^4.2.2",
+    "@tailwindcss/postcss": "^4.2.4",
     "@tanstack/router-devtools": "^1.97.14",
     "@tanstack/router-plugin": "^1.62.0",
     "@types/lodash": "^4.17.20",
