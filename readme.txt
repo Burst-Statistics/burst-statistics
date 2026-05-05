@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.0
-Stable tag: 3.4.1
+Stable tag: 3.4.1.1
 
 Analytics you'll actually use. Privacy-friendly, zero config, and designed to be actionable. Get insights, not just raw data.
 
@@ -201,6 +201,10 @@ Absolutely! Both free and premium plugins can be managed with Composer. Read the
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.4.1.1 =
+* May 5th 2026
+* Fix: CSS styling regression due to obsolete javascript files being included in the dashboard build.
+
 = 3.4.1 =
 * April 29th 2026
 * New: automated tests for subscription statistics dashboard.
