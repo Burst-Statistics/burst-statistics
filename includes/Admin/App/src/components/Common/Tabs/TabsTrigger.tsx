@@ -1,0 +1,92 @@
+import React from 'react';
+import clsx from 'clsx';
+import { useNonPersistedTabsStore, TabValue } from '@/store/useTabsStore';
+
+/**
+ * Props for the TabsTrigger component.
+ *
+ * @interface TabsTriggerProps
+ */
+export interface TabsTriggerProps
+	extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onChange'> {
+	group: string;
+	id: TabValue;
+	activeStyle?: string;
+}
+
+/**
+ * Tab trigger component.
+ *
+ * @param {TabsTriggerProps} props               - Component props.
+ * @param {string}           props.group         - The group identifier for the tab.
+ * @param {TabValue}         props.id            - The id of the tab.
+ * @param {string}           [props.className]   - Additional class names.
+ * @param {string}           [props.activeStyle] - Class names applied when the tab is active.
+ * @param {React.ReactNode}  props.children      - The content of the tab trigger.
+ * @param {Function}         [props.onClick]     - Click event handler.
+ * @param {Object}           [rest]              - Additional button attributes.
+ *
+ * @return {JSX.Element} The rendered tab trigger component.
+ */
+export function TabsTrigger({
+	group,
+	id,
+	className,
+	activeStyle,
+	children,
+	onClick,
+	...rest
+}: TabsTriggerProps ) {
+	const activeTab = useNonPersistedTabsStore( ( state ) =>
+		state.getActiveTab( group )
+	);
+	const setActiveTab = useNonPersistedTabsStore(
+		( state ) => state.setActiveTab
+	);
+	const selected = activeTab === id;
+
+	/**
+	 * Handle click on the tab trigger
+	 *
+	 * @param e - Mouse event
+	 *
+	 * @return void
+	 */
+	const handleClick = ( e: React.MouseEvent<HTMLButtonElement> ) => {
+		setActiveTab( group, id );
+		onClick?.( e );
+	};
+	const activeClassesByVariant = {
+		blue: [
+			'data-[active="true"]:bg-blue-50',
+			'data-[active="true"]:border-blue-700',
+			'data-[active="true"]:text-blue'
+		],
+		green: [
+			'data-[active="true"]:bg-green-50',
+			'data-[active="true"]:border-green',
+			'data-[active="true"]:text-green'
+		]
+	} as const;
+
+	const activeVariant = 'green' === activeStyle ? 'green' : 'blue';
+
+	return (
+		<button
+			className={clsx(
+				'text-base px-4 py-1 transition-colors rounded-sm bg-white focus:outline-hidden text-text-gray-light hover:text-text-gray font-medium border border-transparent',
+				activeClassesByVariant[activeVariant],
+				className
+			)}
+			type="button"
+			role="tab"
+			aria-controls={id}
+			aria-selected={selected || undefined}
+			onClick={handleClick}
+			data-active={selected || undefined}
+			{...rest}
+		>
+			{children}
+		</button>
+	);
+}

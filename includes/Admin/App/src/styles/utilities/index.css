@@ -1,0 +1,62 @@
+@import 'tailwindcss/utilities' layer(utilities);
+
+@utility scrollbar-hide {
+	-ms-overflow-style: none; /* IE and Edge */
+	scrollbar-width: none; /* Firefox */
+
+	&::-webkit-scrollbar {
+	display: none; /* Chrome, Safari, Opera*/
+	}
+}
+
+@utility burst-scroll {
+	/* Track */
+	&::-webkit-scrollbar-track {
+	border-radius: 10px;
+	-webkit-box-shadow: inset 0 0 2px rgba(0, 0, 0, 0);
+	background-color: transparent;
+	}
+
+	/* Scrollbar */
+	&::-webkit-scrollbar {
+	width: 8px;
+	background-color: var(--color-gray-300);
+	cursor: pointer;
+	}
+
+	/* Thumb */
+	&::-webkit-scrollbar-thumb {
+	background-color: var(--color-gray-400);
+	border-radius: 10px;
+	}
+}
+
+@utility burst-no-marker {
+	&::-webkit-details-marker {
+	display: none;
+	}
+
+	&::marker {
+	display: none;
+	}
+}
+
+@utility animate-toast-enter {
+	animation: toastEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility animate-toast-exit {
+	animation: toastExit 0.25s ease-in both;
+}
+
+@layer utilities {
+	@keyframes toastEnter {
+		from { opacity: 0; transform: translate3d(100%, 0, 0); }
+		to   { opacity: 1; transform: translate3d(0, 0, 0); }
+	}
+
+	@keyframes toastExit {
+		from { opacity: 1; transform: translate3d(0, 0, 0); }
+		to   { opacity: 0; transform: translate3d(100%, 0, 0); }
+	}
+}

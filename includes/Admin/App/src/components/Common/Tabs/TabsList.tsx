@@ -1,0 +1,72 @@
+import clsx from 'clsx';
+import type { ReactElement } from 'react';
+import { TabsTrigger } from '@/components/Common/Tabs';
+import { useNonPersistedTabsStore } from '@/store/useTabsStore';
+
+/**
+ * Single tab item type.
+ */
+interface TabItem {
+	id: string;
+	title: string;
+	activeStyle?: string;
+}
+
+/**
+ * Props for the TabsList component.
+ */
+export interface TabsListProps extends React.HTMLAttributes<HTMLDivElement> {
+	tabConfig: TabItem[];
+	tabGroup: string;
+	className?: string;
+}
+
+/**
+ * Tab list component.
+ *
+ * @param {TabsListProps}   props             - Component props.
+ * @param {string}          [props.className] - Additional class names.
+ * @param {React.ReactNode} props.tabGroup    - The content of the tab list.
+ *
+ * @return {JSX.Element} The rendered tab list component.
+ */
+export function TabsList({
+	className,
+	tabConfig,
+	tabGroup
+}: TabsListProps ): ReactElement {
+	const getActiveTab = useNonPersistedTabsStore( ( state ) =>
+		state.getActiveTab
+	);
+
+	/**
+	 * Get active tab with default fallback to first item in config.
+	 * The store will automatically set the default if no tab is active.
+	 */
+	const defaultTabId = 0 < tabConfig.length ? tabConfig[0].id : undefined;
+	getActiveTab( tabGroup, defaultTabId );
+
+	return (
+		<div
+			className={clsx(
+				'grid grid-flow-col auto-cols-fr gap-0.5 border border-gray-300 rounded-md bg-gray-200 p-0.5 shadow-sm',
+				className
+			)}
+		>
+			{tabConfig.map( ( tabItem, index ) => {
+				const style =
+					0 === index ? 'blue' : 1 === index ? 'green' : undefined;
+				return (
+					<TabsTrigger
+						key={tabItem.id}
+						group={tabGroup}
+						activeStyle={style}
+						id={tabItem.id}
+					>
+						{tabItem.title}
+					</TabsTrigger>
+				);
+			})}
+		</div>
+	);
+}

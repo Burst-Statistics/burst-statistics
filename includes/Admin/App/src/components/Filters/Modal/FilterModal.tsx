@@ -1,0 +1,304 @@
+import React, { useState } from 'react';
+import { __ } from '@wordpress/i18n';
+import Modal from '@/components/Common/Modal';
+import FilterSelectionView from './FilterSelectionView';
+import FilterSetupView from './FilterSetupView';
+import { useFilters } from '@/hooks/useFilters';
+import ButtonInput from '@/components/Inputs/ButtonInput';
+import Icon from '@/utils/Icon';
+import { type FilterConfig } from '@/config/filterConfig';
+
+interface FilterModalProps {
+	isOpen: boolean;
+	setIsOpen: ( isOpen: boolean ) => void;
+	initialFilter?: {
+		key: string;
+		config: FilterConfig;
+		value: string;
+	};
+	reportBlockIndex: number;
+}
+
+type ModalStep = 'selection' | 'setup';
+
+const FilterModal: React.FC<FilterModalProps> = ({
+	isOpen,
+	setIsOpen,
+	initialFilter,
+	reportBlockIndex
+}) => {
+	const { setFilters, deleteFilter, clearAllFilters, getActiveFilters } = useFilters( reportBlockIndex );
+
+	const [ currentStep, setCurrentStep ] = useState<ModalStep>( 'selection' );
+	const [ selectedFilter, setSelectedFilter ] = useState<string | null>( null );
+	const [ selectedConfig, setSelectedConfig ] = useState<FilterConfig | null>(
+		null
+	);
+	const [ tempValue, setTempValue ] = useState<string>( '' );
+
+	// Reset modal state when modal is closed/opened
+	React.useEffect( () => {
+		if ( isOpen ) {
+			if ( initialFilter ) {
+
+				// If editing an existing filter, go directly to setup
+				setCurrentStep( 'setup' );
+				setSelectedFilter( initialFilter.key );
+				setSelectedConfig( initialFilter.config );
+				setTempValue( initialFilter.value );
+			} else {
+
+				// If adding a new filter, start with selection
+				setCurrentStep( 'selection' );
+				setSelectedFilter( null );
+				setSelectedConfig( null );
+				setTempValue( '' );
+			}
+		}
+	}, [ isOpen, initialFilter ]);
+
+	const handleSelectFilter = ( filterKey: string, config: FilterConfig ) => {
+		setSelectedFilter( filterKey );
+		setSelectedConfig( config );
+		setCurrentStep( 'setup' );
+
+		// Set initial temp value from existing filter
+		const activeFilters = getActiveFilters();
+		setTempValue( activeFilters[filterKey] || '' );
+	};
+
+	const handleBack = () => {
+		setCurrentStep( 'selection' );
+		setSelectedFilter( null );
+		setSelectedConfig( null );
+		setTempValue( '' );
+	};
+
+	const handleApply = ( filterKey: string, value: string ) => {
+		if ( '' === value || null === value || value === undefined ) {
+			deleteFilter( filterKey );
+		} else {
+			setFilters( filterKey, value );
+		}
+		setIsOpen( false );
+	};
+
+	const handleApplyAndAddMore = ( filterKey: string, value: string ) => {
+		if ( '' === value || null === value || value === undefined ) {
+			deleteFilter( filterKey );
+		} else {
+			setFilters( filterKey, value );
+		}
+		handleBack();
+	};
+
+	const handleTempValueChange = ( value: string ) => {
+		setTempValue( value );
+	};
+
+	const handleApplyClick = () => {
+		if ( selectedFilter ) {
+			handleApply( selectedFilter, tempValue );
+		}
+	};
+
+	const handleApplyAndAddMoreClick = () => {
+		if ( selectedFilter ) {
+			handleApplyAndAddMore( selectedFilter, tempValue );
+		}
+	};
+
+	const handleResetToDefaults = () => {
+		clearAllFilters();
+		setIsOpen( false );
+	};
+
+	const renderContent = (): React.ReactNode => {
+		if ( 'selection' === currentStep ) {
+			return <FilterSelectionView onSelectFilter={handleSelectFilter} reportBlockIndex={reportBlockIndex} />;
+		}
+
+		// TypeScript-safe: ensure values exist
+		if ( ! selectedFilter || ! selectedConfig ) {
+			return null;
+		}
+
+		return (
+			<FilterSetupView
+				filterKey={selectedFilter}
+				config={selectedConfig}
+				onBack={handleBack}
+
+				// Type casting it to string as child component expects this as string.
+				tempValue={tempValue + ''}
+				onTempValueChange={handleTempValueChange}
+			/>
+		);
+	};
+
+	const renderFooter = (): React.ReactNode | null => {
+		if ( 'selection' === currentStep ) {
+			return (
+				<ButtonInput
+					onClick={handleResetToDefaults}
+					btnVariant="tertiary"
+					size="sm"
+					className="w-full"
+					ariaLabel={__(
+						'Reset all active filters to default settings',
+						'burst-statistics'
+					)}
+				>
+					{__( 'Reset all filters', 'burst-statistics' )}
+				</ButtonInput>
+			);
+		} else if ( 'setup' === currentStep ) {
+			return (
+				<div className="flex space-x-3">
+					<ButtonInput
+						onClick={handleApplyClick}
+						btnVariant="primary"
+						size="sm"
+						className="flex-1"
+						ariaLabel={
+							selectedConfig ?
+								__(
+										'Apply %s filter',
+										'burst-statistics'
+									).replace( '%s', selectedConfig.label ) :
+								__( 'Apply filter', 'burst-statistics' )
+						}
+					>
+						{__( 'Apply Filter', 'burst-statistics' )}
+					</ButtonInput>
+					<ButtonInput
+						onClick={handleApplyAndAddMoreClick}
+						btnVariant="secondary"
+						size="sm"
+						className="flex-1"
+						ariaLabel={
+							selectedConfig ?
+								__(
+										'Apply %s filter and continue adding more filters',
+										'burst-statistics'
+									).replace( '%s', selectedConfig.label ) :
+								__(
+										'Apply filter and add more',
+										'burst-statistics'
+									)
+						}
+					>
+						{__( 'Apply & Add More', 'burst-statistics' )}
+					</ButtonInput>
+				</div>
+			);
+		}
+		return null;
+	};
+
+	const getTitle = (): string => {
+		if ( 'selection' === currentStep ) {
+			return __( 'Select a filter', 'burst-statistics' );
+		}
+		return __( 'Setup Filter', 'burst-statistics' );
+	};
+
+	const getSubtitle = (): string => {
+		if ( 'selection' === currentStep ) {
+			return __(
+				'Choose a filter to apply to your analytics data',
+				'burst-statistics'
+			);
+		}
+		return __( 'Setup filter', 'burst-statistics' );
+	};
+
+	const getFilterDescription = (): string => {
+		if ( 'setup' !== currentStep || ! selectedConfig ) {
+			return '';
+		}
+
+		// Different descriptions based on filter type
+		if ( 'string' === selectedConfig.type ) {
+			return selectedConfig.options ?
+				__(
+						'Start typing to search or select from available options',
+						'burst-statistics'
+					) :
+				__(
+						'Enter the value you want to filter by',
+						'burst-statistics'
+					);
+		} else if ( 'int' === selectedConfig.type ) {
+			return __( 'Set the range for this filter', 'burst-statistics' );
+		} else if ( 'boolean' === selectedConfig.type ) {
+			return __(
+				'Select the option you want to filter by',
+				'burst-statistics'
+			);
+		}
+		return '';
+	};
+
+	// Custom header for setup step
+	const renderCustomHeader = (): React.ReactNode => {
+		if ( 'setup' !== currentStep || ! selectedConfig ) {
+			return null;
+		}
+
+		return (
+			<div>
+				{/* Back Button */}
+				<div className="flex items-center space-x-3 mb-4">
+					<button
+						onClick={handleBack}
+						className="flex items-center space-x-2 text-sm text-text-gray-light hover:text-text-gray focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded transition-all duration-200"
+						aria-label={__( 'Back to filters', 'burst-statistics' )}
+						type="button"
+					>
+						<Icon
+							name="chevron-left"
+							size={16}
+							aria-hidden="true"
+						/>
+						<span>{__( 'Back to filters', 'burst-statistics' )}</span>
+					</button>
+				</div>
+
+				{/* Filter Header */}
+				<div className="flex items-center space-x-3">
+					<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100">
+						<Icon
+							name={selectedConfig.icon}
+							color="gray"
+							size={20}
+						/>
+					</div>
+					<div>
+						<h3 className="text-lg font-semibold text-text-gray">
+							{selectedConfig.label}
+						</h3>
+						<p className="text-sm text-text-gray-light">
+							{getFilterDescription()}
+						</p>
+					</div>
+				</div>
+			</div>
+		);
+	};
+
+	return (
+		<Modal
+			isOpen={isOpen}
+			onClose={() => setIsOpen( false )}
+			title={getTitle()}
+			subtitle={'selection' === currentStep ? getSubtitle() : undefined}
+			customHeader={'setup' === currentStep ? renderCustomHeader() : null}
+			content={renderContent()}
+			footer={renderFooter()}
+			triggerClassName=""
+		/>
+	);
+};
+
+export default FilterModal;

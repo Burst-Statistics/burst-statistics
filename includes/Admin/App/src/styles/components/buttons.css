@@ -1,0 +1,39 @@
+@utility burst-button-icon {
+	@apply bg-gray-300 text-button-accent border border-none rounded-full
+		w-4 h-4 p-2.5 m-1.5
+		inline-flex items-center justify-center
+		transition-all duration-300 ease-in-out
+		cursor-pointer
+		hover:p-2.5 hover:m-0;
+}
+
+@utility burst-button-icon--delete {
+	&:hover {
+	@apply bg-red-100;
+	}
+
+	&:hover svg path {
+	@apply fill-red;
+	}
+}
+
+@utility burst-button--date-range {
+	@apply flex items-center cursor-pointer
+		shadow-rsp
+		gap-2.5
+		text-gray
+		bg-white
+		border border-gray-400
+		rounded-xs
+		px-1 py-3.5;
+
+	& .burst-icon {
+	@apply h-max;
+	}
+}
+
+@utility burst-icon {
+	.burst-button--date-range & {
+	@apply h-max;
+	}
+}

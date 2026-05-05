@@ -1,0 +1,59 @@
+import { memo } from 'react';
+import { Block } from '@/components/Blocks/Block';
+import { BlockHeading } from '@/components/Blocks/BlockHeading';
+import { BlockContent } from '@/components/Blocks/BlockContent';
+import ErrorBoundary from '@/components/Common/ErrorBoundary';
+import Field from '@/components/Fields/Field';
+import Overlay from '@/components/Common/Overlay';
+import ButtonInput from '@/components/Inputs/ButtonInput';
+import { __ } from '@wordpress/i18n';
+import useLicenseData from '@/hooks/useLicenseData';
+import clsx from 'clsx';
+
+const SettingsGroupBlock = memo( ({ group, fields, control, isLastGroup, isShowingFooter = true }) => {
+		const { isLicenseValid } = useLicenseData();
+
+		const className = clsx( 'p-0', isLastGroup && isShowingFooter ? 'rounded-b-none' : 'mb-5', 'license' === group.id ? '' : 'pb-4' );
+
+		if ( 0 === fields.length ) {
+			return null; // No fields to display
+		}
+
+    return (
+      <Block key={group.id} className={className}>
+        {group.pro && ! isLicenseValid  && (
+          <Overlay className='backdrop-blur-sm'>
+            <div className='flex flex-col gap-4'>
+              <h4>{__( 'Unlock Advanced Features with Burst Pro', 'burst-statistics' )}</h4>
+              <p>
+                {__( 'This setting is exclusive to Pro users.', 'burst-statistics' )}
+              {group.pro && group.pro.text && ( ' ' + group.pro.text )}
+              </p>
+              {group.pro.url && <ButtonInput className="text-center" target="_blank" link={{ to: group.pro.url }} btnVariant='primary' btnSize='small'>
+                {__( 'Upgrade to Pro', 'burst-statistics' )}
+              </ButtonInput>}
+            </div>
+            </Overlay>
+        )}
+        <BlockHeading title={group.title} className="burst-settings-group-block" />
+        <BlockContent className={'p-0'}>
+          {group.description && <h3 className="mb-5 text-sm">{group.description}</h3>}
+          <div className="flex flex-wrap">
+            {fields.map( ( field ) => (
+              <ErrorBoundary key={field.id} fallback={'Could not load field'}>
+                <Field
+                  setting={field}
+                  control={control}
+                />
+              </ErrorBoundary>
+            ) )}
+          </div>
+        </BlockContent>
+      </Block>
+    );
+  }
+);
+
+SettingsGroupBlock.displayName = 'SettingsGroupBlock';
+
+export default SettingsGroupBlock;
