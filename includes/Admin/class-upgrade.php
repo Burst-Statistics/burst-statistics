@@ -295,6 +295,19 @@ class Upgrade {
 			burst_reinstall_rest_api_optimizer();
 		}
 
+		if ( $prev_version && version_compare( $prev_version, '3.5.0', '<' ) && defined( 'BURST_PRO' ) ) {
+			global $wpdb;
+			$oldest_timestamp = (int) $wpdb->get_var( "SELECT MIN(time) FROM {$wpdb->prefix}burst_statistics" );
+			$activation_time  = (int) get_option( 'burst_activation_time', 0 );
+
+			if ( $oldest_timestamp > 0
+				&& $activation_time > 0
+				&& $oldest_timestamp < ( $activation_time - WEEK_IN_SECONDS )
+			) {
+				update_option( 'burst_activation_time', $oldest_timestamp, false );
+			}
+		}
+
 		$admin = new Admin();
 		$admin->run_table_init_hook();
 		$admin->create_js_file();
