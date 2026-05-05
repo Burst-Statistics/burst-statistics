@@ -201,6 +201,9 @@ Absolutely! Both free and premium plugins can be managed with Composer. Read the
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.4.1.1 =
+* fix: CSS styling regression due to obsolete javascript files being included in the dashboard build.
+
 = 3.4.1 =
 * April 29th 2026
 * New: automated tests for subscription statistics dashboard.
