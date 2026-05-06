@@ -202,8 +202,9 @@ We value your feedback. You can [submit a support request on the WordPress forum
 
 == Change log ==
 = 3.4.1.1 =
-* May 5th 2026
-* Fix: CSS styling regression due to obsolete javascript files being included in the dashboard build.
+* May 6th 2026
+* Fix: CSS styling regression due to obsolete javascript files being included in the dashboard build, props @techlector
+* Fix: improve CSS compatibility with older browsers, to prevent breaking styling.
 
 = 3.4.1 =
 * April 29th 2026
