@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Burst Pro plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: Burst Pro 3.4.1\n"
+"Project-Id-Version: Burst Pro 3.4.1.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/burst-pro\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-04-29T07:29:18+00:00\n"
+"POT-Creation-Date: 2026-05-06T09:58:00+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: burst-statistics\n"
@@ -31,6 +31,7 @@ msgstr ""
 
 #. Author of the plugin
 #: burst-pro.php
+#: includes/Admin/Abilities_Api/class-abilities-api.php:47
 #: includes/Admin/Share/class-share.php:279
 msgid "Burst Statistics"
 msgstr ""
@@ -40,8 +41,84 @@ msgstr ""
 msgid "https://burst-statistics.com"
 msgstr ""
 
+#: includes/Admin/Abilities_Api/class-abilities-api.php:48
+msgid "Read-only analytics abilities provided by Burst."
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:71
+msgid "Get live visitors"
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:72
+msgid "Returns the current number of live visitors."
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:102
+msgid "Get live traffic"
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:103
+msgid "Returns active visitors and pages from the live traffic feed."
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:161
+msgid "Get today summary"
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:162
+msgid "Returns a read-only summary of key Burst statistics for a date range."
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:241
+msgid "Get tasks"
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:242
+msgid "Returns the current Burst task list and status."
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:283
+msgid "Get tracking status"
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:284
+msgid "Returns Burst tracking transport status and last test time."
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:315
+msgid "Get license notices"
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:316
+msgid "Returns license state and notices for Burst Pro."
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:360
+msgid "Get data"
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:361
+msgid "Returns analytics data: pages overview with insights or datatable data."
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:424
+msgid "Get sales data"
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:425
+msgid "Returns ecommerce sales metrics (Burst Pro only)."
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:474
+msgid "Get subscriptions data"
+msgstr ""
+
+#: includes/Admin/Abilities_Api/class-abilities-api.php:475
+msgid "Returns ecommerce subscriptions metrics (Burst Pro only)."
+msgstr ""
+
 #: includes/Admin/App/class-app.php:175
-#: includes/Admin/App/class-app.php:845
+#: includes/Admin/App/class-app.php:856
 #: includes/Frontend/class-frontend-admin.php:44
 msgid "Statistics"
 msgstr ""
@@ -63,40 +140,40 @@ msgstr ""
 msgid "Upgrade to Pro"
 msgstr ""
 
-#: includes/Admin/App/class-app.php:844
+#: includes/Admin/App/class-app.php:855
 #: includes/Admin/App/config/menu.php:8
 msgid "Dashboard"
 msgstr ""
 
-#: includes/Admin/App/class-app.php:846
+#: includes/Admin/App/class-app.php:857
 #: includes/Admin/App/config/menu.php:87
 msgid "Settings"
 msgstr ""
 
-#: includes/Admin/App/class-app.php:897
+#: includes/Admin/App/class-app.php:908
 msgid "Burst Statistics could not load"
 msgstr ""
 
-#: includes/Admin/App/class-app.php:900
+#: includes/Admin/App/class-app.php:911
 msgid "It looks like an ad blocker or browser extension is preventing Burst Statistics from loading. Burst Statistics does not display ads, but some ad blockers may block analytics tools."
 msgstr ""
 
-#: includes/Admin/App/class-app.php:903
+#: includes/Admin/App/class-app.php:914
 msgid "Please disable your ad blocker for this site and reload the page."
 msgstr ""
 
-#: includes/Admin/App/class-app.php:907
+#: includes/Admin/App/class-app.php:918
 msgid "Reload page"
 msgstr ""
 
-#: includes/Admin/App/class-app.php:910
+#: includes/Admin/App/class-app.php:921
 #: includes/Admin/App/build/790.714163a639ce201541a9.js:12
 #: includes/Admin/App/build/index.628cc2788a2e79fe5700.js:14
 #: includes/Admin/App/src/components/Sources/WorldMap/InCompleteDataNotice.jsx:85
 msgid "Dismiss"
 msgstr ""
 
-#: includes/Admin/App/class-app.php:1377
+#: includes/Admin/App/class-app.php:1388
 #: includes/Admin/Statistics/class-goal-statistics.php:307
 #: includes/Frontend/class-shortcodes.php:427
 #: includes/Admin/App/build/index.628cc2788a2e79fe5700.js:19
@@ -105,7 +182,7 @@ msgstr ""
 msgid "Desktop"
 msgstr ""
 
-#: includes/Admin/App/class-app.php:1380
+#: includes/Admin/App/class-app.php:1391
 #: includes/Admin/Statistics/class-goal-statistics.php:310
 #: includes/Frontend/class-shortcodes.php:429
 #: includes/Admin/App/build/index.628cc2788a2e79fe5700.js:19
@@ -114,7 +191,7 @@ msgstr ""
 msgid "Mobile"
 msgstr ""
 
-#: includes/Admin/App/class-app.php:1383
+#: includes/Admin/App/class-app.php:1394
 #: includes/Admin/Statistics/class-goal-statistics.php:313
 #: includes/Frontend/class-shortcodes.php:428
 #: includes/Admin/App/build/index.628cc2788a2e79fe5700.js:19
@@ -123,7 +200,7 @@ msgstr ""
 msgid "Tablet"
 msgstr ""
 
-#: includes/Admin/App/class-app.php:1386
+#: includes/Admin/App/class-app.php:1397
 #: includes/Admin/Statistics/class-goal-statistics.php:317
 #: includes/Frontend/class-shortcodes.php:430
 #: includes/Admin/App/build/index.628cc2788a2e79fe5700.js:19
@@ -132,11 +209,11 @@ msgstr ""
 msgid "Other"
 msgstr ""
 
-#: includes/Admin/App/class-app.php:1975
+#: includes/Admin/App/class-app.php:1986
 msgid "Settings saved successfully"
 msgstr ""
 
-#: includes/Admin/App/class-app.php:1976
+#: includes/Admin/App/class-app.php:1987
 msgid "No changes were made"
 msgstr ""
 
@@ -285,7 +362,15 @@ msgstr ""
 msgid "Available when \"Merge tracking settings and script\" is activated. If you enable this, the javascript filename does not include \"burst\", making it less obvious."
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:341
+#: includes/Admin/App/config/fields.php:340
+msgid "Enable Abilities API (for AI agents and automation)"
+msgstr ""
+
+#: includes/Admin/App/config/fields.php:342
+msgid "Allow trusted AI agents and automation tools to read Burst statistics via WordPress abilities."
+msgstr ""
+
+#: includes/Admin/App/config/fields.php:354
 #: includes/Admin/App/build/35.9e2863a5bb82a368e5b7.js:14
 #: includes/Admin/App/build/262.3ba57d0909417e00ca45.js:14
 #: includes/Admin/App/src/components/Fields/ExportSettingsField.jsx:117
@@ -293,75 +378,75 @@ msgstr ""
 msgid "Download settings file"
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:342
+#: includes/Admin/App/config/fields.php:355
 msgid "Export settings"
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:343
+#: includes/Admin/App/config/fields.php:356
 msgid "Download a file containing your current settings. Use this for migrating or copying settings to another website."
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:352
+#: includes/Admin/App/config/fields.php:365
 msgid "Import settings"
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:353
+#: includes/Admin/App/config/fields.php:366
 msgid "Upload a previously exported settings file to overwrite your current settings."
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:367
+#: includes/Admin/App/config/fields.php:380
 msgid "Don't manage"
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:368
+#: includes/Admin/App/config/fields.php:381
 msgid "Automatically Archive"
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:369
+#: includes/Admin/App/config/fields.php:382
 msgid "Automatically Delete"
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:377
+#: includes/Admin/App/config/fields.php:390
 msgid "Why should I manage old data?"
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:378
+#: includes/Admin/App/config/fields.php:391
 msgid "Managing old data can optimize storage and improve site performance. Choose to archive or delete based on your needs."
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:383
+#: includes/Admin/App/config/fields.php:396
 msgid "Choose how to manage old statistics"
 msgstr ""
 
 #. translators: %s is the current size of the database used by Burst, e.g. "10 MB".
-#: includes/Admin/App/config/fields.php:385
+#: includes/Admin/App/config/fields.php:398
 msgctxt "e.g. Burst currently uses 10 MB of your database."
 msgid "Burst currently uses %s of your database."
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:394
+#: includes/Admin/App/config/fields.php:407
 msgid "Retain data for how many months?"
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:406
+#: includes/Admin/App/config/fields.php:419
 msgid "Please confirm the deletion, without the possibility to restore."
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:418
+#: includes/Admin/App/config/fields.php:431
 msgid "Are you sure?"
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:419
-#: includes/Admin/App/config/fields.php:425
+#: includes/Admin/App/config/fields.php:432
+#: includes/Admin/App/config/fields.php:438
 msgid "This will permanently delete all statistics, goals, and goal statistics."
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:419
+#: includes/Admin/App/config/fields.php:432
 msgid "This action can not be undone."
 msgstr ""
 
-#: includes/Admin/App/config/fields.php:423
-#: includes/Admin/App/config/fields.php:424
+#: includes/Admin/App/config/fields.php:436
+#: includes/Admin/App/config/fields.php:437
 msgid "Reset statistics"
 msgstr ""
 
@@ -733,97 +818,97 @@ msgstr ""
 msgid "Installed"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:275
+#: includes/Admin/AutoInstaller/class-auto-installer.php:300
 msgid "Checking if plugin folder exists..."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:276
+#: includes/Admin/AutoInstaller/class-auto-installer.php:301
 msgid "Able to create destination folder"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:277
+#: includes/Admin/AutoInstaller/class-auto-installer.php:302
 msgid "Destination folder already exists"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:282
+#: includes/Admin/AutoInstaller/class-auto-installer.php:307
 msgid "Validating license..."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:283
+#: includes/Admin/AutoInstaller/class-auto-installer.php:308
 msgid "License valid"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:284
+#: includes/Admin/AutoInstaller/class-auto-installer.php:309
 msgid "License invalid"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:289
+#: includes/Admin/AutoInstaller/class-auto-installer.php:314
 msgid "Retrieving package information..."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:290
+#: includes/Admin/AutoInstaller/class-auto-installer.php:315
 msgid "Package information retrieved"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:291
+#: includes/Admin/AutoInstaller/class-auto-installer.php:316
 msgid "Failed to gather package information"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:296
+#: includes/Admin/AutoInstaller/class-auto-installer.php:321
 msgid "Installing plugin..."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:297
+#: includes/Admin/AutoInstaller/class-auto-installer.php:322
 msgid "Plugin installed"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:298
+#: includes/Admin/AutoInstaller/class-auto-installer.php:323
 msgid "Failed to install plugin"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:303
+#: includes/Admin/AutoInstaller/class-auto-installer.php:328
 msgid "Activating plugin..."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:304
+#: includes/Admin/AutoInstaller/class-auto-installer.php:329
 msgid "Plugin activated"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:305
+#: includes/Admin/AutoInstaller/class-auto-installer.php:330
 msgid "Failed to activate plugin"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:330
+#: includes/Admin/AutoInstaller/class-auto-installer.php:355
 msgid "Installation finished"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:430
+#: includes/Admin/AutoInstaller/class-auto-installer.php:455
 msgid "Start"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:433
+#: includes/Admin/AutoInstaller/class-auto-installer.php:458
 msgid "Recommended by Burst Statistics"
 msgstr ""
 
 #. translators: 1: Plugin name to be installed.
-#: includes/Admin/AutoInstaller/class-auto-installer.php:464
+#: includes/Admin/AutoInstaller/class-auto-installer.php:489
 msgid "Ready to install %s!"
 msgstr ""
 
 #. translators: 1: Plugin name to be installed.
-#: includes/Admin/AutoInstaller/class-auto-installer.php:466
+#: includes/Admin/AutoInstaller/class-auto-installer.php:491
 msgid "Installing %s..."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:467
+#: includes/Admin/AutoInstaller/class-auto-installer.php:492
 msgid "Ready!"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:478
+#: includes/Admin/AutoInstaller/class-auto-installer.php:503
 msgid "Visit Dashboard"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:481
+#: includes/Admin/AutoInstaller/class-auto-installer.php:506
 #: includes/Admin/class-admin.php:1173
 #: includes/Admin/App/build/35.9e2863a5bb82a368e5b7.js:1
 #: includes/Admin/App/build/35.9e2863a5bb82a368e5b7.js:10
@@ -833,60 +918,65 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:486
-#: includes/Admin/AutoInstaller/class-auto-installer.php:496
+#: includes/Admin/AutoInstaller/class-auto-installer.php:511
+#: includes/Admin/AutoInstaller/class-auto-installer.php:521
 msgid "An Error Occurred:"
 msgstr ""
 
 #. translators: 1: opening anchor tag for manual install link, 2: closing anchor tag.
-#: includes/Admin/AutoInstaller/class-auto-installer.php:491
+#: includes/Admin/AutoInstaller/class-auto-installer.php:516
 msgid "Install %1$sManually%2$s."
 msgstr ""
 
 #. translators: 1: opening anchor tag to the license page, 2: closing anchor tag.
-#: includes/Admin/AutoInstaller/class-auto-installer.php:501
+#: includes/Admin/AutoInstaller/class-auto-installer.php:526
 msgid "Check your %1$slicense%2$s."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:575
+#: includes/Admin/AutoInstaller/class-auto-installer.php:600
 msgid "Could not rename folder!"
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:697
-#: includes/Admin/AutoInstaller/class-auto-installer.php:730
+#: includes/Admin/AutoInstaller/class-auto-installer.php:731
+#: includes/Admin/AutoInstaller/class-auto-installer.php:764
 msgid "An error occurred, please try again."
 msgstr ""
 
 #. translators: %s is the license expiration date, e.g. "April 30, 2025".
-#: includes/Admin/AutoInstaller/class-auto-installer.php:706
+#: includes/Admin/AutoInstaller/class-auto-installer.php:740
 msgid "Your license key expired on %s."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:712
+#: includes/Admin/AutoInstaller/class-auto-installer.php:746
 msgid "Your license key has been disabled."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:715
+#: includes/Admin/AutoInstaller/class-auto-installer.php:749
 msgid "Missing license."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:718
+#: includes/Admin/AutoInstaller/class-auto-installer.php:752
+#: includes/Admin/AutoInstaller/class-auto-installer.php:873
 msgid "Invalid license."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:721
+#: includes/Admin/AutoInstaller/class-auto-installer.php:755
 msgid "Your license is not active for this URL."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:724
+#: includes/Admin/AutoInstaller/class-auto-installer.php:758
 msgid "This appears to be an invalid license key for this plugin."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:727
+#: includes/Admin/AutoInstaller/class-auto-installer.php:761
 msgid "Your license key has reached its activation limit."
 msgstr ""
 
-#: includes/Admin/AutoInstaller/class-auto-installer.php:841
+#: includes/Admin/AutoInstaller/class-auto-installer.php:862
+msgid "Download URL is not from an allowed host."
+msgstr ""
+
+#: includes/Admin/AutoInstaller/class-auto-installer.php:895
 msgid "An error occurred while installing the plugin."
 msgstr ""
 
@@ -1756,27 +1846,27 @@ msgstr ""
 msgid "Added to cart"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics.php:232
+#: includes/Admin/Statistics/class-statistics.php:231
 msgid "The amount of people using your website right now. The data updates every 5 seconds."
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics.php:236
+#: includes/Admin/Statistics/class-statistics.php:235
 msgid "This is the total amount of unique visitors for today."
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics.php:241
+#: includes/Admin/Statistics/class-statistics.php:240
 msgid "This is your most viewed page for today."
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics.php:246
+#: includes/Admin/Statistics/class-statistics.php:245
 msgid "This website referred the most visitors."
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics.php:249
+#: includes/Admin/Statistics/class-statistics.php:248
 msgid "Total pageviews"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics.php:254
+#: includes/Admin/Statistics/class-statistics.php:253
 msgid "Average time on page"
 msgstr ""
 

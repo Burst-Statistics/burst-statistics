@@ -39,6 +39,20 @@ trait Admin_Helper {
 			return burst_loader()->user_can_view = false;
 		}
 
+		// For shared links, only allow access when the current shared-dashboard tab
+		// being accessed is allowed for the active share token.
+		if ( self::is_shareable_link_viewer() ) {
+			$token = burst_loader()->admin->share->tokens->get_current_token();
+
+			if ( empty( $token ) ) {
+				return burst_loader()->user_can_view = false;
+			} else {
+				// Do not cache the result for shared links since it depends on the endpoint path,
+				// which could change during a batch REST request.
+				return burst_loader()->admin->share->routing->current_shared_request_tab_is_allowed();
+			}
+		}
+
 		return burst_loader()->user_can_view = true;
 	}
 
@@ -52,13 +66,21 @@ trait Admin_Helper {
 			return burst_loader()->user_can_view_sales;
 		}
 
-		// For shared links, access is determined solely by the sharing settings.
-		if ( $this->is_shared_link_request() ) {
-			return burst_loader()->user_can_view_sales = burst_loader()->admin->share->ecommerce_tab_is_shared();
-		}
-
 		if ( ! is_user_logged_in() ) {
 			return burst_loader()->user_can_view_sales = false;
+		}
+
+		// For shared links, only allow ecommerce access when the resolved endpoint
+		// tab is allowed and that tab is a sales-capable tab.
+		if ( self::is_shareable_link_viewer() ) {
+
+			$token = burst_loader()->admin->share->tokens->get_current_token();
+
+			if ( empty( $token ) ) {
+				return burst_loader()->user_can_view = false;
+			} else {
+				return burst_loader()->admin->share->routing->current_shared_request_tab_is_allowed();
+			}
 		}
 
 		if ( ! current_user_can( 'view_sales_burst_statistics' ) ) {
@@ -66,14 +88,6 @@ trait Admin_Helper {
 		}
 
 		return burst_loader()->user_can_view_sales = true;
-	}
-
-	/**
-	 * Check if the request is a shared link request.
-	 */
-	protected function is_shared_link_request(): bool {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- only checking existence of a property, not processing the value.
-		return isset( $_SERVER['HTTP_X_BURST_SHARE_TOKEN'] ) || isset( $_GET['burst_share_token'] );
 	}
 
 	/**
@@ -180,12 +194,12 @@ trait Admin_Helper {
 			return burst_loader()->has_admin_access;
 		}
 
-		// Cheap fast-paths that don't require user/caps.
+		// Check fast-paths that don't require user/caps.
 		if ( wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) || burst_is_logged_in_rest() ) {
 			return burst_loader()->has_admin_access = true;
 		}
 
-		// the share token is a nonce in itself with an expiry.
+		// The share token is a nonce in itself with an expiry.
         // phpcs:ignore
 		if ( isset( $_GET['burst_share_token'] ) && self::validate_share_token( wp_unslash( $_GET['burst_share_token'] ) ) ) {
 			return burst_loader()->has_admin_access = true;
@@ -222,7 +236,7 @@ trait Admin_Helper {
 			return burst_loader()->is_shareable_link_viewer;
 		}
 		$user = wp_get_current_user();
-		return burst_loader()->is_shareable_link_viewer = in_array( 'burst_viewer', (array) $user->roles, true );
+		return burst_loader()->is_shareable_link_viewer = in_array( 'burst_viewer', $user->roles, true );
 	}
 
 	/**
@@ -363,8 +377,8 @@ trait Admin_Helper {
 		}
 
 		// Allow access during cron jobs and WP-CLI.
-		$is_wpli = ( defined( 'WP_CLI' ) && WP_CLI );
-		if ( wp_doing_cron() || $is_wpli ) {
+		$is_wp_cli = ( defined( 'WP_CLI' ) && WP_CLI );
+		if ( wp_doing_cron() || $is_wp_cli ) {
 			burst_loader()->user_can_manage = true;
 			return true;
 		}

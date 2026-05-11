@@ -204,6 +204,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 = 3.4.2 =
 * May 11th 2026
 * New: AI chat.
+* Security: harden MainWP integration
 
 = 3.4.1.1 =
 * May 5th 2026

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, notFound } from '@tanstack/react-router';
 import { PageHeader } from '@/components/Common/PageHeader';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import WorldMapBlock from '@/components/Sources/WorldMapBlock';
@@ -8,9 +8,17 @@ import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
 import useLicenseData from '@/hooks/useLicenseData';
 import TrialPopup from '@/components/Upsell/TrialPopup';
+import { shouldLoadRoute } from '@/utils/helper';
 
 export const Route = createFileRoute( '/sources' )({
 	component: Sources,
+
+	// Throwing notFound in beforeLoad does not render header.
+	loader: ({ context }) => {
+		if ( context?.menus && ! shouldLoadRoute( 'sources', context.menus ) ) {
+			throw notFound();
+		}
+	},
 	errorComponent: ({ error }) => (
 		<div className="text-red-500 p-4">
 			{error.message || 'An error occurred loading sources'}
@@ -42,14 +50,14 @@ function Sources() {
 				<WorldMapBlock />
 			</ErrorBoundary>
 			<ErrorBoundary>
-				<DataTableBlock allowedConfigs={[ 'countries' ]} id="5" />
+				<DataTableBlock allowedConfigs={[ 'countries' ]} id="sources_countries" />
 			</ErrorBoundary>
 
 			<ErrorBoundary>
-				<DataTableBlock allowedConfigs={[ 'campaigns' ]} id="3" />
+				<DataTableBlock allowedConfigs={[ 'campaigns' ]} id="sources_campaigns" />
 			</ErrorBoundary>
 			<ErrorBoundary>
-				<DataTableBlock allowedConfigs={[ 'referrers' ]} id="4" />
+				<DataTableBlock allowedConfigs={[ 'referrers' ]} id="sources_referrers" />
 			</ErrorBoundary>
 		</>
 	);

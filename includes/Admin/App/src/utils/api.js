@@ -5,10 +5,10 @@ import { __ } from '@wordpress/i18n';
 import { toast } from './toast';
 
 if ( burst_settings.is_mainwp && burst_settings.root ) {
-    apiFetch.use.bind( apiFetch );
+	apiFetch.use.bind( apiFetch );
 
-    // Force-register a root URL override by using the fetch handler directly
-    apiFetch.use( ( options, next ) => {
+	// Force-register a root URL override by using the fetch handler directly
+	apiFetch.use( ( options, next ) => {
 		if ( options.path ) {
 			const root = burst_settings.root.replace( /\/$/, '' );
 			const path = options.path.replace( /^\//, '' );
@@ -34,7 +34,7 @@ if ( burst_settings.is_mainwp && burst_settings.root ) {
 		return next( options );
 	});
 
-    burst_settings.rest_url = burst_settings.root;
+	burst_settings.rest_url = burst_settings.root;
 }
 
 const usesPlainPermalinks = () => {
@@ -138,19 +138,32 @@ const generateError = ( error, path = false ) => {
 	});
 };
 
+// Capture the share token once at load time so it survives client-side
+// navigations that may strip it from the URL (e.g. tab switches).
+const _initialShareToken = new URLSearchParams( window.location.search ).get( 'burst_share_token' );
+
+const getRequestAuth = () => ({
+	shareToken: _initialShareToken || ''
+});
+
+const withRequestHeaders = ( headers = {}, auth = getRequestAuth() ) => {
+	if ( ! auth.shareToken ) {
+		return headers;
+	}
+
+	return {
+		...headers,
+		'X-Burst-Share-Token': auth.shareToken
+	};
+};
+
 const makeRequest = async( path, method = 'GET', data = {}) => {
 	const controller = new AbortController();
 	const signal = controller.signal;
+	const auth = getRequestAuth();
 	const args = { path, method, signal };
 
-	//if burst_share_token is in the url, add it to the headers
-	const urlParams = new URLSearchParams( window.location.search );
-	const shareToken = urlParams.get( 'burst_share_token' );
-	if ( shareToken ) {
-		args.headers = {
-			'X-Burst-Share-Token': shareToken
-		};
-	}
+	args.headers = withRequestHeaders( args.headers, auth );
 
 	if ( 'POST' === method ) {
 		data.nonce = burst_settings.burst_nonce;
@@ -177,10 +190,11 @@ const makeRequest = async( path, method = 'GET', data = {}) => {
 		try {
 
 			// Wait for ajaxRequest to resolve before continuing.
-			return await ajaxRequest( method, path, data );
-		} catch {
-			generateError( error.message, args.path );
-			throw error;
+			return await ajaxRequest( method, path, data, auth );
+		} catch ( ajaxError ) {
+			const err = error || ajaxError;
+			generateError( err.message, args.path );
+			throw err;
 		}
 	}
 };
@@ -217,7 +231,7 @@ const getAjaxFallbackUrl = ( method, path ) => {
 	return withAjaxAction( siteUrl( 'ajax' ), action );
 };
 
-const ajaxRequest = async( method, path, requestData = null ) => {
+const ajaxRequest = async( method, path, requestData = null, auth = getRequestAuth() ) => {
 	const ajaxUrl = getAjaxFallbackUrl( method, path );
 	const url =
 		'GET' === method ?
@@ -229,7 +243,12 @@ const ajaxRequest = async( method, path, requestData = null ) => {
 
 	const options = {
 		method,
-		headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+		headers: withRequestHeaders(
+			{
+				'Content-Type': 'application/json; charset=UTF-8'
+			},
+			auth
+		),
 		signal
 	};
 
@@ -242,9 +261,17 @@ const ajaxRequest = async( method, path, requestData = null ) => {
 
 	try {
 		const response = await fetch( url, options ); // nosemgrep
+
 		if ( ! response.ok ) {
-			generateError( response.statusText );
-			throw new Error( response.statusText );
+			const responseText = await response.text();
+
+			generateError(
+				`AJAX request failed: ${ response.status } ${ response.statusText }`
+			);
+
+			throw new Error(
+				`AJAX request failed: ${ response.status } ${ response.statusText }. Response: ${ responseText }`
+			);
 		}
 
 		const responseData = await response.json();
@@ -257,17 +284,24 @@ const ajaxRequest = async( method, path, requestData = null ) => {
 			)
 		) {
 
-			//log for automated fallback test. Do not remove.
+			// Log for automated fallback test. Do not remove.
 			console.log( 'Ajax fallback request failed.' );
-			throw new Error( 'Invalid data error' );
+
+			throw new Error(
+				`AJAX response validation failed. Response: ${ JSON.stringify( responseData ) }`
+			);
 		}
 
 		delete responseData.data.request_success;
 
 		// return promise with the data object
 		return Promise.resolve( responseData.data );
-	} catch ( error ) { // eslint-disable-line @typescript-eslint/no-unused-vars
-		return Promise.reject( new Error( 'AJAX request failed' ) );
+	} catch ( error ) {
+		return Promise.reject(
+			new Error(
+				`AJAX request failed. ${ error instanceof Error ? error.message : String( error ) }`
+			)
+		);
 	}
 };
 
@@ -369,17 +403,17 @@ export const doAction = ( action, data = {}) =>
  * @return {Promise}
  */
 export const getAction = ( action, actionData = {}) => {
-    const params = new URLSearchParams({
-        nonce: burst_settings.burst_nonce,
-        ...actionData
-    }).toString();
+	const params = new URLSearchParams({
+		nonce: burst_settings.burst_nonce,
+		...actionData
+	}).toString();
 
-    return makeRequest(
-        `burst/v1/get_action/${action}${glue()}${params}`,
-        'GET'
-    ).then( ( response ) => {
-        return Object.prototype.hasOwnProperty.call( response, 'data' ) ? response.data : [];
-    });
+	return makeRequest(
+		`burst/v1/get_action/${action}${glue()}${params}`,
+		'GET'
+	).then( ( response ) => {
+		return Object.prototype.hasOwnProperty.call( response, 'data' ) ? response.data : [];
+	});
 };
 
 /**
@@ -424,6 +458,39 @@ const buildQueryString = ( params ) => {
 		.join( '&' );
 };
 
+export const getDatatableData = async( id, isEcommerce, startDate, endDate, range, args = {}) => {
+	const { filters, metrics, group_by, selectedPages } = args;
+
+	const queryParams = {
+		date_start: startDate,
+		date_end: endDate,
+		date_range: range,
+		nonce: burst_settings.burst_nonce,
+		should_load_ecommerce: burst_settings.shouldLoadEcommerce || false,
+		goal_id: args.goal_id,
+		token: Math.random().toString( 36 ).replace( /[^a-z]+/g, '' ).substr( 0, 5 ) // nosemgrep
+	};
+
+	if ( selectedPages ) {
+		queryParams.selected_pages = selectedPages;
+	}
+	if ( filters ) {
+		queryParams.filters = filters;
+	}
+	if ( metrics ) {
+		queryParams.metrics = metrics;
+	}
+	if ( group_by ) {
+		queryParams.group_by = group_by;
+	}
+
+	const queryString = buildQueryString( queryParams );
+	const endpoint = isEcommerce ? `data/ecommerce/datatable/${id}` : `data/datatable/${id}`;
+	const path = `burst/v1/${endpoint}${glue()}${queryString}`;
+
+	return await makeRequest( path, 'GET' );
+};
+
 /**
  * Get data from the REST API
  * @param {string} type      - The data type to fetch
@@ -435,10 +502,8 @@ const buildQueryString = ( params ) => {
  */
 export const getData = async( type, startDate, endDate, range, args = {}) => {
 
-	// Extract filters and metrics from args if they exist.
-	const { filters, metrics, group_by, currentView, selectedPages, id, chart_mode, distribution_view, product_id } = args;
+	const { filters, metrics, currentView, selectedPages, chart_mode, distribution_view, product_id } = args;
 
-	// Combine all query parameters.
 	const queryParams = {
 		date_start: startDate,
 		date_end: endDate,
@@ -446,23 +511,34 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
 		nonce: burst_settings.burst_nonce,
 		should_load_ecommerce: burst_settings.shouldLoadEcommerce || false,
 		goal_id: args.goal_id,
-		token: Math.random() // nosemgrep
-			.toString( 36 )
-			.replace( /[^a-z]+/g, '' )
-			.substr( 0, 5 ),
-		...( selectedPages && { selected_pages: selectedPages }), // type is string
-		...( filters && { filters }), // type is object
-		...( metrics && { metrics }), // type is array
-		...( group_by && { group_by }), // type is array
-		...( currentView && { currentView }), // type is object
-		...( id && { id }), // type is string
-		...( chart_mode && { chart_mode }), // type is string
-		...( distribution_view && { distribution_view }), // type is string
-		...( product_id && { product_id }) // type is string
+		token: Math.random().toString( 36 ).replace( /[^a-z]+/g, '' ).substr( 0, 5 ) // nosemgrep
 	};
 
+	if ( selectedPages ) {
+		queryParams.selected_pages = selectedPages;
+	}
+	if ( filters ) {
+		queryParams.filters = filters;
+	}
+	if ( metrics ) {
+		queryParams.metrics = metrics;
+	}
+	if ( currentView ) {
+		queryParams.currentView = currentView;
+	}
+	if ( chart_mode ) {
+		queryParams.chart_mode = chart_mode;
+	}
+	if ( distribution_view ) {
+		queryParams.distribution_view = distribution_view;
+	}
+	if ( product_id ) {
+		queryParams.product_id = product_id;
+	}
+
 	const queryString = buildQueryString( queryParams );
-	const path = `burst/v1/data/${type}${glue()}${queryString}`;
+	const endpoint = `data/${type}`;
+	const path = `burst/v1/${endpoint}${glue()}${queryString}`;
 
 	return await makeRequest( path, 'GET' );
 };

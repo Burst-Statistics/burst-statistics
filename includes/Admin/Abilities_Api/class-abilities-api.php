@@ -358,42 +358,47 @@ class Abilities_Api {
 			'burst/data',
 			[
 				'label'               => __( 'Get data', 'burst-statistics' ),
-				'description'         => __( 'Returns analytics data: pages overview with insights or datatable data.', 'burst-statistics' ),
+				'description'         => __( 'Returns analytics data: pages overview with insights or a specific datatable.', 'burst-statistics' ),
 				'category'            => self::CATEGORY_SLUG,
 				'input_schema'        => [
 					'type'                 => [ 'object', 'null' ],
 					'additionalProperties' => false,
 					'properties'           => [
-						'type'       => [
+						'type'         => [
 							'type' => 'string',
 							'enum' => [ 'insights', 'datatable' ],
 						],
-						'date_start' => [
+						'datatable_id' => [
+							'type'        => 'string',
+							'enum'        => [ 'statistics_pages', 'statistics_parameters', 'statistics_referrers', 'sources_countries', 'sources_campaigns', 'sales_products', 'subscription_products', 'sources_referrers' ],
+							'description' => 'Datatable endpoint ID, for example statistics_pages. Required when type is datatable.',
+						],
+						'date_start'   => [
 							'type'        => 'integer',
 							'minimum'     => 0,
 							'description' => 'Unix timestamp for start date',
 						],
-						'date_end'   => [
+						'date_end'     => [
 							'type'        => 'integer',
 							'minimum'     => 0,
 							'description' => 'Unix timestamp for end date',
 						],
-						'metrics'    => [
+						'metrics'      => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
 							'description' => 'Metrics to retrieve (e.g., pageviews, visitors)',
 						],
-						'filters'    => [
+						'filters'      => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'object' ],
 							'description' => 'Filter objects for data retrieval',
 						],
-						'group_by'   => [
+						'group_by'     => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
 							'description' => 'Grouping columns for datatable results',
 						],
-						'limit'      => [
+						'limit'        => [
 							'type'        => 'integer',
 							'minimum'     => 0,
 							'description' => 'Limit number of results',
@@ -866,9 +871,28 @@ class Abilities_Api {
 						'metrics'    => $metrics,
 					]
 				);
-
 				return $this->format_agent_insights_response( $data, $metrics );
 			} elseif ( 'datatable' === $type ) {
+				$datatable_id = isset( $input['datatable_id'] ) ? sanitize_title( (string) $input['datatable_id'] ) : '';
+				if ( empty( $datatable_id ) ) {
+					return new \WP_Error(
+						'burst_abilities_invalid_input',
+						'The datatable_id parameter is required when type is datatable.',
+						[ 'status' => 400 ]
+					);
+				}
+
+				$allow_list = $admin->app->get_datatable_metric_allow_list();
+				if ( ! isset( $allow_list[ $datatable_id ] ) ) {
+					return new \WP_Error(
+						'burst_abilities_unknown_datatable',
+						'Unknown datatable endpoint.',
+						[ 'status' => 404 ]
+					);
+				}
+
+				$metrics = array_values( array_intersect( $metrics, $allow_list[ $datatable_id ] ) );
+
 				$data = $admin->statistics->get_datatables_data(
 					[
 						'date_start' => $date_start,
@@ -877,6 +901,7 @@ class Abilities_Api {
 						'filters'    => $filters,
 						'group_by'   => $group_by,
 						'limit'      => $limit,
+						'id'         => $datatable_id,
 					]
 				);
 
@@ -924,27 +949,32 @@ class Abilities_Api {
 
 		$input = is_array( $input ) ? $input : [];
 
-		$date_start = isset( $input['date_start'] ) ? absint( $input['date_start'] ) : 0;
-		$date_end   = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
-		$metrics    = isset( $input['metrics'] ) ? (array) $input['metrics'] : [ 'revenue' ];
-		$group_by   = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'source' ];
-		$group_by   = $this->normalize_group_by( $group_by );
+		$date_start      = isset( $input['date_start'] ) ? absint( $input['date_start'] ) : 0;
+		$date_end        = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
+		$datatable_id    = 'sales_products';
+		$default_metrics = [
+			'product',
+			'sales',
+			'revenue',
+		];
+		$metrics         = isset( $input['metrics'] ) ? (array) $input['metrics'] : $default_metrics;
+		$metrics         = $this->filter_datatable_metrics( $admin, $datatable_id, $metrics, $default_metrics );
+		if ( is_wp_error( $metrics ) ) {
+			return $metrics;
+		}
+		$group_by = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'product' ];
+		$group_by = $this->normalize_group_by( $group_by );
 
 		try {
-			// Use the datatables method with ecommerce filter for sales data.
 			$data = $admin->statistics->get_datatables_data(
 				[
 					'date_start' => $date_start,
 					'date_end'   => $date_end,
 					'metrics'    => $metrics,
-					'filters'    => [
-						[
-							'key'   => 'type',
-							'value' => 'purchase',
-						],
-					],
+					'filters'    => [],
 					'group_by'   => $group_by,
 					'limit'      => 100,
+					'id'         => $datatable_id,
 				]
 			);
 
@@ -985,27 +1015,35 @@ class Abilities_Api {
 
 		$input = is_array( $input ) ? $input : [];
 
-		$date_start = isset( $input['date_start'] ) ? absint( $input['date_start'] ) : 0;
-		$date_end   = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
-		$metrics    = isset( $input['metrics'] ) ? (array) $input['metrics'] : [ 'revenue' ];
-		$group_by   = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'source' ];
-		$group_by   = $this->normalize_group_by( $group_by );
+		$date_start      = isset( $input['date_start'] ) ? absint( $input['date_start'] ) : 0;
+		$date_end        = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
+		$datatable_id    = 'subscription_products';
+		$default_metrics = [
+			'plan',
+			'active_subscribers',
+			'canceled_subscribers',
+			'trialling_subscribers',
+			'monthly_recurring_revenue',
+			'product_churn_value',
+		];
+		$metrics         = isset( $input['metrics'] ) ? (array) $input['metrics'] : $default_metrics;
+		$metrics         = $this->filter_datatable_metrics( $admin, $datatable_id, $metrics, $default_metrics );
+		if ( is_wp_error( $metrics ) ) {
+			return $metrics;
+		}
+		$group_by = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'plan' ];
+		$group_by = $this->normalize_group_by( $group_by );
 
 		try {
-			// Use the datatables method with ecommerce filter for subscription data.
 			$data = $admin->statistics->get_datatables_data(
 				[
 					'date_start' => $date_start,
 					'date_end'   => $date_end,
 					'metrics'    => $metrics,
-					'filters'    => [
-						[
-							'key'   => 'type',
-							'value' => 'subscription',
-						],
-					],
+					'filters'    => [],
 					'group_by'   => $group_by,
 					'limit'      => 100,
+					'id'         => $datatable_id,
 				]
 			);
 
@@ -1081,6 +1119,52 @@ class Abilities_Api {
 		}
 
 		return array_values( array_unique( $normalized ) );
+	}
+
+	/**
+	 * Restrict requested metrics to the granular datatable endpoint allow-list.
+	 *
+	 * @param Admin              $admin Admin instance.
+	 * @param string             $datatable_id Datatable endpoint ID.
+	 * @param array<int, mixed>  $metrics Requested metric keys.
+	 * @param array<int, string> $fallback_metrics Metrics to use when none of the requested metrics are valid.
+	 * @return array<int, string>|\WP_Error
+	 */
+	private function filter_datatable_metrics( Admin $admin, string $datatable_id, array $metrics, array $fallback_metrics ): array|\WP_Error {
+		$allow_list = $admin->app->get_datatable_metric_allow_list();
+		if ( ! isset( $allow_list[ $datatable_id ] ) ) {
+			return new \WP_Error(
+				'burst_abilities_unknown_datatable',
+				'Unknown datatable endpoint.',
+				[ 'status' => 404 ]
+			);
+		}
+
+		$metrics = array_values(
+			array_unique(
+				array_map(
+					static function ( mixed $metric ): string {
+						return (string) $metric;
+					},
+					$metrics
+				)
+			)
+		);
+
+		$filtered_metrics = array_values( array_intersect( $metrics, $allow_list[ $datatable_id ] ) );
+		if ( empty( $filtered_metrics ) ) {
+			$filtered_metrics = array_values( array_intersect( $fallback_metrics, $allow_list[ $datatable_id ] ) );
+		}
+
+		if ( empty( $filtered_metrics ) ) {
+			return new \WP_Error(
+				'burst_abilities_invalid_metrics',
+				'No valid metrics were requested for this datatable endpoint.',
+				[ 'status' => 400 ]
+			);
+		}
+
+		return $filtered_metrics;
 	}
 
 	/**

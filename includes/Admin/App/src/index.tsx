@@ -9,6 +9,7 @@ import {
 import {
 	RouterProvider,
 	createRouter,
+	createBrowserHistory,
 	createHashHistory
 } from '@tanstack/react-router';
 
@@ -100,7 +101,11 @@ declare global {
 	}
 }
 
-const hashHistory = createHashHistory();
+// This bundle is mounted in wp-admin and on shared dashboard URLs. wp-admin
+// still needs hash routing, while /burst-dashboard/<tab>/ should behave like a
+// normal path-based app.
+const isSharedDashboardRoute = /\/burst-dashboard(\/|$)/.test( window.location.pathname );
+const routerHistory = isSharedDashboardRoute ? createBrowserHistory() : createHashHistory();
 const HOUR_IN_SECONDS = 3600;
 
 interface QueryConfig {
@@ -162,7 +167,11 @@ const router = createRouter({
 			<p>{error?.message || 'An unexpected error occurred'}</p>
 		</div>
 	),
-	history: hashHistory,
+	history: routerHistory,
+
+	// Shared links are mounted under /burst-dashboard, but the route tree itself
+	// still uses app-relative paths such as /statistics and /story.
+	...( isSharedDashboardRoute ? { basepath: '/burst-dashboard' } : {}),
 	defaultPreload: 'viewport'
 
 	// Since we're using React Query, we don't want loader calls to ever be stale

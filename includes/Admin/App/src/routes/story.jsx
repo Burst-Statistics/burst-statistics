@@ -14,8 +14,7 @@ export const Route = createFileRoute( '/story' )({
     component: Story,
     errorComponent: ({ error }) => (
         <div className="text-red-500 p-4">
-            {error.message ||
-                'An error occurred loading sources'}
+            {error.message || 'An error occurred loading sources'}
         </div>
     )
 });
@@ -38,11 +37,11 @@ function Story() {
 
     const getReportData = async() => {
         const token = getShareTokenFromUrl();
-        return getAction( 'report-data', { token });
+        return getAction( 'story-report-data', { token });
     };
 
     const { data: reportData, isFetching, isError } = useQuery({
-        queryKey: [ 'report-data' ],
+        queryKey: [ 'story-report-data' ],
         queryFn: () => getReportData()
     });
 
@@ -136,12 +135,16 @@ function Story() {
 
     return (
         <div className="col-span-12 flex flex-col">
-            {isPdfMode && <div className="flex justify-end">
-                <button onClick={handlePrintPdf} className=" print:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:border-gray-400 text-text-gray font-medium rounded-lg shadow-sm hover:shadow transition-all duration-200">
-                    <Icon name="download" size={18} />
-                    <span>{__( 'Download PDF', 'burst-statistics' )}</span>
-                </button>
-            </div>}
+            {
+                isPdfMode &&
+                <div className="flex justify-end">
+                    <button onClick={handlePrintPdf} className=" print:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:border-gray-400 text-text-gray font-medium rounded-lg shadow-sm hover:shadow transition-all duration-200">
+                        <Icon name="download" size={18} />
+                        <span>{__( 'Download PDF', 'burst-statistics' )}</span>
+                    </button>
+                </div>
+            }
+
             {
                 reportBlocks.map( ( block, index ) => {
                     const blockId = block.id;
@@ -163,13 +166,14 @@ function Story() {
                         allowBlockFilters: false,
                         isReport: true
                     };
-                        return (
-                            <StoryBlockWrapper
-                                reportBlockIndex={index}
-                                key={`${blockId}-${index}`}
-                            >
-                                <BlockComponent {...componentProps} />
-                            </StoryBlockWrapper>
+
+                    return (
+                        <StoryBlockWrapper
+                            reportBlockIndex={index}
+                            key={`${blockId}-${index}`}
+                        >
+                            <BlockComponent {...componentProps} />
+                        </StoryBlockWrapper>
                     );
                 })
             }
