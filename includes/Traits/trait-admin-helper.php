@@ -213,6 +213,13 @@ trait Admin_Helper {
 			}
 		}
 
+		if (
+			self::is_http_basic_auth_request()
+			&& self::is_confirmed_application_password_auth()
+		) {
+			return burst_loader()->has_admin_access = true;
+		}
+
 		if ( isset( $_SERVER['HTTP_X_BURSTMAINWP'] ) && $_SERVER['HTTP_X_BURSTMAINWP'] === '1' ) {
 			$mainwp_proxy = new \Burst\Frontend\MainWP_Proxy();
 
@@ -461,6 +468,37 @@ trait Admin_Helper {
 		}
 		$header = sanitize_text_field( wp_unslash( $raw ) );
 		return stripos( $header, 'basic ' ) === 0;
+	}
+
+	/**
+	 * Confirm that the current Basic Auth request is authenticated via Application Passwords.
+	 *
+	 * At early bootstrap points the `wp_application_passwords_did_authenticate` action may
+	 * not have fired yet, so we also perform an explicit validation fallback.
+	 */
+	private static function is_confirmed_application_password_auth(): bool {
+		if ( (bool) did_action( 'wp_application_passwords_did_authenticate' ) ) {
+			return true;
+		}
+
+		if ( ! isset( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] ) ) {
+			return false;
+		}
+
+		if ( ! function_exists( 'wp_validate_application_password' ) ) {
+			return false;
+		}
+
+		add_filter( 'application_password_is_api_request', '__return_true', 99 );
+		$validated_user_id = wp_validate_application_password( false );
+		remove_filter( 'application_password_is_api_request', '__return_true', 99 );
+
+		if ( empty( $validated_user_id ) ) {
+			return false;
+		}
+
+		wp_set_current_user( (int) $validated_user_id );
+		return true;
 	}
 
 	/**

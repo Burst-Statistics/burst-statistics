@@ -1,6 +1,7 @@
 <?php
 namespace Burst\Admin\App;
 
+use Burst\Admin\Abilities_Api\Abilities_Api;
 use Burst\Admin\App\Fields\Fields;
 use Burst\Admin\App\Fields\Reporting_Fields;
 use Burst\Admin\App\Menu\Menu;
@@ -360,8 +361,9 @@ class App {
 	 * @return array<string, mixed>
 	 */
 	public function extend_localized_settings_for_dashboard( array $data ): array {
-		$data['menu']   = $this->menu->get();
-		$data['fields'] = $this->fields->get();
+		$data['menu']              = $this->menu->get();
+		$data['fields']            = $this->fields->get();
+		$data['chat_availability'] = Abilities_Api::get_chat_availability();
 		return $data;
 	}
 
@@ -1179,7 +1181,6 @@ class App {
 			]
 		);
 	}
-
 
 	/**
 	 * Perform a specific action based on the provided request.

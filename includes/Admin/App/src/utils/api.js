@@ -157,7 +157,12 @@ const withRequestHeaders = ( headers = {}, auth = getRequestAuth() ) => {
 	};
 };
 
-const makeRequest = async( path, method = 'GET', data = {}) => {
+const makeRequest = async(
+    path,
+    method = 'GET',
+    data = {},
+    requireRequestSuccess = true
+) => {
 	const controller = new AbortController();
 	const signal = controller.signal;
 	const auth = getRequestAuth();
@@ -172,7 +177,7 @@ const makeRequest = async( path, method = 'GET', data = {}) => {
 
 	try {
 		const response = await apiFetch( args );
-		if ( ! response.request_success ) {
+		if ( requireRequestSuccess && ! response.request_success ) {
 			if ( Object.prototype.hasOwnProperty.call( response, 'message' ) ) {
 				generateError( response.message, args.path );
 			} else {
@@ -568,6 +573,14 @@ export const getPosts = ( search ) =>
 				[];
 		}
 	);
+
+export const postChatMessage = ( message, history = []) =>
+	doAction( 'chat', {
+		message,
+		history
+	});
+
+export const getChatStatus = () => doAction( 'chat_status' );
 
 /**
  * Retrieves a value from local storage with a 'burst_' prefix and parses it as

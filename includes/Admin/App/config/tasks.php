@@ -166,6 +166,18 @@ return [
 		'plusone'     => false,
 	],
 	[
+		'id'          => 'enable_ai_chat',
+		'condition'   => [
+			'type'     => 'serverside',
+			'function' => 'Burst\Admin\Abilities_Api\Abilities_Api::should_show_enable_notice()',
+		],
+		'msg'         => __( 'New: Burst AI chat can answer analytics questions and use Burst abilities for you. Enable the Abilities API to try it.', 'burst-statistics' ),
+		'icon'        => 'new',
+		'fix'         => 'burst_option_enable_abilities_api',
+		'dismissible' => true,
+		'plusone'     => true,
+	],
+	[
 		'id'          => 'opt-in-sharing',
 		'msg'         => __( 'Help us build better features, prioritize integrations, and improve recommendations by sharing anonymous usage data. We never collect personal information, your site URL, or IP addresses. Everything stays completely anonymous.', 'burst-statistics' ),
 		'icon'        => 'new',

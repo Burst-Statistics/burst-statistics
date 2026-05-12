@@ -14,6 +14,7 @@ import BurstLogo from './BurstLogo';
 import MenuItemLink from './HeaderMenuItemLink';
 import HeaderThemeMenu from './HeaderThemeMenu';
 import TransparencyModal from './TransparencyModal';
+import ChatAssistantModal from './ChatAssistantModal';
 
 const SHARE_LINK_BRANDING_URL = burst_get_website_url( '', {
 	utm_source: 'share-link',
@@ -85,11 +86,7 @@ const Header = () => {
 			<div className="mx-auto flex max-w-(--breakpoint-2xl) items-center gap-5 px-3 lg:px-10 max-xxs:gap-0 min-h-16">
 				<div className="max-xxs:w-16 max-xxs:h-auto max-xxs:hidden pr-2">
 					{isWhiteLabel && ! isLoading && attachmentUrl ? (
-						<img
-							alt="logo"
-							src={attachmentUrl}
-							className={LOGO_CLASS}
-						/>
+						<img alt="logo" src={attachmentUrl} className={LOGO_CLASS} />
 					) : isShareableLinkViewer ? (
 						<a
 							href={SHARE_LINK_BRANDING_URL}
@@ -164,7 +161,7 @@ const Header = () => {
 
 				{! isShareableLinkViewer && (
 					<div className="flex items-center gap-4 lg:gap-5">
-
+						<ChatAssistantModal />
 
 						{upgradeUrl && (
 							<>
@@ -173,25 +170,32 @@ const Header = () => {
 									link={{ to: upgradeUrl }}
 									btnVariant="primary"
 								>
-									<span className='flex items-center gap-1'>
+									<span className="flex items-center gap-1">
 										{__( 'Upgrade to Pro', 'burst-statistics' )}
-										<Icon name="move-right" size={16} color="text-white" strokeWidth={2.5} />
+										<Icon
+											name="move-right"
+											size={16}
+											color="text-white"
+											strokeWidth={2.5}
+										/>
 									</span>
 								</ButtonInput>
 							</>
 						)}
 
-<a href={supportUrl} target="_blank" className="flex items-center text-text-gray gap-1 max-xxs:hidden hover:underline">
+						<a
+							href={supportUrl}
+							target="_blank"
+							className="flex items-center text-text-gray gap-1 max-xxs:hidden hover:underline"
+						>
+							{__( 'Support', 'burst-statistics' )}
+							<Icon name="external-link" size={12} color="gray" />
+						</a>
 
-{__( 'Support', 'burst-statistics' )}
-<Icon name="external-link" size={12} color="gray" />
-</a>
+						{/* separator */}
+						<div className="max-xxs:hidden h-4 w-px bg-gray-300"></div>
 
-
-								{/* separator */}
-								<div className="max-xxs:hidden h-4 w-px bg-gray-300"></div>
-
-<div className="max-xxs:hidden flex">
+						<div className="max-xxs:hidden flex">
 							{rightMenuItems.map( ( menuItem ) => (
 								<MenuItemLink
 									key={'menu-item-link-' + menuItem.id}
@@ -203,9 +207,7 @@ const Header = () => {
 							) )}
 						</div>
 
-
 						<HeaderThemeMenu />
-
 					</div>
 				)}
 			</div>
