@@ -207,11 +207,9 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * New: granular datatable REST endpoints (data/datatable/{id} and data/ecommerce/datatable/{id}) so the dashboard and AI abilities can request a specific table by id.
 * Improvement: refactor the Share class into dedicated Share_Tokens, Share_Routing, Share_Auth and Share_UI services for clearer responsibilities and easier maintenance.
 * Improvement: dark mode initialization respects an explicit "light" preference so users on a dark OS no longer briefly see a dark skeleton when they have forced light mode.
-* Improvement: license activation results are cached for 5 minutes to avoid repeated remote calls.
-* Improvement: upgrade routine for 3.5.0 corrects the stored activation time for sites with older data.
+* Improvement: upgrade routine corrects the stored activation time for sites with older data.
 * Improvement: replace native checkboxes with Radix checkboxes in the Share dialog for consistent styling.
 * Improvement: shared-link capability checks now reflect the currently requested dashboard tab instead of a single cached value, so per-tab permissions are enforced correctly during batch REST requests.
-* Fix: rename the story report action from report-data to story-report-data and validate the share token before returning data, preventing accidental name collisions and unauthenticated access.
 * Fix: dashboard route returns a 404 when the user is not allowed to load it, instead of rendering an empty page.
 * Security: limit Share link viewer statistics access, props Sanjay Singh Jhala.
 * Security: REST API optimizer now matches the Burst namespace strictly against the URL path (anchored at burst/v1), props Sanjay Singh Jhala.
