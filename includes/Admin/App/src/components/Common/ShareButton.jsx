@@ -19,6 +19,7 @@ import { formatDateShort } from '@/utils/formatting';
 import useShareableLinkStore from '@/store/useShareableLinkStore';
 import {copyToClipboard} from '@/utils/copyToClipboard';
 import ProBadge from '@/components/Common/ProBadge';
+import * as Checkbox from '@radix-ui/react-checkbox';
 import React from 'react';
 
 /**
@@ -328,21 +329,30 @@ const AdvancedOptions = ({
 									{__( 'Allow viewer to:', 'burst-statistics' )}
 								</span>
 								<div className="flex flex-wrap gap-x-6 gap-y-2">
-									{Object.entries( PERMISSION_LABELS ).map( ([ key, label ]) => (
-										<label
-											key={key}
-											className={`flex items-center gap-2 cursor-pointer text-sm ${! shareLinkPro ? 'cursor-default' : 'cursor-pointer'}`}
+								{Object.entries( PERMISSION_LABELS ).map( ([ key, label ]) => (
+									<label
+										key={key}
+										className={`flex items-center gap-2 cursor-pointer text-sm ${! shareLinkPro ? 'cursor-default' : 'cursor-pointer'}`}
+									>
+										<Checkbox.Root
+											disabled={! shareLinkPro}
+											checked={permissions[key] || false}
+											onCheckedChange={() => onPermissionToggle( key )}
+											className="focus:ring-blue-500 flex h-4 w-4 items-center justify-center rounded border-2 border-gray-300 bg-white transition-colors hover:border-gray-400 focus:outline-hidden focus:ring-2 focus:ring-offset-2"
+											id={`permission_${key}`}
 										>
-											<input
-												disabled={! shareLinkPro}
-												type="checkbox"
-												checked={permissions[key] || false}
-												onChange={() => onPermissionToggle( key )}
-												className="rounded border-gray-400 text-wp-blue focus:ring-wp-blue cursor-pointer disabled:cursor-default disabled:opacity-60"
-											/>
-											<span className={! shareLinkPro ? 'text-text-gray' : 'text-text-black'}>{label}</span>
-										</label>
-									) )}
+											<Checkbox.Indicator>
+												<Icon
+													name="check"
+													size={14}
+													color="green"
+													strokeWidth={2}
+												/>
+											</Checkbox.Indicator>
+										</Checkbox.Root>
+										<span className={! shareLinkPro ? 'text-text-gray' : 'text-text-black'}>{label}</span>
+									</label>
+								) )}
 								</div>
 							</div>
 
@@ -363,13 +373,22 @@ const AdvancedOptions = ({
 													key={tab.id}
 													className={`flex items-center gap-2 text-sm ${disabled ? 'cursor-default' : 'cursor-pointer'}`}
 												>
-													<input
-														type="checkbox"
+													<Checkbox.Root
 														checked={isChecked}
-														onChange={() => onTabToggle( tab.id )}
+														onCheckedChange={() => onTabToggle( tab.id )}
 														disabled={disabled}
-														className="rounded border-gray-400 text-wp-blue focus:ring-wp-blue cursor-pointer disabled:cursor-default disabled:opacity-60"
-													/>
+														className="focus:ring-blue-500 flex h-4 w-4 items-center justify-center rounded border-2 border-gray-300 bg-white transition-colors hover:border-gray-400 focus:outline-hidden focus:ring-2 focus:ring-offset-2"
+														id={`tab_${tab.id}`}
+													>
+														<Checkbox.Indicator>
+															<Icon
+																name="check"
+																size={14}
+																color="green"
+																strokeWidth={2}
+															/>
+														</Checkbox.Indicator>
+													</Checkbox.Root>
 													<span className={disabled ? 'text-text-gray-light' : 'text-text-gray'}>
 														{tab.title}
 														{isCurrentTab && (

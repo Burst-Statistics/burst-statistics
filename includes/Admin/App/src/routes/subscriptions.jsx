@@ -15,6 +15,7 @@ import { RetentionChartBlock } from '@/components/Subscriptions/RetentionChart';
 import { DistributionBlock } from '@/components/Subscriptions/DistributionChart';
 import { shouldLoadRoute } from '@/utils/helper';
 import NotFoundModal from '@/components/Common/NotFoundModal';
+import useShareableLinkStore from '@/store/useShareableLinkStore';
 
 export const Route = createFileRoute( '/subscriptions' )({
 	notFoundComponent: NotFoundModal,
@@ -75,6 +76,7 @@ function SubscriptionsComponent() {
 
 	// Use the hook inside the component, not in the loader
 	const { isLicenseValidFor, isFetching } = useLicenseData();
+	const isShareableLinkViewer = useShareableLinkStore( state => state.isShareableLinkViewer );
 
 	if ( isFetching ) {
 		return null;
@@ -99,7 +101,7 @@ function SubscriptionsComponent() {
 	return (
 		<>
 			<PageHeader />
-			<SubscriptionsProgressBar />
+			{ ! isShareableLinkViewer && <SubscriptionsProgressBar /> }
 
 			<ErrorBoundary>
 				<RevenueChartBlock />
@@ -111,7 +113,7 @@ function SubscriptionsComponent() {
 			<ErrorBoundary>
 				<DataTableBlock
 					allowedConfigs={[ 'subscription_products' ]}
-					id={'subscription_products'}
+					id="subscription_products"
 					isEcommerce={true}
 				/>
 			</ErrorBoundary>

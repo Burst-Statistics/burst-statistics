@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Burst\Admin\App\App;
+use Burst\Admin\Abilities_Api\Abilities_Api;
 use Burst\Admin\Archive\Archive;
 use Burst\Admin\Burst_Wp_Cli\Burst_Wp_Cli;
 use Burst\Admin\Cron\Cron;
@@ -111,6 +112,8 @@ class Admin {
 		$reports_logs->init();
 		$this->app = new App();
 		$this->app->init();
+		$abilities_api = new Abilities_Api();
+		$abilities_api->init();
 
 		$posts = new Posts();
 		$posts->init();

@@ -15,14 +15,43 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Abilities_Api {
 	use Admin_Helper;
 
-	private const ENABLE_OPTION = 'enable_abilities_api';
-	private const CATEGORY_SLUG = 'burst-statistics';
+	private const ENABLE_OPTION     = 'enable_abilities_api';
+	private const CATEGORY_SLUG     = 'burst-statistics';
+	private const CHAT_ABILITY_LIST = [
+		'burst/live-visitors',
+		'burst/live-traffic',
+		'burst/today-summary',
+		'burst/tasks',
+		'burst/tracking-status',
+		'burst/license-notices',
+		'burst/data',
+		'burst/subscriptions-data',
+	];
+
+	/**
+	 * Check whether the Abilities API setting is enabled.
+	 */
+	public static function is_enabled(): bool {
+		return (bool) burst_get_option( self::ENABLE_OPTION, false );
+	}
+
+	/**
+	 * Show the chat enable notice only when the feature can actually be enabled.
+	 */
+	public static function should_show_enable_notice(): bool {
+		return function_exists( 'wp_register_ability' ) && ! self::is_enabled();
+	}
 
 	/**
 	 * Initialize Abilities API integration.
 	 */
 	public function init(): void {
-		if ( function_exists( 'wp_register_ability' ) && (bool) burst_get_option( self::ENABLE_OPTION, false ) ) {
+		if ( self::is_enabled() ) {
+			add_action( 'rest_api_init', [ $this, 'register_chat_rest_routes' ], 9 );
+			add_filter( 'burst_do_action', [ $this, 'handle_ajax_chat_actions' ], 10, 3 );
+		}
+
+		if ( function_exists( 'wp_register_ability' ) && self::is_enabled() ) {
 			add_action( 'wp_abilities_api_categories_init', [ self::class, 'register_category' ] );
 			add_action( 'wp_abilities_api_init', [ self::class, 'register' ] );
 			add_action( 'abilities_api_init', [ self::class, 'register' ] );
@@ -103,7 +132,7 @@ class Abilities_Api {
 				'description'         => __( 'Returns active visitors and pages from the live traffic feed.', 'burst-statistics' ),
 				'category'            => self::CATEGORY_SLUG,
 				'input_schema'        => [
-					'type'                 => [ 'object', 'null' ],
+					'type'                 => 'object',
 					'additionalProperties' => false,
 					'properties'           => [
 						'limit' => [
@@ -162,7 +191,7 @@ class Abilities_Api {
 				'description'         => __( 'Returns a read-only summary of key Burst statistics for a date range.', 'burst-statistics' ),
 				'category'            => self::CATEGORY_SLUG,
 				'input_schema'        => [
-					'type'                 => [ 'object', 'null' ],
+					'type'                 => 'object',
 					'additionalProperties' => false,
 					'properties'           => [
 						'date_start' => [
@@ -358,42 +387,52 @@ class Abilities_Api {
 			'burst/data',
 			[
 				'label'               => __( 'Get data', 'burst-statistics' ),
-				'description'         => __( 'Returns analytics data: pages overview with insights or datatable data.', 'burst-statistics' ),
+				'description'         => __( 'Returns analytics data: pages overview with insights or a specific datatable.', 'burst-statistics' ),
 				'category'            => self::CATEGORY_SLUG,
 				'input_schema'        => [
-					'type'                 => [ 'object', 'null' ],
+					'type'                 => 'object',
 					'additionalProperties' => false,
 					'properties'           => [
-						'type'       => [
+						'type'         => [
 							'type' => 'string',
 							'enum' => [ 'insights', 'datatable' ],
 						],
-						'date_start' => [
+						'datatable_id' => [
+							'type'        => 'string',
+							'enum'        => [ 'statistics_pages', 'statistics_parameters', 'statistics_referrers', 'sources_countries', 'sources_campaigns', 'sales_products', 'subscription_products', 'sources_referrers' ],
+							'description' => 'Datatable endpoint ID, for example statistics_pages. Required when type is datatable.',
+						],
+						'date_start'   => [
 							'type'        => 'integer',
 							'minimum'     => 0,
 							'description' => 'Unix timestamp for start date',
 						],
-						'date_end'   => [
+						'date_end'     => [
 							'type'        => 'integer',
 							'minimum'     => 0,
 							'description' => 'Unix timestamp for end date',
 						],
-						'metrics'    => [
+						'interval'     => [
+							'type'        => 'string',
+							'enum'        => [ 'auto', 'hour', 'day', 'week', 'month' ],
+							'description' => 'Insights-only interval override. Use auto/hour/day/week/month.',
+						],
+						'metrics'      => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
 							'description' => 'Metrics to retrieve (e.g., pageviews, visitors)',
 						],
-						'filters'    => [
+						'filters'      => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'object' ],
 							'description' => 'Filter objects for data retrieval',
 						],
-						'group_by'   => [
+						'group_by'     => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
 							'description' => 'Grouping columns for datatable results',
 						],
-						'limit'      => [
+						'limit'        => [
 							'type'        => 'integer',
 							'minimum'     => 0,
 							'description' => 'Limit number of results',
@@ -425,7 +464,7 @@ class Abilities_Api {
 				'description'         => __( 'Returns ecommerce sales metrics (Burst Pro only).', 'burst-statistics' ),
 				'category'            => self::CATEGORY_SLUG,
 				'input_schema'        => [
-					'type'                 => [ 'object', 'null' ],
+					'type'                 => 'object',
 					'additionalProperties' => false,
 					'properties'           => [
 						'date_start' => [
@@ -443,10 +482,21 @@ class Abilities_Api {
 							'items'       => [ 'type' => 'string' ],
 							'description' => 'Metrics to retrieve',
 						],
+						'filters'    => [
+							'type'        => 'array',
+							'items'       => [ 'type' => 'object' ],
+							'description' => 'Additional filter objects for sales retrieval',
+						],
 						'group_by'   => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
 							'description' => 'Grouping columns for sales results',
+						],
+						'limit'      => [
+							'type'        => 'integer',
+							'minimum'     => 1,
+							'maximum'     => 500,
+							'description' => 'Maximum number of rows to return',
 						],
 					],
 				],
@@ -475,7 +525,7 @@ class Abilities_Api {
 				'description'         => __( 'Returns ecommerce subscriptions metrics (Burst Pro only).', 'burst-statistics' ),
 				'category'            => self::CATEGORY_SLUG,
 				'input_schema'        => [
-					'type'                 => [ 'object', 'null' ],
+					'type'                 => 'object',
 					'additionalProperties' => false,
 					'properties'           => [
 						'date_start' => [
@@ -493,10 +543,21 @@ class Abilities_Api {
 							'items'       => [ 'type' => 'string' ],
 							'description' => 'Metrics to retrieve',
 						],
+						'filters'    => [
+							'type'        => 'array',
+							'items'       => [ 'type' => 'object' ],
+							'description' => 'Additional filter objects for subscription retrieval',
+						],
 						'group_by'   => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
 							'description' => 'Grouping columns for subscription results',
+						],
+						'limit'      => [
+							'type'        => 'integer',
+							'minimum'     => 1,
+							'maximum'     => 500,
+							'description' => 'Maximum number of rows to return',
 						],
 					],
 				],
@@ -529,7 +590,7 @@ class Abilities_Api {
 	public function permission_callback( mixed $input = null ): bool|\WP_Error {
 		unset( $input );
 
-		if ( $this->user_can_view() ) {
+		if ( $this->user_can_manage() ) {
 			return true;
 		}
 
@@ -834,6 +895,16 @@ class Abilities_Api {
 		}
 
 		$input = is_array( $input ) ? $input : [];
+		return $this->execute_data_request( $input );
+	}
+
+	/**
+	 * Shared implementation for data-like abilities.
+	 *
+	 * @param array<string, mixed> $input Ability input.
+	 * @return array<string, mixed>|\WP_Error
+	 */
+	private function execute_data_request( array $input ): array|\WP_Error {
 
 		if ( ! isset( $input['type'] ) ) {
 			return new \WP_Error(
@@ -855,7 +926,19 @@ class Abilities_Api {
 		$filters    = isset( $input['filters'] ) ? (array) $input['filters'] : [];
 		$group_by   = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'page_url' ];
 		$group_by   = $this->normalize_group_by( $group_by );
-		$limit      = isset( $input['limit'] ) ? absint( $input['limit'] ) : 0;
+		$interval   = $this->normalize_insights_interval( $input['interval'] ?? null );
+
+		// Backward compatibility: if interval is omitted and callers used group_by
+		// for insights, honor the first value as interval hint.
+		if ( 'auto' === $interval && isset( $input['group_by'] ) ) {
+			$insights_group_by = $input['group_by'];
+			if ( is_array( $insights_group_by ) ) {
+				$interval = $this->normalize_insights_interval( $insights_group_by[0] ?? null );
+			} else {
+				$interval = $this->normalize_insights_interval( $insights_group_by );
+			}
+		}
+		$limit = isset( $input['limit'] ) ? absint( $input['limit'] ) : 0;
 
 		try {
 			if ( 'insights' === $type ) {
@@ -864,11 +947,31 @@ class Abilities_Api {
 						'date_start' => $date_start,
 						'date_end'   => $date_end,
 						'metrics'    => $metrics,
+						'group_by'   => $interval,
 					]
 				);
-
 				return $this->format_agent_insights_response( $data, $metrics );
 			} elseif ( 'datatable' === $type ) {
+				$datatable_id = isset( $input['datatable_id'] ) ? sanitize_title( (string) $input['datatable_id'] ) : '';
+				if ( empty( $datatable_id ) ) {
+					return new \WP_Error(
+						'burst_abilities_invalid_input',
+						'The datatable_id parameter is required when type is datatable.',
+						[ 'status' => 400 ]
+					);
+				}
+
+				$allow_list = $admin->app->get_datatable_metric_allow_list();
+				if ( ! isset( $allow_list[ $datatable_id ] ) ) {
+					return new \WP_Error(
+						'burst_abilities_unknown_datatable',
+						'Unknown datatable endpoint.',
+						[ 'status' => 404 ]
+					);
+				}
+
+				$metrics = array_values( array_intersect( $metrics, $allow_list[ $datatable_id ] ) );
+
 				$data = $admin->statistics->get_datatables_data(
 					[
 						'date_start' => $date_start,
@@ -877,6 +980,7 @@ class Abilities_Api {
 						'filters'    => $filters,
 						'group_by'   => $group_by,
 						'limit'      => $limit,
+						'id'         => $datatable_id,
 					]
 				);
 
@@ -924,27 +1028,39 @@ class Abilities_Api {
 
 		$input = is_array( $input ) ? $input : [];
 
-		$date_start = isset( $input['date_start'] ) ? absint( $input['date_start'] ) : 0;
-		$date_end   = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
-		$metrics    = isset( $input['metrics'] ) ? (array) $input['metrics'] : [ 'revenue' ];
-		$group_by   = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'source' ];
-		$group_by   = $this->normalize_group_by( $group_by );
+		$date_start      = isset( $input['date_start'] ) ? absint( $input['date_start'] ) : 0;
+		$date_end        = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
+		$datatable_id    = 'sales_products';
+		$default_metrics = [
+			'product',
+			'sales',
+			'revenue',
+		];
+		$metrics         = isset( $input['metrics'] ) ? (array) $input['metrics'] : $default_metrics;
+		$metrics         = $this->filter_datatable_metrics( $admin, $datatable_id, $metrics, $default_metrics );
+		if ( is_wp_error( $metrics ) ) {
+			return $metrics;
+		}
+		$group_by  = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'product' ];
+		$group_by  = $this->normalize_group_by( $group_by );
+		$limit     = isset( $input['limit'] ) ? absint( $input['limit'] ) : 100;
+		$limit     = max( 1, min( 500, $limit ) );
+		$filters   = $this->normalize_agent_filter_objects( $input['filters'] ?? [] );
+		$filters[] = [
+			'key'   => 'type',
+			'value' => 'purchase',
+		];
 
 		try {
-			// Use the datatables method with ecommerce filter for sales data.
 			$data = $admin->statistics->get_datatables_data(
 				[
 					'date_start' => $date_start,
 					'date_end'   => $date_end,
 					'metrics'    => $metrics,
-					'filters'    => [
-						[
-							'key'   => 'type',
-							'value' => 'purchase',
-						],
-					],
+					'filters'    => $filters,
 					'group_by'   => $group_by,
-					'limit'      => 100,
+					'limit'      => $limit,
+					'id'         => $datatable_id,
 				]
 			);
 
@@ -985,27 +1101,42 @@ class Abilities_Api {
 
 		$input = is_array( $input ) ? $input : [];
 
-		$date_start = isset( $input['date_start'] ) ? absint( $input['date_start'] ) : 0;
-		$date_end   = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
-		$metrics    = isset( $input['metrics'] ) ? (array) $input['metrics'] : [ 'revenue' ];
-		$group_by   = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'source' ];
-		$group_by   = $this->normalize_group_by( $group_by );
+		$date_start      = isset( $input['date_start'] ) ? absint( $input['date_start'] ) : 0;
+		$date_end        = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
+		$datatable_id    = 'subscription_products';
+		$default_metrics = [
+			'plan',
+			'active_subscribers',
+			'canceled_subscribers',
+			'trialling_subscribers',
+			'monthly_recurring_revenue',
+			'product_churn_value',
+		];
+		$metrics         = isset( $input['metrics'] ) ? (array) $input['metrics'] : $default_metrics;
+		$metrics         = $this->filter_datatable_metrics( $admin, $datatable_id, $metrics, $default_metrics );
+		if ( is_wp_error( $metrics ) ) {
+			return $metrics;
+		}
+		$group_by  = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'plan' ];
+		$group_by  = $this->normalize_group_by( $group_by );
+		$limit     = isset( $input['limit'] ) ? absint( $input['limit'] ) : 100;
+		$limit     = max( 1, min( 500, $limit ) );
+		$filters   = $this->normalize_agent_filter_objects( $input['filters'] ?? [] );
+		$filters[] = [
+			'key'   => 'type',
+			'value' => 'subscription',
+		];
 
 		try {
-			// Use the datatables method with ecommerce filter for subscription data.
 			$data = $admin->statistics->get_datatables_data(
 				[
 					'date_start' => $date_start,
 					'date_end'   => $date_end,
 					'metrics'    => $metrics,
-					'filters'    => [
-						[
-							'key'   => 'type',
-							'value' => 'subscription',
-						],
-					],
+					'filters'    => $filters,
 					'group_by'   => $group_by,
-					'limit'      => 100,
+					'limit'      => $limit,
+					'id'         => $datatable_id,
 				]
 			);
 
@@ -1060,6 +1191,51 @@ class Abilities_Api {
 	}
 
 	/**
+	 * Normalize insights interval coming from API clients.
+	 */
+	private function normalize_insights_interval( mixed $interval ): string {
+		if ( ! is_string( $interval ) ) {
+			return 'auto';
+		}
+
+		$interval = strtolower( trim( $interval ) );
+		$allowed  = [ 'auto', 'hour', 'day', 'week', 'month' ];
+
+		return in_array( $interval, $allowed, true ) ? $interval : 'auto';
+	}
+
+	/**
+	 * Normalize generic filter objects passed by agent clients.
+	 *
+	 * @param mixed $filters Input filters; expected array of objects with key/value.
+	 * @return array<int, array{key: string, value: mixed}>
+	 */
+	private function normalize_agent_filter_objects( mixed $filters ): array {
+		if ( ! is_array( $filters ) ) {
+			return [];
+		}
+
+		$normalized = [];
+		foreach ( $filters as $filter ) {
+			if ( ! is_array( $filter ) ) {
+				continue;
+			}
+
+			$key = isset( $filter['key'] ) ? (string) $filter['key'] : '';
+			if ( '' === $key ) {
+				continue;
+			}
+
+			$normalized[] = [
+				'key'   => $key,
+				'value' => $filter['value'] ?? '',
+			];
+		}
+
+		return $normalized;
+	}
+
+	/**
 	 * Normalize group_by keys coming from API clients.
 	 *
 	 * @param array<int, string> $group_by Grouping keys from input.
@@ -1081,6 +1257,52 @@ class Abilities_Api {
 		}
 
 		return array_values( array_unique( $normalized ) );
+	}
+
+	/**
+	 * Restrict requested metrics to the granular datatable endpoint allow-list.
+	 *
+	 * @param Admin              $admin Admin instance.
+	 * @param string             $datatable_id Datatable endpoint ID.
+	 * @param array<int, mixed>  $metrics Requested metric keys.
+	 * @param array<int, string> $fallback_metrics Metrics to use when none of the requested metrics are valid.
+	 * @return array<int, string>|\WP_Error
+	 */
+	private function filter_datatable_metrics( Admin $admin, string $datatable_id, array $metrics, array $fallback_metrics ): array|\WP_Error {
+		$allow_list = $admin->app->get_datatable_metric_allow_list();
+		if ( ! isset( $allow_list[ $datatable_id ] ) ) {
+			return new \WP_Error(
+				'burst_abilities_unknown_datatable',
+				'Unknown datatable endpoint.',
+				[ 'status' => 404 ]
+			);
+		}
+
+		$metrics = array_values(
+			array_unique(
+				array_map(
+					static function ( mixed $metric ): string {
+						return (string) $metric;
+					},
+					$metrics
+				)
+			)
+		);
+
+		$filtered_metrics = array_values( array_intersect( $metrics, $allow_list[ $datatable_id ] ) );
+		if ( empty( $filtered_metrics ) ) {
+			$filtered_metrics = array_values( array_intersect( $fallback_metrics, $allow_list[ $datatable_id ] ) );
+		}
+
+		if ( empty( $filtered_metrics ) ) {
+			return new \WP_Error(
+				'burst_abilities_invalid_metrics',
+				'No valid metrics were requested for this datatable endpoint.',
+				[ 'status' => 400 ]
+			);
+		}
+
+		return $filtered_metrics;
 	}
 
 	/**
@@ -1123,13 +1345,1040 @@ class Abilities_Api {
 			$metrics
 		);
 
+		$raw_rows = is_array( $data['data'] ?? null ) ? $data['data'] : [];
+		$rows     = $this->normalize_agent_datatable_rows( $raw_rows, $group_by, $metrics );
+
 		return [
 			'type'       => 'datatable',
 			'dimensions' => $dimensions,
 			'metrics'    => $metric_defs,
-			'rows'       => is_array( $data['data'] ?? null ) ? $data['data'] : [],
-			'row_count'  => is_array( $data['data'] ?? null ) ? count( $data['data'] ) : 0,
+			'rows'       => $rows,
+			'row_count'  => count( $rows ),
 		];
+	}
+
+	/**
+	 * Normalize datatable rows to match declared dimensions/metrics.
+	 *
+	 * @param array<int, mixed>  $rows Raw data rows.
+	 * @param array<int, string> $group_by Declared dimensions.
+	 * @param array<int, string> $metrics Declared metrics.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function normalize_agent_datatable_rows( array $rows, array $group_by, array $metrics ): array {
+		$normalized = [];
+
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+
+			$out = [];
+
+			foreach ( $group_by as $dimension ) {
+				if ( array_key_exists( $dimension, $row ) ) {
+					$out[ $dimension ] = $row[ $dimension ];
+				}
+			}
+
+			foreach ( $metrics as $metric ) {
+				if ( array_key_exists( $metric, $row ) ) {
+					$out[ $metric ] = $row[ $metric ];
+					continue;
+				}
+
+				if ( 1 === count( $metrics ) && 'pageviews' !== $metric && array_key_exists( 'pageviews', $row ) ) {
+					$out[ $metric ] = $row['pageviews'];
+					continue;
+				}
+
+				$out[ $metric ] = 0;
+			}
+
+			$normalized[] = $out;
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * Register chat REST routes when abilities are enabled.
+	 */
+	public function register_chat_rest_routes(): void {
+		register_rest_route(
+			'burst/v1',
+			'chat',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'rest_api_chat' ],
+				'permission_callback' => [ $this, 'permission_callback' ],
+				'args'                => [
+					'message' => [
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => static function ( $value ): string {
+							return is_scalar( $value ) ? sanitize_textarea_field( (string) $value ) : '';
+						},
+					],
+					'history' => [
+						'required'          => false,
+						'default'           => [],
+						'type'              => 'array',
+						'sanitize_callback' => static function ( $value ): array {
+							return is_array( $value ) ? $value : [];
+						},
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			'burst/v1',
+			'chat/status',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'rest_api_chat_status' ],
+				'permission_callback' => [ $this, 'permission_callback' ],
+			]
+		);
+	}
+
+	/**
+	 * Handle chat actions through the existing do_action fallback channel.
+	 *
+	 * @param mixed                $result Existing action result.
+	 * @param string               $action Action name.
+	 * @param array<string, mixed> $data   Action payload.
+	 */
+	public function handle_ajax_chat_actions( mixed $result, string $action, array $data ): mixed {
+		if ( ! $this->user_can_manage() ) {
+			return $result;
+		}
+
+		if ( 'chat' === $action ) {
+			$request = new \WP_REST_Request();
+			$request->set_param( 'message', $data['message'] ?? '' );
+			$request->set_param( 'history', isset( $data['history'] ) && is_array( $data['history'] ) ? $data['history'] : [] );
+
+			$response = $this->rest_api_chat( $request );
+			if ( is_wp_error( $response ) ) {
+				return [
+					'success' => false,
+					'message' => $response->get_error_message(),
+					'code'    => (int) ( $response->get_error_data()['status'] ?? 500 ),
+				];
+			}
+
+			return is_array( $response->get_data() ) ? $response->get_data() : [];
+		}
+
+		if ( 'chat_status' === $action ) {
+			return self::get_chat_availability();
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Chat endpoint using the WordPress AI Client and Burst abilities.
+	 */
+	public function rest_api_chat( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		$rate_limit = $this->enforce_chat_rate_limit();
+		if ( is_wp_error( $rate_limit ) ) {
+			return $rate_limit;
+		}
+
+		if ( ! self::is_enabled() ) {
+			return new \WP_Error(
+				'burst_chat_disabled',
+				'Abilities API is disabled in Burst settings.',
+				[ 'status' => 403 ]
+			);
+		}
+
+		if (
+			! function_exists( 'wp_ai_client_prompt' )
+			|| ! class_exists( '\\WP_AI_Client_Ability_Function_Resolver' )
+			|| ! class_exists( '\\WordPress\\AiClient\\Messages\\DTO\\Message' )
+			|| ! class_exists( '\\WordPress\\AiClient\\Messages\\DTO\\MessagePart' )
+			|| ! class_exists( '\\WordPress\\AiClient\\Messages\\DTO\\ModelMessage' )
+			|| ! class_exists( '\\WordPress\\AiClient\\Messages\\DTO\\UserMessage' )
+		) {
+			return new \WP_Error(
+				'burst_ai_client_unavailable',
+				'The WordPress AI Client is not available. Please install and activate the AI plugin and configure a connector.',
+				[ 'status' => 503 ]
+			);
+		}
+
+		$this->prime_ai_provider_authentication();
+
+		$message = trim( (string) $request->get_param( 'message' ) );
+		$message = $this->sanitize_chat_text( $message, $this->get_prompt_character_limit() );
+		if ( '' === $message ) {
+			return new \WP_Error(
+				'burst_chat_invalid_prompt',
+				'Message is required.',
+				[ 'status' => 400 ]
+			);
+		}
+
+		$history = $request->get_param( 'history' );
+
+		$messages = $this->normalize_chat_history( is_array( $history ) ? $history : [] );
+		if ( is_wp_error( $messages ) ) {
+			return $messages;
+		}
+
+		$user_message = $this->create_user_message( $message );
+		if ( is_wp_error( $user_message ) ) {
+			return $user_message;
+		}
+
+		$messages[] = $user_message;
+		$this->log_chat_debug(
+			'request_prepared',
+			[
+				'prompt_length'    => strlen( $message ),
+				'history_messages' => count( $messages ),
+			]
+		);
+
+		$now          = time();
+		$month_start  = (int) strtotime( 'first day of this month midnight', $now );
+		$month_end    = (int) strtotime( 'first day of next month midnight', $now ) - 1;
+		$week_start   = (int) strtotime( 'monday this week midnight', $now );
+		$today_start  = (int) strtotime( 'today midnight', $now );
+		$today_end    = $today_start + DAY_IN_SECONDS - 1;
+		$current_date = gmdate( 'l, F j, Y', $now );
+
+		$system_prompt = implode(
+			"\n",
+			[
+				'You are the Burst Analytics assistant.',
+				'Always use available abilities for data lookups and tasks.',
+				'Never fabricate numbers and keep responses concise.',
+				'When calling abilities, prefer exact metric names and date ranges from the user context.',
+				sprintf( 'Today is %s (UTC).', $current_date ),
+				sprintf( 'Current Unix timestamps — today: %d–%d | this week (Mon): %d–now | this month: %d–%d.', $today_start, $today_end, $week_start, $month_start, $month_end ),
+				'Always use these timestamps for relative date references such as "today", "this week", or "this month".',
+			]
+		);
+
+		try {
+			$resolver_class = '\\WP_AI_Client_Ability_Function_Resolver';
+			if ( ! class_exists( $resolver_class ) ) {
+				return new \WP_Error(
+					'burst_ai_client_unavailable',
+					'The WordPress AI Client ability resolver is not available.',
+					[ 'status' => 503 ]
+				);
+			}
+
+			$chat_builder = $this->build_chat_prompt_builder( $messages, $system_prompt, true )
+				->using_model_preference( 'gpt-5-mini' );
+
+			// First pass: get a full result object so we can inspect for tool calls.
+			$result = $chat_builder->generate_text_result();
+
+			if ( is_wp_error( $result ) ) {
+				$this->log_chat_debug(
+					'primary_generate_error',
+					[ 'error' => $result->get_error_message() ]
+				);
+
+				if ( $this->is_provider_protocol_error( $result ) ) {
+					$compat = $this->build_chat_prompt_builder( $messages, $system_prompt, false )
+						->using_model_preference( 'gpt-5-mini' )
+						->generate_text();
+
+					if ( is_wp_error( $compat ) ) {
+						return $result;
+					}
+
+					$assistant_reply = trim( wp_unslash( (string) $compat ) );
+				} else {
+					return $result;
+				}
+			} else {
+				$assistant_reply = '';
+
+				// Extract the model message from the first candidate.
+				$model_msg_obj = null;
+				if ( method_exists( $result, 'getCandidates' ) ) {
+					$candidates = $result->getCandidates();
+					if ( ! empty( $candidates ) && method_exists( $candidates[0], 'getMessage' ) ) {
+						$model_msg_obj = $candidates[0]->getMessage();
+					}
+				}
+
+				// Check whether the model issued any function/tool calls.
+				$has_calls = false;
+				$resolver  = new \WP_AI_Client_Ability_Function_Resolver( ...self::CHAT_ABILITY_LIST );
+				if ( null !== $model_msg_obj && method_exists( $model_msg_obj, 'getParts' ) ) {
+					if ( method_exists( $resolver, 'has_ability_calls' ) ) {
+						$has_calls = $resolver->has_ability_calls( $model_msg_obj );
+					} else {
+						foreach ( $model_msg_obj->getParts() as $part ) {
+							if ( method_exists( $part, 'getFunctionCall' ) && null !== $part->getFunctionCall() ) {
+								$has_calls = true;
+								break;
+							}
+						}
+					}
+				}
+
+				if ( $has_calls && null !== $model_msg_obj ) {
+					// Append the model's tool-call turn then resolve abilities.
+					$messages[] = $model_msg_obj;
+
+					$tool_result_msg = $resolver->execute_abilities( $model_msg_obj );
+
+					if ( null !== $tool_result_msg && ! is_wp_error( $tool_result_msg ) ) {
+						$messages[] = $tool_result_msg;
+					}
+
+					// Second pass: generate the final plain-text answer.
+					$final = $this->build_chat_prompt_builder( $messages, $system_prompt, false )
+						->using_model_preference( 'gpt-5-mini' )
+						->generate_text();
+
+					if ( is_wp_error( $final ) ) {
+						return $final;
+					}
+
+					$assistant_reply = trim( wp_unslash( (string) $final ) );
+				} elseif ( method_exists( $result, 'toText' ) ) {
+					// No tool calls – read the text directly from the result.
+					try {
+						$assistant_reply = trim( wp_unslash( (string) $result->toText() ) );
+					} catch ( \Throwable $e ) {
+						$assistant_reply = '';
+					}
+				}
+			}
+
+			if ( '' === $assistant_reply ) {
+				return new \WP_Error(
+					'burst_ai_client_empty_response',
+					'The AI did not return a response.',
+					[ 'status' => 502 ]
+				);
+			}
+
+			$model_message = $this->create_model_message( $assistant_reply );
+			if ( ! is_wp_error( $model_message ) ) {
+				$messages[] = $model_message;
+			}
+
+			return new \WP_REST_Response(
+				[
+					'reply'   => $assistant_reply,
+					'history' => $this->serialize_chat_history( $messages ),
+				],
+				200
+			);
+		} catch ( \Throwable $throwable ) {
+			$this->log_chat_debug(
+				'chat_exception',
+				[
+					'exception' => get_class( $throwable ),
+					'message'   => $throwable->getMessage(),
+					'code'      => $throwable->getCode(),
+				]
+			);
+
+			$message     = $throwable->getMessage();
+			$status_code = 500;
+
+			if ( '' !== $message && false !== stripos( $message, 'provider' ) && false !== stripos( $message, 'not configured' ) ) {
+				$status_code = 503;
+			}
+
+			$error_data = [
+				'status'      => $status_code,
+				'diagnostics' => $this->get_ai_provider_diagnostics(),
+			];
+
+			$expose_exception = (bool) apply_filters( 'burst_chat_expose_exception', false );
+			if ( $expose_exception ) {
+				$error_data['exception'] = get_class( $throwable ) . ': ' . $message;
+			}
+
+			return new \WP_Error(
+				'burst_ai_client_exception',
+				'Unable to generate a chat response right now.',
+				$error_data
+			);
+		}
+	}
+
+	/**
+	 * Chat status endpoint for dashboard availability checks.
+	 */
+	public function rest_api_chat_status(): \WP_REST_Response {
+		return new \WP_REST_Response( self::get_chat_availability(), 200 );
+	}
+
+	/**
+	 * Shared chat availability payload with extension filter.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function get_chat_availability(): array {
+		$instance = new self();
+		$payload  = $instance->build_chat_availability();
+
+		return apply_filters( 'burst_chat_availability', $payload );
+	}
+
+	/**
+	 * Normalize incoming history payload into SDK message objects.
+	 *
+	 * @param array<int, mixed> $history
+	 * @return array<int, object>|\WP_Error
+	 */
+	private function normalize_chat_history( array $history ): array|\WP_Error {
+		$messages      = [];
+		$history       = array_slice( $history, -1 * $this->get_history_max_items() );
+		$text_limit    = $this->get_prompt_character_limit();
+		$parts_limit   = $this->get_parts_max_items();
+		$message_class = implode( '\\', [ 'WordPress', 'AiClient', 'Messages', 'DTO', 'Message' ] );
+
+		foreach ( $history as $index => $raw_message ) {
+			if ( ! is_array( $raw_message ) ) {
+				return new \WP_Error(
+					'burst_chat_invalid_history',
+					sprintf( 'History item %d is invalid.', (int) $index ),
+					[ 'status' => 400 ]
+				);
+			}
+
+			$role = $this->sanitize_history_role( $raw_message['role'] ?? '' );
+			if ( '' === $role ) {
+				return new \WP_Error(
+					'burst_chat_invalid_history',
+					sprintf( 'History item %d has an unsupported role.', (int) $index ),
+					[ 'status' => 400 ]
+				);
+			}
+
+			if ( isset( $raw_message['parts'] ) && is_array( $raw_message['parts'] ) ) {
+				if ( ! class_exists( $message_class ) ) {
+					return new \WP_Error(
+						'burst_ai_client_unavailable',
+						'The WordPress AI Client message classes are not available.',
+						[ 'status' => 503 ]
+					);
+				}
+
+				$parts = array_slice( $raw_message['parts'], 0, $parts_limit );
+				$parts = array_values(
+					array_filter(
+						array_map( [ $this, 'sanitize_chat_part' ], $parts ),
+						static fn( $part ): bool => null !== $part
+					)
+				);
+
+				$normalized = [
+					'role'  => $role,
+					'parts' => $parts,
+				];
+
+				try {
+					$messages[] = call_user_func( [ $message_class, 'fromArray' ], $normalized );
+					continue;
+				} catch ( \Throwable $e ) {
+					return new \WP_Error(
+						'burst_chat_invalid_history',
+						sprintf( 'History item %d has invalid message parts.', (int) $index ),
+						[ 'status' => 400 ]
+					);
+				}
+			}
+
+			$content = isset( $raw_message['content'] ) ? $this->sanitize_chat_text( (string) $raw_message['content'], $text_limit ) : '';
+
+			if ( 'model' === $role ) {
+				$model_message = $this->create_model_message( $content );
+				if ( is_wp_error( $model_message ) ) {
+					return $model_message;
+				}
+
+				$messages[] = $model_message;
+			} elseif ( 'user' === $role ) {
+				$user_message = $this->create_user_message( $content );
+				if ( is_wp_error( $user_message ) ) {
+					return $user_message;
+				}
+
+				$messages[] = $user_message;
+			}
+		}
+
+		return $messages;
+	}
+
+	/**
+	 * Build a chat prompt builder with a service-aware fallback.
+	 *
+	 * @throws \RuntimeException When the AI client prompt builder is unavailable.
+	 */
+	private function build_chat_prompt_builder( array $messages, string $system_prompt, bool $with_abilities = true ): object {
+		if ( function_exists( 'WordPress\\AI\\get_ai_service' ) ) {
+			$builder = \WordPress\AI\get_ai_service()->create_textgen_prompt();
+		} else {
+			if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
+				throw new \RuntimeException( 'wp_ai_client_prompt is unavailable.' );
+			}
+
+			$builder = wp_ai_client_prompt();
+		}
+
+		$builder = $builder
+			->with_history( ...$messages )
+			->using_system_instruction( $system_prompt );
+
+		if ( $with_abilities ) {
+			$declarations = $this->get_normalized_chat_function_declarations();
+			if ( ! empty( $declarations ) ) {
+				$builder = $builder->using_function_declarations( ...$declarations );
+			}
+		}
+
+		return $builder;
+	}
+
+	/**
+	 * Build tool declarations with provider-compatible input schemas.
+	 *
+	 * @return array<int, object>
+	 */
+	private function get_normalized_chat_function_declarations(): array {
+		$declaration_class = '\\WordPress\\AiClient\\Tools\\DTO\\FunctionDeclaration';
+
+		if ( ! function_exists( 'wp_get_ability' ) || ! class_exists( $declaration_class ) ) {
+			return [];
+		}
+
+		$declarations = [];
+
+		foreach ( self::CHAT_ABILITY_LIST as $ability_name ) {
+			$ability = wp_get_ability( $ability_name );
+			if ( null === $ability ) {
+				continue;
+			}
+
+			$function_name = $this->ability_name_to_function_name( $ability->get_name() );
+			$input_schema  = $this->normalize_tool_input_schema( $ability->get_input_schema() );
+
+			$declarations[] = new $declaration_class(
+				$function_name,
+				$ability->get_description(),
+				$input_schema
+			);
+		}
+
+		return $declarations;
+	}
+
+	/**
+	 * Normalize ability input schema to providers that require type=object.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function normalize_tool_input_schema( mixed $schema ): array {
+		if ( ! is_array( $schema ) ) {
+			$schema = [];
+		}
+
+		$type = $schema['type'] ?? 'object';
+		if ( is_array( $type ) ) {
+			$schema['type'] = 'object';
+		} elseif ( ! is_string( $type ) || 'object' !== $type ) {
+			$schema['type'] = 'object';
+		}
+
+		if ( isset( $schema['properties'] ) ) {
+			if ( ! is_array( $schema['properties'] ) || array_is_list( $schema['properties'] ) || empty( $schema['properties'] ) ) {
+				unset( $schema['properties'] );
+			} else {
+				foreach ( $schema['properties'] as $property_name => $property_schema ) {
+					if ( ! is_string( $property_name ) ) {
+						unset( $schema['properties'][ $property_name ] );
+						continue;
+					}
+
+					$schema['properties'][ $property_name ] = $this->normalize_schema_branch( $property_schema );
+				}
+
+				if ( empty( $schema['properties'] ) ) {
+					unset( $schema['properties'] );
+				}
+			}
+		}
+
+		return $schema;
+	}
+
+	/**
+	 * Recursively normalize JSON schema branches for provider compatibility.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function normalize_schema_branch( mixed $branch ): array {
+		if ( ! is_array( $branch ) ) {
+			return [ 'type' => 'string' ];
+		}
+
+		if ( isset( $branch['type'] ) && is_array( $branch['type'] ) ) {
+			$preferred_types = [ 'object', 'array', 'string', 'number', 'integer', 'boolean' ];
+			foreach ( $preferred_types as $preferred_type ) {
+				if ( in_array( $preferred_type, $branch['type'], true ) ) {
+					$branch['type'] = $preferred_type;
+					break;
+				}
+			}
+		}
+
+		if ( isset( $branch['type'] ) && 'object' === $branch['type'] ) {
+			if ( isset( $branch['properties'] ) ) {
+				if ( ! is_array( $branch['properties'] ) || array_is_list( $branch['properties'] ) || empty( $branch['properties'] ) ) {
+					unset( $branch['properties'] );
+				} else {
+					foreach ( $branch['properties'] as $property_name => $property_schema ) {
+						if ( ! is_string( $property_name ) ) {
+							unset( $branch['properties'][ $property_name ] );
+							continue;
+						}
+
+						$branch['properties'][ $property_name ] = $this->normalize_schema_branch( $property_schema );
+					}
+					if ( empty( $branch['properties'] ) ) {
+						unset( $branch['properties'] );
+					}
+				}
+			}
+		}
+
+		if ( isset( $branch['items'] ) ) {
+			if ( is_array( $branch['items'] ) ) {
+				$branch['items'] = $this->normalize_schema_branch( $branch['items'] );
+			} else {
+				unset( $branch['items'] );
+			}
+		}
+
+		foreach ( [ 'anyOf', 'allOf', 'oneOf' ] as $combinator ) {
+			if ( isset( $branch[ $combinator ] ) && is_array( $branch[ $combinator ] ) ) {
+				$branch[ $combinator ] = array_values(
+					array_map( [ $this, 'normalize_schema_branch' ], $branch[ $combinator ] )
+				);
+			}
+		}
+
+		return $branch;
+	}
+
+	/**
+	 * Ensure AI provider request authentication is set from connector options.
+	 */
+	private function prime_ai_provider_authentication(): void {
+		if ( ! class_exists( '\\WordPress\\AiClient\\AiClient' ) ) {
+			return;
+		}
+
+		try {
+			$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+		} catch ( \Throwable $e ) {
+			return;
+		}
+
+		$this->ensure_ai_providers_registered( $registry );
+
+		foreach ( $registry->getRegisteredProviderIds() as $provider_id ) {
+			$option_name = 'connectors_ai_' . str_replace( '-', '_', $provider_id ) . '_api_key';
+			$api_key     = get_option( $option_name, '' );
+
+			if ( ! is_string( $api_key ) || '' === $api_key ) {
+				continue;
+			}
+
+			try {
+				$provider_class = $registry->getProviderClassName( $provider_id );
+				$auth_method    = $provider_class::metadata()->getAuthenticationMethod();
+				$auth_class     = $auth_method ? $auth_method->getImplementationClass() : null;
+
+				if ( ! is_string( $auth_class ) || ! class_exists( $auth_class ) || ! method_exists( $auth_class, 'fromArray' ) ) {
+					continue;
+				}
+
+				$registry->setProviderRequestAuthentication(
+					$provider_id,
+					$auth_class::fromArray( [ 'apiKey' => $api_key ] )
+				);
+			} catch ( \Throwable $e ) {
+				continue;
+			}
+		}
+	}
+
+	/**
+	 * Provide non-sensitive AI provider diagnostics for troubleshooting.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function get_ai_provider_diagnostics(): array {
+		if ( ! class_exists( '\\WordPress\\AiClient\\AiClient' ) ) {
+			return [ 'ai_client_loaded' => false ];
+		}
+
+		try {
+			$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+			$this->ensure_ai_providers_registered( $registry );
+			$providers = [];
+
+			foreach ( $registry->getRegisteredProviderIds() as $provider_id ) {
+				$option_name = 'connectors_ai_' . str_replace( '-', '_', $provider_id ) . '_api_key';
+				$api_key     = get_option( $option_name, '' );
+
+				$providers[ $provider_id ] = [
+					'api_key_present' => is_string( $api_key ) && '' !== $api_key,
+					'is_configured'   => $registry->isProviderConfigured( $provider_id ),
+				];
+			}
+
+			return [
+				'ai_client_loaded' => true,
+				'providers'        => $providers,
+			];
+		} catch ( \Throwable $e ) {
+			return [
+				'ai_client_loaded' => true,
+				'error'            => $e->getMessage(),
+			];
+		}
+	}
+
+	/**
+	 * Build non-sensitive chat availability flags for the dashboard UI.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function build_chat_availability(): array {
+		$abilities_enabled = self::is_enabled();
+		$ai_client_loaded  =
+			function_exists( 'wp_ai_client_prompt' )
+			&& class_exists( '\\WP_AI_Client_Ability_Function_Resolver' )
+			&& class_exists( '\\WordPress\\AiClient\\Messages\\DTO\\Message' )
+			&& class_exists( '\\WordPress\\AiClient\\Messages\\DTO\\MessagePart' )
+			&& class_exists( '\\WordPress\\AiClient\\Messages\\DTO\\ModelMessage' )
+			&& class_exists( '\\WordPress\\AiClient\\Messages\\DTO\\UserMessage' );
+
+		$has_configured_provider = false;
+		if ( $ai_client_loaded ) {
+			$diagnostics = $this->get_ai_provider_diagnostics();
+			$providers   = isset( $diagnostics['providers'] ) && is_array( $diagnostics['providers'] ) ? $diagnostics['providers'] : [];
+
+			foreach ( $providers as $provider ) {
+				if ( is_array( $provider ) && ! empty( $provider['is_configured'] ) ) {
+					$has_configured_provider = true;
+					break;
+				}
+			}
+		}
+
+		$enabled         = $abilities_enabled && $ai_client_loaded;
+		$disabled_reason = '';
+
+		if ( ! $abilities_enabled ) {
+			$disabled_reason = 'Abilities API is disabled in Burst settings.';
+		} elseif ( ! $ai_client_loaded ) {
+			$disabled_reason = 'To enable the AI chat, please install and configure the WordPress AI plugin.';
+		}
+
+		return [
+			'enabled'                 => $enabled,
+			'abilities_enabled'       => $abilities_enabled,
+			'ai_client_loaded'        => $ai_client_loaded,
+			'has_configured_provider' => $has_configured_provider,
+			'disabled_reason'         => $disabled_reason,
+		];
+	}
+
+	/**
+	 * Register known provider classes if they are installed but not yet registered.
+	 *
+	 * @param object $registry AI provider registry instance.
+	 */
+	private function ensure_ai_providers_registered( object $registry ): void {
+		if ( ! method_exists( $registry, 'hasProvider' ) || ! method_exists( $registry, 'registerProvider' ) ) {
+			return;
+		}
+
+		$providers = [
+			[
+				'class'       => '\\WordPress\\AnthropicAiProvider\\Provider\\AnthropicProvider',
+				'plugin_file' => WP_PLUGIN_DIR . '/ai-provider-for-anthropic/plugin.php',
+			],
+			[
+				'class'       => '\\WordPress\\OpenAiProvider\\Provider\\OpenAiProvider',
+				'plugin_file' => WP_PLUGIN_DIR . '/ai-provider-for-openai/plugin.php',
+			],
+			[
+				'class'       => '\\WordPress\\GoogleAiProvider\\Provider\\GoogleProvider',
+				'plugin_file' => WP_PLUGIN_DIR . '/ai-provider-for-google/plugin.php',
+			],
+		];
+
+		foreach ( $providers as $provider ) {
+			$provider_class = $provider['class'];
+			$plugin_file    = $provider['plugin_file'];
+
+			if ( ! class_exists( $provider_class ) && is_file( $plugin_file ) ) {
+				require_once $plugin_file;
+			}
+
+			if ( ! class_exists( $provider_class ) ) {
+				continue;
+			}
+
+			if ( $registry->hasProvider( $provider_class ) ) {
+				continue;
+			}
+
+			try {
+				$registry->registerProvider( $provider_class );
+			} catch ( \Throwable $e ) {
+				continue;
+			}
+		}
+	}
+
+	/**
+	 * Convert normalized message objects to JSON-serializable array data.
+	 *
+	 * @param array<int, object> $messages
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function serialize_chat_history( array $messages ): array {
+		return array_map(
+			static function ( object $message ): array {
+				if ( method_exists( $message, 'toArray' ) ) {
+					return $message->toArray();
+				}
+
+				return [];
+			},
+			$messages
+		);
+	}
+
+	/**
+	 * Detect provider protocol/format errors that should trigger compatibility fallback.
+	 */
+	private function is_provider_protocol_error( \WP_Error $error ): bool {
+		$error_message = $error->get_error_message();
+
+		return false !== stripos( $error_message, 'Unexpected Anthropic API response' )
+			|| false !== stripos( $error_message, 'tool_result' )
+			|| false !== stripos( $error_message, 'tool_use' )
+			|| false !== stripos( $error_message, 'Missing the "content" key' );
+	}
+
+	/**
+	 * Determine whether chat debug logging is enabled.
+	 */
+	private function is_chat_debug_enabled(): bool {
+		$enabled = defined( 'WP_DEBUG' ) ? (bool) constant( 'WP_DEBUG' ) : false;
+
+		return (bool) apply_filters( 'burst_chat_debug', $enabled );
+	}
+
+	/**
+	 * Write structured chat debug logs when enabled.
+	 *
+	 * @param string               $event   Event identifier.
+	 * @param array<string, mixed> $context Optional context data.
+	 */
+	private function log_chat_debug( string $event, array $context = [] ): void {
+		if ( ! $this->is_chat_debug_enabled() ) {
+			return;
+		}
+
+		$payload = [
+			'event'   => $event,
+			'context' => $context,
+		];
+
+		wp_trigger_error( __METHOD__, '[Burst Chat Debug] ' . wp_json_encode( $payload ), E_USER_NOTICE );
+	}
+
+	/**
+	 * Apply a dedicated per-user chat rate limit.
+	 */
+	private function enforce_chat_rate_limit(): bool|\WP_Error {
+		$user_id = get_current_user_id();
+		if ( $user_id <= 0 ) {
+			return new \WP_Error(
+				'burst_chat_forbidden',
+				'You are not allowed to use this endpoint.',
+				[ 'status' => 403 ]
+			);
+		}
+
+		$window = max( 1, (int) apply_filters( 'burst_chat_rate_limit_window', 60 ) );
+		$max    = max( 1, (int) apply_filters( 'burst_chat_rate_limit_max', 20 ) );
+		$bucket = (int) floor( time() / $window );
+		$key    = 'burst_chat_rl_' . $user_id . '_' . $bucket;
+
+		$count = (int) get_transient( $key );
+		if ( $count >= $max ) {
+			return new \WP_Error(
+				'burst_chat_rate_limited',
+				'Too many chat requests. Please try again shortly.',
+				[ 'status' => 429 ]
+			);
+		}
+
+		set_transient( $key, $count + 1, $window );
+		return true;
+	}
+
+	/**
+	 * Convert an ability name (for example burst/data) to AI function name.
+	 */
+	private function ability_name_to_function_name( string $ability_name ): string {
+		$normalized = str_replace( [ '/', '-' ], '__', $ability_name );
+
+		return 'wpab__' . ltrim( $normalized, '_' );
+	}
+
+	/**
+	 * Create a UserMessage from plain text with runtime class guards.
+	 */
+	private function create_user_message( string $text ): mixed {
+		$part = $this->create_message_part( $text );
+		if ( is_wp_error( $part ) ) {
+			return $part;
+		}
+
+		$message_class = '\\WordPress\\AiClient\\Messages\\DTO\\UserMessage';
+		if ( ! class_exists( $message_class ) ) {
+			return new \WP_Error(
+				'burst_ai_client_unavailable',
+				'The WordPress AI Client user message class is not available.',
+				[ 'status' => 503 ]
+			);
+		}
+
+		return new $message_class( [ $part ] );
+	}
+
+	/**
+	 * Create a ModelMessage from plain text with runtime class guards.
+	 */
+	private function create_model_message( string $text ): mixed {
+		$part = $this->create_message_part( $text );
+		if ( is_wp_error( $part ) ) {
+			return $part;
+		}
+
+		$message_class = '\\WordPress\\AiClient\\Messages\\DTO\\ModelMessage';
+		if ( ! class_exists( $message_class ) ) {
+			return new \WP_Error(
+				'burst_ai_client_unavailable',
+				'The WordPress AI Client model message class is not available.',
+				[ 'status' => 503 ]
+			);
+		}
+
+		return new $message_class( [ $part ] );
+	}
+
+	/**
+	 * Create a MessagePart from plain text with runtime class guards.
+	 */
+	private function create_message_part( string $text ): mixed {
+		$part_class = '\\WordPress\\AiClient\\Messages\\DTO\\MessagePart';
+		if ( ! class_exists( $part_class ) ) {
+			return new \WP_Error(
+				'burst_ai_client_unavailable',
+				'The WordPress AI Client message part class is not available.',
+				[ 'status' => 503 ]
+			);
+		}
+
+		return new $part_class( $text );
+	}
+
+	/**
+	 * Normalize and sanitize a chat history role.
+	 */
+	private function sanitize_history_role( mixed $role ): string {
+		$normalized = sanitize_key( (string) $role );
+		if ( 'assistant' === $normalized ) {
+			$normalized = 'model';
+		}
+
+		return in_array( $normalized, [ 'user', 'model' ], true ) ? $normalized : '';
+	}
+
+	/**
+	 * Normalize and sanitize message part arrays.
+	 *
+	 * @param mixed $part Raw part.
+	 * @return array<string, string>|null
+	 */
+	private function sanitize_chat_part( mixed $part ): ?array {
+		if ( ! is_array( $part ) ) {
+			return null;
+		}
+
+		$channel = sanitize_key( (string) ( $part['channel'] ?? '' ) );
+		if ( '' === $channel ) {
+			$channel = 'content';
+		}
+
+		$text = $this->sanitize_chat_text( (string) ( $part['text'] ?? '' ), $this->get_prompt_character_limit() );
+
+		return [
+			'channel' => $channel,
+			'text'    => $text,
+		];
+	}
+
+	/**
+	 * Sanitize and clamp freeform chat text.
+	 */
+	private function sanitize_chat_text( string $text, int $max_length ): string {
+		$sanitized = sanitize_textarea_field( $text );
+		if ( strlen( $sanitized ) > $max_length ) {
+			$sanitized = substr( $sanitized, 0, $max_length );
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * Chat prompt input max character limit.
+	 */
+	private function get_prompt_character_limit(): int {
+		return max( 1, (int) apply_filters( 'burst_chat_prompt_max_length', 8000 ) );
+	}
+
+	/**
+	 * Chat history max item count.
+	 */
+	private function get_history_max_items(): int {
+		return max( 1, (int) apply_filters( 'burst_chat_history_max_items', 40 ) );
+	}
+
+	/**
+	 * Message part max count per history message.
+	 */
+	private function get_parts_max_items(): int {
+		return max( 1, (int) apply_filters( 'burst_chat_parts_max_items', 50 ) );
 	}
 
 	/**
@@ -1204,9 +2453,9 @@ class Abilities_Api {
 	 */
 	private function empty_object_schema(): array {
 		return [
-			'type'                 => [ 'object', 'null' ],
+			'type'                 => 'object',
 			'additionalProperties' => false,
-			'properties'           => [],
+			'properties'           => (object) [],
 		];
 	}
 }

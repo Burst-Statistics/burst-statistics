@@ -13,7 +13,7 @@ import { getData } from '@/utils/api';
  */
 export async function fetchRevenueData({ startDate, endDate, range, filters, chartMode }) {
 	const { data } = await getData(
-		'subscriptions-revenue-chart',
+		'ecommerce/subscriptions-revenue-chart',
 		startDate,
 		endDate,
 		range,

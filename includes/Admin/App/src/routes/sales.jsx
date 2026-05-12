@@ -129,7 +129,7 @@ function SalesComponent() {
 			<ErrorBoundary>
 				<DataTableBlock
 					allowedConfigs={[ 'products' ]}
-					id={'6'}
+					id="sales_products"
 					isEcommerce={true}
 				/>
 			</ErrorBoundary>

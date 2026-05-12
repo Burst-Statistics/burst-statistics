@@ -157,8 +157,8 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 * @return array<string, mixed> The modified output array.
 		 */
 		public function get_action_handler( array $output, string $action, ?array $data ): array {
-			if ( $action === 'report-data' ) {
-				return $this->get_report_data( $data );
+			if ( $action === 'story-report-data' ) {
+				return $this->get_story_report_data( $data );
 			}
 			return $output;
 		}
@@ -415,20 +415,24 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 * @param array $data The REST request object.
 		 * @return array The response.
 		 */
-		public function get_report_data( array $data ): array {
-			$token       = $data['token'];
+		public function get_story_report_data( array $data ): array {
+			if ( empty( $data['token'] ) || ! self::validate_share_token( $data['token'] ) ) {
+				return [];
+			}
+
 			$share       = new Share();
+			$token       = $data['token'];
 			$report      = null;
-			$share_links = $share->get_share_links( 'report', $token );
+			$share_links = $share->tokens->get_share_links( 'report', $token );
 
 			if ( ! empty( $share_links ) ) {
-				// get first share link.
-				$share_links           = array_values( $share_links );
-				$share_link            = $share_links[0];
-				$report_id             = $share_link['report_id'];
-				$is_share_link_request = $this->is_shared_link_request();
-				$report                = new Report( $report_id, $is_share_link_request );
+				// Get first share link.
+				$share_links = array_values( $share_links );
+				$share_link  = $share_links[0];
+				$report_id   = $share_link['report_id'];
+				$report      = new Report( $report_id, true );
 			}
+
 			if ( ob_get_length() ) {
 				ob_clean();
 			}
@@ -1092,7 +1096,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 */
 		public function get_story_url( int $report_id ): string {
 			$share       = new Share();
-			$share_links = $share->get_share_links( 'report', '', $report_id );
+			$share_links = $share->tokens->get_share_links( 'report', '', $report_id );
 
 			if ( ! empty( $share_links ) ) {
 				$share_links = array_values( $share_links );
@@ -1100,8 +1104,9 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				$token       = $share_link['token'];
 				// During cron, site_url() may return http:// while the site runs on https://.
 				// Normalize to the same scheme as BURST_URL to ensure the link is correct.
+				// Story links are now first-class path routes on /burst-dashboard/story/.
 				$burst_scheme = wp_parse_url( BURST_URL, PHP_URL_SCHEME );
-				return set_url_scheme( site_url( '/burst-dashboard/?burst_share_token=' . $token . '#/story' ), $burst_scheme );
+				return set_url_scheme( site_url( '/burst-dashboard/story/?burst_share_token=' . $token ), $burst_scheme );
 			}
 			return '';
 		}

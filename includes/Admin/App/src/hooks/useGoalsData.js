@@ -10,6 +10,7 @@ import { toast } from '@/utils/toast';
 import { __ } from '@wordpress/i18n';
 import { produce } from 'immer';
 import useLicenseData from '@/hooks/useLicenseData';
+import useShareableLinkStore from '@/store/useShareableLinkStore';
 
 /**
  * Custom hook for managing goals data using TanStack Query.
@@ -21,6 +22,10 @@ import useLicenseData from '@/hooks/useLicenseData';
 const useGoalsData = () => {
 	const queryClient = useQueryClient();
 	const { isPro } = useLicenseData();
+	const { isShareableLinkViewer, userCanFilter } = useShareableLinkStore();
+
+	// Shared viewers without filter permission should not fetch goals.
+	const shouldFetchGoals = ! isShareableLinkViewer || userCanFilter;
 
 	// Main query to fetch goals, predefined goals, and goal fields
 	const goalsQuery = useQuery({
@@ -33,6 +38,7 @@ const useGoalsData = () => {
 				goalFields: Object.values( response.goalFields || {})
 			};
 		},
+		enabled: shouldFetchGoals,
 		retry: 1
 	});
 

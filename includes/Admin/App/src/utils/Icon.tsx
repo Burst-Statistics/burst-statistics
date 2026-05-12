@@ -109,7 +109,8 @@ import {
 	Settings2,
 	Key,
 	SlidersVertical,
-	HardDrive
+	HardDrive,
+	MessageCircle
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -255,10 +256,11 @@ const iconComponents = {
 	pencil: Pencil,
 	'grip-vertical': GripVertical,
 	'move-right': MoveRight,
-	'preferences': Settings2,
-	'key': Key,
+	preferences: Settings2,
+	key: Key,
 	'sliders-vertical': SlidersVertical,
 	'hard-drive': HardDrive,
+	chat: MessageCircle,
 
 	// Sales & subscription metric icons
 	banknote: Banknote,

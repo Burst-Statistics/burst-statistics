@@ -153,7 +153,7 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 				[
 					'methods'             => 'GET',
 					'callback'            => [ $this, 'install_plugin' ],
-					'permission_callback' => [ $this, 'has_permission' ],
+					'permission_callback' => [ $this, 'has_install_permission' ],
 				]
 			);
 
@@ -242,6 +242,31 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 		 */
 		public function has_permission(): bool {
 			return current_user_can( 'activate_plugins' );
+		}
+
+		/**
+		 * Plugin installation requires the install_plugins capability,
+		 * which WordPress separates from activate_plugins.
+		 */
+		public function has_install_permission(): bool {
+			return current_user_can( 'install_plugins' );
+		}
+
+		/**
+		 * Verify a download link points at one of our official update/license hosts,
+		 * so an attacker cannot supply an arbitrary zip URL to Plugin_Upgrader::install().
+		 */
+		private function is_allowed_download_host( string $url ): bool {
+			$host = wp_parse_url( $url, PHP_URL_HOST );
+			if ( ! is_string( $host ) || $host === '' ) {
+				return false;
+			}
+			$allowed = [
+				'license.burst-statistics.com',
+				'licensing.burst-statistics.com',
+				'burst-statistics.com',
+			];
+			return in_array( strtolower( $host ), $allowed, true );
 		}
 
 		/**
@@ -671,6 +696,15 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 				];
 			}
 
+			// cache key only, not used for security.
+			// phpcs:ignore
+			// nosemgrep
+			$cache_key = 'burst_validate_license_' . md5( $license . '|' . $item_id );
+			$cached    = get_transient( $cache_key );
+			if ( is_array( $cached ) && array_key_exists( 'success', $cached ) && array_key_exists( 'message', $cached ) ) {
+				return $cached;
+			}
+
 			// data to send in our API request.
 			$api_params = [
 				'edd_action' => 'activate_license',
@@ -750,10 +784,12 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 				}
 			}
 
-			return [
+			$result = [
 				'success' => $success,
 				'message' => $message,
 			];
+			set_transient( $cache_key, $result, 5 * MINUTE_IN_SECONDS );
+			return $result;
 		}
 
 
@@ -808,7 +844,7 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 			$license       = $params['license'] ?? '';
 			$item_id       = $params['item_id'] ?? 0;
 
-			if ( ! $this->has_permission()
+			if ( ! $this->has_install_permission()
 				|| empty( $nonce )
 				|| empty( $download_link )
 				|| empty( $license )
@@ -820,6 +856,24 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 			if ( ! $error && $this->verify_nonce( $nonce ) ) {
 
 				$download_link = esc_url_raw( $download_link );
+				if ( ! $this->is_allowed_download_host( $download_link ) ) {
+					$response = [
+						'success' => false,
+						'message' => __( 'Download URL is not from an allowed host.', 'burst-statistics' ),
+					];
+					return $this->response( false, $response, '', 200 );
+				}
+
+				$license_check = $this->validate_license( $this->sanitize_license_key( $license ), (int) $item_id );
+				if ( empty( $license_check['success'] ) ) {
+					$response = [
+						'success' => false,
+						'message' => ! empty( $license_check['message'] )
+							? $license_check['message']
+							: __( 'Invalid license.', 'burst-statistics' ),
+					];
+					return $this->response( false, $response, '', 200 );
+				}
 				require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 				require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
 				require_once ABSPATH . 'wp-admin/includes/plugin.php';

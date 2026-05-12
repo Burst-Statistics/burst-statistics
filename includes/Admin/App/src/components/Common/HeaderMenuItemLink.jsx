@@ -8,6 +8,7 @@ import {
 	TRAILING_PARAM_KEY
 } from '@/hooks/useFilters';
 import { useFiltersStore } from '@/store/useFiltersStore';
+import useShareableLinkStore from '@/store/useShareableLinkStore';
 import Icon from '@/utils/Icon';
 
 /**
@@ -66,13 +67,22 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => 
 	const isTargetFilterEnabled = isFilterEnabledRoute( targetUrl );
 
 	// Build search params to preserve when navigating to filter-enabled routes.
+	const isShareableLinkViewer = useShareableLinkStore( ( state ) => state.isShareableLinkViewer );
 	const preservedSearch = useMemo( () => {
-		if ( ! isTargetFilterEnabled ) {
-			return undefined;
+		const filterParams = {};
+
+		// Always preserve the share token for shared viewers.
+		if ( isShareableLinkViewer && searchParams.burst_share_token ) {
+			filterParams.burst_share_token = searchParams.burst_share_token;
 		}
 
-		// First, try to extract filter params from current URL search.
-		const filterParams = {};
+		if ( ! isTargetFilterEnabled ) {
+
+			// Even on non-filter routes, return the share token if present.
+			return 0 < Object.keys( filterParams ).length ? filterParams : undefined;
+		}
+
+		// Extract filter params from current URL search.
 		FILTER_KEYS.forEach( ( key ) => {
 			if ( searchParams[key] && '' !== searchParams[key]) {
 				filterParams[key] = searchParams[key];
@@ -81,7 +91,8 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => 
 
 		// If no filters in URL, fall back to saved filters from Zustand store.
 		// This handles navigation from non-filter routes (like /settings/*) back to filter routes.
-		if ( 0 === Object.keys( filterParams ).length && savedFilters ) {
+		const hasAnyFilterParams = FILTER_KEYS.some( ( key ) => filterParams[key]);
+		if ( ! hasAnyFilterParams && savedFilters ) {
 			FILTER_KEYS.forEach( ( key ) => {
 				if ( savedFilters[key] && '' !== savedFilters[key]) {
 					filterParams[key] = savedFilters[key];
@@ -89,7 +100,7 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => 
 			});
 		}
 
-		// Only return params if we have any filters to preserve.
+		// Only return params if we have anything to preserve.
 		if ( 0 === Object.keys( filterParams ).length ) {
 			return undefined;
 		}
@@ -98,7 +109,7 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => 
 		filterParams[TRAILING_PARAM_KEY] = '';
 
 		return filterParams;
-	}, [ searchParams, isTargetFilterEnabled, savedFilters ]);
+	}, [ searchParams, isTargetFilterEnabled, savedFilters, isShareableLinkViewer ]);
 
 	// TanStack Link exposes `isActive` inside render props, so we mirror it to state.
 	// Ref holds the latest value during render; syncing to state lets effects run after

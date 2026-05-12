@@ -979,6 +979,79 @@ class Statistics {
 	}
 
 	/**
+	 * Generate dummy data for datatable display.
+	 *
+	 * @return array Array of dummy data rows.
+	 */
+	public function get_dummy_datatable_data(): array {
+		$page_urls = [
+			'/',
+			'/about-us',
+			'/contact',
+			'/blog',
+			'/pricing',
+			'/products',
+			'/features',
+			'/services',
+			'/shop',
+			'/checkout',
+			'/cart',
+			'/faq',
+			'/documentation',
+			'/case-studies',
+			'/testimonials',
+			'/careers',
+			'/privacy-policy',
+			'/terms-and-conditions',
+			'/integrations',
+			'/landing-page',
+		];
+
+		$dummy_rows = [];
+
+		for ( $i = 0; $i < 15; $i++ ) {
+			$pageviews             = wp_rand( 800, 5000 );
+			$visitors              = wp_rand( (int) ( $pageviews * 0.6 ), (int) ( $pageviews * 0.9 ) );
+			$sessions              = wp_rand( $visitors, (int) ( $visitors * 1.2 ) );
+			$bounce_rate           = round( wp_rand( 20, 65 ) + ( wp_rand( 0, 9 ) / 10 ), 1 );
+			$avg_time_on_page      = wp_rand( 90, 480 );
+			$entrances             = wp_rand( 300, 1800 );
+			$exit_rate             = round( wp_rand( 15, 70 ) + ( wp_rand( 0, 9 ) / 10 ), 1 );
+			$conversions           = wp_rand( 20, 350 );
+			$conversion_rate       = round( ( $conversions / $pageviews ) * 100, 1 );
+			$sales                 = wp_rand( 5, 120 );
+			$revenue               = wp_rand( 500, 10000 );
+			$sales_conversion_rate = round( ( $sales / $pageviews ) * 100, 1 );
+			$page_value            = round( $revenue / $pageviews, 2 );
+
+			$dummy_rows[] = [
+				'page_url'              => $page_urls[ array_rand( $page_urls ) ],
+				'pageviews'             => $pageviews,
+				'visitors'              => $visitors,
+				'sessions'              => $sessions,
+				'bounce_rate'           => $bounce_rate,
+				'avg_time_on_page'      => $avg_time_on_page,
+				'entrances'             => $entrances,
+				'exit_rate'             => $exit_rate,
+				'conversions'           => $conversions,
+				'conversion_rate'       => $conversion_rate,
+				'sales'                 => $sales,
+				'revenue'               => [
+					'currency' => 'USD',
+					'value'    => $revenue,
+				],
+				'sales_conversion_rate' => $sales_conversion_rate,
+				'page_value'            => [
+					'currency' => 'USD',
+					'value'    => $page_value,
+				],
+			];
+		}
+
+		return $dummy_rows;
+	}
+
+	/**
 	 * The FROM_UNIXTIME takes into account the timezone offset from the mysql timezone settings. These can differ from the server settings.
 	 *
 	 * @throws \Exception //exception.

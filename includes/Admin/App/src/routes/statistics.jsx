@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, notFound } from '@tanstack/react-router';
 import { PageHeader } from '@/components/Common/PageHeader';
 import InsightsBlock from '@/components/Statistics/InsightsBlock';
 import CompareBlock from '@/components/Statistics/CompareBlock';
@@ -7,9 +7,15 @@ import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import { __ } from '@wordpress/i18n';
 import useLicenseData from '@/hooks/useLicenseData';
+import { shouldLoadRoute } from '@/utils/helper';
 
 export const Route = createFileRoute( '/statistics' )({
 	component: Statistics,
+	loader: ({ context }) => {
+		if ( context?.menus && ! shouldLoadRoute( 'statistics', context.menus ) ) {
+			throw notFound();
+		}
+	},
 	errorComponent: ({ error }) => (
 		<div className="p-4 text-red-500">
 			{error.message ||
@@ -22,6 +28,7 @@ function Statistics() {
 	const { isPro } = useLicenseData();
 	const blockOneItems = [ 'pages' ];
 	const blockTwoItems = isPro ? [ 'parameters' ] : [ 'referrers' ];
+	const blockTwoID = isPro ? 'statistics_parameters' : 'statistics_referrers';
 	return (
 		<>
 			<PageHeader />
@@ -39,11 +46,11 @@ function Statistics() {
 			</ErrorBoundary>
 
 			<ErrorBoundary>
-				<DataTableBlock allowedConfigs={blockOneItems} id="1" />
+				<DataTableBlock allowedConfigs={blockOneItems} id="statistics_pages" />
 			</ErrorBoundary>
 
 			<ErrorBoundary>
-				<DataTableBlock allowedConfigs={blockTwoItems} id="2" />
+				<DataTableBlock allowedConfigs={blockTwoItems} id={blockTwoID} />
 			</ErrorBoundary>
 		</>
 	);
