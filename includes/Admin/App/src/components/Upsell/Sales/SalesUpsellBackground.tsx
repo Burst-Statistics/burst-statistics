@@ -37,7 +37,7 @@ const SalesUpsellBackground = () => {
 			</ErrorBoundary>
 
 			<ErrorBoundary>
-				<DataTableBlock allowedConfigs={[ 'pages' ]} id="99" isEcommerce={false} />
+				<DataTableBlock allowedConfigs={[ 'pages' ]} id="dummy_data" isEcommerce={false} />
 			</ErrorBoundary>
 		</>
 	);

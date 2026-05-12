@@ -19,13 +19,13 @@ const SourcesUpsellBackground = () => {
 				<GhostWorldMapBlock />
 			</ErrorBoundary>
 			<ErrorBoundary>
-				<DataTableBlock allowedConfigs={[ 'pages' ]} id="99" isEcommerce={false} />
+				<DataTableBlock allowedConfigs={[ 'pages' ]} id="dummy_data" isEcommerce={false} />
 			</ErrorBoundary>
 			<ErrorBoundary>
-				<DataTableBlock allowedConfigs={[ 'pages' ]} id="100" isEcommerce={false} />
+				<DataTableBlock allowedConfigs={[ 'pages' ]} id="dummy_data" isEcommerce={false} />
 			</ErrorBoundary>
 			<ErrorBoundary>
-				<DataTableBlock allowedConfigs={[ 'pages' ]} id="101" isEcommerce={false} />
+				<DataTableBlock allowedConfigs={[ 'pages' ]} id="dummy_data" isEcommerce={false} />
 			</ErrorBoundary>
 		</>
 	);

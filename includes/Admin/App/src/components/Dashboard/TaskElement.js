@@ -3,19 +3,27 @@ import Icon from '../../utils/Icon';
 import useTasks from '@/store/useTasksStore';
 import HelpTooltip from '@/components/Common/HelpTooltip';
 import { renderPossiblyHtml } from '@/utils/dangerouslySetHtml';
+import useSettingsData from '@/hooks/useSettingsData';
 
 const TaskElement = ( props ) => {
 	const { task } = props;
 	const fixTask = useTasks( ( state ) => state.fixTask );
+	const { setValue } = useSettingsData();
+
+	const handleFixTask = async() => {
+		await fixTask( task.id );
+
+		if ( task.fix?.startsWith( 'burst_option_' ) ) {
+			setValue( task.fix.replace( 'burst_option_', '' ), true );
+		}
+	};
 
 	return (
 		<div className="flex items-center justify-center gap-1 pb-2.5">
 			<TaskStatusIcon task={task} />
 			{task.msg && (
 				<p className="flex-1 text-base text-text-black">
-					{
-						renderPossiblyHtml({ value: task.msg })
-					}
+					{renderPossiblyHtml({ value: task.msg })}
 				</p>
 			)}{' '}
 			{task.url && (
@@ -24,8 +32,7 @@ const TaskElement = ( props ) => {
 					href={task.url}
 					className="text-blue underline cursor-pointer"
 				>
-					{'sale' === task.icon &&
-						__( 'Get 40% Off', 'burst-statistics' )}
+					{'sale' === task.icon && __( 'Get 40% Off', 'burst-statistics' )}
 					{'offer' === task.icon &&
 						__( 'Get 3 months free!', 'burst-statistics' )}
 					{'offer' !== task.icon &&
@@ -36,9 +43,13 @@ const TaskElement = ( props ) => {
 			{task.fix && (
 				<span
 					className="text-blue underline cursor-pointer hover:text-blue-800 hover:no-underline leading-5"
-					onClick={() => fixTask( task.id )}
+					onClick={() => {
+						void handleFixTask();
+					}}
 				>
-					{task.fix.startsWith( 'burst_option_' ) ? __( 'Enable', 'burst-statistics' ) : __( 'Fix', 'burst-statistics' )}
+					{task.fix.startsWith( 'burst_option_' ) ?
+						__( 'Enable', 'burst-statistics' ) :
+						__( 'Fix', 'burst-statistics' )}
 				</span>
 			)}
 			{task.plusone && (

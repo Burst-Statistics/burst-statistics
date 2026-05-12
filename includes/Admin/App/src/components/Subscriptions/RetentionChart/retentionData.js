@@ -25,7 +25,7 @@ export async function fetchRetentionData({ startDate, endDate, range, productId 
 	}
 
 	const { data } = await getData(
-		'subscriptions-retention',
+		'ecommerce/subscriptions-retention',
 		startDate,
 		endDate,
 		range,

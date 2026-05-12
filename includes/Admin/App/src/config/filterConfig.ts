@@ -296,8 +296,8 @@ export type FilterSearchParams = {
  */
 export const validateFilterSearch = (
 	search: Record<string, unknown>
-): FilterSearchParams => {
-	const filters: FilterSearchParams = {};
+): FilterSearchParams & { burst_share_token?: string } => {
+	const filters: FilterSearchParams & { burst_share_token?: string } = {};
 
 	FILTER_KEYS.forEach( ( key ) => {
 		const value = search[key];
@@ -309,6 +309,12 @@ export const validateFilterSearch = (
 	// Preserve trailing param for URL parsing safety.
 	if ( TRAILING_PARAM_KEY in search ) {
 		filters[TRAILING_PARAM_KEY] = '';
+	}
+
+	// Preserve the share token across client-side navigations so the backend
+	// can identify shared viewers on every page-load and API request.
+	if ( 'string' === typeof search.burst_share_token && '' !== search.burst_share_token ) {
+		filters.burst_share_token = search.burst_share_token;
 	}
 
 	return filters;

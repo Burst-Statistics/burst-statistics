@@ -345,6 +345,19 @@ return [
 		'disabled' => false,
 		'default'  => false,
 	],
+	[
+		'id'       => 'enable_mainwp_integration',
+		'menu_id'  => 'advanced',
+		'group_id' => 'scripts',
+		'type'     => 'checkbox',
+		'label'    => __( 'Enable MainWP Dashboard Integration', 'burst-statistics' ),
+		'context'  => [
+			'text' => __( 'Allow the MainWP dashboard to display Burst statistics from child sites. Disable this to completely prevent MainWP integration.', 'burst-statistics' ),
+			'url'  => 'guides/manage-burst-statistics-across-all-your-sites-with-mainwp/',
+		],
+		'disabled' => false,
+		'default'  => false,
+	],
 
 	[
 		'id'          => 'export_settings',

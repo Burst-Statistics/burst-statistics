@@ -1,4 +1,4 @@
-import { getData } from '@/utils/api';
+import { getDatatableData } from '@/utils/api';
 import {
 	formatPercentage,
 	formatTime,
@@ -363,9 +363,8 @@ const getDataTableData = async( params ) => {
 
 		const { startDate, endDate, range, args, columnsOptions, type } = params;
 
-		const endpoint = 'ecommerce-datatable' === type ? 'ecommerce/datatable' : 'datatable';
-
-		const { data } = await getData( endpoint, startDate, endDate, range, args );
+		const isEcommerce = 'ecommerce-datatable' === type;
+		const { data } = await getDatatableData( args.id, isEcommerce, startDate, endDate, range, args );
 
 		if ( ! data ) {
 			throw new Error( 'No data received from API' );

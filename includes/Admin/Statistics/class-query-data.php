@@ -4,6 +4,8 @@ namespace Burst\Admin\Statistics;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Sanitize;
 
+use function Burst\burst_loader;
+
 defined( 'ABSPATH' ) || die();
 
 /**
@@ -221,6 +223,8 @@ class Query_Data {
 	 * @param array<string,mixed> $args Associative array of query parameters.
 	 */
 	public function __construct( string $id, array $args = [] ) {
+		$args = $this->apply_share_link_restrictions_to_args( $args );
+
 		$this->strict  = ! $this->has_admin_access();
 		$this->metrics = [
 			'host'                 => 'Domain',
@@ -274,6 +278,34 @@ class Query_Data {
 
 			$this->exclude_bounces = $this->exclude_bounces();
 		}
+	}
+
+	/**
+	 * Apply share-link restrictions to Query_Data arguments.
+	 *
+	 * This centralizes enforcement so any REST endpoint that constructs Query_Data
+	 * cannot bypass share link restrictions by skipping routing-level sanitization.
+	 *
+	 * @param array<string,mixed> $args Query args.
+	 * @return array<string,mixed> Modified args.
+	 */
+	private function apply_share_link_restrictions_to_args( array $args ): array {
+		if ( ! self::is_shareable_link_viewer() ) {
+			return $args;
+		}
+
+		$loader = burst_loader();
+		if ( ! isset( $loader->admin, $loader->admin->share, $loader->admin->share->routing ) ) {
+			return $args;
+		}
+
+		$routing = $loader->admin->share->routing;
+		if ( ! is_object( $routing ) || ! method_exists( $routing, 'apply_share_link_restrictions' ) ) {
+			return $args;
+		}
+
+		// apply_share_link_restrictions() is share-viewer aware and does not restrict admins.
+		return $routing->apply_share_link_restrictions( $args );
 	}
 
 	/**

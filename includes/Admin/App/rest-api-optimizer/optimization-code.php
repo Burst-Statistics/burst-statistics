@@ -22,6 +22,32 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 			return $plugins;
 		}
 
+		// Resolve the actual REST route from the URL path only (pretty permalinks).
+		// Anything in the query string is ignored, so ?x=burst/v1 or ?rest_route=/burst/v1
+		// on an unrelated URL cannot trigger the optimizer. Plain (non-pretty) permalinks
+		// are intentionally not supported here; the optimizer simply no-ops on those sites.
+		// The path is matched as-is (not URL-decoded) so detection stays in sync with WP's
+		// own REST routing, which also matches against the raw URI.
+		$parsed = wp_parse_url( $request_uri );
+		$path   = isset( $parsed['path'] ) ? $parsed['path'] : '';
+
+		// Hardcoded WP REST prefix. We can't call rest_get_url_prefix() because rest-api.php
+		// is loaded later than option_active_plugins, and invoking the core rest_url_prefix
+		// filter ourselves wouldn't pick up callbacks registered by regular plugins anyway
+		// (those haven't loaded yet). Sites with a custom REST prefix simply no-op here.
+		$burst_rest_route = '';
+		$needle           = '/wp-json/';
+		$pos              = strpos( $path, $needle );
+		if ( $pos !== false ) {
+			$burst_rest_route = ltrim( substr( $path, $pos + strlen( $needle ) ), '/' );
+		}
+
+		// Anchored at the namespace boundary: only burst/v1 and burst/v1/* qualify,
+		// not lookalikes such as burst/v1foo/...
+		if ( $burst_rest_route !== 'burst/v1' && ! str_starts_with( $burst_rest_route, 'burst/v1/' ) ) {
+			return $plugins;
+		}
+
 		// Define plugins that should always remain active during REST API optimization.
 		$plugins_to_keep = [
 			// AIOS dynamically changes salts, this breaks nonces.
@@ -36,21 +62,17 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 		 */
 		$plugins_to_keep = apply_filters( 'burst_rest_api_optimizer_keep_plugins', $plugins_to_keep );
 
-		// if not an rsp request return all plugins.
-		// but for some requests, we need to load other plugins, to ensure we can detect them.
+		// Some Burst routes still need other plugins active.
 		if (
-			// burst/v1 not included means this is a not Burst request.
-			! str_contains( $request_uri, 'burst/v1' ) ||
-			// below requests are burst requests, but requiring the other plugins to load.
-			str_contains( $request_uri, 'burst/v1/track' ) ||
-			str_contains( $request_uri, 'burst/v1/auto_installer' ) ||
-			str_contains( $request_uri, 'burst/v1/do_action/report/send-test-report' ) ||
-			str_contains( $request_uri, 'burst/v1/otherplugins' ) ||
-			str_contains( $request_uri, 'burst/v1/onboarding' ) ||
-			str_contains( $request_uri, 'otherpluginsdata' ) ||
-			str_contains( $request_uri, 'plugin_actions' ) ||
-			str_contains( $request_uri, 'fields/set' ) ||
-			str_contains( $request_uri, 'goals/get' )
+			str_contains( $burst_rest_route, 'burst/v1/track' ) ||
+			str_contains( $burst_rest_route, 'burst/v1/auto_installer' ) ||
+			str_contains( $burst_rest_route, 'burst/v1/do_action/report/send-test-report' ) ||
+			str_contains( $burst_rest_route, 'burst/v1/otherplugins' ) ||
+			str_contains( $burst_rest_route, 'burst/v1/onboarding' ) ||
+			str_contains( $burst_rest_route, 'otherpluginsdata' ) ||
+			str_contains( $burst_rest_route, 'plugin_actions' ) ||
+			str_contains( $burst_rest_route, 'fields/set' ) ||
+			str_contains( $burst_rest_route, 'goals/get' )
 		) {
 			return $plugins;
 		}
@@ -109,9 +131,9 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 
 			if (
 				(
-					strpos( $request_uri, 'burst/v1/data/ecommerce' ) !== false ||
-					strpos( $request_uri, 'burst/v1/do_action/ecommerce' ) !== false ||
-					strpos( $request_uri, 'burst/v1/get_action/ecommerce' ) !== false
+					strpos( $burst_rest_route, 'burst/v1/data/ecommerce' ) === 0 ||
+					strpos( $burst_rest_route, 'burst/v1/do_action/ecommerce' ) === 0 ||
+					strpos( $burst_rest_route, 'burst/v1/get_action/ecommerce' ) === 0
 				) ||
 				$should_load_ecommerce
 			) {

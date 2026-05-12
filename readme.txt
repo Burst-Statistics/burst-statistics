@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.0
-Stable tag: 3.4.1.1
+Stable tag: 3.4.2
 
 Analytics you'll actually use. Privacy-friendly, zero config, and designed to be actionable. Get insights, not just raw data.
 
@@ -201,6 +201,21 @@ Absolutely! Both free and premium plugins can be managed with Composer. Read the
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.4.2 =
+* May 12th 2026
+* New: AI chat integration via the WordPress Abilities API, including granular datatable abilities with metric allow-listing for pages, parameters, referrers, countries, campaigns, sales and subscription products.
+* New: granular datatable REST endpoints (data/datatable/{id} and data/ecommerce/datatable/{id}) so the dashboard and AI abilities can request a specific table by id.
+* Improvement: refactor the Share class into dedicated Share_Tokens, Share_Routing, Share_Auth and Share_UI services for clearer responsibilities and easier maintenance.
+* Improvement: dark mode initialization respects an explicit "light" preference so users on a dark OS no longer briefly see a dark skeleton when they have forced light mode.
+* Improvement: upgrade routine corrects the stored activation time for sites with older data.
+* Improvement: replace native checkboxes with Radix checkboxes in the Share dialog for consistent styling.
+* Improvement: shared-link capability checks now reflect the currently requested dashboard tab instead of a single cached value, so per-tab permissions are enforced correctly during batch REST requests.
+* Fix: dashboard route returns a 404 when the user is not allowed to load it, instead of rendering an empty page.
+* Security: limit Share link viewer statistics access, props Sanjay Singh Jhala.
+* Security: REST API optimizer now matches the Burst namespace strictly against the URL path (anchored at burst/v1), props Sanjay Singh Jhala.
+* Security: harden MainWP proxy authentication. Props Sanjay Singh Jhala, Chloe Chamberland & PRISM - Wordfence
+* Security: Auto Installer now requires the install_plugins capability instead of activate_plugins and only accepts download URLs from official Burst hosts. Props Sanjay Singh Jhala.
+
 = 3.4.1.1 =
 * May 5th 2026
 * Fix: CSS styling regression due to obsolete javascript files being included in the dashboard build.
