@@ -295,7 +295,7 @@ class Upgrade {
 			burst_reinstall_rest_api_optimizer();
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.5.0', '<' ) ) {
+		if ( $prev_version && version_compare( $prev_version, '3.4.2', '<' ) ) {
 			global $wpdb;
 			$oldest_timestamp = (int) $wpdb->get_var( "SELECT MIN(time) FROM {$wpdb->prefix}burst_statistics" );
 			$activation_time  = (int) get_option( 'burst_activation_time', 0 );
