@@ -61,8 +61,11 @@ class Frontend {
 		$share = new Share_Expired();
 		$share->init();
 
-		$mainwp_proxy = new MainWP_Proxy();
-		$mainwp_proxy->init();
+		// Check if MainWP integration option is enabled.
+		if ( $this->get_option_bool( 'enable_mainwp_integration' ) ) {
+			$mainwp_proxy = new MainWP_Proxy();
+			$mainwp_proxy->init();
+		}
 	}
 
 	/**

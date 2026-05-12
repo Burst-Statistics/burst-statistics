@@ -121,9 +121,67 @@ class MainWP_Proxy {
 
 	/**
 	 * Permission gate for the mainwp-auth endpoint.
+	 *
+	 * Three callers are legitimate, each with its own CSRF defense:
+	 *  - MainWP dashboard bootstrap: sends a signed body containing a single-use
+	 *    nonce, identified by the X-BURSTMAINWP header. The signature itself is
+	 *    the CSRF defense — a browser cannot forge it.
+	 *  - Application Password / HTTP Basic Auth: no session cookie is involved,
+	 *    so CSRF is structurally impossible.
+	 *  - Cookie-authenticated admin (e.g. a same-origin call from the Burst UI):
+	 *    must present a valid `burst_nonce` to prove explicit user intent and
+	 *    prevent a logged-in admin from being tricked into minting an
+	 *    Application Password via a forged cross-origin request.
+	 *
+	 * @param \WP_REST_Request|null $request The REST request (provided by WP).
 	 */
-	public function check_auth_permission(): bool {
-		return current_user_can( 'manage_burst_statistics' );
+	public function check_auth_permission( ?\WP_REST_Request $request = null ): bool {
+		if ( ! current_user_can( 'manage_burst_statistics' ) ) {
+			return false;
+		}
+
+		if ( $this->is_mainwp_request_context() ) {
+			return true;
+		}
+
+		// Cookie-auth path: require an explicit burst_nonce.
+		$nonce = '';
+		if ( $request instanceof \WP_REST_Request ) {
+			$header_nonce = $request->get_header( 'x_burst_nonce' );
+			if ( is_string( $header_nonce ) && $header_nonce !== '' ) {
+				$nonce = $header_nonce;
+			} else {
+				$param_nonce = $request->get_param( 'burst_nonce' );
+				if ( is_string( $param_nonce ) ) {
+					$nonce = $param_nonce;
+				}
+			}
+		}
+
+		return $this->verify_nonce( $nonce, 'burst_nonce' );
+	}
+
+	/**
+	 * Whether the current request was authenticated as a MainWP dashboard call.
+	 *
+	 * Matches the two server-to-server paths that already have CSRF protection
+	 * baked in:
+	 *  - X-BURSTMAINWP header set to '1' (only sent by the dashboard, and a
+	 *    custom header forces a CORS preflight that a cross-origin browser
+	 *    request cannot pass without an explicit allow).
+	 *  - HTTP Basic Authorization that resolved to an Application Password
+	 *    during this request.
+	 */
+	private function is_mainwp_request_context(): bool {
+		if ( isset( $_SERVER['HTTP_X_BURSTMAINWP'] ) && $_SERVER['HTTP_X_BURSTMAINWP'] === '1' ) {
+			return true;
+		}
+
+		if ( self::is_http_basic_auth_request() && (bool) did_action( 'wp_application_passwords_did_authenticate' ) ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -337,17 +395,24 @@ class MainWP_Proxy {
 			if ( count( $parts ) !== 2 ) {
 				return false;
 			}
-			$authenticated = wp_authenticate_application_password( null, $parts[0], $parts[1] );
-			if ( ! $authenticated instanceof \WP_User ) {
+
+			$allow_application_password_request = static function (): bool {
+				return true;
+			};
+			add_filter( 'application_password_is_api_request', $allow_application_password_request, 999 );
+			$authenticated_user = wp_authenticate_application_password( null, $parts[0], $parts[1] );
+			remove_filter( 'application_password_is_api_request', $allow_application_password_request, 999 );
+
+			if ( ! $authenticated_user instanceof \WP_User ) {
 				return false;
 			}
-			if ( ! hash_equals( (string) $authenticated->user_login, $parts[0] ) ) {
+			if ( ! hash_equals( (string) $authenticated_user->user_login, $parts[0] ) ) {
 				return false;
 			}
-			if ( ! user_can( $authenticated, 'manage_burst_statistics' ) ) {
+			if ( ! user_can( $authenticated_user, 'manage_burst_statistics' ) ) {
 				return false;
 			}
-			wp_set_current_user( $authenticated->ID );
+			wp_set_current_user( $authenticated_user->ID );
 
 			return true;
 		}
