@@ -201,6 +201,10 @@ Absolutely! Both free and premium plugins can be managed with Composer. Read the
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.4.2.1 =
+* May 14th 2026
+* Improvement: performance improvements.
+
 = 3.4.2 =
 * May 12th 2026
 * New: AI chat integration via the WordPress Abilities API, including granular datatable abilities with metric allow-listing for pages, parameters, referrers, countries, campaigns, sales and subscription products.
