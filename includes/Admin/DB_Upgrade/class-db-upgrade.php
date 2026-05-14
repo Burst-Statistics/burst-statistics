@@ -1319,5 +1319,4 @@ class DB_Upgrade {
 			self::error_log( 'move_columns_to_sessions upgrade complete.' );
 		}
 	}
-
 }
