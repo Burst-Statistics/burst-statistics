@@ -176,6 +176,8 @@ return [
 		'fix'         => 'burst_option_enable_abilities_api',
 		'dismissible' => true,
 		'plusone'     => true,
+		'url'         => 'guides/ask-burst-anything-setting-up-the-ai-chat-for-your-analytics',
+
 	],
 	[
 		'id'          => 'opt-in-sharing',
@@ -193,5 +195,30 @@ return [
 		'plusone'     => false,
 		'url'         => 'definition/turbo-mode/',
 		'fix'         => 'burst_option_enable_turbo_mode',
+	],
+	[
+		'id'          => 'mainwp_integration_disabled',
+		'condition'   => [
+			'type'     => 'serverside',
+			'function' => 'Burst\\Admin\\Tasks::should_show_mainwp_integration_task()',
+		],
+		'msg'         => __( 'MainWP Child is active on this site, but Burst MainWP integration is disabled. Enable it in settings to allow MainWP Dashboard statistics.', 'burst-statistics' ),
+		'icon'        => 'warning',
+		'url'         => '#settings/advanced',
+		'fix'         => 'burst_option_enable_mainwp_integration',
+		'dismissible' => true,
+		'plusone'     => false,
+	],
+	[
+		'id'                  => 'persistent_object_cache_recommended',
+		'condition'           => [
+			'type'     => 'serverside',
+			'function' => 'Burst\Admin\Statistics\Statistics::should_recommend_object_cache()',
+		],
+		'msg'                 => __( 'Burst detected very slow analytics queries. To reduce repeated heavy database load, we recommend enabling a persistent object cache (Redis or Memcached).', 'burst-statistics' ),
+		'icon'                => 'warning',
+		'dismissible'         => true,
+		'plusone'             => false,
+		'dismiss_permanently' => true,
 	],
 ];

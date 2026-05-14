@@ -96,21 +96,6 @@ class Upgrade {
 			}
 		}
 
-		if ( $prev_version
-			&& version_compare( $prev_version, '1.6.1', '<' ) ) {
-			// add the admin to the email reports mailing list.
-			$mailinglist = burst_get_option( 'email_reports_mailinglist' );
-			if ( ! $mailinglist ) {
-				$defaults = [
-					[
-						'email'     => get_option( 'admin_email' ),
-						'frequency' => 'monthly',
-					],
-				];
-				$this->update_option( 'email_reports_mailinglist', $defaults );
-			}
-		}
-
 		// check if column 'device_id' exists in the table 'burst_statistics'.
 		$is_version_upgrade      = $prev_version && version_compare( $prev_version, '1.7.0', '<' );
 		$lookup_table_incomplete = version_compare( $prev_version, '1.7.1', '=' ) && ! $this->column_exists( 'burst_statistics', 'device_id' );
@@ -184,9 +169,9 @@ class Upgrade {
 				global $wpdb;
 				$wpdb->query(
 					"DELETE gs1 FROM {$wpdb->prefix}burst_goal_statistics gs1
-                INNER JOIN {$wpdb->prefix}burst_goal_statistics gs2 
-                WHERE gs1.goal_id = gs2.goal_id 
-                AND gs1.statistic_id = gs2.statistic_id 
+                INNER JOIN {$wpdb->prefix}burst_goal_statistics gs2
+                WHERE gs1.goal_id = gs2.goal_id
+                AND gs1.statistic_id = gs2.statistic_id
                 AND gs1.ID > gs2.ID"
 				);
 			}
@@ -316,6 +301,10 @@ class Upgrade {
 			}
 
 			flush_rewrite_rules();
+		}
+
+		if ( $prev_version && version_compare( $prev_version, '3.4.2.1', '<' ) ) {
+			// No upgrade needed for this version.
 		}
 
 		$admin = new Admin();

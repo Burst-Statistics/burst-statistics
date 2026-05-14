@@ -349,7 +349,7 @@ return [
 		'id'       => 'enable_mainwp_integration',
 		'menu_id'  => 'advanced',
 		'group_id' => 'scripts',
-		'type'     => 'checkbox',
+		'type'     => file_exists( WP_PLUGIN_DIR . '/mainwp-child/mainwp-child.php' ) ? 'checkbox' : 'hidden',
 		'label'    => __( 'Enable MainWP Dashboard Integration', 'burst-statistics' ),
 		'context'  => [
 			'text' => __( 'Allow the MainWP dashboard to display Burst statistics from child sites. Disable this to completely prevent MainWP integration.', 'burst-statistics' ),

@@ -1,6 +1,15 @@
 <?php
 /**
- * Rest API Optimizer.
+ * Plugin Name: Burst REST API Optimizer
+ * Plugin URI: https://burst-statistics.com
+ * Description: Must-use plugin installed by Burst Pro to keep the Burst REST API fast by skipping unrelated plugins on Burst REST requests.
+ * Version: 1.0.0
+ * Requires at least: 6.6
+ * Requires PHP: 8.0
+ * Author: Burst Statistics
+ * Author URI: https://burst-statistics.com
+ * License: GPL v2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
 
 defined( 'ABSPATH' ) || die();
