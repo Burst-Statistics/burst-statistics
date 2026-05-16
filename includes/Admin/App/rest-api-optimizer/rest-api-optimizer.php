@@ -53,7 +53,15 @@ if ( ! function_exists( 'burst_install_rest_api_optimizer' ) ) {
 			if ( $wp_filesystem->put_contents( $burst_mu_plugin_file, $burst_php_code, FS_CHMOD_FILE ) === false ) {
 				update_option( 'burst_rest_api_optimizer_not_writable', true, false );
 			} else {
-				update_option( 'burst_plugin_path', BURST_PATH, true );
+				// Store only the plugin directory slug, not the full filesystem
+				// path. The MU plugin combines this with WP_PLUGIN_DIR and
+				// validates the slug against a strict charset, so an attacker
+				// who can write burst_* options cannot pivot to loading code
+				// from outside the plugins directory.
+				$burst_plugin_slug = basename( untrailingslashit( BURST_PATH ) );
+				if ( preg_match( '/^[a-zA-Z0-9_-]+$/', $burst_plugin_slug ) ) {
+					update_option( 'burst_plugin_slug', $burst_plugin_slug, true );
+				}
 			}
 		} else {
 			update_option( 'burst_rest_api_optimizer_not_writable', true, false );

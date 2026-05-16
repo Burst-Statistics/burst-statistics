@@ -336,8 +336,6 @@ trait Admin_Helper {
 				// Configuration and options.
 				'date_ranges'                  => $this->get_date_ranges(),
 				'time_format'                  => get_option( 'time_format' ),
-				'tour_shown'                   => $this->get_option_int( 'burst_tour_shown_once' ),
-
 				// Date picker's starting date.
 				'burst_date_picker_start_date' => (int) get_option( 'burst_activation_time', 1640995200 ),
 			]

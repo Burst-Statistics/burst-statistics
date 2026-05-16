@@ -2823,11 +2823,17 @@ class Statistics {
 			'session_id',
 		];
 
+		// A custom_select may reference statistics columns by bare name (e.g. `page_url`
+		// instead of `statistics.page_url`), which the prefix-based scan below cannot
+		// detect. Projecting the full candidate set keeps those queries correct.
+		if ( ! empty( $data->custom_select ) ) {
+			return array_values( array_unique( array_merge( [ 'ID', 'time' ], $candidates ) ) );
+		}
+
 		$search_string = implode(
 			' ',
 			[
 				$select_clause,
-				$data->custom_select,
 				$join_sql,
 				$this->get_where_clause_for_filters( $data ),
 				implode( ' ', $data->order_by ),

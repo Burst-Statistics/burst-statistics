@@ -308,6 +308,19 @@ class Upgrade {
 			$prev_version .= '';
 		}
 
+		if ( $prev_version && version_compare( $prev_version, '3.4.3', '<' ) ) {
+			// Drop burst_plugin_path and store only the validated
+			// plugin directory slug instead. The MU optimizer now builds the
+			// integration path from WP_PLUGIN_DIR + slug.
+			delete_option( 'burst_plugin_path' );
+			$burst_plugin_slug = basename( untrailingslashit( BURST_PATH ) );
+			if ( preg_match( '/^[a-zA-Z0-9_-]+$/', $burst_plugin_slug ) ) {
+				update_option( 'burst_plugin_slug', $burst_plugin_slug, true );
+			}
+			// Reinstall the optimizer so the on-disk MU plugin matches the new loader logic.
+			burst_reinstall_rest_api_optimizer();
+		}
+
 		$admin = new Admin();
 		$admin->run_table_init_hook();
 		$admin->create_js_file();

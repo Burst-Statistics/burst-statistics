@@ -268,7 +268,6 @@ const makeRequest = async(
 
 const isDoActionFallbackPath = ( path = '' ) => {
 	const writeFragments = [
-		'/options/set',
 		'/fields/set',
 		'/goals/add',
 		'/goals/delete',
@@ -413,11 +412,6 @@ const siteUrl = ( type ) => {
 	}
 	return url;
 };
-
-export const setOption = ( option, value ) =>
-	makeRequest( 'burst/v1/options/set' + glue() + getNonce(), 'POST', {
-		option: { option, value }
-	});
 
 export const getFields = () =>
 	makeRequest( 'burst/v1/fields/get' + glue() + getNonce() );
