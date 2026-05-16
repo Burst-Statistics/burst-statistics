@@ -423,4 +423,32 @@ class Tasks {
 
 		return (bool) $output;
 	}
+
+	/**
+	 * Whether we should show the MainWP integration reminder task.
+	 */
+	public static function should_show_mainwp_integration_task(): bool {
+		$mainwp_child_plugin = 'mainwp-child/mainwp-child.php';
+
+		if ( ! file_exists( WP_PLUGIN_DIR . '/' . $mainwp_child_plugin ) ) {
+			return false;
+		}
+
+		if ( ! function_exists( 'is_plugin_active' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		$is_mainwp_child_active = is_plugin_active( $mainwp_child_plugin );
+		if ( is_multisite() ) {
+			$is_mainwp_child_active = $is_mainwp_child_active || is_plugin_active_for_network( $mainwp_child_plugin );
+		}
+
+		if ( ! $is_mainwp_child_active ) {
+			return false;
+		}
+
+		$options = get_option( 'burst_options_settings', [] );
+		// Return true if integration is available but not yet enabled (show setup task).
+		return empty( $options['enable_mainwp_integration'] );
+	}
 }

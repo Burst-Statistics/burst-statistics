@@ -77,7 +77,7 @@ trait Admin_Helper {
 			$token = burst_loader()->admin->share->tokens->get_current_token();
 
 			if ( empty( $token ) ) {
-				return burst_loader()->user_can_view = false;
+				return burst_loader()->user_can_view_sales = false;
 			} else {
 				return burst_loader()->admin->share->routing->current_shared_request_tab_is_allowed();
 			}
@@ -189,9 +189,13 @@ trait Admin_Helper {
 	/**
 	 * Checks if the user has admin access to the Burst plugin.
 	 */
-	protected function has_admin_access(): bool {
+	protected function has_admin_access( bool $allow_track_only = false ): bool {
 		if ( isset( burst_loader()->has_admin_access ) ) {
 			return burst_loader()->has_admin_access;
+		}
+
+		if ( ! $allow_track_only && BURST_TRACK_ONLY ) {
+			return false;
 		}
 
 		// Check fast-paths that don't require user/caps.
@@ -332,8 +336,6 @@ trait Admin_Helper {
 				// Configuration and options.
 				'date_ranges'                  => $this->get_date_ranges(),
 				'time_format'                  => get_option( 'time_format' ),
-				'tour_shown'                   => $this->get_option_int( 'burst_tour_shown_once' ),
-
 				// Date picker's starting date.
 				'burst_date_picker_start_date' => (int) get_option( 'burst_activation_time', 1640995200 ),
 			]
