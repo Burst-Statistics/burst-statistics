@@ -29,10 +29,25 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 			global $wpdb;
 			$goal_id = (int) $args['goal_id'];
 			$today   = strtotime( 'today midnight' );
-			$sql     = $this->get_goal_completed_count_sql( $goal_id, $today );
+			$sql     = $this->add_query_timeout_hint( $this->get_goal_completed_count_sql( $goal_id, $today ), $this->get_goal_query_timeout_ms() );
             // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --get_goal_completed_count_sql returns prepared sql.
 			$val = $wpdb->get_var( $sql );
 			return (int) $val ?: 0;
+		}
+
+		/**
+		 * Resolve timeout for goal statistics queries.
+		 */
+		private function get_goal_query_timeout_ms(): int {
+			return $this->resolve_query_timeout_ms(
+				'burst_query_timeout_ms',
+				'burst_query_timeout_ms_background',
+				null,
+				30000,
+				900000,
+				30000,
+				false
+			);
 		}
 
 		/**
@@ -227,6 +242,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 				$top_performer_sql  = $this->get_goal_completed_count_sql( $goal_id );
 				$top_performer_sql  = str_replace( ' AS value FROM ', ' AS value, statistics.page_url AS title FROM ', $top_performer_sql );
 				$top_performer_sql .= ' GROUP BY statistics.page_url ORDER BY value DESC LIMIT 1';
+				$top_performer_sql  = $this->add_query_timeout_hint( $top_performer_sql, $this->get_goal_query_timeout_ms() );
                 // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- get_goal_completed_count_sql returns prepared sql.
 				$top_performer_result = $wpdb->get_row( $top_performer_sql );
 				if ( $top_performer_result ) {
@@ -235,7 +251,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 				}
 
 				// Query to get total number of goal completions.
-				$total_completed_sql = $this->get_goal_completed_count_sql( $goal_id );
+				$total_completed_sql = $this->add_query_timeout_hint( $this->get_goal_completed_count_sql( $goal_id ), $this->get_goal_query_timeout_ms() );
                 // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- get_goal_completed_count_sql returns prepared sql.
 				$data['total']['value'] = $wpdb->get_var( $total_completed_sql );
 
@@ -245,6 +261,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 					"SELECT {$count_sql} FROM {$wpdb->prefix}burst_statistics as statistics WHERE statistics.time > %s {$date_end_sql} {$goal_url_sql}",
 					$date_start
 				);
+				$conversion_metric = $this->add_query_timeout_hint( $conversion_metric, $this->get_goal_query_timeout_ms() );
                 // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- get_goal_completed_count_sql returns prepared sql.
 				$data['conversionMetric']['value'] = $wpdb->get_var( $conversion_metric );
 
@@ -252,6 +269,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 				$completed_goals_per_device_sql  = $this->get_goal_completed_count_sql( $goal_id );
 				$completed_goals_per_device_sql  = str_replace( ' AS value FROM ', ' AS value, sessions.device_id AS device_id FROM ', $completed_goals_per_device_sql );
 				$completed_goals_per_device_sql .= ' GROUP BY sessions.device_id ORDER BY value DESC LIMIT 4';
+				$completed_goals_per_device_sql  = $this->add_query_timeout_hint( $completed_goals_per_device_sql, $this->get_goal_query_timeout_ms() );
                 // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- get_goal_completed_count_sql returns prepared sql.
 				$completed_goals_per_device = $wpdb->get_results( $completed_goals_per_device_sql );
 
@@ -267,6 +285,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 					LIMIT 4",
 					$date_start
 				);
+				$pageviews_per_device_sql = $this->add_query_timeout_hint( $pageviews_per_device_sql, $this->get_goal_query_timeout_ms() );
                 // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- prepared sql.
 				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is prepared via $wpdb->prepare() above.
 				$pageviews_per_device = $wpdb->get_results( $pageviews_per_device_sql );

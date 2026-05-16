@@ -61,7 +61,7 @@ class App {
 		add_action( 'burst_weekly', [ $this, 'init_cleanup' ] );
 		add_action( 'burst_weekly_clear_referrers_cron', [ $this, 'weekly_clear_referrers_table' ] );
 		add_action( 'burst_weekly_clear_spam_browsers_cron', [ $this, 'weekly_clear_spam_browsers' ] );
-		add_action( 'burst_daily', [ $this, 'maybe_update_plugin_path' ] );
+		add_action( 'burst_daily', [ $this, 'maybe_update_plugin_slug' ] );
 		$this->menu             = new Menu();
 		$this->fields           = new Fields();
 		$this->reporting_fields = new Reporting_Fields();
@@ -72,13 +72,17 @@ class App {
 	}
 
 	/**
-	 * Check plugin path daily and maybe update the path if it is changed.
+	 * Check plugin slug daily and maybe update if the plugin directory was renamed.
+	 * Only the validated slug is stored, not a filesystem path.
 	 */
-	public function maybe_update_plugin_path(): void {
-		$stored_path  = get_option( 'burst_plugin_path', '' );
-		$current_path = BURST_PATH;
-		if ( $stored_path !== $current_path ) {
-			update_option( 'burst_plugin_path', $current_path, true );
+	public function maybe_update_plugin_slug(): void {
+		$current_slug = basename( untrailingslashit( BURST_PATH ) );
+		if ( ! preg_match( '/^[a-zA-Z0-9_-]+$/', $current_slug ) ) {
+			return;
+		}
+		$stored_slug = get_option( 'burst_plugin_slug', '' );
+		if ( $stored_slug !== $current_slug ) {
+			update_option( 'burst_plugin_slug', $current_slug, true );
 		}
 	}
 
@@ -417,7 +421,6 @@ class App {
 		}
 
 		$do_action_fragments = [
-			'/options/set',
 			'/fields/set',
 			'/goals/add',
 			'/goals/delete',
@@ -569,8 +572,6 @@ class App {
 				$response = $this->rest_api_fields_get( $request );
 			} elseif ( str_contains( $action, '/fields/set' ) ) {
 				$response = $this->rest_api_fields_set( $request, $data );
-			} elseif ( str_contains( $action, '/options/set' ) ) {
-				$response = $this->rest_api_options_set( $request, $data );
 			} elseif ( str_contains( $action, '/goals/get' ) ) {
 				$response = $this->rest_api_goals_get( $request );
 			} elseif ( str_contains( $action, '/goals/add' ) ) {
@@ -969,18 +970,6 @@ class App {
 			// sleep for 0.5 seconds to allow the database installation to finish.
 			usleep( 500000 );
 		}
-
-		register_rest_route(
-			'burst/v1',
-			'options/set',
-			[
-				'methods'             => 'POST',
-				'callback'            => [ $this, 'rest_api_options_set' ],
-				'permission_callback' => function () {
-					return $this->user_can_manage();
-				},
-			]
-		);
 
 		register_rest_route(
 			'burst/v1',
@@ -1943,54 +1932,6 @@ class App {
 				'success'         => true,
 			],
 			$status
-		);
-	}
-
-	/**
-	 * Save options through the rest api
-	 */
-	public function rest_api_options_set( \WP_REST_Request $request, array $ajax_data = [] ): \WP_REST_Response {
-		if ( ! $this->user_can_manage() ) {
-			return new \WP_REST_Response(
-				[
-					'success' => false,
-					'message' => 'You do not have permission to perform this action.',
-				]
-			);
-		}
-		$data = empty( $ajax_data ) ? $request->get_json_params() : $ajax_data;
-
-		// get the nonce.
-		$nonce   = $data['nonce'];
-		$options = $data['option'];
-		if ( ! $this->verify_nonce( $nonce, 'burst_nonce' ) ) {
-			return new \WP_REST_Response(
-				[
-					'success' => false,
-					'message' => 'Invalid nonce.',
-				]
-			);
-		}
-
-		// sanitize the options.
-		$option = sanitize_title( $options['option'] );
-		$value  = sanitize_text_field( $options['value'] );
-
-		// option should be prefixed with burst_, if not add it.
-		if ( strpos( $option, 'burst_' ) !== 0 ) {
-			$option = 'burst_' . $option;
-		}
-		update_option( $option, $value );
-		if ( ob_get_length() ) {
-			ob_clean();
-		}
-
-		return new \WP_REST_Response(
-			[
-				'status'          => 'success',
-				'request_success' => true,
-			],
-			200
 		);
 	}
 

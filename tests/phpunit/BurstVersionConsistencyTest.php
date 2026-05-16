@@ -229,4 +229,119 @@ class BurstVersionConsistencyTest extends TestCase {
 
         return count( $matches[0] );
     }
+
+    /**
+     * Verifies that class-upgrade.php contains an upgrade block for the current plugin
+     * version. The last `version_compare( $prev_version, 'X.Y.Z', '<' )` in the file must
+     * reference the current version so that bumping the plugin version forces the developer
+     * to consciously decide whether an upgrade routine is needed.
+     *
+     * The block may either contain real upgrade code or just a comment explaining that no
+     * upgrade is needed — but the block must exist and must not be empty. Multiple blocks
+     * for the same version are flagged as duplicates so they can be merged.
+     */
+    public function test_upgrade_class_has_current_version_block() {
+        $plugin_dir   = dirname( __FILE__, 3 );
+        $upgrade_path = $plugin_dir . '/includes/Admin/class-upgrade.php';
+
+        $this->assertFileExists( $upgrade_path, 'class-upgrade.php not found' );
+
+        $current_version = $this->get_plugin_version( $plugin_dir . '/burst.php' );
+        $this->assertNotNull( $current_version, 'Could not find current plugin version' );
+
+        $content = file_get_contents( $upgrade_path );
+
+        // Find all `version_compare( $prev_version, 'X.Y.Z', '<' )` calls in file order.
+        $pattern = '/version_compare\s*\(\s*\$prev_version\s*,\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]<[\'"]\s*\)/';
+        preg_match_all( $pattern, $content, $matches );
+
+        $versions = $matches[1];
+        $this->assertNotEmpty( $versions, 'No version_compare( $prev_version, ..., \'<\' ) calls found in class-upgrade.php' );
+
+        $errors = [];
+
+        // 1. The textually last version_compare must be for the current plugin version.
+        $last_version = end( $versions );
+        if ( version_compare( $last_version, $current_version, '!=' ) ) {
+            $errors[] = sprintf(
+                'The last version_compare in class-upgrade.php is for version %s, but the current plugin version is %s. Add an if-block for %s as the last upgrade block (with code if an upgrade is needed, or a comment stating no upgrade is needed).',
+                $last_version,
+                $current_version,
+                $current_version
+            );
+        }
+
+        // 2. No version_compare may reference a version above the current plugin version.
+        $above_current = array_values( array_unique( array_filter(
+            $versions,
+            static fn( $v ) => version_compare( $v, $current_version, '>' )
+        ) ) );
+        if ( ! empty( $above_current ) ) {
+            $errors[] = sprintf(
+                'class-upgrade.php contains version_compare blocks for version(s) higher than the current plugin version (%s): %s. Either bump the plugin version or remove these blocks.',
+                $current_version,
+                implode( ', ', $above_current )
+            );
+        }
+
+        // 3. Flag duplicate versions so they can be merged.
+        $counts     = array_count_values( $versions );
+        $duplicates = array_keys( array_filter( $counts, static fn( $c ) => $c > 1 ) );
+        if ( ! empty( $duplicates ) ) {
+            $errors[] = 'Duplicate version_compare blocks found for version(s): ' . implode( ', ', $duplicates ) . '. Merge them into a single upgrade block.';
+        }
+
+        // 4. The if-block for the current version must have a non-empty body
+        //    (either real code or at least a comment stating no upgrade is needed).
+        $block_body = $this->get_upgrade_block_body( $content, $current_version );
+        if ( $block_body === null ) {
+            $errors[] = sprintf(
+                'No if-block found that uses version_compare( $prev_version, \'%s\', \'<\' ). Add one at the end of check_upgrade().',
+                $current_version
+            );
+        } elseif ( trim( $block_body ) === '' ) {
+            $errors[] = sprintf(
+                'The if-block for version %s is empty. Add at least one line of code, or a comment stating that no upgrade is needed for this version.',
+                $current_version
+            );
+        }
+
+        $this->assertEmpty(
+            $errors,
+            "class-upgrade.php consistency issues:\n - " . implode( "\n - ", $errors )
+        );
+    }
+
+    /**
+     * Returns the textual body of the first if-block whose condition uses
+     * `version_compare( $prev_version, $version, '<' )`. Braces are balanced manually so
+     * that nested blocks inside the body don't terminate the match early. Returns null when
+     * no such if-block exists.
+     */
+    private function get_upgrade_block_body( string $content, string $version ): ?string {
+        $version_escaped = preg_quote( $version, '/' );
+        $pattern         = '/if\s*\(\s*[^{]*?version_compare\s*\(\s*\$prev_version\s*,\s*[\'"]' . $version_escaped . '[\'"]\s*,\s*[\'"]<[\'"]\s*\)[^{]*?\)\s*\{/';
+
+        if ( ! preg_match( $pattern, $content, $matches, PREG_OFFSET_CAPTURE ) ) {
+            return null;
+        }
+
+        $start = $matches[0][1] + strlen( $matches[0][0] );
+        $depth = 1;
+        $len   = strlen( $content );
+
+        for ( $i = $start; $i < $len; $i++ ) {
+            $ch = $content[ $i ];
+            if ( $ch === '{' ) {
+                ++$depth;
+            } elseif ( $ch === '}' ) {
+                --$depth;
+                if ( $depth === 0 ) {
+                    return substr( $content, $start, $i - $start );
+                }
+            }
+        }
+
+        return null;
+    }
 }

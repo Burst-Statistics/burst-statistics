@@ -64,6 +64,60 @@ const getNonce = () => {
 let lastErrorMessage = '';
 let lastErrorTime = 0;
 const NONCE_TOAST_ID = 'burst-nonce-expired';
+const activeRequestControllers = new Map();
+
+const getRequestDedupKey = ( method, path ) => {
+	const [ basePath, queryString = '' ] = path.split( '?' );
+	const normalizedPath = ( basePath || '' ).replace( /\/+/g, '/' );
+	const params = new URLSearchParams( queryString );
+	params.delete( 'nonce' );
+	params.delete( 'token' );
+
+	const sortedParams = [ ...params.entries() ]
+		.sort( ([ keyA ], [ keyB ]) => keyA.localeCompare( keyB ) )
+		.map( ([ key, value ]) => `${key}=${value}` )
+		.join( '&' );
+
+	return `${method}:${normalizedPath}?${sortedParams}`;
+};
+
+const createAbortableRequest = ( method, path ) => {
+	const requestKey = getRequestDedupKey( method, path );
+	const existingController = activeRequestControllers.get( requestKey );
+
+	// Keep only the newest in-flight request for each dedup key.
+	if ( existingController ) {
+		existingController.abort();
+	}
+
+	const controller = new AbortController();
+	activeRequestControllers.set( requestKey, controller );
+
+	const finalize = () => {
+		if ( activeRequestControllers.get( requestKey ) === controller ) {
+			activeRequestControllers.delete( requestKey );
+		}
+	};
+
+	return {
+		requestKey,
+		controller,
+		signal: controller.signal,
+		finalize
+	};
+};
+
+const isAbortError = ( error ) => {
+	if ( ! error ) {
+		return false;
+	}
+
+	return (
+		'AbortError' === error.name ||
+		/aborted|aborterror/i.test( error.message || '' )
+	);
+};
+
 const generateError = ( error, path = false ) => {
 	const rawError = ( error || '' ).replace( /(<([^>]+)>)/gi, '' );
 
@@ -163,10 +217,9 @@ const makeRequest = async(
     data = {},
     requireRequestSuccess = true
 ) => {
-	const controller = new AbortController();
-	const signal = controller.signal;
+	const requestContext = createAbortableRequest( method, path );
 	const auth = getRequestAuth();
-	const args = { path, method, signal };
+	const args = { path, method, signal: requestContext.signal };
 
 	args.headers = withRequestHeaders( args.headers, auth );
 
@@ -192,21 +245,29 @@ const makeRequest = async(
 		delete response.request_success;
 		return response;
 	} catch ( error ) {
+		if ( isAbortError( error ) ) {
+			return null;
+		}
+
 		try {
 
 			// Wait for ajaxRequest to resolve before continuing.
-			return await ajaxRequest( method, path, data, auth );
+			return await ajaxRequest( method, path, data, auth, requestContext.signal );
 		} catch ( ajaxError ) {
-			const err = error || ajaxError;
-			generateError( err.message, args.path );
-			throw err;
+			if ( isAbortError( ajaxError ) ) {
+				return null;
+			}
+
+			generateError( ajaxError.message, args.path );
+			throw ajaxError;
 		}
+	} finally {
+		requestContext.finalize();
 	}
 };
 
 const isDoActionFallbackPath = ( path = '' ) => {
 	const writeFragments = [
-		'/options/set',
 		'/fields/set',
 		'/goals/add',
 		'/goals/delete',
@@ -236,15 +297,18 @@ const getAjaxFallbackUrl = ( method, path ) => {
 	return withAjaxAction( siteUrl( 'ajax' ), action );
 };
 
-const ajaxRequest = async( method, path, requestData = null, auth = getRequestAuth() ) => {
+const ajaxRequest = async(
+	method,
+	path,
+	requestData = null,
+	auth = getRequestAuth(),
+	signal = undefined
+) => {
 	const ajaxUrl = getAjaxFallbackUrl( method, path );
 	const url =
 		'GET' === method ?
 			`${ajaxUrl}&rest_action=${path.replace( '?', '&' )}` :
 			ajaxUrl;
-
-	const controller = new AbortController();
-	const signal = controller.signal;
 
 	const options = {
 		method,
@@ -258,10 +322,7 @@ const ajaxRequest = async( method, path, requestData = null, auth = getRequestAu
 	};
 
 	if ( 'POST' === method ) {
-		options.body = JSON.stringify(
-			{ path, data: requestData },
-			stripControls
-		);
+		options.body = JSON.stringify({ path, data: requestData }, stripControls );
 	}
 
 	try {
@@ -271,11 +332,11 @@ const ajaxRequest = async( method, path, requestData = null, auth = getRequestAu
 			const responseText = await response.text();
 
 			generateError(
-				`AJAX request failed: ${ response.status } ${ response.statusText }`
+				`AJAX request failed: ${response.status} ${response.statusText}`
 			);
 
 			throw new Error(
-				`AJAX request failed: ${ response.status } ${ response.statusText }. Response: ${ responseText }`
+				`AJAX request failed: ${response.status} ${response.statusText}. Response: ${responseText}`
 			);
 		}
 
@@ -293,7 +354,7 @@ const ajaxRequest = async( method, path, requestData = null, auth = getRequestAu
 			console.log( 'Ajax fallback request failed.' );
 
 			throw new Error(
-				`AJAX response validation failed. Response: ${ JSON.stringify( responseData ) }`
+				`AJAX response validation failed. Response: ${JSON.stringify( responseData )}`
 			);
 		}
 
@@ -304,7 +365,7 @@ const ajaxRequest = async( method, path, requestData = null, auth = getRequestAu
 	} catch ( error ) {
 		return Promise.reject(
 			new Error(
-				`AJAX request failed. ${ error instanceof Error ? error.message : String( error ) }`
+				`AJAX request failed. ${error instanceof Error ? error.message : String( error )}`
 			)
 		);
 	}
@@ -352,11 +413,6 @@ const siteUrl = ( type ) => {
 	return url;
 };
 
-export const setOption = ( option, value ) =>
-	makeRequest( 'burst/v1/options/set' + glue() + getNonce(), 'POST', {
-		option: { option, value }
-	});
-
 export const getFields = () =>
 	makeRequest( 'burst/v1/fields/get' + glue() + getNonce() );
 export const setFields = ( data ) => {
@@ -394,6 +450,10 @@ export const doAction = ( action, data = {}) =>
 		action_data: data,
 		should_load_ecommerce: burst_settings.shouldLoadEcommerce || false
 	}).then( ( response ) => {
+		if ( ! response ) {
+			return [];
+		}
+
 		return Object.prototype.hasOwnProperty.call( response, 'data' ) ?
 			response.data :
 			[];
@@ -417,6 +477,10 @@ export const getAction = ( action, actionData = {}) => {
 		`burst/v1/get_action/${action}${glue()}${params}`,
 		'GET'
 	).then( ( response ) => {
+		if ( ! response ) {
+			return [];
+		}
+
 		return Object.prototype.hasOwnProperty.call( response, 'data' ) ? response.data : [];
 	});
 };
