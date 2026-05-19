@@ -203,11 +203,13 @@ We value your feedback. You can [submit a support request on the WordPress forum
 == Change log ==
 = 3.4.3 =
 * May 20th 2026
-* Fix: permanently dismiss notices that are triggered conditionally.
-
-= 3.4.2.1 =
-* May 14th 2026
-* Improvement: performance improvements.
+* Fix: AI chat enablement and MainWP integration reminder tasks can now be dismissed permanently.
+* Fix: AI chat assistant is now hidden for users without the manage_burst_statistics capability.
+* Fix: modal position calculation in the shared viewer.
+* Fix: scope application password auth probing to Burst REST endpoints, so authentication on unrelated REST routes (e.g. WooCommerce) is no longer affected.
+* Security: harden rest api optimizer, Props Sanjay Singh Jhala.
+* Improvement: performance of background aggregated table build, time out guards on sql queries, additional indexes on the burst_statistics table.
+* Improvement: AI chat enablement task now links to the "Ask Burst anything" setup guide.
 
 = 3.4.2 =
 * May 12th 2026
@@ -344,44 +346,6 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Fix: remove obsolete slash in loading of goals script, which on some setups causes it to get blocked, props @jhndkrvzc
 * Fix: top bar count did not show the 'k' for thousands, 'M' for millions, etc, only showing 1, instead of 1k.
 * New: increase minimal required versions for PHP to 8.0, for WordPress to 6.4
-
-= 2.2.9.3 =
-* Fix: some css styling fixed.
-
-= 2.2.9.2 =
-* Improvement: css change to ensure Burst icon aligned correctly in menu
-* Improvement: remove obsolete log line
-* Improvement: remove upgrader_process_complete hook to handle upgrades
-* Improvement: removed some obsolete files
-
-= 2.2.9.1 =
-* Improvement: Date range selection option in pages and posts overview screen options.
-* Fix: issue in onboarding wizard data storing.
-
-= 2.2.9 =
-* Fix: move the code directory from /src to /includes, because otherwise javascript files are not scanned for translations by WordPress
-
-= 2.2.8 =
-* New: improved library for cookieless tracking.
-* New: entry/exit pages filter
-* Improvement: added fallback database upgrade mechanism in case the normal upgrade didn't fire.
-* Improvement: dismissal of PHP notice.
-
-= 2.2.7 =
-* New: Detailed live visitors tab
-* Improvement: responsiveness on mobile, restored 1280px breakpoint
-* Improvement: suspicious data (over 1000 visits from 1 user) is now only detected and the admin notified, not automatically removed.
-* Fix: on multisite with Burst network activated, the endpoint incorrectly did not detect Burst as active, which prevents tracking from occuring.
-
-= 2.2.6.1 =
-* Fix: remove false positive notice about missing tables.
-
-= 2.2.6 =
-* Improvement: pass post_id to javascript using a data attribute in the body element, to improve accuracy of the page specific pageviews.
-* Improvement: dropped usage of the imprecise post_meta pageviews metric entirely.
-* Improvement: made it possible to track hook goals with cookieless tracking.
-* Improvement: migrated all remaining css to tailwind css.
-* Fix: Group by on parameters overview should group by combination of parameter and value.
 
 == Upgrade notice ==
 * Please backup before upgrading.
