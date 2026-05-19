@@ -32,7 +32,7 @@ class Traffic_Metrics {
 	 *     @type int   $visitors                 Number of visitors.
 	 *     @type int   $pageviews                Number of pageviews.
 	 *     @type float $average_bounce_rate      Average bounce rate.
-	 *     @type int   $average_session_duration Average session duration in seconds.
+	 *     @type float $average_session_duration Average session duration in milliseconds.
 	 * }
 	 */
 	public function collect(): array {
@@ -58,7 +58,7 @@ class Traffic_Metrics {
 			'visitors'                 => (int) ( $current_data['visitors'] ?? 0 ),
 			'pageviews'                => (int) ( $current_data['pageviews'] ?? 0 ),
 			'average_bounce_rate'      => (float) ( $current_data['bounce_rate'] ?? 0 ),
-			'average_session_duration' => (float) ( $current_data['avg_time_on_page'] ?? 0 ),
+			'average_session_duration' => max( 0.0, (float) ( $current_data['avg_time_on_page'] ?? 0 ) ),
 		];
 	}
 }

@@ -58,6 +58,7 @@ class Reports_Data extends Data_Collector {
 			$filtered_report['report_id'] = $report->id;
 			$filtered_report['frequency'] = $report->frequency;
 			$filtered_report['format']    = $report->format;
+			$filtered_report['enabled']   = ! empty( $report->enabled );
 
 			// Extract only the string IDs from content blocks, filter out any non-strings.
 			$filtered_report['content_types']    = array_values(

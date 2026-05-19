@@ -32,6 +32,8 @@ class Bootstrap {
 			if ( ! get_option( 'burst_activation_time_pro' ) ) {
 				set_transient( 'burst_redirect_to_settings_page', true, 5 * MINUTE_IN_SECONDS );
 				update_option( 'burst_start_onboarding', true, false );
+				update_option( 'burst_telemetry_skipped_onboarding', (bool) get_option( 'burst_skipped_onboarding', false ), false );
+				update_option( 'burst_telemetry_completed_onboarding', (bool) get_option( 'burst_completed_onboarding', false ), false );
 				delete_option( 'burst_skipped_onboarding' );
 				delete_option( 'burst_completed_onboarding' );
 				update_option( 'burst_activation_time_pro', time(), false );
@@ -43,6 +45,8 @@ class Bootstrap {
 		if ( defined( 'BURST_FORCE_ONBOARDING' ) ) {
 			set_transient( 'burst_redirect_to_settings_page', true, 5 * MINUTE_IN_SECONDS );
 			update_option( 'burst_start_onboarding', true, false );
+			update_option( 'burst_telemetry_skipped_onboarding', (bool) get_option( 'burst_skipped_onboarding', false ), false );
+			update_option( 'burst_telemetry_completed_onboarding', (bool) get_option( 'burst_completed_onboarding', false ), false );
 			delete_option( 'burst_skipped_onboarding' );
 			delete_option( 'burst_completed_onboarding' );
 			delete_option( 'burst_onboarding_free_completed' );
