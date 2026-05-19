@@ -218,7 +218,8 @@ trait Admin_Helper {
 		}
 
 		if (
-			self::is_http_basic_auth_request()
+			self::is_burst_rest_request_path()
+			&& self::is_http_basic_auth_request()
 			&& self::is_confirmed_application_password_auth()
 		) {
 			return burst_loader()->has_admin_access = true;
@@ -444,7 +445,7 @@ trait Admin_Helper {
 		// Scope the skip to the actual auth mechanism of *this* request: the `did_action` flag
 		// is global per request, so on its own it would also skip nonce checks in cookie-auth
 		// paths that happen after an earlier app-password authentication in the same request.
-		if ( self::is_http_basic_auth_request() && (bool) did_action( 'wp_application_passwords_did_authenticate' ) ) {
+		if ( self::is_http_basic_auth_request() && (bool) did_action( 'application_password_did_authenticate' ) ) {
 			return true;
 		}
 		if ( empty( $nonce ) ) {
@@ -473,13 +474,35 @@ trait Admin_Helper {
 	}
 
 	/**
+	 * Whether the current request targets a Burst REST API endpoint.
+	 *
+	 * This is used to avoid running Burst-specific auth probing on unrelated
+	 * REST routes (e.g. WooCommerce), which can taint global REST auth status.
+	 */
+	private static function is_burst_rest_request_path(): bool {
+		// unslashed and sanitized later in this function.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+		$raw_uri = $_SERVER['REQUEST_URI'] ?? '';
+		if ( ! is_string( $raw_uri ) || $raw_uri === '' ) {
+			return false;
+		}
+
+		$uri = sanitize_url( wp_unslash( $raw_uri ) );
+		return strpos( $uri, '/burst/v1/' ) !== false || strpos( $uri, '%2Fburst%2Fv1%2F' ) !== false;
+	}
+
+	/**
 	 * Confirm that the current Basic Auth request is authenticated via Application Passwords.
 	 *
-	 * At early bootstrap points the `wp_application_passwords_did_authenticate` action may
+	 * At early bootstrap points the `application_password_did_authenticate` action may
 	 * not have fired yet, so we also perform an explicit validation fallback.
 	 */
 	private static function is_confirmed_application_password_auth(): bool {
-		if ( (bool) did_action( 'wp_application_passwords_did_authenticate' ) ) {
+		if ( ! self::is_burst_rest_request_path() ) {
+			return false;
+		}
+
+		if ( (bool) did_action( 'application_password_did_authenticate' ) ) {
 			return true;
 		}
 

@@ -177,7 +177,7 @@ class MainWP_Proxy {
 			return true;
 		}
 
-		if ( self::is_http_basic_auth_request() && (bool) did_action( 'wp_application_passwords_did_authenticate' ) ) {
+		if ( self::is_http_basic_auth_request() && (bool) did_action( 'application_password_did_authenticate' ) ) {
 			return true;
 		}
 

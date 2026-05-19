@@ -2249,7 +2249,9 @@ class Abilities_Api {
 	 * Convert an ability name (for example burst/data) to AI function name.
 	 */
 	private function ability_name_to_function_name( string $ability_name ): string {
-		$normalized = str_replace( [ '/', '-' ], '__', $ability_name );
+		// Keep hyphens intact so resolver roundtrips function names back to the
+		// original ability IDs (it maps "__" to "/").
+		$normalized = str_replace( '/', '__', $ability_name );
 
 		return 'wpab__' . ltrim( $normalized, '_' );
 	}

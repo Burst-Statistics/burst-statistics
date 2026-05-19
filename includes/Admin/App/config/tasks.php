@@ -166,17 +166,18 @@ return [
 		'plusone'     => false,
 	],
 	[
-		'id'          => 'enable_ai_chat',
-		'condition'   => [
+		'id'                  => 'enable_ai_chat',
+		'condition'           => [
 			'type'     => 'serverside',
 			'function' => 'Burst\Admin\Abilities_Api\Abilities_Api::should_show_enable_notice()',
 		],
-		'msg'         => __( 'New: Burst AI chat can answer analytics questions and use Burst abilities for you. Enable the Abilities API to try it.', 'burst-statistics' ),
-		'icon'        => 'new',
-		'fix'         => 'burst_option_enable_abilities_api',
-		'dismissible' => true,
-		'plusone'     => true,
-		'url'         => 'guides/ask-burst-anything-setting-up-the-ai-chat-for-your-analytics',
+		'msg'                 => __( 'New: Burst AI chat can answer analytics questions and use Burst abilities for you. Enable the Abilities API to try it.', 'burst-statistics' ),
+		'icon'                => 'new',
+		'fix'                 => 'burst_option_enable_abilities_api',
+		'dismissible'         => true,
+		'plusone'             => true,
+		'dismiss_permanently' => true,
+		'url'                 => 'guides/ask-burst-anything-setting-up-the-ai-chat-for-your-analytics',
 
 	],
 	[
@@ -197,17 +198,18 @@ return [
 		'fix'         => 'burst_option_enable_turbo_mode',
 	],
 	[
-		'id'          => 'mainwp_integration_disabled',
-		'condition'   => [
+		'id'                  => 'mainwp_integration_disabled',
+		'condition'           => [
 			'type'     => 'serverside',
 			'function' => 'Burst\\Admin\\Tasks::should_show_mainwp_integration_task()',
 		],
-		'msg'         => __( 'MainWP Child is active on this site, but Burst MainWP integration is disabled. Enable it in settings to allow MainWP Dashboard statistics.', 'burst-statistics' ),
-		'icon'        => 'warning',
-		'url'         => '#/settings/advanced',
-		'fix'         => 'burst_option_enable_mainwp_integration',
-		'dismissible' => true,
-		'plusone'     => false,
+		'msg'                 => __( 'MainWP Child is active on this site, but Burst MainWP integration is disabled. Enable it in settings to allow MainWP Dashboard statistics.', 'burst-statistics' ),
+		'icon'                => 'warning',
+		'url'                 => '#/settings/advanced',
+		'fix'                 => 'burst_option_enable_mainwp_integration',
+		'dismissible'         => true,
+		'plusone'             => false,
+		'dismiss_permanently' => true,
 	],
 	[
 		'id'                  => 'persistent_object_cache_recommended',

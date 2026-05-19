@@ -243,6 +243,8 @@ class Onboarding {
 
 		// Don't Reopen the wizard if the user skipped the wizard.
 		if ( $skipped || $completed ) {
+			update_option( $prefix . '_telemetry_skipped_onboarding', $skipped, false );
+			update_option( $prefix . '_telemetry_completed_onboarding', $completed, false );
 			delete_option( $prefix . '_skipped_onboarding' );
 			delete_option( $prefix . '_start_onboarding' );
 			delete_option( $prefix . '_completed_onboarding' );
@@ -378,10 +380,12 @@ class Onboarding {
 		switch ( $action ) {
 			case 'user_skipped_wizard':
 				update_option( $this->prefix . '_skipped_onboarding', true, false );
+				update_option( $this->prefix . '_telemetry_skipped_onboarding', true, false );
 				$response = $this->response( true, [], 'User skipped the wizard' );
 				break;
 			case 'user_completed_wizard':
 				update_option( $this->prefix . '_completed_onboarding', true, false );
+				update_option( $this->prefix . '_telemetry_completed_onboarding', true, false );
 				$response = $this->response( true, [], 'User Completed the wizard' );
 				break;
 			case 'activate_license':
