@@ -42,106 +42,107 @@ class Admin {
 	 * Initialize the admin class
 	 */
 	public function init(): void {
-		/**
-		 * Tell the consent API we're following the api
-		 */
-		$plugin = BURST_PLUGIN;
-		add_filter( "wp_consent_api_registered_$plugin", '__return_true' );
-		add_filter( "plugin_action_links_$plugin", [ $this, 'plugin_settings_link' ] );
-		add_filter( "network_admin_plugin_action_links_$plugin", [ $this, 'plugin_settings_link' ] );
-
-		// deactivating.
-		add_action( 'admin_footer', [ $this, 'deactivate_popup' ], 40 );
-		add_action( 'admin_init', [ $this, 'listen_for_deactivation' ], 40 );
-		add_action( 'admin_init', [ $this, 'add_privacy_info' ], 10 );
-
-		// remove tables on multisite uninstall.
-		add_filter( 'wpmu_drop_tables', [ $this, 'ms_remove_tables' ], 10, 2 );
-		add_filter( 'burst_do_action', [ $this, 'maybe_delete_all_data' ], 10, 3 );
-		add_action( 'burst_after_updated_goals', [ $this, 'create_js_file' ], 10, 1 );
-		add_action( 'burst_after_saved_fields', [ $this, 'create_js_file' ], 10, 1 );
-		add_action( 'burst_daily', [ $this, 'create_js_file' ] );
-		add_action( 'burst_daily', [ $this, 'schedule_detect_malicious_data_cron' ] );
-		add_action( 'burst_detect_malicious_data', [ $this, 'detect_malicious_data' ] );
-		add_action( 'burst_dismiss_task', [ $this, 'dismiss_malicious_data_notice' ], 10, 1 );
-		add_action( 'burst_dismiss_task', [ $this, 'dismiss_php_error_notice' ], 10, 1 );
-		add_action( 'wp_initialize_site', [ $this, 'create_js_file' ], 10, 1 );
-		add_action( 'admin_init', [ $this, 'activation' ], 3, 1 );
-		add_action( 'burst_activation', [ $this, 'setup_defaults' ], 20, 1 );
-
-		add_action( 'burst_activation', [ $this, 'run_table_init_hook' ], 10, 1 );
-		add_action( 'after_reset_stats', [ $this, 'run_table_init_hook' ], 10, 1 );
-		add_action( 'wp_initialize_site', [ $this, 'run_table_init_hook' ], 10, 1 );
-		add_action( 'burst_upgrade_before', [ $this, 'run_table_init_hook' ], 10, 1 );
-		add_action( 'burst_cron_table_upgrade', [ $this, 'run_table_init_hook' ], 10, 1 );
-		add_action( 'burst_daily', [ $this, 'validate_tasks' ] );
-		add_action( 'burst_validate_tasks', [ $this, 'validate_tasks' ] );
-		add_action( 'plugins_loaded', [ $this, 'init_wpcli' ] );
-		add_action( 'burst_scheduled_task_fix_malicious_data_removal', [ $this, 'clean_malicious_data' ] );
-		add_action( 'burst_daily', [ $this, 'test_database_tables' ] );
-		add_action( 'burst_attempt_database_fix', [ $this, 'test_database_tables' ] );
-		add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
-		add_action( 'burst_weekly', [ $this, 'cleanup_bf_dismissed_tasks' ] );
-		add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
 		$recalculate_cron_interval = apply_filters( 'burst_recalculate_cron_interval', 'burst_every_ten_minutes' );
 		add_action( $recalculate_cron_interval, [ $this, 'update_last_statistic_data' ] );
 		add_action( 'burst_recalculate_known_uids_cron', [ $this, 'update_known_uids_table' ] );
 		add_action( 'burst_recalculate_bounces_cron', [ $this, 'recalculate_bounces' ] );
 		add_action( 'burst_recalculate_first_time_visits_cron', [ $this, 'recalculate_first_time_visits' ] );
-		add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
 
-		$this->maybe_update_site_scheme();
+		if ( ! BURST_TRACK_ONLY ) {
+			/**
+			 * Tell the consent API we're following the api
+			 */
+			$plugin = BURST_PLUGIN;
+			add_filter( "wp_consent_api_registered_$plugin", '__return_true' );
+			add_filter( "plugin_action_links_$plugin", [ $this, 'plugin_settings_link' ] );
+			add_filter( "network_admin_plugin_action_links_$plugin", [ $this, 'plugin_settings_link' ] );
 
-		$upgrade = new Upgrade();
-		$upgrade->init();
-		$db_upgrade = new DB_Upgrade();
-		$db_upgrade->init();
-		$cron = new Cron();
-		$cron->init();
+			// deactivating.
+			add_action( 'admin_footer', [ $this, 'deactivate_popup' ], 40 );
+			add_action( 'admin_init', [ $this, 'listen_for_deactivation' ], 40 );
+			add_action( 'admin_init', [ $this, 'add_privacy_info' ], 10 );
 
-		$archive = new Archive();
-		$archive->init();
+			// remove tables on multisite uninstall.
+			add_filter( 'wpmu_drop_tables', [ $this, 'ms_remove_tables' ], 10, 2 );
+			add_filter( 'burst_do_action', [ $this, 'maybe_delete_all_data' ], 10, 3 );
+			add_action( 'burst_after_updated_goals', [ $this, 'create_js_file' ], 10, 1 );
+			add_action( 'burst_after_saved_fields', [ $this, 'create_js_file' ], 10, 1 );
+			add_action( 'burst_daily', [ $this, 'create_js_file' ] );
+			add_action( 'burst_daily', [ $this, 'schedule_detect_malicious_data_cron' ] );
+			add_action( 'burst_detect_malicious_data', [ $this, 'detect_malicious_data' ] );
+			add_action( 'burst_dismiss_task', [ $this, 'dismiss_malicious_data_notice' ], 10, 1 );
+			add_action( 'burst_dismiss_task', [ $this, 'dismiss_php_error_notice' ], 10, 1 );
+			add_action( 'wp_initialize_site', [ $this, 'create_js_file' ], 10, 1 );
+			add_action( 'admin_init', [ $this, 'activation' ], 3, 1 );
+			add_action( 'burst_activation', [ $this, 'setup_defaults' ], 20, 1 );
+			add_action( 'burst_activation', [ $this, 'run_table_init_hook' ], 10, 1 );
+			add_action( 'after_reset_stats', [ $this, 'run_table_init_hook' ], 10, 1 );
+			add_action( 'wp_initialize_site', [ $this, 'run_table_init_hook' ], 10, 1 );
+			add_action( 'burst_upgrade_before', [ $this, 'run_table_init_hook' ], 10, 1 );
+			add_action( 'burst_cron_table_upgrade', [ $this, 'run_table_init_hook' ], 10, 1 );
+			add_action( 'burst_daily', [ $this, 'validate_tasks' ] );
+			add_action( 'burst_validate_tasks', [ $this, 'validate_tasks' ] );
+			add_action( 'plugins_loaded', [ $this, 'init_wpcli' ] );
+			add_action( 'burst_scheduled_task_fix_malicious_data_removal', [ $this, 'clean_malicious_data' ] );
+			add_action( 'burst_daily', [ $this, 'test_database_tables' ] );
+			add_action( 'burst_attempt_database_fix', [ $this, 'test_database_tables' ] );
+			add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
+			add_action( 'burst_weekly', [ $this, 'cleanup_bf_dismissed_tasks' ] );
+			add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
+			add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
 
-		$goal_statistics = new Goal_Statistics();
-		$goal_statistics->init();
-		$this->statistics = new Statistics();
-		$this->statistics->init();
-		$reports = new Reports();
-		$reports->init();
-		$reports_logs = Report_Logs::instance();
-		$reports_logs->init();
-		$this->app = new App();
-		$this->app->init();
-		$abilities_api = new Abilities_Api();
-		$abilities_api->init();
+			$this->maybe_update_site_scheme();
+			$upgrade = new Upgrade();
+			$upgrade->init();
+			$db_upgrade = new DB_Upgrade();
+			$db_upgrade->init();
+			$cron = new Cron();
+			$cron->init();
 
-		$posts = new Posts();
-		$posts->init();
+			$archive = new Archive();
+			$archive->init();
 
-		$review = new Review();
-		$review->init();
-		$this->tasks = new Tasks();
-		$widget      = new Dashboard_Widget();
-		$widget->init();
+			$goal_statistics = new Goal_Statistics();
+			$goal_statistics->init();
+			$this->statistics = new Statistics();
+			$this->statistics->init();
+			$reports = new Reports();
+			$reports->init();
+			$reports_logs = Report_Logs::instance();
+			$reports_logs->init();
+			$this->app = new App();
+			$this->app->init();
+			$abilities_api = new Abilities_Api();
+			$abilities_api->init();
 
-		$debug = new Debug();
-		$debug->init();
+			$posts = new Posts();
+			$posts->init();
 
-		$milestones = new Milestones();
-		$milestones->init();
+			$review = new Review();
+			$review->init();
+			$this->tasks = new Tasks();
+			$widget      = new Dashboard_Widget();
+			$widget->init();
 
-		if ( $this->get_option_bool( 'anonymous_usage_data' ) ) {
-			$data_sharing = new Data_Sharing();
-			$data_sharing->init();
+			$debug = new Debug();
+			$debug->init();
+
+			$milestones = new Milestones();
+			$milestones->init();
+
+			if ( $this->get_option_bool( 'anonymous_usage_data' ) ) {
+				$data_sharing = new Data_Sharing();
+				$data_sharing->init();
+			}
+
+			if ( defined( 'BURST_BLUEPRINT' ) && ! get_option( 'burst_demo_data_installed' ) ) {
+				add_action( 'init', [ $this, 'install_demo_data' ] );
+				update_option( 'burst_demo_data_installed', true, false );
+			}
+
+			$this->share = new Share();
+			$this->share->init();
 		}
-
-		if ( defined( 'BURST_BLUEPRINT' ) && ! get_option( 'burst_demo_data_installed' ) ) {
-			add_action( 'init', [ $this, 'install_demo_data' ] );
-			update_option( 'burst_demo_data_installed', true, false );
-		}
-
-		$this->share = new Share();
-		$this->share->init();
 	}
 
 	/**

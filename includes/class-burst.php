@@ -69,13 +69,16 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 		define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 		define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 		define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
-		define( 'BURST_VERSION', '3.4.2' );
+		define( 'BURST_VERSION', '3.4.3' );
 		define( 'BURST_PUBLIC_KEY', 'bst_7k9mQpX2vL4nWzR8jYhF6tGcU5eBxN3dS1aM0iKoHgJfVq' );
 		// deprecated constant.
         //phpcs:ignore
         define( 'burst_version', BURST_VERSION );
 		define( 'BURST_ITEM_ID', 889 );
 		define( 'BURST_PRODUCT_NAME', 'Burst Pro' );
+		if ( ! defined( 'BURST_TRACK_ONLY' ) ) {
+			define( 'BURST_TRACK_ONLY', false );
+		}
 	}
 
 	/**
@@ -105,12 +108,12 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 		$this->integrations = new Integrations();
 		$this->integrations->init();
 
-		if ( is_user_logged_in() ) {
+		if ( is_user_logged_in() && ! BURST_TRACK_ONLY ) {
 			$this->frontend_admin = new Frontend_Admin();
 			$this->frontend_admin->init();
 		}
 
-		if ( $this->has_admin_access() ) {
+		if ( $this->has_admin_access( true ) ) {
 			$this->admin = new Admin();
 			$this->admin->init();
 			$capability = new Capability();

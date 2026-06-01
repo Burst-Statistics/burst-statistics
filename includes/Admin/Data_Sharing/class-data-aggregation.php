@@ -58,6 +58,98 @@ class Data_Aggregation {
 	}
 
 	/**
+	 * Get a fallback payload shape for a collector key.
+	 */
+	private function get_collector_fallback_data( string $key ): array {
+		switch ( $key ) {
+			case 'goals':
+				return [
+					'goals' => [],
+				];
+
+			case 'environment':
+				return [
+					'wordpress' => [
+						'version'   => wp_get_wp_version(),
+						'multisite' => is_multisite(),
+					],
+					'php'       => [
+						'version' => (string) phpversion(),
+					],
+					'plugins'   => [
+						'active_plugins' => [],
+					],
+				];
+
+			case 'email_reports':
+				return [
+					'reports' => [],
+					'logs'    => null,
+				];
+
+			case 'metrics':
+				return [
+					'aggregation_period' => [
+						'start_date' => gmdate( 'Y-m-d', $this->capture_data_from ),
+						'end_date'   => gmdate( 'Y-m-d', $this->capture_data_to ),
+					],
+					'traffic'            => [
+						'visitors'    => 0,
+						'pageviews'   => 0,
+						'sessions'    => 0,
+						'bounce_rate' => 0,
+					],
+					'ecommerce'          => null,
+					'database'           => [
+						'database_size' => 0,
+						'table_count'   => 0,
+					],
+					'query_stats'        => [],
+				];
+
+			case 'settings':
+			default:
+				return [];
+		}
+	}
+
+	/**
+	 * Normalize email report logs to either null or a strict metrics object.
+	 */
+	private function normalize_email_report_logs( mixed $logs ): ?array {
+		if ( ! is_array( $logs ) || empty( $logs ) ) {
+			return null;
+		}
+
+		$reports_sent = isset( $logs['reports_sent_last_month'] ) ? (int) $logs['reports_sent_last_month'] : 0;
+		$successes    = isset( $logs['successful_sends'] ) ? (int) $logs['successful_sends'] : 0;
+		$failures     = isset( $logs['failed_sends'] ) ? (int) $logs['failed_sends'] : 0;
+
+		return [
+			'reports_sent_last_month' => max( 0, $reports_sent ),
+			'successful_sends'        => max( 0, $successes ),
+			'failed_sends'            => max( 0, $failures ),
+		];
+	}
+
+	/**
+	 * Ensure required top-level v2 sections always exist.
+	 */
+	private function ensure_required_sections( array $collected_data ): array {
+		$required_sections = [ 'settings', 'goals', 'environment', 'email_reports', 'metrics' ];
+
+		foreach ( $required_sections as $section ) {
+			if ( ! isset( $collected_data[ $section ] ) || ! is_array( $collected_data[ $section ] ) ) {
+				$collected_data[ $section ] = $this->get_collector_fallback_data( $section );
+			}
+		}
+
+		$collected_data['email_reports']['logs'] = $this->normalize_email_report_logs( $collected_data['email_reports']['logs'] ?? null );
+
+		return $collected_data;
+	}
+
+	/**
 	 * Generate a unique hash for this site
 	 */
 	private function generate_site_hash(): string {
@@ -94,6 +186,8 @@ class Data_Aggregation {
 
 				$aggregated_data['data'][ $key ] = $collector->collect_data();
 			} catch ( \Exception $e ) {
+				$aggregated_data['data'][ $key ] = $this->get_collector_fallback_data( $key );
+
 				$aggregated_data['errors'][ $key ] = [
 					'message' => $e->getMessage(),
 					'code'    => $e->getCode(),
@@ -108,6 +202,8 @@ class Data_Aggregation {
 				);
 			}
 		}
+
+		$aggregated_data['data'] = $this->ensure_required_sections( $aggregated_data['data'] );
 
 		set_transient( self::CACHE_KEY, $aggregated_data, self::CACHE_DURATION );
 

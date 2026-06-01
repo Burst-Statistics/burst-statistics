@@ -161,7 +161,7 @@ const Header = () => {
 
 				{! isShareableLinkViewer && (
 					<div className="flex items-center gap-4 lg:gap-5">
-						<ChatAssistantModal />
+						{burst_settings.manage_burst_statistics && <ChatAssistantModal />}
 
 						{upgradeUrl && (
 							<>

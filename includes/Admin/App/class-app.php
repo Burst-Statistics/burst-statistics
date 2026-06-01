@@ -39,6 +39,7 @@ class App {
 	public Menu $menu;
 	public Fields $fields;
 	public Tasks $tasks;
+	private array|null $cached_datatable_configs = null;
 
 	/**
 	 * Reporting fields.
@@ -61,7 +62,7 @@ class App {
 		add_action( 'burst_weekly', [ $this, 'init_cleanup' ] );
 		add_action( 'burst_weekly_clear_referrers_cron', [ $this, 'weekly_clear_referrers_table' ] );
 		add_action( 'burst_weekly_clear_spam_browsers_cron', [ $this, 'weekly_clear_spam_browsers' ] );
-		add_action( 'burst_daily', [ $this, 'maybe_update_plugin_path' ] );
+		add_action( 'burst_daily', [ $this, 'maybe_update_plugin_slug' ] );
 		$this->menu             = new Menu();
 		$this->fields           = new Fields();
 		$this->reporting_fields = new Reporting_Fields();
@@ -72,13 +73,17 @@ class App {
 	}
 
 	/**
-	 * Check plugin path daily and maybe update the path if it is changed.
+	 * Check plugin slug daily and maybe update if the plugin directory was renamed.
+	 * Only the validated slug is stored, not a filesystem path.
 	 */
-	public function maybe_update_plugin_path(): void {
-		$stored_path  = get_option( 'burst_plugin_path', '' );
-		$current_path = BURST_PATH;
-		if ( $stored_path !== $current_path ) {
-			update_option( 'burst_plugin_path', $current_path, true );
+	public function maybe_update_plugin_slug(): void {
+		$current_slug = basename( untrailingslashit( BURST_PATH ) );
+		if ( ! preg_match( '/^[a-zA-Z0-9_-]+$/', $current_slug ) ) {
+			return;
+		}
+		$stored_slug = get_option( 'burst_plugin_slug', '' );
+		if ( $stored_slug !== $current_slug ) {
+			update_option( 'burst_plugin_slug', $current_slug, true );
 		}
 	}
 
@@ -417,7 +422,6 @@ class App {
 		}
 
 		$do_action_fragments = [
-			'/options/set',
 			'/fields/set',
 			'/goals/add',
 			'/goals/delete',
@@ -458,12 +462,18 @@ class App {
 
 			// Handle granular datatable endpoints in fallback.
 			if ( str_contains( $action, 'burst/v1/data/ecommerce/datatable/' ) ) {
+				if ( ! $this->user_can_view_sales() ) {
+					$error = true;
+				}
 				$data_type = 'datatable-' . str_replace( 'burst/v1/data/ecommerce/datatable/', '', $action );
 				// Manually set is_ecommerce for the fallback request.
 				$_GET['is_ecommerce'] = true;
 			} elseif ( str_contains( $action, 'burst/v1/data/datatable/' ) ) {
 				$data_type = 'datatable-' . str_replace( 'burst/v1/data/datatable/', '', $action );
 			} elseif ( str_contains( $action, 'burst/v1/data/ecommerce/' ) ) {
+				if ( ! $this->user_can_view_sales() ) {
+					$error = true;
+				}
 				$data_type = strtolower( str_replace( 'burst/v1/data/ecommerce/', '', $action ) );
 			} elseif ( str_contains( $action, 'burst/v1/data/' ) ) {
 				$data_type = strtolower( str_replace( 'burst/v1/data/', '', $action ) );
@@ -485,11 +495,17 @@ class App {
 				if ( ! $data_type && strpos( $action, 'burst/v1/data/' ) !== false ) {
 					// Extract data type for /data/* when using POST.
 					if ( str_contains( $action, 'burst/v1/data/ecommerce/datatable/' ) ) {
+						if ( ! $this->user_can_view_sales() ) {
+							$error = true;
+						}
 						$data_type                            = 'ecommerce-datatable-' . str_replace( 'burst/v1/data/ecommerce/datatable/', '', $action );
 						$request_data['data']['is_ecommerce'] = true;
 					} elseif ( str_contains( $action, 'burst/v1/data/datatable/' ) ) {
 						$data_type = 'datatable-' . str_replace( 'burst/v1/data/datatable/', '', $action );
 					} else {
+						if ( str_contains( $action, 'burst/v1/data/ecommerce/' ) && ! $this->user_can_view_sales() ) {
+							$error = true;
+						}
 						$data_type = strtolower( str_replace( 'burst/v1/data/', '', $action ) );
 					}
 				}
@@ -569,8 +585,6 @@ class App {
 				$response = $this->rest_api_fields_get( $request );
 			} elseif ( str_contains( $action, '/fields/set' ) ) {
 				$response = $this->rest_api_fields_set( $request, $data );
-			} elseif ( str_contains( $action, '/options/set' ) ) {
-				$response = $this->rest_api_options_set( $request, $data );
 			} elseif ( str_contains( $action, '/goals/get' ) ) {
 				$response = $this->rest_api_goals_get( $request );
 			} elseif ( str_contains( $action, '/goals/add' ) ) {
@@ -969,18 +983,6 @@ class App {
 			// sleep for 0.5 seconds to allow the database installation to finish.
 			usleep( 500000 );
 		}
-
-		register_rest_route(
-			'burst/v1',
-			'options/set',
-			[
-				'methods'             => 'POST',
-				'callback'            => [ $this, 'rest_api_options_set' ],
-				'permission_callback' => function () {
-					return $this->user_can_manage();
-				},
-			]
-		);
 
 		register_rest_route(
 			'burst/v1',
@@ -1769,20 +1771,93 @@ class App {
 	}
 
 	/**
-	 * Get the metric allow-list for each datatable.
+	 * Get datatable configuration (metrics and capability requirements).
+	 * Single source of truth for all datatable access control and metrics.
+	 *
+	 * @return array<string, array{metrics: string[], capability: string}> Datatable config.
+	 */
+	public function get_datatable_config(): array {
+		if ( null !== $this->cached_datatable_configs ) {
+			return $this->cached_datatable_configs;
+		}
+
+		$config = [
+			'statistics_pages'      => [
+				'metrics'    => [ 'page_url', 'pageviews', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'entrances', 'exit_rate', 'conversions', 'conversion_rate', 'sales', 'revenue', 'sales_conversion_rate', 'page_value' ],
+				'capability' => 'view_burst_statistics',
+			],
+			'statistics_parameters' => [
+				'metrics'    => [ 'parameter', 'parameters', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'conversions', 'sales', 'revenue', 'page_value' ],
+				'capability' => 'view_burst_statistics',
+			],
+			// In free sources_referrers becomes statistics_referrers.
+			'statistics_referrers'  => [
+				'metrics'    => [ 'referrer', 'visitors', 'sessions', 'bounce_rate', 'conversions', 'sales', 'revenue', 'page_value' ],
+				'capability' => 'view_burst_statistics',
+			],
+			'dummy_data'            => [
+				'metrics'    => [ 'page_url', 'pageviews', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'entrances', 'exit_rate', 'conversions', 'conversion_rate', 'sales', 'revenue', 'sales_conversion_rate', 'page_value' ],
+				'capability' => 'view_burst_statistics',
+			],
+		];
+
+		$this->cached_datatable_configs = apply_filters( 'burst_datatable_config', $config );
+
+		return $this->cached_datatable_configs;
+	}
+
+	/**
+	 * Get the metric allow-list for each datatable (backward compatibility).
 	 *
 	 * @return array<string, string[]> Datatable ID => list of allowed metric keys.
 	 */
 	public function get_datatable_metric_allow_list(): array {
-		$allow_list = [
-			'statistics_pages'      => [ 'page_url', 'pageviews', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'entrances', 'exit_rate', 'conversions', 'conversion_rate', 'sales', 'revenue', 'sales_conversion_rate', 'page_value' ],
-			'statistics_parameters' => [ 'parameter', 'parameters', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'conversions', 'sales', 'revenue', 'page_value' ],
-			// In free sources_referrers becomes statistics_referrers.
-			'statistics_referrers'  => [ 'referrer', 'visitors', 'sessions', 'bounce_rate', 'conversions', 'sales', 'revenue', 'page_value' ],
-			'dummy_data'            => [ 'page_url', 'pageviews', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'entrances', 'exit_rate', 'conversions', 'conversion_rate', 'sales', 'revenue', 'sales_conversion_rate', 'page_value' ],
-		];
+		$config     = $this->get_datatable_config();
+		$allow_list = [];
 
-		return apply_filters( 'burst_datatable_metric_allow_list', $allow_list );
+		foreach ( $config as $datatable_id => $datatable_cfg ) {
+			$allow_list[ $datatable_id ] = $datatable_cfg['metrics'] ?? [];
+		}
+
+		return $allow_list;
+	}
+
+	/**
+	 * Get the required capability for accessing each datatable.
+	 *
+	 * @return array<string, string> Datatable ID => required capability.
+	 */
+	public function get_datatable_capability_requirements(): array {
+		$config = $this->get_datatable_config();
+
+		return array_map(
+			function ( $datatable_cfg ) {
+				return $datatable_cfg['capability'];
+			},
+			$config
+		);
+	}
+
+	/**
+	 * Check if user has permission to access a specific datatable.
+	 * For shared link viewers, trust the route-level permission check which validates tab routing.
+	 * For regular users, enforce capability requirements.
+	 *
+	 * @param string $datatable_id The datatable ID to check.
+	 * @return bool True if user can access the datatable, false otherwise.
+	 */
+	private function user_can_access_datatable( string $datatable_id ): bool {
+		// Shared link viewers are identified by burst_viewer role and have their access
+		// controlled by share configuration at the route level. If they pass the route's
+		// permission check, trust that decision.
+		if ( self::is_shareable_link_viewer() ) {
+			return true;
+		}
+
+		$requirements = $this->get_datatable_capability_requirements();
+		$required_cap = $requirements[ $datatable_id ] ?? 'view_burst_statistics';
+
+		return current_user_can( $required_cap );
 	}
 
 	/**
@@ -1835,6 +1910,17 @@ class App {
 			$allow_list = $this->get_datatable_metric_allow_list();
 
 			if ( isset( $allow_list[ $type ] ) ) {
+				// Enforce capability requirements for gated datatables (e.g., ecommerce data).
+				if ( ! $this->user_can_access_datatable( $type ) ) {
+					return $this->create_rest_response(
+						[
+							'success' => false,
+							'message' => __( 'Access denied.', 'burst-statistics' ),
+						],
+						403
+					);
+				}
+
 				// If a datatable ID is used as the endpoint type, intersect incoming metrics with the allow-list.
 				if ( isset( $args['metrics'] ) && is_array( $args['metrics'] ) ) {
 					$args['metrics'] = array_intersect( $args['metrics'], $allow_list[ $type ] );
@@ -1943,54 +2029,6 @@ class App {
 				'success'         => true,
 			],
 			$status
-		);
-	}
-
-	/**
-	 * Save options through the rest api
-	 */
-	public function rest_api_options_set( \WP_REST_Request $request, array $ajax_data = [] ): \WP_REST_Response {
-		if ( ! $this->user_can_manage() ) {
-			return new \WP_REST_Response(
-				[
-					'success' => false,
-					'message' => 'You do not have permission to perform this action.',
-				]
-			);
-		}
-		$data = empty( $ajax_data ) ? $request->get_json_params() : $ajax_data;
-
-		// get the nonce.
-		$nonce   = $data['nonce'];
-		$options = $data['option'];
-		if ( ! $this->verify_nonce( $nonce, 'burst_nonce' ) ) {
-			return new \WP_REST_Response(
-				[
-					'success' => false,
-					'message' => 'Invalid nonce.',
-				]
-			);
-		}
-
-		// sanitize the options.
-		$option = sanitize_title( $options['option'] );
-		$value  = sanitize_text_field( $options['value'] );
-
-		// option should be prefixed with burst_, if not add it.
-		if ( strpos( $option, 'burst_' ) !== 0 ) {
-			$option = 'burst_' . $option;
-		}
-		update_option( $option, $value );
-		if ( ob_get_length() ) {
-			ob_clean();
-		}
-
-		return new \WP_REST_Response(
-			[
-				'status'          => 'success',
-				'request_success' => true,
-			],
-			200
 		);
 	}
 

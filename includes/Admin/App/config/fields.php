@@ -107,32 +107,6 @@ defined( 'ABSPATH' ) || die();
 
 return [
 	[
-		'id'       => 'review_notice_shown',
-		'menu_id'  => 'general',
-		'group_id' => 'general',
-		'type'     => 'hidden',
-		'label'    => '',
-		'disabled' => false,
-		'default'  => false,
-	],
-	[
-		'id'       => 'burst_tour_shown_once',
-		'menu_id'  => 'general',
-		'group_id' => 'general',
-		'type'     => 'hidden',
-		'label'    => '',
-		'disabled' => false,
-		'default'  => false,
-	],
-	[
-		'id'       => 'not_writable',
-		'menu_id'  => 'general',
-		'group_id' => 'general',
-		'type'     => 'hidden',
-		'label'    => '',
-		'default'  => false,
-	],
-	[
 		'id'                     => 'enable_turbo_mode',
 		'menu_id'                => 'general',
 		'group_id'               => 'general',
@@ -349,7 +323,7 @@ return [
 		'id'       => 'enable_mainwp_integration',
 		'menu_id'  => 'advanced',
 		'group_id' => 'scripts',
-		'type'     => 'checkbox',
+		'type'     => file_exists( WP_PLUGIN_DIR . '/mainwp-child/mainwp-child.php' ) ? 'checkbox' : 'hidden',
 		'label'    => __( 'Enable MainWP Dashboard Integration', 'burst-statistics' ),
 		'context'  => [
 			'text' => __( 'Allow the MainWP dashboard to display Burst statistics from child sites. Disable this to completely prevent MainWP integration.', 'burst-statistics' ),

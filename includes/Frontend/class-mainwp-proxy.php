@@ -177,7 +177,7 @@ class MainWP_Proxy {
 			return true;
 		}
 
-		if ( self::is_http_basic_auth_request() && (bool) did_action( 'wp_application_passwords_did_authenticate' ) ) {
+		if ( self::is_http_basic_auth_request() && (bool) did_action( 'application_password_did_authenticate' ) ) {
 			return true;
 		}
 
@@ -385,39 +385,84 @@ class MainWP_Proxy {
 	public function is_mainwp_authenticated(): bool {
 		$auth_header = sanitize_text_field( wp_unslash( $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '' ) );
 
-		if ( ! empty( $auth_header ) && stripos( $auth_header, 'basic ' ) === 0 ) {
-			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
-			$credentials = base64_decode( substr( $auth_header, 6 ), true );
-			if ( ! $credentials ) {
-				return false;
-			}
-			$parts = explode( ':', $credentials, 2 );
-			if ( count( $parts ) !== 2 ) {
-				return false;
-			}
-
-			$allow_application_password_request = static function (): bool {
-				return true;
-			};
-			add_filter( 'application_password_is_api_request', $allow_application_password_request, 999 );
-			$authenticated_user = wp_authenticate_application_password( null, $parts[0], $parts[1] );
-			remove_filter( 'application_password_is_api_request', $allow_application_password_request, 999 );
-
-			if ( ! $authenticated_user instanceof \WP_User ) {
-				return false;
-			}
-			if ( ! hash_equals( (string) $authenticated_user->user_login, $parts[0] ) ) {
-				return false;
-			}
-			if ( ! user_can( $authenticated_user, 'manage_burst_statistics' ) ) {
-				return false;
-			}
-			wp_set_current_user( $authenticated_user->ID );
-
-			return true;
+		if ( empty( $auth_header ) || stripos( $auth_header, 'basic ' ) !== 0 ) {
+			return false;
 		}
 
-		return false;
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+		$credentials = base64_decode( substr( $auth_header, 6 ), true );
+		if ( ! $credentials ) {
+			return false;
+		}
+
+		$parts = explode( ':', $credentials, 2 );
+		if ( count( $parts ) !== 2 ) {
+			return false;
+		}
+
+		if ( ! function_exists( 'wp_validate_application_password' ) ) {
+			return false;
+		}
+
+		// Save and restore the original PHP_AUTH_* server values so that populating
+		// them here (required by wp_validate_application_password) does not bleed into
+		// any other auth checks that may run later in the same request.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+		$saved_auth_user = $_SERVER['PHP_AUTH_USER'] ?? null;
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+		$saved_auth_pw = $_SERVER['PHP_AUTH_PW'] ?? null;
+
+		// We are *writing* to $_SERVER so wp_validate_application_password() can read the
+		// credentials. $parts values originate from the sanitized $auth_header above.
+		// Sanitizing further (e.g. sanitize_text_field) would corrupt the password.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+		$_SERVER['PHP_AUTH_USER'] = $parts[0];
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+		$_SERVER['PHP_AUTH_PW'] = $parts[1];
+
+		// wp_validate_application_password() only operates when WordPress considers the
+		// request to be a REST API context. This function is called from has_admin_access(),
+		// which runs before REST routes are loaded — it is the gate that decides whether to
+		// load them. At that early point WordPress has not yet identified the request as an
+		// API context, so without this filter wp_validate_application_password() returns
+		// nothing and the credential check silently fails, resulting in a 404 "route not found"
+		// because the REST endpoint files are never loaded. The filter is scoped tightly and
+		// removed immediately after the call.
+		add_filter( 'application_password_is_api_request', '__return_true', 99 );
+		$validated_user_id = wp_validate_application_password( false );
+		remove_filter( 'application_password_is_api_request', '__return_true', 99 );
+
+		if ( $saved_auth_user !== null ) {
+			$_SERVER['PHP_AUTH_USER'] = $saved_auth_user;
+		} else {
+			unset( $_SERVER['PHP_AUTH_USER'] );
+		}
+		if ( $saved_auth_pw !== null ) {
+			$_SERVER['PHP_AUTH_PW'] = $saved_auth_pw;
+		} else {
+			unset( $_SERVER['PHP_AUTH_PW'] );
+		}
+
+		if ( empty( $validated_user_id ) ) {
+			return false;
+		}
+
+		// wp_validate_application_password() validates both the username and the
+		// application password credential atomically and returns the authenticated user's
+		// ID. We use that ID directly — no secondary username comparison is needed or
+		// safe, because the validated ID already proves the credentials matched.
+		$authenticated_user = get_user_by( 'id', (int) $validated_user_id );
+		if ( ! $authenticated_user instanceof \WP_User ) {
+			return false;
+		}
+
+		if ( ! user_can( $authenticated_user, 'manage_burst_statistics' ) ) {
+			return false;
+		}
+
+		wp_set_current_user( $authenticated_user->ID );
+		return true;
 	}
 
 	// ── Nonce Management ──────────────────────────────────────────────────────
