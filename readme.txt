@@ -31,13 +31,13 @@ Trusted by **200,000+ WordPress sites**. Built by the team behind [Team Updraft]
 = Why Burst Statistics? =
  
 **Analytics designed to be actionable**
-Other analytics plugins throw everything at you. Burst shows what matters, visitors, pageviews, referrers, top pages, in a dashboard you'll actually use. No data overload. No confusing menus. See the [features overview](https://burst-statistics.com/features/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=why-actionable).
+Other analytics plugins throw everything at you. Burst shows what matters, visitors, pageviews, referrers, top pages, in a dashboard you'll actually use. No data overload. No confusing menus. See why [Burst is perfect for bloggers](https://burst-statistics.com/for/bloggers/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=why-actionable).
  
 **Privacy analytics by design**
-All site stats stay on your server, making Burst a true local analytics solution. No external tracking. Your data is yours, we never see it without your explicit permission. Designed for GDPR compliant analytics out of the box. Read [why Burst is privacy-friendly](https://burst-statistics.com/why-is-burst-privacy-friendly/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=why-privacy).
+All site stats stay on your server, making Burst a true local analytics solution. No external tracking. Your data is yours, we never see it without your explicit permission. Designed for GDPR compliant analytics out of the box. Read [why Burst Statistics is privacy-friendly](https://burst-statistics.com/why-is-burst-privacy-friendly/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=why-privacy).
  
 **Zero setup friction**
-Install, activate, done. No Google Analytics account, no GA4 setup, no tracking codes, no configuration headaches. Start seeing live visitors immediately. New to analytics? Start with our [WordPress analytics guide](https://burst-statistics.com/guides/wordpress-analytics/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=why-setup).
+Install, activate, done. No Google Analytics account, no GA4 setup, no tracking codes, no configuration headaches. Start seeing live visitors immediately. New to analytics? Start with our guide on [WordPress analytics](https://burst-statistics.com/guides/wordpress-analytics/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=why-setup).
  
 **WordPress-native analytics**
 Not a port from another platform. Built specifically for WordPress with native performance and seamless integration. Works with WooCommerce, blogs, business sites and membership sites.
