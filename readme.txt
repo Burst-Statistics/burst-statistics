@@ -1,4 +1,4 @@
-=== Burst Statistics – Simple WordPress Analytics plugin ===
+=== Burst Statistics – Simple WordPress Analytics (Google Analytics Alternative)  ===
 Contributors: hesseldejong, RogierLankhorst, sh4lin, parthnvaswani
 Donate link: paypal.me/Burststatistics
 Tags: analytics, statistics, stats, google analytics, GDPR
@@ -8,7 +8,7 @@ Requires PHP: 8.0
 Tested up to: 7.0
 Stable tag: 3.4.2
 
-Simple WordPress Analytics plugin. Setup in seconds and understand your wordpress traffic analytics just as easy. 
+Simple WordPress Analytics plugin. Setup in seconds and understand your website traffic just as easy. No cookiebanner required.
  
 == Description ==
  
