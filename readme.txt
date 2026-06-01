@@ -1,4 +1,4 @@
-=== Burst Statistics - Privacy-Friendly WordPress Analytics (Google Analytics Alternative) ===
+=== Burst Statistics – Simple WordPress Analytics plugin ===
 Contributors: hesseldejong, RogierLankhorst, sh4lin, parthnvaswani
 Donate link: paypal.me/Burststatistics
 Tags: analytics, statistics, stats, google analytics, GDPR
@@ -8,7 +8,7 @@ Requires PHP: 8.0
 Tested up to: 7.0
 Stable tag: 3.4.2
 
-Privacy-friendly WordPress analytics. A simple, GDPR compliant Google Analytics alternative with cookieless tracking and zero setup.
+Simple WordPress Analytics plugin. Setup in seconds and understand your wordpress traffic analytics just as easy. 
  
 == Description ==
  
