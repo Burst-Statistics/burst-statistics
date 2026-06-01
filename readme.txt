@@ -1,20 +1,20 @@
 === Burst Statistics – Simple WordPress Analytics (Google Analytics Alternative)  ===
 Contributors: hesseldejong, RogierLankhorst, sh4lin, parthnvaswani
 Donate link: paypal.me/Burststatistics
-Tags: analytics, statistics, stats, google analytics, GDPR
+Tags: analytics, visitor tracking, statistics, google analytics, cookieless analytics
 Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.0
 Stable tag: 3.4.2
 
-Simple WordPress Analytics plugin. Setup in seconds and understand your website traffic just as easy. No cookiebanner required.
+Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner required.
  
 == Description ==
  
 = Finally, WordPress analytics you'll actually use =
  
-Google Analytics is overkill. Most other WordPress statistics plugins are cluttered and confusing. You just want to know what's happening on your site, without a data science degree.
+Google Analytics is overkill. Most other WordPress statistics plugins are cluttered and confusing. You just want to track visitors and know what's happening on your site, without a data science degree.
  
 [Burst Statistics](https://burst-statistics.com/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=intro) gives you a clean, intuitive analytics dashboard focused on the metrics that actually matter. **No external analytics accounts. No complex setup. Install, activate, and understand your website traffic in seconds.**
  
@@ -34,7 +34,7 @@ Trusted by **200,000+ WordPress sites**. Built by the team behind [Team Updraft]
 Other analytics plugins throw everything at you. Burst shows what matters, visitors, pageviews, referrers, top pages, in a dashboard you'll actually use. No data overload. No confusing menus. See the [features overview](https://burst-statistics.com/features/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=why-actionable).
  
 **Privacy analytics by design**
-All site stats stay on your server. No external tracking. Your data is yours, we never see it without your explicit permission. Designed for GDPR compliant analytics out of the box. Read [why Burst is privacy-friendly](https://burst-statistics.com/why-is-burst-privacy-friendly/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=why-privacy).
+All site stats stay on your server, making Burst a true local analytics solution. No external tracking. Your data is yours, we never see it without your explicit permission. Designed for GDPR compliant analytics out of the box. Read [why Burst is privacy-friendly](https://burst-statistics.com/why-is-burst-privacy-friendly/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=why-privacy).
  
 **Zero setup friction**
 Install, activate, done. No Google Analytics account, no GA4 setup, no tracking codes, no configuration headaches. Start seeing live visitors immediately. New to analytics? Start with our [WordPress analytics guide](https://burst-statistics.com/guides/wordpress-analytics/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=why-setup).
@@ -77,7 +77,7 @@ Optimized database queries. A tiny tracking script under 4 KB. No external depen
 **Privacy-friendly analytics without compromise**
  
 * 100% self-hosted, all statistics stored locally in your WordPress database
-* [Cookieless tracking](https://burst-statistics.com/features/cookieless-tracking/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=feature-cookieless) option, no consent banner required in many countries
+* [Cookieless tracking](https://burst-statistics.com/features/cookieless-tracking/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=feature-cookieless) option, a cookie free analytics setup with no consent banner required in many countries
 * Analytics designed to support GDPR, CCPA, DSGVO, AVG, RGPD and PECR compliance
 * No data shared with Google, Facebook or any third party
  
