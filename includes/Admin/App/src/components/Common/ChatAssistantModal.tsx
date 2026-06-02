@@ -16,6 +16,7 @@ import {
 	postChatMessage,
 	setLocalStorage
 } from '@/utils/api';
+import { formatDateAndTime } from '@/utils/formatting';
 
 type ChatAvailability = {
 	enabled?: boolean;
@@ -645,7 +646,7 @@ const ChatAssistantModal = () => {
 									{session.title}
 								</div>
 								<div className="mt-1 truncate text-xs text-gray-500">
-									{new Date( session.updatedAt ).toLocaleString()}
+									{formatDateAndTime( session.updatedAt )}
 								</div>
 							</button>
 

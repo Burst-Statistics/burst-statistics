@@ -12,7 +12,7 @@ import * as Popover from '@radix-ui/react-popover';
 import Icon from '@/utils/Icon';
 import { useBlockConfig } from '@/hooks/useBlockConfig';
 import { getSourcesOverTimeData } from '@/api/getSourcesData';
-import { formatAxisLabel, formatNumber, getChartXAxisTickValues } from '@/utils/formatting';
+import { formatAxisLabel, formatNumber, getChartXAxisTickValues, getPercentage } from '@/utils/formatting';
 
 const SOURCE_KEYS = [ 'search', 'social', 'referral', 'aiReferral', 'paid', 'direct' ];
 
@@ -126,7 +126,9 @@ function SourcesBarTooltip({ data }) {
 				<tbody>
 					{ SOURCE_KEYS.map( ( key ) => {
 						const value = Number( data[ key ] ?? 0 );
-						const pct = 0 < total ? Math.round( ( value / total ) * 100 ) : 0;
+						const pct = 0 < total ?
+							getPercentage( value, total ) :
+							getPercentage( 0, 1 );
 						return (
 							<tr key={ key }>
 								<td className="py-0.5 pr-4">
@@ -139,10 +141,10 @@ function SourcesBarTooltip({ data }) {
 									</span>
 								</td>
 								<td className="py-0.5 text-right text-gray-600 tabular-nums">
-									{ value.toLocaleString() }
+									{ formatNumber( value, 0, false ) }
 								</td>
 								<td className="py-0.5 pl-2 text-right font-medium text-gray-900 tabular-nums">
-									{ `${ pct }%` }
+									{ pct }
 								</td>
 							</tr>
 						);
@@ -152,7 +154,7 @@ function SourcesBarTooltip({ data }) {
 					<tr className="border-t border-gray-200">
 						<td className="pt-1.5 text-gray-700">{ __( 'Total', 'burst-statistics' ) }</td>
 						<td className="pt-1.5 text-right text-gray-700 tabular-nums">
-							{ total.toLocaleString() }
+							{ formatNumber( total, 0, false ) }
 						</td>
 						<td className="pt-1.5 pl-2 text-right text-gray-700 tabular-nums">100%</td>
 					</tr>

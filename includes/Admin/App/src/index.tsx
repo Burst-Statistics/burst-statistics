@@ -52,51 +52,17 @@ const shouldForwardProp = ( prop: string ) => {
 	return isPropValid( prop );
 };
 
-export interface BurstMenuPro {
-	url: string;
-	text: string;
-}
+export type {
+	BurstMenuPro,
+	BurstMenuGroup,
+	BurstMenuItem,
+	BurstMenuPage,
+	BurstMenuConfig,
+	BurstSettings
+} from './types/burst-settings';
 
-export interface BurstMenuGroup {
-	id: string;
-	title: string;
-	pro?: BurstMenuPro;
-}
-
-export interface BurstMenuItem {
-	id: string;
-	group_id: string;
-	title: string;
-	groups: BurstMenuGroup[];
-	hidden?: boolean;
-	capabilities?: string;
-}
-
-export interface BurstMenuPage {
-	id: string;
-	title: string;
-	default_hidden: boolean;
-	menu_items: BurstMenuItem[];
-	capabilities: string;
-	menu_slug: string;
-	show_in_admin: boolean;
-	show_in_plugin_overview?: boolean;
-	shareable?: boolean;
-	pro?: boolean;
-	location?: 'left' | 'right';
-}
-
-export type BurstMenuConfig = BurstMenuPage[] | Record<number, BurstMenuPage>;
-
-// Add type declaration for window.burst_settings
 declare global {
 	interface Window {
-		burst_settings?: {
-			is_pro?: string;
-			view_sales_burst_statistics?: string;
-			menu: BurstMenuConfig;
-			[key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-		};
 		burstLoaded?: boolean;
 	}
 }

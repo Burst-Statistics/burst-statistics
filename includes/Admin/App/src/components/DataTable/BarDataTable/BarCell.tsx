@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { formatNumber } from '@/utils/formatting';
 
 type BarCellProps = {
 
@@ -33,7 +34,7 @@ const BarCell = memo( ({ value, max }: BarCellProps ) => {
 			/>
 			{/* Numeric text sits above the bar. */}
 			<span className="relative z-10 font-medium text-text-black">
-				{ value.toLocaleString() }
+				{ formatNumber( value, 0, false ) }
 			</span>
 		</span>
 	);

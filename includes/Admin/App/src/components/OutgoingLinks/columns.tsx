@@ -34,7 +34,7 @@ export function getOutgoingLinksColumns(): BarColumn<OutgoingLinkRow>[] {
 						className="inline-flex items-center gap-1 text-text-black hover:text-blue-600 transition-colors"
 						title={ row.url }
 					>
-						<span>{ truncateMiddle( display, 24 ) }</span>
+						<span>{ truncateMiddle( display, 44 ) }</span>
 						<Icon name="external-link" size={ 11 } color="gray" className="shrink-0" />
 					</a>
 				);
@@ -44,7 +44,7 @@ export function getOutgoingLinksColumns(): BarColumn<OutgoingLinkRow>[] {
 			key: 'clicks',
 			label: __( 'Clicks', 'burst-statistics' ),
 			align: 'right',
-			minWidth: 48,
+			minWidth: 64,
 			cell: ( row ) => (
 				<span className="font-medium text-text-black">
 					{ formatNumber( row.clicks ) }
@@ -55,7 +55,7 @@ export function getOutgoingLinksColumns(): BarColumn<OutgoingLinkRow>[] {
 			key: 'change',
 			label: __( 'Change', 'burst-statistics' ),
 			align: 'right',
-			minWidth: 64,
+			minWidth: 96,
 			cell: ( row ) => {
 				if ( 0 === row.previousClicks ) {
 					return (
@@ -66,7 +66,7 @@ export function getOutgoingLinksColumns(): BarColumn<OutgoingLinkRow>[] {
 				const { val, status } = getChangePercentage( row.clicks, row.previousClicks );
 
 				return (
-					<span className={ 'positive' === status ? 'text-green font-medium' : 'text-red font-medium' }>
+					<span className={ 'positive' === status ? 'text-green font-medium min-w-fit whitespace-nowrap' : 'text-red font-medium min-w-fit whitespace-nowrap' }>
 						{ val }
 					</span>
 				);

@@ -8,6 +8,7 @@ import {
 	StepStatistics
 } from './types';
 import { __, sprintf } from '@wordpress/i18n';
+import { formatNumber, formatPercentage } from '@/utils/formatting';
 
 /**
  * FunnelChart component to render a funnel chart using Nivo.
@@ -232,13 +233,20 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 							const potentialGainText =
 								currentIndex < data.length - 1 ?
 									sprintf(
-											__(
-												'Improving this by %s%% could lead to ~%d more sales.',
-												'burst-statistics'
-											),
+										__(
+											'Improving this by %s could lead to ~%s more sales.',
+											'burst-statistics'
+										),
+										formatPercentage(
 											improvementPercentage,
-											potentialGain
-										) :
+											0
+										),
+										formatNumber(
+											potentialGain,
+											0,
+											false
+										)
+									) :
 									'';
 							const tooltipData = {
 								stepTitle: part.data.label,
