@@ -26,7 +26,7 @@ function Engagement() {
 			<PageHeader />
 
 			<h2 className="col-span-12">{__( 'What are people doing on my site?', 'burst-statistics' )}</h2>
-			<p className='col-span-12'>Which traffic sources are driving the most engagement? If business, display the highest converting traffic sources as well.</p>
+			<p className='col-span-12'>{__("Which traffic sources are driving the most engagement?", "burst-statistics") }</p>
 
 			<OutgoingLinksBlock className="row-span-1 lg:col-span-6 xl:col-span-3" />
 
