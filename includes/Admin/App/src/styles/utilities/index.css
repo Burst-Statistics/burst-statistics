@@ -5,39 +5,39 @@
 	scrollbar-width: none; /* Firefox */
 
 	&::-webkit-scrollbar {
-	display: none; /* Chrome, Safari, Opera*/
+		display: none; /* Chrome, Safari, Opera*/
 	}
 }
 
 @utility burst-scroll {
 	/* Track */
 	&::-webkit-scrollbar-track {
-	border-radius: 10px;
-	-webkit-box-shadow: inset 0 0 2px rgba(0, 0, 0, 0);
-	background-color: transparent;
+		border-radius: 10px;
+		-webkit-box-shadow: inset 0 0 2px rgba(0, 0, 0, 0);
+		background-color: transparent;
 	}
 
 	/* Scrollbar */
 	&::-webkit-scrollbar {
-	width: 8px;
-	background-color: var(--color-gray-300);
-	cursor: pointer;
+		width: 8px;
+		background-color: var(--color-gray-300);
+		cursor: pointer;
 	}
 
 	/* Thumb */
 	&::-webkit-scrollbar-thumb {
-	background-color: var(--color-gray-400);
-	border-radius: 10px;
+		background-color: var(--color-gray-400);
+		border-radius: 10px;
 	}
 }
 
 @utility burst-no-marker {
 	&::-webkit-details-marker {
-	display: none;
+		display: none;
 	}
 
 	&::marker {
-	display: none;
+		display: none;
 	}
 }
 
@@ -47,6 +47,23 @@
 
 @utility animate-toast-exit {
 	animation: toastExit 0.25s ease-in both;
+}
+
+#burst-statistics .burst-story-content-width > * {
+	@apply max-w-[1200px] mx-auto px-8;
+}
+
+@media (max-width: 767px) {
+	#burst-statistics .burst-story-content-width > * {
+		padding-inline: 1rem;
+	}
+}
+
+/* Reset WP admin sidebar compensations when rendering story/share page. */
+#burst-statistics:has(.burst-story-page) {
+	margin: 0 !important;
+	padding: 0 !important;
+	width: 100% !important;
 }
 
 @layer utilities {

@@ -16,7 +16,7 @@ import {
 } from '@/config/filterConfig';
 import { useWizardStore } from '@/store/reports/useWizardStore';
 
-export const FILTER_ENABLED_ROUTES = [ '/statistics', '/sources', '/sales' ];
+export const FILTER_ENABLED_ROUTES = [ '/statistics', '/engagement', '/sources', '/sales', '/table' ];
 
 export const isFilterEnabledRoute = ( pathname: string ): boolean => {
 	return FILTER_ENABLED_ROUTES.some( ( route ) => pathname.startsWith( route ) );

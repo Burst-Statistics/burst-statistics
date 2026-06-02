@@ -5,7 +5,7 @@ import { BlockContent } from '@/components/Blocks/BlockContent';
 import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import { __ } from '@wordpress/i18n';
 import Tasks from './Tasks';
-import OverviewFooter from '@/components/Dashboard/OverviewFooter';
+
 import { useNonPersistedTabsStore } from '@/store/useTabsStore';
 import LiveTraffic from '@/components/Dashboard/LiveTraffic';
 import { TabsContent, TabsList } from '@/components/Common/Tabs';
@@ -104,7 +104,7 @@ const OverviewBlock = () => {
 			</BlockContent>
 
 			<BlockFooter className="gap-2">
-				<OverviewFooter />
+				{/* <OverviewFooter /> */}
 			</BlockFooter>
 		</Block>
 	);

@@ -1,0 +1,88 @@
+.burst-wysiwyg-wrapper {
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Override TinyMCE borders and shadows to let the wrapper handle it */
+.burst-wysiwyg-wrapper .mce-container,
+.burst-wysiwyg-wrapper .mce-edit-area,
+.burst-wysiwyg-wrapper .mce-edit-area iframe {
+	border: none !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	pointer-events: auto !important;
+}
+
+.burst-wysiwyg-wrapper .mce-tinymce {
+	border: none !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	display: block !important;
+	visibility: visible !important;
+	pointer-events: auto !important;
+}
+
+.burst-wysiwyg-wrapper .wp-editor-container {
+	border: none !important;
+}
+
+/* Toolbar area styling to match the provided component */
+.burst-wysiwyg-wrapper .mce-top-part {
+	border-bottom: 1px solid var(--color-gray-200) !important;
+	background: var(--color-gray-50) !important;
+	padding: 4px !important;
+}
+
+.burst-wysiwyg-wrapper .mce-toolbar-grp .mce-flow-layout-item.mce-last {
+	display: block !important;
+}
+
+/* Toolbar button styling */
+.burst-wysiwyg-wrapper .mce-btn {
+	background: transparent !important;
+	border: none !important;
+	border-radius: 4px !important;
+	padding: 0 !important;
+	margin: 0 2px !important;
+}
+
+.burst-wysiwyg-wrapper .mce-btn:first-child {
+	margin-left: 0 !important;
+}
+
+.burst-wysiwyg-wrapper .mce-btn button,
+.burst-wysiwyg-wrapper .mce-btn button i {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+}
+
+.burst-wysiwyg-wrapper .mce-btn button {
+	padding: 4px !important;
+	width: 28px !important;
+	height: 28px !important;
+}
+
+.burst-wysiwyg-wrapper .mce-btn:hover {
+	background: var(--color-gray-200) !important;
+	box-shadow: 0 0 0 2px var(--color-primary-700) !important;
+}
+
+.burst-wysiwyg-wrapper .mce-ico,
+.burst-wysiwyg-wrapper .mce-txt {
+	color: var(--color-text-black) !important;
+	font-size: 16px !important;
+}
+
+.burst-wysiwyg-wrapper .mce-menubutton.mce-fixed-width button span {
+	margin-right: 0 !important;
+}
+
+/* Editor content area */
+.burst-wysiwyg-wrapper .mce-edit-area {
+	padding: 0 !important;
+}
+
+/* Quicktags (Text mode) toolbar - hide it as we want only the TinyMCE toolbar */
+.burst-wysiwyg-wrapper .quicktags-toolbar {
+	display: none !important;
+}

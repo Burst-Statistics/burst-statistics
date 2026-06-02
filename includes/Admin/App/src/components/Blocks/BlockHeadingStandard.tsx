@@ -4,6 +4,7 @@ import { LoadingSpinner } from '@/components/Common/LoadingSpinner';
 
 type BlockHeadingStandardProps = {
 	title: ReactNode;
+	subtitle?: ReactNode;
 	controls?: ReactNode;
 	className?: string;
 	isLoading?: boolean;
@@ -14,12 +15,13 @@ type BlockHeadingStandardProps = {
  *
  * @param {Object}           props           - Component props.
  * @param {React.ReactNode}  props.title     - The heading title.
+ * @param {React.ReactNode}  props.subtitle  - The subtitle
  * @param {React.ReactNode}  props.controls  - Optional controls to render on the right side.
  * @param {string}           props.className - Additional CSS classes.
  * @param {boolean}          props.isLoading - Whether the block is currently loading.
  * @return {JSX.Element} The block heading component.
  */
-export const BlockHeadingStandard = memo( ({ title, controls, className = '', isLoading = false }: BlockHeadingStandardProps ) => {
+export const BlockHeadingStandard = memo( ({ title, subtitle = '', controls, className = '', isLoading = false }: BlockHeadingStandardProps ) => {
 	return (
 		<div
 			className={clsx(
@@ -27,9 +29,12 @@ export const BlockHeadingStandard = memo( ({ title, controls, className = '', is
 				'flex min-h-14 items-center justify-between px-2.5 md:px-6 md:min-h-16 gap-4'
 			)}
 		>
-			<div className="flex items-center gap-2.5 min-w-0">
-				<h2 className="text-lg font-semibold">{title}</h2>
-				{isLoading && <LoadingSpinner />}
+			<div>
+				<div className="flex items-center gap-2.5 min-w-0">
+					<h2 className="text-lg font-semibold">{title}</h2>
+					{isLoading && <LoadingSpinner />}
+				</div>
+				{subtitle && <p className="text-sm text-text-gray">{subtitle}</p>}
 			</div>
 
 			{controls}

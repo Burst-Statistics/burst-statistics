@@ -43,6 +43,12 @@ const InsightsHeader = ({ selectedMetrics, filters }) => {
 			selectedOptions={selectedMetrics}
 			options={insightsOptions}
 			onApply={onApply}
+			description={
+				__(
+					'When a single metric is selected, a dashed comparison line is shown on the chart based on the comparison period set in the header.',
+					'burst-statistics'
+				)
+			}
 		/>
 	);
 };

@@ -69,7 +69,7 @@ interface WizardStore {
 }
 
 const DEFAULT_CLASSIC_IDS:ContentBlockId[] = [ 'compare', 'most_visited_pages', 'top_referrers' ];
-const DEFAULT_STORY_IDS:ContentBlockId[] = [ 'logo', 'insights', 'pages' ];
+const DEFAULT_STORY_IDS:ContentBlockId[] = [ 'hero', 'insights', 'pages', 'footer' ];
 
 const createDefaultBlocks = ( ids: ContentBlockId[]): ContentBlock[] => {
 	return ids.map( id => ({

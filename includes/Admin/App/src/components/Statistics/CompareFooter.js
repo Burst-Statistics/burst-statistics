@@ -1,31 +1,33 @@
 import { __ } from '@wordpress/i18n';
-import { differenceInDays, parseISO } from 'date-fns';
 
-const CompareFooter = ({ noCompare, startDate, endDate }) => {
+import { getDisplayDates } from '@/utils/formatting';
+
+/**
+ * CompareFooter displays a short label describing which period the current
+ * metrics are being compared against.
+ *
+ * @param {Object}  props              - Component props.
+ * @param {boolean} props.noCompare    - When true, shows a "no data" notice.
+ * @param {string}  props.compareStart - Comparison window start (YYYY-MM-DD).
+ * @param {string}  props.compareEnd   - Comparison window end (YYYY-MM-DD).
+ * @return {JSX.Element} Footer text element.
+ */
+const CompareFooter = ({ noCompare, compareStart, compareEnd }) => {
 	let text = '';
+
 	if ( noCompare ) {
 		text = __( 'No data available for comparison', 'burst-statistics' );
 	} else {
-		const startDateISO = parseISO( startDate );
-		const endDateISO = parseISO( endDate );
-
-		// get amount of days between start and end date with date-fns
-		const days = differenceInDays( endDateISO, startDateISO ) + 1;
-		const textStr =
-			1 === days ?
-				__( 'vs. previous day', 'burst-statistics' ) :
-				__( 'vs. previous %s days', 'burst-statistics' );
-
-		// replace %s with days
-		text = textStr.replace( '%s', days );
+		const { startDate, endDate } = getDisplayDates( compareStart, compareEnd );
+		text = __( 'vs. %s – %s', 'burst-statistics' )
+			.replace( '%s', startDate )
+			.replace( '%s', endDate );
 	}
 
 	return (
-		<>
-			<p className="text-sm font-medium leading-[1.5] text-text-gray">
-				{text}
-			</p>
-		</>
+		<p className="text-sm font-medium leading-[1.5] text-text-gray">
+			{ text }
+		</p>
 	);
 };
 

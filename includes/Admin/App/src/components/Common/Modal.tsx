@@ -12,6 +12,7 @@ interface ModalProps {
 	children?: React.ReactNode;
 	isOpen: boolean;
 	onClose: () => void;
+	size?: 'default' | 'full';
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -23,8 +24,14 @@ const Modal: React.FC<ModalProps> = ({
 	triggerClassName,
 	children,
 	isOpen,
-	onClose
+	onClose,
+	size = 'default'
 }) => {
+	const contentSizeClasses =
+		'full' === size ?
+			'md:w-[calc(100%-40px)] md:max-w-(--breakpoint-2xl) xl:w-[calc(100%-64px)]' :
+			'md:w-full md:max-w-[720px]';
+
 	return (
 		<Dialog.Root
 			open={isOpen}
@@ -41,7 +48,7 @@ const Modal: React.FC<ModalProps> = ({
 			)}
 			<Dialog.Portal container={document.getElementById( 'modal-root' )}>
 				<Dialog.Overlay className="bg-black/50 fixed inset-0 z-9999" />
-				<Dialog.Content className="fixed top-[calc(var(--wp-admin--admin-bar--height,0px)+12px)] left-1/2 -translate-x-1/2 w-[calc(100%-20px)] max-h-[90vh] m-0 px-4 py-3 rounded-md z-9999 bg-gray-100 shadow-md focus:outline-hidden data-[state=open]:animate-contentShow flex flex-col overflow-x-visible md:w-full md:max-w-[720px]">
+				<Dialog.Content className={`fixed top-[calc(var(--wp-admin--admin-bar--height,0px)+12px)] left-1/2 -translate-x-1/2 w-[calc(100%-20px)] max-h-[90vh] m-0 px-4 py-3 rounded-md z-9999 bg-gray-100 shadow-md focus:outline-hidden data-[state=open]:animate-contentShow flex flex-col overflow-x-visible ${contentSizeClasses}`}>
 					<div className="flex flex-row justify-between items-center shrink-0">
 						{customHeader ? (
 							<>

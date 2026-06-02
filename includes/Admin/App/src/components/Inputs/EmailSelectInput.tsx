@@ -77,7 +77,7 @@ export const EmailSelectInput = forwardRef<HTMLInputElement, EmailSelectInputPro
 
 		const containerClass =
 			'flex min-h-[2.5rem] w-full rounded-md border border-gray-400 bg-white ' +
-			'focus-within:border-primary-700 focus-within:ring-3 disabled:cursor-not-allowed ' +
+			'focus-within:border-primary-700 focus-within:ring-1 disabled:cursor-not-allowed ' +
 			'disabled:border-gray-200 disabled:bg-gray-200';
 
 		const innerClass =

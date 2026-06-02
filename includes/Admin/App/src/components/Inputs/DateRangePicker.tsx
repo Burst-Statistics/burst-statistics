@@ -242,7 +242,7 @@ export const DateRangePicker = ({
 						>
 							<span className="absolute right-4 mt-1 h-4 w-4 -translate-y-2 rotate-45 transform bg-green-50" />
 
-							<div className="z-50 rounded-lg border border-gray-200 bg-white shadow-md">
+							<div className="z-9999 rounded-lg border border-gray-200 bg-white shadow-md">
 								<ReactDateRangePicker
 									ranges={[ selectionRange ]}
 									rangeColors={[ 'var(--color-green)' ]}

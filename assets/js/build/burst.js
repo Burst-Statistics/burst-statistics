@@ -7,6 +7,7 @@
  * @property {boolean} do_not_track
  * @property {boolean} enable_turbo_mode
  * @property {boolean} track_url_change
+ * @property {boolean} track_external_links
  * @property {string} pageUrl
  * @property {boolean} cookieless
  */
@@ -249,11 +250,12 @@ const burst_is_do_not_track = () => {
     return false;
   }
     // check for doNotTrack and globalPrivacyControl headers
-  const result = '1' === navigator.doNotTrack || 
-                 'yes' === navigator.doNotTrack ||
-                 '1' === navigator.msDoNotTrack || 
-                 '1' === window.doNotTrack || 
-                 1 === navigator.globalPrivacyControl;    
+  const result =
+		"1" === navigator.doNotTrack ||
+		"yes" === navigator.doNotTrack ||
+		"1" === navigator.msDoNotTrack ||
+		"1" === window.doNotTrack ||
+		1 === navigator.globalPrivacyControl;
   burst.cache.isDoNotTrack = result;
   return result;
 };
@@ -350,48 +352,59 @@ const burst_api_request = obj => {
  * Mostly used for updating time spent on a page
  * Also used for updating the UID (from fingerprint to a cookie)
  */
-async function burst_update_hit(update_uid = false, force = false) {
-  await pageIsRendered;
-  if (burst_is_user_agent() || burst_is_do_not_track()) return;
-  if (burst.tracking.isInitialHit) {
-    burst_track_hit();
-    return;
-  }
+async function burst_update_hit(
+	update_uid = false,
+	force = false,
+	extraData = {},
+) {
+	await pageIsRendered;
+	if (burst_is_user_agent() || burst_is_do_not_track()) return;
+	if (burst.tracking.isInitialHit) {
+		burst_track_hit(extraData);
+		return;
+	}
 
-  // If we don't force the update, we only update the hit if 300ms have passed since the last update
-  if (!force && Date.now() - burst.tracking.lastUpdateTimestamp < 300) return;
+	// If we don't force the update, we only update the hit if 300ms have passed since the last update
+	if (!force && Date.now() - burst.tracking.lastUpdateTimestamp < 300) return;
 
-  document.dispatchEvent(new CustomEvent('burst_before_update_hit', { detail: burst }));
+	document.dispatchEvent(
+		new CustomEvent("burst_before_update_hit", { detail: burst }),
+	);
 
-  const [time, id] = await Promise.all([
-    burst_get_time_on_page(),
-    update_uid ? Promise.all([burst_uid(), burst_fingerprint()]) : (burst_use_cookies() ? burst_uid() : burst_fingerprint())
-  ]);
+	const [time, id] = await Promise.all([
+		burst_get_time_on_page(),
+		update_uid
+			? Promise.all([burst_uid(), burst_fingerprint()])
+			: burst_use_cookies()
+				? burst_uid()
+				: burst_fingerprint(),
+	]);
 
-  const data = {
-    fingerprint: update_uid ? id[1] : (burst_use_cookies() ? false : id),
-    uid: update_uid ? id[0] : (burst_use_cookies() ? id : false),
-    url: location.href,
-    time_on_page: time,
-    completed_goals: burst.goals.completed,
-    should_load_ecommerce: burst.should_load_ecommerce,
-  };
+	const data = {
+		fingerprint: update_uid ? id[1] : burst_use_cookies() ? false : id,
+		uid: update_uid ? id[0] : burst_use_cookies() ? id : false,
+		url: location.href,
+		time_on_page: time,
+		completed_goals: burst.goals.completed,
+		should_load_ecommerce: burst.should_load_ecommerce,
+		...extraData,
+	};
 
-  if (time > 0 || data.uid !== false) {
-    await burst_api_request({ data: data });
-    burst.tracking.lastUpdateTimestamp = Date.now();
-  }
+	if (time > 0 || data.uid !== false) {
+		await burst_api_request({ data: data });
+		burst.tracking.lastUpdateTimestamp = Date.now();
+	}
 }
 /**
  * Track a hit
  *
  */
-async function burst_track_hit() {
+async function burst_track_hit(extraData = {}) {
   const isInitialHit = burst.tracking.isInitialHit;
   burst.tracking.isInitialHit = false;
   await pageIsRendered;
   if ( !isInitialHit ) {
-    burst_update_hit();
+    burst_update_hit(false, false, extraData);
     return;
   }
   if (burst_is_user_agent() || burst_is_do_not_track()) return;
@@ -428,6 +441,7 @@ async function burst_track_hit() {
     page_id: document.body?.dataset?.burst_id ?? document.body?.dataset?.b_id ?? 0,
     page_type: document.body?.dataset?.burst_type ?? document.body?.dataset?.b_type ?? '',
     should_load_ecommerce: burst.should_load_ecommerce,
+    ...extraData,
   };
 
   document.dispatchEvent(new CustomEvent('burst_track_hit', { detail: data }));
@@ -458,31 +472,68 @@ function burst_init_events() {
     burst_track_hit();
   };
 
+  const getExternalLinkUrl = (anchorElement) => {
+		const href = anchorElement?.getAttribute?.("href");
+		if (!href || href.startsWith("#")) return false;
+
+		let targetUrl;
+		try {
+			targetUrl = new URL(anchorElement.href, window.location.href);
+		} catch (error) {
+			return false;
+		}
+
+		if (!["http:", "https:"].includes(targetUrl.protocol)) return false;
+		if (targetUrl.origin === window.location.origin) return false;
+
+		return targetUrl.href;
+	};
+
+	const shouldWaitForNavigation = (event, anchorElement) => {
+		if (event.defaultPrevented) return false;
+		if (event.button !== 0) return false;
+		if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+			return false;
+		if (anchorElement.hasAttribute("download")) return false;
+
+		const linkTarget = (
+			anchorElement.getAttribute("target") || ""
+		).toLowerCase();
+		return !linkTarget || linkTarget === "_self";
+	};
+
   // Handle external link clicks for Elementor loading animations/lazy loading
   const handleExternalLinkClick = (e) => {
-    const target = e.target.closest('a');
+    const target = e.target.closest("a[href]");
     if (!target) return;
 
-    // Check if this element is part of a goal
-    const isGoalElement = burst.goals?.active?.some(goal => {
-      if (goal.type !== 'clicks') return false;
-      if (!goal.selector || goal.selector.trim() === '') {
-        console.warn(goal.selector, "does not exist");
-        return false;
-      }
+    if (!burst.options.track_external_links) return;
 
-      try {
-        return target.closest(goal.selector);
-      } catch (error) {
-        console.warn('Invalid selector for goal:', goal.selector, error);
-        return false;
-      }
-    });
+		const externalLinkUrl = getExternalLinkUrl(target);
+		if (!externalLinkUrl) return;
 
-    // Only update hit if it's not a goal element, as the goal will be tracked by the goal tracker
-    if (!isGoalElement) {
-      burst_update_hit(false, false);
-    }
+		const trackingPayload = {
+			external_link_url: externalLinkUrl,
+		};
+
+		if (burst.options.beacon_enabled || !shouldWaitForNavigation(e, target)) {
+			burst_update_hit(false, true, trackingPayload);
+			return;
+		}
+
+    e.preventDefault();
+		const fallbackTimeoutMs = 250;
+		let didNavigate = false;
+		const navigate = () => {
+			if (didNavigate) return;
+			didNavigate = true;
+			window.location.assign(target.href);
+		};
+
+		setTimeout(navigate, fallbackTimeoutMs);
+		burst_update_hit(false, true, trackingPayload).finally(navigate);
+
+    return;
   };
 
   // Attach event handlers

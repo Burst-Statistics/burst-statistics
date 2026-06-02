@@ -398,6 +398,12 @@ class Share_Tokens {
 			return '';
 		}
 
+		// Flush rewrite rules only once when the first token is created.
+		// Covers both manually created share links and auto-generated report tokens.
+		if ( ! is_array( get_option( 'burst_share_tokens', false ) ) ) {
+			set_transient( 'burst_flush_rewrite_rules', true, 60 );
+		}
+
 		$token           = '';
 		$existing_tokens = get_option( 'burst_share_tokens', [] );
 
@@ -601,10 +607,6 @@ class Share_Tokens {
 			return $output;
 		}
 		if ( $action === 'get_share_token' ) {
-			// Flush rewrite rules only once when the first token is created.
-			if ( ! is_array( get_option( 'burst_share_tokens', false ) ) ) {
-				set_transient( 'burst_flush_rewrite_rules', true, 60 );
-			}
 			$this->share->auth->create_viewer_user();
 
 			$expiration    = isset( $data['expiration'] ) ? sanitize_text_field( $data['expiration'] ) : '7d';

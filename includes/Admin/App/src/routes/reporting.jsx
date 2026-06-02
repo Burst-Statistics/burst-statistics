@@ -53,7 +53,7 @@ function ReportingComponent() {
 
 	return (
 		<>
-			<div className="col-span-12 lg:col-span-3">
+			<div className="col-span-12 lg:col-span-3 max-lg:hidden">
 				<SubNavigation subMenu={ subMenu } from='/reporting/' to='$reportingId' paramKey='reportingId' />
 			</div>
 

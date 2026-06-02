@@ -2,13 +2,13 @@ import {useState, useCallback, useEffect, useMemo, createInterpolateElement} fro
 import {__, _n, sprintf} from '@wordpress/i18n';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLocation } from '@tanstack/react-router';
+import * as ReactPopover from '@radix-ui/react-popover';
 import { doAction } from '@/utils/api';
 import { toast } from '@/utils/toast';
 import useLicenseData from '@/hooks/useLicenseData';
 import useDateRange from '@/hooks/useDateRange';
 import { useFilters } from '@/hooks/useFilters';
 import { AddFilterButton } from '../Filters/Display';
-import Modal from './Modal';
 import SelectInput from '@/components/Inputs/SelectInput';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import IconButton from '@/components/Inputs/IconButton';
@@ -679,7 +679,7 @@ const ActiveLinksSection = ({
 
 /**
  * ShareButton component handles generating and copying shareable links.
- * Opens a modal with link management and generation.
+ * Opens a popover anchored to the trigger button, consistent with DateRange and PageFilter.
  *
  * @return {JSX.Element|null} ShareButton component or null if viewer or license invalid.
  */
@@ -920,94 +920,124 @@ export const ShareButton = () => {
 		return null;
 	}
 
+	const portalContainer =
+		document.getElementById( 'modal-root' ) ||
+		document.querySelector( '.burst' ) ||
+		document.body;
+
 	return (
 		<>
-			<AddFilterButton
-				label=""
-				icon="referrer"
+			{isModalOpen && (
+				<div className="fixed inset-0 bg-black/30 z-[55]" />
+			)}
 
-				//class used for automated test.
-				className="burst-share-link"
-				onClick={() => setIsModalOpen( true )}
-			/>
+			<ReactPopover.Root
+				open={isModalOpen}
+				onOpenChange={( open ) => ! open && handleClose()}
+			>
+				<ReactPopover.Anchor asChild>
+					<div className={`${isModalOpen ? 'relative z-[60]' : ''}`}>
+						<AddFilterButton
+							label=""
+							icon="referrer"
+							isHighlighted={isModalOpen}
 
-			<Modal
-				isOpen={isModalOpen}
-				onClose={handleClose}
-				title={__( 'Share dashboard', 'burst-statistics' )}
-				content={
-					<div className="flex flex-col gap-4">
-						{/* Description. */}
-						<p className="text-text-gray text-sm">
-							{__(
-								'Generate a private, shareable link to a live view of this dashboard.',
-								'burst-statistics'
-							)}
-						</p>
-
-						{/* Create new link section. */}
-						<div className="burst-share-link-panel rounded-lg border border-gray-200 bg-white p-4 flex flex-col gap-4">
-							{/* Link configuration summary. */}
-							<LinkConfigurationSummary
-								currentTab={currentTab}
-								startDate={startDate}
-								endDate={endDate}
-								filters={filters}
-							/>
-
-							{/* Expiration. */}
-							<div className="flex items-center gap-3">
-								<span className="text-base font-medium text-text-gray">
-									{__( 'Link expires in:', 'burst-statistics' )}
-								</span>
-								<SelectInput
-									value={expiration}
-									onChange={setExpiration}
-									options={EXPIRATION_OPTIONS}
-								/>
-							</div>
-
-							{/* Advanced Options. */}
-							<AdvancedOptions
-								isOpen={advancedOpen}
-								onToggle={() => setAdvancedOpen( ( prev ) => ! prev )}
-								permissions={permissions}
-								onPermissionToggle={togglePermission}
-								sharedTabs={sharedTabs}
-								onTabToggle={toggleTab}
-								shareableTabs={shareableTabs}
-								currentTab={currentTab}
-							/>
-
-							{/* Generate Button. */}
-							<ButtonInput
-								onClick={handleGenerate}
-								disabled={isGenerating}
-								btnVariant="primary"
-
-								//class burst-generate-share-link-button used for automated test.
-								className="burst-generate-share-link-button w-full justify-center"
-							>
-								{isGenerating ?
-									__( 'Generating…', 'burst-statistics' ) :
-									__( 'Generate shareable link', 'burst-statistics' )}
-							</ButtonInput>
-						</div>
-
-						{/* Active shared links section (collapsed by default). */}
-						<ActiveLinksSection
-							isOpen={activeLinksOpen}
-							onToggle={() => setActiveLinksOpen( ( prev ) => ! prev )}
-							links={shareLinks}
-							isLoading={isLoading}
-							copiedId={copiedId}
-							onCopy={handleCopyLink}
-							onRevoke={handleRevoke}
-							isRevoking={isRevoking}
+							//class used for automated test.
+							className="burst-share-link"
+							onClick={() => setIsModalOpen( true )}
 						/>
 					</div>
-				}
-			/>
+				</ReactPopover.Anchor>
+
+				<ReactPopover.Portal container={portalContainer}>
+					<ReactPopover.Content
+						className="z-[10001] w-[520px] max-w-[calc(100vw-40px)] max-h-[80vh] rounded-lg border border-gray-200 bg-white shadow-xl flex flex-col"
+						align="end"
+						sideOffset={10}
+						arrowPadding={10}
+					>
+						<div className="border-b border-gray-100 px-4 py-3 flex items-center justify-between shrink-0">
+							<h5 className="m-0 text-base font-semibold text-text-black">
+								{__( 'Share dashboard', 'burst-statistics' )}
+							</h5>
+							<button
+								type="button"
+								aria-label={__( 'Close', 'burst-statistics' )}
+								onClick={handleClose}
+								className="bg-gray-200 rounded-full p-1.5 w-7 h-7 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors duration-150"
+							>
+								<Icon name="times" size={14} color="gray" />
+							</button>
+						</div>
+
+						<div className="flex-1 overflow-y-auto p-4">
+							<div className="flex flex-col gap-4">
+								<p className="text-text-gray text-sm">
+									{__(
+										'Generate a private, shareable link to a live view of this dashboard.',
+										'burst-statistics'
+									)}
+								</p>
+
+								<div className="burst-share-link-panel rounded-lg border border-gray-200 bg-white p-4 flex flex-col gap-4">
+									<LinkConfigurationSummary
+										currentTab={currentTab}
+										startDate={startDate}
+										endDate={endDate}
+										filters={filters}
+									/>
+
+									<div className="flex items-center gap-3">
+										<span className="text-base font-medium text-text-gray">
+											{__( 'Link expires in:', 'burst-statistics' )}
+										</span>
+										<SelectInput
+											value={expiration}
+											onChange={setExpiration}
+											options={EXPIRATION_OPTIONS}
+										/>
+									</div>
+
+									<AdvancedOptions
+										isOpen={advancedOpen}
+										onToggle={() => setAdvancedOpen( ( prev ) => ! prev )}
+										permissions={permissions}
+										onPermissionToggle={togglePermission}
+										sharedTabs={sharedTabs}
+										onTabToggle={toggleTab}
+										shareableTabs={shareableTabs}
+										currentTab={currentTab}
+									/>
+
+									<ButtonInput
+										onClick={handleGenerate}
+										disabled={isGenerating}
+										btnVariant="primary"
+
+										//class burst-generate-share-link-button used for automated test.
+										className="burst-generate-share-link-button w-full justify-center"
+									>
+										{isGenerating ?
+											__( 'Generating…', 'burst-statistics' ) :
+											__( 'Generate shareable link', 'burst-statistics' )}
+									</ButtonInput>
+								</div>
+
+								<ActiveLinksSection
+									isOpen={activeLinksOpen}
+									onToggle={() => setActiveLinksOpen( ( prev ) => ! prev )}
+									links={shareLinks}
+									isLoading={isLoading}
+									copiedId={copiedId}
+									onCopy={handleCopyLink}
+									onRevoke={handleRevoke}
+									isRevoking={isRevoking}
+								/>
+							</div>
+						</div>
+					</ReactPopover.Content>
+				</ReactPopover.Portal>
+			</ReactPopover.Root>
 		</>
 	);
 };

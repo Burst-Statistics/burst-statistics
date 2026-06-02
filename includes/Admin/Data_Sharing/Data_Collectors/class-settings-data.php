@@ -167,12 +167,12 @@ class Settings_Data extends Data_Collector {
 			'combine_vars_and_script'             => $this->get_burst_setting_bool( 'combine_vars_and_script' ),
 			'enable_ghost_mode'                   => $this->get_burst_setting_bool( 'ghost_mode' ),
 			'uses_custom_logo'                    => $this->has_custom_logo(),
-			'tips_tricks_signup'                  => $this->has_signed_up_for_tips(),
+			'tips_tricks_signup'                  => $this->get_burst_setting_bool( 'tips_tricks_mailinglist' ),
 			'burst_pro_active'                    => defined( 'BURST_PRO' ),
 			'burst_version'                       => BURST_VERSION,
 			'subscription_tier'                   => $this->get_subscription_tier(),
 			'excluded_user_roles'                 => $this->get_option( 'user_role_blocklist', [] ),
-			'uses_ip_exclusion'                   => $this->has_ip_exclusion(),
+			'uses_ip_exclusion'                   => $this->get_burst_setting_bool( 'ip_blocklist' ),
 			'geo_ip_database_type'                => $this->get_option( 'geo_ip_database_type', 'city' ),
 			'archive_mode'                        => $this->get_option( 'archive_data', 'none' ),
 			'archive_months'                      => $this->get_option_int( 'archive_after_months' ),
@@ -203,20 +203,6 @@ class Settings_Data extends Data_Collector {
 	 */
 	private function has_custom_logo(): bool {
 		return ! empty( $this->get_option( 'logo_attachment_id' ) );
-	}
-
-	/**
-	 * Check if user has signed up for tips and tricks
-	 */
-	private function has_signed_up_for_tips(): bool {
-		return null !== $this->get_option( 'signed_up_for_tips_and_tricks' );
-	}
-
-	/**
-	 * Check if IP exclusion is enabled
-	 */
-	private function has_ip_exclusion(): bool {
-		return $this->get_burst_setting_bool( 'ip_blocklist' );
 	}
 
 	/**

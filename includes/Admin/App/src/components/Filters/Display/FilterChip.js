@@ -5,17 +5,18 @@ import { __ } from '@wordpress/i18n';
 import { isExcluding } from '@/config/filterConfig';
 
 /**
- * Reusable FilterChip component for displaying active filters
+ * Reusable FilterChip component for displaying active filters.
  *
- * @param {Object}   props                  - Component props
- * @param {Object}   props.filter           - Filter object with key, value, displayValue, exclusion, and config
- * @param {Function} props.onRemove         - Callback function when remove button is clicked
- * @param {Function} props.onClick          - Callback function when chip is clicked to edit
- * @param {string}   props.className        - Additional CSS classes
- * @param {boolean}  props.showRemoveButton - Whether to show the remove button (default: true)
- * @param {boolean}  props.disabled         - Whether the chip is disabled (default: false)
- * @param {boolean}  props.smallLabels      - Whether to use small size styling (px-2 py-1 text-xs) (default: false)
- * @return {JSX.Element} FilterChip component
+ * @param {Object}   props                  - Component props.
+ * @param {Object}   props.filter           - Filter object with key, value, displayValue, exclusion, and config.
+ * @param {Function} props.onRemove         - Callback function when remove button is clicked.
+ * @param {Function} props.onClick          - Callback function when chip is clicked to edit.
+ * @param {string}   props.className        - Additional CSS classes.
+ * @param {boolean}  props.showRemoveButton - Whether to show the remove button (default: true).
+ * @param {boolean}  props.disabled         - Whether the chip is disabled (default: false).
+ * @param {boolean}  props.smallLabels      - Whether to use small size styling (px-2 py-1 text-xs) (default: false).
+ * @param {boolean}  props.isHighlighted    - Whether to apply the green ring highlight (popover-open state).
+ * @return {JSX.Element} FilterChip component.
  */
 const FilterChip = ({
 	filter,
@@ -24,7 +25,8 @@ const FilterChip = ({
 	className = '',
 	showRemoveButton = true,
 	disabled = false,
-	smallLabels = false
+	smallLabels = false,
+	isHighlighted = false
 }) => {
 	let exclusionAllowed = false;
 
@@ -48,7 +50,10 @@ const FilterChip = ({
 		// State-specific styles.
 		{
 			'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60': disabled,
-			'bg-white border-gray-300 hover:bg-gray-50 hover:shadow-ringSubtle cursor-pointer': ! disabled && ! isExcluded,
+
+			// Highlighted (popover open) overrides the normal border/shadow.
+			'bg-white border-green-300 shadow-md ring-1 ring-green-300 cursor-pointer': ! disabled && isHighlighted && ! isExcluded,
+			'bg-white border-gray-300 hover:bg-gray-50 hover:shadow-ringSubtle cursor-pointer': ! disabled && ! isHighlighted && ! isExcluded,
 			'bg-red-50 border-red-200 hover:bg-red-100 hover:shadow-ringExcluded cursor-pointer': ! disabled && isExcluded
 		},
 

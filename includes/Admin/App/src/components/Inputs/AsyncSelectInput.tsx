@@ -352,7 +352,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 				{/* Combobox container with integrated selected items */}
 				<div
 					{...getComboboxProps()}
-					className="flex min-h-[2.5rem] w-full rounded-md border border-gray-400 bg-white focus-within:border-primary-700 focus-within:ring-3 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-200"
+					className="flex min-h-[2.5rem] w-full rounded-md border border-gray-400 bg-white focus-within:border-primary-700 focus-within:ring-1 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-200"
 				>
 					{/* Container for selected items and input */}
 					<div className="flex flex-1 flex-wrap items-center gap-1 p-1">

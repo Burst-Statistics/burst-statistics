@@ -165,12 +165,32 @@ class Share_Routing {
 	/**
 	 * Extract the Burst REST endpoint path from the current request.
 	 *
-	 * Works for both REST API requests (`/wp-json/burst/v1/...`) and
-	 * AJAX fallback requests (where the path is in `rest_action` or POST body).
+	 * For real REST API requests (`/wp-json/burst/v1/...`), the endpoint must be
+	 * resolved from REQUEST_URI so auth and execution use the same route.
+	 *
+	 * For AJAX fallback requests, the endpoint can be resolved from `rest_action`
+	 * or request payload fields.
 	 *
 	 * @return string The relative endpoint path (e.g. 'data/insights'), or empty string if not a Burst REST request.
 	 */
 	public function get_current_rest_endpoint_path(): string {
+		// Standard REST API: always parse REQUEST_URI first.
+		if ( ! isset( $_SERVER['REQUEST_URI'] ) ) {
+			$path = '';
+		} else {
+			$request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) );
+			$path        = wp_parse_url( $request_uri, PHP_URL_PATH );
+			if ( ! is_string( $path ) ) {
+				$path = '';
+			}
+		}
+
+		// Regex: `#burst/v1/(.+?)$#` extracts the path after `burst/v1/` to end-of-string (no query string here).
+		// Example: `/wp-json/burst/v1/data/insights` -> `data/insights`.
+		if ( preg_match( '#burst/v1/(.+?)$#', $path, $matches ) ) {
+			return trim( $matches[1], '/' );
+		}
+
 		// Try AJAX fallback first: rest_action query param.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rest_action'] ) ) {
@@ -207,23 +227,6 @@ class Share_Routing {
 					}
 				}
 			}
-		}
-
-		// Standard REST API: parse REQUEST_URI.
-		if ( ! isset( $_SERVER['REQUEST_URI'] ) ) {
-			return '';
-		}
-
-		$request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) );
-		$path        = wp_parse_url( $request_uri, PHP_URL_PATH );
-		if ( ! is_string( $path ) ) {
-			return '';
-		}
-
-		// Regex: `#burst/v1/(.+?)$#` extracts the path after `burst/v1/` to end-of-string (no query string here).
-		// Example: `/wp-json/burst/v1/data/insights` -> `data/insights`.
-		if ( preg_match( '#burst/v1/(.+?)$#', $path, $matches ) ) {
-			return trim( $matches[1], '/' );
 		}
 
 		return '';

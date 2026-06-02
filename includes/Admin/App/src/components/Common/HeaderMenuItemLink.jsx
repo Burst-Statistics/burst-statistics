@@ -41,17 +41,19 @@ export function getMenuItemUrl( menuItem ) {
 /**
  * Single top-level nav link with optional icon from menu config.
  *
- * @param {Object}  props
- * @param {Object}  props.menuItem
- * @param {string}  props.menuItem.id
- * @param {string}  props.menuItem.title
- * @param {string}  [props.menuItem.icon] - Registered `Icon` name when set in menu config.
- * @param {boolean} props.isTrial
- * @param {string}  props.linkClassName
- * @param {string}  props.activeClassName
+ * @param {Object}   props
+ * @param {Object}   props.menuItem
+ * @param {string}   props.menuItem.id
+ * @param {string}   props.menuItem.title
+ * @param {string}   [props.menuItem.icon]       - Registered `Icon` name when set in menu config.
+ * @param {boolean}  props.isTrial
+ * @param {string}   props.linkClassName
+ * @param {string}   props.activeClassName
+ * @param {string}   [props.variant='horizontal'] - Rendering context: 'horizontal' or 'drawer'.
+ * @param {Function} [props.onNavigate]           - Called after navigation; use to close the drawer.
  * @return {JSX.Element} Menu link.
  */
-const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => {
+const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial, variant = 'horizontal', onNavigate }) => {
 	const linkRef = useRef( null );
 	const [ isActiveState, setIsActiveState ] = useState( false );
 	const isActiveRef = useRef( false );
@@ -120,8 +122,11 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => 
 		}
 	}, [ isActiveState ]);
 
-	// Scroll active menu item into view after activation.
+	// Scroll active menu item into view after activation (horizontal tab bar only).
 	useEffect( () => {
+		if ( 'horizontal' !== variant ) {
+			return;
+		}
 		if ( isActiveState && linkRef.current ) {
 			const el = linkRef.current;
 			const t = setTimeout( () => {
@@ -129,15 +134,18 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial }) => 
 			}, 1500 );
 			return () => clearTimeout( t );
 		}
-	}, [ isActiveState ]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [ isActiveState, variant ]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	return (
 		<Link
 			from="/"
 			ref={linkRef}
 			onClick={( event ) => {
-				const link = event.currentTarget;
-				link.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+				if ( 'horizontal' === variant ) {
+					const link = event.currentTarget;
+					link.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+				}
+				onNavigate?.();
 			}}
 			to={targetUrl}
 			params={{

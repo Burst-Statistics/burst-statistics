@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { __ } from '@wordpress/i18n';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { __, sprintf } from '@wordpress/i18n';
 import clsx from 'clsx';
 import { Close } from '@radix-ui/react-dialog';
 import ReactMarkdown from 'react-markdown';
@@ -21,7 +22,9 @@ type ChatAvailability = {
 	abilities_enabled?: boolean;
 	ai_client_loaded?: boolean;
 	has_configured_provider?: boolean;
-	disabled_reason?: string;
+
+	/** Pre-formatted connector approval names that still need to be granted. */
+	missing_approvals?: string[];
 };
 
 type ChatSession = {
@@ -226,6 +229,11 @@ const normalizeChatStatus = ( status: unknown ): ChatAvailability => {
 	const hasOwn = ( key: string ): boolean =>
 		Object.prototype.hasOwnProperty.call( typed, key );
 
+	const rawMissing = typed.missing_approvals;
+	const missingApprovals = Array.isArray( rawMissing ) ?
+		rawMissing.map( ( item ) => asString( item ) ).filter( ( item ) => '' !== item ) :
+		[];
+
 	return {
 		enabled: hasOwn( 'enabled' ) ?
 			boolFromSetting( typed.enabled, false ) :
@@ -239,7 +247,7 @@ const normalizeChatStatus = ( status: unknown ): ChatAvailability => {
 		has_configured_provider: hasOwn( 'has_configured_provider' ) ?
 			boolFromSetting( typed.has_configured_provider, false ) :
 			undefined,
-		disabled_reason: asString( typed.disabled_reason )
+		missing_approvals: missingApprovals
 	};
 };
 
@@ -271,24 +279,6 @@ const buildTimeline = (
 	return output;
 };
 
-const getDefaultDisabledReason = ( status: ChatAvailability ): string => {
-	if ( ! status.ai_client_loaded ) {
-		return __(
-			'The WordPress AI Client plugin is not available. Install and activate it to use chat.',
-			'burst-statistics'
-		);
-	}
-
-	if ( ! status.has_configured_provider ) {
-		return __(
-			'No AI connector is configured. Connect a provider to use chat.',
-			'burst-statistics'
-		);
-	}
-
-	return __( 'Chat is currently unavailable.', 'burst-statistics' );
-};
-
 const ChatAssistantModal = () => {
 	const { getValue } = useSettingsData();
 	const [ isOpen, setIsOpen ] = useState( false );
@@ -300,9 +290,19 @@ const ChatAssistantModal = () => {
 	const [ isSending, setIsSending ] = useState( false );
 	const [ loadingStep, setLoadingStep ] = useState( 0 );
 	const [ requestError, setRequestError ] = useState( '' );
-	const [ chatStatus, setChatStatus ] = useState<ChatAvailability>(
-		normalizeChatStatus( window.burst_settings?.chat_availability )
-	);
+
+	const queryClient = useQueryClient();
+
+	// Single source of truth for chat status: one cached REST call, deduped,
+	// refetched at most once per 60s. Replaces three useEffect-driven manual
+	// refresh calls plus a chatStatus → abilitiesEnabled feedback loop.
+	// The REST endpoint is the only source — PHP does not preload via localize_script.
+	const { data: chatStatus = {} as ChatAvailability } = useQuery<ChatAvailability>({
+		queryKey: [ 'chat-status' ],
+		queryFn: async() => normalizeChatStatus( await getChatStatus() ),
+		staleTime: 60_000,
+		refetchOnWindowFocus: false
+	});
 
 	const messagesContainerRef = useRef<HTMLDivElement | null>( null );
 	const scrollRef = useRef<HTMLDivElement | null>( null );
@@ -311,8 +311,8 @@ const ChatAssistantModal = () => {
 	);
 	const abilitiesEnabled =
 		null !== explicitAbilitiesSetting ?
-			explicitAbilitiesSetting :
-			( chatStatus.abilities_enabled ?? true );
+		explicitAbilitiesSetting :
+		( chatStatus.abilities_enabled ?? false );
 
 	const scrollToBottom = ( behavior: ScrollBehavior = 'smooth' ) => {
 		if ( messagesContainerRef.current ) {
@@ -324,20 +324,6 @@ const ChatAssistantModal = () => {
 		}
 
 		scrollRef.current?.scrollIntoView({ behavior });
-	};
-
-	const refreshChatStatus = async() => {
-		try {
-			const response = await getChatStatus();
-			const normalized = normalizeChatStatus( response );
-			setChatStatus( normalized );
-			if ( window.burst_settings ) {
-				window.burst_settings.chat_availability = normalized;
-			}
-		} catch {
-
-			// Keep existing status when request fails.
-		}
 	};
 
 	useEffect( () => {
@@ -360,8 +346,6 @@ const ChatAssistantModal = () => {
 			setSessions([ firstSession ]);
 			setActiveSessionId( firstSession.id );
 		}
-
-		void refreshChatStatus();
 	}, []);
 
 	useEffect( () => {
@@ -371,17 +355,14 @@ const ChatAssistantModal = () => {
 		setLocalStorage( STORAGE_KEY, applySessionStorageLimits( sessions ) );
 	}, [ sessions ]);
 
+	// Mark chat-status as potentially stale when the modal opens. React Query
+	// will only actually refetch when the staleTime (60s) has elapsed, so
+	// rapidly opening and closing the modal does not generate extra requests.
 	useEffect( () => {
 		if ( isOpen ) {
-			void refreshChatStatus();
+			void queryClient.invalidateQueries({ queryKey: [ 'chat-status' ] });
 		}
-	}, [ isOpen ]);
-
-	useEffect( () => {
-		if ( abilitiesEnabled ) {
-			void refreshChatStatus();
-		}
-	}, [ abilitiesEnabled ]);
+	}, [ isOpen, queryClient ]);
 
 	useEffect( () => {
 		if ( ! sessions.length ) {
@@ -461,13 +442,33 @@ const ChatAssistantModal = () => {
 
 		if ( false === chatStatus.ai_client_loaded ) {
 			return __(
-				'to enable the AI chat, please install and configure the WordPress AI plugin',
+				'To enable AI chat, please install and configure the WordPress AI plugin.',
 				'burst-statistics'
 			);
 		}
 
+		if ( false === chatStatus.has_configured_provider ) {
+			return __(
+				'No AI connector is configured. Install the WordPress AI plugin and connect a provider to use chat.',
+				'burst-statistics'
+			);
+		}
+
+		const missingApprovals = chatStatus.missing_approvals ?? [];
+		if ( 0 < missingApprovals.length ) {
+			return sprintf(
+
+				/* translators: %s is a comma-separated list of approval names (e.g. "Burst, WordPress AI, OpenAI Provider"). */
+				__(
+					'To enable AI chat, please go to Tools > Connector Approvals and approve the following: %s.',
+					'burst-statistics'
+				),
+				missingApprovals.join( ', ' )
+			);
+		}
+
 		if ( false === chatStatus.enabled ) {
-			return chatStatus.disabled_reason || getDefaultDisabledReason( chatStatus );
+			return __( 'Chat is currently unavailable.', 'burst-statistics' );
 		}
 
 		return '';

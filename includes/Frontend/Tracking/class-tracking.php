@@ -12,8 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Burst\Frontend\Endpoint;
-use Burst\Frontend\Goals\Goal;
 use Burst\Frontend\Ip\Ip;
+use Burst\Pro\Frontend\External_Link\External_Link_Frontend;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
@@ -74,6 +74,11 @@ class Tracking {
 		$should_load_ecommerce = $sanitized_data['should_load_ecommerce'];
 		unset( $sanitized_data['should_load_ecommerce'] );
 
+		$external_link_url = '';
+		if ( $this->get_option_bool( 'track_external_links' ) && ! empty( $sanitized_data['external_link_url'] ) ) {
+			$external_link_url = $sanitized_data['external_link_url'];
+		}
+
 		// If new hit, get the last row.
 		$result = $this->get_hit_type( $sanitized_data );
 		if ( empty( $result ) ) {
@@ -103,6 +108,7 @@ class Tracking {
 			$sanitized_data['city_code'],
 			$sanitized_data['referrer'],
 			$sanitized_data['bounce'],
+			$sanitized_data['external_link_url'],
 			$sanitized_data['browser_id'],
 			$sanitized_data['browser_version_id'],
 			$sanitized_data['platform_id'],
@@ -179,6 +185,10 @@ class Tracking {
 			$completed_goals = $this->get_completed_goals( $statistic['completed_goals'], $statistic['page_url'] );
 			if ( ! empty( $completed_goals ) ) {
 				$this->create_goal_statistic( $statistic_id, $completed_goals );
+			}
+
+			if ( $this->get_option_bool( 'track_external_links' ) && ! empty( $external_link_url ) ) {
+				External_Link_Frontend::track_external_link( (int) $statistic_id, $external_link_url );
 			}
 		}
 
@@ -350,6 +360,7 @@ class Tracking {
 	 *     uid: string,
 	 *     fingerprint: string,
 	 *     referrer: string,
+	 *     external_link_url: string,
 	 *     time_on_page: int,
 	 *     bounce: int,
 	 *     browser_id?: int,
@@ -378,6 +389,7 @@ class Tracking {
 			'uid'                   => null,
 			'fingerprint'           => null,
 			'referrer_url'          => null,
+			'external_link_url'     => null,
 			'user_agent'            => null,
 			'time_on_page'          => null,
 			'completed_goals'       => null,
@@ -401,6 +413,7 @@ class Tracking {
 		$sanitized_data['uid']                   = $this->sanitize_uid( $data['uid'] );
 		$sanitized_data['fingerprint']           = $this->sanitize_fingerprint( $data['fingerprint'] );
 		$sanitized_data['referrer']              = $this->sanitize_referrer( $data['referrer_url'] );
+		$sanitized_data['external_link_url']     = $this->sanitize_external_link_url( $data['external_link_url'] );
 		$sanitized_data['browser_id']            = self::get_lookup_table_id( 'browser', $user_agent_data['browser'] );
 		$sanitized_data['browser_version_id']    = self::get_lookup_table_id( 'browser_version', $user_agent_data['browser_version'] );
 		$sanitized_data['platform_id']           = self::get_lookup_table_id( 'platform', $user_agent_data['platform'] );
@@ -449,6 +462,31 @@ class Tracking {
 		}
 
 		return sanitize_title( $page_identifier );
+	}
+
+	/**
+	 * Sanitize tracked external link URL.
+	 */
+	private function sanitize_external_link_url( ?string $external_link_url ): string {
+		if ( empty( $external_link_url ) ) {
+			return '';
+		}
+
+		$url = esc_url_raw( $external_link_url, [ 'http', 'https' ] );
+		if ( empty( $url ) ) {
+			return '';
+		}
+
+		$parsed = wp_parse_url( $url );
+		if ( empty( $parsed['scheme'] ) || empty( $parsed['host'] ) ) {
+			return '';
+		}
+
+		if ( ! in_array( $parsed['scheme'], [ 'http', 'https' ], true ) ) {
+			return '';
+		}
+
+		return $url;
 	}
 
 	/**
@@ -613,6 +651,7 @@ class Tracking {
 	 *         do_not_track: int,
 	 *         enable_turbo_mode: int,
 	 *         track_url_change: int,
+	 *         track_external_links: int,
 	 *         cookie_retention_days: int
 	 *     },
 	 *     goals: array{
@@ -647,8 +686,9 @@ class Tracking {
 					'do_not_track'          => $this->get_option_int( 'enable_do_not_track' ),
 					'enable_turbo_mode'     => $this->get_option_int( 'enable_turbo_mode' ),
 					'track_url_change'      => $this->get_option_int( 'track_url_change' ),
+					'track_external_links'  => $this->get_option_int( 'track_external_links' ),
 					'cookie_retention_days' => apply_filters( 'burst_cookie_retention_days', 30 ),
-					'debug'                 => defined( 'BURST_DEBUG' ) && BURST_DEBUG ? 1 : 0,
+					'debug'                 => defined( 'BURST_DEBUG' ) && \BURST_DEBUG ? 1 : 0,
 				],
 				'goals'    => [
 					'completed' => [],

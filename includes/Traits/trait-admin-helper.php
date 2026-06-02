@@ -304,41 +304,42 @@ trait Admin_Helper {
 			'burst_localize_script',
 			[
 				// Core plugin information.
-				'burst_version'                => BURST_VERSION,
-				'is_pro'                       => defined( 'BURST_PRO' ),
-				'plugin_url'                   => BURST_URL,
-				'installed_by'                 => get_site_option( 'teamupdraft_installation_source_burst-statistics', '' ),
+				'burst_version'                        => BURST_VERSION,
+				'is_pro'                               => defined( 'BURST_PRO' ),
+				'plugin_url'                           => BURST_URL,
+				'installed_by'                         => get_site_option( 'teamupdraft_installation_source_burst-statistics', '' ),
 
 				// URLs and endpoints.
-				'rest_url'                     => get_rest_url(),
-				'site_url'                     => defined( 'BURST_HEADLESS_DOMAIN' ) ? esc_url_raw( BURST_HEADLESS_DOMAIN ) : get_site_url(),
-				'admin_ajax_url'               => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
-				'dashboard_url'                => $this->admin_url( 'burst' ),
-				'network_link'                 => network_site_url( 'plugins.php' ),
+				'rest_url'                             => get_rest_url(),
+				'site_url'                             => defined( 'BURST_HEADLESS_DOMAIN' ) ? esc_url_raw( BURST_HEADLESS_DOMAIN ) : get_site_url(),
+				'admin_ajax_url'                       => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
+				'dashboard_url'                        => $this->admin_url( 'burst' ),
+				'network_link'                         => network_site_url( 'plugins.php' ),
 
 				// Security and authentication.
-				'nonce'                        => wp_create_nonce( 'wp_rest' ),
-				'burst_nonce'                  => wp_create_nonce( 'burst_nonce' ),
-				'current_ip'                   => Ip::get_ip_address(),
+				'nonce'                                => wp_create_nonce( 'wp_rest' ),
+				'burst_nonce'                          => wp_create_nonce( 'burst_nonce' ),
+				'current_ip'                           => Ip::get_ip_address(),
 
 				// User permissions and capabilities.
-				'user_roles'                   => $this->get_user_roles(),
-				'view_sales_burst_statistics'  => $this->user_can_view_sales(),
-				'manage_burst_statistics'      => $this->user_can_manage(),
-				'can_install_plugins'          => $user_can_install,
-				'share_link_permissions'       => self::get_share_link_permissions(),
+				'user_roles'                           => $this->get_user_roles(),
+				'view_sales_burst_statistics'          => $this->user_can_view_sales(),
+				'manage_burst_statistics'              => $this->user_can_manage(),
+				'can_install_plugins'                  => $user_can_install,
+				'share_link_permissions'               => self::get_share_link_permissions(),
 
 				// Localization and internationalization.
-				'json_translations'            => $js_data['json_translations'],
-				'date_format'                  => get_option( 'date_format' ),
-				'gmt_offset'                   => get_option( 'gmt_offset' ),
-				'burst_activation_time'        => (int) get_option( 'burst_activation_time', 1640995200 ),
+				'json_translations'                    => $js_data['json_translations'],
+				'date_format'                          => get_option( 'date_format' ),
+				'gmt_offset'                           => get_option( 'gmt_offset' ),
+				'burst_activation_time'                => (int) get_option( 'burst_activation_time', 1640995200 ),
 
 				// Configuration and options.
-				'date_ranges'                  => $this->get_date_ranges(),
-				'time_format'                  => get_option( 'time_format' ),
+				'date_ranges'                          => $this->get_date_ranges(),
+				'time_format'                          => get_option( 'time_format' ),
 				// Date picker's starting date.
-				'burst_date_picker_start_date' => (int) get_option( 'burst_activation_time', 1640995200 ),
+				'burst_date_picker_start_date'         => (int) get_option( 'burst_activation_time', 1640995200 ),
+				'external_links_first_cycle_completed' => (int) get_option( 'burst_external_links_last_completed', 0 ) > 0,
 			]
 		);
 	}

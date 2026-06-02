@@ -2,6 +2,7 @@
  * Sales Route
  */
 import { createFileRoute, notFound } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 import { __ } from '@wordpress/i18n';
 import { PageHeader } from '@/components/Common/PageHeader';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
@@ -9,10 +10,12 @@ import useLicenseData from '@/hooks/useLicenseData';
 import UnauthorizedModal from '@/components/Common/UnauthorizedModal';
 import SubscriptionsBlock from '@/components/Subscriptions/SubscriptionsBlock';
 import SubscriptionsProgressBar from '@/components/Subscriptions/SubscriptionsProgressBar';
+import SubscriptionsLargeSiteNotice from '@/components/Subscriptions/SubscriptionsLargeSiteNotice';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import { RevenueChartBlock } from '@/components/Subscriptions/RevenueChart';
 import { RetentionChartBlock } from '@/components/Subscriptions/RetentionChart';
 import { DistributionBlock } from '@/components/Subscriptions/DistributionChart';
+import getSubscriptionsProgressData from '@/api/getSubscriptionsProgressData';
 import { shouldLoadRoute } from '@/utils/helper';
 import NotFoundModal from '@/components/Common/NotFoundModal';
 import useShareableLinkStore from '@/store/useShareableLinkStore';
@@ -78,6 +81,25 @@ function SubscriptionsComponent() {
 	const { isLicenseValidFor, isFetching } = useLicenseData();
 	const isShareableLinkViewer = useShareableLinkStore( state => state.isShareableLinkViewer );
 
+	// Shared queryKey with SubscriptionsProgressBar dedupes the fetch.
+	// Polls every 60s while backfill is still running, then stops so open
+	// dashboard tabs do not keep hitting the endpoint forever.
+	const progressQuery = useQuery({
+		queryKey: [ 'subscriptions-backfill-progress' ],
+		queryFn: () => getSubscriptionsProgressData(),
+		refetchInterval: ( query ) => {
+			const d = query.state.data;
+			if ( ! d ) {
+				return 60000;
+			}
+			if ( d.backfill_completed && ! d.is_processing ) {
+				return false;
+			}
+			return 60000;
+		},
+		refetchIntervalInBackground: true
+	});
+
 	if ( isFetching ) {
 		return null;
 	}
@@ -95,6 +117,33 @@ function SubscriptionsComponent() {
 				}
 				actionLabel={__( 'Go Back', 'burst-statistics' )}
 			/>
+		);
+	}
+
+	// Block data blocks until the gate decision is known. Summary / chart /
+	// product are cached-only on the server and would render empty cards
+	// before backfill finishes. On query error we keep the gate engaged
+	// rather than fire heavy REST calls in parallel.
+	const isProgressLoading = undefined === progressQuery.data && ! progressQuery.isError;
+
+	if ( isProgressLoading ) {
+		return (
+			<>
+				<PageHeader />
+			</>
+		);
+	}
+
+	const progressData = progressQuery.data;
+	const backfillCompleted = ! progressQuery.isError && !! progressData?.backfill_completed;
+	const hasProviders = !! progressData?.has_providers;
+
+	if ( hasProviders && ! backfillCompleted ) {
+		return (
+			<>
+				<PageHeader />
+				<SubscriptionsLargeSiteNotice />
+			</>
 		);
 	}
 

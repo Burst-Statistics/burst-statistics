@@ -29,10 +29,45 @@ const getSystemTheme = () => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
+// Mirror the main app's stored choice (burst_ + 'theme_preference', JSON-encoded
+// by setLocalStorage). Only 'light'/'dark' are persisted; 'system' removes the key.
+const getStoredTheme = () => {
+    if (typeof window === 'undefined' || !window.localStorage) {
+        return null;
+    }
+
+    let raw;
+    try {
+        raw = localStorage.getItem('burst_theme_preference');
+    } catch (e) {
+        return null;
+    }
+
+    if (!raw) {
+        return null;
+    }
+
+    let pref;
+    try {
+        pref = JSON.parse(raw);
+    } catch (e) {
+        pref = raw;
+    }
+
+    return pref === 'dark' || pref === 'light' ? pref : null;
+};
+
 const resolveTheme = () => {
     const bodyTheme = getBodyTheme();
     if (bodyTheme === 'dark') {
         return 'dark';
+    }
+
+    // Respect an explicit user light/dark choice over the OS setting, so forcing
+    // light on a dark OS doesn't leave the onboarding stuck in dark.
+    const storedTheme = getStoredTheme();
+    if (storedTheme) {
+        return storedTheme;
     }
 
     return getSystemTheme();

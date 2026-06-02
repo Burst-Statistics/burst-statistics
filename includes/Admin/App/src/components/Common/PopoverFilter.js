@@ -14,10 +14,15 @@ const PopoverFilter = ({
 	options,
 	selectedOptions,
 	defaultOptions = [],
-	selectionMode = 'multiple'
+	selectionMode = 'multiple',
+	extraSection = null,
+	extraSectionValue = false,
+	onExtraSectionChange = null,
+	description = ''
 }) => {
 	const [ isOpen, setIsOpen ] = useState( false );
 	const [ pendingMetrics, setPendingMetrics ] = useState( selectedOptions );
+	const [ pendingExtraValue, setPendingExtraValue ] = useState( extraSectionValue );
 
 	// Memoize the categorization logic - only recalculates when options change
 	const { categories, uncategorized } = useMemo( () => {
@@ -46,6 +51,10 @@ const PopoverFilter = ({
 	useEffect( () => {
 		setPendingMetrics( selectedOptions );
 	}, [ selectedOptions ]);
+
+	useEffect( () => {
+		setPendingExtraValue( extraSectionValue );
+	}, [ extraSectionValue ]);
 
 	const { isLicenseValid } = useLicenseData();
 	const onCheckboxChange = ( value ) => {
@@ -91,11 +100,20 @@ const PopoverFilter = ({
 			setPendingMetrics( defaultMetrics );
 			setMetrics( defaultMetrics );
 		}
+
+		if ( onExtraSectionChange ) {
+			setPendingExtraValue( false );
+			onExtraSectionChange( false );
+		}
 		setIsOpen( false );
 	};
 
 	const applyMetrics = ( metrics ) => {
 		setMetrics( metrics );
+
+		if ( onExtraSectionChange ) {
+			onExtraSectionChange( pendingExtraValue );
+		}
 		setIsOpen( false );
 	};
 
@@ -120,6 +138,7 @@ const PopoverFilter = ({
 		} else {
 			setIsOpen( false );
 			setPendingMetrics( selectedOptions );
+			setPendingExtraValue( extraSectionValue );
 		}
 	};
 
@@ -153,7 +172,15 @@ const PopoverFilter = ({
 					__( 'Select metrics', 'burst-statistics' )
 			}
 			footer={footer}
+			description={description}
 		>
+			{extraSection && (
+				<div className="-mx-4 mb-2 border-b border-gray-100 px-4 pb-2">
+					{'function' === typeof extraSection ?
+						extraSection( pendingExtraValue, setPendingExtraValue ) :
+						extraSection}
+				</div>
+			)}
 			{'single' === selectionMode ? (
 
 				// Radio button mode for single selection

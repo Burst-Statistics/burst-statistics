@@ -29,7 +29,6 @@ export const ReportActionMenu: React.FC<ReportActionMenuProps> = ({ row }) => {
 	const deleteReport = useReportsStore( ( state ) => state.deleteReport );
 	const duplicateReport = useReportsStore( ( state ) => state.duplicateReport );
 	const duplicateAndLoadReportIntoWizard = useReportsStore( ( state ) => state.duplicateAndLoadReportIntoWizard );
-	const sendTestEmail = useReportsStore( ( state ) => state.sendTestEmail );
 	const sendEmailNow = useReportsStore( ( state ) => state.sendEmailNow );
 	const openPreview = useReportsStore( ( state ) => state.openPreview );
 	const { isLicenseValidFor } = useLicenseData();
@@ -106,22 +105,6 @@ export const ReportActionMenu: React.FC<ReportActionMenuProps> = ({ row }) => {
 					} else {
 						toast.error(
 							__( 'Failed to start email sending.', 'burst-statistics' )
-						);
-					}
-				});
-			}
-		},
-		{
-			label: __( 'Send test email', 'burst-statistics' ),
-			action: () => {
-				sendTestEmail( row.id ).then( ( response: boolean ) => {
-					if ( response ) {
-						toast.success(
-							__( 'Test email sending has been started.', 'burst-statistics' )
-						);
-					} else {
-						toast.error(
-							__( 'Failed to start test email sending.', 'burst-statistics' )
 						);
 					}
 				});

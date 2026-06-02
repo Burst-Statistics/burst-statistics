@@ -4,6 +4,7 @@ import TodayBlock from '@/components/Dashboard/TodayBlock';
 import GoalsBlock from '@/components/Dashboard/GoalsBlock';
 import TipsTricksBlock from '@/components/Dashboard/TipsTricksBlock';
 import OtherPluginsBlock from '@/components/Dashboard/OtherPluginsBlock';
+
 import { shouldLoadRoute } from '@/utils/helper';
 
 export const Route = createFileRoute( '/' )({

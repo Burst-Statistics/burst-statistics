@@ -7,9 +7,15 @@ const useShareableLinkStore = create( () => {
     const canFilter = isPdfMode ? false : ( burst_settings?.share_link_permissions?.can_filter || false );
     const canFilterDateRange = isPdfMode ? false : ( burst_settings?.share_link_permissions?.can_change_date || false );
 
+    // The story view is served at /burst-dashboard/story via browser-history routing,
+    // so a pathname check at app-init is sufficient — no SPA navigation enters or
+    // leaves /story during a session.
+    const isStoryView = /\/burst-dashboard\/story\/?$/.test( window.location.pathname );
+
     return {
         isPdfMode,
         isShareableLinkViewer,
+        isStoryView,
         userCanFilter: ! isShareableLinkViewer || canFilter,
         userCanFilterDateRange: ! isShareableLinkViewer || canFilterDateRange
     };

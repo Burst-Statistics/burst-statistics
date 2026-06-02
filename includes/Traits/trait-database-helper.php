@@ -225,4 +225,57 @@ trait Database_Helper {
 			}
 		}
 	}
+
+	/**
+	 * Normalize an external URL for consistent storage and lookup.
+	 *
+	 * - Strips fragments (#…) before sanitization.
+	 * - Lowercases the host (RFC 3986 §3.2.2 — host is case-insensitive).
+	 * - Appends a trailing slash when there is no query string and the last
+	 *   path segment has no file extension, so scraper and tracker always
+	 *   store/look up the same string.
+	 *
+	 * @param string $url The raw URL to normalize.
+	 * @return string The normalized URL, or an empty string when invalid.
+	 */
+	protected static function normalize_external_url( string $url ): string {
+		$url = trim( $url );
+		if ( empty( $url ) ) {
+			return '';
+		}
+
+		// Strip fragment but leave query strings intact.
+		// /#[^?]*$/ stops at '?' so encoded '#' in query values is unaffected.
+		$url = (string) preg_replace( '/#[^?]*$/', '', $url );
+
+		$url = esc_url_raw( $url );
+		if ( empty( $url ) ) {
+			return '';
+		}
+
+		$parsed = wp_parse_url( $url );
+		if ( empty( $parsed['host'] ) ) {
+			return '';
+		}
+
+		// Lowercase the host to prevent duplicate rows for mixed-case hostnames.
+		$url = str_replace( $parsed['host'], strtolower( $parsed['host'] ), $url );
+
+		// Add trailing slash when there is no query string and the last path
+		// segment has no file extension. Use basename + strrchr instead of
+		// pathinfo() to avoid false positives on version numbers like /v2.1/.
+		if ( empty( $parsed['query'] ) ) {
+			$path      = $parsed['path'] ?? '/';
+			$last_seg  = basename( $path );
+			$extension = strpos( $last_seg, '.' ) !== false
+				? ltrim( (string) strrchr( $last_seg, '.' ), '.' )
+				: '';
+
+			if ( '' === $extension ) {
+				$url = trailingslashit( $url );
+			}
+		}
+
+		return $url;
+	}
 }

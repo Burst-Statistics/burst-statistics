@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || die();
  * @property string $menu_id            Menu/tab where the setting appears (e.g., 'general', 'advanced', 'data', 'goals')
  * @property string $group_id           Group within the menu where the setting belongs
  * @property string $type               Input type: 'checkbox', 'radio', 'select', 'number', 'text', 'button', 'hidden',
- *                                      'email_reports', 'logo_editor', 'goals', 'ip_blocklist', 'restore_archives', 'checkbox_group'
+ *                                      'email_reports', 'image_picker', 'goals', 'ip_blocklist', 'restore_archives', 'checkbox_group'
  * @property string $label              Display label for the setting
  * @property string|array $context      Help text or contextual information
  *                                      - string: Simple help text
@@ -144,6 +144,20 @@ return [
 		'context'  => __( "Stop tracking visitors who have 'Do Not Track' enabled in their browser.", 'burst-statistics' ),
 		'disabled' => false,
 		'default'  => false,
+	],
+	[
+		'id'       => 'track_external_links',
+		'menu_id'  => 'general',
+		'group_id' => 'general',
+		'type'     => 'checkbox',
+		'label'    => __( 'Track external link clicks', 'burst-statistics' ),
+		'context'  => __( 'Record outgoing link clicks so you can analyze which external destinations are most used.', 'burst-statistics' ),
+		'disabled' => false,
+		'default'  => false,
+		'pro'      => [
+			'url'      => 'pricing/',
+			'disabled' => false,
+		],
 	],
 	[
 		'id'       => 'dismiss_non_error_notices',
