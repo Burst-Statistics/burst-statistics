@@ -73,4 +73,12 @@
 		color: var(--color-text-gray-light) !important;
 		fill: var(--color-text-gray-light) !important;
 	}
+
+	/* Dim disabled expandable-row chevron icons. */
+	.rdt_TableRow button svg {
+		opacity: 0.8 !important;
+	}
+	.rdt_TableRow button:disabled svg {
+		opacity: 0.2 !important;
+	}
 }

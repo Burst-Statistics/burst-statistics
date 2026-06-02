@@ -70,7 +70,10 @@ class Share_UI {
 			return $this->share->sanitize_tab( $requested_tab );
 		}
 
-		return '';
+		// Fallback: rewrite rules may not be flushed yet (e.g. when the first
+		// token was auto-generated through a report rather than the share UI),
+		// so resolve the tab from the request URI directly.
+		return $this->share->routing->get_current_shared_request_tab();
 	}
 
 	/**

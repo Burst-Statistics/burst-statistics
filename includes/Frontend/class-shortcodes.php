@@ -405,7 +405,7 @@ class Shortcodes {
 				$label = $title;
 				$value = number_format_i18n( $item['pageviews'] );
 			} elseif ( $atts['type'] === 'top_referrers' ) {
-				$label = ! empty( $item['referrer'] ) ? $item['referrer'] : __( 'Direct', 'burst-statistics' );
+				$label = ! empty( $item['referrer'] ) ? $item['referrer'] : __( 'Direct / unknown', 'burst-statistics' );
 				$value = number_format_i18n( $item['pageviews'] );
 			} elseif ( $atts['type'] === 'device_breakdown' ) {
 				// Get device name - handle both lookup table and direct storage modes.

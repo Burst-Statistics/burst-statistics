@@ -319,6 +319,15 @@ class Upgrade {
 			}
 			// Reinstall the optimizer so the on-disk MU plugin matches the new loader logic.
 			burst_reinstall_rest_api_optimizer();
+			delete_transient( 'burst_use_fallback_licensing_domain' );
+		}
+
+		if ( $prev_version && version_compare( $prev_version, '3.5.0', '<' ) ) {
+			// External link tracking is enabled by default for upgraded installs.
+			$this->update_option( 'track_external_links', true );
+			( new Tasks() )->add_task( 'external_links_tracking' );
+
+			burst_reinstall_rest_api_optimizer();
 		}
 
 		$admin = new Admin();

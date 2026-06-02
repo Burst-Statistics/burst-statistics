@@ -5,10 +5,16 @@ const Popover = ({
 	title,
 	children,
 	footer,
+	description = '',
 	isOpen,
 	setIsOpen,
 	showFilterIcon = true
 }) => {
+	const portalContainer =
+		document.getElementById( 'modal-root' ) ||
+		document.querySelector( '.burst' ) ||
+		document.body;
+
 	return (
 		<ReactPopover.Root open={isOpen} onOpenChange={setIsOpen}>
 			<ReactPopover.Trigger
@@ -24,9 +30,9 @@ const Popover = ({
 				)}
 			</ReactPopover.Trigger>
 
-			<ReactPopover.Portal container={document.querySelector( '.burst' )}>
+			<ReactPopover.Portal container={portalContainer}>
 				<ReactPopover.Content
-					className="z-50 min-w-[280px] max-w-[600px] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"
+					className="z-[10001] min-w-[280px] max-w-[400px] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"
 					align="end"
 					sideOffset={10}
 					arrowPadding={10}
@@ -39,9 +45,15 @@ const Popover = ({
 						</h5>
 					</div>
 
-					<div className="px-4 py-2">{children}</div>
+				<div className="px-4 py-2">{children}</div>
 
-					{footer && (
+				{description && (
+					<div className="px-4 pb-3 pt-1 border-t border-gray-100">
+						<p className="text-sm text-text-gray leading-relaxed">{description}</p>
+					</div>
+				)}
+
+				{footer && (
 						<div className="flex gap-2 rounded-b-lg border-t border-gray-100 bg-gray-50 px-4 py-3">
 							{footer}
 						</div>

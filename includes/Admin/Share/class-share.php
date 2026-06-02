@@ -47,7 +47,6 @@ class Share {
 		add_filter( 'burst_menu', [ $this->ui, 'allowed_tabs_for_current_shared_view' ], PHP_INT_MAX );
 		add_action( 'admin_init', [ $this->routing, 'maybe_flush_rewrite_rules' ] );
 		add_action( 'burst_daily', [ $this->auth, 'cleanup_viewer_sessions' ] );
-		add_filter( 'wp_is_application_passwords_available_for_user', [ $this, 'disable_app_passwords_for_viewer' ], 10, 2 );
 	}
 
 	/**

@@ -97,6 +97,7 @@ trait Sanitize {
 		switch ( $type ) {
 			case 'checkbox':
 			case 'anonymous_usage_data':
+			case 'number':
 			case 'hidden':
 				return (int) $value;
 			case 'checkbox_group':
@@ -107,14 +108,15 @@ trait Sanitize {
 				return array_map( 'sanitize_text_field', $value );
 			case 'email':
 				return sanitize_email( $value );
-			case 'number':
-				return (int) $value;
+			case 'color_picker':
+				return sanitize_hex_color( $value );
 			case 'ip_blocklist':
 				return $this->sanitize_ip_field( $value );
 			case 'email_reports':
 				return $this->sanitize_email_reports( $value );
 			case 'license':
 				return defined( 'BURST_PRO' ) && class_exists( '\\Burst\\Pro\\Admin\\Licensing\\Licensing' ) ? ( new \Burst\Pro\Admin\Licensing\Licensing() )->sanitize_license( $value ) : '';
+			case 'wysiwyg':
 			case 'textarea':
 				return wp_kses_post( $value );
 			default:
@@ -705,7 +707,7 @@ trait Sanitize {
 	 * @return array<int, string> List of available arguments for the specified data type
 	 */
 	public function get_data_available_args( string $type ): array {
-		$default_args = [ 'filters', 'metrics', 'group_by', 'goal_id', 'date_start', 'date_end' ];
+		$default_args = [ 'filters', 'metrics', 'group_by', 'goal_id', 'date_start', 'date_end', 'compare_mode', 'compare_date_start', 'compare_date_end' ];
 
 		// Allow filtering of available args by type.
 		return apply_filters( 'burst_get_data_available_args', $default_args, $type );

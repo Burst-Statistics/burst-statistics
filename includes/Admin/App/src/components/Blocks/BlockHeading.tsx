@@ -4,6 +4,7 @@ import { BlockHeadingStandard } from './BlockHeadingStandard';
 
 type BlockHeadingProps = {
 	title: ReactNode;
+	subtitle?: ReactNode;
 	controls?: ReactNode;
 	className?: string;
 	isReport?: boolean;
@@ -16,6 +17,7 @@ type BlockHeadingProps = {
  *
  * @param {Object}           props                 - Component props.
  * @param {React.ReactNode}  props.title            - The heading title.
+ * @param {React.ReactNode}  props.subtitle         - The sub title.
  * @param {React.ReactNode}  props.controls         - Optional controls to render on the right side.
  * @param {string}           props.className        - Additional CSS classes.
  * @param {boolean}          props.isReport         - Whether this is a report view.
@@ -23,12 +25,12 @@ type BlockHeadingProps = {
  * @param {boolean}          props.isLoading        - Whether the block is currently loading.
  * @return {JSX.Element} The block heading component.
  */
-export const BlockHeading = memo( ({ title, controls, className = '', isReport = false, reportBlockIndex, isLoading = false }: BlockHeadingProps ) => {
+export const BlockHeading = memo( ({ title, subtitle = '', controls, className = '', isReport = false, reportBlockIndex, isLoading = false }: BlockHeadingProps ) => {
 	if ( isReport ) {
 		return <BlockHeadingReport title={title} controls={controls} className={className} reportBlockIndex={reportBlockIndex} />;
 	}
 
-	return <BlockHeadingStandard title={title} controls={controls} className={className} isLoading={isLoading} />;
+	return <BlockHeadingStandard title={title} subtitle={subtitle} controls={controls} className={className} isLoading={isLoading} />;
 });
 
 BlockHeading.displayName = 'BlockHeading';

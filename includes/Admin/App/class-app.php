@@ -63,6 +63,7 @@ class App {
 		add_action( 'burst_weekly_clear_referrers_cron', [ $this, 'weekly_clear_referrers_table' ] );
 		add_action( 'burst_weekly_clear_spam_browsers_cron', [ $this, 'weekly_clear_spam_browsers' ] );
 		add_action( 'burst_daily', [ $this, 'maybe_update_plugin_slug' ] );
+
 		$this->menu             = new Menu();
 		$this->fields           = new Fields();
 		$this->reporting_fields = new Reporting_Fields();
@@ -333,6 +334,8 @@ class App {
 			'burst_settings',
 			$this->localized_settings( $js_data )
 		);
+
+		wp_enqueue_editor();
 	}
 
 	/**
@@ -366,9 +369,8 @@ class App {
 	 * @return array<string, mixed>
 	 */
 	public function extend_localized_settings_for_dashboard( array $data ): array {
-		$data['menu']              = $this->menu->get();
-		$data['fields']            = $this->fields->get();
-		$data['chat_availability'] = Abilities_Api::get_chat_availability();
+		$data['menu']   = $this->menu->get();
+		$data['fields'] = $this->fields->get();
 		return $data;
 	}
 
@@ -978,7 +980,7 @@ class App {
 			return;
 		}
 
-		if ( get_transient( 'burst_running_upgrade' ) ) {
+		if ( get_transient( 'burst_running_upgrade_process' ) ) {
 			self::error_log( 'Database installation in progress, delaying REST API response with 2 seconds.' );
 			// sleep for 0.5 seconds to allow the database installation to finish.
 			usleep( 500000 );
@@ -1754,6 +1756,13 @@ class App {
 				}
 			case 'goal_id':
 				return absint( $value );
+			case 'compare_mode':
+				$allowed = [ 'previous_period', 'year_over_year' ];
+				return in_array( $value, $allowed, true ) ? $value : '';
+			case 'compare_date_start':
+				return $this->normalize_date( $value . ' 00:00:00' );
+			case 'compare_date_end':
+				return $this->normalize_date( $value . ' 23:59:59' );
 			case 'date_start':
 				return $this->normalize_date( $value . ' 00:00:00' );
 			case 'date_end':
@@ -1797,6 +1806,10 @@ class App {
 			],
 			'dummy_data'            => [
 				'metrics'    => [ 'page_url', 'pageviews', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'entrances', 'exit_rate', 'conversions', 'conversion_rate', 'sales', 'revenue', 'sales_conversion_rate', 'page_value' ],
+				'capability' => 'view_burst_statistics',
+			],
+			'outgoing-links'        => [
+				'metrics'    => [ 'url', 'clicks', 'previous_clicks', 'previous_clicks_yoy' ],
 				'capability' => 'view_burst_statistics',
 			],
 		];
@@ -1921,9 +1934,12 @@ class App {
 					);
 				}
 
-				// If a datatable ID is used as the endpoint type, intersect incoming metrics with the allow-list.
-				if ( isset( $args['metrics'] ) && is_array( $args['metrics'] ) ) {
+				// Enforce metric allow-list: intersect if caller provided metrics, otherwise default to the full allow-list.
+				if ( isset( $args['metrics'] ) && is_array( $args['metrics'] ) && ! empty( $args['metrics'] ) ) {
 					$args['metrics'] = array_intersect( $args['metrics'], $allow_list[ $type ] );
+				} else {
+					// No metrics in request — use all allowed metrics for this datatable.
+					$args['metrics'] = $allow_list[ $type ];
 				}
 
 				$args['id'] = $type;
@@ -2135,6 +2151,13 @@ class App {
 					do_action( 'burst_after_save_field', $field_id, $value, $prev_value, $type );
 				}
 				do_action( 'burst_after_saved_fields', $updated_fields );
+
+				// Schedule a table-install pass so any tables needed by newly-enabled
+				// features (e.g. track_external_links) are created in a fresh request
+				// where all feature classes are properly bootstrapped.
+				if ( ! wp_next_scheduled( 'burst_cron_table_upgrade' ) ) {
+					wp_schedule_single_event( time() + 10, 'burst_cron_table_upgrade' );
+				}
 			}
 
 			// Return success response.

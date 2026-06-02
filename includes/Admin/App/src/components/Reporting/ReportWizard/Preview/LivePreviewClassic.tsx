@@ -1,37 +1,10 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import { __ } from '@wordpress/i18n';
 import { useQuery } from '@tanstack/react-query';
 
 import { useWizardStore } from '@/store/reports/useWizardStore';
 import { getReportPreview } from '@/utils/api';
-
-/**
- * Shadow DOM container component for rendering HTML with CSS isolation.
- * This allows the container to be scrollable while keeping styles encapsulated.
- */
-const ShadowContainer = ({ html }: { html: string }) => {
-    const containerRef = useRef<HTMLDivElement>( null );
-
-    useEffect( () => {
-        if ( ! containerRef.current ) {
-            return;
-        }
-
-        // Create or get existing shadow root.
-        let shadow = containerRef.current.shadowRoot;
-        if ( ! shadow ) {
-            shadow = containerRef.current.attachShadow({ mode: 'open' });
-        }
-        shadow.innerHTML = html;
-    }, [ html ]);
-
-    return (
-        <div
-            ref={ containerRef }
-            className="w-full burst-classic-html-container border rounded bg-white"
-        />
-    );
-};
+import ShadowContainer from '@/components/Common/ShadowContainer';
 
 export const LivePreviewClassic = ({ className }: { className?: string }) => {
     const frequency = useWizardStore( ( state ) => state.wizard.frequency );
@@ -66,7 +39,10 @@ export const LivePreviewClassic = ({ className }: { className?: string }) => {
             ) }
 
             { hasSelectedContent && ! isFetching && data?.preview_html && (
-                <ShadowContainer html={ data.preview_html } />
+                <ShadowContainer
+                    html={ data.preview_html }
+                    className="w-full burst-classic-html-container border rounded bg-white"
+                />
             ) }
         </div>
     );

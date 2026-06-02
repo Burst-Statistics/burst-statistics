@@ -50,7 +50,7 @@ const glue = () => {
  * @return {string}
  */
 const getNonce = () => {
-	return (
+	return  (
 		'nonce=' +
 		burst_settings.burst_nonce +
 		'&token=' +
@@ -69,13 +69,23 @@ const activeRequestControllers = new Map();
 const getRequestDedupKey = ( method, path ) => {
 	const [ basePath, queryString = '' ] = path.split( '?' );
 	const normalizedPath = ( basePath || '' ).replace( /\/+/g, '/' );
-	const params = new URLSearchParams( queryString );
-	params.delete( 'nonce' );
-	params.delete( 'token' );
 
-	const sortedParams = [ ...params.entries() ]
-		.sort( ([ keyA ], [ keyB ]) => keyA.localeCompare( keyB ) )
-		.map( ([ key, value ]) => `${key}=${value}` )
+	// Strip cache-busting `token` and per-session `nonce`, drop empty segments
+	// from `&&` artifacts (e.g. when filters serializes to an empty array), and
+	// sort the rest so two requests for the same logical resource share a key.
+	// Avoid URLSearchParams here: with bracketed array keys like `metrics[]=`
+	// some environments silently produce empty entries, which would collapse
+	// every request for the same endpoint onto a single dedup key.
+	const sortedParams = queryString
+		.split( '&' )
+		.filter( ( entry ) => {
+			if ( '' === entry ) {
+				return false;
+			}
+			const key = entry.split( '=' )[ 0 ];
+			return 'nonce' !== key && 'token' !== key;
+		})
+		.sort()
 		.join( '&' );
 
 	return `${method}:${normalizedPath}?${sortedParams}`;
@@ -227,7 +237,6 @@ const makeRequest = async(
 		data.nonce = burst_settings.burst_nonce;
 		args.data = data;
 	}
-
 	try {
 		const response = await apiFetch( args );
 		if ( requireRequestSuccess && ! response.request_success ) {
@@ -571,7 +580,7 @@ export const getDatatableData = async( id, isEcommerce, startDate, endDate, rang
  */
 export const getData = async( type, startDate, endDate, range, args = {}) => {
 
-	const { filters, metrics, currentView, selectedPages, chart_mode, distribution_view, product_id } = args;
+	const { filters, metrics, group_by, currentView, selectedPages, id, chart_mode, distribution_view, product_id, compare_mode, compare_date_start, compare_date_end, page_url } = args;
 
 	const queryParams = {
 		date_start: startDate,
@@ -592,6 +601,9 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
 	if ( metrics ) {
 		queryParams.metrics = metrics;
 	}
+	if ( group_by ) {
+		queryParams.group_by = group_by;
+	}
 	if ( currentView ) {
 		queryParams.currentView = currentView;
 	}
@@ -604,6 +616,22 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
 	if ( product_id ) {
 		queryParams.product_id = product_id;
 	}
+	if ( compare_mode ) {
+		queryParams.compare_mode = compare_mode;
+	}
+	if ( compare_date_start ) {
+		queryParams.compare_date_start = compare_date_start;
+	}
+	if ( compare_date_end ) {
+		queryParams.compare_date_end = compare_date_end;
+	}
+	if ( id ) {
+		queryParams.id = id;
+	}
+	if ( page_url ) {
+		queryParams.page_url = page_url;
+	}
+
 
 	const queryString = buildQueryString( queryParams );
 	const endpoint = `data/${type}`;

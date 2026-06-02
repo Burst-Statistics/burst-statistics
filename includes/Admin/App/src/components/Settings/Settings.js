@@ -128,7 +128,7 @@ const Settings = ({ currentSettingPage }) => {
 
 				{'license' !== settingsId && (
 					<SettingsFooter
-						onSubmit={handleSubmit( ( formData ) => {
+						onSubmit={handleSubmit( async( formData ) => {
 							const changedData = Object.keys( dirtyFields ).reduce(
 								( acc, key ) => {
 									acc[key] = formData[key];
@@ -136,13 +136,15 @@ const Settings = ({ currentSettingPage }) => {
 								},
 								{}
 							);
-							saveSettings( changedData ).then( () => {
-								reset( formData, {
-									keepValues: true,
-									keepDefaultValues: false
-								});
-							});
-							saveGoals();
+							await Promise.all([
+								saveSettings( changedData ).then( () => {
+									reset( formData, {
+										keepValues: true,
+										keepDefaultValues: false
+									});
+								}),
+								saveGoals()
+							]);
 						})}
 						control={control}
 					/>

@@ -15,6 +15,7 @@ import MenuItemLink from './HeaderMenuItemLink';
 import HeaderThemeMenu from './HeaderThemeMenu';
 import TransparencyModal from './TransparencyModal';
 import ChatAssistantModal from './ChatAssistantModal';
+import MobileMenuDrawer from './MobileMenuDrawer';
 
 const SHARE_LINK_BRANDING_URL = burst_get_website_url( '', {
 	utm_source: 'share-link',
@@ -83,26 +84,33 @@ const Header = () => {
 	return (
 		<div className="bg-white shadow-sm">
 			<SubscriptionHeader />
-			<div className="mx-auto flex max-w-(--breakpoint-2xl) items-center gap-5 px-3 lg:px-10 max-xxs:gap-0 min-h-16">
-				<div className="max-xxs:w-16 max-xxs:h-auto max-xxs:hidden pr-2">
+			<div className="mx-auto flex max-w-(--breakpoint-2xl) items-center gap-5 px-3 lg:px-10 max-lg:justify-between max-lg:px-4 min-h-16">
+
+				{/* Logo — visible on all screen sizes. Smaller height below lg breakpoint. */}
+				<div className="pr-2 max-lg:pr-0 shrink-0">
 					{isWhiteLabel && ! isLoading && attachmentUrl ? (
-						<img alt="logo" src={attachmentUrl} className={LOGO_CLASS} />
+						<img
+							alt="logo"
+							src={attachmentUrl}
+							className={LOGO_CLASS + ' max-lg:h-8 max-lg:py-0'}
+						/>
 					) : isShareableLinkViewer ? (
 						<a
 							href={SHARE_LINK_BRANDING_URL}
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							<BurstLogo className={LOGO_CLASS} />
+							<BurstLogo className={LOGO_CLASS + ' max-lg:h-8 max-lg:py-0'} />
 						</a>
 					) : (
 						<Link className="flex gap-3 align-middle" from="/" to="/">
-							<BurstLogo className={LOGO_CLASS} />
+							<BurstLogo className={LOGO_CLASS + ' max-lg:h-8 max-lg:py-0'} />
 						</Link>
 					)}
 				</div>
 
-				<div className="max-xxs:hidden flex items-center flex-1">
+				{/* Primary navigation tabs — desktop only (hidden below lg). */}
+				<div className="max-lg:hidden flex items-center flex-1">
 					{leftMenuItems.map( ( menuItem ) => (
 						<MenuItemLink
 							key={'menu-item-link' + menuItem.id}
@@ -134,68 +142,42 @@ const Header = () => {
 					</div>
 				)}
 
-				<div className="overflow-x-auto scrollbar-hide hidden max-xxs:block">
-					<div className="flex flex-1 items-center animate-scrollIndicator">
-						{leftMenuItems.map( ( menuItem ) => (
-							<MenuItemLink
-								key={'menu-item-link-' + menuItem.id}
-								menuItem={menuItem}
-								linkClassName={linkClassName}
-								activeClassName={activeClassName}
-								isTrial={isTrial}
-							/>
-						) )}
-
-						{! isShareableLinkViewer &&
-							rightMenuItems.map( ( menuItem ) => (
-								<MenuItemLink
-									key={'menu-item-link' + menuItem.id}
-									menuItem={menuItem}
-									linkClassName={linkClassName}
-									activeClassName={activeClassName}
-									isTrial={isTrial}
-								/>
-							) )}
-					</div>
-				</div>
-
 				{! isShareableLinkViewer && (
-					<div className="flex items-center gap-4 lg:gap-5">
+					<div className="flex items-center gap-4 lg:gap-5 max-lg:gap-2">
 						{burst_settings.manage_burst_statistics && <ChatAssistantModal />}
 
+						{/* Desktop-only: upgrade button, support link, separator, Settings tab. */}
 						{upgradeUrl && (
-							<>
-								<ButtonInput
-									className="max-xxs:ml-4"
-									link={{ to: upgradeUrl }}
-									btnVariant="primary"
-								>
-									<span className="flex items-center gap-1">
-										{__( 'Upgrade to Pro', 'burst-statistics' )}
-										<Icon
-											name="move-right"
-											size={16}
-											color="text-white"
-											strokeWidth={2.5}
-										/>
-									</span>
-								</ButtonInput>
-							</>
+							<ButtonInput
+								className="max-lg:hidden"
+								link={{ to: upgradeUrl }}
+								btnVariant="primary"
+							>
+								<span className="flex items-center gap-1">
+									{__( 'Upgrade to Pro', 'burst-statistics' )}
+									<Icon
+										name="move-right"
+										size={16}
+										color="text-white"
+										strokeWidth={2.5}
+									/>
+								</span>
+							</ButtonInput>
 						)}
 
 						<a
 							href={supportUrl}
 							target="_blank"
-							className="flex items-center text-text-gray gap-1 max-xxs:hidden hover:underline"
+							className="flex items-center text-text-gray gap-1 max-lg:hidden hover:underline"
 						>
 							{__( 'Support', 'burst-statistics' )}
 							<Icon name="external-link" size={12} color="gray" />
 						</a>
 
 						{/* separator */}
-						<div className="max-xxs:hidden h-4 w-px bg-gray-300"></div>
+						<div className="max-lg:hidden h-4 w-px bg-gray-300"></div>
 
-						<div className="max-xxs:hidden flex">
+						<div className="max-lg:hidden flex">
 							{rightMenuItems.map( ( menuItem ) => (
 								<MenuItemLink
 									key={'menu-item-link-' + menuItem.id}
@@ -208,6 +190,15 @@ const Header = () => {
 						</div>
 
 						<HeaderThemeMenu />
+
+						{/* Mobile/tablet hamburger + drawer (trigger is hidden at lg and above). */}
+						<MobileMenuDrawer
+							leftMenuItems={leftMenuItems}
+							rightMenuItems={rightMenuItems}
+							supportUrl={supportUrl}
+							upgradeUrl={upgradeUrl}
+							isTrial={isTrial}
+						/>
 					</div>
 				)}
 			</div>

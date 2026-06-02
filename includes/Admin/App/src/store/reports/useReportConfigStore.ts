@@ -17,6 +17,9 @@ import Sales from '@/components/Sales/Sales';
 import TopPerformers from '@/components/Sales/TopPerformers';
 import FunnelChartSection from '@/components/Sales/FunnelChartSection';
 import Logo from '@/components/Reporting/ReportWizard/Blocks/Logo';
+import TextBlock from '@/components/Reporting/ReportWizard/Blocks/TextBlock';
+import HeroBlock from '@/components/Reporting/ReportWizard/Blocks/HeroBlock';
+import FooterBlock from '@/components/Reporting/ReportWizard/Blocks/FooterBlock';
 import {ComponentType} from 'react';
 const AVAILABLE_CONTENT: ContentItems = [
 	{
@@ -25,6 +28,27 @@ const AVAILABLE_CONTENT: ContentItems = [
 		icon: 'image',
 		pro: false,
 		component: Logo
+	},
+	{
+		id: 'hero',
+		label: __( 'Hero', 'burst-statistics' ),
+		icon: 'image',
+		pro: true,
+		component: HeroBlock
+	},
+	{
+		id: 'text_block',
+		label: __( 'Text', 'burst-statistics' ),
+		icon: 'pencil',
+		pro: true,
+		component: TextBlock
+	},
+	{
+		id: 'footer',
+		label: __( 'Footer', 'burst-statistics' ),
+		icon: 'pencil',
+		pro: true,
+		component: FooterBlock
 	},
 	{
 		id: 'insights',

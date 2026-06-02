@@ -49,7 +49,13 @@ const Reporting = ({ currentSettingPage }) => {
 					}
 					return Object.entries( setting.react_conditions ).every(
 						([ field, allowedValues ]) => {
-							const value = watchedValues?.[field];
+							let value = watchedValues?.[field] ?? initialDefaultValues[field];
+
+							// Checkbox values may be stored as 1/'1'; coerce when
+							// the condition expects a boolean so reload matches.
+							if ( 'boolean' === typeof allowedValues ) {
+								value = 1 === value || true === value || '1' === value;
+							}
 							if ( ! Array.isArray( allowedValues ) ) {
 								return value === allowedValues;
 							}
@@ -76,7 +82,7 @@ const Reporting = ({ currentSettingPage }) => {
 		});
 
 		return grouped;
-	}, [ settings, settingsId, currentSettingPage.groups, watchedValues ]);
+	}, [ settings, settingsId, currentSettingPage.groups, watchedValues, initialDefaultValues ]);
 
 	const shouldShowFooter = 'reports' !== settingsId && 'logs' !== settingsId;
 

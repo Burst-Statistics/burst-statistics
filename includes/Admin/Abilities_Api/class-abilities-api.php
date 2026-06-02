@@ -80,6 +80,51 @@ class Abilities_Api {
 	}
 
 	/**
+	 * Manually register category and abilities inside a mock WordPress action hook loop.
+	 *
+	 * This prevents PHP notices check triggers by satisfying doing_action() checks
+	 * while shielding other plugins from duplicate registrations.
+	 */
+	public static function register_abilities_manually(): void {
+		if ( ! function_exists( 'wp_register_ability' ) ) {
+			return;
+		}
+
+		global $wp_filter, $wp_current_filter;
+
+		// phpcs:disable WordPress.WP.GlobalVariablesOverride.Prohibited
+		// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+
+		// Back up current hook states.
+		$backup_wp_filter = $wp_filter;
+		$backup_current   = $wp_current_filter;
+
+		try {
+			// Clear/mock hook structures with only our registration callbacks.
+			$wp_filter['wp_abilities_api_categories_init'] = new \WP_Hook();
+			$wp_filter['wp_abilities_api_categories_init']->add_filter( 'wp_abilities_api_categories_init', [ self::class, 'register_category' ], 10, 0 );
+
+			$wp_filter['wp_abilities_api_init'] = new \WP_Hook();
+			$wp_filter['wp_abilities_api_init']->add_filter( 'wp_abilities_api_init', [ self::class, 'register' ], 10, 0 );
+
+			$wp_filter['abilities_api_init'] = new \WP_Hook();
+			$wp_filter['abilities_api_init']->add_filter( 'abilities_api_init', [ self::class, 'register' ], 10, 0 );
+
+			// Execute hooks dynamically.
+			do_action( 'wp_abilities_api_categories_init' );
+			do_action( 'wp_abilities_api_init' );
+			do_action( 'abilities_api_init' );
+		} finally {
+			// Restore original hook states.
+			$wp_filter         = $backup_wp_filter;
+			$wp_current_filter = $backup_current;
+		}
+
+		// phpcs:enable WordPress.WP.GlobalVariablesOverride.Prohibited
+		// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+	}
+
+	/**
 	 * Register all V1 read-only abilities.
 	 */
 	public static function register(): void {
@@ -1488,10 +1533,17 @@ class Abilities_Api {
 			return $rate_limit;
 		}
 
-		if ( ! self::is_enabled() ) {
+		if ( function_exists( 'wp_register_ability' ) && ! wp_has_ability( 'burst/data' ) ) {
+			self::register_abilities_manually();
+		}
+
+		$availability = self::get_chat_availability();
+		if ( empty( $availability['enabled'] ) ) {
+			// Generic server-side message; the dashboard UI surfaces the specific
+			// disabled-reason based on the availability flags returned above.
 			return new \WP_Error(
-				'burst_chat_disabled',
-				'Abilities API is disabled in Burst settings.',
+				'burst_chat_unavailable',
+				'AI chat is currently unavailable.',
 				[ 'status' => 403 ]
 			);
 		}
@@ -1575,33 +1627,42 @@ class Abilities_Api {
 				);
 			}
 
-			$chat_builder = $this->build_chat_prompt_builder( $messages, $system_prompt, true )
-				->using_model_preference( 'gpt-5-mini' );
+			$resolver        = new \WP_AI_Client_Ability_Function_Resolver( ...self::CHAT_ABILITY_LIST );
+			$max_turns       = 5;
+			$turn            = 0;
+			$assistant_reply = '';
 
-			// First pass: get a full result object so we can inspect for tool calls.
-			$result = $chat_builder->generate_text_result();
+			while ( $turn < $max_turns ) {
+				$chat_builder = $this->build_chat_prompt_builder( $messages, $system_prompt, true )
+					->using_model_preference( 'gpt-5-mini' );
 
-			if ( is_wp_error( $result ) ) {
-				$this->log_chat_debug(
-					'primary_generate_error',
-					[ 'error' => $result->get_error_message() ]
-				);
+				// First pass or loop pass: get a full result object so we can inspect for tool calls.
+				$result = $chat_builder->generate_text_result();
 
-				if ( $this->is_provider_protocol_error( $result ) ) {
-					$compat = $this->build_chat_prompt_builder( $messages, $system_prompt, false )
-						->using_model_preference( 'gpt-5-mini' )
-						->generate_text();
+				if ( is_wp_error( $result ) ) {
+					$this->log_chat_debug(
+						'generate_error',
+						[
+							'error' => $result->get_error_message(),
+							'turn'  => $turn,
+						]
+					);
 
-					if ( is_wp_error( $compat ) ) {
+					if ( $this->is_provider_protocol_error( $result ) ) {
+						$compat = $this->build_chat_prompt_builder( $messages, $system_prompt, false )
+							->using_model_preference( 'gpt-5-mini' )
+							->generate_text();
+
+						if ( is_wp_error( $compat ) ) {
+							return $result;
+						}
+
+						$assistant_reply = trim( wp_unslash( (string) $compat ) );
+						break;
+					} else {
 						return $result;
 					}
-
-					$assistant_reply = trim( wp_unslash( (string) $compat ) );
-				} else {
-					return $result;
 				}
-			} else {
-				$assistant_reply = '';
 
 				// Extract the model message from the first candidate.
 				$model_msg_obj = null;
@@ -1612,49 +1673,77 @@ class Abilities_Api {
 					}
 				}
 
+				if ( null === $model_msg_obj ) {
+					if ( method_exists( $result, 'toText' ) ) {
+						try {
+							$assistant_reply = trim( wp_unslash( (string) $result->toText() ) );
+						} catch ( \Throwable $e ) {
+							$assistant_reply = '';
+						}
+					}
+					break;
+				}
+
+				// Map underscores to hyphens for the resolver to check and execute them.
+				$this->map_message_function_names( $model_msg_obj, '_' );
+
 				// Check whether the model issued any function/tool calls.
 				$has_calls = false;
-				$resolver  = new \WP_AI_Client_Ability_Function_Resolver( ...self::CHAT_ABILITY_LIST );
-				if ( null !== $model_msg_obj && method_exists( $model_msg_obj, 'getParts' ) ) {
-					if ( method_exists( $resolver, 'has_ability_calls' ) ) {
-						$has_calls = $resolver->has_ability_calls( $model_msg_obj );
-					} else {
-						foreach ( $model_msg_obj->getParts() as $part ) {
-							if ( method_exists( $part, 'getFunctionCall' ) && null !== $part->getFunctionCall() ) {
-								$has_calls = true;
-								break;
-							}
+				if ( method_exists( $resolver, 'has_ability_calls' ) ) {
+					$has_calls = $resolver->has_ability_calls( $model_msg_obj );
+				} elseif ( method_exists( $model_msg_obj, 'getParts' ) ) {
+					foreach ( $model_msg_obj->getParts() as $part ) {
+						if ( method_exists( $part, 'getFunctionCall' ) && null !== $part->getFunctionCall() ) {
+							$has_calls = true;
+							break;
 						}
 					}
 				}
 
-				if ( $has_calls && null !== $model_msg_obj ) {
+				if ( $has_calls ) {
 					// Append the model's tool-call turn then resolve abilities.
 					$messages[] = $model_msg_obj;
 
 					$tool_result_msg = $resolver->execute_abilities( $model_msg_obj );
 
+					// Map hyphens back to underscores for Anthropic compatibility.
+					$this->map_message_function_names( $model_msg_obj, '-' );
 					if ( null !== $tool_result_msg && ! is_wp_error( $tool_result_msg ) ) {
+						$this->map_message_function_names( $tool_result_msg, '-' );
 						$messages[] = $tool_result_msg;
 					}
 
-					// Second pass: generate the final plain-text answer.
-					$final = $this->build_chat_prompt_builder( $messages, $system_prompt, false )
-						->using_model_preference( 'gpt-5-mini' )
-						->generate_text();
+					++$turn;
+				} else {
+					// No tool calls – this is the final answer! Read the text directly.
+					$this->map_message_function_names( $model_msg_obj, '-' );
 
-					if ( is_wp_error( $final ) ) {
-						return $final;
+					if ( method_exists( $result, 'toText' ) ) {
+						try {
+							$assistant_reply = trim( wp_unslash( (string) $result->toText() ) );
+						} catch ( \Throwable $e ) {
+							$assistant_reply = '';
+						}
 					}
+					break;
+				}
+			}
 
+			// Final pass fallback if the loop finished but left us without an assistant reply text.
+			if ( '' === $assistant_reply ) {
+				$this->log_chat_debug(
+					'max_turns_reached',
+					[
+						'turns' => $turn,
+					]
+				);
+
+				$final = $this->build_chat_prompt_builder( $messages, $system_prompt, false )
+					->using_model_preference( 'gpt-5-mini' )
+					->generate_text();
+
+				if ( ! is_wp_error( $final ) ) {
 					$assistant_reply = trim( wp_unslash( (string) $final ) );
-				} elseif ( method_exists( $result, 'toText' ) ) {
-					// No tool calls – read the text directly from the result.
-					try {
-						$assistant_reply = trim( wp_unslash( (string) $result->toText() ) );
-					} catch ( \Throwable $e ) {
-						$assistant_reply = '';
-					}
 				}
 			}
 
@@ -1870,6 +1959,7 @@ class Abilities_Api {
 			}
 
 			$function_name = $this->ability_name_to_function_name( $ability->get_name() );
+			$function_name = str_replace( '-', '_', $function_name );
 			$input_schema  = $this->normalize_tool_input_schema( $ability->get_input_schema() );
 
 			$declarations[] = new $declaration_class(
@@ -2029,22 +2119,41 @@ class Abilities_Api {
 	 * @return array<string, mixed>
 	 */
 	private function get_ai_provider_diagnostics(): array {
-		if ( ! class_exists( '\\WordPress\\AiClient\\AiClient' ) ) {
+		if ( ! $this->is_wp_ai_plugin_active() || ! class_exists( '\\WordPress\\AiClient\\AiClient' ) ) {
 			return [ 'ai_client_loaded' => false ];
 		}
 
 		try {
 			$registry = \WordPress\AiClient\AiClient::defaultRegistry();
 			$this->ensure_ai_providers_registered( $registry );
-			$providers = [];
+			$providers      = [];
+			$registered_ids = $registry->getRegisteredProviderIds();
 
-			foreach ( $registry->getRegisteredProviderIds() as $provider_id ) {
+			if ( empty( $registered_ids ) ) {
+				$known_provider_ids = [ 'openai', 'anthropic', 'google' ];
+				foreach ( $known_provider_ids as $provider_id ) {
+					$option_name = 'connectors_ai_' . str_replace( '-', '_', $provider_id ) . '_api_key';
+					$api_key     = get_option( $option_name, '' );
+					$key_present = is_string( $api_key ) && '' !== $api_key;
+
+					$providers[ $provider_id ] = [
+						'api_key_present' => $key_present,
+					];
+				}
+
+				return [
+					'ai_client_loaded' => true,
+					'providers'        => $providers,
+				];
+			}
+
+			foreach ( $registered_ids as $provider_id ) {
 				$option_name = 'connectors_ai_' . str_replace( '-', '_', $provider_id ) . '_api_key';
 				$api_key     = get_option( $option_name, '' );
+				$key_present = is_string( $api_key ) && '' !== $api_key;
 
 				$providers[ $provider_id ] = [
-					'api_key_present' => is_string( $api_key ) && '' !== $api_key,
-					'is_configured'   => $registry->isProviderConfigured( $provider_id ),
+					'api_key_present' => $key_present,
 				];
 			}
 
@@ -2061,48 +2170,111 @@ class Abilities_Api {
 	}
 
 	/**
+	 * Determine whether the WordPress AI plugin is active.
+	 *
+	 * Uses plugin option lists as primary source so REST/admin contexts are
+	 * consistent and do not depend on optional helper availability.
+	 * On multisite, also checks network-wide activated plugins.
+	 */
+	private function is_wp_ai_plugin_active(): bool {
+		$runtime_loaded = function_exists( 'wp_ai_client_prompt' ) ||
+			class_exists( 'WP_AI_Client_Ability_Function_Resolver' ) ||
+			class_exists( 'WordPress\\AiClient\\AiClient' );
+
+		$ai_basename = $this->get_ai_plugin_basename();
+		// Check site-level active plugins.
+		$active_plugins = get_option( 'active_plugins', [] );
+		$option_check   = is_array( $active_plugins ) && in_array( $ai_basename, $active_plugins, true );
+
+		// On multisite, also check network-wide activated plugins.
+		if ( ! $option_check && is_multisite() ) {
+			$network_plugins = get_site_option( 'active_sitewide_plugins', [] );
+			$option_check    = is_array( $network_plugins ) && array_key_exists( $ai_basename, $network_plugins );
+		}
+
+		return $runtime_loaded && $option_check;
+	}
+
+	/**
 	 * Build non-sensitive chat availability flags for the dashboard UI.
 	 *
 	 * @return array<string, mixed>
 	 */
 	private function build_chat_availability(): array {
+		if ( function_exists( 'wp_register_ability' ) && ! wp_has_ability( 'burst/data' ) ) {
+			self::register_abilities_manually();
+		}
+
 		$abilities_enabled = self::is_enabled();
-		$ai_client_loaded  =
-			function_exists( 'wp_ai_client_prompt' )
-			&& class_exists( '\\WP_AI_Client_Ability_Function_Resolver' )
-			&& class_exists( '\\WordPress\\AiClient\\Messages\\DTO\\Message' )
-			&& class_exists( '\\WordPress\\AiClient\\Messages\\DTO\\MessagePart' )
-			&& class_exists( '\\WordPress\\AiClient\\Messages\\DTO\\ModelMessage' )
-			&& class_exists( '\\WordPress\\AiClient\\Messages\\DTO\\UserMessage' );
+		$ai_plugin_active  = $this->is_wp_ai_plugin_active();
+		$ai_client_loaded  = $ai_plugin_active && (
+			function_exists( 'WordPress\\AI\\get_ai_service' )
+			|| function_exists( 'wp_ai_client_prompt' )
+			|| class_exists( '\\WordPress\\AiClient\\AiClient' )
+		);
+
+		$connector_approvals_enabled = (bool) get_option( 'wpai_features_enabled', false ) && (bool) get_option( 'wpai_feature_connector-approval_enabled', false );
+		$connector_approvals_missing = false;
+		$missing_approvals_list      = [];
 
 		$has_configured_provider = false;
 		if ( $ai_client_loaded ) {
 			$diagnostics = $this->get_ai_provider_diagnostics();
-			$providers   = isset( $diagnostics['providers'] ) && is_array( $diagnostics['providers'] ) ? $diagnostics['providers'] : [];
+			$providers   = isset( $diagnostics['providers'] ) && is_array( $diagnostics['providers'] )
+				? $diagnostics['providers']
+				: [];
 
-			foreach ( $providers as $provider ) {
-				if ( is_array( $provider ) && ! empty( $provider['is_configured'] ) ) {
+			foreach ( $providers as $provider_id => $provider ) {
+				if ( is_array( $provider ) && ! empty( $provider['api_key_present'] ) ) {
 					$has_configured_provider = true;
+
+					if ( $connector_approvals_enabled ) {
+						// Check the three approvals for this provider connector.
+						$burst_basename    = defined( 'BURST_PLUGIN' ) ? BURST_PLUGIN : 'burst-pro/burst-pro.php';
+						$ai_basename       = $this->get_ai_plugin_basename();
+						$provider_basename = $this->get_connector_plugin_basename( $provider_id );
+
+						$burst_approved    = $this->is_caller_approved( $burst_basename, $provider_id );
+						$ai_approved       = $this->is_caller_approved( $ai_basename, $provider_id );
+						$provider_approved = empty( $provider_basename ) || $this->is_caller_approved( $provider_basename, $provider_id );
+
+						if ( ! $burst_approved || ! $ai_approved || ! $provider_approved ) {
+							$connector_approvals_missing = true;
+
+							if ( ! $burst_approved ) {
+								$missing_approvals_list[] = 'Burst';
+							}
+							if ( ! $ai_approved ) {
+								$missing_approvals_list[] = 'WordPress AI';
+							}
+							if ( ! $provider_approved ) {
+								$provider_names           = [
+									'openai'    => 'OpenAI',
+									'anthropic' => 'Anthropic',
+									'google'    => 'Google',
+								];
+								$provider_name            = $provider_names[ $provider_id ] ?? ucwords( $provider_id );
+								$missing_approvals_list[] = $provider_name . ' Provider';
+							}
+						}
+					}
 					break;
 				}
 			}
 		}
 
-		$enabled         = $abilities_enabled && $ai_client_loaded;
-		$disabled_reason = '';
+		// Also require plugin to be truly active (runtime signals) to avoid false positives if plugin is deactivated but classes persist.
+		$enabled = $abilities_enabled && $ai_client_loaded && $has_configured_provider && $ai_plugin_active && ! $connector_approvals_missing;
 
-		if ( ! $abilities_enabled ) {
-			$disabled_reason = 'Abilities API is disabled in Burst settings.';
-		} elseif ( ! $ai_client_loaded ) {
-			$disabled_reason = 'To enable the AI chat, please install and configure the WordPress AI plugin.';
-		}
-
+		// Disabled-reason strings are assembled client-side in the React UI so
+		// translations live in one place. We only ship the raw flags and the
+		// list of missing approval names — React formats the user-facing copy.
 		return [
 			'enabled'                 => $enabled,
 			'abilities_enabled'       => $abilities_enabled,
 			'ai_client_loaded'        => $ai_client_loaded,
 			'has_configured_provider' => $has_configured_provider,
-			'disabled_reason'         => $disabled_reason,
+			'missing_approvals'       => array_values( array_unique( $missing_approvals_list ) ),
 		];
 	}
 
@@ -2117,29 +2289,14 @@ class Abilities_Api {
 		}
 
 		$providers = [
-			[
-				'class'       => '\\WordPress\\AnthropicAiProvider\\Provider\\AnthropicProvider',
-				'plugin_file' => WP_PLUGIN_DIR . '/ai-provider-for-anthropic/plugin.php',
-			],
-			[
-				'class'       => '\\WordPress\\OpenAiProvider\\Provider\\OpenAiProvider',
-				'plugin_file' => WP_PLUGIN_DIR . '/ai-provider-for-openai/plugin.php',
-			],
-			[
-				'class'       => '\\WordPress\\GoogleAiProvider\\Provider\\GoogleProvider',
-				'plugin_file' => WP_PLUGIN_DIR . '/ai-provider-for-google/plugin.php',
-			],
+			'\\WordPress\\AnthropicAiProvider\\Provider\\AnthropicProvider',
+			'\\WordPress\\OpenAiProvider\\Provider\\OpenAiProvider',
+			'\\WordPress\\GoogleAiProvider\\Provider\\GoogleProvider',
 		];
 
-		foreach ( $providers as $provider ) {
-			$provider_class = $provider['class'];
-			$plugin_file    = $provider['plugin_file'];
-
-			if ( ! class_exists( $provider_class ) && is_file( $plugin_file ) ) {
-				require_once $plugin_file;
-			}
-
-			if ( ! class_exists( $provider_class ) ) {
+		foreach ( $providers as $provider_class ) {
+			// Only register if the class is already in memory — never load files here.
+			if ( ! class_exists( $provider_class, false ) ) {
 				continue;
 			}
 
@@ -2153,6 +2310,18 @@ class Abilities_Api {
 				continue;
 			}
 		}
+	}
+
+	/**
+	 * Get the plugin basename for the WordPress AI plugin.
+	 *
+	 * Falls back to 'ai/ai.php' if WPAI_PLUGIN_FILE is not defined.
+	 */
+	private function get_ai_plugin_basename(): string {
+		if ( defined( 'WPAI_PLUGIN_FILE' ) ) {
+			return plugin_basename( WPAI_PLUGIN_FILE );
+		}
+		return 'ai/ai.php';
 	}
 
 	/**
@@ -2327,10 +2496,10 @@ class Abilities_Api {
 	}
 
 	/**
-	 * Normalize and sanitize message part arrays.
+	 * Normalize and sanitize message part arrays, supporting all types of parts.
 	 *
 	 * @param mixed $part Raw part.
-	 * @return array<string, string>|null
+	 * @return array<string, mixed>|null
 	 */
 	private function sanitize_chat_part( mixed $part ): ?array {
 		if ( ! is_array( $part ) ) {
@@ -2342,12 +2511,67 @@ class Abilities_Api {
 			$channel = 'content';
 		}
 
-		$text = $this->sanitize_chat_text( (string) ( $part['text'] ?? '' ), $this->get_prompt_character_limit() );
+		$type = sanitize_key( (string) ( $part['type'] ?? '' ) );
 
-		return [
+		$sanitized = [
 			'channel' => $channel,
-			'text'    => $text,
+			'type'    => $type,
 		];
+
+		if ( isset( $part['text'] ) ) {
+			$sanitized['text'] = $this->sanitize_chat_text( (string) $part['text'], $this->get_prompt_character_limit() );
+		}
+
+		if ( isset( $part['thoughtSignature'] ) ) {
+			$sanitized['thoughtSignature'] = sanitize_text_field( (string) $part['thoughtSignature'] );
+		}
+
+		if ( isset( $part['file'] ) && is_array( $part['file'] ) ) {
+			$sanitized['file'] = $this->sanitize_array_recursive( $part['file'] );
+		}
+
+		if ( isset( $part['functionCall'] ) && is_array( $part['functionCall'] ) ) {
+			$call                      = $part['functionCall'];
+			$sanitized['functionCall'] = [
+				'id'   => sanitize_text_field( (string) ( $call['id'] ?? '' ) ),
+				'name' => sanitize_text_field( (string) ( $call['name'] ?? '' ) ),
+				'args' => is_array( $call['args'] ?? null ) ? $this->sanitize_array_recursive( $call['args'] ) : [],
+			];
+		}
+
+		if ( isset( $part['functionResponse'] ) && is_array( $part['functionResponse'] ) ) {
+			$resp                          = $part['functionResponse'];
+			$raw_response                  = $resp['response'] ?? null;
+			$sanitized['functionResponse'] = [
+				'id'       => sanitize_text_field( (string) ( $resp['id'] ?? '' ) ),
+				'name'     => sanitize_text_field( (string) ( $resp['name'] ?? '' ) ),
+				'response' => is_array( $raw_response ) ? $this->sanitize_array_recursive( $raw_response ) : ( is_scalar( $raw_response ) ? wp_kses_post( (string) $raw_response ) : [] ),
+			];
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * Recursively sanitize array values using sanitize_text_field or wp_kses_post.
+	 *
+	 * @param mixed $value The value to sanitize.
+	 * @return mixed The recursively sanitized value.
+	 */
+	private function sanitize_array_recursive( mixed $value ): mixed {
+		if ( is_array( $value ) ) {
+			$sanitized = [];
+			foreach ( $value as $k => $v ) {
+				$sanitized[ sanitize_text_field( (string) $k ) ] = $this->sanitize_array_recursive( $v );
+			}
+			return $sanitized;
+		}
+
+		if ( is_string( $value ) ) {
+			return wp_kses_post( $value );
+		}
+
+		return $value;
 	}
 
 	/**
@@ -2459,5 +2683,141 @@ class Abilities_Api {
 			'additionalProperties' => false,
 			'properties'           => (object) [],
 		];
+	}
+
+	/**
+	 * Check if a caller is approved for a connector in Connector Approvals.
+	 */
+	private function is_caller_approved( string $caller_basename, string $connector_id ): bool {
+		if ( class_exists( 'WordPress\\AI\\Connector_Approval\\Approvals_Store' ) ) {
+			try {
+				$store = new \WordPress\AI\Connector_Approval\Approvals_Store();
+				return $store->is_approved( $caller_basename, $connector_id );
+			} catch ( \Throwable $e ) {
+				// Fallback to manual check.
+				unset( $e );
+			}
+		}
+
+		// Manual check fallback.
+		$approvals = get_option( 'wpai_connector_approvals', [] );
+		if ( ! is_array( $approvals ) ) {
+			return false;
+		}
+
+		// Check exact match.
+		if ( ! empty( $approvals[ $caller_basename ][ $connector_id ] ) ) {
+			return true;
+		}
+
+		// Check bare slug match (e.g. if stored as 'ai' instead of 'ai/ai.php').
+		$slug = dirname( $caller_basename );
+		if ( '.' !== $slug && '' !== $slug && ! empty( $approvals[ $slug ][ $connector_id ] ) ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get the plugin basename for a connector ID.
+	 */
+	private function get_connector_plugin_basename( string $connector_id ): string {
+		$connectors = [];
+		if ( function_exists( 'WordPress\\AI\\get_ai_connectors' ) ) {
+			$connectors = \WordPress\AI\get_ai_connectors( false );
+		} elseif ( function_exists( 'wp_get_connectors' ) ) {
+			$connectors = wp_get_connectors();
+		}
+
+		if ( is_array( $connectors ) && isset( $connectors[ $connector_id ] ) ) {
+			$connector_data = $connectors[ $connector_id ];
+			if ( isset( $connector_data['plugin'] ) && is_array( $connector_data['plugin'] ) ) {
+				$plugin_data = $connector_data['plugin'];
+				if ( ! empty( $plugin_data['file'] ) && is_string( $plugin_data['file'] ) ) {
+					return $plugin_data['file'];
+				}
+				if ( ! empty( $plugin_data['plugin_file'] ) && is_string( $plugin_data['plugin_file'] ) ) {
+					return $plugin_data['plugin_file'];
+				}
+				if ( ! empty( $plugin_data['pluginFile'] ) && is_string( $plugin_data['pluginFile'] ) ) {
+					return $plugin_data['pluginFile'];
+				}
+			}
+		}
+
+		// Fallbacks for known providers if metadata is missing.
+		$known_fallbacks = [
+			'anthropic' => 'connectors-ai-anthropic/connectors-ai-anthropic.php',
+			'openai'    => 'connectors-ai-openai/connectors-ai-openai.php',
+			'google'    => 'connectors-ai-google/connectors-ai-google.php',
+		];
+
+		return $known_fallbacks[ $connector_id ] ?? '';
+	}
+
+	/**
+	 * Map function/tool names in message parts between hyphens and underscores for compatibility.
+	 *
+	 * @param mixed  $message The message object.
+	 * @param string $from    Character to map from ('-' or '_').
+	 */
+	private function map_message_function_names( mixed $message, string $from ): void {
+		if ( ! is_object( $message ) || ! method_exists( $message, 'getParts' ) ) {
+			return;
+		}
+
+		$mapping = [];
+		foreach ( self::CHAT_ABILITY_LIST as $ability_name ) {
+			$function_name = $this->ability_name_to_function_name( $ability_name );
+
+			if ( '-' === $from ) {
+				$key = $function_name;
+				$val = str_replace( '-', '_', $function_name );
+			} else {
+				$key = str_replace( '-', '_', $function_name );
+				$val = $function_name;
+			}
+
+			$mapping[ $key ] = $val;
+		}
+
+		foreach ( $message->getParts() as $part ) {
+			if ( ! is_object( $part ) || ! method_exists( $part, 'getType' ) ) {
+				continue;
+			}
+
+			if ( $part->getType()->isFunctionCall() && method_exists( $part, 'getFunctionCall' ) ) {
+				$call = $part->getFunctionCall();
+				if ( is_object( $call ) && method_exists( $call, 'getName' ) ) {
+					$name = $call->getName();
+					if ( isset( $mapping[ $name ] ) ) {
+						try {
+							$ref = new \ReflectionProperty( get_class( $call ), 'name' );
+							$ref->setAccessible( true );
+							$ref->setValue( $call, $mapping[ $name ] );
+						} catch ( \Throwable $e ) {
+							// Fallback.
+							unset( $e );
+						}
+					}
+				}
+			} elseif ( $part->getType()->isFunctionResponse() && method_exists( $part, 'getFunctionResponse' ) ) {
+				$response = $part->getFunctionResponse();
+				if ( is_object( $response ) && method_exists( $response, 'getName' ) ) {
+					$name = $response->getName();
+					if ( isset( $mapping[ $name ] ) ) {
+						try {
+							$ref = new \ReflectionProperty( get_class( $response ), 'name' );
+							$ref->setAccessible( true );
+							$ref->setValue( $response, $mapping[ $name ] );
+						} catch ( \Throwable $e ) {
+							// Fallback.
+							unset( $e );
+						}
+					}
+				}
+			}
+		}
 	}
 }

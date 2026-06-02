@@ -577,6 +577,13 @@ class Report {
 			if ( ! in_array( $block['id'], $valid_block_ids, true ) ) {
 				continue;
 			}
+
+			if ( in_array( $block['id'], [ 'text_block', 'hero', 'footer' ], true ) ) {
+				$block['content'] = isset( $block['content'] ) ? wp_kses_post( $block['content'] ) : '';
+			} else {
+				$block['content'] = isset( $block['content'] ) ? sanitize_textarea_field( $block['content'] ) : '';
+			}
+
 			$filters = isset( $block['filters'] ) ? $block['filters'] : [];
 			// let Query_Data handle filter sanitizing.
 			$qd = new Query_Data(
@@ -591,7 +598,8 @@ class Report {
 				// already sanitized above.
 				'id'                 => $block['id'],
 				'filters'            => $qd->filters,
-				'content'            => isset( $block['content'] ) ? sanitize_textarea_field( $block['content'] ) : '',
+				// $block['content'] is sanitized above.
+				'content'            => $block['content'],
 				'date_range'         => isset( $block['date_range'] ) ? Report_Date_Range::from_string( $block['date_range'] ) : '',
 				'comment_title'      => isset( $block['comment_title'] ) ? sanitize_text_field( $block['comment_title'] ) : '',
 				'comment_text'       => isset( $block['comment_text'] ) ? sanitize_textarea_field( $block['comment_text'] ) : '',

@@ -12,6 +12,10 @@ interface DataTableState {
 
     sortConfigs: Record<string, SortConfig>;
 
+    // Per-block-instance toggle for showing parameter variations under page rows.
+    // Keyed by the DataTableBlock `id` prop so each block instance can be toggled independently.
+    parameterVariations: Record<string, boolean>;
+
     getSelectedConfig: ( id: string, defaultValue: string ) => string;
     setSelectedConfig: ( id: string, value: string ) => void;
     getColumns: ( configKey: string, defaultColumns: string[]) => string[];
@@ -20,6 +24,9 @@ interface DataTableState {
     getSortConfig: ( configKey: string, defaultSort?: SortConfig ) => SortConfig | undefined;
     setSortConfig: ( configKey: string, sortConfig: SortConfig ) => void;
     clearSortConfig: ( configKey: string ) => void;
+
+    getParameterVariations: ( id: string ) => boolean;
+    setParameterVariations: ( id: string, value: boolean ) => void;
 }
 
 export const useDataTableStore = create<DataTableState>()(
@@ -28,6 +35,7 @@ export const useDataTableStore = create<DataTableState>()(
             selectedConfigs: {},
             columns: {},
             sortConfigs: {},
+            parameterVariations: {},
 
             getSelectedConfig: ( id: string, defaultValue: string ) => {
                 return get().selectedConfigs[id] || defaultValue;
@@ -74,6 +82,19 @@ export const useDataTableStore = create<DataTableState>()(
                     const {[configKey]: _, ...rest} = state.sortConfigs;
                     return {sortConfigs: rest};
                 });
+            },
+
+            getParameterVariations: ( id: string ) => {
+                return !! get().parameterVariations[id];
+            },
+
+            setParameterVariations: ( id: string, value: boolean ) => {
+                set( ( state ) => ({
+                    parameterVariations: {
+                        ...state.parameterVariations,
+                        [id]: value
+                    }
+                }) );
             }
         }),
         {
@@ -81,7 +102,8 @@ export const useDataTableStore = create<DataTableState>()(
             partialize: ( state ) => ({
                 selectedConfigs: state.selectedConfigs,
                 columns: state.columns,
-                sortConfigs: state.sortConfigs
+                sortConfigs: state.sortConfigs,
+                parameterVariations: state.parameterVariations
             })
         }
     )

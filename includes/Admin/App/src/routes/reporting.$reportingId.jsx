@@ -32,7 +32,7 @@ function ReportingRoute() {
 	return (
 		<>
 			<div className="col-span-12 lg:col-span-9 flex flex-col">
-				<Reporting currentSettingPage={currentItem} />
+				<Reporting key={currentItem.id} currentSettingPage={currentItem} />
 			</div>
 		</>
 	);

@@ -9,6 +9,7 @@
  */
 
 export { default as FilterModal } from './FilterModal';
+export { default as FilterPopoverContent } from './FilterPopoverContent';
 export { default as FilterCard } from './FilterCard';
 export { default as FilterSelectionView } from './FilterSelectionView';
 export { default as FilterSetupView } from './FilterSetupView';

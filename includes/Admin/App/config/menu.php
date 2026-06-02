@@ -5,7 +5,7 @@ defined( 'ABSPATH' ) || die();
 return [
 	[
 		'id'                      => 'dashboard',
-		'title'                   => __( 'Dashboard', 'burst-statistics' ),
+		'title'                   => __( 'Overview', 'burst-statistics' ),
 		'default_hidden'          => false,
 		'menu_items'              => [],
 		'capabilities'            => 'view_burst_statistics',
@@ -31,7 +31,16 @@ return [
 		'capabilities'   => 'view_burst_statistics',
 		'menu_slug'      => 'burst#/sources',
 		'show_in_admin'  => true,
-		'pro'            => true,
+		'shareable'      => true,
+	],
+	[
+		'id'             => 'engagement',
+		'title'          => __( 'Engagement', 'burst-statistics' ),
+		'default_hidden' => false,
+		'menu_items'     => [],
+		'capabilities'   => 'view_burst_statistics',
+		'menu_slug'      => 'burst#/engagement',
+		'show_in_admin'  => true,
 		'shareable'      => true,
 	],
 	[
@@ -65,6 +74,10 @@ return [
 					[
 						'id'    => 'customization',
 						'title' => __( 'Customization', 'burst-statistics' ),
+					],
+					[
+						'id'    => 'email',
+						'title' => __( 'Email', 'burst-statistics' ),
 					],
 				],
 			],

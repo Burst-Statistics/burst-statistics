@@ -389,10 +389,11 @@ class Statistics {
 	 */
 	public function get_insights_data( array $args = [] ): array {
 		$defaults = [
-			'date_start' => 0,
-			'date_end'   => 0,
-			'metrics'    => [ 'pageviews', 'visitors' ],
-			'group_by'   => 'auto',
+			'date_start'   => 0,
+			'date_end'     => 0,
+			'metrics'      => [ 'pageviews', 'visitors' ],
+			'group_by'     => 'auto',
+			'compare_mode' => '',
 		];
 		$args     = wp_parse_args( $args, $defaults );
 
@@ -401,21 +402,20 @@ class Statistics {
 		$group_by_raw = $args['group_by'] ?? 'auto';
 		$group_by     = is_array( $group_by_raw ) ? (string) ( $group_by_raw[0] ?? 'auto' ) : (string) $group_by_raw;
 
+		$start = (int) $args['date_start'];
+		$end   = (int) $args['date_end'];
+
 		$qd = new Query_Data(
 			'insights_data',
 			[
-				'date_start'     => (int) $args['date_start'],
-				'date_end'       => (int) $args['date_end'],
+				'date_start'     => $start,
+				'date_end'       => $end,
 				'select'         => $args['metrics'],
 				'filters'        => $args['filters'] ?? [],
 				'group_by'       => 'period',
 				'order_by'       => 'period',
 				'limit'          => 0,
-				'date_modifiers' => $this->get_insights_date_modifiers(
-					(int) $args['date_start'],
-					(int) $args['date_end'],
-					$group_by
-				),
+				'date_modifiers' => $this->get_insights_date_modifiers( $start, $end, $group_by ),
 			]
 		);
 
@@ -476,11 +476,131 @@ class Statistics {
 			$datasets[ $metric_key ]['data'] = array_values( $datasets[ $metric_key ]['data'] );
 		}
 
-		return [
+		$result = [
 			'timestamps'           => $timestamps,
 			'interval'             => $date_modifiers['interval'],
 			'spans_multiple_years' => $date_modifiers['spans_multiple_years'],
 			'datasets'             => $datasets,
+		];
+
+		// When a compare_mode is set and only a single metric is selected, append comparison data.
+		// The comparison line is only meaningful with one active metric (no multi-series overlap).
+		$compare_mode = (string) ( $args['compare_mode'] ?? '' );
+		$metrics_list = (array) ( $args['metrics'] ?? [] );
+
+		if ( ! empty( $compare_mode ) && 1 === count( $metrics_list ) ) {
+			$result['comparison'] = $this->get_insights_comparison_data(
+				$start,
+				$end,
+				$compare_mode,
+				$metrics_list,
+				$args['filters'] ?? [],
+				$date_modifiers
+			);
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Build comparison period data for the insights chart.
+	 *
+	 * Runs the same insights query against a shifted date window (previous period
+	 * or same period last year) and returns the dataset values together with the
+	 * actual comparison timestamps so the tooltip can display the correct dates.
+	 *
+	 * @param int    $start          Current period start timestamp.
+	 * @param int    $end            Current period end timestamp.
+	 * @param string $compare_mode   'previous_period' or 'year_over_year'.
+	 * @param array  $metrics        Metric keys to query.
+	 * @param array  $filters        Active filters.
+	 * @param array  $date_modifiers Date modifiers from the current period query.
+	 * @return array{
+	 *     datasets: array<int, array{data: list<int|float>}>,
+	 *     timestamps: list<int>,
+	 *     start_date: int,
+	 *     end_date: int
+	 * }
+	 */
+	private function get_insights_comparison_data( int $start, int $end, string $compare_mode, array $metrics, array $filters, array $date_modifiers ): array {
+		if ( 'year_over_year' === $compare_mode ) {
+			$compare_start = (int) strtotime( '-1 year', $start );
+			$compare_end   = (int) strtotime( '-1 year', $end );
+		} else {
+			// Default: previous period of equal length.
+			$diff          = $end - $start;
+			$compare_start = $start - $diff - 1;
+			$compare_end   = $end - $diff - 1;
+		}
+
+		$qd_compare = new Query_Data(
+			'insights_data',
+			[
+				'date_start'     => $compare_start,
+				'date_end'       => $compare_end,
+				'select'         => $metrics,
+				'filters'        => $filters,
+				'group_by'       => 'period',
+				'order_by'       => 'period',
+				'limit'          => 0,
+				// Re-use the same interval type so the result has the same number of slots.
+				'date_modifiers' => $this->get_insights_date_modifiers(
+					$compare_start,
+					$compare_end,
+					$date_modifiers['interval']
+				),
+			]
+		);
+
+		$comp_date_start     = $qd_compare->get_date_start();
+		$comp_metrics        = $qd_compare->get_select();
+		$comp_date_modifiers = $qd_compare->get_date_modifiers();
+
+		$timezone_offset = self::get_wp_timezone_offset();
+		$comp_date       = $comp_date_start + $timezone_offset;
+		$comp_timestamps = [];
+		$comp_data       = [];
+
+		// Initialise dataset slots using the comparison period's own timestamps.
+		foreach ( $comp_metrics as $metric ) {
+			$comp_data[ $metric ] = [];
+		}
+
+		for ( $i = 0; $i < $comp_date_modifiers['nr_of_intervals']; $i++ ) {
+			$formatted_date                     = date_i18n( $comp_date_modifiers['php_date_format'], $comp_date );
+			$comp_timestamps[ $formatted_date ] = $comp_date - $timezone_offset;
+
+			foreach ( $comp_metrics as $metric ) {
+				$comp_data[ $metric ][ $formatted_date ] = 0;
+			}
+
+			$comp_date += $comp_date_modifiers['interval_in_seconds'];
+		}
+
+		$hits = $this->get_results( $qd_compare, ARRAY_A );
+
+		foreach ( $hits as $hit ) {
+			$period = $hit['period'];
+			foreach ( $comp_metrics as $metric ) {
+				if ( isset( $comp_data[ $metric ][ $period ] ) && isset( $hit[ $metric ] ) ) {
+					$comp_data[ $metric ][ $period ] = $hit[ $metric ];
+				}
+			}
+		}
+
+		// Build indexed datasets and timestamps for the comparison period.
+		$datasets = [];
+		foreach ( $comp_metrics as $i => $metric ) {
+			$datasets[ $i ] = [
+				'data' => array_values( $comp_data[ $metric ] ),
+			];
+		}
+
+		return [
+			'datasets'   => $datasets,
+			'timestamps' => array_values( $comp_timestamps ),
+			'start_date' => $compare_start,
+			'end_date'   => $compare_end,
 		];
 	}
 	/**
@@ -914,6 +1034,7 @@ class Statistics {
 			'date_end'   => 0,
 			'metrics'    => [ 'pageviews' ],
 			'filters'    => [],
+			'group_by'   => [],
 			'limit'      => '',
 		];
 
@@ -971,11 +1092,13 @@ class Statistics {
 
 		$data = apply_filters( 'burst_datatable_data', $data, $qd );
 
-		return [
+		$response = [
 			'columns' => $columns,
 			'data'    => $data,
 			'metrics' => $metrics,
 		];
+
+		return apply_filters( 'burst_datatable_response', $response, $args );
 	}
 
 	/**

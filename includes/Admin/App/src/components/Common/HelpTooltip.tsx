@@ -62,13 +62,15 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
             data-[state=delayed-open]:data-[side=right]:slide-in-from-left-2"
 					onClick={( e ) => e.stopPropagation()}
 				>
-					{'string' === typeof content ?
-						__( content, 'burst-statistics' ) :
-						content}
+					{
+						'string' === typeof content ? __( content, 'burst-statistics' ) : content
+					}
 
-					{hasArrow && (
-						<Tooltip.Arrow className="fill-gray-300" width={10} height={5} />
-					)}
+					{
+						hasArrow && (
+							<Tooltip.Arrow className="fill-gray-300" width={10} height={5} />
+						)
+					}
 				</Tooltip.Content>
 			</Tooltip.Root>
 		</Tooltip.Provider>

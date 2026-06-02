@@ -877,6 +877,7 @@ class Admin {
 			update_option( 'burst_last_cron_hit', time(), false );
 			$this->update_option( 'combine_vars_and_script', true );
 			$this->update_option( 'enable_turbo_mode', true );
+			$this->update_option( 'track_external_links', true );
 			$this->create_js_file();
 
 			$this->tasks->add_initial_tasks();
@@ -1293,7 +1294,7 @@ class Admin {
 		$this->setup_defaults();
 
 		// ensure the tables are created.
-		delete_transient( 'burst_running_upgrade' );
+		delete_transient( 'burst_running_upgrade_process' );
 		$this->run_table_init_hook();
 	}
 
@@ -1387,12 +1388,13 @@ class Admin {
 	): array {
 		global $wpdb;
 
-		$tables[] = $wpdb->get_blog_prefix( $blog_id ) . 'burst_sessions';
-		$tables[] = $wpdb->get_blog_prefix( $blog_id ) . 'burst_statistics';
-		$tables[] = $wpdb->get_blog_prefix( $blog_id ) . 'burst_goals';
-		$tables[] = $wpdb->get_blog_prefix( $blog_id ) . 'burst_archived_months';
-		$tables[] = $wpdb->get_blog_prefix( $blog_id ) . 'burst_goal_statistics';
-		$tables[] = $wpdb->get_blog_prefix( $blog_id ) . 'burst_summary';
+		$table_names = $this->get_table_list();
+		foreach ( $table_names as $table_name ) {
+			if ( ! str_starts_with( $table_name, 'burst_' ) ) {
+				continue;
+			}
+			$tables[] = $wpdb->get_blog_prefix( $blog_id ) . $table_name;
+		}
 
 		return $tables;
 	}
@@ -1421,7 +1423,7 @@ class Admin {
 			'capabilities'   => 'view_sales_burst_statistics',
 			'menu_slug'      => 'burst#/sales',
 			'show_in_admin'  => true,
-			'pro'            => true,
+			'pro'            => false,
 			'shareable'      => true,
 		];
 

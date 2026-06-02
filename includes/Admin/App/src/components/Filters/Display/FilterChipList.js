@@ -2,16 +2,17 @@ import FilterChip from './FilterChip';
 import useShareableLinkStore from '@/store/useShareableLinkStore';
 
 /**
- * Reusable FilterChipList component for displaying a list of filter chips
+ * Reusable FilterChipList component for displaying a list of filter chips.
  *
- * @param {Object}   props                  - Component props
- * @param {Array}    props.filters          - Array of filter objects
- * @param {Function} props.onRemove         - Callback function when a filter is removed
- * @param {Function} props.onClick          - Callback function when a filter chip is clicked to edit
- * @param {string}   props.className        - Additional CSS classes for the container
- * @param {boolean}  props.showRemoveButton - Whether to show remove buttons on chips
- * @param {string}   props.emptyMessage     - Message to show when no filters are active
- * @return {JSX.Element} FilterChipList component
+ * @param {Object}   props                  - Component props.
+ * @param {Array}    props.filters          - Array of filter objects.
+ * @param {Function} props.onRemove         - Callback function when a filter is removed.
+ * @param {Function} props.onClick          - Callback function when a filter chip is clicked to edit.
+ * @param {string}   props.className        - Additional CSS classes for the container.
+ * @param {boolean}  props.showRemoveButton - Whether to show remove buttons on chips.
+ * @param {string}   props.emptyMessage     - Message to show when no filters are active.
+ * @param {boolean}  props.isHighlighted    - Whether to highlight all chips (popover-open state).
+ * @return {JSX.Element} FilterChipList component.
  */
 const FilterChipList = ({
 	filters = [],
@@ -20,8 +21,9 @@ const FilterChipList = ({
 	className = 'flex flex-wrap gap-2',
 	showRemoveButton = true,
 	emptyMessage = null,
-    isReport	= false,
-    smallLabels = false
+	isReport = false,
+	smallLabels = false,
+	isHighlighted = false
 }) => {
 	const userCanFilter = useShareableLinkStore( ( state ) => state.userCanFilter );
 
@@ -47,6 +49,7 @@ const FilterChipList = ({
 						onClick={onClick}
 						showRemoveButton={showRemoveButton}
 						smallLabels={smallLabels}
+						isHighlighted={isHighlighted}
 					/>
 				) )
 			}

@@ -26,7 +26,8 @@ const StoryContentSelection = () => {
 	const addContent = useWizardStore( ( state ) => state.addContent );
 	const shouldLoadEcommerce = window.burst_settings?.shouldLoadEcommerce || false;
 
-	const { isLicenseValid } = useLicenseData();
+	const { isLicenseValid, isLicenseValidFor } = useLicenseData();
+	const isAgency = isLicenseValidFor( 'reporting' );
 	const isFirstRender = useRef( true );
 	const [ animatingBlock, setAnimatingBlock ] = useState<AnimatingBlock | null>( null );
 	const containerRef = useRef<HTMLDivElement>( null );
@@ -59,7 +60,7 @@ const StoryContentSelection = () => {
 
 	const handleClick = ( blockId: ContentBlockId, event: React.MouseEvent<HTMLButtonElement> ) => {
 		const block = availableContent.find( item => item.id === blockId );
-		if ( ! block || ( block.pro && ! isLicenseValid ) ) {
+		if ( ! block || ( block.pro && ! isAgency ) ) {
 			return;
 		}
 
@@ -89,8 +90,9 @@ const StoryContentSelection = () => {
 					availableContent
 						.filter( ( block ) => ! block.ecommerce || shouldLoadEcommerce )
 						.filter( ( block ) => block.component )
+						.filter( ( block ) => ! block.pro || isAgency )
 						.map( ( block:ContentItem, index ) => {
-							const isBlockProDisabled = block.pro && ! isLicenseValid;
+							const isBlockProDisabled = block.pro && ! isAgency;
 
 							return (
 								<button

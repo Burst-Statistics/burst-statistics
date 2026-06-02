@@ -6,7 +6,6 @@ import DevicesBlock from '@/components/Statistics/DevicesBlock';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import { __ } from '@wordpress/i18n';
-import useLicenseData from '@/hooks/useLicenseData';
 import { shouldLoadRoute } from '@/utils/helper';
 
 export const Route = createFileRoute( '/statistics' )({
@@ -25,10 +24,6 @@ export const Route = createFileRoute( '/statistics' )({
 });
 
 function Statistics() {
-	const { isPro } = useLicenseData();
-	const blockOneItems = [ 'pages' ];
-	const blockTwoItems = isPro ? [ 'parameters' ] : [ 'referrers' ];
-	const blockTwoID = isPro ? 'statistics_parameters' : 'statistics_referrers';
 	return (
 		<>
 			<PageHeader />
@@ -46,12 +41,14 @@ function Statistics() {
 			</ErrorBoundary>
 
 			<ErrorBoundary>
-				<DataTableBlock allowedConfigs={blockOneItems} id="statistics_pages" />
+				<DataTableBlock allowedConfigs={[ 'pages' ]} id="statistics_pages" />
 			</ErrorBoundary>
 
 			<ErrorBoundary>
-				<DataTableBlock allowedConfigs={blockTwoItems} id={blockTwoID} />
+				<DataTableBlock allowedConfigs={[ 'referrers' ]} id="statistics_referrers" />
 			</ErrorBoundary>
+
+
 		</>
 	);
 }

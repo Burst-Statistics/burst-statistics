@@ -4,6 +4,7 @@ import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import InsightsHeader from './InsightsHeader';
 import { useInsightsStore } from '../../store/useInsightsStore';
+import { useCompareStore } from '../../store/useCompareStore';
 import InsightsGraph from './InsightsGraph';
 import { useQuery } from '@tanstack/react-query';
 import getInsightsData from '../../api/getInsightsData';
@@ -52,11 +53,19 @@ const InsightsBlock = (props) => {
 	const { startDate, endDate, range, filters, allowBlockFilters, isReport, index } = useBlockConfig( props );
 
 	const metrics = useInsightsStore( ( state ) => state.getMetrics() );
+	const compareMode = useCompareStore( ( state ) => state.compareMode );
 
-	const args = { filters, metrics };
+	// Pass compare_mode only when a single metric is active — comparison is not
+	// meaningful when multiple series are already overlaid on the chart.
+	const isSingleMetric = 1 === metrics.length;
+	const args = {
+		filters,
+		metrics,
+		...( isSingleMetric && { compare_mode: compareMode })
+	};
 
 	const query = useQuery({
-		queryKey: [ 'insights', metrics, startDate, endDate, args ],
+		queryKey: [ 'insights', metrics, startDate, endDate, compareMode, args ],
 		queryFn: () => getInsightsData({ startDate, endDate, range, args }),
 		placeholderData: {
 			timestamps: [ 0, 0, 0, 0, 0, 0, 0 ],
@@ -117,6 +126,7 @@ const InsightsBlock = (props) => {
 							interval={query.data.interval}
 							spansMultipleYears={query.data.spans_multiple_years}
 							metrics={metrics}
+							comparison={query.data.comparison ?? null}
 						/>
 					)
 				}

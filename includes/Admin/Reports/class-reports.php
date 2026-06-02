@@ -43,6 +43,19 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			add_filter( 'burst_do_action', [ $this, 'do_action_handler' ], 10, 3 );
 			add_filter( 'burst_get_action', [ $this, 'get_action_handler' ], 10, 3 );
 			add_action( 'burst_create_report_from_onboarding', [ $this, 'create_report_from_onboarding' ] );
+			add_filter( 'burst_allowed_field_types', [ $this, 'allowed_field_types' ] );
+		}
+
+		/**
+		 * Add 'wysiwyg' to the list of allowed field types
+		 *
+		 * @param array<int, string> $field_types The existing list of field types.
+		 * @return array<int, string> The modified list of field types.
+		 */
+		public function allowed_field_types( array $field_types ): array {
+			$field_types[] = 'wysiwyg';
+			$field_types[] = 'color_picker';
+			return $field_types;
 		}
 
 		/**
@@ -116,7 +129,6 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			'report-create',
 			'report-delete',
 			'report-update',
-			'report-send-test-report',
 			'report-send-report-now',
 		];
 
@@ -138,13 +150,12 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			}
 
 			return match ( $action ) {
-				'report-create'           => $this->create_report( $data ),
-				'report-delete'           => $this->delete_report( $data ),
-				'report-update'           => $this->update_report( $data ),
-				'report-send-test-report' => $this->send_test_report_action( $data ),
-				'report-send-report-now'  => $this->send_report_now_action( $data ),
-				'report-preview'          => $this->get_report_preview( $data ),
-				default                   => $output,
+				'report-create'          => $this->create_report( $data ),
+				'report-delete'          => $this->delete_report( $data ),
+				'report-update'          => $this->update_report( $data ),
+				'report-send-report-now' => $this->send_report_now_action( $data ),
+				'report-preview'         => $this->get_report_preview( $data ),
+				default                  => $output,
 			};
 		}
 
@@ -279,6 +290,13 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				}
 			}
 
+			// For scheduled reports, anchor fixed_end_date to "yesterday" at save
+			// time so the shared story link reflects a recent window until the
+			// next email send refreshes it again via build_report().
+			if ( $report->scheduled ) {
+				$report->fixed_end_date = gmdate( 'Y-m-d', strtotime( 'yesterday' ) );
+			}
+
 			if ( ! $report->save() ) {
 				return [
 					'success' => false,
@@ -351,6 +369,13 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					->set_recipients( $data['recipients'] )
 					->set_enabled( $data['enabled'] )
 					->set_scheduled( $data['scheduled'] );
+
+			// For scheduled reports, anchor fixed_end_date to "yesterday" at save
+			// time so the shared story link reflects a recent window until the
+			// next email send refreshes it again via build_report().
+			if ( $report->scheduled ) {
+				$report->set_fixed_end_date( gmdate( 'Y-m-d', strtotime( 'yesterday' ) ) );
+			}
 
 			if ( ! $report->save() ) {
 				return [
@@ -448,10 +473,30 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					$logo_url = $image_src[0];
 				}
 			}
+
+			// Same pattern for the hero background image (used in the right column of HeroBlock).
+			$hero_bg_attachment_id = (int) burst_get_option( 'hero_background_image_attachment_id', 0 );
+			$hero_bg_url           = '';
+			if ( $hero_bg_attachment_id > 0 ) {
+				$image_src = wp_get_attachment_image_src( $hero_bg_attachment_id, 'large' )
+					?: wp_get_attachment_image_src( $hero_bg_attachment_id, 'full' )
+					?: wp_get_attachment_image_src( $hero_bg_attachment_id, 'medium' );
+				if ( $image_src ) {
+					$hero_bg_url = $image_src[0];
+				}
+			}
+
+			$brand_color                = sanitize_hex_color( (string) burst_get_option( 'brand_color', '#2B8133' ) ) ?: '#2B8133';
+			$hero_color_overlay_enabled = (bool) burst_get_option( 'hero_color_overlay_enabled', true );
+			$report_array               = ! empty( $report ) ? $report->to_array() : null;
+
 			return [
-				'request_success' => true,
-				'report'          => $report?->to_array(),
-				'logo_url'        => $logo_url,
+				'request_success'            => true,
+				'report'                     => $report_array,
+				'logo_url'                   => $logo_url,
+				'hero_background_image_url'  => $hero_bg_url,
+				'brand_color'                => $brand_color,
+				'hero_color_overlay_enabled' => $hero_color_overlay_enabled,
 			];
 		}
 
@@ -590,51 +635,13 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		}
 
 		/**
-		 * User can send a report by clicking the button in the settings page.
-		 *
-		 * @return array<string, mixed> The modified output array.
-		 */
-		public function send_test_report_action( ?array $data ): array {
-			if ( empty( $data['id'] ) ) {
-				return [
-					'success' => false,
-					'message' => 'Report ID is required.',
-				];
-			}
-
-			$report = new Report( (int) $data['id'] );
-
-			if ( empty( $report->id ) ) {
-				return [
-					'success' => false,
-					'message' => 'Report not found.',
-				];
-			}
-
-			// For test reports, set the send timestamp to now.
-			$report->set_next_send_timestamp( time() );
-			return $this->send_report_instance( $report, true );
-		}
-
-		/**
 		 * Get Queue ID from next send timestamp.
 		 *
-		 * @param int  $next_send_timestamp The next send timestamp.
-		 * @param bool $is_test             Whether it's a test report.
+		 * @param int $next_send_timestamp The next send timestamp.
 		 * @return string The generated Queue ID.
 		 */
-		public function get_queue_id_from_timestamp( int $next_send_timestamp, bool $is_test = false ): string {
-			$queue_id = gmdate( 'Y-m-d', $next_send_timestamp );
-
-			if ( $is_test ) {
-				$queue_id = sprintf(
-					'test-%s-%s',
-					$queue_id,
-					time()
-				);
-			}
-
-			return $queue_id;
+		public function get_queue_id_from_timestamp( int $next_send_timestamp ): string {
+			return gmdate( 'Y-m-d', $next_send_timestamp );
 		}
 
 		/**
@@ -643,7 +650,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 * @param Report $report The report object.
 		 * @return array The result of the send operation.
 		 */
-		private function send_report_instance( Report $report, bool $is_test = false ): array {
+		private function send_report_instance( Report $report ): array {
 			if ( empty( $report->recipients ) ) {
 				return [
 					'success' => false,
@@ -652,12 +659,14 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			}
 
 			$report_id = $report->id;
-			$queue_id  = $this->get_queue_id_from_timestamp( $report->next_send_timestamp, $is_test );
+			$queue_id  = $this->get_queue_id_from_timestamp( $report->next_send_timestamp );
 			$batch_id  = 1;
 
-			// Do not schedule test reports on cron, but send immediately.
-			if ( $is_test ) {
-				if ( ! Report_Logs::instance()->parent_processing_exists( $report_id, $queue_id ) ) {
+			if ( ! wp_next_scheduled( 'burst_send_email_batch', [ $report_id, $queue_id, $batch_id ] ) ) {
+				if ( ! Report_Logs::instance()->parent_processing_exists(
+					$report_id,
+					$queue_id
+				) ) {
 					Report_Logs::instance()->insert_log(
 						$report_id,
 						$queue_id,
@@ -667,37 +676,16 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					);
 				}
 
-				$this->handle_email_batch( $report_id, $queue_id, $batch_id );
-				return [
-					'success' => true,
-					'message' => __( 'Report sent.', 'burst-statistics' ),
-				];
-			} else {
-				if ( ! wp_next_scheduled( 'burst_send_email_batch', [ $report_id, $queue_id, $batch_id ] ) ) {
-					if ( ! Report_Logs::instance()->parent_processing_exists(
-						$report_id,
-						$queue_id
-					) ) {
-						Report_Logs::instance()->insert_log(
-							$report_id,
-							$queue_id,
-							null,
-							Report_Log_Status::PROCESSING,
-							Report_Log_Status::get_log_message( Report_Log_Status::PROCESSING )
-						);
-					}
-
-					wp_schedule_single_event(
-						time() + 5 * MINUTE_IN_SECONDS,
-						'burst_send_email_batch',
-						[ $report_id, $queue_id, $batch_id ]
-					);
-				}
-				return [
-					'success' => true,
-					'message' => __( 'Sending of report scheduled.', 'burst-statistics' ),
-				];
+				wp_schedule_single_event(
+					time() + 5 * MINUTE_IN_SECONDS,
+					'burst_send_email_batch',
+					[ $report_id, $queue_id, $batch_id ]
+				);
 			}
+			return [
+				'success' => true,
+				'message' => __( 'Sending of report scheduled.', 'burst-statistics' ),
+			];
 		}
 
 		/**
@@ -734,7 +722,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				}
 
 				// Mark as handled before sending, so a parallel cron cannot enter here.
-				set_transient( $transient_key, $report->next_send_timestamp, DAY_IN_SECONDS );
+				set_transient( $transient_key, $report->next_send_timestamp, 30 );
 
 				$this->send_report_instance( $report );
 			}
@@ -782,7 +770,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			$raw_results = array_filter(
 				$raw_results,
 				function ( $row ) {
-					return ! in_array( 'Direct', $row, true );
+					return ! in_array( 'Direct / unknown', $row, true );
 				}
 			);
 
@@ -928,7 +916,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					if ( $first_row ) {
 						// max 45 characters add ...
 						if ( $column === null ) {
-							$column = __( 'Direct', 'burst-statistics' );
+							$column = __( 'Direct / unknown', 'burst-statistics' );
 						}
 						if ( ! is_numeric( $column ) ) {
 							if ( strlen( $column ) > 35 ) {
@@ -1002,8 +990,10 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				$mailer->set_read_more_button_url( $this->get_story_url( $mailer->report_id ) )
 				->set_read_more_button_text( __( 'View story', 'burst-statistics' ) )
 				->set_read_more_header( '' )
-					// translators: %s is the website's domain name (e.g., example.com).
-					->set_read_more_teaser( sprintf( __( 'A new report is available for %s.', 'burst-statistics' ), $mailer->pretty_domain ) );
+				// translators: %s is the website's domain name (e.g., example.com).
+				->set_read_more_teaser( sprintf( __( 'A new report is available for %s.', 'burst-statistics' ), $mailer->pretty_domain ) )
+				// Story reports need the "view report" button regardless of footer customization.
+				->set_force_read_more( true );
 			}
 		}
 

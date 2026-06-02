@@ -1,0 +1,107 @@
+import { useRef, useState } from 'react';
+import { DateRange, DefinedRange } from 'react-date-range';
+import { __ } from '@wordpress/i18n';
+import CompareToggle from '../Statistics/CompareToggle';
+
+
+/**
+ * Find the next non-disabled range index, matching react-date-range's helper.
+ *
+ * @param {Array}  ranges             List of range objects.
+ * @param {number} currentRangeIndex  Index to start searching after.
+ * @return {number} Index of the next focusable range (or the first valid one).
+ */
+const findNextRangeIndex = ( ranges = [], currentRangeIndex = -1 ) => {
+	const nextIndex = ranges.findIndex(
+		( range, i ) =>
+			i > currentRangeIndex && false !== range.autoFocus && ! range.disabled
+	);
+	if ( -1 !== nextIndex ) {
+		return nextIndex;
+	}
+	return ranges.findIndex(
+		( range ) => false !== range.autoFocus && ! range.disabled
+	);
+};
+
+/**
+ * Custom DateRangePicker.
+ *
+ * Drop-in replacement for `react-date-range`'s `DateRangePicker` that composes
+ * `DefinedRange` (preset sidebar) and `DateRange` (calendar) so we can add
+ * section headings between them for a clearer UI.
+ *
+ * The wiring (focused range state, preview updates via the calendar ref)
+ * mirrors the upstream implementation:
+ * @see https://github.com/hypeserver/react-date-range/blob/master/src/components/DateRangePicker/index.js
+ *
+ * @param {Object} props                       Component props (passed through to both subcomponents).
+ * @param {Array}  props.ranges                The selected ranges.
+ * @param {string} [props.presetsHeading]      Optional override for the presets heading.
+ * @param {string} [props.calendarHeading]     Optional override for the calendar heading.
+ * @param {string} [props.className]           Optional wrapper className.
+ * @return {JSX.Element} Rendered date range picker.
+ */
+const DateRangePicker = ({
+	presetsHeading,
+	calendarHeading,
+	className = '',
+	...props
+}) => {
+	const { ranges = [] } = props;
+
+	const [ focusedRange, setFocusedRange ] = useState([
+		findNextRangeIndex( ranges ),
+		0
+	]);
+
+	// Ref to the underlying DateRange instance so DefinedRange can drive
+	// the hover-preview behaviour, as the original DateRangePicker does.
+	const dateRangeRef = useRef( null );
+
+	const handlePreviewChange = ( value ) => {
+		const instance = dateRangeRef.current;
+		if ( ! instance ) {
+			return;
+		}
+		instance.updatePreview(
+			value ?
+				instance.calcNewSelection( value, 'string' === typeof value ) :
+				null
+		);
+	};
+
+	return (
+		<div className={`burst-date-range-picker ${className}`.trim()}>
+			<div className="flex flex-row">
+				<div className="flex flex-col border-r border-gray-200 min-w-3xs">
+					<h3 className="text-md font-medium px-4 pt-4 pb-2">
+						{presetsHeading ?? __( 'Quick select', 'burst-statistics' )}
+					</h3>
+					<DefinedRange
+						{...props}
+						focusedRange={focusedRange}
+						onPreviewChange={handlePreviewChange}
+						range={ranges[focusedRange[0]]}
+						className={'w-full'}
+					/>
+				</div>
+				<div className="flex flex-col pb-4">
+					<h3 className="text-md font-medium px-4 pt-4 pb-2">
+						{calendarHeading ?? __( 'Custom range', 'burst-statistics' )}
+					</h3>
+					<DateRange
+						{...props}
+						ref={dateRangeRef}
+						focusedRange={focusedRange}
+						onRangeFocusChange={setFocusedRange}
+						className={'mx-4 border border-gray-200 rounded-md'}
+					/>
+					<CompareToggle />
+				</div>
+			</div>
+		</div>
+	);
+};
+
+export default DateRangePicker;

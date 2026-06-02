@@ -69,7 +69,7 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 		define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 		define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 		define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
-		define( 'BURST_VERSION', '3.4.3' );
+		define( 'BURST_VERSION', '3.5.0' );
 		define( 'BURST_PUBLIC_KEY', 'bst_7k9mQpX2vL4nWzR8jYhF6tGcU5eBxN3dS1aM0iKoHgJfVq' );
 		// deprecated constant.
         //phpcs:ignore
@@ -99,6 +99,8 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 	private function bootstrap(): void {
 
 		$this->constants();
+
+		add_filter( 'wp_is_application_passwords_available_for_user', [ $this, 'disable_app_passwords_for_viewer' ], 10, 2 );
 		// not using the formdata.
 		//phpcs:ignore
 		if ( isset( $_GET['install_pro'] ) ) {
@@ -127,5 +129,19 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 
 		$this->frontend = new Frontend();
 		$this->frontend->init();
+	}
+
+	/**
+	 * Disable Application Passwords for shared-link viewer accounts.
+	 *
+	 * @param bool     $available Whether Application Passwords are available for the user.
+	 * @param \WP_User $user      The user being checked.
+	 */
+	public function disable_app_passwords_for_viewer( bool $available, \WP_User $user ): bool {
+		if ( in_array( 'burst_viewer', (array) $user->roles, true ) ) {
+			return false;
+		}
+
+		return $available;
 	}
 }

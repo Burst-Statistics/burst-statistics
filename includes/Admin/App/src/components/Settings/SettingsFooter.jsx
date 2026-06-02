@@ -56,7 +56,11 @@ function SettingsFooter({ onSubmit, control }) {
 						</span>
 					</div>
 				)}
-				<ButtonInput className="burst-save" onClick={onSubmit}>
+				<ButtonInput
+					className="burst-save"
+					onClick={onSubmit}
+					disabled={isSubmitting}
+				>
 					{__( 'Save', 'burst-statistics' )}
 				</ButtonInput>
 			</div>

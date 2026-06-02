@@ -1,0 +1,175 @@
+/* Note: If you move this file somewhere you'll also have to update the path in WysiwygField.jsx */
+
+/* Element styles — match email rendering context */
+body {
+	font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+	font-size: 12px;
+	line-height: 1.6;
+	padding: 24px;
+	margin: 0;
+	background-color: #f0f0f1;
+	color: #333;
+	text-align: center;
+}
+
+p {
+	margin: 0 0 10px 0;
+}
+
+a {
+	color: #333;
+}
+
+h1,
+h2,
+h3 {
+	color: #333;
+}
+
+.burst-button {
+	display: inline-block;
+	border-radius: 4px;
+	padding: 16px 24px;
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 1;
+	text-decoration: none;
+	background-color: #007cba;
+	color: #ffffff;
+}
+
+@media (max-width: 600px) {
+	.sm-my-8 {
+		margin-top: 32px !important;
+		margin-bottom: 32px !important;
+	}
+}
+
+/* Light mode: set message text to medium grey */
+.email-message,
+.email-introduction {
+	color: #696969;
+}
+
+/* Logo switching for dark mode */
+.email-logo-light {
+	display: inline;
+}
+
+.email-logo-dark {
+	display: none;
+}
+
+/* MIRROR NOTICE: If you change any rule in this block, update TINYMCE_LIGHT_OVERRIDE_CSS
+ * in includes/Admin/App/src/components/Fields/WysiwygField.jsx to match.
+ * That constant resets these same rules inside the TinyMCE iframe when the admin
+ * is in light mode but the OS prefers dark. */
+@media (prefers-color-scheme: dark) {
+	body,
+	.email-body {
+		background-color: #1a1a1a !important;
+		color: #e0e0e0 !important;
+	}
+
+	.email-wrapper {
+		background-color: #1a1a1a !important;
+		color: #e0e0e0 !important;
+	}
+
+	.email-card {
+		background-color: #2d2d2d !important;
+		color: #e0e0e0 !important;
+	}
+
+	h1,
+	h2,
+	h3,
+	.email-wrapper h1,
+	.email-wrapper h2,
+	.email-wrapper h3 {
+		color: #e0e0e0 !important;
+	}
+
+	p,
+	a {
+		color: #e0e0e0;
+	}
+
+	.email-message,
+	.email-introduction {
+		color: #e0e0e0;
+	}
+
+	.email-muted {
+		color: #a0a0a0 !important;
+	}
+
+	.email-link {
+		color: #a0a0a0 !important;
+	}
+
+	.email-divider {
+		background-color: #505050 !important;
+	}
+
+	.email-logo-light {
+		display: none !important;
+	}
+
+	.email-logo-dark {
+		display: inline !important;
+	}
+}
+
+/* Dark mode: admin toggle (WYSIWYG editor only) */
+body.burst-dark-mode,
+body.burst-dark-mode .email-body {
+	background-color: #1a1a1a !important;
+	color: #e0e0e0 !important;
+}
+
+body.burst-dark-mode .email-wrapper {
+	background-color: #1a1a1a !important;
+	color: #e0e0e0 !important;
+}
+
+body.burst-dark-mode .email-card {
+	background-color: #2d2d2d !important;
+	color: #e0e0e0 !important;
+}
+
+body.burst-dark-mode h1,
+body.burst-dark-mode h2,
+body.burst-dark-mode h3 {
+	color: #e0e0e0 !important;
+}
+
+body.burst-dark-mode p,
+body.burst-dark-mode a {
+	color: #e0e0e0;
+}
+
+body.burst-dark-mode .email-message,
+body.burst-dark-mode .email-introduction {
+	color: #e0e0e0;
+}
+
+body.burst-dark-mode .email-muted {
+	color: #a0a0a0 !important;
+}
+
+body.burst-dark-mode .email-link {
+	color: #a0a0a0 !important;
+}
+
+body.burst-dark-mode .email-divider {
+	background-color: #505050 !important;
+}
+
+body.burst-dark-mode .email-logo-light {
+	display: none !important;
+}
+
+body.burst-dark-mode .email-logo-dark {
+	display: inline !important;
+}

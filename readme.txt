@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.0
-Stable tag: 3.4.3
+Stable tag: 3.5.0
 
 Analytics you'll actually use. Privacy-friendly, zero config, and designed to be actionable. Get insights, not just raw data.
 
@@ -201,6 +201,12 @@ Absolutely! Both free and premium plugins can be managed with Composer. Read the
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
 
 == Change log ==
+= 3.5.0 =
+* June 3rd 2026
+* Improvement: AI chat availability checks and ability registration, preventing PHP notices and duplicate ability registrations.
+* Fix: AI Chat integration with AI plugin.
+* Fix: missing GROUP BY in a statistics query.
+
 = 3.4.3 =
 * May 20th 2026
 * Fix: AI chat enablement and MainWP integration reminder tasks can now be dismissed permanently.

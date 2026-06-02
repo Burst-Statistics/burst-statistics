@@ -63,6 +63,8 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 			'all-in-one-wp-security-and-firewall',
 			// if Permalink manager is excluded, this can cause 404 pages.
 			'permalink-manager-for-woocommerce',
+			// If AI is excluded it give wrong chat availability status.
+			'ai',
 		];
 		/**
 		 * Allow filtering of plugins that should remain active during REST API loading of BURST.
@@ -75,7 +77,6 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 		if (
 			str_contains( $burst_rest_route, 'burst/v1/track' ) ||
 			str_contains( $burst_rest_route, 'burst/v1/auto_installer' ) ||
-			str_contains( $burst_rest_route, 'burst/v1/do_action/report/send-test-report' ) ||
 			str_contains( $burst_rest_route, 'burst/v1/otherplugins' ) ||
 			str_contains( $burst_rest_route, 'burst/v1/onboarding' ) ||
 			str_contains( $burst_rest_route, 'otherpluginsdata' ) ||

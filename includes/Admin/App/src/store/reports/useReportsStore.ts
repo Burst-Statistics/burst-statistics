@@ -31,7 +31,6 @@ interface ReportsStore {
 	toggleReportActive: ( id: number ) => Promise<void>;
 	openPreview: ( reportId: number, startPdfDownload:boolean ) => Promise<void>;
 
-	sendTestEmail: ( id: number ) => Promise<boolean>;
 	sendEmailNow: ( id: number ) => Promise<boolean>;
 }
 
@@ -327,11 +326,6 @@ export const useReportsStore = create<ReportsStore>( ( set, get ) => ({
 		get().loadReportIntoWizard( reportId, true );
 
 		return response.report as Report;
-	},
-
-	sendTestEmail: async( id ) => {
-		const response = await doAction( 'report/send-test-report', { id });
-		return response.success;
 	},
 
 	sendEmailNow: async( id ) => {

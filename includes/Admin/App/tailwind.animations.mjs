@@ -200,6 +200,22 @@ const keyFrames = {
 	shimmer: {
 		'0%': { transform: 'translateX(-100%)' },
 		'100%': { transform: 'translateX(100%)' }
+	},
+	drawerSlideIn: {
+		from: { transform: 'translateX(100%)' },
+		to: { transform: 'translateX(0)' }
+	},
+	drawerSlideOut: {
+		from: { transform: 'translateX(0)' },
+		to: { transform: 'translateX(100%)' }
+	},
+	fadeIn: {
+		from: { opacity: '0' },
+		to: { opacity: '1' }
+	},
+	fadeOut: {
+		from: { opacity: '1' },
+		to: { opacity: '0' }
 	}
 };
 
@@ -232,7 +248,11 @@ const animations = {
 	toastTrackProgress: 'toastTrackProgress 1s linear forwards',
 	scrollIndicator: 'scrollIndicator 1.5s ease-in-out',
 	pulseSlow: 'pulseSlow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-	shimmer: 'shimmer 2s infinite'
+	shimmer: 'shimmer 2s infinite',
+	drawerSlideIn: 'drawerSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+	drawerSlideOut: 'drawerSlideOut 0.25s ease-in',
+	fadeIn: 'fadeIn 0.2s ease-out',
+	fadeOut: 'fadeOut 0.25s ease-in'
 };
 
 export {
