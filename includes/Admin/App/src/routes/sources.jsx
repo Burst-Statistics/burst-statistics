@@ -3,6 +3,10 @@ import { PageHeader } from '@/components/Common/PageHeader';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import WorldMapBlock from '@/components/Sources/WorldMapBlock';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
+import SourcesUpsellBackground from '@/components/Upsell/Sources/SourcesUpsellBackground';
+import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
+import UpsellCopy from '@/components/Upsell/UpsellCopy';
+import useLicenseData from '@/hooks/useLicenseData';
 import TrialPopup from '@/components/Upsell/TrialPopup';
 import { shouldLoadRoute } from '@/utils/helper';
 
@@ -26,18 +30,18 @@ export const Route = createFileRoute( '/sources' )({
 function Sources() {
 
 	// Use the hook inside the component, not in the loader
-	// const { isLicenseValidFor } = useLicenseData();
-	// if ( ! isLicenseValidFor( 'sources' ) ) {
-	// 	return (
-	// 		<>
-	// 			<SourcesUpsellBackground />
+	const { isLicenseValidFor } = useLicenseData();
+	if ( ! isLicenseValidFor( 'sources' ) ) {
+		return (
+			<>
+				<SourcesUpsellBackground />
 
-	// 			<UpsellOverlay>
-	// 				<UpsellCopy type="sources" />
-	// 			</UpsellOverlay>
-	// 		</>
-	// 	);
-	// }
+				<UpsellOverlay>
+					<UpsellCopy type="sources" />
+				</UpsellOverlay>
+			</>
+		);
+	}
 
 	return (
 		<>

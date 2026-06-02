@@ -53,13 +53,6 @@ trait Save {
 		// autoload as this is important for front end as well.
 		update_option( 'burst_options_settings', $options, true );
 		do_action( 'burst_after_save_field', $name, $value, $prev_value, $type );
-
-        // Schedule a table-install pass so any tables needed by newly-enabled
-        // features (e.g. track_external_links) are created in a fresh request
-        // where all feature classes are properly bootstrapped.
-        if ( ! wp_next_scheduled( 'burst_cron_table_upgrade' ) ) {
-            wp_schedule_single_event( time() + 10, 'burst_cron_table_upgrade' );
-        }
 	}
     // phpcs:enable
 }

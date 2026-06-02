@@ -279,40 +279,74 @@ const UpsellCopy: React.FC<UpsellCopyProps> = ({
 		utm_medium: content.utm_medium
 	};
 
-	// if this is premium, but user has not activated the license, or has a not sufficient tier
-	if ( isPro ) {
+	// Unified compact block layout for both Free and Pro configurations
+	if ( compact ) {
 		return (
-			<div className={`text-center flex flex-col ${compact ? 'gap-3' : 'gap-6'}`}>
-				<h2 className={`${compact ? 'text-xl' : 'text-2xl'} font-semibold text-text-gray`}>
+			<div className="text-center flex flex-col gap-3 w-full max-w-[220px] mx-auto items-stretch">
+				<h2 className="text-xl font-semibold text-text-gray">
 					{upsellConfig.upgradePlan.header}
 				</h2>
 
-				{! compact && upsellConfig.upgradePlan.subTitle && (
-					<p className="text-lg text-text-gray-light max-w-md mx-auto">
-						{upsellConfig.upgradePlan.subTitle}
-					</p>
-				)}
+				<div className="flex flex-col gap-2 w-full items-stretch mt-2">
+					{isPro && ! licenseActivated && (
+						<ButtonInput
+							btnVariant="primary"
+							size="md"
+							link={{ to: '/settings/license' }}
+							className="w-full text-center justify-center flex"
+						>
+							{__( 'Activate License', 'burst-statistics' )}
+						</ButtonInput>
+					)}
 
-				{! compact && (
-					<p className="text-base text-text-gray-light">
-						{! licenseActivated &&
-							__(
-								'Already have a license? Activate it to access these features.',
-								'burst-statistics'
-							)}
+					<ButtonInput
+						btnVariant={isPro ? 'secondary' : 'primary'}
+						size="md"
+						link={! isPro ? { to: burst_get_website_url( 'pricing', baseParams ) } : undefined}
+						className="w-full text-center justify-center flex"
+						onClick={! isPro ? undefined : () => {
+							window.open(
+								burst_get_website_url( 'pricing', baseParams ),
+								'_blank'
+							);
+						}}
+					>
+						{isPro ? __( 'Upgrade Plan', 'burst-statistics' ) : __( 'Upgrade to Pro', 'burst-statistics' )}
+					</ButtonInput>
+				</div>
+			</div>
+		);
+	}
 
-						{licenseActivated &&
-							upsellConfig.upgradePlan.licenseInsufficient}
-					</p>
-				)}
+	// if this is premium, but user has not activated the license, or has a not sufficient tier
+	if ( isPro ) {
+		return (
+			<div className="text-center flex flex-col gap-6">
+				<h2 className="text-2xl font-semibold text-text-gray">
+					{upsellConfig.upgradePlan.header}
+				</h2>
 
-				<div className={`flex ${compact ? 'flex-col gap-2 w-full max-w-[220px] mx-auto items-stretch' : 'flex-col sm:flex-row gap-4 justify-center items-center'}`}>
+				<p className="text-lg text-text-gray-light max-w-md mx-auto">
+					{upsellConfig.upgradePlan.subTitle}
+				</p>
+
+				<p className="text-base text-text-gray-light">
+					{! licenseActivated &&
+						__(
+							'Already have a license? Activate it to access these features.',
+							'burst-statistics'
+						)}
+
+					{licenseActivated &&
+						upsellConfig.upgradePlan.licenseInsufficient}
+				</p>
+
+				<div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
 					{! licenseActivated && (
 						<ButtonInput
 							btnVariant="primary"
-							size={compact ? 'md' : 'lg'}
+							size="lg"
 							link={{ to: '/settings/license' }}
-							className={compact ? 'w-full text-center justify-center flex' : ''}
 						>
 							{__( 'Activate License', 'burst-statistics' )}
 						</ButtonInput>
@@ -320,8 +354,7 @@ const UpsellCopy: React.FC<UpsellCopyProps> = ({
 
 					<ButtonInput
 						btnVariant="secondary"
-						size={compact ? 'md' : 'lg'}
-						className={compact ? 'w-full text-center justify-center flex' : ''}
+						size="lg"
 						onClick={() => {
 							window.open(
 								burst_get_website_url( 'pricing', baseParams ),

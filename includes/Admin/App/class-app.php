@@ -2151,13 +2151,6 @@ class App {
 					do_action( 'burst_after_save_field', $field_id, $value, $prev_value, $type );
 				}
 				do_action( 'burst_after_saved_fields', $updated_fields );
-
-				// Schedule a table-install pass so any tables needed by newly-enabled
-				// features (e.g. track_external_links) are created in a fresh request
-				// where all feature classes are properly bootstrapped.
-				if ( ! wp_next_scheduled( 'burst_cron_table_upgrade' ) ) {
-					wp_schedule_single_event( time() + 10, 'burst_cron_table_upgrade' );
-				}
 			}
 
 			// Return success response.
