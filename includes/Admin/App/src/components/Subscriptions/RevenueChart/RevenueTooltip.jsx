@@ -1,6 +1,6 @@
 import { __ } from '@wordpress/i18n';
 import { ChartTooltip } from '@/components/Common/ChartTooltip';
-import { formatCurrency } from '@/utils/formatting';
+import { formatCurrency, formatNumber } from '@/utils/formatting';
 
 /**
  * Custom tooltip for the new vs renewal chart.
@@ -23,7 +23,7 @@ export function RevenueTooltip({ id, value, color, data, mode = 'revenue', curre
 	const total = ( data.newValue ?? 0 ) + ( data.renewalValue ?? 0 );
 	const formatValue = ( amount ) => isRevenueMode ?
 		formatCurrency( currency, Number( amount ?? 0 ) ) :
-		Number( amount ?? 0 ).toLocaleString();
+		formatNumber( Number( amount ?? 0 ), 0, false );
 
 	return (
 		<ChartTooltip>

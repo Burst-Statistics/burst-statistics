@@ -5,7 +5,7 @@ import { BlockContent } from '@/components/Blocks/BlockContent';
 import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import { __ } from '@wordpress/i18n';
 import Tasks from './Tasks';
-
+import ButtonInput from '@/components/Inputs/ButtonInput';
 import { useNonPersistedTabsStore } from '@/store/useTabsStore';
 import LiveTraffic from '@/components/Dashboard/LiveTraffic';
 import { TabsContent, TabsList } from '@/components/Common/Tabs';
@@ -104,7 +104,9 @@ const OverviewBlock = () => {
 			</BlockContent>
 
 			<BlockFooter className="gap-2">
-				{/* <OverviewFooter /> */}
+				<ButtonInput btnVariant={'tertiary'} link={{ to: '/statistics' }}>
+					{__( 'View my statistics', 'burst-statistics' )}
+				</ButtonInput>
 			</BlockFooter>
 		</Block>
 	);

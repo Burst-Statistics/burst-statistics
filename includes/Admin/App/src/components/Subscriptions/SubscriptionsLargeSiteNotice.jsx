@@ -2,16 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { __, sprintf } from '@wordpress/i18n';
 import getSubscriptionsProgressData from '@/api/getSubscriptionsProgressData';
 import Icon from '@/utils/Icon';
-
-const formatCount = ( value ) => {
-	const safe = Number.isFinite( value ) ? value : 0;
-
-	try {
-		return new Intl.NumberFormat().format( safe );
-	} catch {
-		return String( safe );
-	}
-};
+import { formatNumber } from '@/utils/formatting';
 
 const SubscriptionsLargeSiteNotice = () => {
 	const { data, isError } = useQuery({
@@ -39,7 +30,7 @@ const SubscriptionsLargeSiteNotice = () => {
 	const rawCount = parseInt( data?.subscription_count, 10 );
 	const hasCount = Number.isFinite( rawCount ) && 0 < rawCount;
 	const formattedCount = hasCount ?
-		formatCount( rawCount ) :
+		formatNumber( rawCount, 0, false ) :
 		__( 'many', 'burst-statistics' );
 
 	const heading = isLargeSite ?

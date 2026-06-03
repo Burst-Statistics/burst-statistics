@@ -47,6 +47,7 @@ function Engagement() {
 				</BlockContent>
 			</Block>
 
+			{ /* Temporary placeholder — swap back to <SearchTermsBlock /> next release. */ }
 			<Block className="row-span-1 lg:col-span-6 xl:col-span-3">
 				<BlockHeading title={__( 'Search terms', 'burst-statistics' )} />
 				<BlockContent className="flex items-center justify-center h-48 text-gray-400 text-sm font-medium italic">

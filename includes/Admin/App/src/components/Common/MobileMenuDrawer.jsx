@@ -1,13 +1,15 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { Link } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
+import clsx from 'clsx';
 import { __ } from '@wordpress/i18n';
-import { useState } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
+import ProBadge from '@/components/Common/ProBadge';
 import Icon from '@/utils/Icon';
-import BurstLogo from './BurstLogo';
 import MenuItemLink from './HeaderMenuItemLink';
 import ButtonInput from '../Inputs/ButtonInput';
 
-const LOGO_CLASS = 'h-8 w-auto';
+/** Top-level menu IDs that expand into a dropdown in the mobile drawer. */
+const DRAWER_DROPDOWN_IDS = new Set([ 'reporting', 'settings' ]);
 
 /** Tailwind classes for top-level drawer nav items. */
 const DRAWER_LINK_CLASS = 'block w-full px-4 py-3 text-md font-medium text-text-gray rounded-md hover:bg-gray-100 transition-colors duration-150';
@@ -35,6 +37,45 @@ const getSubItemPath = ( parentId, subItemId ) => {
 };
 
 /**
+ * Returns visible sub-menu items for a menu item.
+ *
+ * @param {Object} menuItem - Parent menu item with a `menu_items` array.
+ * @return {Array} Visible sub-menu items.
+ */
+const getVisibleSubItems = ( menuItem ) => {
+	return ( menuItem.menu_items ?? []).filter( ( item ) => ! item.hidden );
+};
+
+/**
+ * Whether a sub-menu route matches the current pathname.
+ *
+ * @param {string} pathname  - Current route pathname.
+ * @param {string} parentId  - Top-level menu item ID.
+ * @param {string} subItemId - Sub-menu item ID.
+ * @return {boolean} True when the sub-item route is active.
+ */
+const isSubItemPathActive = ( pathname, parentId, subItemId ) => {
+	const normalizedPath = getSubItemPath( parentId, subItemId ).replace( /\/$/, '' );
+	const normalizedLocation = pathname.replace( /\/$/, '' );
+
+	return normalizedLocation.startsWith( normalizedPath );
+};
+
+/**
+ * Whether a menu item should render as a mobile drawer dropdown.
+ *
+ * @param {Object} menuItem - Menu item from burst_settings.menu.
+ * @return {boolean} True when the item uses a non-clickable dropdown trigger.
+ */
+const hasDrawerDropdown = ( menuItem ) => {
+	if ( ! DRAWER_DROPDOWN_IDS.has( menuItem.id ) ) {
+		return false;
+	}
+
+	return 0 < getVisibleSubItems( menuItem ).length;
+};
+
+/**
  * Renders indented sub-navigation links for a menu item that has sub-pages.
  *
  * Mirrors the desktop SubNavigation sidebar: hidden items are filtered out,
@@ -46,7 +87,7 @@ const getSubItemPath = ( parentId, subItemId ) => {
  * @return {JSX.Element|null} List of sub-item links, or null if there are none.
  */
 const DrawerSubItems = ({ menuItem, onNavigate }) => {
-	const visibleItems = ( menuItem.menu_items ?? []).filter( ( item ) => ! item.hidden );
+	const visibleItems = getVisibleSubItems( menuItem );
 
 	if ( 0 === visibleItems.length ) {
 		return null;
@@ -77,6 +118,122 @@ const DrawerSubItems = ({ menuItem, onNavigate }) => {
 };
 
 DrawerSubItems.displayName = 'DrawerSubItems';
+
+/**
+ * Renders a non-clickable dropdown trigger with collapsible sub-navigation links.
+ *
+ * Used in the mobile drawer for Reporting and Settings so users pick a sub-page
+ * instead of navigating to the parent route.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.menuItem   - Parent menu item with sub-pages.
+ * @param {boolean}  props.isTrial    - Whether the license is a trial.
+ * @param {Function} props.onNavigate - Called after tapping a sub-link to close the drawer.
+ * @return {JSX.Element|null} Dropdown section, or null when there are no visible sub-items.
+ */
+const DrawerDropdownSection = ({ menuItem, isTrial, onNavigate }) => {
+	const location = useLocation();
+	const visibleItems = getVisibleSubItems( menuItem );
+	const hasActiveChild = visibleItems.some( ( subItem ) =>
+		isSubItemPathActive( location.pathname, menuItem.id, subItem.id )
+	);
+	const [ isExpanded, setIsExpanded ] = useState( hasActiveChild );
+	const contentId = `drawer-dropdown-${ menuItem.id }`;
+
+	useEffect( () => {
+		if ( hasActiveChild ) {
+			setIsExpanded( true );
+		}
+	}, [ hasActiveChild, location.pathname ]);
+
+	if ( 0 === visibleItems.length ) {
+		return null;
+	}
+
+	return (
+		<div>
+			<button
+				type="button"
+				id={`${ contentId }-trigger`}
+				aria-expanded={isExpanded}
+				aria-controls={contentId}
+				onClick={() => setIsExpanded( ( open ) => ! open )}
+				className={clsx(
+					DRAWER_LINK_CLASS,
+					'flex w-full items-center justify-between gap-2 text-left',
+					hasActiveChild && DRAWER_ACTIVE_CLASS
+				)}
+			>
+				<span className="inline-flex min-w-0 items-center gap-1.5 text-base tracking-wide">
+					{menuItem.icon && '' !== menuItem.icon && (
+						<span aria-hidden="true" className="inline-flex shrink-0">
+							<Icon name={menuItem.icon} size={14} color="gray" strokeWidth={2.5} />
+						</span>
+					)}
+					<span>{menuItem.title}</span>
+					{menuItem.pro && (
+						<ProBadge
+							type={isTrial ? 'icon' : 'badge'}
+							label={__( 'Pro', 'burst-statistics' )}
+							id={menuItem.id}
+							hasLink={false}
+						/>
+					)}
+				</span>
+				<Icon
+					name="chevron-down"
+					size={16}
+					className={clsx(
+						'shrink-0 transition-transform duration-150',
+						isExpanded && 'rotate-180'
+					)}
+				/>
+			</button>
+
+			{isExpanded && (
+				<div id={contentId} role="region" aria-labelledby={`${ contentId }-trigger`}>
+					<DrawerSubItems menuItem={menuItem} onNavigate={onNavigate} />
+				</div>
+			)}
+		</div>
+	);
+};
+
+DrawerDropdownSection.displayName = 'DrawerDropdownSection';
+
+/**
+ * Renders a single mobile drawer nav item as either a link or a dropdown section.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.menuItem   - Menu item from burst_settings.menu.
+ * @param {boolean}  props.isTrial    - Whether the license is a trial.
+ * @param {Function} props.onNavigate - Called after navigation to close the drawer.
+ * @return {JSX.Element} Drawer menu item.
+ */
+const DrawerMenuItem = ({ menuItem, isTrial, onNavigate }) => {
+	if ( hasDrawerDropdown( menuItem ) ) {
+		return (
+			<DrawerDropdownSection
+				menuItem={menuItem}
+				isTrial={isTrial}
+				onNavigate={onNavigate}
+			/>
+		);
+	}
+
+	return (
+		<MenuItemLink
+			menuItem={menuItem}
+			linkClassName={DRAWER_LINK_CLASS}
+			activeClassName={DRAWER_ACTIVE_CLASS}
+			isTrial={isTrial}
+			variant="drawer"
+			onNavigate={onNavigate}
+		/>
+	);
+};
+
+DrawerMenuItem.displayName = 'DrawerMenuItem';
 
 /**
  * Mobile navigation drawer.
@@ -112,7 +269,7 @@ const MobileMenuDrawer = ({ leftMenuItems, rightMenuItems, supportUrl, upgradeUr
 					aria-label={__( 'Open navigation menu', 'burst-statistics' )}
 					className="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-text-gray hover:bg-gray-100 transition-colors duration-150"
 				>
-					<Icon name="menu" size={22} color="gray" />
+					<Icon name="menu" size={22} />
 				</button>
 			</Dialog.Trigger>
 
@@ -130,16 +287,15 @@ const MobileMenuDrawer = ({ leftMenuItems, rightMenuItems, supportUrl, upgradeUr
 				className="absolute top-0 right-0 z-50 flex h-full max-h-dvh w-[85%] max-w-sm flex-col bg-white shadow-layered-high-b data-[state=open]:animate-drawerSlideIn data-[state=closed]:animate-drawerSlideOut focus:outline-hidden"
 					aria-label={__( 'Navigation menu', 'burst-statistics' )}
 				>
-					{/* Drawer header: logo + close button. */}
-					<div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 shrink-0">
-						<BurstLogo className={LOGO_CLASS} />
+					{/* Drawer header: close button only. */}
+					<div className="flex items-center justify-end border-b border-gray-200 px-4 py-3 shrink-0">
 						<Dialog.Close asChild>
 							<button
 								type="button"
 								aria-label={__( 'Close navigation menu', 'burst-statistics' )}
 								className="inline-flex items-center justify-center rounded-md p-2 text-text-gray hover:bg-gray-100 transition-colors duration-150"
 							>
-								<Icon name="close" size={18} color="gray" />
+								<Icon name="close" size={18} />
 							</button>
 						</Dialog.Close>
 					</div>
@@ -152,15 +308,11 @@ const MobileMenuDrawer = ({ leftMenuItems, rightMenuItems, supportUrl, upgradeUr
 							<ul className="space-y-1" role="list">
 								{leftMenuItems.map( ( menuItem ) => (
 									<li key={'drawer-item-' + menuItem.id}>
-										<MenuItemLink
+										<DrawerMenuItem
 											menuItem={menuItem}
-											linkClassName={DRAWER_LINK_CLASS}
-											activeClassName={DRAWER_ACTIVE_CLASS}
 											isTrial={isTrial}
-											variant="drawer"
 											onNavigate={handleNavigate}
 										/>
-										<DrawerSubItems menuItem={menuItem} onNavigate={handleNavigate} />
 									</li>
 								) )}
 							</ul>
@@ -173,15 +325,11 @@ const MobileMenuDrawer = ({ leftMenuItems, rightMenuItems, supportUrl, upgradeUr
 						<div className="space-y-1">
 							{rightMenuItems.map( ( menuItem ) => (
 								<div key={'drawer-secondary-' + menuItem.id}>
-									<MenuItemLink
+									<DrawerMenuItem
 										menuItem={menuItem}
-										linkClassName={DRAWER_LINK_CLASS}
-										activeClassName={DRAWER_ACTIVE_CLASS}
 										isTrial={isTrial}
-										variant="drawer"
 										onNavigate={handleNavigate}
 									/>
-									<DrawerSubItems menuItem={menuItem} onNavigate={handleNavigate} />
 								</div>
 							) )}
 

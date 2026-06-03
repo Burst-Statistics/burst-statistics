@@ -69,7 +69,7 @@ export interface MetricOption {
 }
 
 /** Grouping interval understood by the chart axis/tooltip formatters. */
-export type ChartInterval = 'hour' | 'day' | 'week' | 'month';
+export type ChartInterval = 'hour' | 'day' | 'week' | 'month' | 'year';
 
 /**
  * Returns a formatted string that represents the relative time between two dates.
@@ -146,6 +146,27 @@ function getPercentage(
 }
 
 /**
+ * Formats a signed ratio as an arrow-prefixed percentage label (e.g. "↑ 11.6%").
+ *
+ * @param percentage - Signed ratio (0.116 = 11.6% increase).
+ * @return Arrow-prefixed percentage string.
+ */
+function formatChangeLabelWithArrow( percentage: number ): string {
+	const formatted = new Intl.NumberFormat( undefined, {
+		style: 'percent',
+		maximumFractionDigits: 1
+	}).format( Math.abs( percentage ) );
+
+	if ( 0 === percentage ) {
+		return `↑ ${ formatted }`;
+	}
+
+	const direction = 0 < percentage ? '↑' : '↓';
+
+	return `${ direction } ${ formatted }`;
+}
+
+/**
  * Calculates the percentage change between two values.
  *
  * @param currValue - The current value.
@@ -165,11 +186,7 @@ function getChangePercentage(
 	}
 
 	const change: ChangePercentage = {
-		val: new Intl.NumberFormat( undefined, {
-			style: 'percent',
-			maximumFractionDigits: 1,
-			signDisplay: 'exceptZero'
-		}).format( percentage ),
+		val: formatChangeLabelWithArrow( percentage ),
 		status: 0 < percentage ? 'positive' : 'negative'
 	};
 
@@ -202,11 +219,7 @@ function getAbsoluteChangePercentage(
 	}
 
 	const change: ChangePercentage = {
-		val: new Intl.NumberFormat( undefined, {
-			style: 'percent',
-			maximumFractionDigits: 1,
-			signDisplay: 'exceptZero'
-		}).format( percentage ),
+		val: formatChangeLabelWithArrow( percentage ),
 		status: 0 < percentage ? 'positive' : 'negative'
 	};
 
@@ -265,7 +278,7 @@ const formatUnixToTime = ( unixTimestamp: number ): string => {
 	}).format( date );
 };
 
-const DEFAULT_X_AXIS_TICK_COUNT = 5;
+const DEFAULT_X_AXIS_TICK_COUNT = 7;
 
 /**
  * Reduces a full x-axis value list to a stable, evenly spaced subset.
@@ -381,29 +394,39 @@ function formatTime( timeInMilliSeconds: number | string = 0 ): string {
 }
 
 /**
- * Formats a number using compact notation with the specified number of decimal places.
+ * Formats a number with locale-aware grouping.
  *
  * @param value    - The number to format.
  * @param decimals - The number of decimal places to use.
+ * @param compact  - When true (default), uses compact notation (e.g. 1.2K). When false, shows the full value.
  * @return The formatted number.
  */
-function formatNumber( value: number | string, decimals: number = 1 ): string {
+function formatNumber( value: number | string, decimals: number = 1, compact: boolean = true ): string {
 	let numeric = Number( value );
 	if ( isNaN( numeric ) ) {
 		numeric = 0;
 	}
 
-	// If value is smaller than 1000, return the number without decimals.
+	// If value is smaller than 1000, return the number without decimals (compact mode only).
 	let fractionDigits = decimals;
-	if ( 1000 > numeric ) {
+	if ( compact && 1000 > numeric ) {
 		fractionDigits = 0;
 	}
-	return new Intl.NumberFormat( undefined, {
+	if ( ! compact && Number.isInteger( numeric ) ) {
+		fractionDigits = 0;
+	}
+
+	const options: Intl.NumberFormatOptions = {
 		style: 'decimal',
-		notation: 'compact',
-		compactDisplay: 'short',
 		maximumFractionDigits: fractionDigits
-	}).format( numeric );
+	};
+
+	if ( compact ) {
+		options.notation = 'compact';
+		options.compactDisplay = 'short';
+	}
+
+	return new Intl.NumberFormat( undefined, options ).format( numeric );
 }
 
 /**
@@ -1016,6 +1039,12 @@ function formatAxisLabel(
 				...( spansMultipleYears ? { year: '2-digit' as const } : {})
 			}).format( date );
 
+		case 'year':
+			return new Intl.DateTimeFormat( undefined, {
+				timeZone,
+				year: 'numeric'
+			}).format( date );
+
 		default:
 			return new Intl.DateTimeFormat( undefined, { timeZone, dateStyle: 'short' }).format( date );
 	}
@@ -1074,6 +1103,12 @@ function formatTooltipLabel(
 			return new Intl.DateTimeFormat( undefined, {
 				timeZone,
 				month: 'long',
+				year: 'numeric'
+			}).format( date );
+
+		case 'year':
+			return new Intl.DateTimeFormat( undefined, {
+				timeZone,
 				year: 'numeric'
 			}).format( date );
 

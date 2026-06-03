@@ -1,6 +1,6 @@
 import { getData } from '../utils/api';
 import { __, _n, sprintf } from '@wordpress/i18n';
-import { formatCurrency, formatCurrencyCompact, formatPercentage } from '../utils/formatting';
+import { formatCurrency, formatCurrencyCompact, formatNumber, formatPercentage } from '../utils/formatting';
 
 const METRIC_KEYS = {
 	AVERAGE_LIFETIME_VALUE: 'average_lifetime_value',
@@ -486,7 +486,7 @@ const getActiveSubscriptionsData = ( metric ) => {
 
 	return {
 		...data,
-		value: activeCount.toLocaleString(),
+		value: formatNumber( activeCount, 0, false ),
 		exactValue: activeCount,
 		subtitle: getActiveSubscriptionsSubtitle( activeCount, previous )
 	};
@@ -554,7 +554,7 @@ const getCanceledSubscriptionsData = ( metric ) => {
 
 	return {
 		...data,
-		value: canceledCount.toLocaleString(),
+		value: formatNumber( canceledCount, 0, false ),
 		exactValue: canceledCount,
 		subtitle: getCanceledSubscriptionsSubtitle( canceledCount, previous )
 	};

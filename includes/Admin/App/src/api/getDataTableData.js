@@ -1,5 +1,6 @@
 import { getDatatableData } from '@/utils/api';
 import {
+	formatNumber,
 	formatPercentage,
 	formatTime,
 	getCountryName,
@@ -102,7 +103,7 @@ const SearchResultsCell = memo( ({ value, term }) => {
 			className="inline-flex items-center gap-1 text-text-black font-medium hover:text-blue-600 transition-colors"
 			title={ __( 'View search results', 'burst-statistics' ) }
 		>
-			{ parseInt( value, 10 ).toLocaleString() }
+			{ formatNumber( parseInt( value, 10 ), 0, false ) }
 			<Icon name="external-link" size={ 11 } color="gray" />
 		</a>
 	);
