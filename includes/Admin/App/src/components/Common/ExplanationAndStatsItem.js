@@ -1,5 +1,6 @@
 import Icon from '../../utils/Icon';
 import HelpTooltip from '@/components/Common/HelpTooltip';
+import { formatNumber } from '@/utils/formatting';
 
 /**
  * ExplanationAndStatsItem component.
@@ -30,7 +31,7 @@ const ExplanationAndStatsItem = ({
 }) => {
 
 	if ( exactValue && 1000 < exactValue ) {
-		tooltipText = tooltipText ? tooltipText : exactValue.toLocaleString();
+		tooltipText = tooltipText ? tooltipText : formatNumber( exactValue, 1, false );
 	}
 
 	return (

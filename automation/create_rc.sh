@@ -145,6 +145,7 @@ create_rc_zip() {
     "--exclude=**/.npm"
     "--exclude=**/.tanstack"
     "--exclude=CLAUDE.md"
+    "--exclude=*.md"
   )
 
     EXCLUDES+=("--exclude=languages/*.po")

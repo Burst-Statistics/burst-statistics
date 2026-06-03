@@ -570,16 +570,18 @@ export const getDatatableData = async( id, isEcommerce, startDate, endDate, rang
 };
 
 /**
- * Get data from the REST API
- * @param {string} type      - The data type to fetch
- * @param {string} startDate - Start date for the query
- * @param {string} endDate   - End date for the query
- * @param {string} range     - Date range
- * @param {Object} args      - Additional query parameters
- * @return {Promise}
+ * Get data from the REST API.
+ *
+ * @param {import('../types/api-endpoints').BurstDataType} type - Endpoint type (see `src/types/api-endpoints.ts`).
+ * @param {string} startDate - Start date for the query.
+ * @param {string} endDate   - End date for the query.
+ * @param {string} range     - Date range slug.
+ * @param {Object} [args={}] - Additional query parameters (filters, metrics, etc.).
+ * @return {Promise<{ data: * }>} Response; `data` shape depends on `type`.
  */
 export const getData = async( type, startDate, endDate, range, args = {}) => {
 
+	// Extract filters and metrics from args if they exist.
 	const { filters, metrics, group_by, currentView, selectedPages, id, chart_mode, distribution_view, product_id, compare_mode, compare_date_start, compare_date_end, page_url } = args;
 
 	const queryParams = {

@@ -307,7 +307,7 @@ class Statistics {
 	 *
 	 * @param int    $date_start Unix timestamp marking the start of the period.
 	 * @param int    $date_end   Unix timestamp marking the end of the period.
-	 * @param string $group_by   Explicit grouping interval ('hour'|'day'|'week'|'month'), or 'auto' to derive from range length.
+	 * @param string $group_by   Explicit grouping interval ('hour'|'day'|'week'|'month'|'year'), or 'auto' to derive from range length.
 	 * @return array{
 	 *     interval: string,
 	 *     interval_in_seconds: mixed,
@@ -325,13 +325,17 @@ class Statistics {
 			// Use %x (ISO year) and %v (ISO week), to prevent 0 hits on week 1 of a leap year.
 			'week'  => [ '%x-%v', 'o-W', WEEK_IN_SECONDS ],
 			'month' => [ '%Y-%m', 'Y-m', MONTH_IN_SECONDS ],
+			'year'  => [ '%Y', 'Y', YEAR_IN_SECONDS ],
 		];
 
 		// When group_by is 'auto', determine the best interval from the range length.
 		if ( 'auto' === $group_by || ! isset( $intervals[ $group_by ] ) ) {
 			$nr_of_days = $this->get_nr_of_periods( 'day', $date_start, $date_end );
 
-			if ( $nr_of_days > 364 ) {
+			if ( $nr_of_days > 1095 ) {
+				// More than ~3 years: monthly ticks become unreadable, switch to yearly.
+				$interval = 'year';
+			} elseif ( $nr_of_days > 364 ) {
 				$interval = 'month';
 			} elseif ( $nr_of_days > 48 ) {
 				$interval = 'week';
@@ -365,13 +369,20 @@ class Statistics {
 	/**
 	 * Get insights data for charting purposes.
 	 *
+	 * When `compare_mode` is set and exactly one metric is selected, a second
+	 * dataset entry is appended with `is_comparison: true`. That entry carries
+	 * the comparison-period values aligned to the current-period x-axis, plus
+	 * a `comparison_timestamps` array so the frontend can show the real
+	 * comparison date in the tooltip.
+	 *
 	 * @param array $args {
 	 *     Optional. Parameters to define time range and metrics.
-	 * @type int    $date_start Start of the data range (timestamp).
-	 * @type int    $date_end   End of the data range (timestamp).
-	 * @type string[] $metrics  List of metrics to retrieve (e.g., 'pageviews', 'visitors').
-	 * @type array  $filters    Filters to apply to the query.
-	 * @type string $group_by   Grouping interval ('auto'|'hour'|'day'|'week'|'month').
+	 * @type int      $date_start   Start of the data range (timestamp).
+	 * @type int      $date_end     End of the data range (timestamp).
+	 * @type string[] $metrics      List of metrics to retrieve (e.g., 'pageviews', 'visitors').
+	 * @type array    $filters      Filters to apply to the query.
+	 * @type string   $group_by     Grouping interval ('auto'|'hour'|'day'|'week'|'month').
+	 * @type string   $compare_mode Comparison mode: 'previous_period' or 'year_over_year'.
 	 * }
 	 * @return array{
 	 *     timestamps: int[],
@@ -382,7 +393,11 @@ class Statistics {
 	 *         backgroundColor: string,
 	 *         borderColor: string,
 	 *         label: string,
-	 *         fill: string
+	 *         fill: string,
+	 *         metric_key: string,
+	 *         is_comparison: bool,
+	 *         comparison_timestamps?: list<int>,
+	 *         compare_mode?: string
 	 *     }>
 	 * }
 	 * @throws \Exception //exception.
@@ -415,7 +430,11 @@ class Statistics {
 				'group_by'       => 'period',
 				'order_by'       => 'period',
 				'limit'          => 0,
-				'date_modifiers' => $this->get_insights_date_modifiers( $start, $end, $group_by ),
+				'date_modifiers' => $this->get_insights_date_modifiers(
+					$start,
+					$end,
+					$group_by
+				),
 			]
 		);
 
@@ -425,7 +444,7 @@ class Statistics {
 		$date_modifiers = $qd->get_date_modifiers();
 		$datasets       = [];
 
-		// foreach metric.
+		// Build one dataset entry per metric.
 		foreach ( $metrics as $metrics_key => $metric ) {
 			$datasets[ $metrics_key ] = [
 				'data'            => [],
@@ -433,6 +452,8 @@ class Statistics {
 				'borderColor'     => $this->get_metric_color( $metric, 'border' ),
 				'label'           => $metric_labels[ $metric ],
 				'fill'            => 'false',
+				'metric_key'      => $metric,
+				'is_comparison'   => false,
 			];
 		}
 
@@ -455,7 +476,10 @@ class Statistics {
 				$datasets[ $metric_key ]['data'][ $formatted_date ] = 0;
 			}
 
-			$date += $date_modifiers['interval_in_seconds'];
+			// Advance by a real calendar step so month/week slots align with the SQL
+			// DATE_FORMAT keys; using a flat seconds constant would skip months
+			// (e.g. February and December) over a 12-month range.
+			$date = $this->advance_period_timestamp( $date, $date_modifiers['interval'] );
 		}
 
 		$hits = $this->get_results( $qd, ARRAY_A );
@@ -483,13 +507,14 @@ class Statistics {
 			'datasets'             => $datasets,
 		];
 
-		// When a compare_mode is set and only a single metric is selected, append comparison data.
+		// When a compare_mode is set and only a single metric is selected, append a comparison
+		// dataset so the frontend can render a dashed line without a separate data structure.
 		// The comparison line is only meaningful with one active metric (no multi-series overlap).
 		$compare_mode = (string) ( $args['compare_mode'] ?? '' );
 		$metrics_list = (array) ( $args['metrics'] ?? [] );
 
 		if ( ! empty( $compare_mode ) && 1 === count( $metrics_list ) ) {
-			$result['comparison'] = $this->get_insights_comparison_data(
+			$comparison = $this->get_insights_comparison_data(
 				$start,
 				$end,
 				$compare_mode,
@@ -497,6 +522,22 @@ class Statistics {
 				$args['filters'] ?? [],
 				$date_modifiers
 			);
+
+			$active_metric = reset( $metrics_list );
+
+			// Append a comparison entry to datasets so the frontend treats it as a
+			// regular series while styling it differently based on is_comparison.
+			$result['datasets'][] = [
+				'data'                  => $comparison['datasets'][0]['data'] ?? [],
+				'backgroundColor'       => $this->get_metric_color( $active_metric, 'background' ),
+				'borderColor'           => $this->get_metric_color( $active_metric, 'border' ),
+				'label'                 => $metric_labels[ $active_metric ] ?? $active_metric,
+				'fill'                  => 'false',
+				'metric_key'            => $active_metric,
+				'is_comparison'         => true,
+				'comparison_timestamps' => $comparison['timestamps'],
+				'compare_mode'          => $compare_mode,
+			];
 		}
 
 		return $result;
@@ -574,7 +615,7 @@ class Statistics {
 				$comp_data[ $metric ][ $formatted_date ] = 0;
 			}
 
-			$comp_date += $comp_date_modifiers['interval_in_seconds'];
+			$comp_date = $this->advance_period_timestamp( $comp_date, $comp_date_modifiers['interval'] );
 		}
 
 		$hits = $this->get_results( $qd_compare, ARRAY_A );
@@ -1207,20 +1248,74 @@ class Statistics {
 		int $date_start,
 		int $date_end
 	): int {
-		if ( 'month' === $period ) {
+		// Calendar-aware counts: use real boundaries so every interval slot generated
+		// by the loop in get_insights_data() matches a possible SQL DATE_FORMAT key.
+		// Plain seconds division (e.g. range / WEEK_IN_SECONDS) drifts across DST and
+		// leap weeks/years, leaving gaps in the chart.
+		if ( 'month' === $period || 'year' === $period || 'week' === $period ) {
 			$start = new \DateTime( '@' . $date_start );
 			$end   = new \DateTime( '@' . $date_end );
 			$start->setTimezone( wp_timezone() );
 			$end->setTimezone( wp_timezone() );
-			$diff = $start->diff( $end );
 
-			return $diff->y * 12 + $diff->m + 1;
+			if ( 'month' === $period ) {
+				$diff = $start->diff( $end );
+				return $diff->y * 12 + $diff->m + 1;
+			}
+
+			if ( 'year' === $period ) {
+				return (int) $end->format( 'Y' ) - (int) $start->format( 'Y' ) + 1;
+			}
+
+			// Week: align both endpoints to the ISO Monday of their week, then count weeks.
+			$start->modify( 'monday this week' )->setTime( 0, 0, 0 );
+			$end->modify( 'monday this week' )->setTime( 0, 0, 0 );
+			$diff_days = (int) $start->diff( $end )->days;
+
+			return (int) floor( $diff_days / 7 ) + 1;
 		}
 
 		$range_in_seconds  = $date_end - $date_start;
 		$period_in_seconds = defined( strtoupper( $period ) . '_IN_SECONDS' ) ? constant( strtoupper( $period ) . '_IN_SECONDS' ) : DAY_IN_SECONDS;
 
 		return (int) round( $range_in_seconds / $period_in_seconds );
+	}
+
+	/**
+	 * Advance a timestamp by one interval step.
+	 *
+	 * For calendar-aware intervals ('month', 'week') we use DateTimeImmutable so that
+	 * stepping respects real month lengths (28-31 days) instead of a flat 30-day
+	 * constant. Falling back to fixed-length seconds would cause months to be
+	 * skipped or duplicated across a year (e.g. December disappearing because
+	 * 12 * 30 days = 360 days).
+	 *
+	 * The timestamp is treated as UTC here on purpose: callers encode local
+	 * civil time into a UTC timestamp by adding the WP timezone offset, so we
+	 * advance in UTC to avoid double-applying DST shifts.
+	 *
+	 * @param int    $timestamp Unix timestamp to advance.
+	 * @param string $interval  Interval key ('hour'|'day'|'week'|'month'|'year').
+	 * @return int Advanced timestamp.
+	 */
+	private function advance_period_timestamp( int $timestamp, string $interval ): int {
+		$calendar_modifiers = [
+			'year'  => '+1 year',
+			'month' => '+1 month',
+			'week'  => '+1 week',
+		];
+
+		if ( isset( $calendar_modifiers[ $interval ] ) ) {
+			$date = ( new \DateTimeImmutable( '@' . $timestamp ) )->modify( $calendar_modifiers[ $interval ] );
+
+			return $date->getTimestamp();
+		}
+
+		if ( 'hour' === $interval ) {
+			return $timestamp + HOUR_IN_SECONDS;
+		}
+
+		return $timestamp + DAY_IN_SECONDS;
 	}
 
 	/**
