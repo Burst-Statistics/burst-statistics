@@ -8,7 +8,7 @@ Requires PHP: 8.0
 Tested up to: 7.0
 Stable tag: 3.5.0
 
-Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner required.
+Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner needed.
  
 == Description ==
  
