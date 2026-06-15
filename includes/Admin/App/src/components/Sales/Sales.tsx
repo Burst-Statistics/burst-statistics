@@ -98,7 +98,7 @@ const Sales = ( props:BlockComponentProps ): JSX.Element => {
 	};
 
 	return (
-		<Block className="row-span-2 lg:col-span-6 xl:col-span-3 block-sales">
+		<Block className="row-span-2 @lg:col-span-6 @xl:col-span-3 block-sales">
 			<BlockHeading {...blockHeadingProps} />
 
 			<BlockContent>

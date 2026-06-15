@@ -24,7 +24,7 @@ const RootComponent = () => {
 					<Outlet />
 				) : (
 					<div className="mx-auto flex max-w-(--breakpoint-2xl)">
-						<div className="grid-rows-auto p-3  grid min-h-full w-full grid-cols-12 gap-3 lg:py-5 lg:px-10 lg:gap-5 relative">
+						<div className="grid-rows-auto p-3  grid min-h-full w-full grid-cols-12 gap-3 @lg:py-5 @lg:px-10 @lg:gap-5 relative">
 							<Outlet />
 						</div>
 					</div>

@@ -262,7 +262,7 @@ const ClickToFilter = ({
 	}
 
 	return (
-		<div className="group relative min-w-36 w-full">
+		<div className="group relative @md:min-w-36 min-w-0 w-full">
 			{/* Main content. */}
 			{useContainerForFilter ? (
 				<HelpTooltip content={filterTooltip} asChild>

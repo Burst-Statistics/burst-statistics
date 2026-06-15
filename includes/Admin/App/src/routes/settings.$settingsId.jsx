@@ -31,10 +31,10 @@ function SettingsRoute() {
 	const { currentItem } = Route.useLoaderData();
 	return (
 		<>
-			<div className="col-span-12 lg:col-span-6 flex flex-col">
+			<div className="col-span-12 @lg:col-span-6 flex flex-col">
 				<Settings currentSettingPage={currentItem} />
 			</div>
-			<div className="col-span-12 lg:col-span-3">
+			<div className="col-span-12 @lg:col-span-3">
 				<SettingsNotices settingsGroup={currentItem} />
 			</div>
 		</>

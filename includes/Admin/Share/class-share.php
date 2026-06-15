@@ -29,7 +29,7 @@ class Share {
 		$this->auth    = new Share_Auth( $this );
 		$this->ui      = new Share_UI( $this );
 
-		$this->shareable_tabs_ids = [ 'statistics', 'sources', 'sales', 'story' ];
+		$this->shareable_tabs_ids = [ 'statistics', 'sources', 'sales', 'story', 'engagement' ];
 	}
 
 	/**
@@ -43,6 +43,10 @@ class Share {
 		add_filter( 'query_vars', [ $this->routing, 'add_query_vars' ] );
 		add_filter( 'burst_verify_nonce', [ $this->tokens, 'verify_nonce_for_shared_links' ], 10, 3 );
 		add_filter( 'burst_share_link_permissions', [ $this->tokens, 'filter_share_link_permissions' ], 10, 0 );
+		// Enforce share-link date/filter restrictions on incoming request args before
+		// any data class (sales, quick-wins, funnel) reads $args['date_start'] for
+		// raw JOIN ON date guards. Priority 5 so ecommerce date filter (10) sees enforced values.
+		add_filter( 'burst_get_data_request_args', [ $this->routing, 'apply_share_link_restrictions_filter' ], 5, 3 );
 		// Execute our burst_menu, to remove any menu items that shared viewer does not have access to.
 		add_filter( 'burst_menu', [ $this->ui, 'allowed_tabs_for_current_shared_view' ], PHP_INT_MAX );
 		add_action( 'admin_init', [ $this->routing, 'maybe_flush_rewrite_rules' ] );

@@ -254,7 +254,7 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 					{ __( 'Filter value', 'burst-statistics' ) }
 				</label>
 
-				<div className="flex items-center space-x-2 pr-0.5">
+				<div className="flex items-center gap-2 pr-0.5">
 					{
 						config.options ? (
 							<AsyncSelectInput

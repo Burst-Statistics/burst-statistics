@@ -17,6 +17,8 @@ use Burst\Admin\Debug\Debug;
 use Burst\Admin\Posts\Posts;
 use Burst\Admin\Reports\Report_Logs;
 use Burst\Admin\Reports\Reports;
+use Burst\Admin\Search\Search;
+use Burst\Admin\Engagement\Reading_Engagement;
 use Burst\Admin\Share\Share;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
@@ -106,6 +108,10 @@ class Admin {
 			$goal_statistics->init();
 			$this->statistics = new Statistics();
 			$this->statistics->init();
+			$search = new Search();
+			$search->init();
+			$reading_engagement = new Reading_Engagement();
+			$reading_engagement->init();
 			$reports = new Reports();
 			$reports->init();
 			$reports_logs = Report_Logs::instance();
@@ -1423,7 +1429,7 @@ class Admin {
 			'capabilities'   => 'view_sales_burst_statistics',
 			'menu_slug'      => 'burst#/sales',
 			'show_in_admin'  => true,
-			'pro'            => false,
+			'pro'            => true,
 			'shareable'      => true,
 		];
 

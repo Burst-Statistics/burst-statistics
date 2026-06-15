@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunk_burst_statistics_burst_statistics=self.webpackChunk_burst_statistics_burst_statistics||[]).push([[249],{9249(s,t,i){i.r(t),i.d(t,{notFoundComponent:()=>u});var u=i(92814).A}}]);

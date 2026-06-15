@@ -11,7 +11,7 @@ use Burst\Admin\Reports\DomainTypes\Report_Frequency;
 use Burst\Admin\Reports\DomainTypes\Report_Log_Status;
 use Burst\Admin\Reports\DomainTypes\Report_Week_Of_Month;
 use Burst\Admin\Share\Share;
-use Burst\Admin\Statistics\Query_Data;
+use Burst\Admin\Statistics\Statistics_Query;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
@@ -99,15 +99,27 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 * Handle email batch sending
 		 */
 		public function handle_email_batch( int $report_id, string $queue_id, ?int $batch_id ): void {
+			self::error_log( "Report email: cron burst_send_email_batch fired for report $report_id, queue $queue_id, batch " . ( $batch_id ?? 'null' ) . '.' );
+
 			$report = new Report( $report_id );
+
+			if ( empty( $report->id ) ) {
+				self::error_log( "Report email: report $report_id not found, aborting batch send." );
+				return;
+			}
+
+			self::error_log( 'Report email: report loaded with ' . count( $report->recipients ) . ' recipient(s), frequency ' . $report->frequency . ', format ' . $report->format . '.' );
+
 			$mailer = new Mailer();
 			$mailer->set_to( $report->recipients )
 				->set_report_id( $report->id )
 				->set_queue_id( $queue_id )
 				->set_batch_id( $batch_id );
 
+			self::error_log( "Report email: building report content for report $report_id." );
 			$this->build_report( $mailer, $report->frequency, $report->content, $report->format );
 
+			self::error_log( "Report email: handing off to mailer queue for report $report_id, batch " . ( $batch_id ?? 'null' ) . '.' );
 			$mailer->send_mail_queue();
 		}
 
@@ -198,7 +210,11 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			}
 
 			$report->set_next_send_timestamp( time() );
-			return $this->send_report_instance( $report );
+
+			// Use a dedicated test queue ID so a manual send never collides with
+			// (and thereby suppresses) the automatic send scheduled for the same
+			// day, and vice versa.
+			return $this->send_report_instance( $report, $this->get_test_queue_id() );
 		}
 
 		/**
@@ -474,6 +490,18 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				}
 			}
 
+			// Same pattern for the dark mode logo.
+			$logo_attachment_id_dark = (int) burst_get_option( 'logo_attachment_id_dark', 0 );
+			$logo_url_dark           = '';
+			if ( $logo_attachment_id_dark > 0 ) {
+				$image_src = wp_get_attachment_image_src( $logo_attachment_id_dark, 'medium' )
+					?: wp_get_attachment_image_src( $logo_attachment_id_dark, 'large' )
+					?: wp_get_attachment_image_src( $logo_attachment_id_dark, 'full' );
+				if ( $image_src ) {
+					$logo_url_dark = $image_src[0];
+				}
+			}
+
 			// Same pattern for the hero background image (used in the right column of HeroBlock).
 			$hero_bg_attachment_id = (int) burst_get_option( 'hero_background_image_attachment_id', 0 );
 			$hero_bg_url           = '';
@@ -486,17 +514,36 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				}
 			}
 
+			// Same pattern for the dark mode hero background image.
+			$hero_bg_attachment_id_dark = (int) burst_get_option( 'hero_background_image_attachment_id_dark', 0 );
+			$hero_bg_url_dark           = '';
+			if ( $hero_bg_attachment_id_dark > 0 ) {
+				$image_src = wp_get_attachment_image_src( $hero_bg_attachment_id_dark, 'large' )
+					?: wp_get_attachment_image_src( $hero_bg_attachment_id_dark, 'full' )
+					?: wp_get_attachment_image_src( $hero_bg_attachment_id_dark, 'medium' );
+				if ( $image_src ) {
+					$hero_bg_url_dark = $image_src[0];
+				}
+			}
+
 			$brand_color                = sanitize_hex_color( (string) burst_get_option( 'brand_color', '#2B8133' ) ) ?: '#2B8133';
 			$hero_color_overlay_enabled = (bool) burst_get_option( 'hero_color_overlay_enabled', true );
 			$report_array               = ! empty( $report ) ? $report->to_array() : null;
 
+			// Custom CSS is sanitized on save (the 'css' field type), but re-read raw here so the
+			// publicly shared story view stays in sync with the stored value.
+			$custom_css = (string) burst_get_option( 'custom_css', '' );
+
 			return [
-				'request_success'            => true,
-				'report'                     => $report_array,
-				'logo_url'                   => $logo_url,
-				'hero_background_image_url'  => $hero_bg_url,
-				'brand_color'                => $brand_color,
-				'hero_color_overlay_enabled' => $hero_color_overlay_enabled,
+				'request_success'                => true,
+				'report'                         => $report_array,
+				'logo_url'                       => $logo_url,
+				'logo_url_dark'                  => $logo_url_dark,
+				'hero_background_image_url'      => $hero_bg_url,
+				'hero_background_image_url_dark' => $hero_bg_url_dark,
+				'brand_color'                    => $brand_color,
+				'hero_color_overlay_enabled'     => $hero_color_overlay_enabled,
+				'custom_css'                     => $custom_css,
 			];
 		}
 
@@ -645,13 +692,33 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		}
 
 		/**
+		 * Build a unique queue ID for a manual ("send now") send.
+		 *
+		 * Manual sends use a `test-{Y-m-d}-{timestamp}` queue ID so they never
+		 * collide with the date-based queue ID of the automatic send for the same
+		 * day. A collision would make either send skip the other via the
+		 * per-queue de-duplication in the mailer. The date portion is still
+		 * recoverable for log grouping via extract_date_from_queue_id().
+		 *
+		 * @return string The generated test queue ID.
+		 */
+		public function get_test_queue_id(): string {
+			$now = time();
+			return 'test-' . gmdate( 'Y-m-d', $now ) . '-' . $now;
+		}
+
+		/**
 		 * Send a report instance.
 		 *
-		 * @param Report $report The report object.
+		 * @param Report      $report   The report object.
+		 * @param string|null $queue_id Explicit queue ID; when null it is derived from the report's send timestamp.
 		 * @return array The result of the send operation.
 		 */
-		private function send_report_instance( Report $report ): array {
+		private function send_report_instance( Report $report, ?string $queue_id = null ): array {
+			self::error_log( "Report email: send_report_instance called for report $report->id." );
+
 			if ( empty( $report->recipients ) ) {
+				self::error_log( "Report email: report $report->id has no recipients, aborting." );
 				return [
 					'success' => false,
 					'message' => __( 'No recipients specified for the report.', 'burst-statistics' ),
@@ -659,8 +726,10 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			}
 
 			$report_id = $report->id;
-			$queue_id  = $this->get_queue_id_from_timestamp( $report->next_send_timestamp );
+			$queue_id  = $queue_id ?? $this->get_queue_id_from_timestamp( $report->next_send_timestamp );
 			$batch_id  = 1;
+
+			self::error_log( "Report email: prepared queue $queue_id for report $report_id (" . count( $report->recipients ) . ' recipient(s)).' );
 
 			if ( ! wp_next_scheduled( 'burst_send_email_batch', [ $report_id, $queue_id, $batch_id ] ) ) {
 				if ( ! Report_Logs::instance()->parent_processing_exists(
@@ -676,11 +745,14 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					);
 				}
 
+				self::error_log( "Report email: scheduling first batch for queue $queue_id (report $report_id) in 5 minutes." );
 				wp_schedule_single_event(
 					time() + 5 * MINUTE_IN_SECONDS,
 					'burst_send_email_batch',
 					[ $report_id, $queue_id, $batch_id ]
 				);
+			} else {
+				self::error_log( "Report email: first batch for queue $queue_id (report $report_id) is already scheduled, not rescheduling." );
 			}
 			return [
 				'success' => true,
@@ -693,6 +765,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 */
 		public function maybe_send_report(): void {
 			if ( ! $this->table_exists( 'burst_reports' ) ) {
+				self::error_log( 'Report email: maybe_send_report aborted, burst_reports table does not exist.' );
 				return;
 			}
 
@@ -702,27 +775,48 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				"SELECT ID FROM {$wpdb->prefix}burst_reports WHERE enabled = 1 AND scheduled = 1"
 			);
 
+			self::error_log( 'Report email: maybe_send_report found ' . count( $ids ) . ' enabled & scheduled report(s) to evaluate.' );
+
 			foreach ( $ids as $id ) {
 				$report = new Report( (int) $id );
 
-				if ( empty( $report->next_send_timestamp ) ) {
+				// The most recent scheduled occurrence at or before now (or null
+				// when the report has no usable schedule).
+				$due = $report->next_send_timestamp;
+				if ( empty( $due ) ) {
+					self::error_log( "Report email: report $id has no due send moment, skipping." );
 					continue;
 				}
 
 				$now = time();
 
-				if ( $now < $report->next_send_timestamp || $now > $report->next_send_timestamp + DAY_IN_SECONDS ) {
+				// Catch-up window: a missed occurrence may still be sent for some
+				// time after its target (e.g. when cron only runs sporadically on
+				// low-traffic sites, so no tick lands between the target time and
+				// local midnight), but very stale occurrences are not resurrected.
+				$catch_up_window = (int) apply_filters( 'burst_report_catch_up_window', DAY_IN_SECONDS, $report );
+				if ( $now - $due > $catch_up_window ) {
+					self::error_log( "Report email: report $id due moment $due is older than the catch-up window ($catch_up_window s), skipping." );
 					continue;
 				}
 
-				// Skip if this report was already handled in the current window.
+				// De-duplicate per occurrence: once this occurrence's batch has
+				// been queued/sent, it is logged and must not be sent again. This
+				// is what makes the catch-up window safe to keep re-evaluating.
+				$queue_id = $this->get_queue_id_from_timestamp( $due );
+				if ( Report_Logs::instance()->queue_exists( $report->id, $queue_id, 1 ) ) {
+					self::error_log( "Report email: report $id occurrence $queue_id already sent, skipping." );
+					continue;
+				}
+
+				// Guard against two parallel cron processes entering at once,
+				// before the first one has had a chance to write its log entry.
 				$transient_key = 'burst_report_sent_' . $report->id;
 				if ( get_transient( $transient_key ) ) {
+					self::error_log( "Report email: report $id already handled in this run (transient set), skipping." );
 					continue;
 				}
-
-				// Mark as handled before sending, so a parallel cron cannot enter here.
-				set_transient( $transient_key, $report->next_send_timestamp, 30 );
+				set_transient( $transient_key, $due, 5 * MINUTE_IN_SECONDS );
 
 				$this->send_report_instance( $report );
 			}
@@ -757,12 +851,11 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 *
 		 * @return array<int, array<int, string>> List of results
 		 */
-		public function get_top_results( int $start_date, int $end_date, Query_Data $qd ): array {
-			$results        = [];
-			$qd->limit      = apply_filters( 'burst_mail_report_limit', 5 );
-			$qd->date_start = $start_date;
-			$qd->date_end   = $end_date;
-			$raw_results    = \Burst\burst_loader()->admin->statistics->get_results( $qd, ARRAY_A );
+		public function get_top_results( int $start_date, int $end_date, Statistics_Query $qd ): array {
+			$results = [];
+			$qd->limit( (int) apply_filters( 'burst_mail_report_limit', 5 ) );
+			$qd->date_range( $start_date, $end_date );
+			$raw_results = $qd->fetch( ARRAY_A );
 
 			$raw_results = apply_filters( 'burst_mail_report_results', $raw_results, $qd, $start_date, $end_date );
 
@@ -1036,7 +1129,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				}
 
 				$query_id = sprintf( 'report_block_%s', sanitize_key( (string) $key ) );
-				$qd       = new Query_Data( $query_id, $query_data_args );
+				$qd       = Statistics_Query::create( $query_id )->apply_args( $query_data_args );
 				$results  = $this->get_top_results( $date_range->start, $date_range->end, $qd );
 
 				// Prepend header row to results.
@@ -1071,6 +1164,19 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 
 				if ( $image_src ) {
 					$mailer->set_logo( $image_src[0] );
+					// Dark mode fallback, overridden below when a dark mode logo is set.
+					$mailer->set_logo_dark( $image_src[0] );
+				}
+			}
+
+			$logo_attachment_id_dark = (int) burst_get_option( 'logo_attachment_id_dark', 0 );
+
+			if ( $logo_attachment_id_dark > 0 ) {
+				$image_src = wp_get_attachment_image_src( $logo_attachment_id_dark, 'medium' )
+					?: wp_get_attachment_image_src( $logo_attachment_id_dark, 'large' )
+						?: wp_get_attachment_image_src( $logo_attachment_id_dark, 'full' );
+
+				if ( $image_src ) {
 					$mailer->set_logo_dark( $image_src[0] );
 				}
 			}

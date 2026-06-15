@@ -41,7 +41,7 @@ class Menu {
 		$menu_items = $this->menu;
 		// Remove items where capabilities are not met.
 		foreach ( $menu_items as $key => $menu_item ) {
-			if ( ! current_user_can( $menu_item['capabilities'] ) ) {
+			if ( ! $this->is_mainwp_request() && ! current_user_can( $menu_item['capabilities'] ) ) {
 				unset( $menu_items[ $key ] );
 				continue;
 			}

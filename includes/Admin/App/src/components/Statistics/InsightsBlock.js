@@ -139,7 +139,7 @@ const InsightsBlock = (props) => {
 	const loading = query.isLoading || query.isFetching;
 
 	return (
-		<Block className="row-span-1 lg:col-span-12 xl:col-span-6 min-h-96 group/root">
+		<Block className="row-span-1 @lg:col-span-12 @xl:col-span-6 min-h-96 group/root">
 			<BlockHeading
 				title={__( 'Insights', 'burst-statistics' )}
 				className="border-b border-gray-200"
@@ -170,7 +170,6 @@ const InsightsBlock = (props) => {
 							timestamps={query.data.timestamps}
 							interval={query.data.interval}
 							spansMultipleYears={query.data.spans_multiple_years}
-							metrics={metrics}
 						/>
 					)
 				}

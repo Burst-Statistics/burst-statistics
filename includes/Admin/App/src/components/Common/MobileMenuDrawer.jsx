@@ -267,7 +267,7 @@ const MobileMenuDrawer = ({ leftMenuItems, rightMenuItems, supportUrl, upgradeUr
 				<button
 					type="button"
 					aria-label={__( 'Open navigation menu', 'burst-statistics' )}
-					className="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-text-gray hover:bg-gray-100 transition-colors duration-150"
+					className="@lg:hidden inline-flex items-center justify-center rounded-md p-2 text-text-gray hover:bg-gray-100 transition-colors duration-150"
 				>
 					<Icon name="menu" size={22} />
 				</button>

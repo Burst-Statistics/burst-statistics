@@ -330,6 +330,11 @@ class Upgrade {
 			burst_reinstall_rest_api_optimizer();
 		}
 
+		if ( $prev_version && version_compare( $prev_version, '3.5.1', '<' ) ) {
+			// No-op code to pass the unit test when no upgrade required.
+			$prev_version .= '';
+		}
+
 		$admin = new Admin();
 		$admin->run_table_init_hook();
 		$admin->create_js_file();

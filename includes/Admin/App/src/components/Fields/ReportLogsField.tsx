@@ -11,10 +11,40 @@ import { OverflowTooltip } from '@/components/Common/OverflowTooltip';
 import { getReportLogsData } from '@/api/getReportLogsData';
 import {
 	ReportLogEntry,
-	ReportLogBatch, ReportLogSeverity
+	ReportLogBatch,
+	ReportLogSeverity,
+	ReportLogStatus
 } from '@/store/reports/types';
 import Icon from '@/utils/Icon';
 import { useReportConfigStore } from '@/store/reports/useReportConfigStore';
+
+const getStatusLabel = ( status: ReportLogStatus ) => {
+	switch ( status ) {
+		case 'sending_successful':
+			return __( 'Sent', 'burst-statistics' );
+		case 'sending_failed':
+			return __( 'Failed', 'burst-statistics' );
+		case 'email_domain_error':
+			return __( 'Domain Error', 'burst-statistics' );
+		case 'email_address_error':
+			return __( 'Address Error', 'burst-statistics' );
+		case 'cron_miss':
+			return __( 'Cron Miss', 'burst-statistics' );
+		case 'concept':
+			return __( 'Concept', 'burst-statistics' );
+		case 'scheduled':
+			return __( 'Scheduled', 'burst-statistics' );
+		case 'processing':
+			return __( 'Processing', 'burst-statistics' );
+		case 'partly_sent':
+			return __( 'Partly Sent', 'burst-statistics' );
+		case 'ready_to_share':
+			return __( 'Ready', 'burst-statistics' );
+		default:
+			return status ? String( status ).split( '_' ).map( s => s.charAt( 0 ).toUpperCase() + s.slice( 1 ) ).join( ' ' ) : '';
+	}
+};
+
 export const ReportLogsField = ({ field, fieldState, help, context, ...props }: any ) => { // eslint-disable-line @typescript-eslint/no-explicit-any
 
 	const inputId = props.id || field.name;
@@ -36,51 +66,59 @@ export const ReportLogsField = ({ field, fieldState, help, context, ...props }: 
 					const severity = reportLogStatusConfig?.[row.status]?.severity ?? 'info';
 					return (
 						<span
-							className={`px-2 py-1 rounded-full text-xs font-medium ${ statusSeverityClasses[ severity ] }`}
+							className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${ statusSeverityClasses[ severity ] }`}
 						>
-                      { row.message }
-                   </span>
+							{ getStatusLabel( row.status ) }
+						</span>
 					);
 				},
+				width: '120px',
 				grow: 0
 			},
 			{
 				name: __( 'Report', 'burst-statistics' ),
 				cell: ( row ) => (
-					<OverflowTooltip>
+					<OverflowTooltip className="whitespace-nowrap">
 						{ row.report_name }
 					</OverflowTooltip>
 				),
+				minWidth: '130px',
 				grow: 1
 			},
 			{
 				name: __( 'Date', 'burst-statistics' ),
-				cell: ( row ) => formatDateAndTime( new Date( row.time * 1000 ) ),
+				cell: ( row ) => (
+					<span className="text-text-black whitespace-nowrap">
+						{ formatDateAndTime( new Date( row.time * 1000 ) ) }
+					</span>
+				),
 				sortable: true,
-				grow: 2
+				minWidth: '220px',
+				grow: 1
 			},
 			{
 				name: __( 'Queue', 'burst-statistics' ),
 				cell: ( row ) => (
-					<OverflowTooltip className="text-right">
+					<span className="text-text-black whitespace-nowrap">
 						{ row.queue_id }
-					</OverflowTooltip>
+					</span>
 				),
-				right: true,
+				minWidth: '120px',
 				grow: 1
 			},
 			{
 				name: __( 'Message', 'burst-statistics' ),
 				cell: ( row ) =>
 					row.message ? (
-						<OverflowTooltip className="text-right">
+						<span className="text-text-black text-sm whitespace-normal py-2 block break-words">
 							{ row.message }
-						</OverflowTooltip>
+						</span>
 					) : (
-						<span className="text-text-gray text-right">—</span>
+						<span className="text-text-gray">—</span>
 					),
-				right: true,
-				grow: 1
+				minWidth: '300px',
+				grow: 3,
+				wrap: true
 			}
 		],
 		[ reportLogStatusConfig, statusSeverityClasses ]
@@ -105,7 +143,7 @@ export const ReportLogsField = ({ field, fieldState, help, context, ...props }: 
 						emptyStateMessage={ __( 'No report logs available.', 'burst-statistics' ) }
 					/>
 				}
-				className="burst-data-table no-custom-burst-style"
+				className="burst-data-table no-custom-burst-style report-logs-table"
 				pagination
 				columns={ columns }
 				data={ data }

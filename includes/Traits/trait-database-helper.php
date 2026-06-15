@@ -159,6 +159,8 @@ trait Database_Helper {
 				'burst_referrers',
 				'burst_known_uids',
 				'burst_query_stats',
+				'burst_searches',
+				'burst_statistics_searches',
 			],
 		);
 	}

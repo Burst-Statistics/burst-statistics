@@ -16,6 +16,7 @@ export const LivePreviewBlocks = ({ className }: { className?: string }) => {
 	const availableContent = useReportConfigStore( ( state ) => state.availableContent );
 	const { getValue } = useSettingsData();
 	const brandColor: string = getValue( 'brand_color' );
+	const customCss: string = getValue( 'custom_css' );
 	const containerRef = useRef<HTMLDivElement>( null );
 	const previewRef = useRef<HTMLDivElement>( null );
 	const previousContentLengthRef = useRef( contents.length );
@@ -52,9 +53,11 @@ export const LivePreviewBlocks = ({ className }: { className?: string }) => {
 			<div
 				ref={previewRef}
 				data-preview-container
-				className='flex-1 overflow-y-auto burst-scroll transition-all duration-300'
+				className='burst-story-page flex-1 overflow-y-auto burst-scroll transition-all duration-300'
 				onClick={handlePreviewClick}
 			>
+                { customCss && <style>{customCss}</style> }
+
                 {
 					brandColor && (
 						<div style={{ backgroundColor: brandColor, height: '13px' }} className="w-full" />

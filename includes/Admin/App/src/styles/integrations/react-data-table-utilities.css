@@ -1,5 +1,5 @@
 @utility burst-inline-block-padding {
-	@apply px-6 max-xl:px-2.5;
+	@apply px-6 @max-xl:px-2.5;
 }
 
 @utility burst-data-table {
@@ -48,4 +48,14 @@
 	& select + svg {
 	@apply hidden;
 	}
+}
+
+.report-logs-table .rdt_TableCol {
+	padding-left: 16px !important;
+	padding-right: 16px !important;
+}
+
+.report-logs-table .rdt_TableCell {
+	padding-left: 16px !important;
+	padding-right: 16px !important;
 }

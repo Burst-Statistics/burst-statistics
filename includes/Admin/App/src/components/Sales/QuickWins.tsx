@@ -211,7 +211,7 @@ const QuickWins = (): JSX.Element => {
 	};
 
 	return (
-		<Block className="row-span-2 overflow-hidden xl:col-span-6">
+		<Block className="row-span-2 overflow-hidden @xl:col-span-6">
 			<BlockHeading {...blockHeadingProps} />
 
 			<BlockContent {...blockContentProps}>

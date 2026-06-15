@@ -26,7 +26,7 @@ const StoryContentSelection = () => {
 	const addContent = useWizardStore( ( state ) => state.addContent );
 	const shouldLoadEcommerce = window.burst_settings?.shouldLoadEcommerce || false;
 
-	const { isLicenseValid, isLicenseValidFor } = useLicenseData();
+	const { isLicenseValidFor } = useLicenseData();
 	const isAgency = isLicenseValidFor( 'reporting' );
 	const isFirstRender = useRef( true );
 	const [ animatingBlock, setAnimatingBlock ] = useState<AnimatingBlock | null>( null );
@@ -120,7 +120,7 @@ const StoryContentSelection = () => {
 										{block.label}
 									</p>
 									{
-										block.pro && ! isLicenseValid && (
+										isBlockProDisabled && (
 											<div className="shrink-0">
 												<ProBadge label={'Pro'}/>
 											</div>

@@ -6,6 +6,7 @@ import {
 	getDateWithOffset,
 	getAvailableRanges,
 	getDisplayDates,
+	getDatePickerLocale,
 	availableRanges,
 	BURST_START_DATE
 } from '@/utils/formatting';
@@ -159,6 +160,7 @@ const DateRange = () => {
 							<DateRangePicker
 								ranges={[ selectionRange ]}
 								rangeColors={[ 'var(--color-green)' ]}
+								locale={getDatePickerLocale()}
 								dateDisplayFormat="dd MMMM yyyy"
 								monthDisplayFormat="MMMM"
 								onChange={updateDateRange}

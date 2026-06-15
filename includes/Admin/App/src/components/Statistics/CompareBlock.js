@@ -94,7 +94,7 @@ const CompareBlock = ( props ) => {
 	);
 
 	return (
-		<Block className="row-span-1 lg:col-span-6 xl:col-span-3">
+		<Block className="row-span-1 @lg:col-span-6 @xl:col-span-3">
 			<BlockHeading title={ __( 'Compare', 'burst-statistics' ) } isReport={ isReport } reportBlockIndex={ index } isLoading={ isLoading } />
 			<BlockContent>
 				{ Object.keys( data ).map( ( key, i ) => {
