@@ -94,10 +94,6 @@
 		@apply w-px h-[1.3rem] bg-divider;
 	}
 
-	.mainwp-ui .burst {
-		margin-left: 0 !important;
-	}
-
 	/* Responsive adjustment */
 	body.dashboard-default-theme {
 		.burst-statistics-wrapper {

@@ -4,9 +4,24 @@
 @import "./theme/tokens.css";
 @import "./theme/dark-scope-tokens.css";
 
+@theme {
+	--container-xxs: 576px;
+	--container-sm: 640px;
+	--container-md: 768px;
+	--container-lg: 1024px;
+	--container-xl: 1280px;
+	--container-2xl: 1600px;
+}
+
 #burst-statistics {
 	@import "tailwindcss";
 	@import "./base/index.css";
+}
+#burst-statistics.burst {
+	container-type: inline-size;
+}
+.mainwp-ui #burst-statistics {
+	margin-left: 0 !important;
 }
 @import "./utilities/index.css";
 @import "./components/index.css";

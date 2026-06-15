@@ -44,7 +44,7 @@ const UnauthorizedModal: React.FC<UnauthorizedModalProps> = ({
 							{message}
 						</p>
 
-						<div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+						<div className="flex flex-col @sm:flex-row justify-center items-center gap-4">
 							<ButtonInput
 								btnVariant="primary"
 								size="lg"

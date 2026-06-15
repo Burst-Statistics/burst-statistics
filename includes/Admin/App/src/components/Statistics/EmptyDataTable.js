@@ -31,7 +31,7 @@ const SkeletonRow = ({ index, isLast }) => {
 
 	return (
 		<div
-			className={`bg-gray-50 flex items-center gap-4 px-6 max-xl:px-2.5 ${! isLast ? 'border-b border-gray-100' : ''}`}
+			className={`bg-gray-50 flex items-center gap-4 px-6 @max-xl:px-2.5 ${! isLast ? 'border-b border-gray-100' : ''}`}
 			style={{ height: `${ROW_HEIGHT}px` }}
 		>
 			{/* First column - wider, simulates URL/name. */}
@@ -59,7 +59,7 @@ const SkeletonRow = ({ index, isLast }) => {
 const SkeletonHeader = () => {
 	return (
 		<div
-			className="flex items-center gap-4 px-6 max-xl:px-2.5 border-b border-gray-200 bg-gray-100"
+			className="flex items-center gap-4 px-6 @max-xl:px-2.5 border-b border-gray-200 bg-gray-100"
 			style={{ height: `${HEADER_HEIGHT}px` }}
 		>
 			{/* First column header - blurred text effect. */}
@@ -92,7 +92,7 @@ const SkeletonHeader = () => {
 const SkeletonPagination = () => {
 	return (
 		<div
-			className="flex items-center justify-end gap-4 px-6 max-xl:px-2.5 border-t border-gray-200 bg-gray-50"
+			className="flex items-center justify-end gap-4 px-6 @max-xl:px-2.5 border-t border-gray-200 bg-gray-50"
 			style={{ height: `${PAGINATION_HEIGHT}px` }}
 		>
 			{/* Rows per page selector skeleton. */}
@@ -188,7 +188,7 @@ const LoadingState = () => {
 const EmptyPagination = () => {
 	return (
 		<div
-			className="flex items-center justify-end gap-4 px-6 max-xl:px-2.5 border-t border-gray-200 bg-gray-50 opacity-40"
+			className="flex items-center justify-end gap-4 px-6 @max-xl:px-2.5 border-t border-gray-200 bg-gray-50 opacity-40"
 			style={{ height: `${PAGINATION_HEIGHT}px` }}
 		>
 			{/* Rows per page selector. */}

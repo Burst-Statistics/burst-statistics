@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Burst\Frontend\Endpoint;
 use Burst\Frontend\Ip\Ip;
+use Burst\Frontend\Search\Search;
 use Burst\Pro\Frontend\External_Link\External_Link_Frontend;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
@@ -103,6 +104,8 @@ class Tracking {
 			'device_id'          => $sanitized_data['device_id'] ?? 0,
 		];
 
+		$search_term = $sanitized_data['search_term'] ?? '';
+
 		// $statistic contains only fields that belong on burst_statistics.
 		unset(
 			$sanitized_data['city_code'],
@@ -112,7 +115,8 @@ class Tracking {
 			$sanitized_data['browser_id'],
 			$sanitized_data['browser_version_id'],
 			$sanitized_data['platform_id'],
-			$sanitized_data['device_id']
+			$sanitized_data['device_id'],
+			$sanitized_data['search_term']
 		);
 		$statistic = $sanitized_data;
 
@@ -176,6 +180,11 @@ class Tracking {
 			do_action( 'burst_before_create_statistic', $statistic );
 			$statistic['time'] = time();
 			$insert_id         = $this->create_statistic( $statistic );
+			if ( ! empty( $search_term ) ) {
+				$frontend_search = new Search();
+				$frontend_search->init();
+				$statistic['search_term'] = $search_term;
+			}
 			do_action( 'burst_after_create_statistic', $insert_id, $statistic );
 		}
 
@@ -423,6 +432,7 @@ class Tracking {
 		$sanitized_data['page_id']               = (int) $data['page_id'];
 		$sanitized_data['page_type']             = $this->sanitize_page_identifier( $data['page_type'] );
 		$sanitized_data['should_load_ecommerce'] = filter_var( $data['should_load_ecommerce'], FILTER_VALIDATE_BOOLEAN );
+		$sanitized_data['search_term']           = isset( $data['search_term'] ) ? sanitize_text_field( wp_unslash( (string) $data['search_term'] ) ) : '';
 		return $sanitized_data;
 	}
 

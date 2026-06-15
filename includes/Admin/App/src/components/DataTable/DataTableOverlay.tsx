@@ -5,7 +5,6 @@ import { __ } from '@wordpress/i18n';
 import * as Select from '@radix-ui/react-select';
 import Icon from '@/utils/Icon';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
-import OutgoingLinksOverlayTable from '@/components/OutgoingLinks/OutgoingLinksOverlayTable';
 import { PageFilter } from '@/components/Filters/PageFilter';
 import DateRange from '@/components/Statistics/DateRange';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
@@ -27,7 +26,9 @@ const VARIANT_META: Record<string, { label: string; icon: string }> = {
 	products: { label: __( 'Products', 'burst-statistics' ), icon: 'shopping-cart' },
 	subscription_products: { label: __( 'Plan performance', 'burst-statistics' ), icon: 'calendar-sync' },
 	search_terms: { label: __( 'Search terms', 'burst-statistics' ), icon: 'search' },
-	outgoing_links: { label: __( 'Outgoing links', 'burst-statistics' ), icon: 'external-link' }
+	outgoing_links: { label: __( 'Outgoing links', 'burst-statistics' ), icon: 'external-link' },
+	forms: { label: __( 'Forms', 'burst-statistics' ), icon: 'chat' },
+	reading_engagement: { label: __( 'Reading engagement', 'burst-statistics' ), icon: 'page' }
 };
 
 /**
@@ -265,15 +266,11 @@ export const DataTableOverlay: React.FC = () => {
 						{/* Table area — fills remaining space, scrollable. */}
 						<div className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 gap-4">
 							<ErrorBoundary>
-								{ 'outgoing_links' === selectedVariant ? (
-									<OutgoingLinksOverlayTable />
-								) : (
-									<DataTableBlock
-										allowedConfigs={ [ selectedVariant ] }
-										id={ dataTableId }
-										isInOverlay={ true }
-									/>
-								) }
+								<DataTableBlock
+									allowedConfigs={ [ selectedVariant ] }
+									id={ dataTableId }
+									isInOverlay={ true }
+								/>
 							</ErrorBoundary>
 						</div>
 						</div>

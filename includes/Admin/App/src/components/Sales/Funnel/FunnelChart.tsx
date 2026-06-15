@@ -9,6 +9,7 @@ import {
 } from './types';
 import { __, sprintf } from '@wordpress/i18n';
 import { formatNumber, formatPercentage } from '@/utils/formatting';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 /**
  * FunnelChart component to render a funnel chart using Nivo.
@@ -20,6 +21,7 @@ import { formatNumber, formatPercentage } from '@/utils/formatting';
 export const FunnelChart: React.FC<FunnelChartProps> = ({
 	data
 }) => {
+	const isMobile = useIsMobile();
 
 	// Use index-based IDs for consistent animation between data states.
 	// Nivo tracks elements by ID to animate transitions. Using position-based
@@ -119,22 +121,59 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 	return (
 		<div className="border-t border-gray-300">
 			<div
-				className="grid"
-				style={{
-					gridTemplateRows: 'auto 1fr auto',
-					minHeight: '300px'
-				}}
+				className="grid relative"
+				style={
+					isMobile ?
+						{
+
+							// minmax(0, …) keeps tracks shrinkable: a plain fr track's
+							// min-width is the svg's fixed width, which blocks nivo
+							// from ever remeasuring smaller.
+							gridTemplateColumns:
+								'minmax(0, 1fr) minmax(0, 1.5fr)',
+							minHeight: '400px'
+						} :
+						{
+							gridTemplateRows: 'auto 1fr auto',
+							gridTemplateColumns: 'minmax(0, 1fr)',
+							minHeight: '300px'
+						}
+				}
 			>
-				{/* Step labels - top layer */}
+				{/* Full-width row separators on mobile. The chart svg is confined
+				    to its grid column, so these are drawn over the whole grid at
+				    the funnel's band boundaries: bands are (100% - spacing *
+				    (n - 1)) / n tall with 4px spacing, matching the labels
+				    column (repeat(n, 1fr) + gap-1). */}
+				{isMobile &&
+					statistics.slice( 0, -1 ).map( ( _, index ) => (
+						<div
+							key={index}
+							className="absolute pointer-events-none"
+							style={{
+								left: 0,
+								right: 0,
+								height: 1,
+								background: 'var(--color-gray-400)',
+								top: `calc(${index + 1} * (100% - ${
+									( statistics.length - 1 ) * 4
+								}px) / ${statistics.length} + ${
+									( index + 1 ) * 4 - 2
+								}px)`
+							}}
+						/>
+					) )}
+
+				{/* Step labels - top layer on desktop, left column on mobile */}
 				<div style={{ gridRow: '1', gridColumn: '1' }}>
-					<FunnelStepLabels steps={statistics} />
+					<FunnelStepLabels steps={statistics} isMobile={isMobile} />
 				</div>
 
 				{/* Funnel chart - middle layer, spans all rows, inverted */}
 				<div
 					style={{
-						gridRow: '1 / -1',
-						gridColumn: '1',
+						gridRow: isMobile ? '1' : '1 / -1',
+						gridColumn: isMobile ? '2' : '1',
 						zIndex: 0,
 						height: '100%',
 						pointerEvents: hasData ? 'auto' : 'none'
@@ -159,10 +198,10 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 						}}
 						labelColor="var(--color-text-black)"
 						shapeBlending={0.35}
-						direction="horizontal"
+						direction={isMobile ? 'vertical' : 'horizontal'}
 						enableLabel={false}
-						enableBeforeSeparators={true}
-						enableAfterSeparators={true}
+						enableBeforeSeparators={! isMobile}
+						enableAfterSeparators={! isMobile}
 						beforeSeparatorLength={hasData ? 50 : 150}
 						afterSeparatorLength={hasData ? 70 : 170}
 						borderWidth={0}
@@ -264,17 +303,19 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 					/>
 				</div>
 
-				{/* Step statistics - top layer above funnel */}
-				<div
-					style={{
-						gridRow: '3',
-						gridColumn: '1',
-						zIndex: 1,
-						pointerEvents: 'none'
-					}}
-				>
-					<FunnelStepStatistics steps={statistics} />
-				</div>
+				{/* Step statistics - top layer above funnel, desktop only */}
+				{! isMobile && (
+					<div
+						style={{
+							gridRow: '3',
+							gridColumn: '1',
+							zIndex: 1,
+							pointerEvents: 'none'
+						}}
+					>
+						<FunnelStepStatistics steps={statistics} />
+					</div>
+				)}
 			</div>
 		</div>
 	);

@@ -49,9 +49,6 @@ class Abilities_Api {
 		if ( self::is_enabled() ) {
 			add_action( 'rest_api_init', [ $this, 'register_chat_rest_routes' ], 9 );
 			add_filter( 'burst_do_action', [ $this, 'handle_ajax_chat_actions' ], 10, 3 );
-		}
-
-		if ( function_exists( 'wp_register_ability' ) && self::is_enabled() ) {
 			add_action( 'wp_abilities_api_categories_init', [ self::class, 'register_category' ] );
 			add_action( 'wp_abilities_api_init', [ self::class, 'register' ] );
 			add_action( 'abilities_api_init', [ self::class, 'register' ] );
@@ -444,7 +441,7 @@ class Abilities_Api {
 						],
 						'datatable_id' => [
 							'type'        => 'string',
-							'enum'        => [ 'statistics_pages', 'statistics_parameters', 'statistics_referrers', 'sources_countries', 'sources_campaigns', 'sales_products', 'subscription_products', 'sources_referrers' ],
+							'enum'        => [ 'statistics_pages', 'statistics_parameters', 'statistics_referrers', 'sources_countries', 'sources_campaigns', 'sales_products', 'subscription_products', 'sources_referrers', 'outgoing-links', 'search-terms', 'forms' ],
 							'description' => 'Datatable endpoint ID, for example statistics_pages. Required when type is datatable.',
 						],
 						'date_start'   => [
@@ -965,13 +962,53 @@ class Abilities_Api {
 			return $admin;
 		}
 
-		$date_start = isset( $input['date_start'] ) ? absint( $input['date_start'] ) : 0;
-		$date_end   = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
-		$metrics    = isset( $input['metrics'] ) ? (array) $input['metrics'] : [ 'pageviews' ];
-		$filters    = isset( $input['filters'] ) ? (array) $input['filters'] : [];
-		$group_by   = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'page_url' ];
-		$group_by   = $this->normalize_group_by( $group_by );
-		$interval   = $this->normalize_insights_interval( $input['interval'] ?? null );
+		$date_start   = isset( $input['date_start'] ) ? absint( $input['date_start'] ) : 0;
+		$date_end     = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
+		$datatable_id = isset( $input['datatable_id'] ) ? sanitize_title( (string) $input['datatable_id'] ) : '';
+
+		$default_group_by_map = [
+			'statistics_pages'      => [ 'page_url' ],
+			'statistics_parameters' => [ 'parameter' ],
+			'statistics_referrers'  => [ 'referrer' ],
+			'sources_countries'     => [ 'country_code' ],
+			'sources_campaigns'     => [ 'campaign' ],
+			'sales_products'        => [ 'product' ],
+			'subscription_products' => [ 'plan' ],
+			'sources_referrers'     => [ 'referrer' ],
+			'outgoing-links'        => [ 'url' ],
+			'search-terms'          => [ 'term' ],
+			'forms'                 => [ 'form_id' ],
+		];
+
+		$default_metrics_map = [
+			'statistics_pages'      => [ 'pageviews', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page' ],
+			'statistics_parameters' => [ 'visitors', 'sessions', 'bounce_rate' ],
+			'statistics_referrers'  => [ 'visitors', 'sessions', 'bounce_rate' ],
+			'sources_countries'     => [ 'visitors', 'sessions', 'bounce_rate' ],
+			'sources_campaigns'     => [ 'visitors', 'bounce_rate' ],
+			'sales_products'        => [ 'sales', 'revenue' ],
+			'subscription_products' => [ 'active_subscribers', 'monthly_recurring_revenue' ],
+			'sources_referrers'     => [ 'visitors', 'sessions', 'bounce_rate' ],
+			'outgoing-links'        => [ 'clicks', 'previous_clicks' ],
+			'search-terms'          => [ 'volume', 'results' ],
+			'forms'                 => [ 'submissions', 'pageviews', 'conversion_rate' ],
+		];
+
+		$default_group_by = [ 'page_url' ];
+		if ( 'datatable' === $type && isset( $default_group_by_map[ $datatable_id ] ) ) {
+			$default_group_by = $default_group_by_map[ $datatable_id ];
+		}
+
+		$default_metrics = [ 'pageviews' ];
+		if ( 'datatable' === $type && isset( $default_metrics_map[ $datatable_id ] ) ) {
+			$default_metrics = $default_metrics_map[ $datatable_id ];
+		}
+
+		$metrics  = isset( $input['metrics'] ) ? (array) $input['metrics'] : $default_metrics;
+		$filters  = isset( $input['filters'] ) ? (array) $input['filters'] : [];
+		$group_by = isset( $input['group_by'] ) ? (array) $input['group_by'] : $default_group_by;
+		$group_by = $this->normalize_group_by( $group_by );
+		$interval = $this->normalize_insights_interval( $input['interval'] ?? null );
 
 		// Backward compatibility: if interval is omitted and callers used group_by
 		// for insights, honor the first value as interval hint.
@@ -997,7 +1034,6 @@ class Abilities_Api {
 				);
 				return $this->format_agent_insights_response( $data, $metrics );
 			} elseif ( 'datatable' === $type ) {
-				$datatable_id = isset( $input['datatable_id'] ) ? sanitize_title( (string) $input['datatable_id'] ) : '';
 				if ( empty( $datatable_id ) ) {
 					return new \WP_Error(
 						'burst_abilities_invalid_input',
@@ -1006,16 +1042,10 @@ class Abilities_Api {
 					);
 				}
 
-				$allow_list = $admin->app->get_datatable_metric_allow_list();
-				if ( ! isset( $allow_list[ $datatable_id ] ) ) {
-					return new \WP_Error(
-						'burst_abilities_unknown_datatable',
-						'Unknown datatable endpoint.',
-						[ 'status' => 404 ]
-					);
+				$metrics = $this->filter_datatable_metrics( $admin, $datatable_id, $metrics, $default_metrics );
+				if ( is_wp_error( $metrics ) ) {
+					return $metrics;
 				}
-
-				$metrics = array_values( array_intersect( $metrics, $allow_list[ $datatable_id ] ) );
 
 				$data = $admin->statistics->get_datatables_data(
 					[
@@ -1320,6 +1350,14 @@ class Abilities_Api {
 				'burst_abilities_unknown_datatable',
 				'Unknown datatable endpoint.',
 				[ 'status' => 404 ]
+			);
+		}
+
+		if ( ! $admin->app->user_can_access_datatable( $datatable_id ) ) {
+			return new \WP_Error(
+				'rest_forbidden',
+				__( 'You do not have sufficient permissions to access this endpoint.', 'burst-statistics' ),
+				[ 'status' => 403 ]
 			);
 		}
 

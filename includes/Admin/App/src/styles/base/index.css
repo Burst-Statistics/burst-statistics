@@ -26,18 +26,25 @@
 @import '../integrations/react-data-table.css';
 
 @layer base {
-	#burst-statistics {
+	input[type=radio] {
+		appearance: none;
+		-webkit-appearance: none;
+		background-color: var(--color-white);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
 	input[type=radio]:checked {
-		position: relative;
+		border-color: var(--color-primary);
 	}
 
 	input[type=radio]:checked::before {
 		content: "";
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-				margin: 0;
-		}
+		display: block;
+		width: 0.5rem;
+		height: 0.5rem;
+		background-color: var(--color-primary);
+		border-radius: 50%;
 	}
 }

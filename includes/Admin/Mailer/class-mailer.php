@@ -460,7 +460,7 @@ class Mailer {
 
 		$this->set_pretty_domain( preg_replace( '/^https?:\/\//', '', home_url() ) )
 			->set_logo( BURST_URL . 'assets/img/burst-email-logo.png' )
-			->set_logo_dark( BURST_URL . 'assets/img/burst-email-logo-dark-mode.png' );
+			->set_logo_dark( BURST_URL . 'assets/img/burst-email-logo-dark.png' );
 
 		$introduction_enabled = (bool) apply_filters( 'burst_email_introduction_enabled', false );
 		$this->set_introduction( $introduction_enabled ? (string) burst_get_option( 'email_introduction', '' ) : '' );
@@ -590,18 +590,25 @@ class Mailer {
 	 * Send an e-mail to all recipients
 	 */
 	public function send_mail_queue(): void {
+		self::error_log( "Report email: start send_mail_queue for report $this->report_id, queue $this->queue_id, batch $this->batch_id. Total recipients: " . count( $this->to ) . ", batch size: $this->batch_size." );
+
 		if ( Report_Logs::instance()->queue_exists( $this->report_id, $this->queue_id, $this->batch_id ) ) {
-			self::error_log( "Batch $this->batch_id for queue $this->queue_id already processed. Skipping." );
+			self::error_log( "Report email: batch $this->batch_id for queue $this->queue_id already processed. Skipping." );
 			return;
 		}
 
 		$offset = ( $this->batch_id - 1 ) * $this->batch_size;
 
-		foreach ( array_slice( $this->to, $offset, $this->batch_size ) as $email ) {
+		$batch_recipients = array_slice( $this->to, $offset, $this->batch_size );
+		self::error_log( 'Report email: processing ' . count( $batch_recipients ) . " recipient(s) in batch $this->batch_id (offset $offset)." );
+
+		foreach ( $batch_recipients as $email ) {
 			$this->send_mail( $email );
 		}
 
 		$total = $this->sent_count + $this->failed_count;
+
+		self::error_log( "Report email: batch $this->batch_id finished. Sent: $this->sent_count, failed: $this->failed_count, total processed: $total." );
 
 		if ( $total > 0 ) {
 			if ( $this->sent_count === $total ) {
@@ -621,6 +628,8 @@ class Mailer {
 				);
 			}
 
+			self::error_log( "Report email: logging batch $this->batch_id result with status '$status': $message" );
+
 			Report_Logs::instance()->insert_log(
 				$this->report_id,
 				$this->queue_id,
@@ -628,6 +637,8 @@ class Mailer {
 				$status,
 				$message
 			);
+		} else {
+			self::error_log( "Report email: no emails were processed in batch $this->batch_id (recipient list empty or fully sliced away)." );
 		}
 
 		if ( $this->should_schedule_batch_sending() ) {
@@ -639,6 +650,8 @@ class Mailer {
 					'burst_send_email_batch',
 					[ $this->report_id, $this->queue_id, $this->batch_id ]
 				);
+			} else {
+				self::error_log( "Report email: next batch $this->batch_id for queue $this->queue_id is already scheduled, not rescheduling." );
 			}
 		} else {
 			Report_Logs::instance()->finalize_queue_status(
@@ -654,7 +667,10 @@ class Mailer {
 	 * Send an e-mail with the correct login URL
 	 */
 	public function send_mail( string $email ): bool {
+		self::error_log( 'Report email: send_mail called for recipient.' );
+
 		if ( ! is_email( $email ) ) {
+			self::error_log( 'Report email is not a valid email address, skipping.' );
 			$this->set_failed_count( ++$this->failed_count )
 				->set_errors(
 					[
@@ -665,6 +681,7 @@ class Mailer {
 		}
 
 		if ( ! $this->check_email_domain( $email ) ) {
+			self::error_log( "Report email: domain check failed for '$email', skipping." );
 			$this->set_failed_count( ++$this->failed_count )
 				->set_errors(
 					[
@@ -675,6 +692,8 @@ class Mailer {
 		}
 
 		add_action( 'wp_mail_failed', [ $this, 'log_mailer_errors' ] );
+
+		self::error_log( "Report email: calling wp_mail() for '$email' with subject '" . sanitize_text_field( $this->subject ) . "'." );
 
 		$sent = wp_mail(
 			$email,
@@ -688,6 +707,7 @@ class Mailer {
 		if ( $sent ) {
 			$this->set_sent_count( ++$this->sent_count );
 		} else {
+			self::error_log( "Report email: wp_mail() returned false for '$email'. See preceding wp_mail_failed log for the reason." );
 			$this->set_failed_count( ++$this->failed_count );
 		}
 
@@ -700,6 +720,7 @@ class Mailer {
 	 * @param \WP_Error $error Error object.
 	 */
 	public function log_mailer_errors( \WP_Error $error ): void {
+		self::error_log( 'Report email: wp_mail_failed fired with error: ' . $error->get_error_message() );
 		$this->set_errors(
 			[
 				'mailer_error' => [ $error->get_error_message() ],
@@ -876,7 +897,6 @@ class Mailer {
 			return true;
 		}
 
-		self::error_log( "$domain does not respond on check" );
 		return false;
 	}
 }

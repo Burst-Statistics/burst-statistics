@@ -3,6 +3,7 @@ namespace Burst\Frontend;
 
 use Burst\Frontend\Goals\Goals;
 use Burst\Frontend\Goals\Goals_Tracker;
+use Burst\Frontend\Search\Search;
 use Burst\Frontend\Share\Share_Expired;
 use Burst\Frontend\Tracking\Tracking;
 use Burst\Traits\Admin_Helper;
@@ -50,6 +51,9 @@ class Frontend {
 		if ( ! is_admin() || wp_doing_ajax() ) {
 			$goals_tracker = new Goals_Tracker();
 			$goals_tracker->init();
+
+			$search = new Search();
+			$search->init();
 		}
 
 		// Check if shortcodes option is enabled.

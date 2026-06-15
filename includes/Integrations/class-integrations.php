@@ -34,6 +34,11 @@ class Integrations {
 			return $this->should_load_ecommerce;
 		}
 
+		if ( $this->is_mainwp_request() ) {
+			$this->should_load_ecommerce = true;
+			return $this->should_load_ecommerce;
+		}
+
 		$this->should_load_ecommerce = false;
 		foreach ( $this->integrations as $plugin => $details ) {
 			if ( isset( $details['load_ecommerce_integration'] ) && $details['load_ecommerce_integration'] && $this->plugin_is_active( $plugin ) ) {
@@ -55,6 +60,12 @@ class Integrations {
 		if ( $this->should_load_subscriptions !== null ) {
 			return $this->should_load_subscriptions;
 		}
+
+		if ( $this->is_mainwp_request() ) {
+			$this->should_load_subscriptions = true;
+			return $this->should_load_subscriptions;
+		}
+
 		$this->should_load_subscriptions = (bool) apply_filters( 'burst_subscription_integrations_enabled', false );
 		return $this->should_load_subscriptions;
 	}

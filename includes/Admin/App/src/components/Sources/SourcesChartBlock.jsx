@@ -207,7 +207,7 @@ const SourcesChartBlock = ( props ) => {
 	);
 
 	return (
-		<Block className="row-span-2 lg:col-span-12 xl:col-span-9">
+		<Block className="row-span-2 @lg:col-span-12 @xl:col-span-9">
 			<BlockHeading
 				title={ __( 'Sources over time', 'burst-statistics' ) }
 				isReport={ isReport }

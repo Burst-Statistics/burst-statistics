@@ -1,7 +1,7 @@
 <?php
 namespace Burst\Frontend;
 
-use Burst\Admin\Statistics\Query_Data;
+use Burst\Admin\Statistics\Statistics_Query;
 use Burst\Traits\Helper;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -314,18 +314,13 @@ class Shortcodes {
 		);
 
 		try {
-			$qd = new Query_Data(
-				'shortcode_' . sanitize_key( $atts['type'] ),
-				[
-					'date_start' => $start,
-					'date_end'   => $end,
-					'select'     => $query_args['select'],
-					'filters'    => $query_args['filters'],
-					'group_by'   => $query_args['group_by'],
-					'order_by'   => $query_args['order_by'],
-					'limit'      => $query_args['limit'],
-				]
-			);
+			$qd = Statistics_Query::create( 'shortcode_' . sanitize_key( $atts['type'] ) )
+				->date_range( $start, $end )
+				->select( $query_args['select'] )
+				->filters( $query_args['filters'] )
+				->group_by( $query_args['group_by'] )
+				->order_by( $query_args['order_by'] )
+				->limit( $query_args['limit'] );
 			// Use our frontend statistics query builder.
 			$sql = $this->statistics->generate_statistics_query( $qd );
 
@@ -470,8 +465,8 @@ class Shortcodes {
 		// Apply format.
 		if ( $atts['format'] === 'text' ) {
 			// Get metric labels from our Frontend_Statistics class.
-			$query_data    = new Query_Data( 'shortcode_metric_labels' );
-			$metric_labels = $query_data->get_allowed_metrics_labels();
+			$query_data    = new Statistics_Query( 'shortcode_metric_labels' );
+			$metric_labels = $query_data->get_allowlist()->metric_labels();
 			$metric_label  = isset( $metric_labels[ $atts['type'] ] ) ? $metric_labels[ $atts['type'] ] : '';
 			$output        = sprintf(
 				'<p class="burst-statistics-text burst-statistics-%s">%s: %s</p>',

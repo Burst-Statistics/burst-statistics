@@ -73,7 +73,7 @@ export const Steps = () => {
 						</div>
 
 						{idx < steps.length - 1 && (
-							<div className="md:block h-0.5 w-full mx-5 bg-gray-300 rounded-xs" />
+							<div className="@md:block h-0.5 w-full mx-5 bg-gray-300 rounded-xs" />
 						)}
 					</React.Fragment>
 				);

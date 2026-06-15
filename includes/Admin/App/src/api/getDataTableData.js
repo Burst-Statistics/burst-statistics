@@ -5,7 +5,8 @@ import {
 	formatTime,
 	getCountryName,
 	getContinentName,
-	formatCurrency, formatCurrencyCompact
+	formatCurrency, formatCurrencyCompact,
+	truncateMiddle
 } from '@/utils/formatting';
 import Flag from '@/components/Statistics/Flag';
 import ClickToFilter from '@/components/Common/ClickToFilter';
@@ -27,7 +28,10 @@ const FORMATS = {
 	REFERRER: 'referrer',
 	FLOAT: 'float',
 	CURRENCY: 'currency',
-	SEARCH_RESULTS: 'search_results'
+	SEARCH_RESULTS: 'search_results',
+	STRING: 'string',
+	EXTERNAL_LINK: 'external_link',
+	FORM_TITLE: 'form_title'
 };
 
 // Memoized filter components - created once, reused everywhere
@@ -160,7 +164,66 @@ const COLUMN_FORMATTERS = {
 	[FORMATS.CURRENCY]: ( value ) => <CurrencyValue value={value} />,
 	[FORMATS.SEARCH_RESULTS]: ( value, _columnId, row ) => (
 		<SearchResultsCell value={value} term={ row?.term } />
-	)
+	),
+	[FORMATS.STRING]: ( value ) => value,
+	[FORMATS.EXTERNAL_LINK]: ( value ) => {
+		let display = value;
+		try {
+			const parsed = new URL( value );
+			display = parsed.hostname + ( '/' !== parsed.pathname ? parsed.pathname : '' );
+		} catch {
+
+			// Fall back to the raw URL if parsing fails.
+		}
+
+		return (
+			<a
+				href={ value }
+				target="_blank"
+				rel="noopener noreferrer"
+				className="inline-flex items-center gap-1 text-text-black hover:text-blue-600 transition-colors"
+				title={ value }
+			>
+				<span>{ truncateMiddle( display, 44 ) }</span>
+				<Icon name="external-link" size={ 11 } color="gray" className="shrink-0" />
+			</a>
+		);
+	},
+	[FORMATS.FORM_TITLE]: ( value, _columnId, row ) => {
+		const submissionsUrl = row?.submissions_url;
+		const providerLabel = row?.form_provider_label;
+
+		const titleContent = submissionsUrl ? (
+			<a
+				href={ submissionsUrl }
+				target="_blank"
+				rel="noopener noreferrer"
+				className="inline-flex items-center gap-1 text-text-black hover:text-blue-600 transition-colors font-medium min-w-0"
+				title={ value }
+			>
+				<span className="truncate">{ value }</span>
+				<Icon name="external-link" size={ 11 } color="gray" className="shrink-0" />
+			</a>
+		) : (
+			<span
+				className="block truncate font-medium text-text-black"
+				title={ value }
+			>
+				{ value }
+			</span>
+		);
+
+		return (
+			<span className="flex flex-col min-w-0">
+				{ titleContent }
+				{ providerLabel && (
+					<span className="text-xs text-text-gray truncate">
+						{ providerLabel }
+					</span>
+				) }
+			</span>
+		);
+	}
 };
 
 /**

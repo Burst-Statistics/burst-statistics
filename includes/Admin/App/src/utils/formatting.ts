@@ -11,6 +11,8 @@ import {
 	startOfMonth,
 	startOfYear
 } from 'date-fns';
+import type { Locale } from 'date-fns';
+import enUS from 'date-fns/locale/en-US';
 import { __ } from '@wordpress/i18n';
 
 /**
@@ -26,7 +28,15 @@ declare const burst_settings: {
 	continents: Record<string, string>;
 	burst_date_picker_start_date?: number | string;
 	burst_activation_time?: number | string;
+	locale?: string;
 	[key: string]: unknown;
+};
+
+const getLocale = (): string | undefined => {
+	if ( 'undefined' !== typeof burst_settings && burst_settings.locale ) {
+		return burst_settings.locale;
+	}
+	return undefined;
 };
 
 /** Units supported by `getRelativeTime`, in descending order of size. */
@@ -272,7 +282,7 @@ const formatUnixToDate = ( unixTimestamp: number ): string => {
 const formatUnixToTime = ( unixTimestamp: number ): string => {
 	const date = new Date( unixTimestamp * 1000 );
 
-	return new Intl.DateTimeFormat( undefined, {
+	return new Intl.DateTimeFormat( getLocale(), {
 		timeZone: getWpTimezone(),
 		timeStyle: 'short'
 	}).format( date );
@@ -426,7 +436,7 @@ function formatNumber( value: number | string, decimals: number = 1, compact: bo
 		options.compactDisplay = 'short';
 	}
 
-	return new Intl.NumberFormat( undefined, options ).format( numeric );
+	return new Intl.NumberFormat( getLocale(), options ).format( numeric );
 }
 
 /**
@@ -448,7 +458,7 @@ function formatPercentage( value: number | string, decimals: number = 1 ): strin
 		return '<0.1%';
 	}
 
-	return new Intl.NumberFormat( undefined, {
+	return new Intl.NumberFormat( getLocale(), {
 		style: 'percent',
 		maximumFractionDigits: decimals
 	}).format( numeric / 100 );
@@ -547,28 +557,36 @@ export const BURST_START_DATE: Date = getBurstStartDate();
 
 const availableRanges = {
 	today: {
-		label: __( 'Today', 'burst-statistics' ),
+		get label() {
+			return __( 'Today', 'burst-statistics' );
+		},
 		range: () => ({
 			startDate: startOfDay( currentDateWithOffset ),
 			endDate: endOfDay( currentDateWithOffset )
 		})
 	} as RangeDefinition,
 	yesterday: {
-		label: __( 'Yesterday', 'burst-statistics' ),
+		get label() {
+			return __( 'Yesterday', 'burst-statistics' );
+		},
 		range: () => ({
 			startDate: startOfDay( addDays( currentDateWithOffset, -1 ) ),
 			endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
 		})
 	} as RangeDefinition,
 	'last-7-days': {
-		label: __( 'Last 7 days', 'burst-statistics' ),
+		get label() {
+			return __( 'Last 7 days', 'burst-statistics' );
+		},
 		range: () => ({
 			startDate: startOfDay( addDays( currentDateWithOffset, -7 ) ),
 			endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
 		})
 	} as RangeDefinition,
 	'last-week': {
-		label: __( 'Last week', 'burst-statistics' ),
+		get label() {
+			return __( 'Last week', 'burst-statistics' );
+		},
 		range: () => {
 			const daysFromSunday = currentDateWithOffset.getDay();
 			const startOfThisWeek = addDays( currentDateWithOffset, -daysFromSunday );
@@ -579,28 +597,36 @@ const availableRanges = {
 		}
 	} as RangeDefinition,
 	'last-30-days': {
-		label: __( 'Last 30 days', 'burst-statistics' ),
+		get label() {
+			return __( 'Last 30 days', 'burst-statistics' );
+		},
 		range: () => ({
 			startDate: startOfDay( addDays( currentDateWithOffset, -30 ) ),
 			endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
 		})
 	} as RangeDefinition,
 	'last-90-days': {
-		label: __( 'Last 90 days', 'burst-statistics' ),
+		get label() {
+			return __( 'Last 90 days', 'burst-statistics' );
+		},
 		range: () => ({
 			startDate: startOfDay( addDays( currentDateWithOffset, -90 ) ),
 			endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
 		})
 	} as RangeDefinition,
 	'last-month': {
-		label: __( 'Last month', 'burst-statistics' ),
+		get label() {
+			return __( 'Last month', 'burst-statistics' );
+		},
 		range: () => ({
 			startDate: startOfMonth( addMonths( currentDateWithOffset, -1 ) ),
 			endDate: endOfMonth( addMonths( currentDateWithOffset, -1 ) )
 		})
 	} as RangeDefinition,
 	'week-to-date': {
-		label: __( 'Week to date', 'burst-statistics' ),
+		get label() {
+			return __( 'Week to date', 'burst-statistics' );
+		},
 		range: () => ({
 			startDate: startOfDay(
 				addDays( currentDateWithOffset, -currentDateWithOffset.getDay() )
@@ -609,28 +635,36 @@ const availableRanges = {
 		})
 	} as RangeDefinition,
 	'month-to-date': {
-		label: __( 'Month to date', 'burst-statistics' ),
+		get label() {
+			return __( 'Month to date', 'burst-statistics' );
+		},
 		range: () => ({
 			startDate: startOfMonth( currentDateWithOffset ),
 			endDate: endOfDay( currentDateWithOffset )
 		})
 	} as RangeDefinition,
 	'year-to-date': {
-		label: __( 'Year to date', 'burst-statistics' ),
+		get label() {
+			return __( 'Year to date', 'burst-statistics' );
+		},
 		range: () => ({
 			startDate: startOfYear( currentDateWithOffset ),
 			endDate: endOfDay( currentDateWithOffset )
 		})
 	} as RangeDefinition,
 	'last-year': {
-		label: __( 'Last year', 'burst-statistics' ),
+		get label() {
+			return __( 'Last year', 'burst-statistics' );
+		},
 		range: () => ({
 			startDate: startOfYear( addYears( currentDateWithOffset, -1 ) ),
 			endDate: endOfYear( addYears( currentDateWithOffset, -1 ) )
 		})
 	} as RangeDefinition,
 	'all-time': {
-		label: __( 'All time', 'burst-statistics' ),
+		get label() {
+			return __( 'All time', 'burst-statistics' );
+		},
 		range: () => ({
 			startDate: BURST_START_DATE,
 			endDate: endOfDay( currentDateWithOffset )
@@ -776,7 +810,7 @@ function createValueFormatter(
  * @return The formatted currency string.
  */
 function formatCurrency( currency: string, value: number ): string {
-	return new Intl.NumberFormat( undefined, {
+	return new Intl.NumberFormat( getLocale(), {
 		style: 'currency',
 		currency,
 		maximumFractionDigits: 2,
@@ -798,7 +832,7 @@ function formatCurrencyCompact(
 	value: number,
 	args: Intl.NumberFormatOptions = {}
 ): string {
-	return new Intl.NumberFormat( undefined, {
+	return new Intl.NumberFormat( getLocale(), {
 		style: 'currency',
 		currency,
 		notation: 'compact',
@@ -828,7 +862,7 @@ function formatDate( dateInput: string | number | Date | null | undefined, remov
 			return '';
 		}
 
-		return new Intl.DateTimeFormat( undefined, {
+		return new Intl.DateTimeFormat( getLocale(), {
 			month: 'long',
 			day: 'numeric',
 			year: removeYear ? undefined : 'numeric'
@@ -857,7 +891,7 @@ function formatDateAndTime( dateInput: string | number | Date | null | undefined
 			return '';
 		}
 
-		return new Intl.DateTimeFormat( undefined, {
+		return new Intl.DateTimeFormat( getLocale(), {
 			month: 'long',
 			day: 'numeric',
 			year: 'numeric',
@@ -889,7 +923,7 @@ function formatDateShort( dateInput: string | number | Date | null | undefined )
 			return '';
 		}
 
-		return new Intl.DateTimeFormat( undefined, {
+		return new Intl.DateTimeFormat( getLocale(), {
 			month: 'short',
 			day: 'numeric',
 			year: 'numeric'
@@ -995,6 +1029,94 @@ function getWpTimezone(): string {
 	return 'UTC';
 }
 
+/** Maps date-fns localize widths to their `Intl.DateTimeFormat` equivalents. */
+const INTL_MONTH_WIDTHS: Record<string, 'narrow' | 'short' | 'long'> = {
+	narrow: 'narrow',
+	abbreviated: 'short',
+	wide: 'long'
+};
+
+const INTL_DAY_WIDTHS: Record<string, 'narrow' | 'short' | 'long'> = {
+	narrow: 'narrow',
+	short: 'short',
+	abbreviated: 'short',
+	wide: 'long'
+};
+
+let datePickerLocale: Locale | undefined;
+
+/**
+ * Returns a date-fns `Locale` for the current WordPress locale, with month and
+ * weekday names generated by `Intl.DateTimeFormat`. `react-date-range` only
+ * accepts date-fns locale objects; basing the result on `enUS` (already
+ * bundled by the library) keeps the non-display fields (`match`, `formatLong`,
+ * ordinals) intact without shipping every date-fns locale.
+ *
+ * @return Locale object for the `locale` prop of `react-date-range`.
+ */
+const getDatePickerLocale = (): Locale => {
+	if ( datePickerLocale ) {
+		return datePickerLocale;
+	}
+
+	const locale = getLocale();
+
+	const monthName = (
+		monthIndex: number,
+		width: 'narrow' | 'short' | 'long',
+		formatting: boolean
+	): string => {
+		const date = new Date( 2021, monthIndex, 15 );
+
+		// Inside full dates (`MMMM` tokens) some languages decline the month
+		// name; `formatToParts` on a complete date returns that form.
+		if ( formatting ) {
+			return (
+				new Intl.DateTimeFormat( locale, { day: 'numeric', month: width })
+					.formatToParts( date )
+					.find( ( part ) => 'month' === part.type )?.value ?? ''
+			);
+		}
+
+		return new Intl.DateTimeFormat( locale, { month: width }).format( date );
+	};
+
+	// August 1st 2021 is a Sunday; date-fns day indexes also start on Sunday.
+	const dayName = ( dayIndex: number, width: 'narrow' | 'short' | 'long' ): string =>
+		new Intl.DateTimeFormat( locale, { weekday: width }).format(
+			new Date( 2021, 7, 1 + dayIndex )
+		);
+
+	// Follow the WordPress "Week Starts On" setting, like other WP calendars.
+	const { l10n } = getSettings() as { l10n?: { startOfWeek?: number } };
+	const wpStartOfWeek = Number( l10n?.startOfWeek );
+
+	const built: Locale = {
+		...enUS,
+		code: locale ?? enUS.code,
+		localize: {
+			...( enUS.localize as NonNullable<Locale['localize']> ),
+			month: ( monthIndex: number, options?: { width?: string; context?: string }) =>
+				monthName(
+					monthIndex,
+					INTL_MONTH_WIDTHS[options?.width ?? 'wide'] ?? 'long',
+					'formatting' === options?.context
+				),
+			day: ( dayIndex: number, options?: { width?: string }) =>
+				dayName( dayIndex, INTL_DAY_WIDTHS[options?.width ?? 'wide'] ?? 'long' )
+		},
+		options: {
+			...enUS.options,
+			weekStartsOn: ( isNaN( wpStartOfWeek ) ?
+				enUS.options?.weekStartsOn ?? 0 :
+				wpStartOfWeek ) as 0 | 1 | 2 | 3 | 4 | 5 | 6
+		}
+	};
+
+	datePickerLocale = built;
+	return built;
+};
+
 /**
  * Formats a Unix timestamp as a short label for chart x-axis ticks.
  * Uses the WordPress site timezone so labels match server-side grouping.
@@ -1014,10 +1136,10 @@ function formatAxisLabel(
 
 	switch ( interval ) {
 		case 'hour':
-			return new Intl.DateTimeFormat( undefined, { timeZone, hour: 'numeric' }).format( date );
+			return new Intl.DateTimeFormat( getLocale(), { timeZone, hour: 'numeric' }).format( date );
 
 		case 'day':
-			return new Intl.DateTimeFormat( undefined, {
+			return new Intl.DateTimeFormat( getLocale(), {
 				timeZone,
 				weekday: 'short',
 				day: 'numeric'
@@ -1026,27 +1148,27 @@ function formatAxisLabel(
 		case 'week':
 
 			// Show the week-start date; a compact day + short month is most readable.
-			return new Intl.DateTimeFormat( undefined, {
+			return new Intl.DateTimeFormat( getLocale(), {
 				timeZone,
 				day: 'numeric',
 				month: 'short'
 			}).format( date );
 
 		case 'month':
-			return new Intl.DateTimeFormat( undefined, {
+			return new Intl.DateTimeFormat( getLocale(), {
 				timeZone,
 				month: 'short',
 				...( spansMultipleYears ? { year: '2-digit' as const } : {})
 			}).format( date );
 
 		case 'year':
-			return new Intl.DateTimeFormat( undefined, {
+			return new Intl.DateTimeFormat( getLocale(), {
 				timeZone,
 				year: 'numeric'
 			}).format( date );
 
 		default:
-			return new Intl.DateTimeFormat( undefined, { timeZone, dateStyle: 'short' }).format( date );
+			return new Intl.DateTimeFormat( getLocale(), { timeZone, dateStyle: 'short' }).format( date );
 	}
 }
 
@@ -1067,7 +1189,7 @@ function formatTooltipLabel(
 
 	switch ( interval ) {
 		case 'hour':
-			return new Intl.DateTimeFormat( undefined, {
+			return new Intl.DateTimeFormat( getLocale(), {
 				timeZone,
 				weekday: 'short',
 				day: 'numeric',
@@ -1078,7 +1200,7 @@ function formatTooltipLabel(
 			}).format( date );
 
 		case 'day':
-			return new Intl.DateTimeFormat( undefined, {
+			return new Intl.DateTimeFormat( getLocale(), {
 				timeZone,
 				weekday: 'long',
 				day: 'numeric',
@@ -1090,7 +1212,7 @@ function formatTooltipLabel(
 
 			// Show the full week range: start date – end date (week start + 6 days).
 			const weekEnd = new Date( ( timestamp + 6 * 24 * 60 * 60 ) * 1000 );
-			const fmt = new Intl.DateTimeFormat( undefined, {
+			const fmt = new Intl.DateTimeFormat( getLocale(), {
 				timeZone,
 				day: 'numeric',
 				month: 'short',
@@ -1100,20 +1222,20 @@ function formatTooltipLabel(
 		}
 
 		case 'month':
-			return new Intl.DateTimeFormat( undefined, {
+			return new Intl.DateTimeFormat( getLocale(), {
 				timeZone,
 				month: 'long',
 				year: 'numeric'
 			}).format( date );
 
 		case 'year':
-			return new Intl.DateTimeFormat( undefined, {
+			return new Intl.DateTimeFormat( getLocale(), {
 				timeZone,
 				year: 'numeric'
 			}).format( date );
 
 		default:
-			return new Intl.DateTimeFormat( undefined, { timeZone, dateStyle: 'long' }).format( date );
+			return new Intl.DateTimeFormat( getLocale(), { timeZone, dateStyle: 'long' }).format( date );
 	}
 }
 
@@ -1168,6 +1290,7 @@ export {
 	formatUnixToTime,
 	formatDuration,
 	getWpTimezone,
+	getDatePickerLocale,
 	formatAxisLabel,
 	formatTooltipLabel,
 	getChartXAxisTickValues,

@@ -31,6 +31,10 @@ trait Admin_Helper {
 			return burst_loader()->user_can_view;
 		}
 
+		if ( $this->is_mainwp_request() && current_user_can( 'view_burst_statistics' ) ) {
+			return burst_loader()->user_can_view = true;
+		}
+
 		if ( ! is_user_logged_in() ) {
 			return burst_loader()->user_can_view = false;
 		}
@@ -64,6 +68,10 @@ trait Admin_Helper {
 	protected function user_can_view_sales(): bool {
 		if ( isset( burst_loader()->user_can_view_sales ) ) {
 			return burst_loader()->user_can_view_sales;
+		}
+
+		if ( $this->is_mainwp_request() && current_user_can( 'view_burst_statistics' ) ) {
+			return burst_loader()->user_can_view_sales = true;
 		}
 
 		if ( ! is_user_logged_in() ) {
@@ -217,24 +225,16 @@ trait Admin_Helper {
 			}
 		}
 
+		if ( $this->is_mainwp_request() ) {
+			return burst_loader()->has_admin_access = true;
+		}
+
 		if (
 			self::is_burst_rest_request_path()
 			&& self::is_http_basic_auth_request()
 			&& self::is_confirmed_application_password_auth()
 		) {
 			return burst_loader()->has_admin_access = true;
-		}
-
-		if ( isset( $_SERVER['HTTP_X_BURSTMAINWP'] ) && $_SERVER['HTTP_X_BURSTMAINWP'] === '1' ) {
-			$mainwp_proxy = new \Burst\Frontend\MainWP_Proxy();
-
-			if ( $mainwp_proxy->is_mainwp_authenticated() ) {
-				return burst_loader()->has_admin_access = true;
-			}
-
-			if ( $mainwp_proxy->is_mainwp_signed_request() ) {
-				return burst_loader()->has_admin_access = true;
-			}
 		}
 
 		return burst_loader()->has_admin_access = false;
@@ -330,6 +330,7 @@ trait Admin_Helper {
 
 				// Localization and internationalization.
 				'json_translations'                    => $js_data['json_translations'],
+				'locale'                               => str_replace( '_', '-', function_exists( 'determine_locale' ) ? determine_locale() : get_locale() ),
 				'date_format'                          => get_option( 'date_format' ),
 				'gmt_offset'                           => get_option( 'gmt_offset' ),
 				'burst_activation_time'                => (int) get_option( 'burst_activation_time', 1640995200 ),
@@ -385,6 +386,10 @@ trait Admin_Helper {
 		// Check if we already have a cached result.
 		if ( isset( burst_loader()->user_can_manage ) ) {
 			return burst_loader()->user_can_manage;
+		}
+
+		if ( $this->is_mainwp_request() && current_user_can( 'manage_burst_statistics' ) ) {
+			return burst_loader()->user_can_manage = true;
 		}
 
 		// Allow access during cron jobs and WP-CLI.
@@ -489,22 +494,65 @@ trait Admin_Helper {
 		}
 
 		$uri = sanitize_url( wp_unslash( $raw_uri ) );
-		return strpos( $uri, '/burst/v1/' ) !== false || strpos( $uri, '%2Fburst%2Fv1%2F' ) !== false;
+
+		// Parse the path and query from URI.
+		$parsed_url = wp_parse_url( $uri );
+		$path       = $parsed_url['path'] ?? '';
+		$query      = $parsed_url['query'] ?? '';
+
+		$burst_namespaces = [ 'burst/v1', 'wp-abilities/v1' ];
+
+		// 1. Check if it's a pretty permalink REST request.
+		$rest_prefix = 'wp-json';
+		if ( function_exists( 'rest_get_url_prefix' ) ) {
+			$rest_prefix = rest_get_url_prefix();
+		}
+
+		foreach ( $burst_namespaces as $namespace ) {
+			if ( $rest_prefix !== '' && strpos( $path, '/' . $rest_prefix . '/' . $namespace ) !== false ) {
+				return true;
+			}
+			if ( strpos( $path, '/wp-json/' . $namespace ) !== false ) {
+				return true;
+			}
+		}
+
+		// 2. Check if it's a query parameter rest route request (for non-pretty permalinks).
+		if ( $query !== '' ) {
+			wp_parse_str( $query, $query_args );
+			$rest_route = $query_args['rest_route'] ?? '';
+			if ( is_string( $rest_route ) && $rest_route !== '' ) {
+				foreach ( $burst_namespaces as $namespace ) {
+					if ( strpos( $rest_route, '/' . $namespace ) === 0 ) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
 	}
 
 	/**
-	 * Confirm that the current Basic Auth request is authenticated via Application Passwords.
+	 * Confirm that the current Basic Auth request is authenticated via Application Passwords
+	 * AND that the authenticated user is allowed to view Burst statistics.
 	 *
 	 * At early bootstrap points the `application_password_did_authenticate` action may
-	 * not have fired yet, so we also perform an explicit validation fallback.
+	 * not have fired yet, so we also perform an explicit validation fallback. In both
+	 * paths the user must hold the `view_burst_statistics` capability before access is granted.
 	 */
 	private static function is_confirmed_application_password_auth(): bool {
 		if ( ! self::is_burst_rest_request_path() ) {
 			return false;
 		}
 
+		// Application Password auth only confirms *which* user is making the request; it does not
+		// verify that user has any Burst capability. Granting Burst admin access purely on a valid
+		// app password would let any logged-in user (e.g. a subscriber) be treated as a trusted
+		// admin/REST caller. Require the Burst view capability so this check also enforces
+		// authorization, not just authentication.
 		if ( (bool) did_action( 'application_password_did_authenticate' ) ) {
-			return true;
+			return current_user_can( 'view_burst_statistics' );
 		}
 
 		if ( ! isset( $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'] ) ) {
@@ -524,7 +572,7 @@ trait Admin_Helper {
 		}
 
 		wp_set_current_user( (int) $validated_user_id );
-		return true;
+		return current_user_can( 'view_burst_statistics' );
 	}
 
 	/**
@@ -622,5 +670,25 @@ trait Admin_Helper {
 			'dependencies'      => $asset_file['dependencies'],
 			'version'           => $asset_file['version'],
 		];
+	}
+
+	/**
+	 * Check if this is a MainWP request.
+	 *
+	 * @return bool True if authenticated via signature/Application Password.
+	 */
+	protected function is_mainwp_request(): bool {
+		if ( isset( burst_loader()->is_mainwp_request ) ) {
+			return burst_loader()->is_mainwp_request;
+		}
+
+		if ( isset( $_SERVER['HTTP_X_BURSTMAINWP'] ) && $_SERVER['HTTP_X_BURSTMAINWP'] === '1' ) {
+			$mainwp_proxy = new \Burst\Frontend\MainWP_Proxy();
+			if ( $mainwp_proxy->is_mainwp_authenticated() || $mainwp_proxy->is_mainwp_signed_request() ) {
+				return burst_loader()->is_mainwp_request = true;
+			}
+		}
+
+		return burst_loader()->is_mainwp_request = false;
 	}
 }

@@ -70,13 +70,13 @@ export const PreviewBlockControls: React.FC<PreviewBlockControlsProps> = ({
 	// Non-editing mode: show block with comment.
 	if ( ! isEditingMode ) {
 		return (
-			<div className="mb-4 grid grid-cols-1 md:grid-cols-12 gap-2 mx-auto">
-                <div className="md:col-span-7">
+			<div className="mb-4 grid grid-cols-1 @md:grid-cols-12 gap-2 mx-auto">
+                <div className="@md:col-span-7">
                     <div className="group relative border border-transparent">
                         {children}
                     </div>
                 </div>
-                <div className="md:col-span-5 flex flex-row items-end gap-2 p-2">
+                <div className="@md:col-span-5 flex flex-row items-end gap-2 p-2">
                     <BlockComment reportBlockIndex={reportBlockIndex} isEditingMode={false} />
                 </div>
             </div>
@@ -103,14 +103,14 @@ export const PreviewBlockControls: React.FC<PreviewBlockControlsProps> = ({
 			aria-pressed={isSelected}
 			aria-label={__( 'Select block to edit settings', 'burst-statistics' )}
 		>
-			<div className="grid grid-cols-1 md:grid-cols-12 gap-3 mx-auto">
-				<div className="md:col-span-7">
+			<div className="grid grid-cols-1 @md:grid-cols-12 gap-3 mx-auto">
+				<div className="@md:col-span-7">
 					<div className="group relative p-1 border border-transparent">
 						{children}
 					</div>
 				</div>
 
-				<div className="md:col-span-5 flex flex-row items-end gap-2 p-1">
+				<div className="@md:col-span-5 flex flex-row items-end gap-2 p-1">
 					<BlockComment reportBlockIndex={reportBlockIndex} isEditingMode={false} />
 				</div>
 			</div>

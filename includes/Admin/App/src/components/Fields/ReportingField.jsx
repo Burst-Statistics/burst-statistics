@@ -202,7 +202,7 @@ const ReportingField = ({ field, fieldState, help, context, ...props }) => {
 				{...props}
 				label=""
 			>
-				<div className="w-full lg:w-4/6 flex flex-col gap-4">
+				<div className="w-full @lg:w-4/6 flex flex-col gap-4">
 					<p className="px-6 text-base text-text-black">
 						{__( 'Share Burst Insights with your team on a schedule that works for them. All reports are generated locally on your site and sent directly to your chosen emails.', 'burst-statistics' )}
 					</p>

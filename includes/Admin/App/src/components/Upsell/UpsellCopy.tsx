@@ -341,7 +341,7 @@ const UpsellCopy: React.FC<UpsellCopyProps> = ({
 						upsellConfig.upgradePlan.licenseInsufficient}
 				</p>
 
-				<div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+				<div className="flex flex-col @sm:flex-row gap-4 justify-center items-center">
 					{! licenseActivated && (
 						<ButtonInput
 							btnVariant="primary"
@@ -375,7 +375,7 @@ const UpsellCopy: React.FC<UpsellCopyProps> = ({
 			className={`mx-auto flex justify-center max-w-3xl gap-8 flex-wrap${className}`}
 		>
 			<div className="text-center">
-				<h2 className="mb-4 text-2xl font-bold leading-tight text-text-black md:text-3xl">
+				<h2 className="mb-4 text-2xl font-bold leading-tight text-text-black @md:text-3xl">
 					{content.title}
 				</h2>
 

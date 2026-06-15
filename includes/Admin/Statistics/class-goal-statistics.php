@@ -6,6 +6,7 @@ use Burst\Frontend\Tracking\Tracking;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
+use Burst\Admin\Database\Query_Executor;
 
 defined( 'ABSPATH' ) || die( 'you do not have access to this page!' );
 
@@ -26,12 +27,14 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 		 * Get live goals data
 		 */
 		public function get_live_goals_count( array $args = [] ): int {
-			global $wpdb;
 			$goal_id = (int) $args['goal_id'];
 			$today   = strtotime( 'today midnight' );
 			$sql     = $this->add_query_timeout_hint( $this->get_goal_completed_count_sql( $goal_id, $today ), $this->get_goal_query_timeout_ms() );
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --get_goal_completed_count_sql returns prepared sql.
-			$val = $wpdb->get_var( $sql );
+			$val     = Query_Executor::create()
+				->fingerprint( 'live_goals_count_' . $goal_id )
+				->cache_ttl( 0 )
+				->single_flight( false )
+				->run( $sql, 'get_var' );
 			return (int) $val ?: 0;
 		}
 
@@ -239,21 +242,29 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 				$goal_url_sql = $goal_url === '' || $goal_url === '*' || $goal->type === 'visits' ? '' : $wpdb->prepare( 'AND statistics.page_url = %s', $goal_url );
 
 				// Query to get top performing page.
-				$top_performer_sql  = $this->get_goal_completed_count_sql( $goal_id );
-				$top_performer_sql  = str_replace( ' AS value FROM ', ' AS value, statistics.page_url AS title FROM ', $top_performer_sql );
-				$top_performer_sql .= ' GROUP BY statistics.page_url ORDER BY value DESC LIMIT 1';
-				$top_performer_sql  = $this->add_query_timeout_hint( $top_performer_sql, $this->get_goal_query_timeout_ms() );
-                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- get_goal_completed_count_sql returns prepared sql.
-				$top_performer_result = $wpdb->get_row( $top_performer_sql );
+				$top_performer_sql    = $this->get_goal_completed_count_sql( $goal_id );
+				$top_performer_sql    = str_replace( ' AS value FROM ', ' AS value, statistics.page_url AS title FROM ', $top_performer_sql );
+				$top_performer_sql   .= ' GROUP BY statistics.page_url ORDER BY value DESC LIMIT 1';
+				$top_performer_sql    = $this->add_query_timeout_hint( $top_performer_sql, $this->get_goal_query_timeout_ms() );
+				$top_performer_result = Query_Executor::create()
+					->fingerprint( 'goal_top_performer_' . $goal_id )
+					->cache_ttl( 30 )
+					->cache_group( 'burst_stats_query_results' )
+					->single_flight( false )
+					->run( $top_performer_sql, 'get_row', 'OBJECT' );
 				if ( $top_performer_result ) {
 					$data['topPerformer']['title'] = $top_performer_result->title;
 					$data['topPerformer']['value'] = $top_performer_result->value;
 				}
 
 				// Query to get total number of goal completions.
-				$total_completed_sql = $this->add_query_timeout_hint( $this->get_goal_completed_count_sql( $goal_id ), $this->get_goal_query_timeout_ms() );
-                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- get_goal_completed_count_sql returns prepared sql.
-				$data['total']['value'] = $wpdb->get_var( $total_completed_sql );
+				$total_completed_sql    = $this->add_query_timeout_hint( $this->get_goal_completed_count_sql( $goal_id ), $this->get_goal_query_timeout_ms() );
+				$data['total']['value'] = Query_Executor::create()
+					->fingerprint( 'goal_total_completed_' . $goal_id )
+					->cache_ttl( 30 )
+					->cache_group( 'burst_stats_query_results' )
+					->single_flight( false )
+					->run( $total_completed_sql, 'get_var' );
 
 				// Query to get total number of visitors, sessions or pageviews with build_raw_sql.
 				$conversion_metric = $wpdb->prepare(
@@ -261,17 +272,25 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 					"SELECT {$count_sql} FROM {$wpdb->prefix}burst_statistics as statistics WHERE statistics.time > %s {$date_end_sql} {$goal_url_sql}",
 					$date_start
 				);
-				$conversion_metric = $this->add_query_timeout_hint( $conversion_metric, $this->get_goal_query_timeout_ms() );
-                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- get_goal_completed_count_sql returns prepared sql.
-				$data['conversionMetric']['value'] = $wpdb->get_var( $conversion_metric );
+				$conversion_metric                 = $this->add_query_timeout_hint( $conversion_metric, $this->get_goal_query_timeout_ms() );
+				$data['conversionMetric']['value'] = Query_Executor::create()
+					->fingerprint( 'goal_conversion_metric_' . $goal_id )
+					->cache_ttl( 30 )
+					->cache_group( 'burst_stats_query_results' )
+					->single_flight( false )
+					->run( $conversion_metric, 'get_var' );
 
 				// Query to get best performing device.
 				$completed_goals_per_device_sql  = $this->get_goal_completed_count_sql( $goal_id );
 				$completed_goals_per_device_sql  = str_replace( ' AS value FROM ', ' AS value, sessions.device_id AS device_id FROM ', $completed_goals_per_device_sql );
 				$completed_goals_per_device_sql .= ' GROUP BY sessions.device_id ORDER BY value DESC LIMIT 4';
 				$completed_goals_per_device_sql  = $this->add_query_timeout_hint( $completed_goals_per_device_sql, $this->get_goal_query_timeout_ms() );
-                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- get_goal_completed_count_sql returns prepared sql.
-				$completed_goals_per_device = $wpdb->get_results( $completed_goals_per_device_sql );
+				$completed_goals_per_device      = Query_Executor::create()
+					->fingerprint( 'goal_completed_goals_per_device_' . $goal_id )
+					->cache_ttl( 30 )
+					->cache_group( 'burst_stats_query_results' )
+					->single_flight( false )
+					->run( $completed_goals_per_device_sql, 'get', 'OBJECT' );
 
 				$pageviews_per_device_sql = $wpdb->prepare(
 					// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- using prepared parts.
@@ -286,9 +305,12 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 					$date_start
 				);
 				$pageviews_per_device_sql = $this->add_query_timeout_hint( $pageviews_per_device_sql, $this->get_goal_query_timeout_ms() );
-                // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- prepared sql.
-				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is prepared via $wpdb->prepare() above.
-				$pageviews_per_device = $wpdb->get_results( $pageviews_per_device_sql );
+				$pageviews_per_device     = Query_Executor::create()
+					->fingerprint( 'goal_pageviews_per_device_' . $goal_id )
+					->cache_ttl( 30 )
+					->cache_group( 'burst_stats_query_results' )
+					->single_flight( false )
+					->run( $pageviews_per_device_sql, 'get', 'OBJECT' );
 
 				// create lookupt table for faster access to pageviews per device.
 				$pageviews_lookup = [];

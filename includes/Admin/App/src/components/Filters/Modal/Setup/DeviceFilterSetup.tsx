@@ -103,7 +103,7 @@ const DeviceFilterSetup: React.FC<DeviceFilterSetupProps> = ({
 		<div className="flex flex-col gap-6">
 			{/* Device Options Grid */}
 			<div
-				className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-items-center"
+				className="grid grid-cols-2 @md:grid-cols-4 gap-4 justify-items-center"
 				role="group"
 				aria-label={__( 'Device selection options', 'burst-statistics' )}
 			>

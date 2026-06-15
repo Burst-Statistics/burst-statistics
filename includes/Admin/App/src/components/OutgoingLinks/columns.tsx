@@ -34,7 +34,7 @@ export function getOutgoingLinksColumns(): BarColumn<OutgoingLinkRow>[] {
 						className="inline-flex items-center gap-1 text-text-black hover:text-blue-600 transition-colors"
 						title={ row.url }
 					>
-						<span>{ truncateMiddle( display, 44 ) }</span>
+						<span>{ truncateMiddle( display, 30 ) }</span>
 						<Icon name="external-link" size={ 11 } color="gray" className="shrink-0" />
 					</a>
 				);

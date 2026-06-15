@@ -812,16 +812,16 @@ class App {
 				overflow-x: hidden;
 			}
 
-			@media not all and (min-width: 640px) {
-				#burst-statistics .max-sm\:w-32 {
+			@container (max-width: 639.98px) {
+				#burst-statistics .\@max-sm\:w-32 {
 					width: 8rem;
 				}
 
-				#burst-statistics .max-sm\:col-span-12 {
+				#burst-statistics .\@max-sm\:col-span-12 {
 					grid-column: span 12 / span 12;
 				}
 
-				#burst-statistics .max-sm\:row-span-1 {
+				#burst-statistics .\@max-sm\:row-span-1 {
 					grid-row: span 1 / span 1;
 				}
 			}
@@ -897,7 +897,7 @@ class App {
 			<div class="mx-auto flex max-w-(--breakpoint-2xl)">
 				<div class="m-5 grid min-h-full w-full grid-cols-12 grid-rows-5 gap-5">
 					<!-- Left Block -->
-					<div class="col-span-6 row-span-2 bg-white shadow-md rounded-xl p-5 max-sm:col-span-12 max-sm:row-span-1">
+					<div class="col-span-6 row-span-2 bg-white shadow-md rounded-xl p-5 @max-sm:col-span-12 @max-sm:row-span-1">
 						<div class="h-6 w-1/2 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
 						<div class="h-6 w-4/5 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
 						<div class="h-6 w-full px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
@@ -909,7 +909,7 @@ class App {
 					</div>
 
 					<!-- Middle Block -->
-					<div class="col-span-3 row-span-2 bg-white shadow-md rounded-xl p-5 max-sm:col-span-12 max-sm:row-span-1">
+					<div class="col-span-3 row-span-2 bg-white shadow-md rounded-xl p-5 @max-sm:col-span-12 @max-sm:row-span-1">
 						<div class="h-6 w-1/2 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
 						<div class="h-6 w-4/5 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
 						<div class="h-6 w-full px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
@@ -921,7 +921,7 @@ class App {
 					</div>
 
 					<!-- Right Block -->
-					<div class="col-span-3 row-span-2 bg-white shadow-md rounded-xl p-5 max-sm:col-span-12 max-sm:row-span-1">
+					<div class="col-span-3 row-span-2 bg-white shadow-md rounded-xl p-5 @max-sm:col-span-12 @max-sm:row-span-1">
 						<div class="h-6 w-1/2 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
 						<div class="h-6 w-4/5 px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
 						<div class="h-6 w-full px-5 py-2 bg-gray-200 rounded-md mb-5 animate-pulse"></div>
@@ -1859,7 +1859,7 @@ class App {
 	 * @param string $datatable_id The datatable ID to check.
 	 * @return bool True if user can access the datatable, false otherwise.
 	 */
-	private function user_can_access_datatable( string $datatable_id ): bool {
+	public function user_can_access_datatable( string $datatable_id ): bool {
 		// Shared link viewers are identified by burst_viewer role and have their access
 		// controlled by share configuration at the route level. If they pass the route's
 		// permission check, trust that decision.

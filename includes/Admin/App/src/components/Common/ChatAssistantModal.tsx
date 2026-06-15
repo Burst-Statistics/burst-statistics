@@ -607,8 +607,8 @@ const ChatAssistantModal = () => {
 	};
 
 	const modalContent = (
-		<div className="flex h-[68vh] min-h-[520px] gap-4 overflow-hidden max-md:h-auto max-md:min-h-0 max-md:max-h-none max-md:flex-col">
-			<div className="flex w-72 shrink-0 flex-col rounded-lg border border-gray-300 bg-white p-3 max-md:w-full max-md:max-h-44">
+		<div className="flex h-[68vh] min-h-[520px] gap-4 overflow-hidden @max-md:h-auto @max-md:min-h-0 @max-md:max-h-none @max-md:flex-col">
+			<div className="flex w-72 shrink-0 flex-col rounded-lg border border-gray-300 bg-white p-3 @max-md:w-full @max-md:max-h-44">
 				<div className="mb-3 flex items-center justify-between gap-2">
 					<h3 className="text-sm font-semibold text-text-black">
 						{__( 'Chats', 'burst-statistics' )}

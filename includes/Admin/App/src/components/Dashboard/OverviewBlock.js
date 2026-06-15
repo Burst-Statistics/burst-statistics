@@ -76,7 +76,7 @@ const OverviewBlock = () => {
 	];
 
 	return (
-		<Block className="row-span-2 lg:col-span-12 xl:col-span-6">
+		<Block className="row-span-2 @lg:col-span-12 @xl:col-span-6">
 			<BlockHeading
 				title={__( 'Overview', 'burst-statistics' )}
 				className="border-b border-gray-200"

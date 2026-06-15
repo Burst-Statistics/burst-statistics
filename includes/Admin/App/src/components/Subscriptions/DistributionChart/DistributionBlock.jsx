@@ -97,7 +97,7 @@ export function DistributionBlock() {
 	}
 
 	return (
-		<Block className="row-span-1 lg:col-span-6 xl:col-span-3">
+		<Block className="row-span-1 @lg:col-span-6 @xl:col-span-3">
 			<BlockHeading
 				title={ __( 'Distribution', 'burst-statistics' ) }
 				className="border-b border-gray-200"

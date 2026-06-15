@@ -231,7 +231,7 @@ const OtherPluginsBlock = () => {
 	if ( isLoading ) {
 		const n = 3;
 		return (
-			<Block className="bg-transparent! row-span-1 shadow-transparent border-transparent lg:col-span-6">
+			<Block className="bg-transparent! row-span-1 shadow-transparent border-transparent @lg:col-span-6">
 				<BlockHeading
 					className={'burst-column-2 no-border no-background'}
 					title={__( 'Other plugins', 'burst-statistics' )}
@@ -263,7 +263,7 @@ const OtherPluginsBlock = () => {
 		);
 	}
 	return (
-		<Block className="bg-trabs bg-transparent! row-span-1 shadow-transparent border-transparent lg:col-span-6">
+		<Block className="bg-trabs bg-transparent! row-span-1 shadow-transparent border-transparent @lg:col-span-6">
 			<BlockHeading
 				title={__( 'Other plugins', 'burst-statistics' )}
 				controls={<UpdraftPlusLogo size={24} color="gray" />}

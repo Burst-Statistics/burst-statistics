@@ -4,9 +4,8 @@
  */
 namespace Burst\Admin;
 
-use Burst\Admin\Statistics\Query_Data;
+use Burst\Admin\Statistics\Statistics_Query;
 use Burst\Traits\Helper;
-use function Burst\burst_loader;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -76,19 +75,13 @@ class Milestones {
 	 * @return int Number of pageviews.
 	 */
 	private static function get_pageviews( int $start, int $end ): int {
-		$qd = new Query_Data(
-			'milestones_pageviews',
-			[
-				'id'         => 'milestones_pageviews',
-				'date_start' => $start,
-				'date_end'   => $end,
-				'select'     => [ 'pageviews' ],
-			]
-		);
+		$qd = Statistics_Query::create( 'milestones_pageviews' )
+			->date_range( $start, $end )
+			->select( [ 'pageviews' ] );
 
-		$result = burst_loader()->admin->statistics->get_row( $qd, 'ARRAY_A' );
+		$result = $qd->fetch_row( 'ARRAY_A' );
 
-		return $result ? (int) $result['pageviews'] : 0;
+		return null !== $result ? (int) $result['pageviews'] : 0;
 	}
 
 	/**
