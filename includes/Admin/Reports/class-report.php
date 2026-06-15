@@ -7,7 +7,7 @@ use Burst\Admin\Reports\DomainTypes\Report_Day_Of_Week;
 use Burst\Admin\Reports\DomainTypes\Report_Format;
 use Burst\Admin\Reports\DomainTypes\Report_Frequency;
 use Burst\Admin\Reports\DomainTypes\Report_Week_Of_Month;
-use Burst\Admin\Statistics\Query_Data;
+use Burst\Admin\Statistics\Statistics_Query;
 use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
 
@@ -546,7 +546,8 @@ class Report {
 			'name'           => $this->name,
 			'format'         => $this->format,
 			'frequency'      => $this->frequency,
-			'fixed_end_date' => $this->fixed_end_date,
+			// Store NULL rather than '' for the DATE column when no anchor date is set.
+			'fixed_end_date' => '' !== $this->fixed_end_date ? $this->fixed_end_date : null,
 			'week_of_month'  => $this->week_of_month,
 			'day_of_week'    => $this->day_of_week,
 			'send_time'      => $this->send_time,
@@ -585,19 +586,15 @@ class Report {
 			}
 
 			$filters = isset( $block['filters'] ) ? $block['filters'] : [];
-			// let Query_Data handle filter sanitizing.
-			$qd = new Query_Data(
-				'report_sanitize_content_filters',
-				[
-					'filters' => $filters,
-				]
-			);
+			// let Statistics_Query handle filter sanitizing.
+			$qd = Statistics_Query::create( 'report_sanitize_content_filters' )
+				->filters( $filters );
 
 			// Sanitize block properties.
 			$sanitized[] = [
 				// already sanitized above.
 				'id'                 => $block['id'],
-				'filters'            => $qd->filters,
+				'filters'            => $qd->get_filters(),
 				// $block['content'] is sanitized above.
 				'content'            => $block['content'],
 				'date_range'         => isset( $block['date_range'] ) ? Report_Date_Range::from_string( $block['date_range'] ) : '',
@@ -668,7 +665,6 @@ class Report {
 	public function to_array(): array {
 		// if a report is not enabled, a visitor for a shared link should not be able to see it.
 		if ( $this->is_shared_link && ! $this->enabled ) {
-			self::error_log( 'Report is not enabled, returning empty array' );
 			return [];
 		}
 
@@ -712,18 +708,60 @@ class Report {
 	}
 
 	/**
-	 * Get the scheduled send timestamp for a report if it matches today's schedule.
+	 * Get the most recent scheduled send moment at or before now.
 	 *
-	 * @return int|null The scheduled send timestamp or null if it doesn't match today's schedule.
+	 * @return int|null The scheduled send timestamp or null when the report has no usable schedule.
 	 */
 	private function get_next_send_timestamp(): ?int {
-		$today = time();
+		return $this->get_last_due_occurrence( time() );
+	}
 
-		if ( ! $this->matches_schedule( $today ) ) {
-			return null;
+	/**
+	 * Get the most recent scheduled send moment at or before $now.
+	 *
+	 * Unlike a "does today match the schedule" check, this looks back in time so
+	 * a cron tick that runs after the target time — even on a later day — can
+	 * still pick up a missed report. De-duplication (sending an occurrence only
+	 * once) is handled separately via the report logs / queue_id, so it is safe
+	 * for this to keep returning the same past occurrence until it is sent.
+	 *
+	 * @param int $now The reference timestamp (UTC).
+	 * @return int|null The UTC timestamp of the occurrence, or null when there is no usable schedule.
+	 */
+	private function get_last_due_occurrence( int $now ): ?int {
+		// Walk back one day at a time until we hit a calendar day that matches
+		// the schedule and whose send_time has already passed. The look-back is
+		// capped so a misconfigured (never-matching) schedule cannot loop
+		// indefinitely; a monthly occurrence is always found within ~31 days.
+		$max_lookback_days = 366;
+
+		for ( $i = 0; $i <= $max_lookback_days; $i++ ) {
+			$day_ts = $now - $i * DAY_IN_SECONDS;
+
+			if ( ! $this->matches_schedule( $day_ts ) ) {
+				continue;
+			}
+
+			$occurrence = $this->occurrence_timestamp_for_day( $day_ts );
+			if ( $occurrence !== null && $occurrence <= $now ) {
+				return $occurrence;
+			}
+
+			// The day matches but its send_time has not passed yet; keep
+			// looking back for the previous matching day.
 		}
 
-		$date = wp_date( 'Y-m-d', $today );
+		return null;
+	}
+
+	/**
+	 * Build the UTC timestamp for send_time on the calendar day of $day_ts.
+	 *
+	 * @param int $day_ts A timestamp on the target calendar day (interpreted in the site timezone).
+	 * @return int|null The UTC timestamp, or null on failure.
+	 */
+	private function occurrence_timestamp_for_day( int $day_ts ): ?int {
+		$date = wp_date( 'Y-m-d', $day_ts );
 
 		try {
 			$dt = new \DateTime(
@@ -751,10 +789,32 @@ class Report {
 		return match ( $this->frequency ) {
 			Report_Frequency::DAILY   => true,
 			// Check if the current day in site timezone matches the report's day_of_week.
-			Report_Frequency::WEEKLY  => strtolower( wp_date( 'l', $timestamp ) ) === strtolower( (string) $this->day_of_week ),
+			Report_Frequency::WEEKLY  => (int) wp_date( 'N', $timestamp ) === $this->day_of_week_iso(),
 			Report_Frequency::MONTHLY => $this->matches_monthly_schedule( $timestamp ),
 			default   => false,
 		};
+	}
+
+	/**
+	 * Map the stored day_of_week to its ISO-8601 number (1 = Monday ... 7 = Sunday).
+	 *
+	 * Compared against wp_date( 'N' ) / gmdate( 'N' ), which are locale-independent,
+	 * unlike the 'l' weekday name that wp_date() localizes (e.g. "mardi" on fr_FR).
+	 *
+	 * @return int|null The ISO weekday number, or null when no day is set.
+	 */
+	private function day_of_week_iso(): ?int {
+		$map = [
+			Report_Day_Of_Week::MONDAY    => 1,
+			Report_Day_Of_Week::TUESDAY   => 2,
+			Report_Day_Of_Week::WEDNESDAY => 3,
+			Report_Day_Of_Week::THURSDAY  => 4,
+			Report_Day_Of_Week::FRIDAY    => 5,
+			Report_Day_Of_Week::SATURDAY  => 6,
+			Report_Day_Of_Week::SUNDAY    => 7,
+		];
+
+		return $map[ $this->day_of_week ] ?? null;
 	}
 
 	/**
@@ -772,8 +832,8 @@ class Report {
 	 */
 	private function matches_monthly_schedule( int $timestamp ): bool {
 		// Check if the current day in site timezone matches the report's day_of_week.
-		$weekday = strtolower( wp_date( 'l', $timestamp ) );
-		if ( $weekday !== strtolower( (string) $this->day_of_week ) ) {
+		$expected_iso = $this->day_of_week_iso();
+		if ( $expected_iso === null || (int) wp_date( 'N', $timestamp ) !== $expected_iso ) {
 			return false;
 		}
 
@@ -789,7 +849,7 @@ class Report {
 			// gmmktime + gmdate stay consistent in UTC: used here only to determine the calendar weekday
 			// of the (year, month, day) triple, which is timezone-independent.
 			$ts = gmmktime( 0, 0, 0, $month, $day, $year );
-			if ( strtolower( gmdate( 'l', $ts ) ) === $weekday ) {
+			if ( (int) gmdate( 'N', $ts ) === $expected_iso ) {
 				// List of timestamps for the weekdays in the month.
 				$weekday_timestamps[] = $ts;
 			}

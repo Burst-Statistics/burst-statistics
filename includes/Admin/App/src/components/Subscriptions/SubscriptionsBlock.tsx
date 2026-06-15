@@ -135,7 +135,7 @@ const SubscriptionsBlock = (): JSX.Element => {
 	};
 
 	return (
-		<Block className="row-span-1 lg:col-span-6 xl:col-span-3 block-subscriptions">
+		<Block className="row-span-1 @lg:col-span-6 @xl:col-span-3 block-subscriptions">
 			<BlockHeading {...blockHeadingProps} />
 
 			<BlockContent>

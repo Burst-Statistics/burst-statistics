@@ -22,6 +22,7 @@ import ExportSettingsField from './ExportSettingsField';
 import AnonymousUsageDataField from './AnonymousUsageDataField';
 import ThemeToggleField from './ThemeToggleField';
 import ColorPickerField from './ColorPickerField';
+import CssField from './CssField';
 import { EmailWysiwygField } from './Wysiwyg/WysiwygField';
 import useLicenseData from '@/hooks/useLicenseData';
 import { ReportLogsField } from '@/components/Fields/ReportLogsField';
@@ -49,7 +50,8 @@ const fieldComponents = {
 	anonymous_usage_data: AnonymousUsageDataField,
 	theme_toggle: ThemeToggleField,
 	wysiwyg: EmailWysiwygField,
-	color_picker: ColorPickerField
+	color_picker: ColorPickerField,
+	css: CssField
 };
 
 const Field = memo( ({ setting, control, ...props }) => {

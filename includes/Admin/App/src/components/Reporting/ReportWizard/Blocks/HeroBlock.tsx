@@ -7,7 +7,8 @@ import { AdminWysiwygField } from '@/components/Fields/Wysiwyg/WysiwygField';
 import WysiwygPreview from '@/components/Common/WysiwygPreview';
 import { BlockComponentProps } from '@/store/reports/types';
 import useSettingsData from '@/hooks/useSettingsData';
-import { useAttachmentUrl } from '@/hooks/useAttachmentUrl';
+import { useDarkAwareAttachmentUrl } from '@/hooks/useAttachmentUrl';
+import { darkOverlayStyle } from '@/utils/overlayStyle';
 
 const HERO_BLOCK_SETTING = { id: 'hero' };
 
@@ -29,13 +30,17 @@ const HeroBlock: React.FC<BlockComponentProps> = ({ reportBlockIndex = 0 }) => {
 	const { getValue } = useSettingsData();
 
 	const logoId = getValue( 'logo_attachment_id' );
+	const logoIdDark = getValue( 'logo_attachment_id_dark' );
 	const rawBgImageId = getValue( 'hero_background_image_attachment_id' );
+	const rawBgImageIdDark = getValue( 'hero_background_image_attachment_id_dark' );
 	const brandColor: string = getValue( 'brand_color' );
 	const colorOverlayEnabled: boolean = getValue( 'hero_color_overlay_enabled' );
 
 	const heroBgDefaultUrl = ( window as any ).burst_settings.plugin_url + 'assets/img/burst-report-hero-bg.jpg'; // eslint-disable-line @typescript-eslint/no-explicit-any
-	const logoQuery = useAttachmentUrl( logoId );
-	const bgImageQuery = useAttachmentUrl( rawBgImageId ?? 0, heroBgDefaultUrl );
+	const heroBgDarkDefaultUrl = ( window as any ).burst_settings.plugin_url + 'assets/img/burst-report-hero-dark-bg.png'; // eslint-disable-line @typescript-eslint/no-explicit-any
+	const darkLogoDefaultUrl = ( window as any ).burst_settings.plugin_url + 'assets/img/burst-email-logo-dark.png'; // eslint-disable-line @typescript-eslint/no-explicit-any
+	const logoQuery = useDarkAwareAttachmentUrl( logoId, logoIdDark, isDarkTheme, undefined, darkLogoDefaultUrl );
+	const bgImageQuery = useDarkAwareAttachmentUrl( rawBgImageId ?? 0, rawBgImageIdDark ?? 0, isDarkTheme, heroBgDefaultUrl, heroBgDarkDefaultUrl );
 	const logoUrl = logoQuery.data?.attachmentUrl ?? '';
 	const bgImageUrl = bgImageQuery.data?.attachmentUrl ?? '';
 
@@ -93,12 +98,12 @@ const HeroBlock: React.FC<BlockComponentProps> = ({ reportBlockIndex = 0 }) => {
 
 	const previewContent = resolveFromComments( content || injectValues( DEFAULT_HERO_TEMPLATE ) );
 
-	const leftColClass = bgImageUrl ? 'md:col-span-7' : 'md:col-span-12';
+	const leftColClass = bgImageUrl ? '@md:col-span-7' : '@md:col-span-12';
 
 	return (
 		<div className="w-full bg-white mb-16 burst-story-content-width">
-			<div className="grid grid-cols-1 md:grid-cols-12 gap-x-16 overflow-hidden">
-				<div className={ `${ leftColClass } py-6 md:py-8 lg:py-10` }>
+			<div className="grid grid-cols-1 @md:grid-cols-12 gap-x-16 overflow-hidden">
+				<div className={ `${ leftColClass } py-6 @md:py-8 @lg:py-10` }>
 				<div className='flex flex-col gap-4'>
 					{
 						logoUrl && (
@@ -129,19 +134,19 @@ const HeroBlock: React.FC<BlockComponentProps> = ({ reportBlockIndex = 0 }) => {
 
 			{
 				bgImageUrl && (
-					<div className="print:hidden hidden md:flex md:col-span-5 items-center overflow-hidden">
+					<div className="print:hidden hidden @md:flex @md:col-span-5 items-center overflow-hidden">
 						<div className="relative w-full">
 							<img
 								src={ bgImageUrl }
 								alt=""
-								className="w-full h-auto grayscale pointer-events-none"
+								className={ `w-full h-auto pointer-events-none ${ isDarkTheme ? '' : 'grayscale' }` }
 							/>
 							{
-								!! brandColor && !! colorOverlayEnabled && (
+								!! brandColor && colorOverlayEnabled && (
 									<div
 										aria-hidden="true"
-										className="absolute inset-0 opacity-80 mix-blend-overlay pointer-events-none"
-										style={{ backgroundColor: brandColor }}
+										className={ `absolute inset-0 mix-blend-overlay pointer-events-none ${ isDarkTheme ? '' : 'opacity-80' }` }
+										style={ isDarkTheme ? darkOverlayStyle( bgImageUrl, brandColor ) : { backgroundColor: brandColor } }
 									/>
 								)
 							}

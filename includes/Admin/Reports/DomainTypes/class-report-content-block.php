@@ -155,7 +155,7 @@ final class Report_Content_Block {
 	 *
 	 * @return array<int, array{
 	 *      id: string,
-	 *      filters: string,
+	 *      filters: string[],
 	 *      content: string,
 	 *      date_range: string,
 	 *      comment_title: string,
@@ -167,7 +167,7 @@ final class Report_Content_Block {
 		return array_map(
 			fn( $id ) => [
 				'id'            => $id,
-				'filters'       => '',
+				'filters'       => [],
 				'content'       => '',
 				'date_range'    => '',
 				'comment_title' => '',

@@ -642,8 +642,140 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				align: 'right'
 			}
 		}
-	}
-};
+	},
+		search_terms: {
+			label: __( 'Search terms', 'burst-statistics' ),
+			searchable: true,
+			defaultColumns: [ 'term', 'volume', 'results' ],
+			columnsOptions: {
+				term: {
+					label: __( 'Search term', 'burst-statistics' ),
+					default: true,
+					format: 'string',
+					align: 'left',
+					group_by: true
+				},
+				volume: {
+					label: __( 'Volume', 'burst-statistics' ),
+					format: 'integer',
+					align: 'right'
+				},
+				results: {
+					label: __( 'Results', 'burst-statistics' ),
+					format: 'search_results',
+					align: 'right'
+				}
+			}
+		},
+		reading_engagement: {
+			label: __( 'Reading engagement', 'burst-statistics' ),
+			searchable: true,
+			defaultColumns: [ 'page_url', 'avg_time_on_page' ],
+			columnsOptions: {
+				page_url: {
+					label: __( 'Page', 'burst-statistics' ),
+					default: true,
+					format: 'url',
+					align: 'left',
+					group_by: true
+				},
+				avg_time_on_page: {
+					label: __( 'Avg. time on page', 'burst-statistics' ),
+					format: 'time',
+					align: 'right'
+				}
+			}
+		},
+		outgoing_links: {
+			label: __( 'Outgoing links', 'burst-statistics' ),
+			searchable: true,
+			pro: true,
+			defaultColumns: [ 'url', 'clicks' ],
+			columnsOptions: {
+				url: {
+					label: __( 'URL', 'burst-statistics' ),
+					default: true,
+					format: 'external_link',
+					align: 'left',
+					group_by: true
+				},
+				clicks: {
+					label: __( 'Clicks', 'burst-statistics' ),
+					category: 'traffic',
+					align: 'right'
+				},
+				previous_clicks: {
+					label: __( 'Prev. clicks', 'burst-statistics' ),
+					category: 'traffic',
+					pro: true,
+					align: 'right'
+				},
+				previous_clicks_yoy: {
+					label: __( 'Prev. clicks YoY', 'burst-statistics' ),
+					category: 'traffic',
+					pro: true,
+					align: 'right'
+				}
+			}
+		},
+		forms: {
+			label: __( 'Forms', 'burst-statistics' ),
+			searchable: true,
+			pro: true,
+			defaultColumns: [ 'form_title', 'submissions', 'conversion_rate' ],
+			columnsOptions: {
+				form_title: {
+					label: __( 'Form', 'burst-statistics' ),
+					default: true,
+					format: 'form_title',
+					align: 'left',
+					group_by: true
+				},
+				form_provider_label: {
+					label: __( 'Provider', 'burst-statistics' ),
+					default: false,
+					format: 'string',
+					align: 'left',
+					group_by: true
+				},
+				submissions: {
+					label: __( 'Submissions', 'burst-statistics' ),
+					category: 'traffic',
+					align: 'right'
+				},
+				pageviews: {
+					label: __( 'Visitors', 'burst-statistics' ),
+					category: 'traffic',
+					align: 'right'
+				},
+				conversion_rate: {
+					label: __( 'Conversion rate', 'burst-statistics' ),
+					category: 'engagement',
+					format: 'percentage',
+					align: 'right'
+				},
+				previous_submissions: {
+					label: __( 'Prev. submissions', 'burst-statistics' ),
+					category: 'traffic',
+					pro: true,
+					align: 'right'
+				},
+				previous_pageviews: {
+					label: __( 'Prev. visitors', 'burst-statistics' ),
+					category: 'traffic',
+					pro: true,
+					align: 'right'
+				},
+				previous_conversion_rate: {
+					label: __( 'Prev. conv. rate', 'burst-statistics' ),
+					category: 'engagement',
+					format: 'percentage',
+					pro: true,
+					align: 'right'
+				}
+			}
+		}
+	};
 
 	// Use the DataTable store.
 	const {
@@ -1206,7 +1338,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 	const fileName = `${safeDomain}-${selectedConfig}-${startDate}-${endDate}`;
 
 	return (
-		<Block className={ isInOverlay ? 'flex-1 min-h-0 group/root' : 'row-span-2 overflow-hidden xl:col-span-6 group/root' }>
+		<Block className={ isInOverlay ? 'flex-1 min-h-0 group/root' : 'row-span-2 overflow-hidden @xl:col-span-6 group/root' }>
 			<BlockHeading
 				className="border-b border-gray-200"
 				isReport={isReport}

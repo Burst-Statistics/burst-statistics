@@ -68,7 +68,7 @@ const AnonymousUsageDataField = forwardRef(
 					</p>
 
 					{/* Details: Always visible for transparency */ }
-					<div className="grid gap-4 sm:grid-cols-2">
+					<div className="grid gap-4 @sm:grid-cols-2">
 						{/* What we collect */ }
 						<div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
 							<h4 className="flex items-center gap-2 text-sm font-semibold text-text-black">

@@ -102,20 +102,31 @@ export const transformTopPerformersData = ( data, selectedOption ) => {
 			switch ( name ) {
 				case 'top-product':
 					transformedData[name].subtitle =
-						current.product_name || defaultSubtitle;
+						0 < ( current.total_revenue ?? 0 ) ||
+						0 < ( current.total_quantity_sold ?? 0 ) ?
+							current.product_name || defaultSubtitle :
+							defaultSubtitle;
 					break;
 				case 'top-device':
 					transformedData[name].subtitle =
-						current.device_name || defaultSubtitle;
+						0 < ( current.total_revenue ?? 0 ) ||
+						0 < ( current.total_quantity_sold ?? 0 ) ?
+							current.device_name || defaultSubtitle :
+							defaultSubtitle;
 					break;
 				case 'top-country':
-					transformedData[name].subtitle = current.country_code ?
-						getCountryName( current.country_code ) :
-						defaultSubtitle;
+					transformedData[name].subtitle =
+						0 < ( current.total_revenue ?? 0 ) ||
+						0 < ( current.total_quantity_sold ?? 0 ) ?
+							getCountryName( current.country_code ) :
+							defaultSubtitle;
 					break;
 				case 'top-campaign':
 					transformedData[name].subtitle =
-						current.campaign_name || defaultSubtitle;
+						0 < ( current.total_revenue ?? 0 ) ||
+						0 < ( current.total_quantity_sold ?? 0 ) ?
+							current.campaign_name || defaultSubtitle :
+							defaultSubtitle;
 					break;
 			}
 		} else {

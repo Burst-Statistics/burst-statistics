@@ -1,8 +1,6 @@
 <?php
 namespace Burst\Traits;
 
-use Burst\Admin\Statistics\Query_Data;
-
 /**
  * Trait containing sanitization methods for consistent data cleaning throughout the application.
  */
@@ -119,9 +117,81 @@ trait Sanitize {
 			case 'wysiwyg':
 			case 'textarea':
 				return wp_kses_post( $value );
+			case 'css':
+				return $this->sanitize_css( (string) $value );
 			default:
 				return sanitize_text_field( $value );
 		}
+	}
+
+	/**
+	 * Strictly sanitize a Custom CSS value.
+	 *
+	 * Allows CSS variables and standard CSS, but removes anything that could load
+	 * external resources or break out of the inline <style> element it is rendered in.
+	 *
+	 * @param string $css The raw CSS.
+	 * @return string The sanitized CSS.
+	 */
+	public function sanitize_css( string $css ): string {
+		// Strip CSS comments first so split-token obfuscation (e.g. "@imp/**/ort") cannot bypass the checks below.
+		$css = (string) preg_replace( '#/\*.*?\*/#s', '', $css );
+
+		// Strip HTML tag starts (e.g. "</style>", "<script>", "<!--") so the value cannot break out of, or inject markup
+		// into, the <style> element it is rendered in. A "<" is only removed when it begins a tag ("<" + letter / "!" / "/"),
+		// which preserves the CSS child combinator ">" and range media queries such as "@media (width < 600px)".
+		$css = (string) preg_replace( '#<(?=[!/a-z])#i', '', $css );
+
+		$denylist = [
+			'#@\s*import#i',
+			'#@\s*charset#i',
+			'#expression\s*\(#i',
+			'#javascript\s*:#i',
+			'#vbscript\s*:#i',
+			'#behaviou?r\s*:#i',
+			'#-moz-binding#i',
+		];
+
+		// Strip plain url(...) and the denylisted at-rules/tokens (the common, non-evasive case). \s* guards against
+		// whitespace-based evasion. A publicly shared report must never load external resources.
+		$css = (string) preg_replace( '#url\s*\([^)]*\)?#i', '', $css );
+		$css = (string) preg_replace( $denylist, '', $css );
+
+		// Backstop against CSS escape-sequence evasion: the browser decodes "\75rl(" to "url(" and "@\69mport" to
+		// "@import", but the literal token never appears in the raw source, so the strip above misses it. Decode the
+		// escapes into a detection-only copy; if any denylisted token or markup reappears, the value is hostile -> drop it.
+		$decoded  = $this->decode_css_escapes( $css );
+		$patterns = array_merge( $denylist, [ '#url\s*\(#i', '#<\s*[a-z!/]#i' ] );
+		foreach ( $patterns as $pattern ) {
+			if ( preg_match( $pattern, $decoded ) ) {
+				return '';
+			}
+		}
+
+		return trim( $css );
+	}
+
+	/**
+	 * Decode CSS escape sequences for detection purposes only.
+	 *
+	 * @param string $css The CSS to decode.
+	 * @return string The CSS with escape sequences resolved.
+	 */
+	private function decode_css_escapes( string $css ): string {
+		// Unicode escape: "\" + 1-6 hex digits + optional single trailing whitespace -> the code point.
+		$css = (string) preg_replace_callback(
+			'/\\\\([0-9A-Fa-f]{1,6})\s?/',
+			static function ( array $m ): string {
+				$code = hexdec( $m[1] );
+				if ( $code < 128 ) {
+					return chr( $code );
+				}
+				return function_exists( 'mb_chr' ) ? (string) mb_chr( $code, 'UTF-8' ) : '';
+			},
+			$css
+		);
+		// Simple escape: "\" + any other character -> that character (e.g. "\@" -> "@").
+		return (string) preg_replace( '/\\\\(.)/s', '$1', $css );
 	}
 
 	/**
@@ -393,7 +463,6 @@ trait Sanitize {
 		return (int) $time_on_page;
 	}
 
-
 	/**
 	 * Configuration file for validation rules
 	 * These values define valid options for various fields throughout the application
@@ -450,6 +519,7 @@ trait Sanitize {
 				'checkbox_group',
 				'license',
 				'anonymous_usage_data',
+				'css',
 			]
 		);
 	}
@@ -605,15 +675,6 @@ trait Sanitize {
 				],
 			]
 		);
-	}
-
-	/**
-	 * Default metric (fallback when an invalid metric is provided)
-	 *
-	 * @return string Default metric name
-	 */
-	public function default_metric(): string {
-		return apply_filters( 'burst_default_metric', 'pageviews' );
 	}
 
 	/**

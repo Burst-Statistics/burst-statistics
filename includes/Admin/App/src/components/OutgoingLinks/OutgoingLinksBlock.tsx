@@ -20,7 +20,7 @@ type OutgoingLinksBlockProps = {
 };
 
 /** Maximum rows shown in the compact block view. */
-const TOP_N = 10;
+const TOP_N = 5;
 
 /**
  * Compact dashboard block showing the most clicked outgoing links.

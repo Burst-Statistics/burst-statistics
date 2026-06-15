@@ -14,7 +14,7 @@ const WorldMapBlock = ( props ) => {
 	const { isFetching: isGeoFetching } = useGeoAnalytics( props );
 
 	return (
-		<Block className="row-span-2 xl:col-span-6 group/root">
+		<Block className="row-span-2 @xl:col-span-6 group/root">
 			<ErrorBoundary>
 				<BlockHeading
 					className="border-b border-gray-200"

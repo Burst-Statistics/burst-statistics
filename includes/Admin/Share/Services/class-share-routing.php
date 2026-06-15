@@ -64,6 +64,7 @@ class Share_Routing {
 			'data/devicesTitleAndValue'    => 'statistics',
 			'data/devicesSubtitle'         => 'statistics',
 			'data/goals'                   => 'statistics',
+			'data/reading_engagement'      => 'engagement',
 
 			// Dashboard tab (NOT shareable).
 			'data/live-goals'              => 'dashboard',
@@ -374,6 +375,20 @@ class Share_Routing {
 		$shared_tabs = $share_link['shared_tabs'] ?? [];
 
 		return in_array( $tab, $shared_tabs, true );
+	}
+
+
+	/**
+	 * Filter wrapper for `burst_get_data_request_args` so enforced dates/filters
+	 * land in $args before raw-SQL callers (sales, quick-wins, funnel) read them.
+	 *
+	 * @param array            $args    Request arguments.
+	 * @param string           $type    Data type (unused).
+	 * @param \WP_REST_Request $request REST request (unused).
+	 */
+	public function apply_share_link_restrictions_filter( array $args, string $type, \WP_REST_Request $request ): array {
+		unset( $type, $request );
+		return $this->apply_share_link_restrictions( $args );
 	}
 
 	/**

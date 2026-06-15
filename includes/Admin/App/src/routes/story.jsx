@@ -60,11 +60,11 @@ function Story() {
 
         if ( reportData.report.id ) {
 
-            // Pre-populate the query cache with logo data resolved server-side.
+            // Seed settings fields with image URLs resolved server-side.
             // On the story/frontend page, settings fields are empty for the burst_viewer
             // user (capability check in PHP), so getValue('logo_attachment_id') returns
-            // undefined. We use a fixed sentinel ID as the linking key between
-            // settings_fields and the attachment cache, so no real attachment ID is needed.
+            // undefined. useAttachmentUrl uses a URL value directly instead of fetching
+            // the attachment via wp.media, which is unavailable here.
             const seedSettingValue = ( settingId, value ) => {
                 queryClient.setQueryData(
                     [ 'settings_fields' ],
@@ -79,21 +79,19 @@ function Story() {
             };
 
             if ( reportData.logo_url ) {
-                const STORY_LOGO_SENTINEL = 'story-logo';
-                seedSettingValue( 'logo_attachment_id', STORY_LOGO_SENTINEL );
-                queryClient.setQueryData(
-                    [ 'attachment', STORY_LOGO_SENTINEL ],
-                    { attachmentUrl: reportData.logo_url, attachment: null }
-                );
+                seedSettingValue( 'logo_attachment_id', reportData.logo_url );
+            }
+
+            if ( reportData.logo_url_dark ) {
+                seedSettingValue( 'logo_attachment_id_dark', reportData.logo_url_dark );
             }
 
             if ( reportData.hero_background_image_url ) {
-                const STORY_HERO_BG_SENTINEL = 'story-hero-bg';
-                seedSettingValue( 'hero_background_image_attachment_id', STORY_HERO_BG_SENTINEL );
-                queryClient.setQueryData(
-                    [ 'attachment', STORY_HERO_BG_SENTINEL ],
-                    { attachmentUrl: reportData.hero_background_image_url, attachment: null }
-                );
+                seedSettingValue( 'hero_background_image_attachment_id', reportData.hero_background_image_url );
+            }
+
+            if ( reportData.hero_background_image_url_dark ) {
+                seedSettingValue( 'hero_background_image_attachment_id_dark', reportData.hero_background_image_url_dark );
             }
 
             if ( reportData.brand_color ) {
@@ -113,7 +111,7 @@ function Story() {
         }
 
         setIsWizardLoaded( true );
-    }, [ reportData?.report, setReports, loadReportIntoWizard, queryClient, reportData?.logo_url, reportData?.hero_background_image_url, reportData?.brand_color, reportData?.hero_color_overlay_enabled ]);
+    }, [ reportData?.report, setReports, loadReportIntoWizard, queryClient, reportData?.logo_url, reportData?.logo_url_dark, reportData?.hero_background_image_url, reportData?.hero_background_image_url_dark, reportData?.brand_color, reportData?.hero_color_overlay_enabled ]);
 
 
     useEffect( () => {
@@ -154,9 +152,12 @@ function Story() {
     }
 
     const brandColor = reportData?.brand_color;
+    const customCss = reportData?.custom_css;
 
     return (
         <div className="burst-story-page relative flex w-full flex-col">
+
+            { customCss && <style>{customCss}</style> }
 
             {
                 brandColor && (
@@ -166,7 +167,7 @@ function Story() {
 
             {
                 isPdfMode &&
-                <div className="z-1 absolute inset-x-0 mx-auto max-w-[1200px] px-4 md:px-8 flex justify-end pt-8 max-md:hidden">
+                <div className="z-1 absolute inset-x-0 mx-auto max-w-[1200px] px-4 @md:px-8 flex justify-end pt-8 @max-md:hidden">
                     <button onClick={handlePrintPdf} className="print:hidden cursor-pointer flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-text-gray font-medium rounded-lg shadow-sm hover:shadow transition-all duration-200">
                         <Icon name="download" size={18} />
                         <span>{__( 'Download PDF', 'burst-statistics' )}</span>

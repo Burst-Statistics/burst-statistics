@@ -29,8 +29,8 @@ const Modal: React.FC<ModalProps> = ({
 }) => {
 	const contentSizeClasses =
 		'full' === size ?
-			'md:w-[calc(100%-40px)] md:max-w-(--breakpoint-2xl) xl:w-[calc(100%-64px)]' :
-			'md:w-full md:max-w-[720px]';
+			'@md:w-[calc(100%-40px)] @md:max-w-(--breakpoint-2xl) @xl:w-[calc(100%-64px)]' :
+			'@md:w-full @md:max-w-[720px]';
 
 	return (
 		<Dialog.Root

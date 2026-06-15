@@ -84,15 +84,15 @@ const Header = () => {
 	return (
 		<div className="bg-white shadow-sm">
 			<SubscriptionHeader />
-			<div className="mx-auto flex max-w-(--breakpoint-2xl) items-center gap-5 px-3 lg:px-10 max-lg:justify-between max-lg:px-4 min-h-16">
+			<div className="mx-auto flex max-w-(--breakpoint-2xl) items-center gap-5 px-3 @lg:px-10 @max-lg:justify-between @max-lg:px-4 min-h-16">
 
 				{/* Logo — visible on all screen sizes. Smaller height below lg breakpoint. */}
-				<div className="pr-2 max-lg:pr-0 shrink-0">
+				<div className="pr-2 @max-lg:pr-0 shrink-0">
 					{isWhiteLabel && ! isLoading && attachmentUrl ? (
 						<img
 							alt="logo"
 							src={attachmentUrl}
-							className={LOGO_CLASS + ' max-lg:h-8 max-lg:py-0'}
+							className={LOGO_CLASS + ' @max-lg:h-8 @max-lg:py-0'}
 						/>
 					) : isShareableLinkViewer ? (
 						<a
@@ -100,17 +100,17 @@ const Header = () => {
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							<BurstLogo className={LOGO_CLASS + ' max-lg:h-8 max-lg:py-0'} />
+							<BurstLogo className={LOGO_CLASS + ' @max-lg:h-8 @max-lg:py-0'} />
 						</a>
 					) : (
 						<Link className="flex gap-3 align-middle" from="/" to="/">
-							<BurstLogo className={LOGO_CLASS + ' max-lg:h-8 max-lg:py-0'} />
+							<BurstLogo className={LOGO_CLASS + ' @max-lg:h-8 @max-lg:py-0'} />
 						</Link>
 					)}
 				</div>
 
 				{/* Primary navigation tabs — desktop only (hidden below lg). */}
-				<div className="max-lg:hidden flex items-center flex-1">
+				<div className="@max-lg:hidden flex items-center flex-1">
 					{leftMenuItems.map( ( menuItem ) => (
 						<MenuItemLink
 							key={'menu-item-link' + menuItem.id}
@@ -143,13 +143,13 @@ const Header = () => {
 				)}
 
 				{! isShareableLinkViewer && (
-					<div className="flex items-center gap-4 lg:gap-5 max-lg:gap-2">
+					<div className="flex items-center gap-4 @lg:gap-5 @max-lg:gap-2">
 						{burst_settings.manage_burst_statistics && <ChatAssistantModal />}
 
 						{/* Desktop-only: upgrade button, support link, separator, Settings tab. */}
 						{upgradeUrl && (
 							<ButtonInput
-								className="max-lg:hidden"
+								className="@max-lg:hidden"
 								link={{ to: upgradeUrl }}
 								btnVariant="primary"
 							>
@@ -168,16 +168,16 @@ const Header = () => {
 						<a
 							href={supportUrl}
 							target="_blank"
-							className="flex items-center text-text-gray gap-1 max-lg:hidden hover:underline"
+							className="flex items-center text-text-gray gap-1 @max-lg:hidden hover:underline"
 						>
 							{__( 'Support', 'burst-statistics' )}
 							<Icon name="external-link" size={12} color="gray" />
 						</a>
 
 						{/* separator */}
-						<div className="max-lg:hidden h-4 w-px bg-gray-300"></div>
+						<div className="@max-lg:hidden h-4 w-px bg-gray-300"></div>
 
-						<div className="max-lg:hidden flex">
+						<div className="@max-lg:hidden flex">
 							{rightMenuItems.map( ( menuItem ) => (
 								<MenuItemLink
 									key={'menu-item-link-' + menuItem.id}

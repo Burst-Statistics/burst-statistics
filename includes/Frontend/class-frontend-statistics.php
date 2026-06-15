@@ -1,7 +1,7 @@
 <?php
 namespace Burst\Frontend;
 
-use Burst\Admin\Statistics\Query_Data;
+use Burst\Admin\Statistics\Statistics_Query;
 use Burst\Traits\Helper;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -138,26 +138,30 @@ class Frontend_Statistics {
 	/**
 	 * Generate a SQL query for frontend statistics without admin dependencies
 	 *
-	 * @param Query_Data $query_data The Query Data object.
+	 * @param Statistics_Query $query_data The Query Data object.
 	 * @return string SQL query.
 	 */
-	public function generate_statistics_query( Query_Data $query_data ): string {
+	public function generate_statistics_query( Statistics_Query $query_data ): string {
 		global $wpdb;
 
-		if ( empty( $query_data->select ) ) {
-			$query_data->select = [ 'pageviews' ];
+		if ( empty( $query_data->get_select() ) ) {
+			$query_data->select( [ 'pageviews' ] );
 		}
 
-		$select_sql   = $this->build_select_metrics( $query_data->select, $query_data );
+		$select       = $query_data->get_select();
+		$filters      = $query_data->get_filters();
+		$select_sql   = $this->build_select_metrics( $select, $query_data );
 		$table_name   = $wpdb->prefix . 'burst_statistics AS statistics';
-		$where        = $this->build_where_clause( $query_data->filters, $query_data );
-		$group_by_sql = ! empty( $query_data->group_by ) ? 'GROUP BY ' . implode( ',', $query_data->group_by ) : '';
-		$order_by_sql = ! empty( $query_data->order_by ) ? 'ORDER BY ' . implode( ',', $query_data->order_by ) : '';
+		$where        = $this->build_where_clause( $filters, $query_data );
+		$group_by     = $query_data->get_group_by();
+		$order_by     = $query_data->get_order_by_value();
+		$group_by_sql = ! empty( $group_by ) ? 'GROUP BY ' . implode( ',', $group_by ) : '';
+		$order_by_sql = ! empty( $order_by ) ? 'ORDER BY ' . implode( ',', $order_by ) : '';
 
 		// Check if sessions join is needed based on select metrics or filters.
 		$needs_sessions  = false;
 		$session_metrics = [ 'bounce_rate', 'first_time_visitors', 'device', 'referrer' ];
-		foreach ( $query_data->select as $metric ) {
+		foreach ( $select as $metric ) {
 			if ( in_array( $metric, $session_metrics, true ) ) {
 				$needs_sessions = true;
 				break;
@@ -165,7 +169,7 @@ class Frontend_Statistics {
 		}
 		if ( ! $needs_sessions ) {
 			$session_filter_keys = [ 'referrer', 'device', 'browser', 'platform', 'top_referrers' ];
-			foreach ( array_keys( $query_data->filters ) as $filter_key ) {
+			foreach ( array_keys( $filters ) as $filter_key ) {
 				if ( in_array( $filter_key, $session_filter_keys, true ) ) {
 					$needs_sessions = true;
 					break;
@@ -199,15 +203,16 @@ class Frontend_Statistics {
 			$sql_parts[] = $order_by_sql;
 		}
 
-		if ( $query_data->limit > 0 ) {
+		$limit = $query_data->get_limit();
+		if ( $limit > 0 ) {
 			$sql_parts[] = 'LIMIT %d';
 			$sql_string  = implode( ' ', $sql_parts );
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			$sql = $wpdb->prepare( $sql_string, $query_data->date_start, $query_data->date_end, $query_data->limit );
+			$sql = $wpdb->prepare( $sql_string, $query_data->get_date_start(), $query_data->get_date_end(), $limit );
 		} else {
 			$sql_string = implode( ' ', $sql_parts );
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			$sql = $wpdb->prepare( $sql_string, $query_data->date_start, $query_data->date_end );
+			$sql = $wpdb->prepare( $sql_string, $query_data->get_date_start(), $query_data->get_date_end() );
 		}
 
 		return $sql;
@@ -316,16 +321,16 @@ class Frontend_Statistics {
 	/**
 	 * Build the SELECT clause for chosen metrics
 	 *
-	 * @param array      $metrics Metrics to include.
-	 * @param Query_Data $query_data The parameters for querying.
+	 * @param array            $metrics Metrics to include.
+	 * @param Statistics_Query $query_data The parameters for querying.
 	 * @return string SELECT clause.
 	 */
-	private function build_select_metrics( array $metrics, Query_Data $query_data ): string {
+	private function build_select_metrics( array $metrics, Statistics_Query $query_data ): string {
 		$select_parts    = [];
-		$exclude_bounces = $query_data->exclude_bounces;
+		$exclude_bounces = $query_data->get_exclude_bounces();
 
 		foreach ( $metrics as $metric ) {
-			if ( ! in_array( $metric, $query_data->get_allowed_metrics(), true ) ) {
+			if ( ! in_array( $metric, $query_data->get_allowlist()->metrics(), true ) ) {
 				continue;
 			}
 
@@ -385,12 +390,12 @@ class Frontend_Statistics {
 	 * @param array $filters Filter conditions.
 	 * @return string WHERE clause.
 	 */
-	private function build_where_clause( array $filters, Query_Data $query_data ): string {
+	private function build_where_clause( array $filters, Statistics_Query $query_data ): string {
 		global $wpdb;
 		$where_parts = [];
 
 		foreach ( $filters as $key => $value ) {
-			if ( ! in_array( $key, $query_data->get_allowed_filter_keys(), true ) ) {
+			if ( ! in_array( $key, $query_data->get_allowlist()->filter_keys(), true ) ) {
 				continue;
 			}
 

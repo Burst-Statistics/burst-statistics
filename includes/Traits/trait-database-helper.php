@@ -159,6 +159,8 @@ trait Database_Helper {
 				'burst_referrers',
 				'burst_known_uids',
 				'burst_query_stats',
+				'burst_searches',
+				'burst_statistics_searches',
 			],
 		);
 	}
@@ -223,6 +225,37 @@ trait Database_Helper {
 					}
 				}
 			}
+		}
+	}
+
+	/**
+	 * Drops a named index from a table when it exists.
+	 *
+	 * Indexes added through add_index() are named `{columns}_index` (columns
+	 * joined by underscores, sanitized with sanitize_key). Pass that exact name.
+	 *
+	 * @param string $table_name The table to drop the index from (without prefix).
+	 * @param string $index_name The index name to drop.
+	 */
+	protected function drop_index( string $table_name, string $index_name ): void {
+		global $wpdb;
+		if ( ! $this->user_can_manage() ) {
+			return;
+		}
+
+		$table_name = $wpdb->prefix . $this->validate_table_name( $table_name );
+		$index_name = esc_sql( $index_name );
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated, index name escaped.
+		$exists = $wpdb->get_results( $wpdb->prepare( "SHOW INDEX FROM $table_name WHERE Key_name = %s", $index_name ) );
+		if ( empty( $exists ) ) {
+			return;
+		}
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated, index name escaped.
+		$wpdb->query( "ALTER TABLE $table_name DROP INDEX $index_name" );
+		if ( $wpdb->last_error ) {
+			self::error_log( "Error dropping index $index_name from $table_name: " . $wpdb->last_error );
 		}
 	}
 

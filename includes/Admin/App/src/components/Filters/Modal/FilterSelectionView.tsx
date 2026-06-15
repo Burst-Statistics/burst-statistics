@@ -171,7 +171,7 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 				)}
 
 				<div
-					className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 justify-items-center"
+					className="grid grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4 gap-4 justify-items-center"
 					role="grid"
 					aria-label={__( 'Available filters', 'burst-statistics' )}
 				>

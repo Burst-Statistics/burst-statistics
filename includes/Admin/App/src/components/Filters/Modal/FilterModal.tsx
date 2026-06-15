@@ -154,7 +154,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 			);
 		} else if ( 'setup' === currentStep ) {
 			return (
-				<div className="flex space-x-3">
+				<div className="flex gap-3">
 					<ButtonInput
 						onClick={handleApplyClick}
 						btnVariant="primary"
@@ -249,10 +249,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
 		return (
 			<div>
 				{/* Back Button */}
-				<div className="flex items-center space-x-3 mb-4">
+				<div className="flex items-center gap-3 mb-4">
 					<button
 						onClick={handleBack}
-						className="flex items-center space-x-2 text-sm text-text-gray-light hover:text-text-gray focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded transition-all duration-200"
+						className="flex items-center gap-2 text-sm text-text-gray-light hover:text-text-gray focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded transition-all duration-200"
 						aria-label={__( 'Back to filters', 'burst-statistics' )}
 						type="button"
 					>
@@ -266,7 +266,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 				</div>
 
 				{/* Filter Header */}
-				<div className="flex items-center space-x-3">
+				<div className="flex items-center gap-3">
 					<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100">
 						<Icon
 							name={selectedConfig.icon}

@@ -12,7 +12,7 @@ export const Block = memo( ({ className = '', children }: BlockProps ) => {
 		<ErrorBoundary>
 			<div
 				className={clsx(
-					'col-span-12 flex flex-col rounded-xl bg-white shadow-xs relative border dark:border-gray-100 border-gray-200',
+					'col-span-12 flex flex-col rounded-xl bg-white shadow-xs relative border dark:border-gray-100 border-gray-200 @container',
 					className // later so should override the above
 				)}
 			>

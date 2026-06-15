@@ -432,6 +432,7 @@ async function burst_track_hit(extraData = {}) {
     console.warn('Burst: missing page_id attribute, not able to resolve body element.');
   }
 
+  const burstSearchParams = new URLSearchParams(location.search);
   const data = {
     uid: burst_use_cookies() ? id : false,
     fingerprint: burst_use_cookies() ? false : id,
@@ -444,6 +445,7 @@ async function burst_track_hit(extraData = {}) {
     page_id: document.body?.dataset?.burst_id ?? document.body?.dataset?.b_id ?? 0,
     page_type: document.body?.dataset?.burst_type ?? document.body?.dataset?.b_type ?? '',
     should_load_ecommerce: burst.should_load_ecommerce,
+    search_term: burstSearchParams.get('s') || '',
     ...extraData,
   };
 

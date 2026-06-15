@@ -276,7 +276,7 @@ const SourcesBlock = ( props ) => {
 
 	return (
 		<>
-			<Block className="row-span-1 lg:col-span-6 xl:col-span-3">
+			<Block className="row-span-1 @lg:col-span-6 @xl:col-span-3">
 				<BlockHeading
 					title={__( 'Traffic sources', 'burst-statistics' )}
 					isReport={isReport}
