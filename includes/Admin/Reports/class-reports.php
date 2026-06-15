@@ -642,13 +642,13 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			$sql = "CREATE TABLE {$wpdb->prefix}burst_reports (
 				`ID` int unsigned NOT NULL AUTO_INCREMENT,
 				`name` varchar(255) NOT NULL,
-				`date_range` varchar(255) NOT NULL,
+				`date_range` varchar(32) NOT NULL,
 				`format` varchar(32) NOT NULL,
 				`frequency` varchar(16) NOT NULL,
-				`fixed_end_date` varchar(16) NOT NULL,
-				`day_of_week` varchar(16) DEFAULT NULL,
+				`fixed_end_date` date DEFAULT NULL,
+				`day_of_week` varchar(9) DEFAULT NULL,
 				`week_of_month` int DEFAULT NULL,
-				`send_time` varchar(16) NOT NULL,
+				`send_time` varchar(5) NOT NULL,
 				`last_edit` int unsigned NOT NULL,
 				`enabled` tinyint(1) NOT NULL DEFAULT 1,
 				`scheduled` tinyint(1) NOT NULL DEFAULT 0,
@@ -664,10 +664,9 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				self::error_log( 'Error creating burst_reports table: ' . $wpdb->last_error );
 			}
 
-			// Add indexes.
+			// Add indexes. ID is already the PRIMARY KEY, so it is not indexed again here.
 			$indexes = [
 				'burst_reports' => [
-					[ 'ID' ],
 					[ 'enabled' ],
 					[ 'frequency' ],
 					[ 'day_of_week' ],

@@ -41,7 +41,7 @@ export const LivePreviewClassic = ({ className }: { className?: string }) => {
             { hasSelectedContent && ! isFetching && data?.preview_html && (
                 <ShadowContainer
                     html={ data.preview_html }
-                    className="w-full burst-classic-html-container border rounded bg-white"
+                    className="w-full burst-classic-html-container border rounded bg-white min-h-[500px]"
                 />
             ) }
         </div>

@@ -331,8 +331,8 @@ class Upgrade {
 		}
 
 		if ( $prev_version && version_compare( $prev_version, '3.5.1', '<' ) ) {
-			// No-op code to pass the unit test when no upgrade required.
-			$prev_version .= '';
+			// Convert oversized/string report columns to fitted/native types.
+			update_option( 'burst_db_upgrade_report_table_types', true, false );
 		}
 
 		$admin = new Admin();

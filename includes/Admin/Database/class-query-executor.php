@@ -293,7 +293,25 @@ class Query_Executor {
 			return 0;
 		}
 
+		if ( ! $this->is_dashboard_rest_request() ) {
+			return 0;
+		}
+
 		return max( 0, (int) constant( 'BURST_STRESS_TEST_QUERIES' ) );
+	}
+
+	/**
+	 * Determine if the current request is a REST request initiated by the frontend dashboard.
+	 */
+	private function is_dashboard_rest_request(): bool {
+		if ( ! defined( 'REST_REQUEST' ) || ! REST_REQUEST ) {
+			return false;
+		}
+
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		$decoded_uri = rawurldecode( $request_uri );
+
+		return ( strpos( $decoded_uri, '/burst/v1/' ) !== false );
 	}
 
 	/**

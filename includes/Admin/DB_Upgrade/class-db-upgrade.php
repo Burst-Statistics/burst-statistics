@@ -218,6 +218,10 @@ class DB_Upgrade {
 			delete_option( 'burst_db_upgrade_clean_orphaned_session_ids' );
 		}
 
+		if ( 'report_table_types' === $do_upgrade ) {
+			$this->upgrade_report_table_types();
+		}
+
 		if ( 'add_page_ids' === $do_upgrade ) {
 			$this->upgrade_add_page_ids();
 		}
@@ -380,6 +384,9 @@ class DB_Upgrade {
 				'3.2.3'   => [
 					'move_columns_to_sessions',
 				],
+				'3.5.1'   => [
+					'report_table_types',
+				],
 			]
 		);
 
@@ -424,6 +431,63 @@ class DB_Upgrade {
 			}
 		}
 		return $version_upgrades;
+	}
+
+	/**
+	 * Align report table column types with the data they store and drop the
+	 * report-index that merely duplicates the PRIMARY KEY. Dates are stored as
+	 * 'Y-m-d', send_time as 'HH:MM'; the oversized varchars become native/fitted
+	 * types. Repairs malformed values before the strict type conversion so the
+	 * ALTER cannot fail on a stray row.
+	 */
+	private function upgrade_report_table_types(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+
+		$option_name = 'burst_db_upgrade_report_table_types';
+		if ( ! get_option( $option_name ) ) {
+			return;
+		}
+
+		global $wpdb;
+
+		$date_regexp = '^[0-9]{4}-[0-9]{2}-[0-9]{2}$';
+
+		if ( $this->table_exists( 'burst_report_logs' ) && $this->column_exists( 'burst_report_logs', 'date' ) ) {
+			// Repair any non-'Y-m-d' value from the row's own timestamp, then
+			// convert the column to a native DATE.
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+			$wpdb->query( "UPDATE {$wpdb->prefix}burst_report_logs SET `date` = FROM_UNIXTIME(`time`, '%Y-%m-%d') WHERE `date` NOT REGEXP '$date_regexp'" );
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_report_logs MODIFY COLUMN `date` DATE NOT NULL" );
+			$this->drop_index( 'burst_report_logs', 'report_id_index' );
+		}
+
+		if ( $this->table_exists( 'burst_reports' ) ) {
+			if ( $this->column_exists( 'burst_reports', 'fixed_end_date' ) ) {
+				// fixed_end_date is empty for non-scheduled reports; move those to
+				// NULL before converting the column to a nullable DATE.
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+				$wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_reports MODIFY COLUMN `fixed_end_date` VARCHAR(16) NULL DEFAULT NULL" );
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+				$wpdb->query( "UPDATE {$wpdb->prefix}burst_reports SET `fixed_end_date` = NULL WHERE `fixed_end_date` NOT REGEXP '$date_regexp'" );
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+				$wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_reports MODIFY COLUMN `fixed_end_date` DATE NULL DEFAULT NULL" );
+			}
+
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_reports MODIFY COLUMN `date_range` VARCHAR(32) NOT NULL" );
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_reports MODIFY COLUMN `day_of_week` VARCHAR(9) DEFAULT NULL" );
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_reports MODIFY COLUMN `send_time` VARCHAR(5) NOT NULL" );
+
+			// ID is the PRIMARY KEY; drop the index that duplicates it.
+			$this->drop_index( 'burst_reports', 'id_index' );
+		}
+
+		delete_option( $option_name );
 	}
 
 	/**

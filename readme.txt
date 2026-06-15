@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.0
-Stable tag: 3.5.0
+Stable tag: 3.5.1
 
 Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner needed.
  
@@ -277,6 +277,24 @@ We value your feedback. You can [submit a support request on the WordPress forum
  
 
 == Change log ==
+= 3.5.1 =
+* June 17th 2026
+* New: Reading Engagement statistics block.
+* New: Pro forms tracking.
+* New: Custom CSS block.
+* Improvement: store product IDs as integers in the ecommerce cart and order tables for smaller, faster joins.
+* Improvement: use native date types and right-sized columns for the report tables.
+* Improvement: removed duplicate database indexes on the subscription, orders and report tables to speed up inserts and updates.
+* Improvement: added outgoing links, search terms, and forms to the Abilities API.
+* Improvement: query data performance and accuracy improvements.
+* Improvement: overwrite the free plugin's tracking script with the premium version during upgrade.
+* Improvement: more robust report email delivery.
+* Fix: container queries and various UI/UX improvements.
+* Fix: mobile responsiveness for the funnel.
+* Fix: report localization, adding locale handling in report configuration and formatting.
+* Fix: use ISO-8601 weekday numbers so report scheduling does not break on other locales.
+* Fix: generalize the GeoIP database type check to support commercial GeoIP2-City databases without triggering mismatch overwrites.
+
 = 3.5.0 =
 * June 3rd 2026
 * Improvement: AI chat availability checks and ability registration, preventing PHP notices and duplicate ability registrations.

@@ -546,7 +546,8 @@ class Report {
 			'name'           => $this->name,
 			'format'         => $this->format,
 			'frequency'      => $this->frequency,
-			'fixed_end_date' => $this->fixed_end_date,
+			// Store NULL rather than '' for the DATE column when no anchor date is set.
+			'fixed_end_date' => '' !== $this->fixed_end_date ? $this->fixed_end_date : null,
 			'week_of_month'  => $this->week_of_month,
 			'day_of_week'    => $this->day_of_week,
 			'send_time'      => $this->send_time,

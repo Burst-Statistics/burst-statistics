@@ -98,7 +98,6 @@ export type ContentItem = {
 	blockProps?: Partial<BlockComponentProps>;
 	ecommerce?: boolean;
 	isReport?: boolean;
-	tier?: 'agency';
 };
 
 export type ContentItems = ContentItem[];

@@ -40,7 +40,7 @@ function Engagement() {
 				</BlockContent>
 			</Block>
 
-			<SearchTermsBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
+			<SearchTermsBlock className="row-span-1 lg:col-span-6 xl:col-span-3" />
 
 			<Block className="row-span-1 @lg:col-span-6 @xl:col-span-4">
 				<BlockHeading title={__( 'Goals', 'burst-statistics' )} />
