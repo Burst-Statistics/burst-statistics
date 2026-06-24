@@ -200,7 +200,11 @@ Browse the full [Learn hub](https://burst-statistics.com/learn/?utm_source=wordp
 That's it. No external accounts. No tracking codes to paste. Burst starts collecting site stats immediately.
  
 Prefer installing manually or via Composer? See [installing Burst Statistics with Composer](https://burst-statistics.com/installing-burst-statistics-with-composer/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=install-composer).
- 
+
+= Credits =
+
+Country-level geographic data is provided by the MaxMind GeoLite2 database. This product includes GeoLite2 Data created by MaxMind, available from https://www.maxmind.com/.
+
 == Frequently Asked Questions ==
  
 = Is Burst Statistics really free? =
