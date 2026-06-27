@@ -19,7 +19,6 @@ use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
 use Burst\Traits\Save;
 use Burst\UserAgentParser\UserAgentParser;
-use Burst\Pro\Admin\Statistics\Source_Classifier;
 
 use function Burst\burst_loader;
 
@@ -370,9 +369,8 @@ class App {
 	 * @return array<string, mixed>
 	 */
 	public function extend_localized_settings_for_dashboard( array $data ): array {
-		$data['menu']                  = $this->menu->get();
-		$data['fields']                = $this->fields->get();
-		$data['source_classifier_map'] = ( new Source_Classifier() )->get_map();
+		$data['menu']   = $this->menu->get();
+		$data['fields'] = $this->fields->get();
 		return $data;
 	}
 
