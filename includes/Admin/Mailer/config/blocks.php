@@ -23,4 +23,16 @@ return [
 		'url'        => '#/statistics',
 		'header'     => [ __( 'Referrers', 'burst-statistics' ), __( 'Pageviews', 'burst-statistics' ) ],
 	],
+	// Country tracking is free; the country code is enriched to a nice name by
+	// Geo_Statistics on the burst_mail_report_results filter.
+	Report_Content_Block::COUNTRIES          => [
+		'title'      => __( 'Countries', 'burst-statistics' ),
+		'query_args' => [
+			'select'   => [ 'country_code', 'pageviews' ],
+			'group_by' => 'country_code',
+			'order_by' => 'pageviews DESC',
+		],
+		'url'        => '#/sources',
+		'header'     => [ __( 'Country', 'burst-statistics' ), __( 'Pageviews', 'burst-statistics' ) ],
+	],
 ];

@@ -115,7 +115,8 @@ import {
 	MessageCircle,
 	Maximize2,
 	Menu,
-	Table2
+	Table2,
+	ShieldCheck
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -271,6 +272,8 @@ const iconComponents = {
 	expand: Maximize2,
 	menu: Menu,
 	close: X,
+	'shield-check': ShieldCheck,
+	privacy: ShieldCheck,
 
 	// Sales & subscription metric icons
 	banknote: Banknote,

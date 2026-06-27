@@ -12,6 +12,7 @@ use Burst\Admin\Data_Sharing\Data_Collectors\Reports_Data;
 use Burst\Admin\Data_Sharing\Data_Collectors\Settings_Data;
 use Burst\Admin\Data_Sharing\Data_Collectors\Goals_Data;
 use Burst\Admin\Data_Sharing\Data_Collectors\Environment_Data;
+use Burst\Admin\Data_Sharing\Data_Collectors\Ai_Chat_Data;
 use Burst\Traits\Helper;
 
 /**
@@ -54,6 +55,7 @@ class Data_Aggregation {
 			'environment'   => new Environment_Data(),
 			'email_reports' => new Reports_Data( $this->capture_data_from ),
 			'metrics'       => new Metrics_Data( $this->capture_data_from, $this->capture_data_to ),
+			'ai_chat'       => new Ai_Chat_Data(),
 		];
 	}
 
@@ -107,6 +109,12 @@ class Data_Aggregation {
 					'query_stats'        => [],
 				];
 
+			case 'ai_chat':
+				return [
+					'question_count' => 0,
+					'questions'      => [],
+				];
+
 			case 'settings':
 			default:
 				return [];
@@ -115,6 +123,8 @@ class Data_Aggregation {
 
 	/**
 	 * Normalize email report logs to either null or a strict metrics object.
+	 *
+	 * Mixed $logs: defensively accepts whatever the collected-data array holds at this key (could be a non-array on corrupt/legacy data); the is_array guard handles it.
 	 */
 	private function normalize_email_report_logs( mixed $logs ): ?array {
 		if ( ! is_array( $logs ) || empty( $logs ) ) {
@@ -136,7 +146,7 @@ class Data_Aggregation {
 	 * Ensure required top-level v2 sections always exist.
 	 */
 	private function ensure_required_sections( array $collected_data ): array {
-		$required_sections = [ 'settings', 'goals', 'environment', 'email_reports', 'metrics' ];
+		$required_sections = [ 'settings', 'goals', 'environment', 'email_reports', 'metrics', 'ai_chat' ];
 
 		foreach ( $required_sections as $section ) {
 			if ( ! isset( $collected_data[ $section ] ) || ! is_array( $collected_data[ $section ] ) ) {

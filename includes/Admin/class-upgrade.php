@@ -323,16 +323,35 @@ class Upgrade {
 		}
 
 		if ( $prev_version && version_compare( $prev_version, '3.5.0', '<' ) ) {
-			// External link tracking is enabled by default for upgraded installs.
-			$this->update_option( 'track_external_links', true );
-			( new Tasks() )->add_task( 'external_links_tracking' );
-
 			burst_reinstall_rest_api_optimizer();
 		}
 
 		if ( $prev_version && version_compare( $prev_version, '3.5.1', '<' ) ) {
 			// Convert oversized/string report columns to fitted/native types.
 			update_option( 'burst_db_upgrade_report_table_types', true, false );
+		}
+
+		if ( $prev_version && version_compare( $prev_version, '3.6.0', '<' ) ) {
+			// Remove historic spam/invalid browsers left over from before the
+			// user agent allowlist was tightened.
+			update_option( 'burst_db_upgrade_clean_spam_browsers', true, false );
+
+			// Country GeoIP tracking ships in free as of 3.6. Download the database
+			// (the burst_locations country lookup is seeded by install_locations_table
+			// via the run_table_init_hook below). The "available from" timestamp is set
+			// only here — i.e. on an upgrade from an existing install — so a fresh
+			// install, which has country data from its first hit, shows no notice.
+			update_option( 'burst_import_geo_ip_on_activation', true, false );
+			// Stored via the settings system (not a standalone option) so the React
+			// world-map notice can read it through getValue().
+			$this->update_option( 'country_geo_database_available_time', time() );
+
+			// External link tracking is Pro-only. Earlier free builds incorrectly
+			// enabled this option (and could fatal on the missing Pro class), so
+			// remove the leftover setting on free installs.
+			if ( defined( 'BURST_FREE' ) ) {
+				burst_delete_option( 'track_external_links' );
+			}
 		}
 
 		$admin = new Admin();

@@ -1,5 +1,6 @@
 import { __ } from '@wordpress/i18n';
 import Tooltip from '@/components/Common/Tooltip';
+import MetricInfo from '@/components/Common/MetricInfo';
 import { useQuery } from '@tanstack/react-query';
 import getTodayData from '@//api/getTodayData';
 import Icon from '@//utils/Icon';
@@ -160,7 +161,9 @@ const TodayBlock = () => {
 							<div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-2 py-2.5 px-2.5 md:px-6 even:bg-gray-100 burst-tooltip-pageviews">
 								<Icon name="pageviews" />
 								<p className="burst-today-list-item-text w-full mr-auto">
-									{data.pageviews.title}
+									<MetricInfo metricKey="pageviews" side="top">
+										{data.pageviews.title}
+									</MetricInfo>
 								</p>
 								<p className="font-semibold">
 									{data.pageviews.value}
@@ -171,7 +174,9 @@ const TodayBlock = () => {
 							<div className="w-full grid justify-items-start grid-cols-auto-1fr-auto gap-2 py-2.5 px-2.5 md:px-6 even:bg-gray-100 burst-tooltip-timeOnPage">
 								<Icon name="time" />
 								<p className="burst-today-list-item-text w-full mr-auto">
-									{data.timeOnPage.title}
+									<MetricInfo metricKey="time_on_page" side="top">
+										{data.timeOnPage.title}
+									</MetricInfo>
 								</p>
 								<p className="font-semibold">
 									{data.timeOnPage.value}

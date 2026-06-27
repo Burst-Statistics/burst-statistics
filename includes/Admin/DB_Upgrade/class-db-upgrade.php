@@ -242,6 +242,10 @@ class DB_Upgrade {
 			$this->upgrade_move_columns_to_sessions();
 		}
 
+		if ( 'clean_spam_browsers' === $do_upgrade ) {
+			$this->clean_spam_browsers();
+		}
+
 		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
 		if ( $this->get_progress( 'free', 'all' ) < 100 ) {
 			// free upgrades not finished yet.
@@ -386,6 +390,9 @@ class DB_Upgrade {
 				],
 				'3.5.1'   => [
 					'report_table_types',
+				],
+				'3.6.0'   => [
+					'clean_spam_browsers',
 				],
 			]
 		);
@@ -1381,6 +1388,42 @@ class DB_Upgrade {
 			delete_option( 'burst_db_upgrade_move_columns_to_sessions' );
 			delete_transient( 'burst_progress_move_columns_to_sessions' );
 			self::error_log( 'move_columns_to_sessions upgrade complete.' );
+		}
+	}
+
+	/**
+	 * One-time cleanup of historic spam/invalid browsers and their visit data.
+	 *
+	 * Older installs accumulated junk browser names (e.g.
+	 * "amazon-Quick-on-behalf-of-<hash>" or random tokens) before the user agent
+	 * allowlist was tightened. This removes them in batches over several upgrade
+	 * iterations to avoid timeouts on large tables.
+	 */
+	private function clean_spam_browsers(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+
+		$option_name = 'burst_db_upgrade_clean_spam_browsers';
+		if ( ! get_option( $option_name ) ) {
+			return;
+		}
+
+		if ( ! $this->table_exists( 'burst_browsers' ) || ! $this->column_exists( 'burst_sessions', 'browser_id' ) ) {
+			delete_option( $option_name );
+			return;
+		}
+
+		// Junk browsers are spread across many lookup rows that each carry only a
+		// few sessions, so per-run cost is dominated by the batched row deletes
+		// (LIMIT 5000) inside clear_spam_browsers(), not by this browser count.
+		$batch   = 500;
+		$removed = \Burst\burst_loader()->admin->app->clear_spam_browsers( $batch );
+
+		// Fewer than a full batch removed means the table has been fully scanned.
+		if ( $removed < $batch ) {
+			delete_option( $option_name );
+			self::error_log( 'clean_spam_browsers upgrade complete.' );
 		}
 	}
 }

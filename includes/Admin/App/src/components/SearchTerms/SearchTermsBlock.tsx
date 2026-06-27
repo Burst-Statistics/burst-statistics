@@ -9,6 +9,7 @@ import Icon from '@/utils/Icon';
 import { BarDataTable } from '@/components/DataTable/BarDataTable';
 import { useSearchTermsData } from './useSearchTermsData';
 import { getSearchTermsColumns } from './columns';
+import MetricInfo from '@/components/Common/MetricInfo';
 
 type SearchTermsBlockProps = {
 
@@ -73,7 +74,9 @@ const SearchTermsBlock = memo( ({ className = '' }: SearchTermsBlockProps ) => {
 				className="border-b border-gray-200"
 				isLoading={isLoading}
 				title={<>
-					{__( 'Search terms', 'burst-statistics' )}
+					<MetricInfo metricKey="search_terms" side="bottom">
+						{__( 'Website searches', 'burst-statistics' )}
+					</MetricInfo>
 					{/* Expand to overlay. */}
 					<button
 						type="button"

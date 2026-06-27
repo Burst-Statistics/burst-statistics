@@ -46,6 +46,14 @@ class Query_Executor {
 	private int $timeout_cooldown_ttl   = 0;
 
 	/**
+	 * Whether the last run() hit a MySQL execution timeout. A timeout returns
+	 * the same empty result as a genuinely empty table, so callers that
+	 * paginate (e.g. the COLLECT pass) must check this to avoid mistaking a
+	 * failed page for the end of the data.
+	 */
+	public bool $timed_out = false;
+
+	/**
 	 * Create a new Query_Executor instance.
 	 */
 	public static function create(): self {
@@ -150,10 +158,13 @@ class Query_Executor {
 	 * @param string $output_type OBJECT | ARRAY_A | ARRAY_N (ignored for get_var / get_col).
 	 * @return mixed  array|object for 'get'; object|array|null for 'get_row';
 	 *                int|float|string|null for 'get_var'; array|null for 'get_col'.
+	 *
+	 * Mixed return: the wpdb result type depends on $method (get/get_row/get_var/get_col), so it cannot be narrowed to a single type.
 	 */
 	public function run( string $sql, string $method, string $output_type = 'OBJECT' ): mixed {
 		global $wpdb;
 
+		$this->timed_out   = false;
 		$is_single_row     = ( 'get_row' === $method );
 		$stress_iterations = $this->get_stress_test_query_iterations();
 		$cache_key         = '';
@@ -212,6 +223,7 @@ class Query_Executor {
 			$end_time = microtime( true );
 
 			if ( $this->is_timeout_error( $wpdb->last_error ) ) {
+				$this->timed_out = true;
 				self::error_log( 'Burst query timed out in ' . $method . ' for fingerprint ' . $this->fingerprint );
 
 				if ( $this->cache_ttl > 0 && '' !== $cache_key ) {
@@ -241,6 +253,8 @@ class Query_Executor {
 
 	/**
 	 * Dispatch to the correct wpdb method.
+	 *
+	 * Mixed return: forwards the wpdb result whose type depends on $method (get/get_row/get_var/get_col); cannot be narrowed.
 	 */
 	private function execute( \wpdb $wpdb, string $sql, string $method, string $output_type ): mixed {
 		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared -- $sql is pre-built and sanitized by Statistics::build_raw_sql() + add_query_timeout_hint().
@@ -259,6 +273,8 @@ class Query_Executor {
 
 	/**
 	 * Run a query repeatedly for stress-test benchmarking.
+	 *
+	 * Mixed return: returns the last execute() result, whose type depends on $method; cannot be narrowed.
 	 */
 	private function run_stress_iterations( \wpdb $wpdb, string $sql, string $method, string $output_type, int $iterations ): mixed {
 		$result = $this->empty_result( $method );
@@ -271,12 +287,14 @@ class Query_Executor {
 	/**
 	 * Return the method-appropriate empty/null sentinel for early-exit paths.
 	 */
-	private function empty_result( string $method ): mixed {
+	private function empty_result( string $method ): ?array {
 		return ( 'get' === $method ) ? [] : null;
 	}
 
 	/**
 	 * Determine whether a result is worth caching (mirrors current Statistics logic).
+	 *
+	 * Mixed $result: receives a run() result whose type depends on the wpdb method (array|object|scalar|null); cannot be narrowed.
 	 */
 	private function is_cacheable_result( mixed $result, string $method ): bool {
 		if ( 'get' === $method ) {
@@ -324,6 +342,8 @@ class Query_Executor {
 
 	/**
 	 * Log a deterministic signature of the stress-test query output for baseline comparisons.
+	 *
+	 * Mixed $result: receives a run() result whose type depends on the wpdb method (array|object|scalar|null); cannot be narrowed.
 	 */
 	private function log_stress_test_result_signature( mixed $result, string $sql, string $result_type ): void {
 		$normalized_sql = preg_replace( '/\s+/', ' ', trim( $sql ) );
@@ -346,6 +366,8 @@ class Query_Executor {
 
 	/**
 	 * Normalize result data for deterministic hashing.
+	 *
+	 * Mixed in/out: recurses over an arbitrary wpdb result (object|array|scalar|null) and returns the same shape normalized — genuinely polymorphic.
 	 */
 	private function normalize_stress_result_for_hash( mixed $value ): mixed {
 		if ( is_object( $value ) ) {
@@ -374,6 +396,8 @@ class Query_Executor {
 
 	/**
 	 * Count top-level result items for stress output logging.
+	 *
+	 * Mixed $result: receives a run() result whose type depends on the wpdb method (array|object|scalar|null); cannot be narrowed.
 	 */
 	private function count_stress_result_items( mixed $result ): int {
 		if ( is_array( $result ) ) {
@@ -585,6 +609,8 @@ class Query_Executor {
 
 	/**
 	 * Follower requests briefly poll cache for a leader-written result.
+	 *
+	 * Mixed return: returns whatever a leader cached for this query (type depends on the wpdb method) or false on miss; cannot be narrowed.
 	 */
 	private function wait_for_query_cache_fill( string $cache_key, string $cache_group, int $wait_ms ): mixed {
 		if ( $wait_ms <= 0 ) {

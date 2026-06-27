@@ -1,5 +1,6 @@
 import Icon from '../../utils/Icon';
 import HelpTooltip from '@/components/Common/HelpTooltip';
+import MetricInfo from '@/components/Common/MetricInfo';
 import { formatNumber } from '@/utils/formatting';
 
 /**
@@ -14,7 +15,8 @@ import { formatNumber } from '@/utils/formatting';
  * @param {string|null}   props.changeStatus Status of the change ('positive' or 'negative').
  * @param {string|null}   [props.iconKey]    Optional key for icon display. Default is null.
  * @param {string}        [props.className]  Optional additional class names. Default is ''.
- * @param {string|null}   [props.tooltipText] Optional text for tooltip display. Default is null.param
+ * @param {string|null}   [props.tooltipText] Optional text for tooltip display. Default is null.
+ * @param {string|null}   [props.metricKey]  Optional metric key to show a metric-explainer ⓘ icon.
  *
  * @return {JSX.Element} The rendered component.
  */
@@ -27,7 +29,8 @@ const ExplanationAndStatsItem = ({
 	changeStatus,
 	iconKey = null,
 	className = '',
-	tooltipText = null
+	tooltipText = null,
+	metricKey = null
 }) => {
 
 	if ( exactValue && 1000 < exactValue ) {
@@ -38,11 +41,17 @@ const ExplanationAndStatsItem = ({
 		<div className={`flex items-start gap-3 py-2 ${className}`}>
 			{iconKey && <Icon name={iconKey} className="mt-1" />}
 
-			<div className="flex-1 label">
-				<h3 className="text-base font-semibold text-text-black">{title}</h3>
+		<div className="flex-1 label min-w-0">
+			<h3 className="text-base font-semibold text-text-black">
+				{ metricKey ? (
+					<MetricInfo metricKey={ metricKey } side="top">{ title }</MetricInfo>
+				) : (
+					title
+				) }
+			</h3>
 
-				{subtitle && <p className="text-sm text-text-gray">{subtitle}</p>}
-			</div>
+			{subtitle && <p className="text-sm text-text-gray">{subtitle}</p>}
+		</div>
 
 			<div className="text-right">
 				{

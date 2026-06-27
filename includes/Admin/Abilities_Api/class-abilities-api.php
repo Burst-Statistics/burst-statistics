@@ -29,6 +29,13 @@ class Abilities_Api {
 	];
 
 	/**
+	 * Abilities_Api constructor.
+	 */
+	public function __construct() {
+		add_action( 'update_option_burst_options_settings', [ $this, 'on_update_options_settings' ], 10, 2 );
+	}
+
+	/**
 	 * Check whether the Abilities API setting is enabled.
 	 */
 	public static function is_enabled(): bool {
@@ -628,6 +635,8 @@ class Abilities_Api {
 	 * Permission callback for all Burst abilities.
 	 *
 	 * @param mixed $input Optional ability input.
+	 *
+	 * Mixed $input: signature is dictated by the WordPress Abilities API (wp_register_ability permission_callback); the validated input shape varies per ability.
 	 */
 	public function permission_callback( mixed $input = null ): bool|\WP_Error {
 		unset( $input );
@@ -648,6 +657,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed $input Ability input.
 	 * @return array<string, int>|\WP_Error
+	 *
+	 * Mixed $input: signature is dictated by the WordPress Abilities API (wp_register_ability execute_callback); the validated input shape varies per ability.
 	 */
 	public function ability_live_visitors( mixed $input ): array|\WP_Error {
 		unset( $input );
@@ -680,6 +691,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed $input Ability input.
 	 * @return array<string, mixed>|\WP_Error
+	 *
+	 * Mixed $input: signature is dictated by the WordPress Abilities API (wp_register_ability execute_callback); the validated input shape varies per ability.
 	 */
 	public function ability_live_traffic( mixed $input ): array|\WP_Error {
 		$rate_limit = $this->enforce_rate_limit( 'live-traffic' );
@@ -742,6 +755,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed $input Ability input.
 	 * @return array<string, mixed>|\WP_Error
+	 *
+	 * Mixed $input: signature is dictated by the WordPress Abilities API (wp_register_ability execute_callback); the validated input shape varies per ability.
 	 */
 	public function ability_today_summary( mixed $input ): array|\WP_Error {
 		$rate_limit = $this->enforce_rate_limit( 'today-summary' );
@@ -815,6 +830,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed $input Ability input.
 	 * @return array<string, mixed>|\WP_Error
+	 *
+	 * Mixed $input: signature is dictated by the WordPress Abilities API (wp_register_ability execute_callback); the validated input shape varies per ability.
 	 */
 	public function ability_tasks( mixed $input ): array|\WP_Error {
 		unset( $input );
@@ -865,6 +882,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed $input Ability input.
 	 * @return array<string, mixed>|\WP_Error
+	 *
+	 * Mixed $input: signature is dictated by the WordPress Abilities API (wp_register_ability execute_callback); the validated input shape varies per ability.
 	 */
 	public function ability_tracking_status( mixed $input ): array|\WP_Error {
 		unset( $input );
@@ -893,6 +912,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed $input Ability input.
 	 * @return array<string, mixed>|\WP_Error
+	 *
+	 * Mixed $input: signature is dictated by the WordPress Abilities API (wp_register_ability execute_callback); the validated input shape varies per ability.
 	 */
 	public function ability_license_notices( mixed $input ): array|\WP_Error {
 		unset( $input );
@@ -929,6 +950,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed $input Ability input.
 	 * @return array<string, mixed>|\WP_Error
+	 *
+	 * Mixed $input: signature is dictated by the WordPress Abilities API (wp_register_ability execute_callback); the validated input shape varies per ability.
 	 */
 	public function ability_data( mixed $input ): array|\WP_Error {
 		$rate_limit = $this->enforce_rate_limit( 'data' );
@@ -1081,6 +1104,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed $input Ability input.
 	 * @return array<string, mixed>|\WP_Error
+	 *
+	 * Mixed $input: signature is dictated by the WordPress Abilities API (wp_register_ability execute_callback); the validated input shape varies per ability.
 	 */
 	public function ability_sales_data( mixed $input ): array|\WP_Error {
 		if ( ! defined( 'BURST_PRO' ) ) {
@@ -1154,6 +1179,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed $input Ability input.
 	 * @return array<string, mixed>|\WP_Error
+	 *
+	 * Mixed $input: signature is dictated by the WordPress Abilities API (wp_register_ability execute_callback); the validated input shape varies per ability.
 	 */
 	public function ability_subscriptions_data( mixed $input ): array|\WP_Error {
 		if ( ! defined( 'BURST_PRO' ) ) {
@@ -1267,6 +1294,8 @@ class Abilities_Api {
 
 	/**
 	 * Normalize insights interval coming from API clients.
+	 *
+	 * Mixed $interval: unvalidated value from API/agent client input that may not be a string; the is_string guard defaults anything else to 'auto'.
 	 */
 	private function normalize_insights_interval( mixed $interval ): string {
 		if ( ! is_string( $interval ) ) {
@@ -1284,6 +1313,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed $filters Input filters; expected array of objects with key/value.
 	 * @return array<int, array{key: string, value: mixed}>
+	 *
+	 * Mixed $filters: unvalidated value from agent client input that may not be an array; the is_array guard returns [] for anything else.
 	 */
 	private function normalize_agent_filter_objects( mixed $filters ): array {
 		if ( ! is_array( $filters ) ) {
@@ -1364,6 +1395,7 @@ class Abilities_Api {
 		$metrics = array_values(
 			array_unique(
 				array_map(
+					// mixed $metric: array_map over an unvalidated request-supplied metric list whose items may be string or int; cast to string here.
 					static function ( mixed $metric ): string {
 						return (string) $metric;
 					},
@@ -1511,6 +1543,14 @@ class Abilities_Api {
 							return is_array( $value ) ? $value : [];
 						},
 					],
+					'model'   => [
+						'required'          => false,
+						'default'           => '',
+						'type'              => 'string',
+						'sanitize_callback' => static function ( $value ): string {
+							return is_scalar( $value ) ? sanitize_text_field( (string) $value ) : '';
+						},
+					],
 				],
 			]
 		);
@@ -1524,6 +1564,16 @@ class Abilities_Api {
 				'permission_callback' => [ $this, 'permission_callback' ],
 			]
 		);
+
+		register_rest_route(
+			'burst/v1',
+			'chat/models',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'rest_api_chat_models' ],
+				'permission_callback' => [ $this, 'permission_callback' ],
+			]
+		);
 	}
 
 	/**
@@ -1532,6 +1582,8 @@ class Abilities_Api {
 	 * @param mixed                $result Existing action result.
 	 * @param string               $action Action name.
 	 * @param array<string, mixed> $data   Action payload.
+	 *
+	 * Mixed $result/return: filter callback in the generic ajax-action chain — it passes through whatever earlier handlers returned for non-'chat' actions, so the type stays open.
 	 */
 	public function handle_ajax_chat_actions( mixed $result, string $action, array $data ): mixed {
 		if ( ! $this->user_can_manage() ) {
@@ -1542,6 +1594,7 @@ class Abilities_Api {
 			$request = new \WP_REST_Request();
 			$request->set_param( 'message', $data['message'] ?? '' );
 			$request->set_param( 'history', isset( $data['history'] ) && is_array( $data['history'] ) ? $data['history'] : [] );
+			$request->set_param( 'model', isset( $data['model'] ) && is_string( $data['model'] ) ? $data['model'] : '' );
 
 			$response = $this->rest_api_chat( $request );
 			if ( is_wp_error( $response ) ) {
@@ -1557,6 +1610,11 @@ class Abilities_Api {
 
 		if ( 'chat_status' === $action ) {
 			return self::get_chat_availability();
+		}
+
+		if ( 'chat_models' === $action ) {
+			$response = $this->rest_api_chat_models();
+			return is_array( $response->get_data() ) ? $response->get_data() : [];
 		}
 
 		return $result;
@@ -1613,7 +1671,8 @@ class Abilities_Api {
 			);
 		}
 
-		$history = $request->get_param( 'history' );
+		$selected_model = trim( (string) ( $request->get_param( 'model' ) ?? '' ) );
+		$history        = $request->get_param( 'history' );
 
 		$messages = $this->normalize_chat_history( is_array( $history ) ? $history : [] );
 		if ( is_wp_error( $messages ) ) {
@@ -1652,6 +1711,12 @@ class Abilities_Api {
 				sprintf( 'Today is %s (UTC).', $current_date ),
 				sprintf( 'Current Unix timestamps — today: %d–%d | this week (Mon): %d–now | this month: %d–%d.', $today_start, $today_end, $week_start, $month_start, $month_end ),
 				'Always use these timestamps for relative date references such as "today", "this week", or "this month".',
+				'At the very end of your response, you MUST append a JSON object wrapped in <telemetry>...</telemetry> tags.',
+				'This JSON object must contain the following keys:',
+				'- "anonymized_question": A short (3-8 words), generalized, and completely anonymized version of the user\'s latest question (e.g. "show todays summary"). Remove all specific names, exact metrics, dates, URLs, or personal data.',
+				'- "answered": A boolean flag indicating whether you successfully answered the user\'s question (true) or if it was not answerable/out of scope/unrecognized (false).',
+				'Example format to append:',
+				'<telemetry>{"anonymized_question": "show today summary", "answered": true}</telemetry>',
 			]
 		);
 
@@ -1671,8 +1736,7 @@ class Abilities_Api {
 			$assistant_reply = '';
 
 			while ( $turn < $max_turns ) {
-				$chat_builder = $this->build_chat_prompt_builder( $messages, $system_prompt, true )
-					->using_model_preference( 'gpt-5-mini' );
+				$chat_builder = $this->build_chat_prompt_builder( $messages, $system_prompt, true, $selected_model );
 
 				// First pass or loop pass: get a full result object so we can inspect for tool calls.
 				$result = $chat_builder->generate_text_result();
@@ -1687,8 +1751,7 @@ class Abilities_Api {
 					);
 
 					if ( $this->is_provider_protocol_error( $result ) ) {
-						$compat = $this->build_chat_prompt_builder( $messages, $system_prompt, false )
-							->using_model_preference( 'gpt-5-mini' )
+						$compat = $this->build_chat_prompt_builder( $messages, $system_prompt, false, $selected_model )
 							->generate_text();
 
 						if ( is_wp_error( $compat ) ) {
@@ -1776,8 +1839,7 @@ class Abilities_Api {
 					]
 				);
 
-				$final = $this->build_chat_prompt_builder( $messages, $system_prompt, false )
-					->using_model_preference( 'gpt-5-mini' )
+				$final = $this->build_chat_prompt_builder( $messages, $system_prompt, false, $selected_model )
 					->generate_text();
 
 				if ( ! is_wp_error( $final ) ) {
@@ -1793,10 +1855,39 @@ class Abilities_Api {
 				);
 			}
 
+			$anonymized_question = 'Chat assistant query';
+			$answered            = false;
+
+			if ( str_contains( $assistant_reply, '<telemetry>' ) ) {
+				$parts             = explode( '<telemetry>', $assistant_reply, 2 );
+				$assistant_reply   = trim( $parts[0] );
+				$telemetry_content = $parts[1];
+
+				if ( str_contains( $telemetry_content, '</telemetry>' ) ) {
+					$subparts          = explode( '</telemetry>', $telemetry_content, 2 );
+					$telemetry_content = $subparts[0];
+					if ( trim( $subparts[1] ) !== '' ) {
+						$assistant_reply .= "\n" . trim( $subparts[1] );
+					}
+				}
+
+				$telemetry_data = json_decode( trim( $telemetry_content ), true );
+				if ( is_array( $telemetry_data ) ) {
+					if ( isset( $telemetry_data['anonymized_question'] ) && '' !== trim( (string) $telemetry_data['anonymized_question'] ) ) {
+						$anonymized_question = sanitize_text_field( trim( (string) $telemetry_data['anonymized_question'] ) );
+					}
+					if ( isset( $telemetry_data['answered'] ) ) {
+						$answered = (bool) $telemetry_data['answered'];
+					}
+				}
+			}
+
 			$model_message = $this->create_model_message( $assistant_reply );
 			if ( ! is_wp_error( $model_message ) ) {
 				$messages[] = $model_message;
 			}
+
+			$this->record_chat_question( $anonymized_question, $selected_model, $answered );
 
 			return new \WP_REST_Response(
 				[
@@ -1837,6 +1928,171 @@ class Abilities_Api {
 				'Unable to generate a chat response right now.',
 				$error_data
 			);
+		}
+	}
+
+	/**
+	 * Chat models endpoint — returns available AI models from the configured provider.
+	 */
+	public function rest_api_chat_models(): \WP_REST_Response {
+		$models  = $this->get_available_chat_models();
+		$default = $this->get_default_chat_model( $models );
+		return new \WP_REST_Response(
+			[
+				'models'  => $models,
+				'default' => $default,
+			],
+			200
+		);
+	}
+
+	/**
+	 * Resolve the default AI model based on provider preference list.
+	 *
+	 * @param array<int, array<string, string>> $available_models Available models list.
+	 * @return array<string, string>|null Default model object or null.
+	 */
+	private function get_default_chat_model( array $available_models ): ?array {
+		if ( ! class_exists( '\\WordPress\\AiClient\\AiClient' ) ) {
+			return null;
+		}
+
+		$preferred = [];
+		if ( function_exists( 'WordPress\\AI\\get_preferred_models_for_text_generation' ) ) {
+			$preferred = \WordPress\AI\get_preferred_models_for_text_generation();
+		}
+
+		if ( ! empty( $preferred ) ) {
+			foreach ( $preferred as $pref ) {
+				if ( ! is_array( $pref ) || count( $pref ) < 2 ) {
+					continue;
+				}
+				$provider_id = $pref[0];
+				$model_id    = $pref[1];
+
+				foreach ( $available_models as $m ) {
+					if ( strtolower( $m['provider'] ) === strtolower( $provider_id ) && $m['id'] === $model_id ) {
+						return $m;
+					}
+				}
+			}
+		}
+
+		return ! empty( $available_models ) ? $available_models[0] : null;
+	}
+
+
+	/**
+	 * Retrieve a flat list of available AI models from the provider registry.
+	 *
+	 * Each entry has `id` (string), `label` (string), and `provider` (string).
+	 *
+	 * @return array<int, array<string, string>>
+	 */
+	private function get_available_chat_models(): array {
+		if ( ! class_exists( '\\WordPress\\AiClient\\AiClient' ) ) {
+			return [];
+		}
+
+		try {
+			$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+			$this->ensure_ai_providers_registered( $registry );
+
+			if ( ! method_exists( $registry, 'getRegisteredProviderIds' ) ) {
+				return [];
+			}
+
+			$models = [];
+
+			foreach ( $registry->getRegisteredProviderIds() as $provider_id ) {
+				$option_name = 'connectors_ai_' . str_replace( '-', '_', $provider_id ) . '_api_key';
+				$api_key     = get_option( $option_name, '' );
+				if ( ! is_string( $api_key ) || '' === $api_key ) {
+					continue;
+				}
+
+				$provider_models = [];
+
+				try {
+					// getProviderClassName() is the public API (resolveProviderClassName is private).
+					if ( ! method_exists( $registry, 'getProviderClassName' ) ) {
+						continue;
+					}
+
+					$provider_class = $registry->getProviderClassName( $provider_id );
+
+					if ( ! $provider_class || ! method_exists( $provider_class, 'modelMetadataDirectory' ) ) {
+						continue;
+					}
+
+					$directory = $provider_class::modelMetadataDirectory();
+					if ( ! method_exists( $directory, 'listModelMetadata' ) ) {
+						continue;
+					}
+
+					$provider_labels = [
+						'openai'    => 'OpenAI',
+						'anthropic' => 'Anthropic',
+						'google'    => 'Google',
+					];
+					$provider_label  = $provider_labels[ $provider_id ] ?? ucwords( $provider_id );
+
+					foreach ( $directory->listModelMetadata() as $meta ) {
+						// ModelMetadata uses getId(), not getModelId().
+						if ( ! method_exists( $meta, 'getId' ) ) {
+							continue;
+						}
+
+						$model_id = (string) $meta->getId();
+						$label    = method_exists( $meta, 'getName' ) ?
+							(string) $meta->getName() :
+							$model_id;
+
+						$provider_models[] = [
+							'id'       => $model_id,
+							'label'    => $label,
+							'provider' => $provider_label,
+							'meta'     => $meta,
+						];
+					}
+				} catch ( \Throwable $e ) {
+					// Skip providers that error during model introspection.
+					continue;
+				}
+
+				foreach ( $provider_models as $model_data ) {
+					$meta        = $model_data['meta'];
+					$is_text_gen = true;
+					if ( method_exists( $meta, 'getSupportedCapabilities' ) ) {
+						$capabilities = $meta->getSupportedCapabilities();
+						$is_text_gen  = false;
+						if ( class_exists( '\WordPress\AiClient\Providers\Models\Enums\CapabilityEnum' ) ) {
+							$text_gen_cap = \WordPress\AiClient\Providers\Models\Enums\CapabilityEnum::textGeneration();
+							foreach ( $capabilities as $cap ) {
+								if ( $cap === $text_gen_cap
+									|| ( isset( $cap->value ) && $cap->value === $text_gen_cap->value )
+									|| ( method_exists( $cap, 'getValue' ) && $cap->getValue() === $text_gen_cap->getValue() )
+								) {
+									$is_text_gen = true;
+									break;
+								}
+							}
+						}
+					}
+
+					if ( $is_text_gen ) {
+						$models[] = [
+							'id'       => $model_data['id'],
+							'label'    => $model_data['label'],
+							'provider' => $model_data['provider'],
+						];
+					}
+				}
+			}
+
+			return $models;
+		} catch ( \Throwable $e ) {
+			return [];
 		}
 	}
 
@@ -1951,7 +2207,7 @@ class Abilities_Api {
 	 *
 	 * @throws \RuntimeException When the AI client prompt builder is unavailable.
 	 */
-	private function build_chat_prompt_builder( array $messages, string $system_prompt, bool $with_abilities = true ): object {
+	private function build_chat_prompt_builder( array $messages, string $system_prompt, bool $with_abilities = true, string $preferred_model = '' ): object {
 		if ( function_exists( 'WordPress\\AI\\get_ai_service' ) ) {
 			$builder = \WordPress\AI\get_ai_service()->create_textgen_prompt();
 		} else {
@@ -1965,6 +2221,11 @@ class Abilities_Api {
 		$builder = $builder
 			->with_history( ...$messages )
 			->using_system_instruction( $system_prompt );
+
+		// Apply the model preference when the user has explicitly selected one.
+		if ( '' !== $preferred_model && method_exists( $builder, 'using_model_preference' ) ) {
+			$builder = $builder->using_model_preference( $preferred_model );
+		}
 
 		if ( $with_abilities ) {
 			$declarations = $this->get_normalized_chat_function_declarations();
@@ -2014,6 +2275,8 @@ class Abilities_Api {
 	 * Normalize ability input schema to providers that require type=object.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * Mixed $schema: an ability's registered input_schema which is not guaranteed to be an array; the is_array guard coerces anything else to [].
 	 */
 	private function normalize_tool_input_schema( mixed $schema ): array {
 		if ( ! is_array( $schema ) ) {
@@ -2053,6 +2316,8 @@ class Abilities_Api {
 	 * Recursively normalize JSON schema branches for provider compatibility.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * Mixed $branch: a nested schema node that may be any JSON value during recursion (array or scalar leaf); the is_array guard handles non-array leaves.
 	 */
 	private function normalize_schema_branch( mixed $branch ): array {
 		if ( ! is_array( $branch ) ) {
@@ -2466,7 +2731,7 @@ class Abilities_Api {
 	/**
 	 * Create a UserMessage from plain text with runtime class guards.
 	 */
-	private function create_user_message( string $text ): mixed {
+	private function create_user_message( string $text ): object {
 		$part = $this->create_message_part( $text );
 		if ( is_wp_error( $part ) ) {
 			return $part;
@@ -2487,7 +2752,7 @@ class Abilities_Api {
 	/**
 	 * Create a ModelMessage from plain text with runtime class guards.
 	 */
-	private function create_model_message( string $text ): mixed {
+	private function create_model_message( string $text ): object {
 		$part = $this->create_message_part( $text );
 		if ( is_wp_error( $part ) ) {
 			return $part;
@@ -2508,7 +2773,7 @@ class Abilities_Api {
 	/**
 	 * Create a MessagePart from plain text with runtime class guards.
 	 */
-	private function create_message_part( string $text ): mixed {
+	private function create_message_part( string $text ): object {
 		$part_class = '\\WordPress\\AiClient\\Messages\\DTO\\MessagePart';
 		if ( ! class_exists( $part_class ) ) {
 			return new \WP_Error(
@@ -2523,6 +2788,8 @@ class Abilities_Api {
 
 	/**
 	 * Normalize and sanitize a chat history role.
+	 *
+	 * Mixed $role: unvalidated value from a request-supplied chat-history entry that may not be a string; cast/sanitized to a known role here.
 	 */
 	private function sanitize_history_role( mixed $role ): string {
 		$normalized = sanitize_key( (string) $role );
@@ -2538,6 +2805,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed $part Raw part.
 	 * @return array<string, mixed>|null
+	 *
+	 * Mixed $part: unvalidated value from a request-supplied message-parts list that may not be an array; the is_array guard returns null for anything else.
 	 */
 	private function sanitize_chat_part( mixed $part ): ?array {
 		if ( ! is_array( $part ) ) {
@@ -2595,6 +2864,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed $value The value to sanitize.
 	 * @return mixed The recursively sanitized value.
+	 *
+	 * Mixed in/out: recurses over an arbitrary request payload (nested arrays and scalar leaves) and returns the same shape sanitized — genuinely polymorphic.
 	 */
 	private function sanitize_array_recursive( mixed $value ): mixed {
 		if ( is_array( $value ) ) {
@@ -2799,6 +3070,8 @@ class Abilities_Api {
 	 *
 	 * @param mixed  $message The message object.
 	 * @param string $from    Character to map from ('-' or '_').
+	 *
+	 * Mixed $message: an optional AI-SDK message object whose class may be unavailable; the is_object + method_exists guard skips anything without getParts().
 	 */
 	private function map_message_function_names( mixed $message, string $from ): void {
 		if ( ! is_object( $message ) || ! method_exists( $message, 'getParts' ) ) {
@@ -2856,6 +3129,58 @@ class Abilities_Api {
 					}
 				}
 			}
+		}
+	}
+
+	/**
+	 * Record a chat question for telemetry/data sharing.
+	 *
+	 * @param string    $message  The user prompt.
+	 * @param string    $model    The model name.
+	 * @param bool|null $answered Whether the query was answered.
+	 */
+	private function record_chat_question( string $message, string $model, ?bool $answered = null ): void {
+		if ( ! (bool) burst_get_option( 'anonymous_usage_data', false ) ) {
+			return;
+		}
+
+		$questions = get_option( 'burst_ai_chat_questions', [] );
+		if ( ! is_array( $questions ) ) {
+			$questions = [];
+		}
+
+		$questions[] = [
+			'text'      => $message,
+			'timestamp' => time(),
+			'model'     => $model,
+			'answered'  => $answered,
+		];
+
+		// Defensively cap the history stored in options to prevent DB bloat.
+		if ( count( $questions ) > 500 ) {
+			$questions = array_slice( $questions, -500 );
+		}
+
+		update_option( 'burst_ai_chat_questions', $questions, false );
+	}
+
+	/**
+	 * Delete chat question history if anonymous usage data is disabled.
+	 *
+	 * Mixed fallback is allowed because if the option does not exist yet
+	 * or fails to load, WordPress may pass a boolean false instead of an array.
+	 *
+	 * @param array<string, mixed>|mixed $old_value Old settings option value.
+	 * @param array<string, mixed>|mixed $value     New settings option value.
+	 */
+	public function on_update_options_settings( mixed $old_value, mixed $value ): void {
+		if ( ! is_array( $value ) ) {
+			return;
+		}
+
+		$enabled = isset( $value['anonymous_usage_data'] ) && (bool) $value['anonymous_usage_data'];
+		if ( ! $enabled ) {
+			delete_option( 'burst_ai_chat_questions' );
 		}
 	}
 }

@@ -97,21 +97,22 @@ const CompareBlock = ( props ) => {
 		<Block className="row-span-1 @lg:col-span-6 @xl:col-span-3">
 			<BlockHeading title={ __( 'Compare', 'burst-statistics' ) } isReport={ isReport } reportBlockIndex={ index } isLoading={ isLoading } />
 			<BlockContent>
-				{ Object.keys( data ).map( ( key, i ) => {
-					const m = data[ key ];
-					return (
-						<ExplanationAndStatsItem
-							key={ i }
-							iconKey={ key }
-							title={ m.title }
-							subtitle={ m.subtitle }
-							value={ m.value }
-							exactValue={ m.exactValue }
-							change={ m.change }
-							changeStatus={ m.changeStatus }
-						/>
-					);
-				}) }
+			{ Object.keys( data ).map( ( key, i ) => {
+				const m = data[ key ];
+				return (
+					<ExplanationAndStatsItem
+						key={ i }
+						iconKey={ key }
+						title={ m.title }
+						subtitle={ m.subtitle }
+						value={ m.value }
+						exactValue={ m.exactValue }
+						change={ m.change }
+						changeStatus={ m.changeStatus }
+						metricKey={ key }
+					/>
+				);
+			}) }
 			</BlockContent>
 			<BlockFooter>
 				<CompareFooter

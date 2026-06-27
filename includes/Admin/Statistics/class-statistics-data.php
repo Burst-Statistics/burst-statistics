@@ -122,12 +122,12 @@ class Statistics_Data {
 	 *     @type int $date_end   End of today (timestamp).
 	 * }
 	 * @return array{
-	 *     live: array{value: string, tooltip: string},
-	 *     today: array{value: string, tooltip: string},
-	 *     mostViewed: array{title: string, value: string, tooltip: string},
-	 *     referrer: array{title: string, value: string, tooltip: string},
-	 *     pageviews: array{title: string, value: string, tooltip: string},
-	 *     timeOnPage: array{title: string, value: string, tooltip: string}
+	 *     live: array{value: string},
+	 *     today: array{value: string},
+	 *     mostViewed: array{title: string, value: string},
+	 *     referrer: array{title: string, value: string},
+	 *     pageviews: array{title: string, value: string},
+	 *     timeOnPage: array{title: string, value: string}
 	 * }
 	 */
 	public function get_today_data( array $args = [] ): array {
@@ -144,32 +144,26 @@ class Statistics_Data {
 
 		$data = [
 			'live'       => [
-				'value'   => '0',
-				'tooltip' => __( 'The amount of people using your website right now. The data updates every 5 seconds.', 'burst-statistics' ),
+				'value' => '0',
 			],
 			'today'      => [
-				'value'   => '0',
-				'tooltip' => __( 'This is the total amount of unique visitors for today.', 'burst-statistics' ),
+				'value' => '0',
 			],
 			'mostViewed' => [
-				'title'   => '-',
-				'value'   => '0',
-				'tooltip' => __( 'This is your most viewed page for today.', 'burst-statistics' ),
+				'title' => '-',
+				'value' => '0',
 			],
 			'referrer'   => [
-				'title'   => '-',
-				'value'   => '0',
-				'tooltip' => __( 'This website referred the most visitors.', 'burst-statistics' ),
+				'title' => '-',
+				'value' => '0',
 			],
 			'pageviews'  => [
-				'title'   => __( 'Total pageviews', 'burst-statistics' ),
-				'value'   => '0',
-				'tooltip' => '',
+				'title' => __( 'Total pageviews', 'burst-statistics' ),
+				'value' => '0',
 			],
 			'timeOnPage' => [
-				'title'   => __( 'Average time on page', 'burst-statistics' ),
-				'value'   => '0',
-				'tooltip' => '',
+				'title' => __( 'Average time on page', 'burst-statistics' ),
+				'value' => '0',
 			],
 		];
 
@@ -779,8 +773,8 @@ class Statistics_Data {
 			->filters( $args['filters'] )
 			->select( [ 'device_id' ] )
 			->select_raw( 'sessions.device_id, COUNT(sessions.device_id) AS count' )
-			->group_by( 'device_id' )
-			->having_raw( 'sessions.device_id > 0' );
+			->where_raw( 'sessions.device_id > 0' )
+			->group_by( 'device_id' );
 		$devices_result = $qd->fetch( ARRAY_A );
 
 		$total   = 0;
@@ -846,8 +840,8 @@ class Statistics_Data {
 			->filters( $args['filters'] )
 			->select( [ 'device_id', 'browser_id', 'platform_id' ] )
 			->select_raw( 'sessions.device_id, sessions.browser_id, sessions.platform_id, COUNT(*) AS count' )
+			->where_raw( 'sessions.browser_id > 0 AND sessions.device_id > 0' )
 			->group_by( 'device_id, browser_id, platform_id' )
-			->having_raw( 'sessions.browser_id > 0 AND sessions.device_id > 0' )
 			->order_by( 'count DESC' );
 		$rows = $qd->fetch( ARRAY_A );
 
@@ -927,14 +921,13 @@ class Statistics_Data {
 
 		$args = wp_parse_args( $args, $defaults );
 
-		$filters      = $args['filters'];
-		$metrics      = $args['metrics'];
-		$group_by_raw = $args['group_by'] ?? '';
-		$group_by     = is_array( $group_by_raw ) ? (string) ( $group_by_raw[0] ?? '' ) : (string) $group_by_raw;
-		$start        = (int) $args['date_start'];
-		$end          = (int) $args['date_end'];
-		$columns      = [];
-		$limit        = (int) ( $args['limit'] ?? 0 );
+		$filters  = $args['filters'];
+		$metrics  = $args['metrics'];
+		$group_by = $args['group_by'] ?? [];
+		$start    = (int) $args['date_start'];
+		$end      = (int) $args['date_end'];
+		$columns  = [];
+		$limit    = (int) ( $args['limit'] ?? 0 );
 
 		if ( empty( $metrics ) ) {
 			$metrics = [ 'pageviews' ];

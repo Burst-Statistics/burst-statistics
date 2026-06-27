@@ -8,6 +8,7 @@ import WorldMapHeader from '@/components/Sources/WorldMap/WorldMapHeader';
 import ErrorBoundary from '../Common/ErrorBoundary';
 import { useBlockConfig } from '@/hooks/useBlockConfig';
 import { useGeoAnalytics } from '@/hooks/useGeoAnalytics';
+import MetricInfo from '@/components/Common/MetricInfo';
 
 const WorldMapBlock = ( props ) => {
 	const { allowBlockFilters, isReport, index } = useBlockConfig( props );
@@ -18,7 +19,11 @@ const WorldMapBlock = ( props ) => {
 			<ErrorBoundary>
 				<BlockHeading
 					className="border-b border-gray-200"
-					title={__( 'World view', 'burst-statistics' )}
+					title={
+						<MetricInfo metricKey="world_view" side="bottom">
+							{__( 'World view', 'burst-statistics' )}
+						</MetricInfo>
+					}
 					isReport={isReport}
 					reportBlockIndex={index}
 					isLoading={isGeoFetching}

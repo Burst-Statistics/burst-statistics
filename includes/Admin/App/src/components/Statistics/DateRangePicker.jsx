@@ -1,8 +1,23 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DateRange, DefinedRange } from 'react-date-range';
 import { __ } from '@wordpress/i18n';
 import CompareToggle from '../Statistics/CompareToggle';
+import Icon from '@/utils/Icon';
 
+/**
+ * Custom hook to detect mobile viewport size
+ */
+const useIsMobile = () => {
+	const [ isMobile, setIsMobile ] = useState( () => 'undefined' !== typeof window && 1024 > window.innerWidth );
+	useEffect( () => {
+		const handleResize = () => {
+			setIsMobile( 1024 > window.innerWidth );
+		};
+		window.addEventListener( 'resize', handleResize );
+		return () => window.removeEventListener( 'resize', handleResize );
+	}, []);
+	return isMobile;
+};
 
 /**
  * Find the next non-disabled range index, matching react-date-range's helper.
@@ -49,6 +64,8 @@ const DateRangePicker = ({
 	...props
 }) => {
 	const { ranges = [] } = props;
+	const isMobile = useIsMobile();
+	const [ isPresetsExpanded, setIsPresetsExpanded ] = useState( false );
 
 	const [ focusedRange, setFocusedRange ] = useState([
 		findNextRangeIndex( ranges ),
@@ -73,20 +90,34 @@ const DateRangePicker = ({
 
 	return (
 		<div className={`burst-date-range-picker ${className}`.trim()}>
-			<div className="flex flex-row">
-				<div className="flex flex-col border-r border-gray-200 min-w-3xs">
-					<h3 className="text-md font-medium px-4 pt-4 pb-2">
-						{presetsHeading ?? __( 'Quick select', 'burst-statistics' )}
-					</h3>
-					<DefinedRange
-						{...props}
-						focusedRange={focusedRange}
-						onPreviewChange={handlePreviewChange}
-						range={ranges[focusedRange[0]]}
-						className={'w-full'}
-					/>
+			<div className="flex flex-col lg:flex-row">
+				<div className="flex flex-col border-b lg:border-b-0 lg:border-r border-gray-200 min-w-3xs pb-2 lg:pb-0">
+					<button
+						type="button"
+						onClick={() => isMobile && setIsPresetsExpanded( ! isPresetsExpanded )}
+						className={`flex w-full items-center justify-between px-4 pt-4 pb-2 text-left text-md font-medium select-none ${isMobile ? 'cursor-pointer hover:bg-gray-50' : 'cursor-default pointer-events-none'}`}
+						tabIndex={isMobile ? 0 : -1}
+					>
+						<span>{presetsHeading ?? __( 'Quick select', 'burst-statistics' )}</span>
+						{isMobile && (
+							<Icon
+								name={isPresetsExpanded ? 'chevron-up' : 'chevron-down'}
+								size={16}
+								className="text-text-gray"
+							/>
+						)}
+					</button>
+					{( ! isMobile || isPresetsExpanded ) && (
+						<DefinedRange
+							{...props}
+							focusedRange={focusedRange}
+							onPreviewChange={handlePreviewChange}
+							range={ranges[focusedRange[0]]}
+							className={'w-full'}
+						/>
+					)}
 				</div>
-				<div className="flex flex-col pb-4">
+				<div className="flex flex-col pb-4 max-w-full">
 					<h3 className="text-md font-medium px-4 pt-4 pb-2">
 						{calendarHeading ?? __( 'Custom range', 'burst-statistics' )}
 					</h3>
@@ -95,7 +126,7 @@ const DateRangePicker = ({
 						ref={dateRangeRef}
 						focusedRange={focusedRange}
 						onRangeFocusChange={setFocusedRange}
-						className={'mx-4 border border-gray-200 rounded-md'}
+						className={'mx-2 lg:mx-4 border border-gray-200 rounded-md max-w-full self-center lg:self-auto'}
 					/>
 					<CompareToggle />
 				</div>

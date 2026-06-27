@@ -81,6 +81,20 @@ class Statistics_Query {
 	private array $filter_exclusions = [];
 
 	/**
+	 * When true, the builder emits a fixed `statistics.ID` SELECT and skips metric
+	 * handling, yielding the set of statistics rows matching the active filters. Used
+	 * to build IN(...) subqueries for feature blocks that assemble their own SQL.
+	 */
+	private bool $select_statistic_ids = false;
+
+	/**
+	 * When non-empty, a correlated `statistics.ID = <column>` condition is emitted, tying this
+	 * (sub)query to an outer column. Used to build correlated EXISTS clauses for feature blocks.
+	 * The value is a validated, developer-supplied column reference — never request data.
+	 */
+	private string $correlate_statistic_id_to = '';
+
+	/**
 	 * Group by clause for the query.
 	 *
 	 * @var string[] $group_by Group by clause for the query.
@@ -389,6 +403,8 @@ class Statistics_Query {
 
 	/**
 	 * Recursively normalize values for deterministic hashing.
+	 *
+	 * Mixed in/out: this recurses over arbitrary query-state values (arrays, scalars, bool, null) and returns the same shape normalized — genuinely polymorphic.
 	 */
 	private function normalize_for_fingerprint( mixed $value ): mixed {
 		if ( is_array( $value ) ) {
@@ -442,6 +458,8 @@ class Statistics_Query {
 
 	/**
 	 * Compare normalized values for deterministic list sorting.
+	 *
+	 * Mixed $a/$b: compares already-normalized values of any type by JSON-encoding them; the inputs are inherently polymorphic.
 	 */
 	private function compare_normalized_values( mixed $a, mixed $b ): int {
 		$encoded_a = wp_json_encode( $a, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
@@ -693,6 +711,8 @@ class Statistics_Query {
 	 * @param string $operator SQL comparison operator.
 	 * @param string $dtype    wpdb placeholder type ('%s', '%d', '%f').
 	 * @return $this
+	 *
+	 * Mixed $value: a query value is intentionally polymorphic — string|int|float for scalar comparisons, array for IN/NOT IN, null for IS NULL.
 	 */
 	public function where( string $column, mixed $value, string $operator = '=', string $dtype = '%s' ): self {
 		$this->additional_wheres[] = [
@@ -1111,8 +1131,20 @@ class Statistics_Query {
 		global $wpdb;
 		$available_joins = Join_Registry::resolve( $this );
 		$filters         = $this->get_filters();
-		$goal_id         = isset( $filters['goal_id'] ) ? (int) $filters['goal_id'] : 0;
-		if ( $goal_id > 0 && isset( $available_joins['goals'] ) ) {
+		$goal_id_filter  = $filters['goal_id'] ?? 0;
+		if ( $goal_id_filter === 'all' ) {
+			if ( isset( $available_joins['goals'] ) ) {
+				$active_goal_ids = $wpdb->get_col( "SELECT ID FROM {$wpdb->prefix}burst_goals WHERE status = 'active'" );
+				if ( ! empty( $active_goal_ids ) ) {
+					$active_goals_in = implode( ',', array_map( 'intval', $active_goal_ids ) );
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$available_joins['goals']['on'] .= " AND goals.goal_id IN ($active_goals_in)";
+				} else {
+					$available_joins['goals']['on'] .= ' AND 1 = 0';
+				}
+			}
+		} elseif ( (int) $goal_id_filter > 0 && isset( $available_joins['goals'] ) ) {
+			$goal_id       = (int) $goal_id_filter;
 			$is_exclude    = ( $this->get_filter_exclusions()['goal_id'] ?? 'include' ) === 'exclude';
 			$goal_operator = $is_exclude ? '!=' : '=';
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -1125,6 +1157,98 @@ class Statistics_Query {
 
 	/**
 	 * Build a Query object from all accumulated state. No parameters — self-contained.
+	 */
+	/**
+	 * Emit a fixed `statistics.ID` SELECT and skip metric handling on the next build.
+	 *
+	 * The column is fixed and not user-controlled, so it is permitted even in strict
+	 * mode (where arbitrary custom selects are blocked) — the IDs are consumed only as
+	 * an IN(...) subquery, never returned to the caller.
+	 *
+	 * @return $this
+	 */
+	public function select_statistic_ids(): self {
+		$this->select_statistic_ids = true;
+		return $this;
+	}
+
+	/**
+	 * Correlate this (sub)query to an outer column via `statistics.ID = <column>`.
+	 *
+	 * The condition is emitted directly during build, so — like select_statistic_ids() — it
+	 * works even in strict mode (where where_raw() is blocked). The caller is responsible for
+	 * passing a trusted, validated column reference (never request data).
+	 *
+	 * @param string $column Outer column reference (e.g. 's.ID').
+	 * @return $this
+	 */
+	public function correlate_statistic_id( string $column ): self {
+		$this->correlate_statistic_id_to = $column;
+		return $this;
+	}
+
+	/**
+	 * Build a prepared, correlated `EXISTS ( … )` clause that is true for outer rows whose
+	 * statistic matches the active filters within the given date range.
+	 *
+	 * Feature blocks that assemble their own SQL (search terms, external links, forms) splice
+	 * the result into their WHERE so the standard browser / page / referrer / country / …
+	 * filters apply exactly as on the regular datatable query path. `$correlate_column` is the
+	 * outer column holding the statistic id (e.g. `s.ID`, `ss.statistic_id`); the subquery is
+	 * tied to it via `statistics.ID = <correlate_column>`.
+	 *
+	 * EXISTS — rather than `IN ( SELECT id … )` — is deliberate: it is a semi-join, so it never
+	 * materialises the (potentially millions, on an all-time + filter query) set of matching
+	 * ids, and it cannot double-count when a filter uses a 1:many join (e.g. `parameter`). Per
+	 * outer row it is a primary-key seek on `statistics.ID`, so cost scales with the number of
+	 * outer rows, not with how many statistics match the filter.
+	 *
+	 * Returns '' when no filters are active — callers then skip the constraint entirely.
+	 *
+	 * The returned SQL is already prepared (placeholder values substituted). When splicing it
+	 * into a string passed through $wpdb->prepare() again, escape literal '%' first via
+	 * str_replace( '%', '%%', $sql ) so the second prepare pass leaves LIKE wildcards intact.
+	 *
+	 * @param array  $filters          Active filter key/value pairs.
+	 * @param int    $date_start       Range start as a Unix timestamp.
+	 * @param int    $date_end         Range end as a Unix timestamp.
+	 * @param string $correlate_column Outer column holding the statistic id (e.g. 's.ID').
+	 * @return string Prepared `EXISTS ( … )` clause, or '' when no filters are active.
+	 */
+	public static function filtered_statistics_exists_sql( array $filters, int $date_start, int $date_end, string $correlate_column ): string {
+		if ( empty( $filters ) ) {
+			return '';
+		}
+
+		// $correlate_column is developer-supplied (never request data), but validate its shape
+		// as defense-in-depth before splicing it into the raw correlation condition.
+		if ( ! preg_match( '/^[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*$/', $correlate_column ) ) {
+			self::error_log( 'QueryData error: filtered_statistics_exists_sql() rejected correlate column: ' . $correlate_column );
+			return '';
+		}
+
+		$query = self::create( 'filtered_statistics_exists' )
+			->date_range( $date_start, $date_end )
+			->filters( $filters )
+			->select_statistic_ids()
+			->correlate_statistic_id( $correlate_column );
+
+		// Honour share-link restrictions (date/filter tightening) like fetch() does.
+		$query->enforce_share_link_restrictions();
+
+		// If share-link restrictions stripped every filter, there is nothing left to
+		// constrain on — skip the clause rather than emit an unbounded correlated scan.
+		if ( empty( $query->get_filters() ) ) {
+			return '';
+		}
+
+		return 'EXISTS ( ' . $query->to_query()->prepare_sql() . ' )';
+	}
+
+	/**
+	 * Compile the current builder state into an executable Query object.
+	 *
+	 * @return Query The compiled query ready for prepare_sql() or execution.
 	 */
 	public function to_query(): Query {
 		// Snapshot joins so per-build additions by From_Strategy / metric handlers don't
@@ -1160,13 +1284,30 @@ class Statistics_Query {
 		$strategy = From_Strategy_Registry::resolve( $this->get_id() );
 		$strategy?->apply( $this );
 
-		$custom_select = $this->get_custom_select();
-		foreach ( $this->get_select() as $metric ) {
+		// Filter-only mode: feature blocks reuse this builder solely to resolve the set of
+		// statistics rows matching the active filters. Emit a fixed, safe SELECT and skip
+		// metric handling. statistics.ID is not user-controlled and is consumed only as an
+		// IN(...) subquery, so it is allowed even in strict mode (where custom selects are not).
+		if ( $this->select_statistic_ids ) {
+			$this->accumulated_selects = [
+				[
+					'expr'   => 'statistics.ID',
+					'params' => [],
+				],
+			];
+		}
+
+		$custom_select = $this->select_statistic_ids ? '' : $this->get_custom_select();
+		foreach ( ( $this->select_statistic_ids ? [] : $this->get_select() ) as $metric ) {
 			$handler = Metric_Registry::get( $metric );
 			if ( $handler !== null ) {
 				$handler->apply( $this );
 			} elseif ( $custom_select === '' ) {
-				$expr = apply_filters( 'burst_select_sql_for_metric', $metric, $this );
+				// Chain-safe: handlers receive an accumulating SQL value (initially '')
+				// so multiple registrants (core geo, Pro campaigns/ecommerce) compose
+				// without clobbering each other. Each returns the incoming value when it
+				// does not own the metric.
+				$expr = apply_filters( 'burst_select_sql_for_metric', '', $metric, $this );
 				if ( $expr !== $metric && $expr !== '' && $expr !== false ) {
 					$safe_alias                  = preg_replace( '/[^a-zA-Z0-9_]/', '', $metric );
 					$this->accumulated_selects[] = [
@@ -1239,6 +1380,12 @@ class Statistics_Query {
 
 		$this->build_filter_where( $q );
 		$q->where_between( 'statistics.time', $this->get_date_start(), $this->get_date_end(), '%d' );
+
+		// Correlated EXISTS support: tie this subquery to an outer statistic id. Emitted here
+		// (not via where_raw) so it survives strict mode. The column is validated by the caller.
+		if ( $this->correlate_statistic_id_to !== '' ) {
+			$q->where_raw( 'statistics.ID = ' . $this->correlate_statistic_id_to );
+		}
 
 		foreach ( $this->accumulated_selects as [ 'expr' => $expr, 'params' => $params ] ) {
 			$q->select_raw( $expr, $params );
@@ -1665,7 +1812,7 @@ class Statistics_Query {
 	/**
 	 * Execute the query and return the first column of the first row. Cache-bypassed.
 	 */
-	public function fetch_var(): mixed {
+	public function fetch_var(): string|int|float|null {
 		$this->enforce_share_link_restrictions();
 		do_action( 'burst_statistics_query', $this );
 		$q          = $this->to_query();
