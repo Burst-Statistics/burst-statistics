@@ -222,6 +222,14 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					align: 'left',
 					group_by: true
 				},
+				source_category: {
+					label: __( 'Source category', 'burst-statistics' ),
+					default: false,
+					format: 'source_category',
+					pro: true,
+					align: 'left',
+					group_by: true
+				},
 				visitors: {
 					label: __( 'Visitors', 'burst-statistics' ),
 					category: 'traffic',
@@ -274,7 +282,10 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		},
 		countries: {
 			label: __( 'Locations', 'burst-statistics' ),
-			pro: true,
+
+			// Country-level location tracking is free; region/city detail and
+			// ecommerce metrics remain Pro (locked per-column below).
+			pro: false,
 			searchable: true,
 			defaultColumns: [
 				'country_code',
@@ -292,25 +303,28 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				state: {
 					label: __( 'State', 'burst-statistics' ),
 					format: 'text',
+					pro: true,
 					align: 'left',
 					group_by: true
 				},
 				city: {
 					label: __( 'City', 'burst-statistics' ),
 					format: 'text',
+					pro: true,
 					align: 'left',
 					group_by: true
 				},
 				continent: {
 					label: __( 'Continent', 'burst-statistics' ),
 					format: 'continent',
+					pro: true,
 					align: 'left',
 					group_by: true
 				},
 				visitors: {
 					label: __( 'Visitors', 'burst-statistics' ),
 					category: 'traffic',
-					pro: true,
+					pro: false,
 					align: 'right'
 				},
 				sessions: {
@@ -323,7 +337,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					label: __( 'Bounce rate', 'burst-statistics' ),
 					category: 'engagement',
 					format: 'percentage',
-					pro: true,
+					pro: false,
 					align: 'right'
 				},
 				conversions: {
@@ -644,7 +658,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		}
 	},
 		search_terms: {
-			label: __( 'Search terms', 'burst-statistics' ),
+			label: __( 'Website searches', 'burst-statistics' ),
 			searchable: true,
 			defaultColumns: [ 'term', 'volume', 'results' ],
 			columnsOptions: {
@@ -786,7 +800,9 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		getSortConfig,
 		setSortConfig,
 		getParameterVariations,
-		setParameterVariations
+		setParameterVariations,
+		getRowsPerPage,
+		setRowsPerPage: setRowsPerPageStore
 	} = useDataTableStore();
 
 	const { isPro } = useLicenseData();
@@ -896,7 +912,22 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 
 	const ROWS_PER_PAGE_OPTIONS = [ 10, 25, 50, 100, 200 ];
 	const [ currentPage, setCurrentPage ] = useState( 1 );
-	const [ rowsPerPage, setRowsPerPage ] = useState( isInOverlay ? 100 : 10 );
+	const [ rowsPerPage, setRowsPerPageState ] = useState( () => {
+		if ( isInOverlay ) {
+			return getRowsPerPage( id, 100 );
+		}
+		return 10;
+	});
+
+	const setRowsPerPage = useCallback(
+		( value ) => {
+			setRowsPerPageState( value );
+			if ( isInOverlay ) {
+				setRowsPerPageStore( id, value );
+			}
+		},
+		[ id, isInOverlay, setRowsPerPageStore ]
+	);
 
 	// Only add select options that are allowed, only allow key and label.
 	const selectOptions = useMemo( () => {
@@ -1169,14 +1200,15 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 	}, [ enrichedFilteredData.length, selectedConfig, filterText ]);
 
 	const totalRows = enrichedFilteredData.length;
-	const totalPages = Math.max( 1, Math.ceil( totalRows / rowsPerPage ) );
+	const rowsPerPageLimit = 'all' === rowsPerPage ? totalRows : Number( rowsPerPage );
+	const totalPages = Math.max( 1, Math.ceil( totalRows / rowsPerPageLimit ) );
 
 	// Paginate the enriched data so the parameter-variations badge and the
 	// expandable rows still work correctly inside the current page slice.
 	const paginatedData = useMemo( () => {
-		const start = ( currentPage - 1 ) * rowsPerPage;
-		return enrichedFilteredData.slice( start, start + rowsPerPage );
-	}, [ enrichedFilteredData, currentPage, rowsPerPage ]);
+		const start = ( currentPage - 1 ) * rowsPerPageLimit;
+		return enrichedFilteredData.slice( start, start + rowsPerPageLimit );
+	}, [ enrichedFilteredData, currentPage, rowsPerPageLimit ]);
 
 	const isLoading = query.isLoading || query.isFetching;
 	const error = query.error;
@@ -1218,6 +1250,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 						data={[]}
 						isLoading={isLoading}
 						error={error}
+						isInOverlay={isInOverlay}
 					/>
 				),
 
@@ -1228,6 +1261,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 						data={[]}
 						isLoading={isLoading}
 						error={error}
+						isInOverlay={isInOverlay}
 					/>
 				)
 			};
@@ -1258,7 +1292,8 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			paramVariationsEnabled,
 			startDate,
 			endDate,
-			range
+			range,
+			isInOverlay
 		]
 	);
 
@@ -1397,32 +1432,35 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				<DataTable {...dataTableProps} />
 			</BlockContent>
 			{ 0 < totalRows && (
-				<BlockFooter className="border-t border-gray-200 gap-4">
-					<div className="flex items-center gap-2 text-sm text-gray-600">
-						<span>{ __( 'Rows per page:', 'burst-statistics' ) }</span>
-						<select
-							className="rounded border border-gray-300 bg-white px-2 py-1 pr-6 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-							value={ rowsPerPage }
-							onChange={ ( e ) => {
-								const value = Number( e.target.value );
-								setRowsPerPage( value );
-								setCurrentPage( 1 );
-							} }
-						>
-							{ ROWS_PER_PAGE_OPTIONS.map( ( option ) => (
-								<option key={ option } value={ option }>
-									{ option }
+				<BlockFooter className={`border-t border-gray-200 gap-4 ${ ! isInOverlay ? 'justify-center' : '' }`}>
+					{ isInOverlay && (
+						<div className="flex items-center gap-2 text-sm text-gray-600">
+							<span>{ __( 'Rows per page:', 'burst-statistics' ) }</span>
+							<select
+								className="rounded border border-gray-300 bg-white px-2 py-1 pr-6 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+								value={ rowsPerPage }
+								onChange={ ( e ) => {
+									const val = e.target.value;
+									const value = 'all' === val ? 'all' : Number( val );
+									setRowsPerPage( value );
+									setCurrentPage( 1 );
+								} }
+							>
+								{ ROWS_PER_PAGE_OPTIONS.map( ( option ) => (
+									<option key={ option } value={ option }>
+										{ option }
+									</option>
+								) ) }
+								<option value="all">
+									{ __( 'All', 'burst-statistics' ) }
 								</option>
-							) ) }
-							<option value={ totalRows }>
-								{ __( 'All', 'burst-statistics' ) }
-							</option>
-						</select>
-					</div>
+							</select>
+						</div>
+					) }
 
 					<div className="flex items-center gap-1">
 						<span className="mr-2 text-sm text-gray-600">
-							{ `${ ( currentPage - 1 ) * rowsPerPage + 1 }-${ Math.min( currentPage * rowsPerPage, totalRows ) } ${ __( 'of', 'burst-statistics' ) } ${ totalRows }` }
+							{ `${ ( currentPage - 1 ) * rowsPerPageLimit + 1 }-${ Math.min( currentPage * rowsPerPageLimit, totalRows ) } ${ __( 'of', 'burst-statistics' ) } ${ totalRows }` }
 						</span>
 						<button
 							type="button"

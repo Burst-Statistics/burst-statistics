@@ -14,7 +14,7 @@ const EXCLUDED_FIELDS = [
 	'burst_tour_shown_once',
 	'license',
 	'review_notice_shown',
-	'burst_update_to_city_geo_database_time',
+	'update_to_city_geo_database_time',
 	'filtering_by_domain',
 	'goals',
 	'import_settings',

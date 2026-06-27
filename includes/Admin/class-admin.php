@@ -20,6 +20,8 @@ use Burst\Admin\Reports\Reports;
 use Burst\Admin\Search\Search;
 use Burst\Admin\Engagement\Reading_Engagement;
 use Burst\Admin\Share\Share;
+use Burst\Admin\Geo_Ip\Geo_Ip;
+use Burst\Admin\Statistics\Geo_Statistics;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
 use Burst\Frontend\Goals\Goal;
@@ -108,6 +110,15 @@ class Admin {
 			$goal_statistics->init();
 			$this->statistics = new Statistics();
 			$this->statistics->init();
+			$geo_statistics = new Geo_Statistics();
+			$geo_statistics->init();
+			// The Country GeoIP database manager ships in free. Pro replaces it with
+			// its City variant (Geo_Ip_Pro), so only load the core manager when Pro
+			// is not active.
+			if ( ! defined( 'BURST_PRO_FILE' ) ) {
+				$geo_ip = new Geo_Ip();
+				$geo_ip->init();
+			}
 			$search = new Search();
 			$search->init();
 			$reading_engagement = new Reading_Engagement();
@@ -881,9 +892,12 @@ class Admin {
 		if ( get_option( 'burst_set_defaults' ) ) {
 			update_option( 'burst_activation_time', time(), false );
 			update_option( 'burst_last_cron_hit', time(), false );
+			// Fresh install: download the GeoIP database (the burst_locations country
+			// lookup is seeded by install_locations_table). No "available from" notice
+			// is shown on a fresh install — only on an upgrade from an existing site.
+			update_option( 'burst_import_geo_ip_on_activation', true, false );
 			$this->update_option( 'combine_vars_and_script', true );
 			$this->update_option( 'enable_turbo_mode', true );
-			$this->update_option( 'track_external_links', true );
 			$this->create_js_file();
 
 			$this->tasks->add_initial_tasks();

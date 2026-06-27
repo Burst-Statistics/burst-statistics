@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useDate } from '@/store/useDateStore';
 import { getDatatableData } from '@/utils/api';
 import useLicenseData from '@/hooks/useLicenseData';
+import useFilters from '@/hooks/useFilters';
 
 /**
  * A single form data row as returned by the Forms block.
@@ -84,9 +85,11 @@ type UseFormsDataReturn = {
 export function useFormsData(): UseFormsDataReturn {
 	const { startDate, endDate, range } = useDate( ( state ) => state );
 	const { isLicenseValid } = useLicenseData();
+	const { getActiveFilters } = useFilters();
+	const filters = getActiveFilters();
 
 	const { data: apiData, isLoading, error } = useQuery({
-		queryKey: [ 'forms', startDate, endDate, range ],
+		queryKey: [ 'forms', startDate, endDate, range, filters ],
 		enabled: isLicenseValid,
 		queryFn: async() => {
 			const response = await getDatatableData(
@@ -95,7 +98,7 @@ export function useFormsData(): UseFormsDataReturn {
 				startDate,
 				endDate,
 				range,
-				{}
+				{ filters }
 			);
 
 			// getDatatableData returns the full REST response; the datatable data is in response.data.

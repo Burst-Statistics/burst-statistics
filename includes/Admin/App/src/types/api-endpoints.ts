@@ -21,7 +21,8 @@ export type BurstCoreDataType =
 export type BurstProDataType =
 	| 'geo'
 	| 'page-parameters'
-	| 'page-parameter-counts';
+	| 'page-parameter-counts'
+	| 'sources-over-time';
 
 /** Ecommerce segment after `ecommerce/` (Pro). */
 export type BurstEcommerceDataType =

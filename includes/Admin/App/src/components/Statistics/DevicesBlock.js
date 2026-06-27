@@ -28,6 +28,7 @@ const DeviceItem = memo( ({ deviceKey, deviceData }) => {
 				value={deviceData.value}
 				change={deviceData.change}
 				changeStatus={deviceData.changeStatus}
+				metricKey={deviceKey}
 			/>
 		</ClickToFilter>
 	);

@@ -17,6 +17,8 @@ class Settings_Data extends Data_Collector {
 
 	/**
 	 * Normalize common option encodings to a strict boolean.
+	 *
+	 * Mixed $value: this normalizes a raw get_option() value, which can be any serialized type (bool|int|float|string|null); narrowing would defeat its purpose.
 	 */
 	private function normalize_option_boolean( mixed $value, bool $default_value = false ): bool {
 		if ( is_bool( $value ) ) {
@@ -173,7 +175,8 @@ class Settings_Data extends Data_Collector {
 			'subscription_tier'                   => $this->get_subscription_tier(),
 			'excluded_user_roles'                 => $this->get_option( 'user_role_blocklist', [] ),
 			'uses_ip_exclusion'                   => $this->get_burst_setting_bool( 'ip_blocklist' ),
-			'geo_ip_database_type'                => $this->get_option( 'geo_ip_database_type', 'city' ),
+			// Derived, not stored: free always tracks country, Pro always tracks city.
+			'geo_ip_database_type'                => defined( 'BURST_PRO_FILE' ) ? 'city' : 'country',
 			'archive_mode'                        => $this->get_option( 'archive_data', 'none' ),
 			'archive_months'                      => $this->get_option_int( 'archive_after_months' ),
 			'site_category'                       => $this->get_option( 'site_category', 'uncategorized' ),

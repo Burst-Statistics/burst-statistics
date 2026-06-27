@@ -25,7 +25,7 @@ const VARIANT_META: Record<string, { label: string; icon: string }> = {
 	parameters: { label: __( 'Parameters', 'burst-statistics' ), icon: 'parameters' },
 	products: { label: __( 'Products', 'burst-statistics' ), icon: 'shopping-cart' },
 	subscription_products: { label: __( 'Plan performance', 'burst-statistics' ), icon: 'calendar-sync' },
-	search_terms: { label: __( 'Search terms', 'burst-statistics' ), icon: 'search' },
+	search_terms: { label: __( 'Website searches', 'burst-statistics' ), icon: 'search' },
 	outgoing_links: { label: __( 'Outgoing links', 'burst-statistics' ), icon: 'external-link' },
 	forms: { label: __( 'Forms', 'burst-statistics' ), icon: 'chat' },
 	reading_engagement: { label: __( 'Reading engagement', 'burst-statistics' ), icon: 'page' }

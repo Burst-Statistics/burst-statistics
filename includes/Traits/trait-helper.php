@@ -419,6 +419,8 @@ trait Helper {
 	 *
 	 * @param mixed $input The input value.
 	 * @return mixed The input as an array if applicable, otherwise the original input.
+	 *
+	 * Mixed in/out: accepts any option/request value (array|string|int|bool|null) and returns it either coerced to an array or unchanged, so the type passes through.
 	 */
 	public function ensure_array_if_applicable( mixed $input ): mixed {
 		if ( is_array( $input ) ) {

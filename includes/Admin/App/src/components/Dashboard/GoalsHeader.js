@@ -31,21 +31,25 @@ const GoalsHeader = ({ goals, goalId, setGoalId }) => {
 		setGoalId( value );
 	};
 
-	const options = goals.map( ( goal ) => {
-		return {
-			value: goal.id,
-			label:
-				goal && 'string' === typeof goal.title ?
-					goal.title :
-					__( 'Untitled goal', 'burst-statistics' )
-		};
-	});
+	const options = [
+		{
+			value: 'all',
+			label: __( 'All goals', 'burst-statistics' )
+		},
+		...goals.map( ( goal ) => {
+			return {
+				value: goal.id,
+				label:
+					goal && 'string' === typeof goal.title ?
+						goal.title :
+						__( 'Untitled goal', 'burst-statistics' )
+			};
+		})
+	];
 
 	return (
 		<div className="flex items-center gap-2.5">
-			{1 === goals.length && goals[0] && <p>{goals[0].title}</p>}
-
-			{1 < goals.length && (
+			{0 < goals.length && (
 				<SelectInput
 					value={goalId}
 					onChange={( value ) => handleChange( value )}

@@ -89,33 +89,6 @@ const transformTotalGoalsData = ( response ) => {
 			}
 		}
 	}
-
-	// Add tooltip only if we have valid values
-	if (
-		safeResponse.total.value &&
-		safeResponse.conversionMetric.value &&
-		safeResponse.conversionMetric.title
-	) {
-		safeResponse.conversionPercentage.tooltip =
-			__( 'Calculated by:', 'burst-statistics' ) +
-			' ' +
-			__( 'Total amount of goals reached', 'burst-statistics' ) +
-			' / ' +
-			__( 'Total amount of', 'burst-statistics' ) +
-			' ' +
-			safeResponse.conversionMetric.title +
-			' (' +
-			safeResponse.total.value +
-			' / ' +
-			safeResponse.conversionMetric.value +
-			')';
-	} else {
-		safeResponse.conversionPercentage.tooltip = __(
-			'No data available yet',
-			'burst-statistics'
-		);
-	}
-
 	return safeResponse;
 };
 

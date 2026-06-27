@@ -3,6 +3,13 @@
 
 @import "./theme/tokens.css";
 @import "./theme/dark-scope-tokens.css";
+@import "./theme/tooltip.css";
+
+/* Tailwind v4 successor to tailwindcss-animate: provides animate-in/out,
+	fade-in-*, slide-in-from-*, zoom-in-* enter/exit utilities. Must be imported
+	at the top level because it defines `@utility` rules, which Tailwind v4 does
+	not allow nested inside a selector (e.g. the #burst-statistics scope). */
+@import "tw-animate-css";
 
 @theme {
 	--container-xxs: 576px;

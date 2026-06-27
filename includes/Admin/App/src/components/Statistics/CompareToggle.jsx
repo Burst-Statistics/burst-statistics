@@ -27,7 +27,7 @@ const CompareToggle = () => {
 		<div className='flex flex-col justify-start py-2 px-4'>
 			<h3 className='font-medium text-md pt-4 pb-1'>{__( 'Compare mode', 'burst-statistics' )}</h3>
 			<p className='text-sm text-text-gray pb-2'>{__( 'Some blocks show a comparison of data. Select how these blocks compare the data.', 'burst-statistics' )}</p>
-			<div className="grid grid-flow-col auto-cols-fr gap-0.5 border border-gray-300 rounded-md bg-gray-200 p-0.5 shadow-sm">
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-0.5 border border-gray-300 rounded-md bg-gray-200 p-0.5 shadow-sm">
 				{options.map( ( option ) => {
 					const isActive = compareMode === option.value;
 					return (

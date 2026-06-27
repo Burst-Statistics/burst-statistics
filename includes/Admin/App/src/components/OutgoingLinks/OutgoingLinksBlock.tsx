@@ -12,6 +12,7 @@ import useSettingsData from '@/hooks/useSettingsData';
 import useLicenseData from '@/hooks/useLicenseData';
 import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
+import MetricInfo from '@/components/Common/MetricInfo';
 
 type OutgoingLinksBlockProps = {
 
@@ -95,7 +96,9 @@ const OutgoingLinksBlock = memo( ({ className = '' }: OutgoingLinksBlockProps ) 
 				className="border-b border-gray-200"
 				isLoading={ isLoading }
 				title={ <>
-					{ __( 'Outgoing links', 'burst-statistics' ) }
+					<MetricInfo metricKey="outgoing_links" side="bottom">
+						{ __( 'Outgoing links', 'burst-statistics' ) }
+					</MetricInfo>
 					{ isEnabled && hasData && (
 						<button
 							type="button"

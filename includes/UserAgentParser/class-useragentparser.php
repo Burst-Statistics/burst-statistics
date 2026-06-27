@@ -11,6 +11,13 @@ class UserAgentParser {
 	private OriginalParser $parser;
 
 	/**
+	 * Cached list of known/valid browser names from the donatj library.
+	 *
+	 * @var string[]|null
+	 */
+	private static ?array $known_browsers = null;
+
+	/**
 	 * Constructor
 	 */
 	public function __construct() {
@@ -100,60 +107,26 @@ class UserAgentParser {
 	/**
 	 * Check if browser name is invalid/suspicious.
 	 *
+	 * Uses an allowlist: the donatj `Browsers` interface is generated from the
+	 * parser itself and lists every browser name the parser can legitimately
+	 * emit. Anything outside that set is fallback garbage - the parser returns
+	 * the leading token of an unrecognized user agent as the "browser"
+	 * (e.g. "amazon-Quick-on-behalf-of-03b1f1a7" or a random "4yyh9sv5bej"),
+	 * which a denylist can never reliably catch.
+	 *
 	 * @param string $browser Browser name to validate.
 	 * @return bool True if invalid, false if valid.
 	 */
 	public function is_invalid_browser_name( string $browser ): bool {
-		if ( empty( $browser ) ) {
+		if ( $browser === '' ) {
 			return true;
 		}
 
-		// Get all known browser constants from the library.
-		$reflection     = new \ReflectionClass( Browsers::class );
-		$known_browsers = array_values( $reflection->getConstants() );
-		if ( in_array( $browser, $known_browsers, true ) ) {
-			return false;
+		if ( self::$known_browsers === null ) {
+			$reflection           = new \ReflectionClass( Browsers::class );
+			self::$known_browsers = array_values( $reflection->getConstants() );
 		}
 
-		// Too short (single letter browsers don't exist).
-		if ( strlen( $browser ) <= 2 ) {
-			return true;
-		}
-
-		// Common test/spam values.
-		$spam_patterns = [
-			'test',
-			'random',
-			'bot',
-			'crawler',
-			'spider',
-			'script',
-			'curl',
-			'wget',
-			'python',
-			'java',
-			'http',
-			'https',
-			'www',
-			'admin',
-			'root',
-			'null',
-			'python-requests',
-			'SOSSE',
-		];
-
-		$browser_lower = strtolower( $browser );
-		foreach ( $spam_patterns as $pattern ) {
-			if ( $browser_lower === $pattern ) {
-				return true;
-			}
-		}
-
-		// Only contains numbers or special characters.
-		if ( preg_match( '/^[0-9\W]+$/', $browser ) ) {
-			return true;
-		}
-
-		return false;
+		return ! in_array( $browser, self::$known_browsers, true );
 	}
 }

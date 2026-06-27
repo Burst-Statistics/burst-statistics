@@ -14,7 +14,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Burst\Frontend\Endpoint;
 use Burst\Frontend\Ip\Ip;
 use Burst\Frontend\Search\Search;
-use Burst\Pro\Frontend\External_Link\External_Link_Frontend;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
@@ -28,6 +27,35 @@ class Tracking {
 	public string $beacon_enabled;
 	public array $lookup_table_cache = [];
 	public array $goals              = [];
+
+	/**
+	 * Register the GeoIP enrichment on construction.
+	 *
+	 * Done in the constructor (not init) so it also applies on the SHORTINIT beacon
+	 * endpoint, which instantiates `new Tracking()` directly but never calls init().
+	 */
+	public function __construct() {
+		if ( ! has_filter( 'burst_before_track_hit', [ self::class, 'add_geoip_location_data' ] ) ) {
+			add_filter( 'burst_before_track_hit', [ self::class, 'add_geoip_location_data' ], 10, 3 );
+		}
+	}
+
+	/**
+	 * Enrich the tracked hit with location data.
+	 *
+	 * The reader class is resolved lazily (at hit time): free uses the core Country
+	 * reader, Pro swaps in its City reader via the burst_geoip_handler filter.
+	 *
+	 * @param array<string, mixed>      $arr          The tracking data.
+	 * @param string                    $hit_type     The type of hit.
+	 * @param array<string, mixed>|null $previous_hit Previous hit data, if any.
+	 * @return array<string, mixed>
+	 */
+	public static function add_geoip_location_data( array $arr, string $hit_type, ?array $previous_hit ): array {
+		$handler = apply_filters( 'burst_geoip_handler', Tracking_GeoIp::class );
+		return $handler::add_location_data( $arr, $hit_type, $previous_hit );
+	}
+
 	/**
 	 * Constructor
 	 */
@@ -75,10 +103,9 @@ class Tracking {
 		$should_load_ecommerce = $sanitized_data['should_load_ecommerce'];
 		unset( $sanitized_data['should_load_ecommerce'] );
 
-		$external_link_url = '';
-		if ( $this->get_option_bool( 'track_external_links' ) && ! empty( $sanitized_data['external_link_url'] ) ) {
-			$external_link_url = $sanitized_data['external_link_url'];
-		}
+		// Preserve the external link URL before it is unset below; it is passed to
+		// the burst_track_external_link action, which Pro handles.
+		$external_link_url = $sanitized_data['external_link_url'] ?? '';
 
 		// If new hit, get the last row.
 		$result = $this->get_hit_type( $sanitized_data );
@@ -196,9 +223,11 @@ class Tracking {
 				$this->create_goal_statistic( $statistic_id, $completed_goals );
 			}
 
-			if ( $this->get_option_bool( 'track_external_links' ) && ! empty( $external_link_url ) ) {
-				External_Link_Frontend::track_external_link( (int) $statistic_id, $external_link_url );
-			}
+			// External link tracking is a Pro-only feature. Pro hooks
+			// burst_track_external_link from Pro/Frontend/Tracking/tracking.php
+			// (where the track_external_links option and empty-URL checks live), so
+			// the free build carries no reference to the Pro class.
+			do_action( 'burst_track_external_link', (int) $statistic_id, $external_link_url );
 		}
 
 		return 'success';
@@ -1120,8 +1149,16 @@ class Tracking {
 
 		// Check if session save path exists and is writable.
 		$save_path = session_save_path();
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
-		if ( empty( $save_path ) || ! is_dir( $save_path ) || ! is_writable( $save_path ) ) {
+		$is_valid  = false;
+
+		if ( ! empty( $save_path ) ) {
+			// Silence open_basedir warnings: outside the allowed paths these
+			// return false, which correctly triggers the uploads fallback below.
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Suppressing potential open_basedir warnings for edge cases.
+			$is_valid = @is_dir( $save_path ) && @is_writable( $save_path );
+		}
+
+		if ( ! $is_valid ) {
 			// Load WordPress default constants manually.
 			require_once ABSPATH . WPINC . '/default-constants.php';
 			wp_plugin_directory_constants();

@@ -9,6 +9,7 @@ import Icon from '@/utils/Icon';
 import { BarDataTable } from '@/components/DataTable/BarDataTable';
 import { useReadingEngagementData } from './useReadingEngagementData';
 import { getReadingEngagementColumns } from './columns';
+import MetricInfo from '@/components/Common/MetricInfo';
 
 type ReadingEngagementBlockProps = {
 
@@ -72,7 +73,9 @@ const ReadingEngagementBlock = memo( ({ className = '' }: ReadingEngagementBlock
 				className="border-b border-gray-200"
 				isLoading={isLoading}
 				title={<>
-					{__( 'Reading engagement', 'burst-statistics' )}
+					<MetricInfo metricKey="reading_engagement" side="bottom">
+						{__( 'Reading engagement', 'burst-statistics' )}
+					</MetricInfo>
 					{/* Expand to overlay. */}
 					<button
 						type="button"

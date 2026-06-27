@@ -31,7 +31,51 @@ const FORMATS = {
 	SEARCH_RESULTS: 'search_results',
 	STRING: 'string',
 	EXTERNAL_LINK: 'external_link',
-	FORM_TITLE: 'form_title'
+	FORM_TITLE: 'form_title',
+	SOURCE_CATEGORY: 'source_category'
+};
+
+export const getSourceCategoryMeta = ( key ) => {
+	const localized = window.burst_settings?.source_categories?.[ key ];
+	if ( localized ) {
+		return localized;
+	}
+
+	const defaults = {
+		search: {
+			label: __( 'Search', 'burst-statistics' ),
+			color: 'var(--color-blue-500)'
+		},
+		social: {
+			label: __( 'Social', 'burst-statistics' ),
+			color: 'var(--color-yellow-500)'
+		},
+		referral: {
+			label: __( 'Referral', 'burst-statistics' ),
+			color: 'var(--color-orange-500)'
+		},
+		aiReferral: {
+			label: __( 'AI referral', 'burst-statistics' ),
+			color: 'var(--color-primary-500)'
+		},
+		paid: {
+			label: __( 'Paid', 'burst-statistics' ),
+			color: 'var(--color-red-500)'
+		},
+		email: {
+			label: __( 'Email', 'burst-statistics' ),
+			color: 'var(--color-green-500)'
+		},
+		direct: {
+			label: __( 'Direct / unknown', 'burst-statistics' ),
+			color: 'var(--color-gray-500)'
+		}
+	};
+
+	return defaults[ key ] || {
+		label: key || __( 'Unknown', 'burst-statistics' ),
+		color: 'var(--color-gray-500)'
+	};
 };
 
 // Memoized filter components - created once, reused everywhere
@@ -166,6 +210,20 @@ const COLUMN_FORMATTERS = {
 		<SearchResultsCell value={value} term={ row?.term } />
 	),
 	[FORMATS.STRING]: ( value ) => value,
+	[FORMATS.SOURCE_CATEGORY]: ( value ) => {
+		const key = String( value || '' );
+		const meta = getSourceCategoryMeta( key );
+
+		return (
+			<span className="inline-flex items-center gap-2">
+				<span
+					className="inline-block h-2.5 w-2.5 rounded-full"
+					style={{ backgroundColor: meta.color }}
+				/>
+				<span>{ meta.label }</span>
+			</span>
+		);
+	},
 	[FORMATS.EXTERNAL_LINK]: ( value ) => {
 		let display = value;
 		try {
@@ -470,7 +528,8 @@ const getDataTableData = async( params ) => {
 		const { startDate, endDate, range, args, columnsOptions, type } = params;
 
 		const isEcommerce = 'ecommerce-datatable' === type;
-		const { data } = await getDatatableData( args.id, isEcommerce, startDate, endDate, range, args );
+		const response = await getDatatableData( args.id, isEcommerce, startDate, endDate, range, args );
+		const data = response?.data;
 
 		if ( ! data ) {
 			throw new Error( 'No data received from API' );
