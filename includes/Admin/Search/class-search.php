@@ -3,6 +3,7 @@ namespace Burst\Admin\Search;
 
 use Burst\Admin\Database\Query;
 use Burst\Admin\Database\Query_Executor;
+use Burst\Admin\Statistics\Statistics_Query;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
@@ -142,6 +143,15 @@ class Search {
 			->where_between( 'ss.created', $start, $end, '%d' )
 			->group_by( 'ss.search_id, s.search' )
 			->order_by( 'volume', 'DESC' );
+
+		// Apply the standard browser/page/referrer/… filters by constraining the searches to
+		// statistics rows that match them. A correlated EXISTS stays scalable on all-time +
+		// filter queries and is dedup-safe for 1:many filter joins. Already prepared, so escape
+		// '%' to survive the outer prepare_sql() pass (the query carries placeholder values).
+		$filter_exists_sql = Statistics_Query::filtered_statistics_exists_sql( (array) ( $args['filters'] ?? [] ), $start, $end, 'ss.statistic_id' );
+		if ( $filter_exists_sql !== '' ) {
+			$q->where_raw( str_replace( '%', '%%', $filter_exists_sql ) );
+		}
 
 		if ( $limit > 0 ) {
 			$q->limit( $limit );

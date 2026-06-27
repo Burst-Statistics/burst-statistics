@@ -1,6 +1,6 @@
 import { useMemo, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { useQuery } from '@tanstack/react-query';
+
 import { ResponsiveBar } from '@nivo/bar';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
@@ -11,28 +11,11 @@ import HelpTooltip from '@/components/Common/HelpTooltip';
 import * as Popover from '@radix-ui/react-popover';
 import Icon from '@/utils/Icon';
 import { useBlockConfig } from '@/hooks/useBlockConfig';
-import { getSourcesOverTimeData } from '@/api/getSourcesData';
+import useSourcesOverTime from '@/hooks/useSourcesOverTime';
 import { formatAxisLabel, formatNumber, getChartXAxisTickValues, getPercentage } from '@/utils/formatting';
+import { getSourceCategoryMeta } from '@/api/getDataTableData';
 
-const SOURCE_KEYS = [ 'search', 'social', 'referral', 'aiReferral', 'paid', 'direct' ];
-
-const SOURCE_LABELS = {
-	search: __( 'Search', 'burst-statistics' ),
-	social: __( 'Social', 'burst-statistics' ),
-	referral: __( 'Referral', 'burst-statistics' ),
-	aiReferral: __( 'AI referral', 'burst-statistics' ),
-	paid: __( 'Paid', 'burst-statistics' ),
-	direct: __( 'Direct / unknown', 'burst-statistics' )
-};
-
-const SOURCE_COLORS = {
-	search: 'var(--color-blue-400)',
-	social: 'var(--color-yellow-400)',
-	referral: 'var(--color-orange-400)',
-	aiReferral: 'var(--color-primary-400)',
-	paid: 'var(--color-red-400)',
-	direct: 'var(--color-gray-500)'
-};
+const SOURCE_KEYS = [ 'search', 'social', 'referral', 'aiReferral', 'paid', 'email', 'direct' ];
 
 const SOURCE_DESCRIPTIONS = {
 	search: __( 'Visitors who found you through a search engine like Google, Bing or DuckDuckGo. No ad spend involved, just organic results.', 'burst-statistics' ),
@@ -44,15 +27,14 @@ const SOURCE_DESCRIPTIONS = {
 	direct: __( 'No referrer, no UTM parameters, no click IDs. Most analytics tools call this "Direct", which implies someone typed your URL by hand. In reality, this bucket also catches clicks from desktop apps, messaging tools, PDFs, browser extensions and any visit where tracking context got stripped along the way.', 'burst-statistics' )
 };
 
-const ALL_SOURCE_DEFINITIONS = [
-	{ key: 'search', label: SOURCE_LABELS.search, color: SOURCE_COLORS.search },
-	{ key: 'social', label: SOURCE_LABELS.social, color: SOURCE_COLORS.social },
-	{ key: 'referral', label: SOURCE_LABELS.referral, color: SOURCE_COLORS.referral },
-	{ key: 'aiReferral', label: SOURCE_LABELS.aiReferral, color: SOURCE_COLORS.aiReferral },
-	{ key: 'paid', label: SOURCE_LABELS.paid, color: SOURCE_COLORS.paid },
-	{ key: 'email', label: __( 'Email', 'burst-statistics' ), color: 'var(--color-green-400)' },
-	{ key: 'direct', label: SOURCE_LABELS.direct, color: SOURCE_COLORS.direct }
-];
+const ALL_SOURCE_DEFINITIONS = SOURCE_KEYS.map( ( key ) => {
+	const meta = getSourceCategoryMeta( key );
+	return {
+		key,
+		label: meta.label,
+		color: meta.color
+	};
+});
 
 /**
  * Popover content explaining each traffic source category.
@@ -103,12 +85,13 @@ function transformToBarData( data, timestamps ) {
 /**
  * Custom tooltip for the stacked bar chart.
  *
- * @param {Object} props      - Nivo bar tooltip props.
- * @param {Object} props.data - The full data row for the hovered bar group.
+ * @param {Object} props          - Nivo bar tooltip props.
+ * @param {Object} props.data     - The full data row for the hovered bar group.
+ * @param {string} props.interval - Time grouping interval.
  * @return {JSX.Element} Tooltip content.
  */
-function SourcesBarTooltip({ data }) {
-	const dateLabel = formatAxisLabel( data.timestamp, 'day', false );
+function SourcesBarTooltip({ data, interval }) {
+	const dateLabel = formatAxisLabel( data.timestamp, interval, false );
 
 	const total = SOURCE_KEYS.reduce( ( sum, key ) => sum + Number( data[ key ] ?? 0 ), 0 );
 
@@ -135,9 +118,9 @@ function SourcesBarTooltip({ data }) {
 									<span className="flex items-center gap-1.5 text-gray-800">
 										<span
 											className="inline-block h-2.5 w-2.5 flex-shrink-0 rounded-sm"
-											style={{ backgroundColor: SOURCE_COLORS[ key ] }}
+											style={{ backgroundColor: getSourceCategoryMeta( key ).color }}
 										/>
-										{ SOURCE_LABELS[ key ] }
+										{ getSourceCategoryMeta( key ).label }
 									</span>
 								</td>
 								<td className="py-0.5 text-right text-gray-600 tabular-nums">
@@ -175,10 +158,11 @@ const SourcesChartBlock = ( props ) => {
 
 	const args = useMemo( () => ({ filters }), [ filters ]);
 
-	const query = useQuery({
-		queryKey: [ 'sources-over-time', startDate, endDate, range, args ],
-		queryFn: () => getSourcesOverTimeData({ startDate, endDate, range, args }),
-		placeholderData: { timestamps: [], search: [], social: [], referral: [], aiReferral: [], paid: [], direct: [] }
+	const query = useSourcesOverTime({
+		startDate,
+		endDate,
+		range,
+		args
 	});
 
 	const timestamps = useMemo(
@@ -186,19 +170,104 @@ const SourcesChartBlock = ( props ) => {
 		[ query.data ]
 	);
 
+	/**
+	 * Detect the time granularity from the gap between the first two timestamps.
+	 * Falls back to 'day' when there is only one timestamp or no data.
+	 * Thresholds (in seconds):
+	 *   < 7 200  (~2 h)  → hour
+	 *   < 172 800 (2 days) → day
+	 *   < 1 209 600 (14 days) → week
+	 *   < 10 368 000 (120 days) → month
+	 *   else → year
+	 */
+	const interval = useMemo( () => {
+		if ( 2 > timestamps.length ) {
+			return 'day';
+		}
+		const gap = timestamps[ 1 ] - timestamps[ 0 ];
+		if ( 7200 > gap ) {
+			return 'hour';
+		}
+		if ( 172800 > gap ) {
+			return 'day';
+		}
+		if ( 1209600 > gap ) {
+			return 'week';
+		}
+		if ( 10368000 > gap ) {
+			return 'month';
+		}
+		return 'year';
+	}, [ timestamps ]);
+
 	const barData = useMemo(
 		() => transformToBarData( query.data, timestamps ),
 		[ query.data, timestamps ]
 	);
 
+	const maxBarValue = useMemo( () => {
+		if ( ! barData || 0 === barData.length ) {
+			return 0;
+		}
+		return Math.max(
+			...barData.map( ( row ) =>
+				SOURCE_KEYS.reduce( ( sum, key ) => sum + Number( row[ key ] ?? 0 ), 0 )
+			)
+		);
+	}, [ barData ]);
+
+	const yTickValues = useMemo( () => {
+		const maxValue = maxBarValue;
+		if ( 0 >= maxValue || isNaN( maxValue ) || ! isFinite( maxValue ) ) {
+			return [ 0, 1 ];
+		}
+
+		// Aim for 5 ticks. Compute the raw interval per tick.
+		const TARGET_TICKS = 5;
+		const rawInterval = maxValue / TARGET_TICKS;
+		if ( 0 >= rawInterval || isNaN( rawInterval ) || ! isFinite( rawInterval ) ) {
+			return [ 0, 1 ];
+		}
+
+		// Round the interval UP to the nearest "nice" number (1, 2, 5 × power of 10).
+		const power = Math.pow( 10, Math.floor( Math.log10( rawInterval ) ) );
+		const fraction = rawInterval / power;
+
+		let niceFraction;
+		if ( 1 >= fraction ) {
+			niceFraction = 1;
+		} else if ( 2 >= fraction ) {
+			niceFraction = 2;
+		} else if ( 5 >= fraction ) {
+			niceFraction = 5;
+		} else {
+			niceFraction = 10;
+		}
+
+		let niceInterval = Math.max( 1, niceFraction * power );
+
+		// Guard: if we'd generate more than 6 ticks, keep doubling the interval.
+		let maxTick = Math.ceil( maxValue / niceInterval ) * niceInterval;
+		while ( 5 < maxTick / niceInterval ) {
+			niceInterval *= 2;
+			maxTick = Math.ceil( maxValue / niceInterval ) * niceInterval;
+		}
+
+		const ticks = [];
+		for ( let val = 0; val <= maxTick; val += niceInterval ) {
+			ticks.push( val );
+		}
+		return ticks;
+	}, [ maxBarValue ]);
+
 	const tickValues = useMemo(
-		() => getChartXAxisTickValues( timestamps ),
-		[ timestamps ]
+		() => getChartXAxisTickValues( timestamps, 'hour' === interval ? 12 : 7 ),
+		[ timestamps, interval ]
 	);
 
 	const labelByTimestamp = useMemo(
-		() => new Map( timestamps.map( ( ts ) => [ String( ts ), formatAxisLabel( ts, 'day', false ) ]) ),
-		[ timestamps ]
+		() => new Map( timestamps.map( ( ts ) => [ String( ts ), formatAxisLabel( ts, interval, false ) ]) ),
+		[ timestamps, interval ]
 	);
 
 	const formatTick = useCallback(
@@ -256,10 +325,10 @@ const SourcesChartBlock = ( props ) => {
 							groupMode="stacked"
 							margin={{ top: 20, right: 24, bottom: 56, left: 56 }}
 							padding={ 0.3 }
-							colors={ ({ id }) => SOURCE_COLORS[ id ] ?? 'var(--color-gray-400)' }
+							colors={ ({ id }) => getSourceCategoryMeta( id ).color }
 							borderRadius={ 2 }
 							enableLabel={ false }
-							tooltip={ SourcesBarTooltip }
+							tooltip={ ( tooltipProps ) => <SourcesBarTooltip { ...tooltipProps } interval={ interval } /> }
 							axisBottom={{
 								tickSize: 0,
 								tickPadding: 12,
@@ -269,12 +338,12 @@ const SourcesChartBlock = ( props ) => {
 							axisLeft={{
 								tickSize: 0,
 								tickPadding: 12,
-								tickValues: 5,
+								tickValues: yTickValues,
 								format: ( value ) => formatNumber( Number( value ), 0 )
 							}}
 							enableGridX={ false }
 							enableGridY={ true }
-							gridYValues={ 5 }
+							gridYValues={ yTickValues }
 							theme={{
 								grid: { line: { stroke: 'var(--color-gray-300)', strokeWidth: 1 } },
 								axis: {
@@ -298,9 +367,9 @@ const SourcesChartBlock = ( props ) => {
 							<span className="flex cursor-default items-center gap-1.5 text-sm text-gray-600">
 								<span
 									className="inline-block h-2.5 w-2.5 rounded-full"
-									style={{ backgroundColor: SOURCE_COLORS[ key ] }}
+									style={{ backgroundColor: getSourceCategoryMeta( key ).color }}
 								/>
-								{ SOURCE_LABELS[ key ] }
+								{ getSourceCategoryMeta( key ).label }
 							</span>
 						</HelpTooltip>
 					) ) }

@@ -193,7 +193,10 @@ const PopoverFilter = ({
 								name={id + '_radio_group'}
 								value={value}
 								label={options[value].label}
-								checked={pendingMetrics[0] === value}
+								checked={
+									pendingMetrics[0] === value &&
+									( isLicenseValid || ! options[value].pro )
+								}
 								disabled={
 									true === options[value].disabled ||
 									( options[value].pro && ! isLicenseValid )
@@ -231,7 +234,10 @@ const PopoverFilter = ({
 							<Checkbox.Root
 								className="focus:ring-blue-500 flex h-4 w-4 items-center justify-center rounded border-2 border-gray-300 bg-white transition-colors hover:border-gray-400 focus:outline-hidden focus:ring-2 focus:ring-offset-2"
 								id={id + '_' + value}
-								checked={pendingMetrics.includes( value )}
+								checked={
+									pendingMetrics.includes( value ) &&
+									( isLicenseValid || ! options[value].pro )
+								}
 								aria-label={__(
 									'Change metrics',
 									'burst-statistics'

@@ -66,6 +66,9 @@ class Share_Routing {
 			'data/goals'                   => 'statistics',
 			'data/reading_engagement'      => 'engagement',
 
+			// Sources tab — the world map (country data) is free.
+			'data/geo'                     => 'sources',
+
 			// Dashboard tab (NOT shareable).
 			'data/live-goals'              => 'dashboard',
 			'data/live-traffic'            => 'dashboard',
@@ -108,6 +111,8 @@ class Share_Routing {
 			'statistics_pages'      => 'statistics',
 			'statistics_referrers'  => 'statistics',
 			'statistics_parameters' => 'statistics',
+			// Locations (country) datatable is free.
+			'sources_countries'     => 'sources',
 		];
 
 		/**

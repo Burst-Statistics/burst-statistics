@@ -238,36 +238,25 @@ return [
 		'default'  => false,
 	],
 	[
-		'id'       => 'geo_ip_database_type',
-		'menu_id'  => 'advanced',
-		'group_id' => 'data_collection',
-		'type'     => 'radio',
-		'label'    => __( 'Visitor location detail', 'burst-statistics' ),
-		'disabled' => false,
-		'default'  => 'city',
-		'pro'      => [
-			'url' => 'pricing/',
-		],
-		'options'  => [
-			'city'    => [
-				'label'       => __( 'Country, City & Region details', 'burst-statistics' ),
-				'context'     => __( 'Provides detailed location data including city and region. This uses a larger database and may result in slightly slower tracking.', 'burst-statistics' ),
-				'recommended' => true,
-			],
-			'country' => [
-				'label'   => __( 'Country only', 'burst-statistics' ),
-				'context' => __( 'Provides basic location insights. This uses a smaller database for faster tracking and less data storage.', 'burst-statistics' ),
-			],
-		],
-	],
-	[
-		'id'       => 'burst_update_to_city_geo_database_time',
+		'id'       => 'update_to_city_geo_database_time',
 		'menu_id'  => 'advanced',
 		'group_id' => 'data_collection',
 		'type'     => 'hidden',
 		'label'    => '',
 		'disabled' => false,
 		'default'  => 1751328000,
+	],
+	[
+		// Timestamp from which country data is available, shown in the world map
+		// notice. Set only on upgrade from an existing install (default 0 hides the
+		// notice on fresh installs).
+		'id'       => 'country_geo_database_available_time',
+		'menu_id'  => 'advanced',
+		'group_id' => 'data_collection',
+		'type'     => 'hidden',
+		'label'    => '',
+		'disabled' => false,
+		'default'  => 0,
 	],
 	[
 		'id'       => 'filtering_by_domain',

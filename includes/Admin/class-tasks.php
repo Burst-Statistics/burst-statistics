@@ -451,4 +451,11 @@ class Tasks {
 		// Return true if integration is available but not yet enabled (show setup task).
 		return empty( $options['enable_mainwp_integration'] );
 	}
+
+	/**
+	 * Check if WP Consent API or Complianz is active.
+	 */
+	public static function is_wp_consent_api_active(): bool {
+		return class_exists( 'WP_Consent_API' ) || defined( 'CMPLZ_VERSION' ) || defined( 'cmplz_version' );
+	}
 }

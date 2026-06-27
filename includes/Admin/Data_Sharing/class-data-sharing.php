@@ -65,8 +65,12 @@ class Data_Sharing {
 	}
 
 	/**
-	 * Schedule the telemetry send with a random offset
-	 * This spreads the load over the month
+	 * Schedule the telemetry send.
+	 *
+	 * The very first time, a random offset (24-720h) is used to spread the
+	 * initial load across the month over all sites. Every subsequent run uses a
+	 * small fixed delay so the send does not fire in the same request as all the
+	 * other tasks hooked onto burst_monthly.
 	 */
 	public function schedule_telemetry(): void {
 		if ( wp_next_scheduled( self::CRON_HOOK ) ) {
@@ -76,13 +80,16 @@ class Data_Sharing {
 		$offset_hours = get_option( self::OFFSET_OPTION, false );
 
 		if ( false === $offset_hours ) {
+			// First scheduling only: random offset to spread the initial load across the month.
 			$offset_hours = wp_rand( 24, 720 );
 			update_option( self::OFFSET_OPTION, $offset_hours, false );
+			$delay = $offset_hours * HOUR_IN_SECONDS;
+		} else {
+			// Subsequent schedulings: small fixed delay so crons on burst_monthly don't all start at once.
+			$delay = 30 * MINUTE_IN_SECONDS;
 		}
 
-		$scheduled_time = time() + ( $offset_hours * HOUR_IN_SECONDS );
-
-		wp_schedule_single_event( $scheduled_time, self::CRON_HOOK );
+		wp_schedule_single_event( time() + $delay, self::CRON_HOOK );
 	}
 
 	/**
@@ -117,11 +124,11 @@ class Data_Sharing {
 		}
 
 		$aggregation = new Data_Aggregation( $this->capture_data_from, $this->current_send_time );
-
 		try {
 			$aggregation->send_to_api( $this->get_api_url() );
 
 			update_option( 'burst_last_telemetry_send', $this->current_send_time, false );
+			delete_option( 'burst_ai_chat_questions' );
 		} catch ( \Exception $e ) {
 			self::error_log(
 				sprintf(

@@ -205,7 +205,14 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 	isOpen: false,
 	setIsOpen: ( v: boolean ) => set( ( state ) => ({ ...state, isOpen: v }) ),
 	openWizard: () => set( ( state ) => ({ ...state, isOpen: true }) ),
-	closeWizard: () => set( ( state ) => ({ ...state, isOpen: false, selectedBlockIndex: null }) ),
+	closeWizard: () => set( ( state ) => ({
+		...state,
+		isOpen: false,
+		selectedBlockIndex: null,
+		wizard: {
+			...INITIAL_WIZARD_STATE
+		}
+	}) ),
 	isEditingMode: false,
 	selectedBlockIndex: null,
 	setSelectedBlockIndex: ( index: number | null ) => set({ selectedBlockIndex: index }),

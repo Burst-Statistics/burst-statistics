@@ -4,6 +4,7 @@ import { useDate } from '@/store/useDateStore';
 import { useCompareStore, COMPARE_MODES } from '@/store/useCompareStore';
 import { getDatatableData } from '@/utils/api';
 import useLicenseData from '@/hooks/useLicenseData';
+import useFilters from '@/hooks/useFilters';
 
 /**
  * A single outgoing link data row.
@@ -65,9 +66,11 @@ export function useOutgoingLinksData( enabled = true ): UseOutgoingLinksDataRetu
 	const { startDate, endDate, range } = useDate( ( state ) => state );
 	const compareMode = useCompareStore( ( state ) => state.compareMode );
 	const { isLicenseValid } = useLicenseData();
+	const { getActiveFilters } = useFilters();
+	const filters = getActiveFilters();
 
 	const { data: apiData, isLoading, error } = useQuery({
-		queryKey: [ 'outgoing-links', startDate, endDate, range ],
+		queryKey: [ 'outgoing-links', startDate, endDate, range, filters ],
 		enabled: enabled && isLicenseValid,
 		queryFn: async() => {
 			const response = await getDatatableData(
@@ -76,7 +79,7 @@ export function useOutgoingLinksData( enabled = true ): UseOutgoingLinksDataRetu
 				startDate,
 				endDate,
 				range,
-				{}
+				{ filters }
 			);
 
 			// getDatatableData returns the full REST response; the datatable data is in response.data.

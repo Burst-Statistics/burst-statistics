@@ -1,8 +1,7 @@
 <?php
 namespace Burst\Admin\Engagement;
 
-use Burst\Admin\Database\Query;
-use Burst\Admin\Database\Query_Executor;
+use Burst\Admin\Statistics\Statistics_Query;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
@@ -72,6 +71,8 @@ class Reading_Engagement {
 	 * @param string $arg             The arg name.
 	 * @param mixed  $value           The raw value.
 	 * @return mixed Sanitized value.
+	 *
+	 * mixed: 'burst_sanitize_arg' filter callback — $sanitized_value/$value and the return are generic across all args (bool|int|string|array|null), so the signature must stay open.
 	 */
 	public function sanitize_reading_engagement_arg( mixed $sanitized_value, string $arg, mixed $value ): mixed {
 		if ( $arg === 'least_engagement' ) {
@@ -123,24 +124,24 @@ class Reading_Engagement {
 		$end   = isset( $args['date_end'] ) ? (int) $args['date_end'] : time();
 		$least = isset( $args['least_engagement'] ) && (bool) $args['least_engagement'];
 
-		$q = Query::create()
-			->select( [ 'page_url', 'AVG(time_on_page) AS avg_time_on_page' ] )
-			->from( 'burst_statistics' )
-			->where_between( 'time', $start, $end, '%d' )
-			->where( 'time_on_page', 0, '>', '%d' )
-			->where( 'page_url', '', '!=' )
+		// Built natively on Statistics_Query: the base table here is already burst_statistics,
+		// so the standard browser/page/referrer/… filters (and their joins) are applied inline
+		// on the single scan — no id-subquery or EXISTS needed. page_url and avg_time_on_page
+		// are allow-listed metrics (also in strict mode), so this is safe for share-link viewers.
+		$qd = Statistics_Query::create( 'reading_engagement' )
+			->date_range( $start, $end )
+			->filters( (array) ( $args['filters'] ?? [] ) )
+			->select( [ 'page_url', 'avg_time_on_page' ] )
+			->where( 'statistics.time_on_page', 0, '>', '%d' )
+			->where( 'statistics.page_url', '', '!=' )
 			->group_by( 'page_url' )
-			->order_by( 'avg_time_on_page', $least ? 'ASC' : 'DESC' );
+			->order_by( 'avg_time_on_page ' . ( $least ? 'ASC' : 'DESC' ) );
 
 		if ( $limit > 0 ) {
-			$q->limit( $limit );
+			$qd->limit( $limit );
 		}
 
-		$rows = Query_Executor::create()
-			->cache_ttl( 30 )
-			->cache_group( 'burst_stats_query_results' )
-			->single_flight( false )
-			->run( $q->prepare_sql(), 'get', ARRAY_A );
+		$rows = $qd->fetch( ARRAY_A );
 
 		if ( empty( $rows ) ) {
 			return [];

@@ -1,6 +1,6 @@
 import { __, _x, _n, sprintf } from '@wordpress/i18n';
 import { metricOptions, useGeoStore } from '@/store/useGeoStore';
-import useSettingsData from '@/hooks/useSettingsData';
+import useLicenseData from '@/hooks/useLicenseData';
 import Icon from '@/utils/Icon';
 import {useMemo} from '@wordpress/element';
 import {createValueFormatter} from '@/utils/formatting';
@@ -8,9 +8,10 @@ import {memo} from 'react';
 
 const MapStatisticsInfo = memo( ({dataStatistics, missingDataCount}) => {
     const currentView = useGeoStore( ( state ) => state.currentView );
-    const { getValue } = useSettingsData();
 
-    const geoIpDatabaseType = getValue( 'geo_ip_database_type' );
+    // Derived (not a setting): Pro tracks city, free tracks country.
+    const { isPro } = useLicenseData();
+    const geoIpDatabaseType = isPro ? 'city' : 'country';
     const selectedMetric = useGeoStore( ( state ) => state.selectedMetric );
     const patternsEnabled = useGeoStore( ( state ) => state.patternsEnabled );
     const currentViewMissingData = useGeoStore(

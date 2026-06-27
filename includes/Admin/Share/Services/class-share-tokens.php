@@ -211,6 +211,8 @@ class Share_Tokens {
 	 *
 	 * @param mixed $view_url The view URL to sanitize.
 	 * @return string Sanitized view URL with hash preserved.
+	 *
+	 * Mixed $view_url: untrusted value from token-payload data that may not be a string; the is_string guard rejects anything else.
 	 */
 	private function sanitize_view_url( mixed $view_url ): string {
 		if ( ! is_string( $view_url ) || empty( $view_url ) ) {
@@ -340,6 +342,8 @@ class Share_Tokens {
 	 *
 	 * @param mixed $initial_state The initial state to sanitize.
 	 * @return array Sanitized initial state array.
+	 *
+	 * Mixed $initial_state: untrusted value from token-payload data that may not be an array; the is_array guard falls back to the default state.
 	 */
 	private function sanitize_initial_state( mixed $initial_state ): array {
 		if ( ! is_array( $initial_state ) ) {

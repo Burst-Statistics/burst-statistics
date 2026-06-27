@@ -1,124 +1,114 @@
 import { getData } from '@/utils/api';
 
-const CATEGORY_DATA = [
-	{ id: 'search', label: 'Search', value: 46 },
-	{ id: 'social', label: 'Social', value: 24 },
-	{ id: 'direct', label: 'Direct', value: 18 },
-	{ id: 'ai', label: 'AI', value: 7 },
-	{ id: 'campaigns', label: 'Campaigns', value: 3 },
-	{ id: 'other', label: 'Other', value: 2 }
-];
-
-const DRILLDOWN_DATA = {
-	search: [
-		{ source: 'Google', visits: 1228, percentage: 58 },
-		{ source: 'Bing', visits: 423, percentage: 20 },
-		{ source: 'DuckDuckGo', visits: 275, percentage: 13 },
-		{ source: 'Yahoo', visits: 190, percentage: 9 }
-	],
-	social: [
-		{ source: 'Facebook', visits: 532, percentage: 42 },
-		{ source: 'X', visits: 322, percentage: 26 },
-		{ source: 'LinkedIn', visits: 233, percentage: 18 },
-		{ source: 'Instagram', visits: 179, percentage: 14 }
-	],
-	direct: [
-		{ source: 'Direct', visits: 802, percentage: 78 }
-	],
-	ai: [
-		{ source: 'ChatGPT', visits: 121, percentage: 54 },
-		{ source: 'Perplexity', visits: 66, percentage: 29 },
-		{ source: 'Claude', visits: 37, percentage: 17 }
-	],
-	campaigns: [
-		{ source: 'Newsletter April', visits: 39, percentage: 51 },
-		{ source: 'Spring Promo', visits: 24, percentage: 31 },
-		{ source: 'Partner Campaign', visits: 14, percentage: 18 }
-	],
-	other: [
-		{ source: 'Campaigns', visits: 100, percentage: 10 },
-		{ source: 'Referral', visits: 100, percentage: 10 },
-		{ source: 'Other', visits: 100, percentage: 10 }
-	]
-};
-
-const TOP_SOURCES_DATA = [
-	{ id: 'google', source: 'Google', percentage: 34.2 },
-	{ id: 'facebook', source: 'Facebook', percentage: 14.8 },
-	{ id: 'direct', source: 'Direct', percentage: 22.3 },
-	{ id: 'bing', source: 'Bing', percentage: 11.8 },
-	{ id: 'chatgpt', source: 'ChatGPT', percentage: 3.4 }
-];
-
 /**
- * Get traffic source category totals.
- *
- * @param {Object} args            - Request arguments.
- * @param {string} args.startDate  - Start date.
- * @param {string} args.endDate    - End date.
- * @param {string} args.range      - Date range key.
- * @param {Object} args.args       - Additional filters.
- * @return {Promise<Array>} Category rows for the donut chart.
+ * Fetch time-bucketed traffic sources data.
  */
-export const getSourcesCategoryData = async({ startDate, endDate, range, args }) => {
+export const getSourcesOverTimeData = async({ startDate, endDate, range, args }) => {
+	const response = await getData( 'sources-over-time', startDate, endDate, range, args );
+	const finalData = response?.data || {};
 
-	// TODO: Replace with real API call once backend categorisation is complete.
-	// await getData( 'sources/categories', startDate, endDate, range, args );
-	void getData;
-	void startDate;
-	void endDate;
-	void range;
-	void args;
-	return CATEGORY_DATA;
+	const timestamps = finalData.timestamps || [];
+	const emptyArray = new Array( timestamps.length ).fill( 0 );
+
+	return {
+		timestamps,
+		search: finalData.search || emptyArray,
+		social: finalData.social || emptyArray,
+		referral: finalData.referral || emptyArray,
+		aiReferral: finalData.aiReferral || emptyArray,
+		paid: finalData.paid || emptyArray,
+		email: finalData.email || emptyArray,
+		direct: finalData.direct || emptyArray
+	};
 };
 
 /**
- * Get source breakdown for a category.
+ * Fetch flat list of traffic sources from server.
+ */
+export const getSourcesListData = async({ startDate, endDate, range, args }) => {
+	const response = await getData( 'sources-list', startDate, endDate, range, args );
+	return response?.data || [];
+};
+
+/**
+ * Get source breakdown for a category from the pre-fetched sourcesList.
  *
  * @param {Object} args            - Request arguments.
- * @param {string} args.startDate  - Start date.
- * @param {string} args.endDate    - End date.
- * @param {string} args.range      - Date range key.
- * @param {Object} args.args       - Additional filters.
+ * @param {Array}  args.sourcesList - The complete sources list from the server.
  * @param {string} args.category   - Selected traffic category.
- * @return {Promise<Array>} Source rows for drill-down display.
+ * @return {Array} Source rows for drill-down display.
  */
-export const getSourcesDrilldownData = async({
-	startDate,
-	endDate,
-	range,
-	args,
-	category
-}) => {
+export const getSourcesDrilldownData = ({ sourcesList, category }) => {
+	if ( ! Array.isArray( sourcesList ) ) {
+		return [];
+	}
 
-	// TODO: Replace with real API call once backend categorisation is complete.
-	// await getData( 'sources/drilldown', startDate, endDate, range, { ...args, category } );
-	void getData;
-	void startDate;
-	void endDate;
-	void range;
-	void args;
-	return DRILLDOWN_DATA[category] ?? [];
+	const filtered = sourcesList.filter( ( item ) => item.category === category );
+
+	const total = filtered.reduce( ( sum, item ) => sum + parseInt( item.visitors || 0 ), 0 );
+
+	return filtered.map( ( item ) => {
+		let source = item.source || 'Unknown';
+		if ( 'direct' === source ) {
+			source = 'Direct / unknown';
+		} else if ( 'Direct / unknown' !== source && 'Email client' !== source ) {
+			source = source.charAt( 0 ).toUpperCase() + source.slice( 1 );
+		}
+
+		return {
+			source,
+			visits: parseInt( item.visitors || 0 ),
+			percentage: 0 < total ? ( parseInt( item.visitors || 0 ) / total ) * 100 : 0
+		};
+	}).sort( ( a, b ) => b.visits - a.visits );
 };
 
 /**
- * Get top traffic sources across all categories.
+ * Get top traffic sources across all categories from the pre-fetched sourcesList.
  *
- * @param {Object} args            - Request arguments.
- * @param {string} args.startDate  - Start date.
- * @param {string} args.endDate    - End date.
- * @param {string} args.range      - Date range key.
- * @param {Object} args.args       - Additional filters.
- * @return {Promise<Array>} Top source rows.
+ * @param {Array} sourcesList - The complete sources list from the server.
+ * @return {Array} Top source rows.
  */
-export const getTopSourcesData = async({ startDate, endDate, range, args }) => {
+export const getTopSourcesData = ( sourcesList ) => {
+	if ( ! Array.isArray( sourcesList ) ) {
+		return [];
+	}
 
-	// TODO: Replace with real API call once backend categorisation is complete.
-	// await getData( 'sources/top', startDate, endDate, range, args );
-	void getData;
-	void startDate;
-	void endDate;
-	void range;
-	void args;
-	return TOP_SOURCES_DATA;
+	// 1. Group/sum visitors by source name (in case a source appears in multiple categories)
+	const sourceMap = {};
+	sourcesList.forEach( ( item ) => {
+		let source = item.source || 'Unknown';
+		if ( 'direct' === source ) {
+			source = 'Direct / unknown';
+		} else if ( 'Direct / unknown' !== source && 'Email client' !== source ) {
+			source = source.charAt( 0 ).toUpperCase() + source.slice( 1 );
+		}
+
+		if ( ! sourceMap[ source ]) {
+			sourceMap[ source ] = 0;
+		}
+		sourceMap[ source ] += parseInt( item.visitors || 0 );
+	});
+
+	const list = Object.keys( sourceMap ).map( ( source ) => ({
+		id: source,
+		source,
+		visitors: sourceMap[ source ]
+	}) );
+
+	// 2. Sum all unique visitors in the list to calculate the true grandTotal
+	// This ensures direct (and other unique sources) are divided by the correct denominator
+	const grandTotal = list.reduce( ( sum, item ) => sum + item.visitors, 0 );
+	if ( 0 === grandTotal ) {
+		return [];
+	}
+
+	const sorted = list.sort( ( a, b ) => b.visitors - a.visitors );
+	const top5 = sorted.slice( 0, 5 );
+
+	return top5.map( ( item ) => ({
+		id: item.id,
+		source: item.source,
+		percentage: ( item.visitors / grandTotal ) * 100
+	}) );
 };

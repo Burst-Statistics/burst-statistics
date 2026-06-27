@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import useDateRange from '@/hooks/useDateRange';
+import useFilters from '@/hooks/useFilters';
 import getSearchTermsData from '@/api/getSearchTermsData';
 
 /**
@@ -36,10 +37,12 @@ type UseSearchTermsDataReturn = {
  */
 export function useSearchTermsData(): UseSearchTermsDataReturn {
 	const { startDate, endDate, range } = useDateRange();
+	const { getActiveFilters } = useFilters();
+	const filters = getActiveFilters();
 
 	const query = useQuery({
-		queryKey: [ 'search_terms', startDate, endDate ],
-		queryFn: () => getSearchTermsData({ startDate, endDate, range }),
+		queryKey: [ 'search_terms', startDate, endDate, filters ],
+		queryFn: () => getSearchTermsData({ startDate, endDate, range, filters }),
 		enabled: !! startDate && !! endDate
 	});
 

@@ -13,7 +13,7 @@ export function ChartTooltip({ children, className }) {
 	return (
 		<div
 			className={ clsx(
-				'bg-white border border-gray-200 rounded-lg shadow-md px-3 py-2 text-sm min-w-36',
+				'burst-tooltip border rounded-lg px-3 py-2 text-sm min-w-36',
 				className
 			) }
 		>

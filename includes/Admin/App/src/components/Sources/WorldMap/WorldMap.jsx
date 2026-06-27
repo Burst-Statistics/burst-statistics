@@ -6,7 +6,7 @@ import { useGeoData } from '@/hooks/useGeoData';
 import { useGeoAnalytics } from '@/hooks/useGeoAnalytics';
 import { createValueFormatter } from '@/utils/formatting';
 import { __, sprintf } from '@wordpress/i18n';
-import useSettingsData from '@/hooks/useSettingsData';
+import useLicenseData from '@/hooks/useLicenseData';
 import {useBlockConfig} from '@/hooks/useBlockConfig';
 import MapOverlay from '@/components/Sources/WorldMap/MapOverlay';
 import InCompleteDataNotice from '@/components/Sources/WorldMap/InCompleteDataNotice';
@@ -36,10 +36,9 @@ const WorldMap = ( props ) => {
 		( state ) => state.classificationMethod
 	);
 
-	// Settings data for getting the database update time
-	const { getValue } = useSettingsData();
-
-	const geoIpDatabaseType = getValue( 'geo_ip_database_type' );
+	// Derived (not a setting): Pro tracks city, free tracks country.
+	const { isPro } = useLicenseData();
+	const geoIpDatabaseType = isPro ? 'city' : 'country';
 
 	const colorScheme = useMemo( () => {
 		return metricOptions[selectedMetric]?.colorScheme || 'greens';
@@ -336,8 +335,10 @@ const WorldMap = ( props ) => {
 			{/* Breadcrumbs Navigation - Only show for city database type */}
 			{'city' === geoIpDatabaseType && <div className="absolute left-3 top-3 z-10"><MapBreadcrumbs /></div>}
 
-			{/* Incomplete Data Notice - Top Left - Only for city database type */}
-			{'city' === geoIpDatabaseType && currentViewMissingData && <InCompleteDataNotice />}
+			{/* Incomplete Data Notice - Top Left. City: when viewing a region with
+			    missing data. Country (free): always — the notice self-gates on the
+			    "available from" timestamp (only set on upgrade, not fresh install). */}
+			{( ( 'city' === geoIpDatabaseType && currentViewMissingData ) || 'country' === geoIpDatabaseType ) && <InCompleteDataNotice />}
 
 			{/* Map Statistics Info */}
 			<MapStatisticsInfo dataStatistics={dataStatistics} missingDataCount={missingDataCount}/>
@@ -420,6 +421,18 @@ const WorldMap = ( props ) => {
 					geoIpDatabaseType={geoIpDatabaseType}
 				/>
 			)}
+
+			{/* MaxMind attribution — required when displaying GeoLite2 data.
+			    Absolutely positioned so it stays out of the map's height
+			    measurement and never affects the responsive layout. */}
+			<a
+				href="https://www.maxmind.com"
+				target="_blank"
+				rel="noopener noreferrer"
+				className="absolute bottom-1 right-2 z-10 text-[10px] leading-none text-gray-400 hover:text-gray-600"
+			>
+				{__( 'Location data by MaxMind GeoLite2', 'burst-statistics' )}
+			</a>
 		</div>
 	);
 };

@@ -19,7 +19,11 @@
 
 @utility rdrDateDisplay {
 	@apply m-3;
-	@apply flex justify-between;
+	@apply flex flex-col justify-between gap-2;
+
+	@media (min-width: 1024px) {
+		@apply flex-row gap-0;
+	}
 }
 
 @utility rdrDateDisplayItem {
@@ -31,7 +35,11 @@
 	@apply flex-1 basis-0 text-center text-inherit;
 
 	& + & {
-	@apply ml-[0.833em];
+	@apply mt-2;
+
+	@media (min-width: 1024px) {
+		@apply mt-0 ml-[0.833em];
+	}
 	}
 
 	& input {

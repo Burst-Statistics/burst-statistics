@@ -236,6 +236,8 @@ class Query {
 	 * @param string $operator Comparison operator (=, !=, >, <, >=, <=, IN, NOT IN, LIKE).
 	 * @param string $type Value type for wpdb::prepare (%s, %d, %f).
 	 * @return self Return the current instance for chaining use.
+	 *
+	 * Mixed $value: a query value is intentionally polymorphic — string|int|float for scalar comparisons, array for IN/NOT IN, null for IS NULL.
 	 */
 	public function where( string $column, mixed $value, string $operator = '=', string $type = '%s' ): self {
 		$column   = $this->sanitize_qualified_column( $column );
@@ -282,6 +284,8 @@ class Query {
 	 * @param mixed  $boundary_start Start value for BETWEEN condition.
 	 * @param mixed  $boundary_end   End value for BETWEEN condition.
 	 * @param string $type           Type of the boundary_start and boundary_end value.
+	 *
+	 * Mixed $boundary_start/$boundary_end: BETWEEN bounds are scalar query values (string|int|float) supplied by callers; kept generic like where().
 	 */
 	public function where_between( string $column, mixed $boundary_start, mixed $boundary_end, string $type = '%s' ): self {
 		$allowed_types = [ '%s', '%d', '%f' ];
@@ -406,11 +410,17 @@ class Query {
 	/**
 	 * Set GROUP BY clause.
 	 *
-	 * @param string $column Column name.
+	 * @param string $column Column name, or a comma-separated list of column names.
 	 * @return self Return the current instance for chaining use.
 	 */
 	public function group_by( string $column ): self {
-		$this->group_by = 'GROUP BY ' . $column;
+		// Column names only — same guard as where(); keeps a future caller from
+		// ever feeding user input into the clause.
+		$columns        = array_filter(
+			array_map( [ $this, 'sanitize_qualified_column' ], explode( ',', $column ) ),
+			static fn( string $col ): bool => '' !== $col
+		);
+		$this->group_by = 'GROUP BY ' . implode( ', ', $columns );
 		return $this;
 	}
 
@@ -422,6 +432,8 @@ class Query {
 	 * @param string $operator Comparison operator.
 	 * @param string $type Value type for wpdb::prepare (%s, %d, %f).
 	 * @return self Return the current instance for chaining use.
+	 *
+	 * Mixed $value: like where(), a HAVING value is polymorphic — string|int|float for scalar comparisons, array for IN/NOT IN, null for IS NULL.
 	 */
 	public function having( string $condition, mixed $value, string $operator = '=', string $type = '%s' ): self {
 		$operator = strtoupper( trim( $operator ) );

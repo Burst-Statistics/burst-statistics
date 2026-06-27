@@ -230,4 +230,17 @@ return [
 		'plusone'             => false,
 		'dismiss_permanently' => true,
 	],
+	[
+		'id'                  => 'wp_consent_api_notice',
+		'condition'           => [
+			'type'     => 'serverside',
+			'function' => 'Burst\Admin\Tasks::is_wp_consent_api_active()',
+		],
+		'msg'                 => __( 'If you have configured a cookiebanner to ask consent for statistics, this will cause Burst not to track any user who is not flagged by the cookie banner as having consent for statistics.', 'burst-statistics' ),
+		'icon'                => 'warning',
+		'url'                 => 'wp-consent-api-integration',
+		'dismissible'         => true,
+		'plusone'             => true,
+		'dismiss_permanently' => true,
+	],
 ];

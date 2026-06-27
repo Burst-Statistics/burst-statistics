@@ -15,11 +15,13 @@ type BlockFooterProps = {
  * @return {JSX.Element} The block footer component.
  */
 export const BlockFooter = memo( ({ children, className = '' }: BlockFooterProps ) => {
+	const hasJustify = className.includes( 'justify-' );
 	return (
 		<div
 			className={clsx(
-				className,
-				'flex items-center justify-between px-2.5 py-3 md:px-6'
+				'flex items-center px-2.5 py-3 md:px-6',
+				! hasJustify && 'justify-between',
+				className
 			)}
 		>
 			{children}

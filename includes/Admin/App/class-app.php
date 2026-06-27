@@ -19,6 +19,7 @@ use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
 use Burst\Traits\Save;
 use Burst\UserAgentParser\UserAgentParser;
+use Burst\Pro\Admin\Statistics\Source_Classifier;
 
 use function Burst\burst_loader;
 
@@ -39,7 +40,7 @@ class App {
 	public Menu $menu;
 	public Fields $fields;
 	public Tasks $tasks;
-	private array|null $cached_datatable_configs = null;
+	private ?array $cached_datatable_configs = null;
 
 	/**
 	 * Reporting fields.
@@ -369,8 +370,9 @@ class App {
 	 * @return array<string, mixed>
 	 */
 	public function extend_localized_settings_for_dashboard( array $data ): array {
-		$data['menu']   = $this->menu->get();
-		$data['fields'] = $this->fields->get();
+		$data['menu']                  = $this->menu->get();
+		$data['fields']                = $this->fields->get();
+		$data['source_classifier_map'] = ( new Source_Classifier() )->get_map();
 		return $data;
 	}
 
@@ -1501,12 +1503,34 @@ class App {
 	}
 
 	/**
-	 * Weekly cleanup of one spam/invalid browser from the database
-	 * Only removes browsers with limited statistics to keep queries fast
+	 * Weekly cleanup of spam/invalid browsers from the database.
+	 * Removes every junk browser and its statistics in a single sweep.
 	 */
 	public function weekly_clear_spam_browsers(): void {
 		if ( ! $this->user_can_manage() ) {
 			return;
+		}
+
+		$this->clear_spam_browsers();
+	}
+
+	/**
+	 * Remove spam/invalid browsers and their visit data from the database.
+	 *
+	 * A browser name is considered junk when it is not part of the user agent
+	 * parser allowlist (see UserAgentParser::is_invalid_browser_name()). The
+	 * browser id lives on the sessions table; the matching sessions and their
+	 * statistics (pageviews) are deleted along with the browser entry - junk
+	 * hits carry no useful data, so there is nothing to preserve and no orphan
+	 * rows are left behind.
+	 *
+	 * @param int $max_browsers Maximum number of junk browsers to remove in this
+	 *                          run (0 = no limit). Used to batch large cleanups.
+	 * @return int Number of junk browsers removed during this run.
+	 */
+	public function clear_spam_browsers( int $max_browsers = 0 ): int {
+		if ( ! $this->table_exists( 'burst_browsers' ) || ! $this->column_exists( 'burst_sessions', 'browser_id' ) ) {
+			return 0;
 		}
 
 		global $wpdb;
@@ -1517,62 +1541,56 @@ class App {
 		);
 
 		if ( empty( $browsers ) ) {
-			return;
+			return 0;
 		}
 
-		$parser = new UserAgentParser();
-		// Find the first invalid browser with limited statistics.
+		$parser   = new UserAgentParser();
+		$junk_ids = [];
 		foreach ( $browsers as $browser ) {
-			$browser_name = $browser['name'];
-			$browser_id   = (int) $browser['ID'];
-
-			// Skip if browser name is valid.
-			if ( ! $parser->is_invalid_browser_name( $browser_name ) ) {
+			if ( ! $parser->is_invalid_browser_name( $browser['name'] ) ) {
 				continue;
 			}
 
-			// Check how many statistics use this browser.
-			$count = $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->prefix}burst_statistics WHERE browser_id = %d",
-					$browser_id
-				)
-			);
-
-			// Only clean up browsers with max 50 statistics to keep it fast.
-			if ( $count > 50 ) {
-				continue;
+			$junk_ids[] = (int) $browser['ID'];
+			if ( $max_browsers > 0 && count( $junk_ids ) >= $max_browsers ) {
+				break;
 			}
-
-			// Delete statistics for this browser.
-			$deleted_stats = $wpdb->query(
-				$wpdb->prepare(
-					"DELETE FROM {$wpdb->prefix}burst_statistics WHERE browser_id = %d",
-					$browser_id
-				)
-			);
-
-			// Delete the browser entry.
-			$wpdb->query(
-				$wpdb->prepare(
-					"DELETE FROM {$wpdb->prefix}burst_browsers WHERE ID = %d",
-					$browser_id
-				)
-			);
-
-			self::error_log(
-				sprintf(
-					'Burst: Weekly cleanup removed spam browser "%s" (ID: %d) and %d related statistics.',
-					$browser_name,
-					$browser_id,
-					$deleted_stats
-				)
-			);
-
-			return;
 		}
 
-		self::error_log( 'Burst: No spam browsers found with limited statistics during weekly cleanup.' );
+		if ( empty( $junk_ids ) ) {
+			return 0;
+		}
+
+		$placeholders = implode( ',', array_fill( 0, count( $junk_ids ), '%d' ) );
+
+		// Delete the pageviews of junk sessions in batches to keep queries fast.
+		$stats_sql = "DELETE FROM {$wpdb->prefix}burst_statistics
+			WHERE session_id IN (
+				SELECT ID FROM {$wpdb->prefix}burst_sessions WHERE browser_id IN ($placeholders)
+			) LIMIT 5000";
+		do {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- values are prepared above.
+			$deleted = (int) $wpdb->query( $wpdb->prepare( $stats_sql, ...$junk_ids ) );
+		} while ( $deleted > 0 );
+
+		// Delete the junk sessions themselves.
+		$sessions_sql = "DELETE FROM {$wpdb->prefix}burst_sessions WHERE browser_id IN ($placeholders) LIMIT 5000";
+		do {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- values are prepared above.
+			$deleted = (int) $wpdb->query( $wpdb->prepare( $sessions_sql, ...$junk_ids ) );
+		} while ( $deleted > 0 );
+
+		// Delete the browser lookup entries.
+		$browsers_sql = "DELETE FROM {$wpdb->prefix}burst_browsers WHERE ID IN ($placeholders)";
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- values are prepared above.
+		$wpdb->query( $wpdb->prepare( $browsers_sql, ...$junk_ids ) );
+
+		// Invalidate the cached browser lookup table.
+		wp_cache_delete( 'burst_browser_all', 'burst' );
+
+		self::error_log( sprintf( 'Burst: removed %d spam browser(s) and their visit data.', count( $junk_ids ) ) );
+
+		return count( $junk_ids );
 	}
 
 	/**
@@ -1755,7 +1773,7 @@ class App {
 					return [ $processed_value ];
 				}
 			case 'goal_id':
-				return absint( $value );
+				return $value === 'all' ? 'all' : absint( $value );
 			case 'compare_mode':
 				$allowed = [ 'previous_period', 'year_over_year' ];
 				return in_array( $value, $allowed, true ) ? $value : '';
@@ -1801,7 +1819,7 @@ class App {
 			],
 			// In free sources_referrers becomes statistics_referrers.
 			'statistics_referrers'  => [
-				'metrics'    => [ 'referrer', 'visitors', 'sessions', 'bounce_rate', 'conversions', 'sales', 'revenue', 'page_value' ],
+				'metrics'    => [ 'referrer', 'source_category', 'visitors', 'sessions', 'bounce_rate', 'conversions', 'sales', 'revenue', 'page_value' ],
 				'capability' => 'view_burst_statistics',
 			],
 			'dummy_data'            => [
@@ -1810,6 +1828,12 @@ class App {
 			],
 			'outgoing-links'        => [
 				'metrics'    => [ 'url', 'clicks', 'previous_clicks', 'previous_clicks_yoy' ],
+				'capability' => 'view_burst_statistics',
+			],
+			// Country-level locations are free. Pro extends this with region/city and
+			// ecommerce metrics via the burst_datatable_config filter.
+			'sources_countries'     => [
+				'metrics'    => [ 'country_code', 'visitors', 'bounce_rate' ],
 				'capability' => 'view_burst_statistics',
 			],
 		];
@@ -1879,6 +1903,8 @@ class App {
 	 * @param mixed $data The pre-data value (null if not already set).
 	 * @param array $args Arguments passed to get_datatables_data.
 	 * @return array|null Dummy data array if id is 'dummy_data', otherwise null to use default DB query.
+	 *
+	 * Mixed $data: 'burst_datatable_pre_data' filter callback — the incoming pre-data value can be whatever earlier filters set (typically null or array); kept generic per the filter contract.
 	 */
 	public function handle_dummy_datatable_data( mixed $data, array $args ): ?array {
 		if ( 'dummy_data' === ( $args['id'] ?? null ) ) {

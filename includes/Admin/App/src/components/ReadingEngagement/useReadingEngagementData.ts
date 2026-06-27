@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import useDateRange from '@/hooks/useDateRange';
+import useFilters from '@/hooks/useFilters';
 import getReadingEngagementData from '@/api/getReadingEngagementData';
 
 /**
@@ -42,10 +43,12 @@ export function useReadingEngagementData({
 	leastEngagement
 }: UseReadingEngagementDataArgs ): UseReadingEngagementDataReturn {
 	const { startDate, endDate, range } = useDateRange();
+	const { getActiveFilters } = useFilters();
+	const filters = getActiveFilters();
 
 	const query = useQuery({
-		queryKey: [ 'reading_engagement', startDate, endDate, leastEngagement ],
-		queryFn: () => getReadingEngagementData({ startDate, endDate, range, leastEngagement }),
+		queryKey: [ 'reading_engagement', startDate, endDate, leastEngagement, filters ],
+		queryFn: () => getReadingEngagementData({ startDate, endDate, range, leastEngagement, filters }),
 		enabled: !! startDate && !! endDate
 	});
 

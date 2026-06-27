@@ -41,7 +41,7 @@ export const FunnelTooltip: React.FC<FunnelTooltipProps> = ({ data }) => {
 	return (
         <ChartTooltip className="max-w-xs p-4 z-[3] relative">
 
-        <div className="bg-white p-4 rounded-lg shadow-lg max-w-xs z-3 relative">
+        <div className="bg-gray-100 text-text-black p-4 rounded-lg shadow-lg max-w-xs z-3 relative">
 			{/* Header */}
 			<div className="mb-3 flex flex-col gap-1">
 				<p className="text-sm font-light text-text-gray-light">

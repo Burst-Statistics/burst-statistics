@@ -20,6 +20,8 @@ trait Database_Helper {
 	 *
 	 * Background cron defaults to 15 minutes, while foreground requests default
 	 * to 30 seconds unless overridden.
+	 *
+	 * Mixed $filter_context: opaque payload forwarded as-is to the timeout apply_filters() hooks; its type is defined by third-party filter callbacks.
 	 */
 	protected function resolve_query_timeout_ms(
 		string $foreground_filter,
@@ -54,6 +56,8 @@ trait Database_Helper {
 
 	/**
 	 * Apply one of the supported timeout filters.
+	 *
+	 * Mixed $filter_context: opaque payload forwarded as-is to apply_filters(); its type is defined by third-party filter callbacks.
 	 */
 	private function apply_query_timeout_filter( string $filter_name, int $timeout_ms, mixed $filter_context = null ): int {
 		switch ( $filter_name ) {
@@ -150,6 +154,7 @@ trait Database_Helper {
 			[
 				'burst_statistics',
 				'burst_sessions',
+				'burst_locations',
 				'burst_goals',
 				'burst_goal_statistics',
 				'burst_browsers',

@@ -78,6 +78,8 @@ class Share {
 	 * Returns an empty string when the tab is not allowed.
 	 *
 	 * @param mixed $tab tab value to be sanitized.
+	 *
+	 * Mixed $tab: untrusted value from request/token storage that may not be a string; the is_string guard rejects anything else.
 	 */
 	public function sanitize_tab( mixed $tab ): string {
 		if ( ! is_string( $tab ) ) {
@@ -94,6 +96,8 @@ class Share {
 	 *
 	 * @param mixed $tabs tabs to be sanitized.
 	 * @return string[]
+	 *
+	 * Mixed $tabs: untrusted value from request/token storage — accepts a single string or an array of tabs and rejects anything else via the guards below.
 	 */
 	public function sanitize_tabs( mixed $tabs ): array {
 		if ( is_string( $tabs ) ) {

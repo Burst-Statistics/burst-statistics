@@ -1,0 +1,32 @@
+/*
+ * Unified, theme-consistent tooltips.
+ * Provides custom shadows and borders to make tooltips stand out
+ * without inverting their colors.
+ */
+.burst-tooltip {
+	z-index: 99999;
+	box-shadow: var(--shadow-layered-high-b) !important;
+	border-color: var(--color-gray-300) !important;
+	background-color: var(--color-white) !important;
+	color: var(--color-text-black) !important;
+}
+
+/* Dark mode overrides for borders and background of tooltips. */
+#burst-statistics.dark .burst-tooltip,
+body.dashboard-default-dark-theme .burst-tooltip,
+body.mainwp-default-dark-theme .burst-tooltip,
+body.updraft-central-default-dark-theme .burst-tooltip {
+	border-color: var(--color-gray-700) !important;
+	background-color: var(--color-gray-100) !important;
+}
+
+/* Arrow styling */
+.burst-tooltip-arrow {
+	fill: var(--color-white) !important;
+}
+#burst-statistics.dark .burst-tooltip-arrow,
+body.dashboard-default-dark-theme .burst-tooltip-arrow,
+body.mainwp-default-dark-theme .burst-tooltip-arrow,
+body.updraft-central-default-dark-theme .burst-tooltip-arrow {
+	fill: var(--color-gray-100) !important;
+}

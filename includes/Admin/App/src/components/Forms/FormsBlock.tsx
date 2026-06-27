@@ -11,6 +11,7 @@ import { getFormsColumns } from './columns';
 import useLicenseData from '@/hooks/useLicenseData';
 import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
+import MetricInfo from '@/components/Common/MetricInfo';
 
 type FormsBlockProps = {
 
@@ -88,7 +89,9 @@ const FormsBlock = memo( ({ className = '' }: FormsBlockProps ) => {
 				className="border-b border-gray-200"
 				isLoading={ isLoading }
 				title={ <>
-					{ __( 'Forms', 'burst-statistics' ) }
+					<MetricInfo metricKey="forms" side="bottom">
+						{ __( 'Forms', 'burst-statistics' ) }
+					</MetricInfo>
 					{ hasData && (
 						<button
 							type="button"
