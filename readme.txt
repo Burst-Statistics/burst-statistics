@@ -290,7 +290,6 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * New: WP Consent API notice task that detects whether the Consent API is active.
 * Improvement: redesigned, unified tooltips with theme-consistent styling, high-contrast borders and improved readability.
 * Improvement: rows-per-page selection is now persisted per datatable.
-* Improvement: MaxMind GeoLite2 attribution.
 * Improvement: query and database performance improvements.
 * Improvement: updated bundled libraries.
 * Fix: prevent errors caused by the external link tracking class loading on the free plugin, props @dragon013.
