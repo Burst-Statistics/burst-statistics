@@ -57,21 +57,35 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 			return $plugins;
 		}
 
-		// Define plugins that should always remain active during REST API optimization.
-		$plugins_to_keep = [
-			// AIOS dynamically changes salts, this breaks nonces.
-			'all-in-one-wp-security-and-firewall',
-			// if Permalink manager is excluded, this can cause 404 pages.
-			'permalink-manager-for-woocommerce',
-			// If AI is excluded it give wrong chat availability status.
-			'ai',
-		];
 		/**
 		 * Allow filtering of plugins that should remain active during REST API loading of BURST.
 		 *
-		 * @param array $plugins_to_keep Array of plugin directory names to keep active.
+		 * @param array{
+		 *     partial_match?: string[],
+		 *     exact_match?: string[],
+		 * } $plugins_to_keep Plugins grouped by matching strategy.
 		 */
-		$plugins_to_keep = apply_filters( 'burst_rest_api_optimizer_keep_plugins', $plugins_to_keep );
+		$plugins_to_keep = apply_filters(
+			'burst_rest_api_optimizer_keep_plugins',
+			[
+				'partial_match' => [
+					// AIOS dynamically changes salts, which breaks nonces.
+					'all-in-one-wp-security-and-firewall',
+					// Excluding Permalink Manager can cause 404 pages.
+					'permalink-manager-for-woocommerce',
+					'ai-provider-for-',
+				],
+				'exact_match'   => [
+					'ai/ai.php',
+					'ai-provider-for-anthropic/plugin.php',
+					'ai-provider-for-google/plugin.php',
+					'ai-provider-for-openai/plugin.php',
+				],
+			]
+		);
+
+		$plugins_to_keep_partial_match = $plugins_to_keep['partial_match'] ?? [];
+		$plugins_to_keep_exact_match   = $plugins_to_keep['exact_match'] ?? [];
 
 		// Some Burst routes still need other plugins active.
 		if (
@@ -109,10 +123,19 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 		foreach ( $plugins as $key => $plugin ) {
 			// Check if plugin is in the keep list.
 			$should_keep = false;
-			foreach ( $plugins_to_keep as $keep_slug ) {
+			foreach ( $plugins_to_keep_partial_match as $keep_slug ) {
 				if ( str_contains( $plugin, $keep_slug ) ) {
 					$should_keep = true;
 					break;
+				}
+			}
+
+			if ( ! $should_keep ) {
+				foreach ( $plugins_to_keep_exact_match as $keep_plugin ) {
+					if ( $plugin === $keep_plugin ) {
+						$should_keep = true;
+						break;
+					}
 				}
 			}
 

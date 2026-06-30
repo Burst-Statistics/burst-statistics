@@ -546,7 +546,10 @@ function burst_init_events() {
     if (document.readyState !== 'loading') {
       burst_track_hit();
     } else {
-      document.addEventListener('load', burst_track_hit);
+      // Note: 'load' does not fire on document (only on window), so listen for
+      // DOMContentLoaded, which fires as soon as parsing completes - the same
+      // moment a deferred script would have run.
+      document.addEventListener('DOMContentLoaded', burst_track_hit, { once: true });
     }
   } else {
     burst_track_hit();

@@ -414,23 +414,27 @@ class Frontend {
 	public function defer_burst_tracking_script( string $tag, string $handle, string $src ): string {
 		// fix phpcs warning.
 		unset( $src );
+
+		// Ghost mode registers the scripts under the obfuscated 'b' prefix instead of 'burst',
+		// so we have to match both handle variants here. Otherwise the tracking script loses
+		// its defer/async attribute in ghost mode, which changes when it executes.
+		$is_timeme   = ( 'burst-timeme' === $handle || 'b-timeme' === $handle );
+		$is_tracking = ( 'burst' === $handle || 'b' === $handle );
+
 		// time me load asap but async to avoid blocking the page load.
-		if ( 'burst-timeme' === $handle ) {
+		if ( $is_timeme ) {
 			return str_replace( ' src', ' async src', $tag );
 		}
 
-		$turbo = $this->get_option_bool( 'enable_turbo_mode' );
-		if ( $turbo ) {
-			if ( 'burst' === $handle ) {
-				return str_replace( ' src', ' defer src', $tag );
-			}
+		if ( ! $is_tracking ) {
+			return $tag;
 		}
 
-		if ( 'burst' === $handle ) {
-			return str_replace( ' src', ' async src', $tag );
+		if ( $this->get_option_bool( 'enable_turbo_mode' ) ) {
+			return str_replace( ' src', ' defer src', $tag );
 		}
 
-		return $tag;
+		return str_replace( ' src', ' async src', $tag );
 	}
 
 	/**
