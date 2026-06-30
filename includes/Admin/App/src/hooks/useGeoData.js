@@ -4,7 +4,6 @@ import {useQuery} from '@tanstack/react-query';
 import {feature} from 'topojson-client';
 import {useGeoStore} from '@/store/useGeoStore'; // Adjust path
 import {getJsonData} from '@/utils/api'; // Your existing API util
-import useLicenseData from '@/hooks/useLicenseData';
 
 // Assuming burst_settings is globally available in your WP environment
 const MAPS_BASE_PATH = burst_settings.plugin_url + 'assets/maps';
@@ -85,7 +84,6 @@ const fetchCountryTopo = async( countryId ) => {
 
 export const useGeoData = () => {
 	const currentView = useGeoStore( ( state ) => state.currentView );
-	const { isPro } = useLicenseData();
 
 	// Always keep simplified world data for fast initial render
 	const { data: simplifiedWorldTopo, isLoading: isGeoSimpleLoading } =
@@ -104,7 +102,12 @@ export const useGeoData = () => {
 		staleTime: Infinity,
 		cacheTime: Infinity,
 		retry: 3,
-		enabled: isPro // Always fetch for base layer
+
+		// Always fetch the detailed world map (free + pro). It carries the
+		// country properties (iso_a2 / name_en) the choropleth matches data and
+		// labels against; the simplified loading map has none, so without this
+		// free falls back to it and shows "Unknown"/0 for every country.
+		enabled: true
 	});
 
 	// Country overlay data - only fetch when in country view
