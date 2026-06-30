@@ -283,7 +283,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 == Change log ==
 = 3.6.0 =
 * July 1st 2026
-* New: country-level geolocation (GeoIP country tracking) is now available in the free plugin.
+* New: country-level geolocation (GeoIP country tracking).
 * New: WordPress Search Terms block: see what your visitors are looking for on your site.
 * New: "All goals" option in the dashboard Goals block.
 * New: AI Chat model selector: select your preferred model.
@@ -295,7 +295,6 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Fix: prevent errors caused by the external link tracking class loading on the free plugin, props @dragon013.
 * Fix: check open_basedir restrictions on the session save path to prevent warnings, props @jstark55.
 * Fix: date picker and Reading Engagement UI layout, stacking, overflow and scroll-lock issues on mobile and tablet.
-* Fix: country database tracking lookup on fresh installs and correct resolution of country placeholder rows.
 * Fix: browser detection cleanup.
 * Fix: stricter match on AI plugins in REST API optimizer to prevent loading plugins only based on 'ai' string in slug, props @nicolas-cuny.
 * Fix: first hit is no longer missed when Ghost mode and Turbo mode are combined.

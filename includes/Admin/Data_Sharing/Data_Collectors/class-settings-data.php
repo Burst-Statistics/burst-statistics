@@ -198,6 +198,7 @@ class Settings_Data extends Data_Collector {
 			'burst_license_status'                => $license_status,
 			'enable_mainwp_integration'           => $this->get_burst_setting_bool( 'enable_mainwp_integration' ),
 			'enable_abilities_api'                => $this->get_burst_setting_bool( 'enable_abilities_api' ),
+			'burst_headless_domain'               => defined( 'BURST_HEADLESS_DOMAIN' ),
 		];
 	}
 
