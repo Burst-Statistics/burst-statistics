@@ -352,6 +352,8 @@ class Upgrade {
 			if ( defined( 'BURST_FREE' ) ) {
 				burst_delete_option( 'track_external_links' );
 			}
+
+			burst_reinstall_rest_api_optimizer();
 		}
 
 		$admin = new Admin();

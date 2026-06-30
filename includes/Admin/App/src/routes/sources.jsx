@@ -71,13 +71,17 @@ function Sources() {
 			<TrialPopup />
 			<PageHeader />
 
-			<ErrorBoundary>
-				<SourcesChartBlock />
-			</ErrorBoundary>
+			{ isPro && (
+				<ErrorBoundary>
+					<SourcesChartBlock />
+				</ErrorBoundary>
+			) }
 
-			<ErrorBoundary>
-				<SourcesBlock />
-			</ErrorBoundary>
+			{ isPro && (
+				<ErrorBoundary>
+					<SourcesBlock />
+				</ErrorBoundary>
+			) }
 
 			<ErrorBoundary>
 				<WorldMapBlock />
