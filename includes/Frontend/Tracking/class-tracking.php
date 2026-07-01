@@ -1154,10 +1154,10 @@ class Tracking {
 		// Non-file session handlers (redis, memcached, database, custom) don't
 		// use a filesystem path, so the directory checks below don't apply and
 		// the uploads fallback would break a working setup. Detect those either
-		// by the save handler or by a URL-style path such as "tcp://host:port"
-		// and leave the configured session storage untouched.
+		// by the save handler or by a URL-style save path such as "redis://" or
+		// "tcp://host:port" and leave the configured session storage untouched.
 		$is_file_handler = 'files' === ini_get( 'session.save_handler' );
-		$is_url_path     = is_string( $save_path ) && false !== strpos( $save_path, '://' );
+		$is_url_path     = is_string( $save_path ) && preg_match( '~^[a-z][a-z0-9+.-]*://~i', $save_path );
 
 		if ( ! $is_file_handler || $is_url_path ) {
 			$is_valid = true;
