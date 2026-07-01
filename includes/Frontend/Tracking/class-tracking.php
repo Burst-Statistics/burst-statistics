@@ -1151,7 +1151,17 @@ class Tracking {
 		$save_path = session_save_path();
 		$is_valid  = false;
 
-		if ( ! empty( $save_path ) ) {
+		// Non-file session handlers (redis, memcached, database, custom) don't
+		// use a filesystem path, so the directory checks below don't apply and
+		// the uploads fallback would break a working setup. Detect those either
+		// by the save handler or by a URL-style path such as "tcp://host:port"
+		// and leave the configured session storage untouched.
+		$is_file_handler = 'files' === ini_get( 'session.save_handler' );
+		$is_url_path     = is_string( $save_path ) && false !== strpos( $save_path, '://' );
+
+		if ( ! $is_file_handler || $is_url_path ) {
+			$is_valid = true;
+		} elseif ( ! empty( $save_path ) ) {
 			// Silence open_basedir warnings: outside the allowed paths these
 			// return false, which correctly triggers the uploads fallback below.
 			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Suppressing potential open_basedir warnings for edge cases.
