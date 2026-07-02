@@ -283,7 +283,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 == Change log ==
 = 3.6.0.1 =
 * July 2nd 2026
-* Fix: re-run upgrade to disable non existent setting.
+* Fix: cleaned up an unused Pro-only setting that remained on some free installs. This had no effect on tracking.
 
 = 3.6.0 =
 * July 1st 2026
