@@ -151,7 +151,7 @@ class Upgrade {
 
 		// ensure the onboarding doesn't start again if users already had the plugin activated.
 		if ( $prev_version && version_compare( $prev_version, '2.1.0', '<' ) ) {
-			if ( defined( 'BURST_PRO' ) ) {
+			if ( ! defined( 'BURST_FREE' ) ) {
 				update_option( 'burst_activation_time_pro', time(), false );
 			}
 		}
@@ -345,11 +345,10 @@ class Upgrade {
 			// Stored via the settings system (not a standalone option) so the React
 			// world-map notice can read it through getValue().
 			$this->update_option( 'country_geo_database_available_time', time() );
+		}
 
-			// External link tracking is Pro-only. Earlier free builds incorrectly
-			// enabled this option (and could fatal on the missing Pro class), so
-			// remove the leftover setting on free installs.
-			if ( defined( 'BURST_FREE' ) ) {
+		if ( $prev_version && version_compare( $prev_version, '3.6.0.1', '<' ) ) {
+			if ( ! defined( 'BURST_FREE' ) ) {
 				burst_delete_option( 'track_external_links' );
 			}
 
