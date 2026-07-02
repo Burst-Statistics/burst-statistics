@@ -348,7 +348,7 @@ class Upgrade {
 		}
 
 		if ( $prev_version && version_compare( $prev_version, '3.6.0.1', '<' ) ) {
-			if ( ! defined( 'BURST_FREE' ) ) {
+			if ( defined( 'BURST_FREE' ) ) {
 				burst_delete_option( 'track_external_links' );
 			}
 
