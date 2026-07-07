@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import useGoalsData from '@/hooks/useGoalsData';
 import SettingsGroupBlock from './SettingsGroupBlock';
@@ -33,6 +33,21 @@ const Settings = ({ currentSettingPage }) => {
 		defaultValues: initialDefaultValues
 	});
 
+	// When settings are refetched (e.g. after save), sync the form's default values
+	// so newly returned fields (like integration rows) are registered with the correct
+	// server-side values. Only reset when the form is clean to avoid discarding
+	// unsaved user edits.
+	const prevDefaultsRef = useRef( initialDefaultValues );
+	useEffect( () => {
+		if ( prevDefaultsRef.current === initialDefaultValues ) {
+			return;
+		}
+		prevDefaultsRef.current = initialDefaultValues;
+		if ( 0 === Object.keys( dirtyFields ).length ) {
+			reset( initialDefaultValues );
+		}
+	}, [ initialDefaultValues, dirtyFields, reset ]); // eslint-disable-line react-hooks/exhaustive-deps
+
 	const watchedValues = useWatch({ control });
 	const filteredGroups = useMemo( () => {
 		const grouped = [];
@@ -45,6 +60,13 @@ const Settings = ({ currentSettingPage }) => {
 						setting.group_id === group.id
 				)
 				.map( ( setting ) => {
+
+					// Static, server-driven visibility (reflects the saved option,
+					// not the live form value). The field stays registered in the
+					// form so it never dirties; it is only rendered once visible.
+					if ( false === setting.visible ) {
+						return null;
+					}
 
 					/**
 					 * Evaluates a conditions map against the current watched form values.
@@ -126,7 +148,7 @@ const Settings = ({ currentSettingPage }) => {
 					);
 				})}
 
-				{'license' !== settingsId && (
+				{! currentSettingPage.no_save_footer && (
 					<SettingsFooter
 						onSubmit={handleSubmit( async( formData ) => {
 							const changedData = Object.keys( dirtyFields ).reduce(

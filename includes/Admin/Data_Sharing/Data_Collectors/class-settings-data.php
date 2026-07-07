@@ -161,7 +161,8 @@ class Settings_Data extends Data_Collector {
 
 		return [
 			'enable_turbo_mode'                   => $this->get_burst_setting_bool( 'enable_turbo_mode' ),
-			'enable_cookieless_tracking'          => $this->get_burst_setting_bool( 'enable_cookieless_tracking' ),
+			'privacy_level'                       => $this->get_option( 'privacy_level', 'cookie' ),
+			'enable_cookieless_tracking'          => $this->get_option( 'privacy_level', 'cookie' ) !== 'cookie',
 			'enable_do_not_track'                 => $this->get_burst_setting_bool( 'enable_do_not_track' ),
 			'dismiss_non_error_notices'           => $this->get_burst_setting_bool( 'dismiss_non_error_notices' ),
 			'filtering_by_domain'                 => $this->get_burst_setting_bool( 'filtering_by_domain' ),

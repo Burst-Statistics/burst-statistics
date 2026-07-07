@@ -71,6 +71,10 @@ class Event_Listener {
 	 * @param object|int|mixed $subscription EDD_Subscription object.
 	 */
 	public function handle_status_change( string $old_status, string $new_status, mixed $subscription = null ): void {
+		if ( $old_status === $new_status ) {
+			return;
+		}
+
 		$id = $this->resolve_id( $subscription );
 
 		if ( $id > 0 ) {

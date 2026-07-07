@@ -246,6 +246,14 @@ class DB_Upgrade {
 			$this->clean_spam_browsers();
 		}
 
+		if ( 'goals_add_block_goal_column' === $do_upgrade ) {
+			$this->upgrade_goals_add_block_goal_column();
+		}
+
+		if ( 'goals_add_page_id_column' === $do_upgrade ) {
+			$this->upgrade_goals_add_page_id_column();
+		}
+
 		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
 		if ( $this->get_progress( 'free', 'all' ) < 100 ) {
 			// free upgrades not finished yet.
@@ -394,6 +402,10 @@ class DB_Upgrade {
 				'3.6.0'   => [
 					'clean_spam_browsers',
 				],
+				'3.6.1'   => [
+					'goals_add_block_goal_column',
+					'goals_add_page_id_column',
+				],
 			]
 		);
 
@@ -540,6 +552,64 @@ class DB_Upgrade {
 			delete_option( 'burst_db_upgrade_bounces' );
 		} else {
 			self::error_log( 'db upgrade bounces failed' );
+		}
+	}
+
+	/**
+	 * Add block_goal column to the goals table for the Gutenberg block integration.
+	 */
+	private function upgrade_goals_add_block_goal_column(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+
+		$option_name = 'burst_db_upgrade_goals_add_block_goal_column';
+		if ( ! get_option( $option_name ) ) {
+			return;
+		}
+
+		global $wpdb;
+		// Check if column already exists.
+		$columns = $wpdb->get_col( "DESC {$wpdb->prefix}burst_goals", 0 );
+		if ( in_array( 'block_goal', $columns, true ) ) {
+			delete_option( $option_name );
+			return;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange
+		$result = $wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_goals ADD COLUMN `block_goal` tinyint NOT NULL DEFAULT 0" );
+
+		if ( $result !== false ) {
+			delete_option( $option_name );
+		}
+	}
+
+	/**
+	 * Add page_id column to the goals table.
+	 */
+	private function upgrade_goals_add_page_id_column(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+
+		$option_name = 'burst_db_upgrade_goals_add_page_id_column';
+		if ( ! get_option( $option_name ) ) {
+			return;
+		}
+
+		global $wpdb;
+		// Check if column already exists.
+		$columns = $wpdb->get_col( "DESC {$wpdb->prefix}burst_goals", 0 );
+		if ( in_array( 'page_id', $columns, true ) ) {
+			delete_option( $option_name );
+			return;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange
+		$result = $wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_goals ADD COLUMN `page_id` int(11) NULL" );
+
+		if ( $result !== false ) {
+			delete_option( $option_name );
 		}
 	}
 

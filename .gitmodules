@@ -1,0 +1,3 @@
+[submodule "tests/e2e/relay"]
+	path = tests/e2e/search-console/relay
+	url = https://source.updraftplus.com/burst/burst-search-console-relay.git

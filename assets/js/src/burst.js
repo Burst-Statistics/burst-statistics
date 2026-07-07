@@ -112,7 +112,7 @@ const burst_set_cookie = (name, value) => {
  */
 const burst_use_cookies = () => {
   if (burst.cache.useCookies !== null) return burst.cache.useCookies;
-  const result = navigator.cookieEnabled && !burst.options.cookieless;
+  const result = navigator.cookieEnabled && !burst.options.cookieless && burst.options.privacy_level !== 'private_mode';
   burst.cache.useCookies = result;
   return result;
 };
@@ -373,11 +373,13 @@ async function burst_update_hit(
 
 	const [time, id] = await Promise.all([
 		burst_get_time_on_page(),
-		update_uid
-			? Promise.all([burst_uid(), burst_fingerprint()])
-			: burst_use_cookies()
-				? burst_uid()
-				: burst_fingerprint(),
+		burst.options.privacy_level === 'private_mode'
+			? Promise.resolve(update_uid ? [false, false] : false)
+			: update_uid
+				? Promise.all([burst_uid(), burst_fingerprint()])
+				: burst_use_cookies()
+					? burst_uid()
+					: burst_fingerprint(),
 	]);
 
 	const data = {
@@ -415,7 +417,9 @@ async function burst_track_hit(extraData = {}) {
 
   const [time, id] = await Promise.all([
     burst_get_time_on_page(),
-    burst_use_cookies() ? burst_uid() : burst_fingerprint()
+    burst.options.privacy_level === 'private_mode'
+      ? Promise.resolve(false)
+      : burst_use_cookies() ? burst_uid() : burst_fingerprint()
   ]);
 
   //wait for body document to resolve.

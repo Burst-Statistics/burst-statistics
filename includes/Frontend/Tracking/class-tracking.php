@@ -218,7 +218,7 @@ class Tracking {
 		$statistic_id = $statistic['ID'] ?? ( $insert_id ?? 0 );
 
 		if ( $statistic_id > 0 ) {
-			$completed_goals = $this->get_completed_goals( $statistic['completed_goals'], $statistic['page_url'] );
+			$completed_goals = $this->get_completed_goals( $statistic['completed_goals'], $statistic['page_url'], (int) ( $statistic['page_id'] ?? 0 ) );
 			if ( ! empty( $completed_goals ) ) {
 				$this->create_goal_statistic( $statistic_id, $completed_goals );
 			}
@@ -437,6 +437,12 @@ class Tracking {
 		];
 		$data     = wp_parse_args( $data, $defaults );
 
+		$privacy_level = $this->get_option( 'privacy_level', 'cookie' );
+		if ( $privacy_level === 'private_mode' ) {
+			$data['fingerprint'] = null;
+			$data['uid']         = $this->get_private_uid();
+		}
+
 		// update array.
 		$sanitized_data                    = [];
 		$destructured_url                  = $this->sanitize_url( $data['url'] );
@@ -463,6 +469,36 @@ class Tracking {
 		$sanitized_data['should_load_ecommerce'] = filter_var( $data['should_load_ecommerce'], FILTER_VALIDATE_BOOLEAN );
 		$sanitized_data['search_term']           = isset( $data['search_term'] ) ? sanitize_text_field( wp_unslash( (string) $data['search_term'] ) ) : '';
 		return $sanitized_data;
+	}
+
+	/**
+	 * Generate a private mode UID.
+	 */
+	private function get_private_uid(): string {
+		$ip   = Ip::get_ip_address();
+		$ua   = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
+		$salt = $this->get_rotating_salt();
+		return hash( 'sha256', $ip . $ua . $salt );
+	}
+
+	/**
+	 * Get the rotating salt for private mode tracking.
+	 */
+	private function get_rotating_salt(): string {
+		$option_name = 'burst_rotating_salt';
+		$stored      = get_option( $option_name, [] );
+		$today       = gmdate( 'Y-m-d' );
+
+		if ( ! is_array( $stored ) || empty( $stored['salt'] ) || empty( $stored['date'] ) || $stored['date'] !== $today ) {
+			$salt   = wp_generate_password( 64, true, true );
+			$stored = [
+				'date' => $today,
+				'salt' => $salt,
+			];
+			update_option( $option_name, $stored, false );
+		}
+
+		return $stored['salt'];
 	}
 
 	/**
@@ -719,7 +755,8 @@ class Tracking {
 					'ajaxUrl'             => admin_url( 'admin-ajax.php' ),
 				],
 				'options'  => [
-					'cookieless'            => $this->get_option_int( 'enable_cookieless_tracking' ),
+					'privacy_level'         => $this->get_option( 'privacy_level', 'cookie' ),
+					'cookieless'            => ( $this->get_option( 'privacy_level', 'cookie' ) !== 'cookie' ) ? 1 : 0,
 					'pageUrl'               => get_permalink(),
 					'beacon_enabled'        => (int) $this->beacon_enabled(),
 					'do_not_track'          => $this->get_option_int( 'enable_do_not_track' ),
@@ -727,6 +764,7 @@ class Tracking {
 					'track_url_change'      => $this->get_option_int( 'track_url_change' ),
 					'track_external_links'  => $this->get_option_int( 'track_external_links' ),
 					'cookie_retention_days' => apply_filters( 'burst_cookie_retention_days', 30 ),
+					'page_id'               => is_singular() ? (int) get_queried_object_id() : 0,
 					'debug'                 => defined( 'BURST_DEBUG' ) && \BURST_DEBUG ? 1 : 0,
 				],
 				'goals'    => [
@@ -853,9 +891,10 @@ class Tracking {
 	 * @param int    $goal_id The ID of the goal to check.
 	 * @param string $page_url The current page URL.
 	 * @param array  $goals the available goals.
+	 * @param int    $page_id Post ID of the tracked page, as sent in the hit payload. 0 if unknown.
 	 * @return bool Returns true if the goal is completed, false otherwise.
 	 */
-	public function goal_is_completed( int $goal_id, string $page_url, array $goals ): bool {
+	public function goal_is_completed( int $goal_id, string $page_url, array $goals, int $page_id = 0 ): bool {
 		$goal = array_filter(
 			$goals,
 			function ( $goal ) use ( $goal_id ) {
@@ -871,6 +910,13 @@ class Tracking {
 
 		switch ( $goal['type'] ) {
 			case 'visits':
+				// Match on the post ID of the tracked page. Runs on the tracking
+				// endpoints (REST and the SHORTINIT beacon), so there is no main
+				// query here — is_singular()/get_queried_object_id() are unusable
+				// and the beacon doesn't even load them.
+				if ( ! empty( $goal['page_id'] ) && $page_id > 0 && (int) $goal['page_id'] === $page_id ) {
+					return true;
+				}
 				// Improved URL comparison logic could go here.
 				// @TODO: Maybe add support for * and ? wildcards?.
 				if ( rtrim( $page_url, '/' ) === rtrim( $goal['url'], '/' ) ) {
@@ -890,9 +936,10 @@ class Tracking {
 	 *
 	 * @param array<int> $completed_client_goals Array of goal IDs completed on the client.
 	 * @param string     $page_url               Page URL used to verify server-side goal completion.
+	 * @param int        $page_id                Post ID of the tracked page, 0 if unknown.
 	 * @return array<int> List of completed goal IDs.
 	 */
-	public function get_completed_goals( array $completed_client_goals, string $page_url ): array {
+	public function get_completed_goals( array $completed_client_goals, string $page_url, int $page_id = 0 ): array {
 		$completed_server_goals = [];
 		$server_goals           = $this->get_active_goals( [ 'visits' ] );
 		// if server side goals exist.
@@ -900,7 +947,7 @@ class Tracking {
 			// loop through server side goals.
 			foreach ( $server_goals as $goal ) {
 				// if goal is completed.
-				if ( $this->goal_is_completed( $goal['ID'], $page_url, $server_goals ) ) {
+				if ( $this->goal_is_completed( $goal['ID'], $page_url, $server_goals, $page_id ) ) {
 					// add goal id to completed goals array.
 					$completed_server_goals[] = $goal['ID'];
 				}
@@ -1151,7 +1198,17 @@ class Tracking {
 		$save_path = session_save_path();
 		$is_valid  = false;
 
-		if ( ! empty( $save_path ) ) {
+		// Non-file session handlers (redis, memcached, database, custom) don't
+		// use a filesystem path, so the directory checks below don't apply and
+		// the uploads fallback would break a working setup. Detect those either
+		// by the save handler or by a URL-style save path such as "redis://" or
+		// "tcp://host:port" and leave the configured session storage untouched.
+		$is_file_handler = 'files' === ini_get( 'session.save_handler' );
+		$is_url_path     = is_string( $save_path ) && preg_match( '~^[a-z][a-z0-9+.-]*://~i', $save_path );
+
+		if ( ! $is_file_handler || $is_url_path ) {
+			$is_valid = true;
+		} elseif ( ! empty( $save_path ) ) {
 			// Silence open_basedir warnings: outside the allowed paths these
 			// return false, which correctly triggers the uploads fallback below.
 			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Suppressing potential open_basedir warnings for edge cases.
