@@ -106,6 +106,8 @@ class Statistics extends Statistics_Data {
         `date_end` int NOT NULL,
         `selector` varchar(255) NOT NULL,
         `hook` varchar(255) NOT NULL,
+        `block_goal` tinyint NOT NULL DEFAULT 0,
+        `page_id` int(11) NULL,
         PRIMARY KEY (ID)
     ) $charset_collate;",
 			'burst_known_uids'       => "CREATE TABLE {$wpdb->prefix}burst_known_uids (

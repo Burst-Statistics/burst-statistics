@@ -10,6 +10,7 @@ use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Save;
 use Burst\Frontend\Goals\Goals;
+use Burst\Admin\Share\Share;
 
 
 class Upgrade {
@@ -260,7 +261,8 @@ class Upgrade {
 				\Burst\burst_loader()->admin->tasks->add_task( 'opt-in-sharing' );
 			}
 
-			if ( $this->get_option_bool( 'enable_cookieless_tracking' ) && ! $this->get_option_bool( 'enable_turbo_mode' ) ) {
+			$cookieless = $this->get_option_bool( 'enable_cookieless_tracking' ) || ( $this->get_option( 'privacy_level', 'cookie' ) !== 'cookie' );
+			if ( $cookieless && ! $this->get_option_bool( 'enable_turbo_mode' ) ) {
 				\Burst\burst_loader()->admin->tasks->add_task( 'turbo_mode_recommended' );
 			}
 		}
@@ -347,12 +349,25 @@ class Upgrade {
 			$this->update_option( 'country_geo_database_available_time', time() );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.6.0.1', '<' ) ) {
+		if ( $prev_version && version_compare( $prev_version, '3.6.1', '<' ) ) {
+			// Reinstall the optimizer so fields/get keeps other plugins loaded,
+			// which the integrations settings page needs for plugin detection.
+			burst_reinstall_rest_api_optimizer();
 			if ( defined( 'BURST_FREE' ) ) {
 				burst_delete_option( 'track_external_links' );
 			}
 
-			burst_reinstall_rest_api_optimizer();
+			// Backfill the descriptive bio and website link on the existing viewer
+			// user so admins understand why the account exists.
+			( new Share() )->auth->backfill_viewer_profile();
+
+			// Migrate privacy_level based on current enable_cookieless_tracking value.
+			$cookieless = $this->get_option_bool( 'enable_cookieless_tracking' );
+			$this->update_option( 'privacy_level', $cookieless ? 'fingerprint' : 'cookie' );
+
+			// Add block_goal column to burst_goals for Gutenberg block editor integration.
+			update_option( 'burst_db_upgrade_goals_add_block_goal_column', true, false );
+			update_option( 'burst_db_upgrade_goals_add_page_id_column', true, false );
 		}
 
 		$admin = new Admin();

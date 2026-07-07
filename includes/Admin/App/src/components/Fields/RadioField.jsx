@@ -1,102 +1,123 @@
 import FieldWrapper from '@/components/Fields/FieldWrapper';
-import RadioInput from '@/components/Inputs/RadioInput';
-import RecommendBadge from '@/components/Common/RecommendBadge';
+import Icon from '@/utils/Icon';
 
-/**
- * RadioField component
- *
- * Renders a group of radio inputs within a FieldWrapper.
- * Now supports context information for individual options and recommended option indicators.
- *
- * @param {Object}  field      - Provided by react-hook-form's Controller.
- * @param {Object}  fieldState - Contains validation state.
- * @param {string}  label      - Field label.
- * @param {string}  help       - Help text for the field.
- * @param {string}  context    - Contextual information for the field.
- * @param {string}  className  - Additional Tailwind CSS classes.
- * @param {boolean} disabled   - Whether the field is disabled.
- * @param {Object}  options    - Radio options as key-value pairs or objects with label, context, and recommended flag.
- * @return {JSX.Element}
- */
-const RadioField =
-	(
-		{
-			field,
-			fieldState,
-			label,
-			help,
-			context,
-			className,
-			recommended,
-			disabled,
-			...props
+const RadioField = (
+	{
+		field,
+		fieldState,
+		label,
+		help,
+		context,
+		className = '',
+		recommended,
+		disabled,
+		...props
+	}
+) => {
+	const inputId = props.id || field.name;
+	const options = props.options || {};
+
+	const renderBadge = ( badgeFormat, badgeLevel, badgeColor ) => {
+		if ( ! badgeFormat ) {
+			return null;
 		}
-	) => {
-		const inputId = props.id || field.name;
-		const options = props.options || {};
 
+		if ( ! badgeLevel ) {
+			return <span className="text-sm text-text-gray">{badgeFormat}</span>;
+		}
+
+		const colorClass = 'blue' === badgeColor ?
+			'text-blue-500 font-semibold' :
+			'green' === badgeColor ?
+				'text-green-500 font-semibold' :
+				'text-text-gray font-semibold';
+
+		const parts = badgeFormat.split( '%s' );
 		return (
-			<FieldWrapper
-				label={label}
-				help={help}
-				error={fieldState?.error?.message}
-				context={context}
-				className={className}
-				inputId={inputId}
-				required={props.required}
-				recommended={recommended}
-				disabled={disabled}
-				{...props}
-			>
-				<div className="flex flex-col gap-4">
-					{Object.entries( options ).map( ([ value, option ]) => {
-
-						// Handle both simple string labels and object format with label and context
-						const optionLabel =
-							'string' === typeof option ? option : option.label;
-						const optionContext =
-							'object' === typeof option && option.context ?
-								option.context :
-								null;
-						const isRecommended =
-							'object' === typeof option &&
-							true === option.recommended;
-
-						return (
-							<div
-								key={`${inputId}-${value}`}
-								className="flex flex-col gap-1"
-							>
-								<div className="flex items-start gap-2 rounded-md border border-gray-400 bg-gray-100 px-3 py-2">
-									<RadioInput
-										id={`${inputId}-${value}`}
-										name={field.name}
-										value={value}
-										label={optionLabel}
-										checked={field.value === value}
-										disabled={disabled}
-										onChange={( value ) =>
-											field.onChange( value )
-										}
-										className={className}
-									>
-										{isRecommended && <RecommendBadge />}
-
-										{optionContext && (
-											<div className="text-sm font-light text-text-gray">
-												{optionContext}
-											</div>
-										)}
-									</RadioInput>
-								</div>
-							</div>
-						);
-					})}
-				</div>
-			</FieldWrapper>
+			<span className="text-sm text-text-gray">
+				{parts[0]}
+				<span className={colorClass}>{badgeLevel}</span>
+				{parts[1]}
+			</span>
 		);
 	};
 
+	return (
+		<FieldWrapper
+			label={label}
+			help={help}
+			error={fieldState?.error?.message}
+			context={context}
+			className={className}
+			inputId={inputId}
+			required={props.required}
+			recommended={recommended}
+			disabled={disabled}
+			{...props}
+		>
+			<div className="flex flex-col gap-4">
+				{Object.entries( options ).map( ([ value, option ]) => {
+					const optionLabel = 'string' === typeof option ? option : option.label;
+					const optionContext = 'object' === typeof option && option.context ? option.context : null;
+					const optionIcon = 'object' === typeof option && option.icon ? option.icon : null;
+					const optionBadge = 'object' === typeof option && option.badge ? option.badge : null;
+					const optionBadgeLevel = 'object' === typeof option && option.badge_level ? option.badge_level : null;
+					const optionBadgeColor = 'object' === typeof option && option.badge_color ? option.badge_color : null;
+					const isChecked = field.value === value;
+
+					return (
+						<label
+							key={`${inputId}-${value}`}
+							htmlFor={`${inputId}-${value}`}
+							className={`flex items-center justify-between gap-4 rounded-xl border p-4 transition-all duration-200 cursor-pointer ${
+								isChecked ?
+									'border-blue-500 bg-blue-50/10' :
+									'border-gray-200 bg-white hover:border-gray-300'
+							}`}
+						>
+							<div className="flex items-start gap-3">
+								<input
+									type="radio"
+									id={`${inputId}-${value}`}
+									name={field.name}
+									value={value}
+									checked={isChecked}
+									disabled={disabled}
+									onChange={() => field.onChange( value )}
+									className="h-5 w-5 rounded-full border border-gray-400 focus:ring-primary focus:ring-offset-0 cursor-pointer mt-0.5"
+								/>
+								<div className="flex flex-col">
+									<div className="flex items-center gap-2">
+										{optionIcon && (
+											<Icon
+												name={optionIcon}
+												size={16}
+												className="text-text-gray"
+											/>
+										)}
+										<span className="font-semibold text-text-black text-base">
+											{optionLabel}
+										</span>
+									</div>
+									{optionContext && (
+										<span className="text-sm text-text-gray mt-1">
+											{optionContext}
+										</span>
+									)}
+								</div>
+							</div>
+							{optionBadge && (
+								<div className="flex items-center">
+									{renderBadge( optionBadge, optionBadgeLevel, optionBadgeColor )}
+								</div>
+							)}
+						</label>
+					);
+				})}
+			</div>
+		</FieldWrapper>
+	);
+};
 
 RadioField.displayName = 'RadioField';
 

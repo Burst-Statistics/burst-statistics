@@ -24,9 +24,10 @@ trait Admin_Helper {
 	/**
 	 * Check if user has Burst view permissions
 	 *
+	 * @param \WP_REST_Request|null $request The dispatched REST request, when available. Passed by REST permission callbacks so shared-link scope is resolved from the route WordPress actually dispatches, not from spoofable request params.
 	 * @return boolean true or false
 	 */
-	protected function user_can_view(): bool {
+	protected function user_can_view( ?\WP_REST_Request $request = null ): bool {
 		if ( isset( burst_loader()->user_can_view ) ) {
 			return burst_loader()->user_can_view;
 		}
@@ -53,7 +54,7 @@ trait Admin_Helper {
 			} else {
 				// Do not cache the result for shared links since it depends on the endpoint path,
 				// which could change during a batch REST request.
-				return burst_loader()->admin->share->routing->current_shared_request_tab_is_allowed();
+				return burst_loader()->admin->share->routing->current_shared_request_tab_is_allowed( $request );
 			}
 		}
 
@@ -63,9 +64,10 @@ trait Admin_Helper {
 	/**
 	 * Check if user has Burst view sales permissions
 	 *
+	 * @param \WP_REST_Request|null $request The dispatched REST request, when available. Passed by REST permission callbacks so shared-link scope is resolved from the route WordPress actually dispatches, not from spoofable request params.
 	 * @return boolean true or false
 	 */
-	protected function user_can_view_sales(): bool {
+	protected function user_can_view_sales( ?\WP_REST_Request $request = null ): bool {
 		if ( isset( burst_loader()->user_can_view_sales ) ) {
 			return burst_loader()->user_can_view_sales;
 		}
@@ -87,7 +89,7 @@ trait Admin_Helper {
 			if ( empty( $token ) ) {
 				return burst_loader()->user_can_view_sales = false;
 			} else {
-				return burst_loader()->admin->share->routing->current_shared_request_tab_is_allowed();
+				return burst_loader()->admin->share->routing->current_shared_request_tab_is_allowed( $request );
 			}
 		}
 
@@ -300,12 +302,28 @@ trait Admin_Helper {
 	 */
 	protected function localized_settings( array $js_data ): array {
 		$user_can_install = current_user_can( 'install_plugins' );
+
+		$goal_count = 0;
+		global $wpdb;
+		$table_name   = $wpdb->prefix . 'burst_goals';
+		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name;
+
+		if ( $table_exists ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$goal_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name} WHERE status = 'active'" );
+		}
+
+		$is_pro_valid = burst_license_is_valid();
+		$goal_limit   = $is_pro_valid ? -1 : \Burst\Frontend\Goals\Goal::LIMIT_FREE;
+
 		return apply_filters(
 			'burst_localize_script',
 			[
 				// Core plugin information.
 				'burst_version'                        => BURST_VERSION,
 				'is_pro'                               => defined( 'BURST_PRO' ),
+				'goal_count'                           => $goal_count,
+				'goal_limit'                           => $goal_limit,
 				'plugin_url'                           => BURST_URL,
 				'installed_by'                         => get_site_option( 'teamupdraft_installation_source_burst-statistics', '' ),
 

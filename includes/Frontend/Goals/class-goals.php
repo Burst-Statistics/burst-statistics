@@ -21,6 +21,7 @@ class Goals {
 	 */
 	public function init(): void {
 		add_action( 'burst_install_tables', [ $this, 'install_goals_table' ], 10 );
+		add_action( 'save_post', [ $this, 'update_goal_urls_on_post_save' ], 10, 3 );
 	}
 
 	/**
@@ -69,6 +70,9 @@ class Goals {
 	 *  }>
 	 */
 	public function get_predefined_goals( bool $skip_active_check = false ): array {
+		if ( isset( \Burst\burst_loader()->integrations ) ) {
+			\Burst\burst_loader()->integrations->load_translations();
+		}
 		$predefined_goals = [];
 		foreach ( \Burst\burst_loader()->integrations->integrations as $plugin => $details ) {
 			if ( ! isset( $details['goals'] ) ) {
@@ -179,5 +183,92 @@ class Goals {
 		}
 
 		return $objects;
+	}
+
+	/**
+	 * Update goal URLs in the database when a post is saved and its slug/URL changes.
+	 *
+	 * @param int      $post_id The ID of the post.
+	 * @param \WP_Post $post    The post object.
+	 * @param bool     $update  Whether this is an update of an existing post.
+	 */
+	public function update_goal_urls_on_post_save( int $post_id, \WP_Post $post, bool $update ): void {
+		unset( $update );
+
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+
+		if ( $post->post_status !== 'publish' && $post->post_status !== 'draft' && $post->post_status !== 'pending' && $post->post_status !== 'private' && $post->post_status !== 'future' ) {
+			return;
+		}
+
+		$permalink = get_permalink( $post_id );
+		if ( ! $permalink ) {
+			return;
+		}
+		$new_url = wp_parse_url( $permalink, PHP_URL_PATH );
+		if ( empty( $new_url ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$table_name   = $wpdb->prefix . 'burst_goals';
+		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name;
+		if ( ! $table_exists ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$columns = $wpdb->get_col( "DESCRIBE {$table_name}" );
+		if ( ! in_array( 'page_id', $columns, true ) ) {
+			return;
+		}
+
+		// 1. Update the URL of any goals on this page.
+		$wpdb->update(
+			$table_name,
+			[ 'url' => $new_url ],
+			[ 'page_id' => $post_id ],
+			[ '%s' ],
+			[ '%d' ]
+		);
+
+		// 2. Perform a post-save cleanup of block goals on this page.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$block_goals = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table_name} WHERE block_goal = 1 AND page_id = %d", $post_id ), ARRAY_A );
+		if ( ! empty( $block_goals ) ) {
+			foreach ( $block_goals as $goal ) {
+				$goal_id = (int) $goal['ID'];
+				$uid     = '';
+				if ( preg_match( '/data-burst-goal="([^"]+)"/', $goal['selector'], $matches ) ) {
+					$uid = $matches[1];
+				}
+				if ( empty( $uid ) ) {
+					continue;
+				}
+
+				// If the goal's unique ID is no longer present in the post content, clean it up.
+				if ( strpos( $post->post_content, $uid ) === false ) {
+					// Check if this goal has statistics.
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+					$has_data = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_goal_statistics WHERE goal_id = %d", $goal_id ) ) > 0;
+
+					if ( ! $has_data ) {
+						// Delete goal completely if it has no stats.
+						$goal_obj = new Goal( $goal_id );
+						$goal_obj->delete();
+					} elseif ( $goal['status'] !== 'inactive' ) {
+						// Otherwise deactivate it to preserve stats.
+						// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+						$wpdb->update( $table_name, [ 'status' => 'inactive' ], [ 'ID' => $goal_id ], [ '%s' ], [ '%d' ] );
+						wp_cache_delete( 'burst_goal_' . $goal_id, 'burst' );
+					}
+				}
+			}
+		}
+
+		// Ensure updates are synchronized.
+		do_action( 'burst_after_updated_goals' );
 	}
 }

@@ -10,8 +10,61 @@ class Share_Expired {
 	 */
 	public function init(): void {
 		add_action( 'template_redirect', [ $this, 'check_for_share_token' ] );
+		add_action( 'template_redirect', [ $this, 'block_viewer_author_archive' ] );
+		add_action( 'pre_get_users', [ $this, 'exclude_viewer_from_frontend_user_queries' ] );
 		add_action( 'init', [ $this, 'add_rewrite_rules' ] );
 		add_filter( 'query_vars', [ $this, 'add_query_vars' ] );
+	}
+
+	/**
+	 * Exclude the viewer user from public user listings.
+	 *
+	 * Complements block_viewer_author_archive(): the archive itself is 404'd, but
+	 * a theme or plugin can still enumerate the account through author-overview
+	 * calls such as wp_list_authors( [ 'hide_empty' => false ] ) or a custom
+	 * get_users() loop. Excluding it from every frontend WP_User_Query keeps the
+	 * account out of those overviews. Admin/REST-authenticated listings are left
+	 * untouched so the account stays manageable in wp-admin.
+	 *
+	 * @param \WP_User_Query $query The user query being prepared.
+	 */
+	public function exclude_viewer_from_frontend_user_queries( \WP_User_Query $query ): void {
+		if ( is_admin() ) {
+			return;
+		}
+
+		$viewer = get_user_by( 'login', 'burst_statistics_viewer' );
+		if ( ! $viewer ) {
+			return;
+		}
+
+		$exclude   = (array) $query->get( 'exclude' );
+		$exclude[] = $viewer->ID;
+		$query->set( 'exclude', $exclude );
+	}
+
+	/**
+	 * Keep the shared-statistics viewer user off public author archives.
+	 *
+	 * The burst_statistics_viewer account carries an explanatory bio and website
+	 * link so admins understand why it exists, but it authors no content. Without
+	 * this, its author archive (and author enumeration via ?author=<id>) would
+	 * publicly surface that bio and URL. Serve a 404 for its archive instead.
+	 */
+	public function block_viewer_author_archive(): void {
+		if ( ! is_author() ) {
+			return;
+		}
+
+		$author = get_queried_object();
+		if ( ! $author instanceof \WP_User || ! in_array( 'burst_viewer', (array) $author->roles, true ) ) {
+			return;
+		}
+
+		global $wp_query;
+		$wp_query->set_404();
+		status_header( 404 );
+		nocache_headers();
 	}
 
 	/**

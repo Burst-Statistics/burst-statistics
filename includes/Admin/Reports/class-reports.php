@@ -894,7 +894,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		/**
 		 * Get compare data for the email report.
 		 *
-		 * @return array<int, array<int, string>> List of compare rows grouped by type.
+		 * @return array<int, array{0: string, 1: array{raw: string}}> List of compare rows grouped by type.
 		 */
 		private function get_compare_data( int $date_start, int $date_end, int $compare_date_start, int $compare_date_end ): array {
 			$args = [
@@ -944,7 +944,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 *
 		 * @param string $type The metric type (e.g., 'pageviews', 'sessions').
 		 * @param array  $compare_data The current and previous data for comparison.
-		 * @return array{0: string, 1: string} An array with the title and formatted HTML string.
+		 * @return array{0: string, 1: array{raw: string}} The title (untrusted text) and the pre-rendered, trusted uplift HTML.
 		 */
 		private function get_compare_row( string $type, array $compare_data ): array {
 			$data = [
@@ -975,7 +975,13 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			$uplift = $uplift > 0 ? '+' . $uplift : $uplift;
 			return [
 				$data[ $type ]['title'],
-				'<span style="font-size: 13px; color: ' . esc_attr( $color ) . '">' . esc_html( $uplift ) . '%</span>&nbsp;<span>' . esc_html( $current ) . '</span>',
+				// Pre-rendered, plugin-generated HTML: a fixed colour palette plus
+				// numeric values that are already escaped here. Wrapped as 'raw' so
+				// format_array_as_table() emits it verbatim instead of escaping the
+				// markup into visible tags.
+				[
+					'raw' => '<span style="font-size: 13px; color: ' . esc_attr( $color ) . '">' . esc_html( $uplift ) . '%</span>&nbsp;<span>' . esc_html( $current ) . '</span>',
+				],
 			];
 		}
 		/**
@@ -992,9 +998,9 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				$first_row = true;
 				foreach ( $row as $column ) {
 					if ( $first_row ) {
-						$html .= '<th style="text-align: left; font-size: 14px; font-weight: 400">' . $column . '</th>';
+						$html .= '<th style="text-align: left; font-size: 14px; font-weight: 400">' . self::render_table_cell( $column ) . '</th>';
 					} else {
-						$html .= '<th style="text-align: right; font-size: 14px; font-weight: 400">' . $column . '</th>';
+						$html .= '<th style="text-align: right; font-size: 14px; font-weight: 400">' . self::render_table_cell( $column ) . '</th>';
 					}
 					$first_row = false;
 				}
@@ -1015,9 +1021,9 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 								$column = substr( $column, 0, 35 ) . '...';
 							}
 						}
-						$html .= '<td style="width: fit-content; text-align: left;">' . $column . '</td>';
+						$html .= '<td style="width: fit-content; text-align: left;">' . self::render_table_cell( $column ) . '</td>';
 					} else {
-						$html .= '<td style="width: fit-content; text-align: right;">' . $column . '</td>';
+						$html .= '<td style="width: fit-content; text-align: right;">' . self::render_table_cell( $column ) . '</td>';
 					}
 					$first_row = false;
 				}
@@ -1026,6 +1032,26 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			}
 
 			return $html;
+		}
+
+		/**
+		 * Render a single report-table cell.
+		 *
+		 * Untrusted values (page titles, referrers, campaign values that originate
+		 * from visitors) are escaped. Cells wrapped as `[ 'raw' => $html ]` are
+		 * trusted, plugin-generated HTML (e.g. the compare block's colour-coded
+		 * uplift indicator) and are emitted verbatim; the mailer still runs
+		 * wp_kses_post() over the whole table as a final backstop.
+		 *
+		 * @param string|array $column Cell value: a string of untrusted text, or a
+		 *                             `[ 'raw' => string ]` wrapper of trusted HTML.
+		 * @return string The escaped or trusted cell inner HTML.
+		 */
+		private static function render_table_cell( string|array $column ): string {
+			if ( is_array( $column ) ) {
+				return isset( $column['raw'] ) ? (string) $column['raw'] : '';
+			}
+			return esc_html( $column );
 		}
 
 		/**

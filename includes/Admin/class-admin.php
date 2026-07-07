@@ -18,6 +18,8 @@ use Burst\Admin\Posts\Posts;
 use Burst\Admin\Reports\Report_Logs;
 use Burst\Admin\Reports\Reports;
 use Burst\Admin\Search\Search;
+use Burst\Admin\Integrations\Integrations_Settings;
+use Burst\Admin\Search_Console\Search_Console;
 use Burst\Admin\Engagement\Reading_Engagement;
 use Burst\Admin\Share\Share;
 use Burst\Admin\Geo_Ip\Geo_Ip;
@@ -93,6 +95,7 @@ class Admin {
 			add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
 			add_action( 'burst_weekly', [ $this, 'cleanup_bf_dismissed_tasks' ] );
 			add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
+			add_action( 'burst_daily', [ $this, 'cleanup_orphaned_block_goals' ] );
 			add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
 
 			$this->maybe_update_site_scheme();
@@ -121,6 +124,10 @@ class Admin {
 			}
 			$search = new Search();
 			$search->init();
+			$integrations_settings = new Integrations_Settings();
+			$integrations_settings->init();
+			$search_console = new Search_Console();
+			$search_console->init();
 			$reading_engagement = new Reading_Engagement();
 			$reading_engagement->init();
 			$reports = new Reports();
@@ -784,7 +791,8 @@ class Admin {
 			return;
 		}
 
-		$cookieless      = $this->get_option_bool( 'enable_cookieless_tracking' );
+		$privacy_level   = $this->get_option( 'privacy_level', 'cookie' );
+		$cookieless      = ( $privacy_level === 'fingerprint' );
 		$cookieless_text = $cookieless ? '-cookieless' : '';
 		$localize_args   = \Burst\burst_loader()->frontend->tracking->get_options();
 
@@ -898,6 +906,7 @@ class Admin {
 			update_option( 'burst_import_geo_ip_on_activation', true, false );
 			$this->update_option( 'combine_vars_and_script', true );
 			$this->update_option( 'enable_turbo_mode', true );
+			$this->update_option( 'privacy_level', 'cookie' );
 			$this->create_js_file();
 
 			$this->tasks->add_initial_tasks();
@@ -1463,5 +1472,81 @@ class Admin {
 		}
 
 		return $menu_items;
+	}
+
+	/**
+	 * Clean up orphaned block goals that were created but never saved (or deleted without trace).
+	 */
+	public function cleanup_orphaned_block_goals(): void {
+		global $wpdb;
+		$table_name   = $wpdb->prefix . 'burst_goals';
+		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name;
+		if ( ! $table_exists ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$block_goals = $wpdb->get_results( "SELECT * FROM {$table_name} WHERE block_goal = 1", ARRAY_A );
+		if ( empty( $block_goals ) ) {
+			return;
+		}
+
+		// Query only post_content from non-trash, non-revision posts/pages.
+		$post_statuses_escaped = [];
+		foreach ( [ 'publish', 'draft', 'pending', 'private', 'future' ] as $status ) {
+			$post_statuses_escaped[] = (string) esc_sql( $status );
+		}
+		$post_statuses_str = "'" . implode( "', '", $post_statuses_escaped ) . "'";
+
+		$post_types = get_post_types( [ 'public' => true ] );
+		if ( empty( $post_types ) || ! is_array( $post_types ) ) {
+			$post_types = [ 'post', 'page' ];
+		}
+		$post_types_escaped = [];
+		foreach ( $post_types as $type ) {
+			if ( is_string( $type ) ) {
+				$post_types_escaped[] = (string) esc_sql( $type );
+			}
+		}
+		$post_types_str = "'" . implode( "', '", $post_types_escaped ) . "'";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$posts          = $wpdb->get_col( "SELECT post_content FROM {$wpdb->posts} WHERE post_status IN ($post_statuses_str) AND post_type IN ($post_types_str) AND post_content LIKE '%data-burst-goal=%'" );
+		$merged_content = is_array( $posts ) ? implode( ' ', $posts ) : '';
+
+		foreach ( $block_goals as $goal ) {
+			// Skip goals created within the last 3 hours to avoid race conditions while editing.
+			if ( time() - (int) $goal['date_created'] < 3 * HOUR_IN_SECONDS ) {
+				continue;
+			}
+
+			$goal_id = (int) $goal['ID'];
+			$uid     = '';
+			if ( preg_match( '/data-burst-goal="([^"]+)"/', $goal['selector'], $matches ) ) {
+				$uid = $matches[1];
+			}
+			if ( empty( $uid ) ) {
+				continue;
+			}
+
+			if ( strpos( $merged_content, $uid ) === false ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+				$has_data = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_goal_statistics WHERE goal_id = %d", $goal_id ) ) > 0;
+
+				if ( ! $has_data ) {
+					// Delete goal completely if it has no stats.
+					$goal_obj = new \Burst\Frontend\Goals\Goal( $goal_id );
+					$goal_obj->delete();
+				} elseif ( $goal['status'] !== 'inactive' ) {
+					// Otherwise deactivate it to preserve stats.
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+					$wpdb->update( $table_name, [ 'status' => 'inactive' ], [ 'ID' => $goal_id ], [ '%s' ], [ '%d' ] );
+					wp_cache_delete( 'burst_goal_' . $goal_id, 'burst' );
+				}
+			}
+		}
+
+		// Ensure updates are synchronized.
+		do_action( 'burst_after_updated_goals' );
 	}
 }

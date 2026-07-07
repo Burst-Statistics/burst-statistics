@@ -134,7 +134,7 @@ class Fields {
 			$this->goal_fields = require BURST_PATH . 'includes/Admin/App/config/goal-fields.php';
 		}
 		$goals = $this->goal_fields;
-		if ( defined( 'BURST_HEADLESS_DOMAIN' ) && $this->get_option_bool( 'enable_cookieless_tracking' ) ) {
+		if ( defined( 'BURST_HEADLESS_DOMAIN' ) && $this->get_option( 'privacy_level', 'cookie' ) !== 'cookie' ) {
 			foreach ( $goals as $key => $field ) {
 				if ( isset( $field['id'] ) && $field['id'] === 'type' && isset( $field['options']['hook'] ) ) {
 					unset( $goals[ $key ]['options']['hook'] );

@@ -13,7 +13,7 @@ function burst_cmplz_script( array $tags ): array {
 	}
 
 	// if cookieless tracking enabled, do not block.
-	if ( (bool) burst_get_option( 'enable_cookieless_tracking' ) ) {
+	if ( burst_get_option( 'privacy_level', 'cookie' ) !== 'cookie' ) {
 		return $tags;
 	}
 
