@@ -5,24 +5,18 @@ defined( 'ABSPATH' ) || die( 'you do not have access to this page!' );
  * List of integrations that Burst Statistics supports.
  * Good to know for goals:
  * - The goals should always be user trigger-able, otherwise the goal can not be tracked as it requires a UID at least for now.
+ * -
  *
  * Integration properties:
  * - php_scripts: Array containing script locations
  *   - admin_scripts: Array of file names to load only in admin context
  *   - frontend_scripts: Array of file names to load only in frontend context
- * - category: One of 'ecommerce', 'forms', 'page_builders', 'consent', 'performance', 'other'.
- * - status: Id of the short description of what the integration does, shown in the
- *   settings UI. Mapped to a translatable label at display time (see
- *   Integrations_Settings::translate_integration_status()).
- * - wporg_slug: Override for the WordPress.org plugin slug used to fetch the plugin icon.
  */
 return [
 	// Consent plugins.
 	'complianz'                  => [
 		'constant_or_function' => 'cmplz_version',
 		'label'                => 'Complianz GDPR/CCPA',
-		'category'             => 'consent',
-		'status'               => 'enhances_consent_compatibility',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [ 'frontend.php' ],
@@ -31,8 +25,6 @@ return [
 	'duplicate-post'             => [
 		'constant_or_function' => 'DUPLICATE_POST_CURRENT_VERSION',
 		'label'                => 'Yoast Duplicate Post',
-		'category'             => 'other',
-		'status'               => 'prevents_duplicate_tracking_data',
 		'php_scripts'          => [
 			'admin_scripts'    => [ 'admin.php' ],
 			'frontend_scripts' => [],
@@ -42,8 +34,6 @@ return [
 	'elementor'                  => [
 		'constant_or_function' => 'ELEMENTOR_VERSION',
 		'label'                => 'Elementor Website Builder',
-		'category'             => 'page_builders',
-		'status'               => 'tracks_form_and_popup_submissions',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -66,8 +56,6 @@ return [
 	'woocommerce'                => [
 		'constant_or_function'       => 'WC_VERSION',
 		'label'                      => 'WooCommerce',
-		'category'                   => 'ecommerce',
-		'status'                     => 'tracks_sales_and_revenue',
 		'load_ecommerce_integration' => true,
 		'php_scripts'                => [
 			'admin_scripts'    => [],
@@ -105,8 +93,6 @@ return [
 	'woocommerce-payments'       => [
 		'constant_or_function' => 'WCPAY_PLUGIN_FILE',
 		'label'                => 'WooCommerce Payments',
-		'category'             => 'ecommerce',
-		'status'               => 'tracks_woocommerce_payments_transactions',
 		'required_plugins'     => [
 			'woocommerce',
 		],
@@ -118,8 +104,6 @@ return [
 	'easy-digital-downloads'     => [
 		'constant_or_function'       => 'EDD_PLUGIN_FILE',
 		'label'                      => 'Easy Digital Downloads',
-		'category'                   => 'ecommerce',
-		'status'                     => 'tracks_sales_and_revenue',
 		'load_ecommerce_integration' => true,
 		'php_scripts'                => [
 			'admin_scripts'    => [],
@@ -149,12 +133,9 @@ return [
 				],
 			],
 	],
-	// Duplicate of easy-digital-downloads, kept for behavioural comparison pending cleanup.
 	'easy-digital-downloads-pro' => [
 		'constant_or_function'       => 'EDD_PLUGIN_FILE',
 		'label'                      => 'Easy Digital Downloads',
-		'category'                   => 'ecommerce',
-		'status'                     => 'tracks_sales_and_revenue',
 		'load_ecommerce_integration' => true,
 		'php_scripts'                => [
 			'admin_scripts'    => [],
@@ -187,8 +168,6 @@ return [
 	'edd-multi-currency'         => [
 		'constant_or_function' => 'EDD_MULTI_CURRENCY_FILE',
 		'label'                => 'Easy Digital Downloads - Multi Currency',
-		'category'             => 'ecommerce',
-		'status'               => 'tracks_multi_currency_transactions',
 		'required_plugins'     => [
 			'easy-digital-downloads',
 		],
@@ -200,9 +179,6 @@ return [
 	'give-wp'                    => [
 		'constant_or_function' => 'GIVE_VERSION',
 		'label'                => 'Give - Donation Plugin',
-		'category'             => 'ecommerce',
-		'status'               => 'tracks_donations',
-		'wporg_slug'           => 'give',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -225,12 +201,10 @@ return [
 			],
 		],
 	],
-	// Contact form plugins.
+	// Contact from plugins.
 	'contact-form-7'             => [
 		'constant_or_function' => 'WPCF7_VERSION',
 		'label'                => 'Contact Form 7',
-		'category'             => 'forms',
-		'status'               => 'tracks_form_submissions',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -252,8 +226,6 @@ return [
 	'wpforms'                    => [
 		'constant_or_function' => 'WPFORMS_VERSION',
 		'label'                => 'WPForms',
-		'category'             => 'forms',
-		'status'               => 'tracks_form_submissions',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -275,8 +247,6 @@ return [
 	'fluentform'                 => [
 		'constant_or_function' => 'FLUENTFORM',
 		'label'                => 'Fluent Forms',
-		'category'             => 'forms',
-		'status'               => 'tracks_form_submissions',
 		'goals'                =>
 			[
 				[
@@ -294,8 +264,6 @@ return [
 	'happy-forms'                => [
 		'constant_or_function' => 'HAPPYFORMS_VERSION',
 		'label'                => 'Happyforms',
-		'category'             => 'forms',
-		'status'               => 'tracks_form_submissions',
 		'goals'                =>
 			[
 				[
@@ -308,8 +276,6 @@ return [
 	'ws-form'                    => [
 		'constant_or_function' => 'WS_FORM_VERSION',
 		'label'                => 'WS Form',
-		'category'             => 'forms',
-		'status'               => 'tracks_form_submissions',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -326,8 +292,6 @@ return [
 	'gravity_forms'              => [
 		'constant_or_function' => 'gravity_form',
 		'label'                => 'Gravity Forms',
-		'category'             => 'forms',
-		'status'               => 'tracks_form_submissions',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -349,8 +313,6 @@ return [
 	'formidable-forms'           => [
 		'constant_or_function' => 'frm_forms_autoloader',
 		'label'                => 'Formidable Forms',
-		'category'             => 'forms',
-		'status'               => 'tracks_form_submissions',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -367,8 +329,6 @@ return [
 	'ninja-forms'                => [
 		'constant_or_function' => 'Ninja_Forms',
 		'label'                => 'Ninja Forms',
-		'category'             => 'forms',
-		'status'               => 'tracks_form_submissions',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -382,12 +342,10 @@ return [
 				],
 			],
 	],
-	// Caching plugins.
+	// caching plugins.
 	'wp-rocket'                  => [
 		'constant_or_function' => 'WP_ROCKET_VERSION',
 		'label'                => 'WP Rocket',
-		'category'             => 'performance',
-		'status'               => 'enhances_caching_compatibility',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [ 'frontend.php' ],
@@ -400,8 +358,6 @@ return [
 			'woocommerce',
 		],
 		'label'                      => 'WooCommerce Subscriptions',
-		'category'                   => 'ecommerce',
-		'status'                     => 'tracks_signups_and_renewals',
 		'php_scripts'                => [
 			'admin_scripts'    => [ 'admin.php' ],
 			'frontend_scripts' => [ 'event-listener.php' ],
@@ -411,8 +367,6 @@ return [
 		'constant_or_function'       => 'EDD_RECURRING_VERSION',
 		'load_ecommerce_integration' => true,
 		'label'                      => 'Easy Digital Downloads - Recurring Payments',
-		'category'                   => 'ecommerce',
-		'status'                     => 'tracks_recurring_payments',
 		'required_plugins'           => [
 			'easy-digital-downloads',
 		],
@@ -441,8 +395,6 @@ return [
 			'woocommerce',
 		],
 		'label'                      => 'Subscriben - WooCommerce Subscription Management',
-		'category'                   => 'ecommerce',
-		'status'                     => 'tracks_woocommerce_subscription_management',
 		'php_scripts'                => [
 			'admin_scripts'    => [ 'admin.php' ],
 			'frontend_scripts' => [ 'event-listener.php' ],

@@ -10,7 +10,7 @@ import { useOutgoingLinksData } from './useOutgoingLinksData';
 import { getOutgoingLinksColumns } from './columns';
 import useSettingsData from '@/hooks/useSettingsData';
 import useLicenseData from '@/hooks/useLicenseData';
-import OverlayBlock from '@/components/Upsell/OverlayBlock';
+import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
 import MetricInfo from '@/components/Common/MetricInfo';
 
@@ -68,18 +68,6 @@ const OutgoingLinksBlock = memo( ({ className = '' }: OutgoingLinksBlockProps ) 
 
 	const hasData = 0 < topData.length;
 
-	if ( ! isLicenseValid ) {
-		return (
-			<OverlayBlock
-				className={ className }
-				title={ __( 'Outgoing links', 'burst-statistics' ) }
-				blurLabel={ __( 'Outgoing links tracking is a Pro feature.', 'burst-statistics' ) }
-			>
-				<UpsellCopy type="external_links" compact={true} />
-			</OverlayBlock>
-		);
-	}
-
 	return (
 		<Block className={ className }>
 			<BlockHeading
@@ -89,7 +77,7 @@ const OutgoingLinksBlock = memo( ({ className = '' }: OutgoingLinksBlockProps ) 
 					<MetricInfo metricKey="outgoing_links" side="bottom">
 						{ __( 'Outgoing links', 'burst-statistics' ) }
 					</MetricInfo>
-					{ isEnabled && hasData && (
+					{ isLicenseValid && isEnabled && hasData && (
 						<button
 							type="button"
 							className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
@@ -131,6 +119,13 @@ const OutgoingLinksBlock = memo( ({ className = '' }: OutgoingLinksBlockProps ) 
 						</span>
 					</div>
 				) }
+						<UpsellOverlay
+						className="flex items-center justify-center pt-0 mt-0 m-0 border-0 bg-transparent"
+						containerClassName="pt-1 m-1 mt-4"
+						cardClassName="mx-4 min-w-fit rounded-md border border-gray-300 bg-gray-100 px-6 py-6 shadow-sm"
+					>
+						<UpsellCopy type="external_links" compact={true} />
+					</UpsellOverlay>
 			</BlockContent>
 		</Block>
 	);

@@ -347,12 +347,11 @@ class Upgrade {
 			// Stored via the settings system (not a standalone option) so the React
 			// world-map notice can read it through getValue().
 			$this->update_option( 'country_geo_database_available_time', time() );
+
+			burst_reinstall_rest_api_optimizer();
 		}
 
 		if ( $prev_version && version_compare( $prev_version, '3.6.1', '<' ) ) {
-			// Reinstall the optimizer so fields/get keeps other plugins loaded,
-			// which the integrations settings page needs for plugin detection.
-			burst_reinstall_rest_api_optimizer();
 			if ( defined( 'BURST_FREE' ) ) {
 				burst_delete_option( 'track_external_links' );
 			}
@@ -364,10 +363,6 @@ class Upgrade {
 			// Migrate privacy_level based on current enable_cookieless_tracking value.
 			$cookieless = $this->get_option_bool( 'enable_cookieless_tracking' );
 			$this->update_option( 'privacy_level', $cookieless ? 'fingerprint' : 'cookie' );
-
-			// Add block_goal column to burst_goals for Gutenberg block editor integration.
-			update_option( 'burst_db_upgrade_goals_add_block_goal_column', true, false );
-			update_option( 'burst_db_upgrade_goals_add_page_id_column', true, false );
 		}
 
 		$admin = new Admin();

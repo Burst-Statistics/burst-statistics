@@ -4,7 +4,6 @@ import InsightsBlock from '@/components/Statistics/InsightsBlock';
 import CompareBlock from '@/components/Statistics/CompareBlock';
 import DevicesBlock from '@/components/Statistics/DevicesBlock';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
-import SearchConsoleBlock from '@/components/Statistics/SearchConsoleBlock';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import { __ } from '@wordpress/i18n';
 import { shouldLoadRoute } from '@/utils/helper';
@@ -49,9 +48,6 @@ function Statistics() {
 				<DataTableBlock allowedConfigs={[ 'referrers' ]} id="statistics_referrers" />
 			</ErrorBoundary>
 
-			<ErrorBoundary>
-				<SearchConsoleBlock />
-			</ErrorBoundary>
 
 		</>
 	);

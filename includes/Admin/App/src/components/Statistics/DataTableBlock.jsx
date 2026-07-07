@@ -22,10 +22,8 @@ import { COLUMN_FORMATTERS, FORMATS } from '@/api/getDataTableData';
 import ClickToFilter from '@/components/Common/ClickToFilter';
 import {
 	getCountryName,
-	getContinentName,
-	getDateWithOffset
+	getContinentName
 } from '@/utils/formatting';
-import { format, subDays } from 'date-fns';
 import { safeDecodeURI } from '@/utils/lib';
 import {useBlockConfig} from '@/hooks/useBlockConfig';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
@@ -683,40 +681,6 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				}
 			}
 		},
-		search_console: {
-			label: __( 'Google Searches', 'burst-statistics' ),
-			searchable: true,
-			defaultColumns: [ 'query', 'clicks', 'impressions', 'click_through_rate', 'position' ],
-			columnsOptions: {
-				query: {
-					label: __( 'Query', 'burst-statistics' ),
-					default: true,
-					format: 'string',
-					align: 'left',
-					group_by: true
-				},
-				clicks: {
-					label: __( 'Clicks', 'burst-statistics' ),
-					format: 'integer',
-					align: 'right'
-				},
-				impressions: {
-					label: __( 'Impressions', 'burst-statistics' ),
-					format: 'integer',
-					align: 'right'
-				},
-				click_through_rate: {
-					label: __( 'Click Through Rate', 'burst-statistics' ),
-					format: 'percentage',
-					align: 'right'
-				},
-				position: {
-					label: __( 'Avg. position', 'burst-statistics' ),
-					format: 'float',
-					align: 'right'
-				}
-			}
-		},
 		reading_engagement: {
 			label: __( 'Reading engagement', 'burst-statistics' ),
 			searchable: true,
@@ -1250,17 +1214,6 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 	const error = query.error;
 	const noData = 0 === enrichedFilteredData.length;
 
-	// Google Search Console reports data with a delay of about two days, so a
-	// range that only covers today and/or yesterday can never have data yet.
-	const searchConsoleLagMessage =
-		'search_console' === selectedConfig &&
-		format( subDays( getDateWithOffset(), 1 ), 'yyyy-MM-dd' ) <= startDate ?
-			__(
-				'Google Search Console data arrives with a delay of about two days, so there is no data for today and yesterday yet. Select an earlier date range to see search data.',
-				'burst-statistics'
-			) :
-			'';
-
 	// sortedColumns the first column should have overflow true.
 	if ( 0 < enhancedColumnsData.length ) {
 		enhancedColumnsData[0] = {
@@ -1297,7 +1250,6 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 						data={[]}
 						isLoading={isLoading}
 						error={error}
-						emptyStateMessage={searchConsoleLagMessage}
 						isInOverlay={isInOverlay}
 					/>
 				),
@@ -1337,7 +1289,6 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			noData,
 			isLoading,
 			error,
-			searchConsoleLagMessage,
 			paramVariationsEnabled,
 			startDate,
 			endDate,
@@ -1428,6 +1379,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				isReport={isReport}
 				reportBlockIndex={index}
 				isLoading={isLoading}
+				pro={configDetails?.pro}
 				title={
 					<DataTableSelect
 						value={selectedConfig}

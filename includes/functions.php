@@ -99,12 +99,3 @@ if ( ! function_exists( '\Burst\burst_get_value' ) && ! function_exists( 'burst_
 	}
     //phpcs:enable
 }
-
-if ( ! function_exists( 'burst_license_is_valid' ) ) {
-	/**
-	 * Check if the Burst Pro license is valid.
-	 */
-	function burst_license_is_valid(): bool {
-		return (bool) apply_filters( 'burst_license_is_valid', false );
-	}
-}

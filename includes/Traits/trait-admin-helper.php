@@ -302,28 +302,12 @@ trait Admin_Helper {
 	 */
 	protected function localized_settings( array $js_data ): array {
 		$user_can_install = current_user_can( 'install_plugins' );
-
-		$goal_count = 0;
-		global $wpdb;
-		$table_name   = $wpdb->prefix . 'burst_goals';
-		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name;
-
-		if ( $table_exists ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$goal_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name} WHERE status = 'active'" );
-		}
-
-		$is_pro_valid = burst_license_is_valid();
-		$goal_limit   = $is_pro_valid ? -1 : \Burst\Frontend\Goals\Goal::LIMIT_FREE;
-
 		return apply_filters(
 			'burst_localize_script',
 			[
 				// Core plugin information.
 				'burst_version'                        => BURST_VERSION,
 				'is_pro'                               => defined( 'BURST_PRO' ),
-				'goal_count'                           => $goal_count,
-				'goal_limit'                           => $goal_limit,
 				'plugin_url'                           => BURST_URL,
 				'installed_by'                         => get_site_option( 'teamupdraft_installation_source_burst-statistics', '' ),
 

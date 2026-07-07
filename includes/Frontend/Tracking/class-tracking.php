@@ -218,7 +218,7 @@ class Tracking {
 		$statistic_id = $statistic['ID'] ?? ( $insert_id ?? 0 );
 
 		if ( $statistic_id > 0 ) {
-			$completed_goals = $this->get_completed_goals( $statistic['completed_goals'], $statistic['page_url'], (int) ( $statistic['page_id'] ?? 0 ) );
+			$completed_goals = $this->get_completed_goals( $statistic['completed_goals'], $statistic['page_url'] );
 			if ( ! empty( $completed_goals ) ) {
 				$this->create_goal_statistic( $statistic_id, $completed_goals );
 			}
@@ -764,7 +764,6 @@ class Tracking {
 					'track_url_change'      => $this->get_option_int( 'track_url_change' ),
 					'track_external_links'  => $this->get_option_int( 'track_external_links' ),
 					'cookie_retention_days' => apply_filters( 'burst_cookie_retention_days', 30 ),
-					'page_id'               => is_singular() ? (int) get_queried_object_id() : 0,
 					'debug'                 => defined( 'BURST_DEBUG' ) && \BURST_DEBUG ? 1 : 0,
 				],
 				'goals'    => [
@@ -891,10 +890,9 @@ class Tracking {
 	 * @param int    $goal_id The ID of the goal to check.
 	 * @param string $page_url The current page URL.
 	 * @param array  $goals the available goals.
-	 * @param int    $page_id Post ID of the tracked page, as sent in the hit payload. 0 if unknown.
 	 * @return bool Returns true if the goal is completed, false otherwise.
 	 */
-	public function goal_is_completed( int $goal_id, string $page_url, array $goals, int $page_id = 0 ): bool {
+	public function goal_is_completed( int $goal_id, string $page_url, array $goals ): bool {
 		$goal = array_filter(
 			$goals,
 			function ( $goal ) use ( $goal_id ) {
@@ -910,13 +908,6 @@ class Tracking {
 
 		switch ( $goal['type'] ) {
 			case 'visits':
-				// Match on the post ID of the tracked page. Runs on the tracking
-				// endpoints (REST and the SHORTINIT beacon), so there is no main
-				// query here — is_singular()/get_queried_object_id() are unusable
-				// and the beacon doesn't even load them.
-				if ( ! empty( $goal['page_id'] ) && $page_id > 0 && (int) $goal['page_id'] === $page_id ) {
-					return true;
-				}
 				// Improved URL comparison logic could go here.
 				// @TODO: Maybe add support for * and ? wildcards?.
 				if ( rtrim( $page_url, '/' ) === rtrim( $goal['url'], '/' ) ) {
@@ -936,10 +927,9 @@ class Tracking {
 	 *
 	 * @param array<int> $completed_client_goals Array of goal IDs completed on the client.
 	 * @param string     $page_url               Page URL used to verify server-side goal completion.
-	 * @param int        $page_id                Post ID of the tracked page, 0 if unknown.
 	 * @return array<int> List of completed goal IDs.
 	 */
-	public function get_completed_goals( array $completed_client_goals, string $page_url, int $page_id = 0 ): array {
+	public function get_completed_goals( array $completed_client_goals, string $page_url ): array {
 		$completed_server_goals = [];
 		$server_goals           = $this->get_active_goals( [ 'visits' ] );
 		// if server side goals exist.
@@ -947,7 +937,7 @@ class Tracking {
 			// loop through server side goals.
 			foreach ( $server_goals as $goal ) {
 				// if goal is completed.
-				if ( $this->goal_is_completed( $goal['ID'], $page_url, $server_goals, $page_id ) ) {
+				if ( $this->goal_is_completed( $goal['ID'], $page_url, $server_goals ) ) {
 					// add goal id to completed goals array.
 					$completed_server_goals[] = $goal['ID'];
 				}

@@ -30,7 +30,7 @@ class Search {
 	}
 
 	/**
-	 * Remove search strings whose only occurrence is older than a month and returned no results.
+	 * Remove search strings that occurred only once in the past month.
 	 * Hooked to `burst_monthly`.
 	 */
 	public function cleanup_single_occurrence_searches(): void {
@@ -51,7 +51,7 @@ class Search {
 					FROM {$wpdb->prefix}burst_statistics_searches
 					WHERE statistic_id IS NOT NULL
 					GROUP BY search_id
-					HAVING COUNT(*) = 1 AND MAX(created) < %d AND MAX(result_count) = 0
+					HAVING COUNT(*) = 1 AND MAX(created) >= %d
 				) one_off ON one_off.search_id = s.ID",
 				$window_start
 			)

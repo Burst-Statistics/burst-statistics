@@ -106,34 +106,12 @@ const useSettingsData = (): UseSettingsDataResult => {
 
 	// Update Mutation for settings data
 	const { mutateAsync: saveSettings, isPending: isSavingSettings } =
-		useMutation<void, Error, Record<string, unknown>>({
-			mutationFn: async( data: Record<string, unknown> ) => {
+		useMutation<void, Error, any>({ // eslint-disable-line @typescript-eslint/no-explicit-any
+			mutationFn: async( data: any ) => { // eslint-disable-line @typescript-eslint/no-explicit-any
 				await setFields( data );
 			},
-			onSuccess: async( _data, variables ) => {
+			onSuccess: async() => {
 				toast.success( __( 'Settings saved', 'burst-statistics' ) );
-
-				// Merge saved values into the cache first so integration rows and other
-				// fields stay visible while a background refetch runs.
-				queryClient.setQueryData<SettingField[]>(
-					[ 'settings_fields' ],
-					( oldData ) => {
-						if ( ! oldData || ! variables ) {
-							return oldData;
-						}
-
-						return oldData.map( ( field ) => {
-							if ( ! Object.prototype.hasOwnProperty.call( variables, field.id ) ) {
-								return field;
-							}
-
-							return {
-								...field,
-								value: variables[field.id]
-							};
-						});
-					}
-				);
 
 				await queryClient.invalidateQueries({
 					queryKey: [ 'settings_fields' ],

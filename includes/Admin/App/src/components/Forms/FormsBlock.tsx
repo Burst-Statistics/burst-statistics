@@ -9,7 +9,7 @@ import { BarDataTable } from '@/components/DataTable/BarDataTable';
 import { useFormsData } from './useFormsData';
 import { getFormsColumns } from './columns';
 import useLicenseData from '@/hooks/useLicenseData';
-import OverlayBlock from '@/components/Upsell/OverlayBlock';
+import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
 import MetricInfo from '@/components/Common/MetricInfo';
 
@@ -63,13 +63,23 @@ const FormsBlock = memo( ({ className = '' }: FormsBlockProps ) => {
 
 	if ( ! isLicenseValid ) {
 		return (
-			<OverlayBlock
-				className={ className }
-				title={ __( 'Forms', 'burst-statistics' ) }
-				blurLabel={ __( 'Form tracking is a Pro feature.', 'burst-statistics' ) }
-			>
-				<UpsellCopy type="forms" compact={ true } />
-			</OverlayBlock>
+			<Block className={ `${ className } relative min-h-[320px] overflow-hidden` }>
+				<BlockHeading title={ __( 'Forms', 'burst-statistics' ) } />
+				<BlockContent className="px-0 py-0 overflow-y-auto">
+					<div className="flex h-48 flex-col items-center justify-center p-4 text-center text-sm text-gray-400 select-none blur-[1px]">
+						<p className="font-medium text-gray-500 mb-1">
+							{ __( 'Form tracking is a Pro feature.', 'burst-statistics' ) }
+						</p>
+					</div>
+					<UpsellOverlay
+						className="flex items-center justify-center pt-0 mt-0 m-0 border-0 bg-transparent"
+						containerClassName="pt-1 m-1 mt-4"
+						cardClassName="mx-4 min-w-fit rounded-md border border-gray-300 bg-gray-100 px-6 py-6 shadow-sm"
+					>
+						<UpsellCopy type="forms" compact={ true } />
+					</UpsellOverlay>
+				</BlockContent>
+			</Block>
 		);
 	}
 
