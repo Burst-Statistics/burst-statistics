@@ -286,7 +286,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * New: Google Search Console integration: connect your Google account on the new Integrations settings page to see your top Google search queries in a new statistics block.
 * New: Gutenberg support for goals: mark buttons, images and navigation links as a goal directly in the block editor, including a metadata migration for block goal/page linkage.
 * New: privacy level setting to choose how Burst recognizes visitors (cookie, private mode or device fingerprint), with a matching onboarding step.
-* New: use the country reported by edge/CDN headers as a fallback for country detection.
+* New: use the country reported by edge/CDN headers as a fallback for country detection, props @knofte.
 * Improvement: increased the goal limit from one to three goals.
 * Improvement: inline search filtering in the Goals Overview dropdown.
 * Improvement: filter out spam and injection probes from on-site search terms.
@@ -294,9 +294,7 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Improvement: added an explanation for the automatically created burst_viewer user, and excluded it from user queries and author archives.
 * Security: share-link authorization now resolves the endpoint from the dispatched REST route, so it cannot desync from the executed route via request parameters.
 * Security: improved escaping in email report tables and removed duplicate escaping.
-* Fix: leave non-filesystem session save paths (Redis, memcached) untouched instead of falling back to the uploads directory.
-* Fix: the world map now shows country data.
-* Fix: hide the Sources over time and Traffic sources blocks, which are Pro features.
+* Fix: leave non-filesystem session save paths (Redis, memcached) untouched instead of falling back to the uploads directory, props @knofte.
 
 = 3.6.0.1 =
 * July 2nd 2026
