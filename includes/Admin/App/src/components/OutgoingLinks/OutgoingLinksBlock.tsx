@@ -10,10 +10,10 @@ import { useOutgoingLinksData } from './useOutgoingLinksData';
 import { getOutgoingLinksColumns } from './columns';
 import useSettingsData from '@/hooks/useSettingsData';
 import useLicenseData from '@/hooks/useLicenseData';
-import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
+import OverlayBlock from '@/components/Upsell/OverlayBlock';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
 import MetricInfo from '@/components/Common/MetricInfo';
-
+import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
 type OutgoingLinksBlockProps = {
 
 	/** Additional CSS class names passed to the wrapping Block. */
@@ -68,6 +68,18 @@ const OutgoingLinksBlock = memo( ({ className = '' }: OutgoingLinksBlockProps ) 
 
 	const hasData = 0 < topData.length;
 
+	if ( ! isLicenseValid ) {
+		return (
+			<OverlayBlock
+				className={ className }
+				title={ __( 'Outgoing links', 'burst-statistics' ) }
+				blurLabel={ __( 'Outgoing links tracking is a Pro feature.', 'burst-statistics' ) }
+			>
+				<UpsellCopy type="external_links" compact={true} />
+			</OverlayBlock>
+		);
+	}
+
 	return (
 		<Block className={ className }>
 			<BlockHeading
@@ -119,13 +131,15 @@ const OutgoingLinksBlock = memo( ({ className = '' }: OutgoingLinksBlockProps ) 
 						</span>
 					</div>
 				) }
-						<UpsellOverlay
+				{ ! isLicenseValid && (
+					<UpsellOverlay
 						className="flex items-center justify-center pt-0 mt-0 m-0 border-0 bg-transparent"
 						containerClassName="pt-1 m-1 mt-4"
 						cardClassName="mx-4 min-w-fit rounded-md border border-gray-300 bg-gray-100 px-6 py-6 shadow-sm"
 					>
-						<UpsellCopy type="external_links" compact={true} />
+						<UpsellCopy type="external_links" compact={ true } />
 					</UpsellOverlay>
+				) }
 			</BlockContent>
 		</Block>
 	);

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import useGoalsData from '@/hooks/useGoalsData';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import Icon from '../../utils/Icon';
 import GoalSetup from './GoalSetup';
 import { burst_get_website_url } from '../../utils/lib';
@@ -15,13 +15,19 @@ const GoalsSettings = () => {
 		goalFields,
 		predefinedGoals,
 		addGoal,
-		deleteGoal,
-		updateGoal,
 		addPredefinedGoal,
+		deleteGoal,
+		toggleGoalStatus,
 		setGoalValue,
-		saveGoalTitle
+		saveGoalTitle,
+		activeGoalsCount,
+		goalLimit
 	} = useGoalsData();
 	const { isLicenseValid } = useLicenseData();
+
+	// Limit is only active for free users; use server-side count as single source of truth.
+	const isLimitReached = ! isLicenseValid && 0 < goalLimit && goalLimit <= activeGoalsCount;
+
 	const [ searchQuery, setSearchQuery ] = useState( '' );
 
 	const filteredGoals = useMemo( () => {
@@ -68,9 +74,12 @@ const GoalsSettings = () => {
 				)}
 				{! isLicenseValid &&
 					' ' +
-						__(
-							'While free users can create one goal, Burst Pro lets you set unlimited goals to plan, measure, and achieve more.',
-							'burst-statistics'
+						sprintf(
+							__(
+								'While free users can create up to %d goals, Burst Pro lets you set unlimited goals to plan, measure, and achieve more.',
+								'burst-statistics'
+							),
+							goalLimit
 						)}
 			</p>
 			{0 < goals.length && (
@@ -107,8 +116,9 @@ const GoalsSettings = () => {
 								goalFields={goalFields}
 								setGoalValue={setGoalValue}
 								deleteGoal={deleteGoal}
-								onUpdate={updateGoal}
 								saveGoalTitle={saveGoalTitle}
+								toggleGoalStatus={toggleGoalStatus}
+								isLimitReached={isLimitReached}
 							/>
 						);
 					})
@@ -120,7 +130,7 @@ const GoalsSettings = () => {
 					)
 				)}
 
-				{( isLicenseValid || 0 === goals.length ) && (
+				{( isLicenseValid || activeGoalsCount < goalLimit || 0 > goalLimit ) && (
 					<div className="flex items-center gap-2">
 						<ButtonInput btnVariant={'tertiary'} onClick={addGoal}>
 							{__( 'Add goal', 'burst-statistics' )}
@@ -200,29 +210,34 @@ const GoalsSettings = () => {
 						<div className="ml-auto text-right">
 							<p className="rounded-lg bg-gray-300 p-1 px-3 text-sm text-text-gray">
 								{isLicenseValid ? (
-									<> {goals.length} / &#8734; </>
+									<> {activeGoalsCount} / &#8734; </>
 								) : (
-									<>{goals.length} / 1</>
+									<>{activeGoalsCount} / {goalLimit}</>
 								)}
 							</p>
 						</div>
 					</div>
 				)}
-				{! isLicenseValid && (
-					<div className="flex gap-4 p-4 bg-gray-200 rounded-md mt-4 justify-start items-center border-2 border-gray-300">
-						<Icon name={'goals'} size={24} color="gray" />
-						<h4>{__( 'Want more goals?', 'burst-statistics' )}</h4>
-						<div className="burst-divider" />
-						<p className="text-sm text-text-gray">
-							{__( 'Upgrade to Burst Pro', 'burst-statistics' )}
-						</p>
+				{isLimitReached && (
+					<div className="flex flex-col sm:flex-row gap-4 p-4 bg-brand-lightest dark:bg-green-dark rounded-md mt-4 justify-between items-start sm:items-center border border-brand-light dark:border-green-dark">
+						<div className="flex gap-4 items-center">
+							<Icon name={'goals'} size={24} color="green" />
+							<div className="text-left">
+								<h4 className="text-base font-semibold m-0 leading-tight">
+									{__( 'Want more active goals?', 'burst-statistics' )}
+								</h4>
+								<p className="text-sm text-text-gray mt-1 mb-0 leading-normal">
+									{__( 'Upgrade to Pro to activate unlimited goals', 'burst-statistics' )}
+								</p>
+							</div>
+						</div>
 						<a
 							href={burst_get_website_url( '/pricing/', {
 								utm_source: 'goals-setting',
 								utm_content: 'more-goals'
 							})}
 							target={'_blank'}
-							className="ml-auto burst-button burst-button--pro"
+							className="w-full sm:w-auto text-center burst-button burst-button--pro shrink-0"
 						>
 							{__( 'Upgrade to Pro', 'burst-statistics' )}
 						</a>

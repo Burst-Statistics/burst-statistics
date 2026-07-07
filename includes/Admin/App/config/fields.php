@@ -22,6 +22,12 @@ defined( 'ABSPATH' ) || die();
  *                                      - bool: true/false
  *                                      - array: Disabled for specific option values (used with select/radio)
  * @property mixed $default             Default value for the setting
+ * @property bool|null $visible         Static visibility, resolved server-side from the saved option (unlike the live
+ *                                      react_conditions), so it only changes after a save + refetch. Defaults to true
+ *                                      (wp_parse_args in Fields/class-fields.php); the UI hides the field only when it
+ *                                      is exactly false. The field stays registered in the form, so hiding it never
+ *                                      marks unsaved changes. Used by Search Console 'gsc_connect' to reveal the
+ *                                      connect UI only once the enable toggle is saved on.
  * @property array|null $options        Available options for select/radio/checkbox_group types
  *                                      - array: key-value pairs or nested arrays with 'label', 'context', 'recommended' properties
  *                                      - string: Function name to call (e.g., 'get_user_roles()')

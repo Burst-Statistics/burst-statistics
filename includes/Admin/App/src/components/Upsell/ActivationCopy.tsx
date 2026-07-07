@@ -38,7 +38,7 @@ interface ActivationConfig {
  */
 const activationConfigs: Record<string, ActivationConfig> = {
 	search_console: {
-		to: '/settings/search_console',
+		to: '/settings/integrations',
 		disabled: {
 			message: __( 'To view your Google Searches, enable the Search Console integration.', 'burst-statistics' ),
 			cta: __( 'Enable Search Console', 'burst-statistics' )

@@ -122,6 +122,7 @@ const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
 				<SelectPageField
 					disabled={disabled}
 					field={field}
+					goal={goal}
 					goal_id={goal.id}
 					label={field.label}
 					help={field.comment}

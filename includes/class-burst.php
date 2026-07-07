@@ -9,6 +9,7 @@ use Burst\Pro\Pro;
 use Burst\Integrations\Integrations;
 use Burst\Traits\Admin_Helper;
 use Burst\Admin\AutoInstaller\Auto_Installer;
+use Burst\Admin\Search_Console\Search_Console;
 
 	// ignore the 'only one object' rule, as it is a trick for compatibility.
     //phpcs:ignore
@@ -121,6 +122,13 @@ use Burst\Admin\AutoInstaller\Auto_Installer;
 			$this->admin->init();
 			$capability = new Capability();
 			$capability->init();
+		}
+
+		// The Google Search Console OAuth popup returns to admin-post.php and must be
+		// handled even when the capability gate above is closed: its only trust anchor
+		// is the single-use OAuth nonce, not the login cookie.
+		if ( is_admin() && $this->get_option_bool( 'enable_search_console' ) ) {
+			( new Search_Console() )->register_oauth_callback();
 		}
 
 		if ( defined( 'BURST_PRO_FILE' ) ) {

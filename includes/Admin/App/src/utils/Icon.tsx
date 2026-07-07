@@ -119,7 +119,8 @@ import {
 	ShieldCheck,
 	Cookie,
 	Shield,
-	Fingerprint
+	Fingerprint,
+	Plug
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -217,6 +218,7 @@ const iconComponents = {
 	alert: CircleAlert,
 	search: Search,
 	upload: Upload,
+	plug: Plug,
 
 	// Filter icons from useFiltersStore
 	bounce: LogOut,
