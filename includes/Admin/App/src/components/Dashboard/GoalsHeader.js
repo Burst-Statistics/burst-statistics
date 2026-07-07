@@ -1,7 +1,7 @@
-import React from 'react';
-import Icon from '../../utils/Icon';
+import React, { useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
-import SelectInput from '@/components/Inputs/SelectInput';
+import AsyncSelectInput from '@/components/Inputs/AsyncSelectInput';
+import Icon from '../../utils/Icon';
 
 /**
  * GoalsHeader component to display and select goals.
@@ -15,47 +15,49 @@ import SelectInput from '@/components/Inputs/SelectInput';
  */
 const GoalsHeader = ({ goals, goalId, setGoalId }) => {
 
-	// if goalValues is an empty array, return null.
-	if ( 0 === goals.length ) {
-		return <Icon name="loading" />;
-	}
-
-	/**
-	 * Handle change event for goal selection.
-	 *
-	 * @param {string} value - The change event object.
-	 *
-	 * @return {void}
-	 */
-	const handleChange = ( value ) => {
-		setGoalId( value );
-	};
-
-	const options = [
-		{
-			value: 'all',
-			label: __( 'All goals', 'burst-statistics' )
-		},
-		...goals.map( ( goal ) => {
-			return {
-				value: goal.id,
+	const options = useMemo( () => {
+		return [
+			{
+				value: 'all',
+				label: __( 'All goals', 'burst-statistics' )
+			},
+			...goals.map( ( goal ) => ({
+				value: String( goal.id ),
 				label:
 					goal && 'string' === typeof goal.title ?
 						goal.title :
 						__( 'Untitled goal', 'burst-statistics' )
-			};
-		})
-	];
+			}) )
+		];
+	}, [ goals ]);
+
+	// Filter options locally on search input
+	const loadOptions = ( input, callback ) => {
+		const query = ( input || '' ).toLowerCase();
+		const filtered = options.filter( ( option ) =>
+			option.label.toLowerCase().includes( query )
+		);
+		callback( filtered );
+	};
+
+	// if goals is an empty array, return a loading indicator.
+	if ( 0 === goals.length ) {
+		return <Icon name="loading" />;
+	}
 
 	return (
 		<div className="flex items-center gap-2.5">
-			{0 < goals.length && (
-				<SelectInput
-					value={goalId}
-					onChange={( value ) => handleChange( value )}
-					options={options}
-				/>
-			)}
+			<AsyncSelectInput
+				value={String( goalId )}
+				onChange={( selected ) => setGoalId( selected ? selected.value : 'all' )}
+				defaultOptions={options}
+				loadOptions={loadOptions}
+				isSearchable={true}
+				allowCustomValue={false}
+				maxSelections={1}
+				placeholder={__( 'Select a goal...', 'burst-statistics' )}
+				className="!min-h-[2rem] !h-8 !w-48 !text-sm focus-within:!border-primary focus-within:!ring-primary [&>div]:!p-0 [&>div]:!pl-1.5 [&_span]:!py-0.5 [&_span]:!px-1.5 [&_span]:!text-sm [&_input]:!p-0 [&_input]:!text-sm [&_button]:!py-1"
+			/>
 		</div>
 	);
 };

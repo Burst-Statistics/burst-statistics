@@ -22,6 +22,12 @@ defined( 'ABSPATH' ) || die();
  *                                      - bool: true/false
  *                                      - array: Disabled for specific option values (used with select/radio)
  * @property mixed $default             Default value for the setting
+ * @property bool|null $visible         Static visibility, resolved server-side from the saved option (unlike the live
+ *                                      react_conditions), so it only changes after a save + refetch. Defaults to true
+ *                                      (wp_parse_args in Fields/class-fields.php); the UI hides the field only when it
+ *                                      is exactly false. The field stays registered in the form, so hiding it never
+ *                                      marks unsaved changes. Used by Search Console 'gsc_connect' to reveal the
+ *                                      connect UI only once the enable toggle is saved on.
  * @property array|null $options        Available options for select/radio/checkbox_group types
  *                                      - array: key-value pairs or nested arrays with 'label', 'context', 'recommended' properties
  *                                      - string: Function name to call (e.g., 'get_user_roles()')
@@ -119,21 +125,47 @@ return [
 		'disabled'               => false,
 		'default'                => false,
 		'recommended_conditions' => [
-			'enable_cookieless_tracking' => true,
+			'privacy_level' => [ 'private_mode', 'fingerprint' ],
 		],
 	],
 	[
-		'id'       => 'enable_cookieless_tracking',
+		'id'       => 'privacy_level',
 		'menu_id'  => 'general',
 		'group_id' => 'general',
-		'type'     => 'checkbox',
-		'label'    => __( 'Enable Cookieless tracking', 'burst-statistics' ),
-		'context'  => [
-			'text' => __( 'Track visitors without cookies using browser & device info.', 'burst-statistics' ),
-			'url'  => 'definition/what-is-cookieless-tracking/',
-		],
+		'type'     => 'radio',
+		'label'    => __( 'How Burst recognizes visitors', 'burst-statistics' ),
+		'context'  => __( 'Choose how visitors are recognized. Stronger privacy means less accurate returning-visitor data.', 'burst-statistics' ),
 		'disabled' => false,
-		'default'  => false,
+		'default'  => 'cookie',
+		'options'  => [
+			'cookie'       => [
+				'label'       => __( 'Cookie', 'burst-statistics' ),
+				'context'     => __( 'Most accurate returning-visitor data', 'burst-statistics' ),
+				// translators: %s: Privacy level (e.g. good, strongest, medium).
+				'badge'       => __( 'Privacy %s', 'burst-statistics' ),
+				'badge_level' => __( 'good', 'burst-statistics' ),
+				'badge_color' => 'green',
+				'icon'        => 'cookie',
+			],
+			'private_mode' => [
+				'label'       => __( 'Private mode', 'burst-statistics' ),
+				'context'     => __( 'No cookie, no fingerprint. Does not recognize returning visitors across days.', 'burst-statistics' ),
+				// translators: %s: Privacy level (e.g. good, strongest, medium).
+				'badge'       => __( 'Privacy %s', 'burst-statistics' ),
+				'badge_level' => __( 'strongest', 'burst-statistics' ),
+				'badge_color' => 'blue',
+				'icon'        => 'security',
+			],
+			'fingerprint'  => [
+				'label'       => __( 'Device fingerprint', 'burst-statistics' ),
+				'context'     => __( 'No cookie, persistent recognition', 'burst-statistics' ),
+				// translators: %s: Privacy level (e.g. good, strongest, medium).
+				'badge'       => __( 'Privacy %s', 'burst-statistics' ),
+				'badge_level' => __( 'medium', 'burst-statistics' ),
+				'badge_color' => 'gray',
+				'icon'        => 'fingerprint',
+			],
+		],
 	],
 	[
 		'id'       => 'enable_do_not_track',

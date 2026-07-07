@@ -103,8 +103,8 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 
 			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- using prepared parts.
 			$sql = $wpdb->prepare(
-				"SELECT {$count_sql} AS value FROM {$wpdb->prefix}burst_statistics AS statistics
-        INNER JOIN {$wpdb->prefix}burst_goal_statistics AS goals
+				"SELECT {$count_sql} AS value FROM {$wpdb->prefix}burst_goal_statistics AS goals
+        INNER JOIN {$wpdb->prefix}burst_statistics AS statistics
             ON statistics.ID = goals.statistic_id
         INNER JOIN {$wpdb->prefix}burst_sessions AS sessions
             ON statistics.session_id = sessions.ID

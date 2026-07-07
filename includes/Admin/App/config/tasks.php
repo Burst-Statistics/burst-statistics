@@ -212,10 +212,10 @@ return [
 		],
 		'msg'                 => __( 'MainWP Child is active on this site, but Burst MainWP integration is disabled. Enable it in settings to allow MainWP Dashboard statistics.', 'burst-statistics' ),
 		'icon'                => 'warning',
-		'url'                 => '#/settings/advanced',
+		'url'                 => 'guides/manage-burst-statistics-across-all-your-sites-with-mainwp/',
 		'fix'                 => 'burst_option_enable_mainwp_integration',
 		'dismissible'         => true,
-		'plusone'             => false,
+		'plusone'             => true,
 		'dismiss_permanently' => true,
 	],
 	[

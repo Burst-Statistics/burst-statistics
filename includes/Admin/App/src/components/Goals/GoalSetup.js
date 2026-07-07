@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Icon from '../../utils/Icon';
 import Tooltip from '@/components/Common/Tooltip';
 import { __ } from '@wordpress/i18n';
@@ -13,12 +13,16 @@ const GoalSetup = ({
 	goalFields,
 	setGoalValue,
 	deleteGoal,
-	saveGoalTitle
+	saveGoalTitle,
+	toggleGoalStatus,
+	isLimitReached
 }) => {
-	const [ status, setStatus ] = useState( 'active' === goal.status );
+	const [ isToggling, setIsToggling ] = useState( false );
+
+	const isActive = 'active' === goal.status;
+	const isToggleDisabled = isLimitReached && ! isActive;
 
 	// Use useMemo to compute fields only when dependencies change
-	// This is more efficient than using useState + useEffect
 	const fields = useMemo( () => {
 		if ( ! goalFields || 0 === goalFields.length ) {
 			return [];
@@ -37,6 +41,15 @@ const GoalSetup = ({
 	if ( ! goalFields ) {
 		return null;
 	}
+
+	const handleToggle = async( value ) => {
+		setIsToggling( true );
+		try {
+			await toggleGoalStatus( goal.id, value ? 'active' : 'inactive' );
+		} finally {
+			setIsToggling( false );
+		}
+	};
 
 	return (
 		<div className="w-full bg-gray-100 rounded-m">
@@ -74,7 +87,7 @@ const GoalSetup = ({
 								goal.title && 0 < goal.title.length ?
 									goal.title :
 									' ',
-							status: status ?
+							status: isActive ?
 								__( 'Active', 'burst-statistics' ) :
 								__( 'Inactive', 'burst-statistics' ),
 							dateCreated:
@@ -90,24 +103,50 @@ const GoalSetup = ({
 					/>
 					<Tooltip
 						content={
-							status ?
+							isActive ?
 								__( 'Click to de-activate', 'burst-statistics' ) :
 								__( 'Click to activate', 'burst-statistics' )
 						}
 					>
-						<span className="burst-click-to-filter burst-goal-toggle">
-							<SwitchInput
-								size="small"
-								value={status}
-								onChange={( value ) => {
-									setStatus( value );
-									setGoalValue(
-										goal.id,
-										'status',
-										value ? 'active' : 'inactive'
-									);
-								}}
-							/>
+						<span className="relative burst-click-to-filter burst-goal-toggle">
+							{isToggling && (
+								<span
+									className="absolute inset-0 flex items-center justify-center z-10"
+									aria-label={__( 'Saving…', 'burst-statistics' )}
+								>
+									<svg
+										className="animate-spin"
+										width="16"
+										height="16"
+										viewBox="0 0 16 16"
+										fill="none"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<circle
+											cx="8"
+											cy="8"
+											r="6"
+											stroke="currentColor"
+											strokeWidth="2"
+											strokeOpacity="0.25"
+										/>
+										<path
+											d="M14 8a6 6 0 0 0-6-6"
+											stroke="currentColor"
+											strokeWidth="2"
+											strokeLinecap="round"
+										/>
+									</svg>
+								</span>
+							)}
+							<span className={isToggling ? 'opacity-0 pointer-events-none' : ''}>
+								<SwitchInput
+									size="small"
+									value={isActive}
+									disabled={isToggleDisabled || isToggling}
+									onChange={handleToggle}
+								/>
+							</span>
 						</span>
 					</Tooltip>
 					<Icon name="chevron-down" size={18} />

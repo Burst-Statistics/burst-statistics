@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.0
-Stable tag: 3.6.0.1
+Stable tag: 3.6.1
 
 Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner needed.
  
@@ -281,6 +281,21 @@ We value your feedback. You can [submit a support request on the WordPress forum
  
 
 == Change log ==
+= 3.6.1 =
+* July 14th 2026
+* New: Google Search Console integration: connect your Google account on the new Integrations settings page to see your top Google search queries in a new statistics block.
+* New: Gutenberg support for goals: mark buttons, images and navigation links as a goal directly in the block editor, including a metadata migration for block goal/page linkage.
+* New: privacy level setting to choose how Burst recognizes visitors (cookie, private mode or device fingerprint), with a matching onboarding step.
+* New: use the country reported by edge/CDN headers as a fallback for country detection, props @knofte.
+* Improvement: increased the goal limit from one to three goals.
+* Improvement: inline search filtering in the Goals Overview dropdown.
+* Improvement: filter out spam and injection probes from on-site search terms.
+* Improvement: the monthly search-terms cleanup now only removes terms without results whose single occurrence is older than a month.
+* Improvement: added an explanation for the automatically created burst_viewer user, and excluded it from user queries and author archives.
+* Security: share-link authorization now resolves the endpoint from the dispatched REST route, so it cannot desync from the executed route via request parameters.
+* Security: improved escaping in email report tables and removed duplicate escaping.
+* Fix: leave non-filesystem session save paths (Redis, memcached) untouched instead of falling back to the uploads directory, props @knofte.
+
 = 3.6.0.1 =
 * July 2nd 2026
 * Fix: cleaned up an unused Pro-only setting that remained on some free installs. This had no effect on tracking.

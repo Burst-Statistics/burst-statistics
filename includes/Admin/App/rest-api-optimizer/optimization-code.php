@@ -96,6 +96,9 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 			str_contains( $burst_rest_route, 'otherpluginsdata' ) ||
 			str_contains( $burst_rest_route, 'plugin_actions' ) ||
 			str_contains( $burst_rest_route, 'fields/set' ) ||
+			// fields/get builds the integrations field list, which detects other
+			// plugins via their constants, so those plugins must stay loaded.
+			str_contains( $burst_rest_route, 'fields/get' ) ||
 			str_contains( $burst_rest_route, 'goals/get' )
 		) {
 			return $plugins;

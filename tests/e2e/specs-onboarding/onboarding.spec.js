@@ -28,10 +28,21 @@ test('after activation, onboarding starts', async ({ page }) => {
     //activate the plugin
     await page.goto('/wp-admin/plugins.php');
     await page.screenshot({ path: 'screenshots/010-plugins-page-start.png' });
+
+    // Dismiss any Shepherd.js guided-tour overlays that may intercept pointer events
+    // (WP core or other plugins may trigger a tour on the plugins page)
+    const shepherdCancel = page.locator('.shepherd-cancel-icon, .shepherd-footer button, [data-shepherd-step-id] button');
+    if (await shepherdCancel.count() > 0) {
+        console.log('Shepherd tour detected, dismissing...');
+        await shepherdCancel.first().click({ force: true }).catch(() => {});
+        await page.waitForTimeout(300);
+    }
+
     const activateLink = await page.$('#activate-burst-statistics');
     if ( activateLink ) {
         console.log("plugin is inactive, activate");
-        await activateLink.click();
+        // Use force:true to bypass any remaining pointer-event overlays
+        await activateLink.click({ force: true });
     }
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'screenshots/020-plugins-page-activated.png' });
@@ -65,6 +76,12 @@ test('after activation, onboarding starts', async ({ page }) => {
     await checkbox.click();
     await expect(checkbox).toHaveAttribute('data-state', 'checked');
 
+    await waitForContinueAndClick(page);
+
+    // We are now on the privacy level step. Check that 'cookie' is selected by default.
+    const privacyCookie = page.locator('#privacy_level-cookie');
+    await expect(privacyCookie).toBeChecked();
+    await page.screenshot({path: 'screenshots/065-privacy-level.png'});
     await waitForContinueAndClick(page);
 
     await page.screenshot({path: 'screenshots/070-email-signup.png'});
@@ -132,9 +149,11 @@ test('after activation, onboarding starts', async ({ page }) => {
     await page.waitForSelector('.burst-scroll');
     
     await page.screenshot({path: 'screenshots/150-live-visitors-clicked.png'});
-    // the text 'second ago' or 'seconds ago' or 'minute ago' or 'minutes ago' should be visible
-    const timeText = await page.locator('text=/\\d+ (second|seconds|minute|minutes) ago/').first();
-    await expect(timeText).toBeVisible();
+    // the text 'second ago' or 'seconds ago' or 'minute ago' or 'minutes ago' should be visible.
+    // The LiveTraffic component fetches data async and TimeAgo renders an empty string initially,
+    // so we give it extra time to load and for the React useEffect to fire.
+    const timeText = page.locator('text=/\\d+ (second|seconds|minute|minutes) ago/').first();
+    await expect(timeText).toBeVisible({ timeout: 15000 });
 
     //the value of .burst-today h2 should be greater than or equal to 1
     const todayValue = await page.locator('.burst-today h2').first().innerText();

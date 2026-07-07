@@ -32,6 +32,8 @@ class Frontend {
 		add_action( 'admin_init', [ $this, 'maybe_redirect_to_settings_page' ], 1 );
 
 		add_action( 'init', [ $this, 'register_pageviews_block' ] );
+		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_burst_block_editor_assets' ] );
+		add_filter( 'render_block', [ $this, 'render_block_filter' ], 10, 2 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_time_tracking_script' ], 0 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_tracking_script' ], 0 );
 		add_filter( 'script_loader_tag', [ $this, 'defer_burst_tracking_script' ], 10, 3 );
@@ -366,7 +368,8 @@ class Frontend {
 		}
 
 		if ( ! $this->exclude_from_tracking() ) {
-			$cookieless              = $this->get_option_bool( 'enable_cookieless_tracking' );
+			$privacy_level           = $this->get_option( 'privacy_level', 'cookie' );
+			$cookieless              = ( $privacy_level === 'fingerprint' );
 			$cookieless_text         = $cookieless ? '-cookieless' : '';
 			$prefix                  = 'burst';
 			$in_footer               = $this->get_option_bool( 'enable_turbo_mode' );
@@ -478,7 +481,7 @@ class Frontend {
 			'burst-pageviews-block-editor',
 			// Adjust the path to your JavaScript file.
 			plugins_url( 'blocks/pageviews.js', __FILE__ ),
-			[ 'wp-blocks', 'wp-element', 'wp-editor' ],
+			[ 'wp-blocks', 'wp-element', 'wp-block-editor' ],
 			filemtime( plugin_dir_path( __FILE__ ) . 'blocks/pageviews.js' ),
 			true
 		);
@@ -492,6 +495,127 @@ class Frontend {
 			]
 		);
 	}
+
+	/**
+	 * Enqueue the Burst block-editor integration script.
+	 * Adds a "Track clicks with a Burst Goal" inspector panel to supported blocks.
+	 */
+	public function enqueue_burst_block_editor_assets(): void {
+		if ( ! $this->user_can_manage() ) {
+			return;
+		}
+
+		$handle    = 'burst-block-editor';
+		$file      = 'blocks/burst-block-editor.js';
+		$src       = plugins_url( $file, __FILE__ );
+		$file_path = plugin_dir_path( __FILE__ ) . $file;
+
+		if ( ! file_exists( $file_path ) ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			$handle,
+			$src,
+			[
+				'wp-blocks',
+				'wp-element',
+				'wp-block-editor',
+				'wp-hooks',
+				'wp-components',
+				'wp-compose',
+				'wp-i18n',
+				'wp-api-fetch',
+				'wp-data',
+				'wp-plugins',
+			],
+			filemtime( $file_path ),
+			true
+		);
+
+		// Localize settings for the block editor script.
+		global $wpdb;
+		$goal_count         = 0;
+		$active_block_goals = [];
+		$goals_list         = [];
+
+		$table_name   = $wpdb->prefix . 'burst_goals';
+		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name;
+		if ( $table_exists ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$goal_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_goals WHERE status = 'active'" );
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$raw_goals = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}burst_goals", ARRAY_A );
+
+			// Batch retrieve goals that have statistics to avoid N+1 queries.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$goals_with_stats = $wpdb->get_col( "SELECT DISTINCT goal_id FROM {$wpdb->prefix}burst_goal_statistics" );
+			$goals_with_stats = is_array( $goals_with_stats ) ? array_map( 'intval', $goals_with_stats ) : [];
+
+			if ( is_array( $raw_goals ) ) {
+				foreach ( $raw_goals as $g ) {
+					$selector = $g['selector'];
+					$uid      = str_replace( [ '[data-burst-goal="', '"]' ], '', $selector );
+					$goal_id  = (int) $g['ID'];
+
+					$has_data = in_array( $goal_id, $goals_with_stats, true );
+
+					$page_id = isset( $g['page_id'] ) ? (int) $g['page_id'] : 0;
+					if ( 0 === $page_id && ! empty( $g['url'] ) && '*' !== $g['url'] ) {
+						static $url_to_post_id_cache = [];
+						if ( ! isset( $url_to_post_id_cache[ $g['url'] ] ) ) {
+							$url_to_post_id_cache[ $g['url'] ] = url_to_postid( home_url( $g['url'] ) );
+						}
+						$page_id = $url_to_post_id_cache[ $g['url'] ];
+					}
+
+					$goals_list[] = [
+						'id'                => $goal_id,
+						'title'             => $g['title'],
+						'type'              => $g['type'],
+						'status'            => $g['status'],
+						'url'               => $g['url'],
+						'conversion_metric' => $g['conversion_metric'],
+						'selector'          => $g['selector'],
+						'block_goal'        => (int) $g['block_goal'],
+						'uid'               => $uid,
+						'has_data'          => $has_data ? 1 : 0,
+						'page_id'           => $page_id,
+						'is_draft'          => ( $page_id > 0 ) ? ( get_post_status( $page_id ) !== 'publish' ) : false,
+					];
+
+					if ( (int) $g['block_goal'] === 1 && ! empty( $uid ) ) {
+						if ( $g['status'] === 'active' ) {
+							$active_block_goals[] = $uid;
+						}
+					}
+				}
+			}
+		}
+		$is_pro_valid = burst_license_is_valid();
+		$goal_limit   = $is_pro_valid ? -1 : \Burst\Frontend\Goals\Goal::LIMIT_FREE;
+
+		wp_localize_script(
+			$handle,
+			'burstBlockEditor',
+			[
+				'rest_url'               => get_rest_url(),
+				'nonce'                  => wp_create_nonce( 'wp_rest' ),
+				'burst_nonce'            => wp_create_nonce( 'burst_nonce' ),
+				'user_can_manage'        => 1,
+				'goal_count'             => $goal_count,
+				'goal_limit'             => $goal_limit,
+				'is_pro'                 => $is_pro_valid ? 1 : 0,
+				'active_block_goal_uids' => $active_block_goals,
+				'goals'                  => $goals_list,
+			]
+		);
+
+		wp_set_script_translations( $handle, 'burst-statistics', BURST_PATH . '/languages' );
+	}
+
+
 
 	/**
 	 * Get the pageviews all time for a post.
@@ -529,5 +653,35 @@ class Frontend {
 		$text = sprintf( _n( 'This page has been viewed %d time.', 'This page has been viewed %d times.', $count, 'burst-statistics' ), $count );
 
 		return '<p class="burst-pageviews">' . esc_html( $text ) . '</p>';
+	}
+
+	/**
+	 * Filter to inject data-burst-goal attribute to dynamic blocks.
+	 *
+	 * @param string $block_content The HTML content of the block.
+	 * @param array  $block         The parsed block structure.
+	 * @return string The modified block content.
+	 */
+	public function render_block_filter( string $block_content, array $block ): string {
+		if ( empty( $block['attrs']['burstGoalActive'] ) || empty( $block['attrs']['burstGoalUid'] ) ) {
+			return $block_content;
+		}
+
+		$uid = sanitize_key( $block['attrs']['burstGoalUid'] );
+
+		// Only inject if not already present in the block content.
+		if ( strpos( $block_content, 'data-burst-goal' ) !== false ) {
+			return $block_content;
+		}
+
+		// Inject data-burst-goal attribute into the first HTML tag opening.
+		$pattern = '/^<([a-zA-Z0-9\-]+)/';
+		if ( preg_match( $pattern, $block_content, $matches ) ) {
+			$tag           = $matches[1];
+			$replacement   = '<' . $tag . ' data-burst-goal="' . esc_attr( $uid ) . '"';
+			$block_content = preg_replace( $pattern, $replacement, $block_content, 1 );
+		}
+
+		return $block_content;
 	}
 }
