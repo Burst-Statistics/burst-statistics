@@ -74,11 +74,17 @@ class Admin {
 			add_action( 'burst_after_updated_goals', [ $this, 'create_js_file' ], 10, 1 );
 			add_action( 'burst_after_saved_fields', [ $this, 'create_js_file' ], 10, 1 );
 			add_action( 'burst_daily', [ $this, 'create_js_file' ] );
+			// The baked should_load_ecommerce tracking option depends on which ecommerce
+			// plugin is active, so the combined js file must be refreshed on (de)activation.
+			add_action( 'activated_plugin', [ $this, 'schedule_js_file_refresh_on_plugin_change' ] );
+			add_action( 'deactivated_plugin', [ $this, 'schedule_js_file_refresh_on_plugin_change' ] );
+			add_action( 'burst_create_js_file', [ $this, 'create_js_file' ] );
 			add_action( 'burst_daily', [ $this, 'schedule_detect_malicious_data_cron' ] );
 			add_action( 'burst_detect_malicious_data', [ $this, 'detect_malicious_data' ] );
 			add_action( 'burst_dismiss_task', [ $this, 'dismiss_malicious_data_notice' ], 10, 1 );
 			add_action( 'burst_dismiss_task', [ $this, 'dismiss_php_error_notice' ], 10, 1 );
-			add_action( 'wp_initialize_site', [ $this, 'create_js_file' ], 10, 1 );
+			// After run_table_init_hook (priority 10), so the goals table exists when the file is baked.
+			add_action( 'wp_initialize_site', [ $this, 'create_js_file_for_new_site' ], 20, 1 );
 			add_action( 'admin_init', [ $this, 'activation' ], 3, 1 );
 			add_action( 'burst_activation', [ $this, 'setup_defaults' ], 20, 1 );
 			add_action( 'burst_activation', [ $this, 'run_table_init_hook' ], 10, 1 );
@@ -800,30 +806,108 @@ class Admin {
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		$js                .= file_get_contents( BURST_PATH . "assets/js/build/burst$cookieless_text.min.js" );
-		$filename           = $this->get_frontend_js_filename();
 		$ghost_mode_enabled = apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
+		$filename           = $this->get_frontend_js_filename( $ghost_mode_enabled );
 		$upload_dir         = $this->upload_dir( 'js', $ghost_mode_enabled );
 		$file               = $upload_dir . $filename;
 
 		// copy timeme script to uploads dir if ghost mode is enabled.
+		$timeme_copy_failed = false;
 		if ( $ghost_mode_enabled ) {
 			$js                      = $this->strip_window_exports( $js );
 			$timeme_original_file    = BURST_PATH . 'assets/js/timeme/timeme.min.js';
 			$timeme_obfustcated_file = $upload_dir . 'timeme.min.js';
-			if ( ! file_exists( $timeme_obfustcated_file ) ) {
-				copy( $timeme_original_file, $timeme_obfustcated_file );
+			// also refresh an existing copy when the bundled file is newer, e.g. after a plugin update.
+			if ( ! file_exists( $timeme_obfustcated_file ) || filemtime( $timeme_original_file ) > filemtime( $timeme_obfustcated_file ) ) {
+				$timeme_copy_failed = ! copy( $timeme_original_file, $timeme_obfustcated_file );
 			}
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		global $wp_filesystem;
-		if ( WP_Filesystem() ) {
-			if ( $wp_filesystem->is_dir( $upload_dir ) && $wp_filesystem->is_writable( $upload_dir ) ) {
-				delete_option( 'burst_js_write_error' );
-				$wp_filesystem->put_contents( $file, $js, FS_CHMOD_FILE );
-			} else {
-				update_option( 'burst_js_write_error', true, false );
+		$written = false;
+		if ( WP_Filesystem() && $wp_filesystem->is_dir( $upload_dir ) && $wp_filesystem->is_writable( $upload_dir ) ) {
+			// Write to a temp file and rename it into place, so a request served
+			// mid-write never loads a truncated script. The temp name is unique per
+			// call: concurrent runs (e.g. parallel requests during an upgrade) would
+			// otherwise rename each other's temp file away mid-write.
+			$temp_file = $file . '.' . uniqid( '', true ) . '.tmp';
+			$written   = (bool) $wp_filesystem->put_contents( $temp_file, $js, FS_CHMOD_FILE );
+			if ( $written ) {
+				$written = $wp_filesystem->move( $temp_file, $file, true );
 			}
+			if ( ! $written && $wp_filesystem->exists( $temp_file ) ) {
+				$wp_filesystem->delete( $temp_file );
+			}
+		}
+
+		// Only clear the error flag once everything is actually on disk: put_contents()
+		// can fail with a writable directory (e.g. an unwritable existing file), and
+		// WP_Filesystem() itself can fail (e.g. FS_METHOD ftpext without credentials).
+		if ( $written && ! $timeme_copy_failed ) {
+			delete_option( 'burst_js_write_error' );
+			$this->delete_js_files( $ghost_mode_enabled );
+		} else {
+			update_option( 'burst_js_write_error', true, false );
+		}
+	}
+
+	/**
+	 * Delete generated tracking JS files from the uploads directory.
+	 *
+	 * @param bool|null $keep_ghost_mode When a mode is passed, that mode's files are kept and
+	 *                                   only the other mode's files are removed, so toggling
+	 *                                   ghost mode does not leave orphaned public files behind.
+	 *                                   Null removes the files of both modes.
+	 */
+	public function delete_js_files( ?bool $keep_ghost_mode = null ): void {
+		if ( ! $this->user_can_manage() ) {
+			return;
+		}
+
+		$files = [];
+		if ( $keep_ghost_mode !== true ) {
+			$files[] = $this->upload_dir( 'js', true ) . $this->get_frontend_js_filename( true );
+			$files[] = $this->upload_dir( 'js', true ) . 'timeme.min.js';
+		}
+		if ( $keep_ghost_mode !== false ) {
+			$files[] = $this->upload_dir( 'js' ) . $this->get_frontend_js_filename( false );
+		}
+		foreach ( $files as $file ) {
+			if ( file_exists( $file ) ) {
+				wp_delete_file( $file );
+			}
+		}
+	}
+
+	/**
+	 * Create the js file for a newly created multisite site, in the context of that site.
+	 *
+	 * @param \WP_Site $new_site The site being initialized.
+	 */
+	public function create_js_file_for_new_site( \WP_Site $new_site ): void {
+		switch_to_blog( (int) $new_site->blog_id );
+		$this->create_js_file();
+		restore_current_blog();
+	}
+
+	/**
+	 * Schedule a combined js file refresh when an ecommerce integration plugin is (de)activated.
+	 *
+	 * Deferred to a single cron event on purpose: during the (de)activation request itself the
+	 * baked should_load_ecommerce value would be stale — the ecommerce tracking filter was
+	 * registered from the pre-change plugin state, and plugin_is_active() checks constants
+	 * that are still loaded while a plugin is being deactivated.
+	 *
+	 * @param string $plugin Plugin file as passed by the (de)activated_plugin hooks.
+	 */
+	public function schedule_js_file_refresh_on_plugin_change( string $plugin ): void {
+		if ( ! \Burst\burst_loader()->integrations->is_ecommerce_integration_plugin( $plugin ) ) {
+			return;
+		}
+
+		if ( ! wp_next_scheduled( 'burst_create_js_file' ) ) {
+			wp_schedule_single_event( time() + 10, 'burst_create_js_file' );
 		}
 	}
 
@@ -1244,12 +1328,16 @@ class Admin {
 					foreach ( $sites as $site ) {
 						switch_to_blog( (int) $site->blog_id );
 						$this->delete_all_burst_data();
+						// Before delete_all_burst_configuration(), which removes the capability its guard checks.
+						$this->delete_js_files();
 						$this->delete_all_burst_configuration();
 						restore_current_blog();
 					}
 				}
 			}
 			$this->delete_all_burst_data();
+			// Before delete_all_burst_configuration(), which removes the capability its guard checks.
+			$this->delete_js_files();
 			$this->delete_all_burst_configuration();
 			\Burst\burst_clear_scheduled_hooks();
 			$this->delete_all_burst_cron_events();

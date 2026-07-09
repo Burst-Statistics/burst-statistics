@@ -14,7 +14,11 @@ defined( 'ABSPATH' ) || die( 'you do not have access to this page!' );
  * - status: Id of the short description of what the integration does, shown in the
  *   settings UI. Mapped to a translatable label at display time (see
  *   Integrations_Settings::translate_integration_status()).
- * - wporg_slug: Override for the WordPress.org plugin slug used to fetch the plugin icon.
+ * - wporg_slug: WordPress.org plugin slug used to fetch the plugin icon. Only set this
+ *   for plugins that are actually hosted in the wp.org repository; premium-only plugins
+ *   omit it so no icon request is made for them.
+ * - wporg_icon: Icon file name on the wp.org CDN, for plugins whose icon is not the
+ *   default icon-128x128.png (e.g. a .jpg or .gif variant).
  */
 return [
 	// Consent plugins.
@@ -23,6 +27,7 @@ return [
 		'label'                => 'Complianz GDPR/CCPA',
 		'category'             => 'consent',
 		'status'               => 'enhances_consent_compatibility',
+		'wporg_slug'           => 'complianz-gdpr',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [ 'frontend.php' ],
@@ -33,6 +38,7 @@ return [
 		'label'                => 'Yoast Duplicate Post',
 		'category'             => 'other',
 		'status'               => 'prevents_duplicate_tracking_data',
+		'wporg_slug'           => 'duplicate-post',
 		'php_scripts'          => [
 			'admin_scripts'    => [ 'admin.php' ],
 			'frontend_scripts' => [],
@@ -44,6 +50,8 @@ return [
 		'label'                => 'Elementor Website Builder',
 		'category'             => 'page_builders',
 		'status'               => 'tracks_form_and_popup_submissions',
+		'wporg_slug'           => 'elementor',
+		'wporg_icon'           => 'icon-128x128.gif',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -69,6 +77,7 @@ return [
 		'category'                   => 'ecommerce',
 		'status'                     => 'tracks_sales_and_revenue',
 		'load_ecommerce_integration' => true,
+		'wporg_slug'                 => 'woocommerce',
 		'php_scripts'                => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [ 'frontend.php' ],
@@ -107,6 +116,7 @@ return [
 		'label'                => 'WooCommerce Payments',
 		'category'             => 'ecommerce',
 		'status'               => 'tracks_woocommerce_payments_transactions',
+		'wporg_slug'           => 'woocommerce-payments',
 		'required_plugins'     => [
 			'woocommerce',
 		],
@@ -121,6 +131,7 @@ return [
 		'category'                   => 'ecommerce',
 		'status'                     => 'tracks_sales_and_revenue',
 		'load_ecommerce_integration' => true,
+		'wporg_slug'                 => 'easy-digital-downloads',
 		'php_scripts'                => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [ 'frontend.php' ],
@@ -203,6 +214,7 @@ return [
 		'category'             => 'ecommerce',
 		'status'               => 'tracks_donations',
 		'wporg_slug'           => 'give',
+		'wporg_icon'           => 'icon-128x128.jpg',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -231,6 +243,7 @@ return [
 		'label'                => 'Contact Form 7',
 		'category'             => 'forms',
 		'status'               => 'tracks_form_submissions',
+		'wporg_slug'           => 'contact-form-7',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -254,6 +267,7 @@ return [
 		'label'                => 'WPForms',
 		'category'             => 'forms',
 		'status'               => 'tracks_form_submissions',
+		'wporg_slug'           => 'wpforms-lite',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -277,6 +291,7 @@ return [
 		'label'                => 'Fluent Forms',
 		'category'             => 'forms',
 		'status'               => 'tracks_form_submissions',
+		'wporg_slug'           => 'fluentform',
 		'goals'                =>
 			[
 				[
@@ -296,6 +311,7 @@ return [
 		'label'                => 'Happyforms',
 		'category'             => 'forms',
 		'status'               => 'tracks_form_submissions',
+		'wporg_slug'           => 'happyforms',
 		'goals'                =>
 			[
 				[
@@ -310,6 +326,8 @@ return [
 		'label'                => 'WS Form',
 		'category'             => 'forms',
 		'status'               => 'tracks_form_submissions',
+		'wporg_slug'           => 'ws-form',
+		'wporg_icon'           => 'icon-256x256.jpg',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -351,6 +369,7 @@ return [
 		'label'                => 'Formidable Forms',
 		'category'             => 'forms',
 		'status'               => 'tracks_form_submissions',
+		'wporg_slug'           => 'formidable',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],
@@ -369,6 +388,7 @@ return [
 		'label'                => 'Ninja Forms',
 		'category'             => 'forms',
 		'status'               => 'tracks_form_submissions',
+		'wporg_slug'           => 'ninja-forms',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [],

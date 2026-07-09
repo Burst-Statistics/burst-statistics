@@ -449,7 +449,7 @@ class Sync {
 	 * @param array $map Datatable id => tab slug.
 	 */
 	public function register_datatable_tab( array $map ): array {
-		$map['search_console'] = 'statistics';
+		$map['search_console'] = 'sources';
 		return $map;
 	}
 

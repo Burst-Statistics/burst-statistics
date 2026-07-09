@@ -14,6 +14,7 @@ import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import useLicenseData from '@/hooks/useLicenseData';
 import { shouldLoadRoute } from '@/utils/helper';
+import SearchConsoleBlock from '@/components/Statistics/SearchConsoleBlock';
 
 
 export const Route = createFileRoute( '/sources' )({
@@ -97,6 +98,10 @@ function Sources() {
 				) : (
 					<CampaignsUpsellBlock />
 				) }
+			</ErrorBoundary>
+
+			<ErrorBoundary>
+				<SearchConsoleBlock />
 			</ErrorBoundary>
 		</>
 	);
