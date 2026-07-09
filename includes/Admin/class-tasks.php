@@ -64,6 +64,7 @@ class Tasks {
 		if ( ! in_array( $task_id, $current_tasks, true ) ) {
 			$current_tasks[] = sanitize_title( $task_id );
 			update_option( 'burst_tasks', $current_tasks, false );
+			delete_transient( 'burst_plusone_count' );
 		}
 	}
 

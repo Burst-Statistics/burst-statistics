@@ -98,7 +98,6 @@ class Admin {
 			add_action( 'burst_scheduled_task_fix_malicious_data_removal', [ $this, 'clean_malicious_data' ] );
 			add_action( 'burst_daily', [ $this, 'test_database_tables' ] );
 			add_action( 'burst_attempt_database_fix', [ $this, 'test_database_tables' ] );
-			add_action( 'burst_weekly', [ $this, 'long_term_user_deal' ] );
 			add_action( 'burst_weekly', [ $this, 'cleanup_bf_dismissed_tasks' ] );
 			add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
 			add_action( 'burst_daily', [ $this, 'cleanup_orphaned_block_goals' ] );
@@ -364,26 +363,6 @@ class Admin {
 		} else {
 			delete_option( 'burst_missing_tables' );
 			delete_option( 'burst_attempt_database_fix' );
-		}
-	}
-
-	/**
-	 * Users who are using the plugin for at least a year get a one time trial offer.
-	 */
-	public function long_term_user_deal(): void {
-		if ( ! defined( 'BURST_FREE' ) ) {
-			return;
-		}
-
-		$activated = get_option( 'burst_activation_time', 0 );
-		if ( $activated === 0 ) {
-			return;
-		}
-
-		$one_year_ago = time() - YEAR_IN_SECONDS;
-		if ( $activated > $one_year_ago && ! get_option( 'burst_trial_offered' ) ) {
-			\Burst\burst_loader()->admin->tasks->add_task( 'trial_offer_loyal_users' );
-			update_option( 'burst_trial_offered', true, false );
 		}
 	}
 
