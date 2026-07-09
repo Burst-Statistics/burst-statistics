@@ -187,9 +187,14 @@ class Integrations_Settings {
 				$requires_label = $all_integrations[ $requires ]['label'];
 			}
 
-			// Build the wp.org icon URL, respecting an optional override slug.
-			$wporg_slug = $details['wporg_slug'] ?? $slug;
-			$icon_url   = 'https://ps.w.org/' . rawurlencode( $wporg_slug ) . '/assets/icon-128x128.png';
+			// Build the wp.org icon URL. Only integrations with an explicit wporg_slug are
+			// hosted on wp.org; premium-only plugins get no URL, so the browser never
+			// fires a request that can only 404. React falls back to a generic icon.
+			$icon_url = '';
+			if ( ! empty( $details['wporg_slug'] ) ) {
+				$icon_file = $details['wporg_icon'] ?? 'icon-128x128.png';
+				$icon_url  = 'https://ps.w.org/' . rawurlencode( $details['wporg_slug'] ) . '/assets/' . $icon_file;
+			}
 
 			// Determine whether the parent integration is currently enabled.
 			// React uses this to set the correct initial disabled state before the parent

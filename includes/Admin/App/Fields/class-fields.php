@@ -70,7 +70,6 @@ class Fields {
 				}
 				if ( $field['id'] === 'ghost_mode' || $field['id'] === 'combine_vars_and_script' ) {
 					unset( $fields[ $key ] );
-					break;
 				}
 			}
 			$fields = array_values( $fields );

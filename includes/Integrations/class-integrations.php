@@ -209,6 +209,18 @@ class Integrations {
 	}
 
 	/**
+	 * Check if a plugin file (as passed by the activated_plugin / deactivated_plugin hooks,
+	 * e.g. "woocommerce/woocommerce.php") is one of the ecommerce integrations.
+	 */
+	public function is_ecommerce_integration_plugin( string $plugin_file ): bool {
+		$slug = dirname( $plugin_file );
+		if ( $slug === '.' ) {
+			$slug = basename( $plugin_file, '.php' );
+		}
+		return ! empty( $this->integrations[ $slug ]['load_ecommerce_integration'] );
+	}
+
+	/**
 	 * Check if a specific integration is enabled by the user.
 	 *
 	 * Returns false when the integration itself is toggled off OR when any of its

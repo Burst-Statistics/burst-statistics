@@ -23,14 +23,31 @@ type BlockHeadingProps = {
  * @param {boolean}          props.isReport         - Whether this is a report view.
  * @param {number}           props.reportBlockIndex - Index of the block in the report's content array (for report views only).
  * @param {boolean}          props.isLoading        - Whether the block is currently loading.
+ * @param {boolean}          props.pro              - Whether this block is a Pro feature.
+ * @param {string}           props.proId            - Optional feature id for tier-specific Pro checks.
  * @return {JSX.Element} The block heading component.
  */
 export const BlockHeading = memo( ({ title, subtitle = '', controls, className = '', isReport = false, reportBlockIndex, isLoading = false }: BlockHeadingProps ) => {
 	if ( isReport ) {
-		return <BlockHeadingReport title={title} controls={controls} className={className} reportBlockIndex={reportBlockIndex} />;
+		return (
+			<BlockHeadingReport
+				title={title}
+				controls={controls}
+				className={className}
+				reportBlockIndex={reportBlockIndex}
+			/>
+		);
 	}
 
-	return <BlockHeadingStandard title={title} subtitle={subtitle} controls={controls} className={className} isLoading={isLoading} />;
+	return (
+		<BlockHeadingStandard
+			title={title}
+			subtitle={subtitle}
+			controls={controls}
+			className={className}
+			isLoading={isLoading}
+		/>
+	);
 });
 
 BlockHeading.displayName = 'BlockHeading';
