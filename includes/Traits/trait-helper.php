@@ -36,10 +36,16 @@ trait Helper {
 
 	/**
 	 * Get the frontend JS filename, with optional name obfuscation.
+	 *
+	 * @param bool|null $obfuscate Whether to use the obfuscated (ghost mode) filename. Pass the
+	 *                             caller's already resolved decision to keep filename and
+	 *                             directory in sync; null resolves it from the option.
 	 */
-	protected function get_frontend_js_filename(): string {
-		$obfuscate = apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
-		$filename  = 'burst';
+	protected function get_frontend_js_filename( ?bool $obfuscate = null ): string {
+		if ( $obfuscate === null ) {
+			$obfuscate = apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
+		}
+		$filename = 'burst';
 		if ( $obfuscate ) {
 			$filename = substr( hash( 'sha256', 'burst-' . get_site_url() ), 0, 8 );
 		}

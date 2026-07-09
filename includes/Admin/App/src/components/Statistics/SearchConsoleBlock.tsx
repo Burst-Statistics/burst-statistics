@@ -39,9 +39,10 @@ const SearchConsoleBlock = (): JSX.Element => {
 			__( 'Checking your Google Search Console properties…', 'burst-statistics' );
 
 		return (
-			<Block>
+			<Block className='row-span-2 overflow-hidden @xl:col-span-6'>
 				<BlockHeading title={ __( 'Google Searches', 'burst-statistics' ) } />
-				<BlockContent>
+
+				<BlockContent className='flex-col items-center justify-center flex'>
 					<p className="py-6 text-center text-sm text-text-gray-light">{ message }</p>
 				</BlockContent>
 			</Block>
@@ -54,6 +55,7 @@ const SearchConsoleBlock = (): JSX.Element => {
 		<OverlayBlock
 			title={ __( 'Google Searches', 'burst-statistics' ) }
 			blurLabel={ __( 'Google Search queries', 'burst-statistics' ) }
+			className='row-span-2 overflow-hidden @xl:col-span-6'
 		>
 			<ActivationCopy type="search_console" enabled={ enabled } />
 		</OverlayBlock>

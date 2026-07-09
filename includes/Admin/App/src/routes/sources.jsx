@@ -14,6 +14,7 @@ import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import useLicenseData from '@/hooks/useLicenseData';
 import { shouldLoadRoute } from '@/utils/helper';
+import SearchConsoleBlock from '@/components/Statistics/SearchConsoleBlock';
 
 
 export const Route = createFileRoute( '/sources' )({
@@ -41,7 +42,7 @@ export const Route = createFileRoute( '/sources' )({
 function CampaignsUpsellBlock() {
 	return (
 		<Block className="relative min-h-[320px] overflow-hidden">
-			<BlockHeading title={ __( 'Campaigns', 'burst-statistics' ) } />
+			<BlockHeading title={ __( 'Campaigns', 'burst-statistics' ) } pro={ true } />
 			<BlockContent className="px-0 py-0 overflow-y-auto">
 				<div className="flex h-48 flex-col items-center justify-center p-4 text-center text-sm text-gray-400 select-none blur-[1px]">
 					<p className="font-medium text-gray-500 mb-1">
@@ -97,6 +98,10 @@ function Sources() {
 				) : (
 					<CampaignsUpsellBlock />
 				) }
+			</ErrorBoundary>
+
+			<ErrorBoundary>
+				<SearchConsoleBlock />
 			</ErrorBoundary>
 		</>
 	);

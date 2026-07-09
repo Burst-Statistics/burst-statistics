@@ -26,6 +26,11 @@ class Frontend {
 	public Frontend_Statistics $statistics;
 
 	/**
+	 * Memoized result of uses_obfuscated_combined_file().
+	 */
+	private ?bool $uses_obfuscated_combined_file = null;
+
+	/**
 	 * Constructor
 	 */
 	public function init(): void {
@@ -308,22 +313,48 @@ class Frontend {
 	}
 
 	/**
+	 * Check if the tracking script is served as the combined file under an obfuscated (ghost mode) name.
+	 *
+	 * Memoized, so the timeme and tracking script enqueues share one decision and their
+	 * handle prefixes can never diverge within a request: the tracking script declares
+	 * its timeme dependency as "{prefix}-timeme", so a diverging prefix would point to an
+	 * unregistered handle and WordPress would silently drop the tracking script.
+	 */
+	private function uses_obfuscated_combined_file(): bool {
+		if ( $this->uses_obfuscated_combined_file !== null ) {
+			return $this->uses_obfuscated_combined_file;
+		}
+
+		$ghost_mode_enabled = (bool) apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
+		if ( ! $ghost_mode_enabled || ! $this->get_option_bool( 'combine_vars_and_script', true ) ) {
+			$this->uses_obfuscated_combined_file = false;
+			return $this->uses_obfuscated_combined_file;
+		}
+
+		$file                                = $this->upload_dir( 'js', true ) . $this->get_frontend_js_filename( true );
+		$this->uses_obfuscated_combined_file = file_exists( $file );
+		return $this->uses_obfuscated_combined_file;
+	}
+
+	/**
 	 * Enqueue some assets
 	 */
 	public function enqueue_burst_time_tracking_script( string $hook ): void {
 		// fix phpcs warning.
 		unset( $hook );
-		$file               = 'assets/js/timeme/timeme.min.js';
-		$src                = BURST_URL . $file;
-		$path               = BURST_PATH . $file;
-		$prefix             = 'burst';
-		$ghost_mode_enabled = apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
-		if ( $ghost_mode_enabled ) {
+		$file   = 'assets/js/timeme/timeme.min.js';
+		$src    = BURST_URL . $file;
+		$path   = BURST_PATH . $file;
+		$prefix = 'burst';
+		if ( $this->uses_obfuscated_combined_file() ) {
 			$prefix      = 'b';
-			$upload_url  = $this->upload_url( 'js', true );
 			$upload_path = $this->upload_dir( 'js', true );
-			$src         = $upload_url . 'timeme.min.js';
-			$path        = $upload_path . 'timeme.min.js';
+			// Fall back to the bundled file if the uploads copy is missing, so the src
+			// stays loadable while the handle keeps matching the tracking script.
+			if ( file_exists( $upload_path . 'timeme.min.js' ) ) {
+				$src  = $this->upload_url( 'js', true ) . 'timeme.min.js';
+				$path = $upload_path . 'timeme.min.js';
+			}
 		}
 		if ( ! $this->exclude_from_tracking() ) {
 			wp_enqueue_script(
@@ -378,14 +409,15 @@ class Frontend {
 			$file_path               = BURST_PATH . "assets/js/build/burst$cookieless_text.min.js";
 			$add_localize_script     = true;
 			if ( $combine_vars_and_script ) {
-				$ghost_mode_enabled = (bool) apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
-				$filename           = $this->get_frontend_js_filename();
-				$root               = apply_filters( 'burst_obfuscate_filename', $ghost_mode_enabled );
-				$upload_url         = $this->upload_url( 'js', $root );
-				$upload_path        = $this->upload_dir( 'js', $root );
+				$ghost_mode_enabled = $this->uses_obfuscated_combined_file();
+				$filename           = $this->get_frontend_js_filename( $ghost_mode_enabled );
+				$upload_url         = $this->upload_url( 'js', $ghost_mode_enabled );
+				$upload_path        = $this->upload_dir( 'js', $ghost_mode_enabled );
 
-				// Only use the written file if it exists.
-				if ( file_exists( $upload_path . $filename ) ) {
+				// Only use the written file if it exists. For ghost mode the existence check
+				// is part of uses_obfuscated_combined_file(), so the prefix always matches
+				// the timeme handle registered in enqueue_burst_time_tracking_script().
+				if ( $ghost_mode_enabled || file_exists( $upload_path . $filename ) ) {
 					$prefix              = $ghost_mode_enabled ? 'b' : 'burst';
 					$file_url            = $upload_url . $filename;
 					$file_path           = $upload_path . $filename;

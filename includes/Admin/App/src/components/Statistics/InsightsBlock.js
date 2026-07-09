@@ -1,9 +1,10 @@
 import { __ } from '@wordpress/i18n';
+import { useEffect } from 'react';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import InsightsHeader from './InsightsHeader';
-import { useInsightsStore } from '../../store/useInsightsStore';
+import { useInsightsStore, groupByFitsRange } from '../../store/useInsightsStore';
 import { useCompareStore } from '../../store/useCompareStore';
 import InsightsGraph from './InsightsGraph';
 import { useQuery } from '@tanstack/react-query';
@@ -43,7 +44,10 @@ function InsightsLegend({ datasets, loading }) {
 						__( 'Year over year', 'burst-statistics' ) :
 						__( 'Previous period', 'burst-statistics' );
 				} else {
-					label = METRIC_LABELS[ metricKey ] ?? metricKey;
+
+					// While loading, placeholder datasets carry internal metric
+					// keys (e.g. 'placeholder_a') that should never be shown.
+					label = METRIC_LABELS[ metricKey ] ?? ( loading ? '…' : metricKey );
 				}
 
 				return (
@@ -90,7 +94,21 @@ const InsightsBlock = (props) => {
 
 	const metrics = useInsightsStore( ( state ) => state.getMetrics() );
 	const groupBy = useInsightsStore( ( state ) => state.groupBy );
+	const setGroupBy = useInsightsStore( ( state ) => state.setGroupBy );
 	const compareMode = useCompareStore( ( state ) => state.compareMode );
+
+	// When the date range shrinks below the selected grouping (e.g. 'month'
+	// while viewing last 7 days) the chart would collapse into a single point,
+	// so fall back to 'auto'. The query below uses the effective value right
+	// away; the effect also resets the store so the popover reflects it.
+	const groupByFits = groupByFitsRange( groupBy, startDate, endDate );
+	const effectiveGroupBy = groupByFits ? groupBy : 'auto';
+
+	useEffect( () => {
+		if ( ! groupByFits ) {
+			setGroupBy( 'auto' );
+		}
+	}, [ groupByFits, setGroupBy ]);
 
 	// Pass compare_mode only when a single metric is active — comparison is not
 	// meaningful when multiple series are already overlaid on the chart.
@@ -102,12 +120,12 @@ const InsightsBlock = (props) => {
 		// Forward the user's grouping choice. 'auto' is the backend default but
 		// we send it explicitly so changes from the popover always invalidate
 		// the cached query above.
-		group_by: groupBy,
+		group_by: effectiveGroupBy,
 		...( isSingleMetric && { compare_mode: compareMode })
 	};
 
 	const query = useQuery({
-		queryKey: [ 'insights', metrics, startDate, endDate, compareMode, groupBy, args ],
+		queryKey: [ 'insights', metrics, startDate, endDate, compareMode, effectiveGroupBy, args ],
 		queryFn: () => getInsightsData({ startDate, endDate, range, args }),
 		placeholderData: {
 			timestamps: [ 0, 0, 0, 0, 0, 0, 0 ],

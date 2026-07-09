@@ -102,7 +102,7 @@ const SearchTermsBlock = memo( ({ className = '' }: SearchTermsBlockProps ) => {
 									<Icon name="check" size={11} color="green" strokeWidth={2.5} />
 								</Checkbox.Indicator>
 							</Checkbox.Root>
-							{__( 'No results only', 'burst-statistics' )}
+							{__( 'Without results', 'burst-statistics' )}
 						</label>
 					</div>
 				}

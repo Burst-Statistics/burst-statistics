@@ -982,7 +982,7 @@ class App {
 			return;
 		}
 
-		if ( get_transient( 'burst_running_upgrade_process' ) ) {
+		if ( $this->upgrade_lock_active() ) {
 			self::error_log( 'Database installation in progress, delaying REST API response with 2 seconds.' );
 			// sleep for 0.5 seconds to allow the database installation to finish.
 			usleep( 500000 );

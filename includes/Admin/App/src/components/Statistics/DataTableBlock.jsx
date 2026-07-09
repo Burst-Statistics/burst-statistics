@@ -1428,6 +1428,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				isReport={isReport}
 				reportBlockIndex={index}
 				isLoading={isLoading}
+				pro={configDetails?.pro}
 				title={
 					<DataTableSelect
 						value={selectedConfig}
