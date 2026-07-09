@@ -265,55 +265,6 @@ trait Database_Helper {
 	}
 
 	/**
-	 * Acquire the table install/upgrade lock, following the WP_Upgrader::create_lock()
-	 * pattern: the unique key on option_name makes the INSERT atomic, so exactly one
-	 * of several concurrent requests wins. A get/set transient check is not atomic —
-	 * parallel requests would both pass it and run dbDelta/ALTER concurrently,
-	 * filling debug.log with duplicate column/key errors.
-	 *
-	 * @return bool True when the lock was acquired (or taken over from a crashed run).
-	 */
-	protected function acquire_upgrade_lock(): bool {
-		global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- add_option() is not atomic (ON DUPLICATE KEY UPDATE), INSERT IGNORE is.
-		$acquired = $wpdb->query(
-			$wpdb->prepare(
-				"INSERT IGNORE INTO `{$wpdb->options}` ( `option_name`, `option_value`, `autoload` ) VALUES (%s, %s, 'off')",
-				'burst_upgrade_process_lock',
-				(string) time()
-			)
-		);
-
-		if ( $acquired ) {
-			return true;
-		}
-
-		if ( $this->upgrade_lock_active() ) {
-			return false;
-		}
-
-		// Stale lock from a crashed run: take it over.
-		update_option( 'burst_upgrade_process_lock', (string) time(), false );
-		return true;
-	}
-
-	/**
-	 * Whether a request currently holds a non-stale install/upgrade lock. A lock
-	 * older than a minute is considered left behind by a crashed run.
-	 */
-	protected function upgrade_lock_active(): bool {
-		$locked_at = (int) get_option( 'burst_upgrade_process_lock' );
-		return $locked_at > time() - MINUTE_IN_SECONDS;
-	}
-
-	/**
-	 * Release the table install/upgrade lock.
-	 */
-	protected function release_upgrade_lock(): void {
-		delete_option( 'burst_upgrade_process_lock' );
-	}
-
-	/**
 	 * Normalize an external URL for consistent storage and lookup.
 	 *
 	 * - Strips fragments (#…) before sanitization.

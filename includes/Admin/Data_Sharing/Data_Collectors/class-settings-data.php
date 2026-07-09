@@ -161,8 +161,7 @@ class Settings_Data extends Data_Collector {
 
 		return [
 			'enable_turbo_mode'                   => $this->get_burst_setting_bool( 'enable_turbo_mode' ),
-			'privacy_level'                       => $this->get_option( 'privacy_level', 'cookie' ),
-			'enable_cookieless_tracking'          => $this->get_option( 'privacy_level', 'cookie' ) !== 'cookie',
+			'enable_cookieless_tracking'          => $this->get_burst_setting_bool( 'enable_cookieless_tracking' ),
 			'enable_do_not_track'                 => $this->get_burst_setting_bool( 'enable_do_not_track' ),
 			'dismiss_non_error_notices'           => $this->get_burst_setting_bool( 'dismiss_non_error_notices' ),
 			'filtering_by_domain'                 => $this->get_burst_setting_bool( 'filtering_by_domain' ),
@@ -199,7 +198,6 @@ class Settings_Data extends Data_Collector {
 			'burst_license_status'                => $license_status,
 			'enable_mainwp_integration'           => $this->get_burst_setting_bool( 'enable_mainwp_integration' ),
 			'enable_abilities_api'                => $this->get_burst_setting_bool( 'enable_abilities_api' ),
-			'burst_headless_domain'               => defined( 'BURST_HEADLESS_DOMAIN' ),
 		];
 	}
 

@@ -6,15 +6,10 @@ let viewportGoals = [];
 const scrollListeners = new Map();
 
 const burst_goals_setup = () => {
-  // Filter out goals that don't match the current path/page
-  burst.goals.active = burst.goals.active.filter((goal) => {
-    // 1. If page_id is set and matches
-    if (goal.page_id && burst.options.page_id && parseInt(goal.page_id, 10) === parseInt(burst.options.page_id, 10)) {
-      return true;
-    }
-    // 2. Fall back to URL matching
-    return !goal.url || goal.url === window.location.pathname || goal.url === '*';
-  });
+  // Filter out goals that don't match the current path
+  burst.goals.active = burst.goals.active.filter(
+      (goal) => !goal.url || goal.url === window.location.pathname || goal.url === '*'
+  );
 
   // Loop through goals and setup event listeners
   burst.goals.active.forEach((goal) => {

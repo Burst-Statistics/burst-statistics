@@ -9,6 +9,7 @@ import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import useLicenseData from '@/hooks/useLicenseData';
 import UnauthorizedModal from '@/components/Common/UnauthorizedModal';
 import SubscriptionsBlock from '@/components/Subscriptions/SubscriptionsBlock';
+import SubscriptionsProgressBar from '@/components/Subscriptions/SubscriptionsProgressBar';
 import SubscriptionsLargeSiteNotice from '@/components/Subscriptions/SubscriptionsLargeSiteNotice';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import { RevenueChartBlock } from '@/components/Subscriptions/RevenueChart';
@@ -17,6 +18,7 @@ import { DistributionBlock } from '@/components/Subscriptions/DistributionChart'
 import getSubscriptionsProgressData from '@/api/getSubscriptionsProgressData';
 import { shouldLoadRoute } from '@/utils/helper';
 import NotFoundModal from '@/components/Common/NotFoundModal';
+import useShareableLinkStore from '@/store/useShareableLinkStore';
 
 export const Route = createFileRoute( '/subscriptions' )({
 	notFoundComponent: NotFoundModal,
@@ -77,11 +79,11 @@ function SubscriptionsComponent() {
 
 	// Use the hook inside the component, not in the loader
 	const { isLicenseValidFor, isFetching } = useLicenseData();
+	const isShareableLinkViewer = useShareableLinkStore( state => state.isShareableLinkViewer );
 
-	// Shared queryKey with SubscriptionsLargeSiteNotice dedupes the fetch.
+	// Shared queryKey with SubscriptionsProgressBar dedupes the fetch.
 	// Polls every 60s while backfill is still running, then stops so open
-	// dashboard tabs do not keep hitting the endpoint forever. Polling also
-	// pauses while the tab is hidden and resumes when it becomes visible.
+	// dashboard tabs do not keep hitting the endpoint forever.
 	const progressQuery = useQuery({
 		queryKey: [ 'subscriptions-backfill-progress' ],
 		queryFn: () => getSubscriptionsProgressData(),
@@ -95,7 +97,7 @@ function SubscriptionsComponent() {
 			}
 			return 60000;
 		},
-		refetchIntervalInBackground: false
+		refetchIntervalInBackground: true
 	});
 
 	if ( isFetching ) {
@@ -120,7 +122,8 @@ function SubscriptionsComponent() {
 
 	// Block data blocks until the gate decision is known. Summary / chart /
 	// product are cached-only on the server and would render empty cards
-	// before backfill finishes.
+	// before backfill finishes. On query error we keep the gate engaged
+	// rather than fire heavy REST calls in parallel.
 	const isProgressLoading = undefined === progressQuery.data && ! progressQuery.isError;
 
 	if ( isProgressLoading ) {
@@ -132,10 +135,7 @@ function SubscriptionsComponent() {
 	}
 
 	const progressData = progressQuery.data;
-
-	// Trust the last successful payload during a fetch error — flipping the
-	// gate on error would swap a working dashboard for the backfill notice.
-	const backfillCompleted = !! progressData?.backfill_completed;
+	const backfillCompleted = ! progressQuery.isError && !! progressData?.backfill_completed;
 	const hasProviders = !! progressData?.has_providers;
 
 	if ( hasProviders && ! backfillCompleted ) {
@@ -150,6 +150,7 @@ function SubscriptionsComponent() {
 	return (
 		<>
 			<PageHeader />
+			{ ! isShareableLinkViewer && <SubscriptionsProgressBar /> }
 
 			<ErrorBoundary>
 				<RevenueChartBlock />

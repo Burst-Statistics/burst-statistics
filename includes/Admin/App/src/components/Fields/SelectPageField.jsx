@@ -6,7 +6,6 @@ import debounce from 'lodash/debounce';
 import usePostsStore from '../../store/usePostsStore';
 import AsyncSelectInput from '@/components/Inputs/AsyncSelectInput';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
-import { __ } from '@wordpress/i18n';
 
 /**
  * SelectField component
@@ -40,8 +39,6 @@ const SelectPageField =
 			callback( data );
 		}, 500 );
 
-		const selectValue = field?.value || '';
-
 		return (
 			<FieldWrapper
 				label={label}
@@ -70,18 +67,13 @@ const SelectPageField =
 					}}
 					isLoading={posts.isFetching}
 					name="selectPage"
-					value={selectValue}
+					value={field?.value}
 					maxSelections={maxSelections}
-					defaultInputValue={selectValue}
+					defaultInputValue={field?.value}
 					defaultOptions={posts.data || []}
 					loadOptions={loadOptions}
 					components={{ Option: OptionLayout }}
 				/>
-				{props.goal && props.goal.is_draft && (
-					<p className="mt-1.5 text-xs text-text-gray-light">
-						{__( 'The post is in draft, once it is published the url will be updated here.', 'burst-statistics' )}
-					</p>
-				)}
 			</FieldWrapper>
 		);
 	};

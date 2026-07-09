@@ -86,54 +86,6 @@ return [
 		],
 	],
 	[
-		'id'             => 'privacy_level',
-		'type'           => 'settings',
-		'first_run_only' => true,
-		'title'          => __( 'How Burst recognizes visitors', 'burst-statistics' ),
-		'subtitle'       => __( 'This decides how repeat visits are counted across your site.', 'burst-statistics' ),
-		'fields'         => [
-			[
-				'id'      => 'privacy_level',
-				'type'    => 'radio',
-				'label'   => '',
-				'default' => 'cookie',
-				'options' => [
-					'cookie'       => [
-						'label'       => __( 'Cookie', 'burst-statistics' ),
-						'context'     => __( 'Most accurate returning-visitor data', 'burst-statistics' ),
-						// translators: %s: Privacy level (e.g. good, strongest, medium).
-						'badge'       => __( 'Privacy %s', 'burst-statistics' ),
-						'badge_level' => __( 'good', 'burst-statistics' ),
-						'badge_color' => 'green',
-						'icon'        => 'cookie',
-					],
-					'private_mode' => [
-						'label'       => __( 'Private mode', 'burst-statistics' ),
-						'context'     => __( 'No cookie, no fingerprint. Does not recognize returning visitors across days.', 'burst-statistics' ),
-						// translators: %s: Privacy level (e.g. good, strongest, medium).
-						'badge'       => __( 'Privacy %s', 'burst-statistics' ),
-						'badge_level' => __( 'strongest', 'burst-statistics' ),
-						'badge_color' => 'blue',
-						'icon'        => 'security',
-					],
-					'fingerprint'  => [
-						'label'       => __( 'Device fingerprint', 'burst-statistics' ),
-						'context'     => __( 'No cookie, persistent recognition', 'burst-statistics' ),
-						// translators: %s: Privacy level (e.g. good, strongest, medium).
-						'badge'       => __( 'Privacy %s', 'burst-statistics' ),
-						'badge_level' => __( 'medium', 'burst-statistics' ),
-						'badge_color' => 'gray',
-						'icon'        => 'fingerprint',
-					],
-				],
-			],
-		],
-		'button'         => [
-			'id'    => 'save',
-			'label' => __( 'Save and continue', 'burst-statistics' ),
-		],
-	],
-	[
 		'id'             => 'email',
 		'type'           => 'email',
 		'first_run_only' => true,

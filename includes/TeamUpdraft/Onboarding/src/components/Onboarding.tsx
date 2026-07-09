@@ -1,343 +1,284 @@
-import { useEffect, memo, useMemo, useState } from '@wordpress/element';
+import {useEffect, memo, useMemo, useState} from "@wordpress/element";
 import type { FC } from '@wordpress/element';
-import Modal from './Modal/Modal';
-import ProgressBar from './ProgressBar';
-import ButtonInput from './Inputs/ButtonInput';
+import Modal from "./Modal/Modal";
+import ProgressBar from "./ProgressBar";
+import ButtonInput from "./Inputs/ButtonInput";
 import { ErrorBoundary } from './ErrorBoundary';
-import useOnboardingStore from '../store/useOnboardingStore';
-import ModalContent from './Modal/ModalContent';
+import useOnboardingStore from "../store/useOnboardingStore";
+import ModalContent from "./Modal/ModalContent";
 import { sprintf, __ } from '@wordpress/i18n';
-import Icon from '../utils/Icon';
-import { get_website_url } from '@/utils/lib.js';
-import { updateAction } from '../utils/api';
+import Icon from "../utils/Icon";
+import {get_website_url} from "@/utils/lib.js";
+import {updateAction} from "../utils/api";
 
 /**
  * Onboarding component that guides users through a series of steps
- *
- * @return {JSX.Element} The Onboarding component
+ * @returns {JSX.Element} The Onboarding component
  */
 const Onboarding: FC = () => {
-	const [ ConfettiExplosion, setConfettiExplosion ] = useState( null );
-	const [ isExploding, setIsExploding ] = useState( false );
+    const [ConfettiExplosion, setConfettiExplosion] = useState(null);
+    const [isExploding, setIsExploding] = useState(false);
 
-	const {
-		isOpen,
-		isUpdating,
-		currentStepIndex,
-		steps,
-		setOpen,
-		setCurrentStepIndex,
-		addSuccessStep,
-		setSteps,
-		onboardingData,
-		setResponseMessage,
-		setResponseSuccess,
-		responseMessage,
-		responseSuccess,
-		updateEmail,
-		updateStepSettings,
-		installPlugins,
-		validateLicense,
-		footerMessage,
-		settings,
-		setValue,
-		getSettings,
-		isLastStep,
-		trackingTestRunning,
-		isInstalling,
-	} = useOnboardingStore();
+    const {
+        isOpen,
+        isUpdating,
+        currentStepIndex,
+        steps,
+        setOpen,
+        setCurrentStepIndex,
+        addSuccessStep,
+        setSteps,
+        onboardingData,
+        setResponseMessage,
+        setResponseSuccess,
+        responseMessage,
+        responseSuccess,
+        updateEmail,
+        updateStepSettings,
+        installPlugins,
+        validateLicense,
+        footerMessage,
+        settings,
+        setValue,
+        getSettings,
+        isLastStep,
+        trackingTestRunning,
+        isInstalling,
+    } = useOnboardingStore();
 
-	useEffect( () => {
-		if ( !! isLastStep() ) {
-			import( 'react-confetti-explosion' ).then(
-				( { default: ConfettiExplosion } ) => {
-					setConfettiExplosion( () => ConfettiExplosion );
-				}
-			);
-			setIsExploding( true );
-		}
-	}, [ isLastStep() ] );
+    useEffect(() => {
+        if ( !!isLastStep() ) {
+            import ( "react-confetti-explosion").then(
+                ({default: ConfettiExplosion}) => {
+                    setConfettiExplosion(() => ConfettiExplosion);
+                });
+            setIsExploding(true);
+        }
+    }, [isLastStep()]);
 
-	// Memoize the settings and visible steps to prevent unnecessary recalculations
-	const visibleSteps = useMemo(
-		() =>
-			onboardingData.steps?.filter(
-				( step ) => step.visible !== false
-			) || [],
-		[ onboardingData.steps ]
-	);
-	const currentStep = visibleSteps[ currentStepIndex ];
+    // Memoize the settings and visible steps to prevent unnecessary recalculations
+    const visibleSteps = useMemo(() => onboardingData.steps?.filter(step => step.visible !== false) || [], [onboardingData.steps]);
+    const currentStep = visibleSteps[currentStepIndex];
 
-	// Initialize steps only once when the component mounts
-	useEffect( () => {
-		if ( visibleSteps.length > 0 && steps.length === 0 ) {
-			setSteps( visibleSteps );
-		}
-	}, [ visibleSteps, steps.length, setSteps ] );
+    // Initialize steps only once when the component mounts
+    useEffect(() => {
 
-	useEffect( () => {
-		if ( settings.length === 0 ) {
-			getSettings();
-		}
-	}, [ settings ] );
+        if (visibleSteps.length > 0 && steps.length === 0) {
+            setSteps(visibleSteps);
+        }
+    }, [visibleSteps, steps.length, setSteps]);
 
-	const handleClose = () => {
-		setOpen( false );
-		updateAction( {}, 'user_skipped_wizard' );
-	};
+    useEffect(() => {
+        if ( settings.length === 0 ) {
+            getSettings();
+        }
+    }, [settings]);
 
-	const handlePrevious = () => {
-		setCurrentStepIndex( currentStepIndex - 1 );
-	};
 
-	const validateAndContinue = async ( e ) => {
-		let success = true;
-		if ( currentStep.type === 'license' ) {
-			success = await validateLicense();
-		}
+    const handleClose = () => {
+        setOpen(false);
+        updateAction({}, 'user_skipped_wizard');
+    };
 
-		//save the current values
-		if ( currentStep.type === 'settings' ) {
-			await updateStepSettings( settings );
-		}
+    const handlePrevious = () => {
+        setCurrentStepIndex(currentStepIndex - 1);
+    };
 
-		if ( currentStep.type === 'email' ) {
-			await updateEmail();
-		}
+    const validateAndContinue = async (e) => {
+        let success = true;
+        if ( currentStep.type === 'license' ) {
+            success = await validateLicense();
+        }
 
-		if ( currentStep.type === 'plugins' ) {
-			//we don't wait for the plugins to be installed, so the user can continue.
-			installPlugins();
-		}
+        //save the current values
+        if ( currentStep.type === 'settings' ) {
+            await updateStepSettings(settings);
+        }
 
-		if ( ! success ) {
-			return;
-		}
-		await handleContinue( e );
-	};
+        if ( currentStep.type === 'email' ) {
+            await updateEmail();
+        }
 
-	const changeFieldValue = async (
-		fieldId: string,
-		value: string | boolean
-	) => {
-		setValue( fieldId, value );
-	};
+        if (currentStep.type === 'plugins'){
+            //we don't wait for the plugins to be installed, so the user can continue.
+            installPlugins();
+        }
 
-	// Function to determine if the continue button should be disabled.
-	const isContinueDisabled = () => {
-		// For tracking test step, only disable continue button while test is running.
-		if ( currentStep?.id === 'tracking' ) {
-			return trackingTestRunning;
-		}
+        if ( !success ) {
+            return;
+        }
+        await handleContinue(e);
+    }
 
-		// we don't want to close the modal during installation. Otherwise it might not complete.
-		if ( isLastStep() && isInstalling ) {
-			return true;
-		}
+    const changeFieldValue = async (fieldId: string, value: string | boolean) => {
+        setValue(fieldId, value);
+    };
 
-		return false;
-	};
+    // Function to determine if the continue button should be disabled.
+    const isContinueDisabled = () => {
+        // For tracking test step, only disable continue button while test is running.
+        if (currentStep?.id === 'tracking') {
+            return trackingTestRunning;
+        }
 
-	const handleContinue = async ( e ) => {
-		// make sure the response message is cleared
-		setResponseMessage( '' );
-		setResponseSuccess( true );
+        // we don't want to close the modal during installation. Otherwise it might not complete.
+        if ( isLastStep() && isInstalling ) {
+            return true;
+        }
 
-		if ( settings && currentStep.fields ) {
-			const atLeastOneFieldIsTrue = currentStep.fields.some(
-				( field: { id: string } ) => {
-					const value = settings[ field.id ];
-					return (
-						value === true ||
-						( typeof value === 'string' && value.trim() !== '' )
-					);
-				}
-			);
-			if ( atLeastOneFieldIsTrue ) {
-				addSuccessStep( currentStep.id );
-			}
-		}
+        return false;
+    };
 
-		setCurrentStepIndex( currentStepIndex + 1 );
-		// If this is the last step, reload the page if this is so configured.
-		if ( currentStepIndex + 1 >= steps.length ) {
-			await updateAction( {}, 'user_completed_wizard' );
-			if ( onboardingData.reload_on_finish ) {
-				window.location.reload();
-			}
-		}
-	};
+    const handleContinue = async (e) => {
 
-	//open the modal when the component mounts
-	useEffect( () => {
-		setOpen( true );
-	}, [] );
+        // make sure the response message is cleared
+        setResponseMessage('');
+        setResponseSuccess(true);
 
-	if ( ! currentStep ) {
-		return null;
-	}
-	const upgradeUrl = get_website_url( onboardingData.upgrade, {
-		utm_source: onboardingData.prefix + '_onboarding',
-		utm_content: 'upgrade',
-	} );
+        if (settings && currentStep.fields) {
+            const atLeastOneFieldIsTrue = currentStep.fields.some((field: { id: string }) => {
+                const value = settings[field.id];
+                return value === true || (typeof value === 'string' && value.trim() !== '');
+            });
+            if (atLeastOneFieldIsTrue) {
+                addSuccessStep(currentStep.id);
+            }
+        }
 
-	return (
-		<ErrorBoundary>
-			<div id="onboarding-modal-root"></div>
+        setCurrentStepIndex(currentStepIndex + 1);
+        // If this is the last step, reload the page if this is so configured.
+        if (currentStepIndex + 1 >= steps.length ) {
+            await updateAction({}, 'user_completed_wizard');
+            if (onboardingData.reload_on_finish) {
+                window.location.reload();
+            }
+        }
+    };
 
-			<Modal
-				title={ __( 'Onboarding', 'burst-statistics' ) }
-				content={
-					<div className="flex flex-col gap-2 my-6 mx-10">
-						<div className="flex flex-col gap-2 my-6 justify-center items-center">
-							<div className="text-sm text-text-gray-light">
-								{ sprintf(
-									__(
-										'Step %1$d of %2$d',
-										'burst-statistics'
-									),
-									currentStepIndex + 1,
-									steps.length
-								) }
-							</div>
+    //open the modal when the component mounts
+    useEffect(() => {
+        setOpen(true);
+    }, []);
 
-							<ProgressBar
-								currentStep={ currentStepIndex }
-								totalSteps={ steps.length }
-							/>
+    if (!currentStep) {
+        return null;
+    }
+    const upgradeUrl = get_website_url(onboardingData.upgrade, {
+        utm_source:onboardingData.prefix + '_onboarding',
+        utm_content: 'upgrade'
+    });
 
-							<div className="text-2xl font-bold text-text-gray text-center mt-4">
-								{ currentStep.title }
-							</div>
+    return (
+        <ErrorBoundary>
+            <div id="onboarding-modal-root"></div>
 
-							<ModalContent
-								step={ currentStep }
-								settings={ settings }
-								onFieldChange={ changeFieldValue }
-							/>
-							{ responseMessage && (
-								<div
-									className={
-										'text-red-600 text-sm text-center mt-4 ' +
-										( responseSuccess
-											? 'text-green-600'
-											: 'text-red-600' )
-									}
-								>
-									{ responseMessage }
-								</div>
-							) }
-						</div>
+            <Modal
+                title={__('Onboarding', 'burst-statistics')}
+                content={
+                    <div className="flex flex-col gap-2 my-6 mx-10">
+                        <div className="flex flex-col gap-2 my-6 justify-center items-center">
+                            <div className="text-sm text-text-gray-light">
+                                {sprintf(__('Step %1$d of %2$d', 'burst-statistics'), currentStepIndex + 1, steps.length)}
+                            </div>
 
-						<div className="flex flex-col gap-4 justify-center items-center mb-6 min-w-[32ch] mx-auto">
-							{ !! isLastStep() && ! onboardingData.is_pro && (
-								<ButtonInput
-									className="w-full"
-									btnVariant="secondary"
-									size="lg"
-									link={ upgradeUrl }
-									key="upgrade-to-pro"
-								>
-									{ __(
-										'Check out Burst Pro',
-										'burst-statistics'
-									) }
-								</ButtonInput>
-							) }
+                            <ProgressBar
+                                currentStep={currentStepIndex}
+                                totalSteps={steps.length}
+                            />
 
-							<ButtonInput
-								className={
-									'w-full burst-continue flex justify-center items-center ' +
-									( isUpdating || isInstalling
-										? 'burst-updating'
-										: '' )
-								}
-								btnVariant={
-									isLastStep() ? 'tertiary' : 'secondary'
-								}
-								size={ isLastStep() ? 'md' : 'lg' }
-								disabled={ isContinueDisabled() }
-								onClick={ ( e ) => validateAndContinue( e ) }
-								key={ currentStep.id + 'continue' }
-							>
-								{ ( isUpdating || isInstalling ) && (
-									<Icon
-										name="loading-circle"
-										size={ 18 }
-										color={
-											isLastStep() ? 'black' : 'white'
-										}
-										className="mr-[10px]"
-									/>
-								) }
-								{ currentStep.button.label }
-							</ButtonInput>
+                            <div className="text-2xl font-bold text-text-gray text-center mt-4">
+                                {currentStep.title}
+                            </div>
 
-							{ currentStepIndex > 0 && ! isLastStep() && (
-								<>
-									<ButtonInput
-										className="w-full burst-skip"
-										btnVariant="tertiary"
-										size="sm"
-										onClick={ ( e ) => handleContinue( e ) }
-										key={ currentStep.id + 'skip' }
-									>
-										{ __( 'Skip', 'burst-statistics' ) }
-									</ButtonInput>
+                            <ModalContent
+                                step={currentStep}
+                                settings={settings}
+                                onFieldChange={changeFieldValue}
+                            />
+                            {responseMessage && (
+                                <div className={"text-red-600 text-sm text-center mt-4 "+ (responseSuccess ? "text-green-600" : "text-red-600")}>
+                                    {responseMessage}
+                                </div>
+                            )}
+                        </div>
 
-									<ButtonInput
-										className="w-full"
-										btnVariant="tertiary"
-										size="sm"
-										onClick={ ( e ) => handlePrevious() }
-										key={ currentStep.id + 'previous' }
-									>
-										{ __( 'Previous', 'burst-statistics' ) }
-									</ButtonInput>
-								</>
-							) }
+                        <div className="flex flex-col gap-4 justify-center items-center mb-6 min-w-[32ch] mx-auto">
+                            { ( !!isLastStep() && !onboardingData.is_pro ) && (
+                                <ButtonInput
+                                    className="w-full"
+                                    btnVariant="secondary"
+                                    size="lg"
+                                    link={upgradeUrl}
+                                    key="upgrade-to-pro"
+                                >
+                                    {__('Check out Burst Pro', 'burst-statistics')}
+                                </ButtonInput>
+                            )}
 
-							{ currentStepIndex === 0 && (
-								<ButtonInput
-									className="w-full burst-skip"
-									btnVariant="tertiary"
-									size="sm"
-									onClick={ handleClose }
-									key="skip-onboarding"
-								>
-									{ __(
-										'Skip onboarding',
-										'burst-statistics'
-									) }
-								</ButtonInput>
-							) }
-						</div>
-						{ footerMessage && (
-							<div className="text-sm text-text-gray-light text-center">
-								{ footerMessage }
-							</div>
-						) }
-					</div>
-				}
-				isOpen={ isOpen }
-				onClose={ handleClose }
-				footer={ null }
-				triggerClassName=""
-				children={ null }
-			/>
-			{ isExploding && ConfettiExplosion && (
-				<div className="absolute top-1/4 left-1/2 -translate-x-1/2">
-					<ConfettiExplosion
-						duration={ 4000 }
-						width={ 1400 }
-						particleCount={ 200 }
-						force={ 0.7 }
-						zIndex={ 999999 }
-					/>
-				</div>
-			) }
-		</ErrorBoundary>
-	);
+                            <ButtonInput
+                                className={"w-full burst-continue flex justify-center items-center "+ ((isUpdating || isInstalling) ? 'burst-updating' : '')}
+                                btnVariant={isLastStep() ? "tertiary" : "secondary"}
+                                size={isLastStep() ? "md" : "lg"}
+                                disabled={isContinueDisabled()}
+                                onClick={(e) =>validateAndContinue(e)}
+                                key={currentStep.id + "continue"}
+                            >
+                                { (isUpdating || isInstalling) && <Icon name="loading-circle" size={18} color={isLastStep() ? "black" : "white"} className="mr-[10px]" />}{currentStep.button.label}
+                            </ButtonInput>
+
+                            {( currentStepIndex > 0 && !isLastStep() ) && (
+                                <>
+                                    <ButtonInput
+                                        className="w-full burst-skip"
+                                        btnVariant="tertiary"
+                                        size="sm"
+                                        onClick={(e) => handleContinue(e)}
+                                        key={currentStep.id + "skip"}
+                                    >
+                                        {__('Skip', 'burst-statistics')}
+                                    </ButtonInput>
+
+                                    <ButtonInput
+                                        className="w-full"
+                                        btnVariant="tertiary"
+                                        size="sm"
+                                        onClick={(e) => handlePrevious() }
+                                        key={currentStep.id + "previous"}
+                                    >
+                                        {__('Previous', 'burst-statistics')}
+                                    </ButtonInput>
+                                </>
+
+                            )}
+
+                            {currentStepIndex === 0 && (
+                                <ButtonInput
+                                    className="w-full burst-skip"
+                                    btnVariant="tertiary"
+                                    size="sm"
+                                    onClick={handleClose}
+                                    key="skip-onboarding"
+                                >
+                                    {__('Skip onboarding', 'burst-statistics')}
+                                </ButtonInput>
+                            )}
+                        </div>
+                        {footerMessage && (
+                            <div className="text-sm text-text-gray-light text-center">
+                                {footerMessage}
+                            </div>
+                        )}
+                    </div>
+                }
+                isOpen={isOpen}
+                onClose={handleClose}
+                footer={null}
+                triggerClassName=""
+                children={null}
+            />
+            {isExploding && ConfettiExplosion && <div className="absolute top-1/4 left-1/2 -translate-x-1/2"><ConfettiExplosion duration={4000} width={1400} particleCount={200} force={0.7} zIndex={999999}/></div>}
+        </ErrorBoundary>
+    );
 };
 
-export default memo( Onboarding );
+export default memo(Onboarding); 

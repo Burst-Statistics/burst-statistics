@@ -2,7 +2,6 @@ import React, {useState, useEffect, forwardRef, useMemo} from 'react';
 import { useCombobox, useMultipleSelection } from 'downshift';
 import { debounce } from 'lodash';
 import { __ } from '@wordpress/i18n';
-import { clsx } from 'clsx';
 
 interface SelectOption {
 	value: any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -54,9 +53,6 @@ interface AsyncSelectInputProps {
 
 	/** Whether to allow creating custom options when no matches are found */
 	allowCustomValue?: boolean;
-
-	/** Additional classes for the container */
-	className?: string;
 }
 
 /**
@@ -81,7 +77,6 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 			maxSelections = 1,
 			showRemoveButton = true,
 			allowCustomValue = true,
-			className,
 			...props
 		},
 		ref
@@ -323,14 +318,6 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 			itemToString: ( item ) => ( item ? item.label : '' )
 		});
 
-		// Sync inputValue with selected item for single selection
-		useEffect( () => {
-			if ( 1 === maxSelections && ! isOpen ) {
-				const selected = currentSelectedItems[0];
-				setInputValue( selected ? selected.label : '' );
-			}
-		}, [ value, items, maxSelections, isOpen ]); // eslint-disable-line react-hooks/exhaustive-deps
-
 		const handleRemoveItem = ( itemToRemove: SelectOption ) => {
 			const newSelectedItems = currentSelectedItems.filter(
 				( item ) => item.value !== itemToRemove.value
@@ -361,19 +348,16 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 		};
 
 		return (
-			<div className={clsx( 'relative w-full', className )}>
+			<>
 				{/* Combobox container with integrated selected items */}
 				<div
 					{...getComboboxProps()}
-					className={clsx(
-						'flex min-h-[2.5rem] w-full rounded-md border border-gray-400 bg-white focus-within:border-primary-700 focus-within:ring-1 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-200',
-						disabled && 'border-gray-200 bg-gray-200'
-					)}
+					className="flex min-h-[2.5rem] w-full rounded-md border border-gray-400 bg-white focus-within:border-primary-700 focus-within:ring-1 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-200"
 				>
 					{/* Container for selected items and input */}
 					<div className="flex flex-1 flex-wrap items-center gap-1 p-1">
 						{/* Selected items (tags) */}
-						{1 < maxSelections && currentSelectedItems.map( ( selectedItem, index ) => (
+						{currentSelectedItems.map( ( selectedItem, index ) => (
 							<span
 								key={`selected-item-${index}`}
 								{...getSelectedItemProps({
@@ -439,7 +423,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 					{/* Selection counter and toggle button */}
 					<div className="flex items-center border-l border-gray-300">
 						{/* Max selections indicator */}
-						{1 < maxSelections && (
+						{0 < maxSelections && (
 							<span className="px-2 text-xs text-text-gray-light border-r border-gray-200">
 								{currentSelectedItems.length}/{maxSelections}
 							</span>
@@ -478,11 +462,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 				{/* Menu */}
 				<div
 					{...getMenuProps()}
-					className={clsx(
-						'absolute left-0 z-9999 mt-1 w-full',
-						insideModal && 'fixed',
-						! isOpen && 'hidden'
-					)}
+					className={`w-full ${insideModal ? 'fixed' : ''} ${! isOpen ? 'hidden' : ''}`}
 				>
 					<ul
 						className={`relative top-0 z-9999 max-h-60 overflow-y-auto w-full rounded-md border border-gray-300 bg-white shadow-lg ${
@@ -531,7 +511,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 						)}
 					</ul>
 				</div>
-			</div>
+			</>
 		);
 	}
 );

@@ -95,7 +95,6 @@ trait Sanitize {
 		switch ( $type ) {
 			case 'checkbox':
 			case 'anonymous_usage_data':
-			case 'integration_row':
 			case 'number':
 			case 'hidden':
 				return (int) $value;
@@ -521,8 +520,6 @@ trait Sanitize {
 				'license',
 				'anonymous_usage_data',
 				'css',
-				'integration_row',
-				'integrations_intro',
 			]
 		);
 	}

@@ -937,18 +937,15 @@ export const ShareButton = () => {
 			>
 				<ReactPopover.Anchor asChild>
 					<div className={`${isModalOpen ? 'relative z-[60]' : ''}`}>
-						<Tooltip content={__( 'Share this view with anyone by creating a share link.', 'burst-statistics' )}>
-							<AddFilterButton
-								label=""
-								ariaLabel={__( 'Share dashboard', 'burst-statistics' )}
-								icon="referrer"
-								isHighlighted={isModalOpen}
+						<AddFilterButton
+							label=""
+							icon="referrer"
+							isHighlighted={isModalOpen}
 
-								//class used for automated test.
-								className="burst-share-link"
-								onClick={() => setIsModalOpen( true )}
-							/>
-						</Tooltip>
+							//class used for automated test.
+							className="burst-share-link"
+							onClick={() => setIsModalOpen( true )}
+						/>
 					</div>
 				</ReactPopover.Anchor>
 

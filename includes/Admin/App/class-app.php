@@ -1,7 +1,6 @@
 <?php
 namespace Burst\Admin\App;
 
-use Burst\Admin\Abilities_Api\Abilities_Api;
 use Burst\Admin\App\Fields\Fields;
 use Burst\Admin\App\Fields\Reporting_Fields;
 use Burst\Admin\App\Menu\Menu;
@@ -9,6 +8,7 @@ use Burst\Admin\Burst_Onboarding\Burst_Onboarding;
 use Burst\Admin\Reports\Reports;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Tasks;
+use Burst\Admin\Tracking_Health;
 use Burst\Frontend\Endpoint;
 use Burst\Frontend\Goals\Goal;
 use Burst\Frontend\Goals\Goals;
@@ -591,8 +591,6 @@ class App {
 				$response = $this->rest_api_goals_get( $request );
 			} elseif ( str_contains( $action, '/goals/add' ) ) {
 				$response = $this->rest_api_goals_add( $request, $data );
-			} elseif ( str_contains( $action, '/goals/upsert_for_block' ) ) {
-				$response = $this->rest_api_goals_upsert_for_block( $request, $data );
 			} elseif ( str_contains( $action, '/goals/delete' ) ) {
 				$response = $this->rest_api_goals_delete( $request, $data );
 			} elseif ( str_contains( $action, '/goal_fields/get' ) ) {
@@ -982,7 +980,7 @@ class App {
 			return;
 		}
 
-		if ( $this->upgrade_lock_active() ) {
+		if ( get_transient( 'burst_running_upgrade_process' ) ) {
 			self::error_log( 'Database installation in progress, delaying REST API response with 2 seconds.' );
 			// sleep for 0.5 seconds to allow the database installation to finish.
 			usleep( 500000 );
@@ -1018,8 +1016,8 @@ class App {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'rest_api_goals_get' ],
-				'permission_callback' => function ( \WP_REST_Request $request ) {
-					return $this->user_can_view( $request );
+				'permission_callback' => function () {
+					return $this->user_can_view();
 				},
 			]
 		);
@@ -1062,18 +1060,6 @@ class App {
 
 		register_rest_route(
 			'burst/v1',
-			'goals/upsert_for_block',
-			[
-				'methods'             => 'POST',
-				'callback'            => [ $this, 'rest_api_goals_upsert_for_block' ],
-				'permission_callback' => function () {
-					return $this->user_can_manage();
-				},
-			]
-		);
-
-		register_rest_route(
-			'burst/v1',
 			'goals/set',
 			[
 				'methods'             => 'POST',
@@ -1096,8 +1082,8 @@ class App {
 
 					return $this->get_data( $request );
 				},
-				'permission_callback' => function ( \WP_REST_Request $request ) {
-					return $this->user_can_view_sales( $request );
+				'permission_callback' => function () {
+					return $this->user_can_view_sales();
 				},
 			]
 		);
@@ -1111,8 +1097,8 @@ class App {
 					$request->set_param( 'is_ecommerce', true );
 					return $this->get_data( $request );
 				},
-				'permission_callback' => function ( \WP_REST_Request $request ) {
-					return $this->user_can_view_sales( $request );
+				'permission_callback' => function () {
+					return $this->user_can_view_sales();
 				},
 			]
 		);
@@ -1127,8 +1113,8 @@ class App {
 					$request->set_param( 'type', 'datatable-' . $request->get_param( 'type' ) );
 					return $this->get_data( $request );
 				},
-				'permission_callback' => function ( \WP_REST_Request $request ) {
-					return $this->user_can_view( $request );
+				'permission_callback' => function () {
+					return $this->user_can_view();
 				},
 			]
 		);
@@ -1139,8 +1125,8 @@ class App {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'get_data' ],
-				'permission_callback' => function ( \WP_REST_Request $request ) {
-					return $this->user_can_view( $request );
+				'permission_callback' => function () {
+					return $this->user_can_view();
 				},
 			]
 		);
@@ -1163,8 +1149,8 @@ class App {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'get_action' ],
-				'permission_callback' => function ( \WP_REST_Request $request ) {
-					return $this->user_can_view( $request );
+				'permission_callback' => function () {
+					return $this->user_can_view();
 				},
 			]
 		);
@@ -1175,8 +1161,8 @@ class App {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'get_action' ],
-				'permission_callback' => function ( \WP_REST_Request $request ) {
-					return $this->user_can_view_sales( $request );
+				'permission_callback' => function () {
+					return $this->user_can_view_sales();
 				},
 			]
 		);
@@ -1312,6 +1298,13 @@ class App {
 				break;
 			case 'tracking':
 				$data = Endpoint::get_tracking_status_and_time();
+				// The loopback probe is unreliable (server can't reach itself,
+				// firewall, CDN, staging auth). Don't raise a tracking error while
+				// hits are still being recorded — only a genuine absence of recent
+				// hits counts as an error.
+				if ( 'error' === $data['status'] && ( new Tracking_Health() )->has_recent_hits() ) {
+					$data['status'] = 'recording';
+				}
 				break;
 			case 'get_article_data':
 				$data = $this->get_articles();
@@ -2294,20 +2287,12 @@ class App {
 			ob_clean();
 		}
 
-		global $wpdb;
-		$is_pro_valid = burst_license_is_valid();
-		$goal_limit   = $is_pro_valid ? -1 : \Burst\Frontend\Goals\Goal::LIMIT_FREE;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		$active_goals_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_goals WHERE status = 'active'" );
-
 		return new \WP_REST_Response(
 			[
-				'request_success'    => true,
-				'goals'              => $goals,
-				'predefinedGoals'    => $predefined_goals,
-				'goalFields'         => $this->fields->get_goal_fields(),
-				'goal_limit'         => $goal_limit,
-				'active_goals_count' => $active_goals_count,
+				'request_success' => true,
+				'goals'           => $goals,
+				'predefinedGoals' => $predefined_goals,
+				'goalFields'      => $this->fields->get_goal_fields(),
 			],
 			200
 		);
@@ -2428,16 +2413,7 @@ class App {
 				]
 			);
 		}
-		$id = isset( $data['id'] ) ? (int) $data['id'] : 0;
-		if ( $id === 0 ) {
-			return new \WP_REST_Response(
-				[
-					'success' => false,
-					'message' => 'Invalid goal ID.',
-				],
-				200
-			);
-		}
+		$id = $data['id'];
 
 		$goal    = new Goal( $id );
 		$deleted = $goal->delete();
@@ -2498,17 +2474,10 @@ class App {
 			ob_clean();
 		}
 
-		if ( ! ( $goal_id > 0 ) ) {
-			return new \WP_REST_Response(
-				[
-					'success' => false,
-					'message' => __( 'Failed to add predefined goal. You might have reached your active goal limit.', 'burst-statistics' ),
-				],
-				400
-			);
+		$goal = [];
+		if ( $goal_id > 0 ) {
+			$goal = new Goal( $goal_id );
 		}
-
-		$goal = new Goal( $goal_id );
 
 		$response = new \WP_REST_Response(
 			[
@@ -2547,18 +2516,8 @@ class App {
 			);
 		}
 
-		$goal    = new Goal();
-		$success = $goal->save();
-
-		if ( ! $success ) {
-			return new \WP_REST_Response(
-				[
-					'success' => false,
-					'message' => __( 'Failed to add goal. You might have reached your active goal limit.', 'burst-statistics' ),
-				],
-				400
-			);
-		}
+		$goal = new Goal();
+		$goal->save();
 
 		// ensure bundled js file updates.
 		do_action( 'burst_after_updated_goals' );
@@ -2575,178 +2534,6 @@ class App {
 		$response->set_status( 200 );
 
 		return $response;
-	}
-
-	/**
-	 * Upsert a goal from the block editor context.
-	 * Enforces the server-side goal limit check.
-	 *
-	 * @param \WP_REST_Request $request The REST API request.
-	 * @param array            $ajax_data Fallback data.
-	 * @return \WP_REST_Response The response object.
-	 */
-	public function rest_api_goals_upsert_for_block( \WP_REST_Request $request, array $ajax_data = [] ): \WP_REST_Response {
-		if ( ! $this->user_can_manage() ) {
-			return new \WP_REST_Response(
-				[
-					'success' => false,
-					'message' => 'You do not have permission to perform this action.',
-				]
-			);
-		}
-
-		$data = empty( $ajax_data ) ? $request->get_json_params() : $ajax_data;
-
-		$nonce = isset( $data['nonce'] ) ? $data['nonce'] : '';
-		if ( ! $this->verify_nonce( $nonce, 'burst_nonce' ) ) {
-			return new \WP_REST_Response(
-				[
-					'success' => false,
-					'message' => $this->nonce_expired_feedback,
-				]
-			);
-		}
-
-		// Sanitize and resolve uid — the unique identifier stored in the block attribute.
-		$uid  = isset( $data['uid'] ) ? sanitize_key( $data['uid'] ) : '';
-		$goal = null;
-
-		// Idempotent lookup: if a uid is provided, try to find an existing goal by its selector.
-		if ( $uid !== '' ) {
-			$goal = Goal::get_by_uid( $uid );
-		}
-
-		// Fall back to a goal_id / id if no uid match found.
-		if ( $goal === null ) {
-			$goal_id = isset( $data['id'] ) ? (int) $data['id'] : 0;
-			if ( $goal_id === 0 && isset( $data['goal_id'] ) ) {
-				$goal_id = (int) $data['goal_id'];
-			}
-			if ( $goal_id > 0 ) {
-				$goal = new Goal( $goal_id );
-			}
-		}
-
-		// If the goal doesn't exist, we only allow creating it if it is an explicit activation (status: active) with a title.
-		// If it's a partial update without status or title, we 404.
-		if ( $goal === null || ! ( $goal->id > 0 ) ) {
-			$status = isset( $data['status'] ) ? sanitize_text_field( $data['status'] ) : '';
-			$title  = isset( $data['title'] ) ? sanitize_text_field( $data['title'] ) : '';
-			if ( $status !== 'active' || empty( $title ) ) {
-				return new \WP_REST_Response(
-					[
-						'success' => false,
-						'message' => __( 'Goal not found.', 'burst-statistics' ),
-					],
-					404
-				);
-			}
-			// Create a new instance for insert.
-			$goal = new Goal();
-		}
-
-		// Handle goal deletion if requested.
-		if ( isset( $data['status'] ) && $data['status'] === 'delete' ) {
-			if ( $goal->id > 0 ) {
-				$deleted = $goal->delete();
-				if ( $deleted ) {
-					do_action( 'burst_after_updated_goals' );
-					return new \WP_REST_Response(
-						[
-							'success' => true,
-							'deleted' => true,
-						]
-					);
-				}
-			}
-			return new \WP_REST_Response(
-				[
-					'success' => false,
-					'message' => 'Failed to delete goal.',
-				]
-			);
-		}
-
-		// If it's a new goal, check if we can add a new goal.
-		if ( ! ( $goal->id > 0 ) ) {
-			if ( ! $goal->can_add_goal() ) {
-				return new \WP_REST_Response(
-					[
-						'success' => false,
-						'message' => __( 'Upgrade to Pro for unlimited goals', 'burst-statistics' ),
-					],
-					200
-				);
-			}
-		}
-
-		// Set the fields from request payload.
-		if ( isset( $data['title'] ) ) {
-			$goal->title = sanitize_text_field( $data['title'] );
-		}
-		if ( isset( $data['type'] ) ) {
-			$goal->type = sanitize_text_field( $data['type'] );
-		}
-
-		// Build selector from uid; never let the client override the uid-based selector.
-		if ( $uid !== '' ) {
-			$goal->selector = '[data-burst-goal="' . $uid . '"]';
-		} elseif ( isset( $data['selector'] ) ) {
-			$goal->selector = sanitize_text_field( $data['selector'] );
-		}
-
-		if ( isset( $data['status'] ) ) {
-			$goal->status = sanitize_text_field( $data['status'] );
-		} else {
-			// Default to active for block editor.
-			$goal->status = 'active';
-		}
-		if ( isset( $data['page_or_website'] ) ) {
-			$goal->page_or_website = sanitize_text_field( $data['page_or_website'] );
-		}
-		if ( isset( $data['specific_page'] ) ) {
-			$goal->specific_page = sanitize_text_field( $data['specific_page'] );
-		}
-		if ( isset( $data['conversion_metric'] ) ) {
-			$goal->conversion_metric = sanitize_text_field( $data['conversion_metric'] );
-		}
-
-		if ( isset( $data['page_id'] ) ) {
-			$goal->page_id = (int) $data['page_id'];
-		}
-
-		// Mark this goal as originating from the block editor.
-		if ( ! ( $goal->id > 0 ) ) {
-			$goal->block_goal = 1;
-		}
-
-		$saved = $goal->save();
-
-		if ( $saved ) {
-			// Ensure bundled JS file updates.
-			do_action( 'burst_after_updated_goals' );
-
-			if ( ob_get_length() ) {
-				ob_clean();
-			}
-
-			return new \WP_REST_Response(
-				[
-					'success' => true,
-					'goal_id' => $goal->id,
-					'goal'    => $goal,
-				],
-				200
-			);
-		}
-
-		return new \WP_REST_Response(
-			[
-				'success' => false,
-				'message' => __( 'Failed to save goal.', 'burst-statistics' ),
-			],
-			200
-		);
 	}
 
 	/**

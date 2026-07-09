@@ -11,8 +11,6 @@ class Goal {
 	use Helper;
 	use Sanitize;
 
-	const LIMIT_FREE = 3;
-
 	public int $id;
 	public string $title             = '';
 	public string $type              = 'clicks';
@@ -36,12 +34,6 @@ class Goal {
 	public string $hook            = '';
 	public string $page_or_website = 'website';
 	public string $specific_page   = '';
-	/**
-	 * Set to 1 when the goal was created from the Gutenberg block editor.
-	 */
-	public int $block_goal = 0;
-	public ?int $page_id   = null;
-	public bool $is_draft  = false;
 	/**
 	 * Constructor
 	 */
@@ -98,13 +90,10 @@ class Goal {
 			}
 			$this->selector   = empty( $goal->selector ) ? '' : $goal->selector;
 			$this->hook       = empty( $goal->hook ) ? '' : $goal->hook;
-			$this->block_goal = isset( $goal->block_goal ) ? (int) $goal->block_goal : 0;
 			$this->date_start = $goal->date_start;
 			// $goal->date_end > 0 ? $goal->date_end : strtotime( 'tomorrow midnight' ) - 1;.
 			$this->date_end     = 0;
 			$this->date_created = $goal->date_created;
-			$this->page_id      = isset( $goal->page_id ) ? (int) $goal->page_id : null;
-			$this->is_draft     = ( $this->page_id > 0 ) ? ( get_post_status( $this->page_id ) !== 'publish' ) : false;
 
 			// Split url property into two separate properties, depending on * value.
 			$this->page_or_website = $this->url !== '*' ? 'page' : 'website';
@@ -132,36 +121,6 @@ class Goal {
 		// Merge url property from two separate properties, depending on 'website' value.
 		$url       = $this->page_or_website === 'website' ? '*' : $this->specific_page;
 		$this->url = $url !== '*' ? $this->sanitize_relative_url( $url ) : '*';
-
-		if ( $this->page_or_website === 'page' ) {
-			if ( ! empty( $this->page_id ) ) {
-				// We already have a page_id (e.g. passed from block editor for a draft/post).
-				// If URL is not set yet, try to resolve it from the post ID, but only if the post is published.
-				if ( empty( $this->url ) || $this->url === '*' ) {
-					$post_status = get_post_status( $this->page_id );
-					if ( 'publish' === $post_status ) {
-						$permalink = get_permalink( $this->page_id );
-						if ( $permalink ) {
-							$this->url = $this->sanitize_relative_url( $permalink );
-						}
-					} else {
-						$this->url = '';
-					}
-				}
-			} elseif ( ! empty( $this->url ) && $this->url !== '*' ) {
-				$full_url = home_url( $this->url );
-				$post_id  = url_to_postid( $full_url );
-				if ( $post_id > 0 ) {
-					$this->page_id = $post_id;
-				} else {
-					$this->page_id = null;
-				}
-			} else {
-				$this->page_id = null;
-			}
-		} else {
-			$this->page_id = null;
-		}
 
 		// Validate goal type exists.
 		if ( ! isset( $available_goal_types[ $this->type ] ) ) {
@@ -196,34 +155,10 @@ class Goal {
 			'hook'              => sanitize_text_field( $this->hook ),
 		];
 
-		// Include block_goal only when the column already exists (safe for
-		// existing installs that haven't run the DB upgrade yet).
-		static $block_goal_col_exists = null;
-		static $page_id_col_exists    = null;
-		if ( $block_goal_col_exists === null ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$columns               = $wpdb->get_col( "DESC {$table_name}", 0 );
-			$block_goal_col_exists = in_array( 'block_goal', $columns, true );
-			$page_id_col_exists    = in_array( 'page_id', $columns, true );
-		}
-		if ( $block_goal_col_exists ) {
-			$args['block_goal'] = $this->block_goal;
-		}
-		if ( $page_id_col_exists ) {
-			$args['page_id'] = $this->page_id;
-		}
-
 		$success = false;
 
 		// Check if we have an id, and if so, check if this id exists in the database.
 		if ( $this->id > 0 ) {
-			if ( $this->status === 'active' ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$old_status = $wpdb->get_var( $wpdb->prepare( "SELECT status FROM {$table_name} WHERE ID = %d", $this->id ) );
-				if ( $old_status !== 'active' && ! $this->can_add_goal() ) {
-					return false;
-				}
-			}
 			$result  = $wpdb->update( $table_name, $args, [ 'ID' => $this->id ] );
 			$success = $result !== false;
 		} elseif ( $this->can_add_goal() ) {
@@ -302,18 +237,19 @@ class Goal {
 	}
 
 	/**
-	 * Check if a new goal can be added.
+	 * Check if a new goal can be added
 	 */
-	public function can_add_goal(): bool {
-		if ( burst_license_is_valid() ) {
-			// Allow unlimited goals in the pro version with a valid license.
+	private function can_add_goal(): bool {
+		if ( $this->is_pro() ) {
+			// @todo add licensing.
+			// Allow unlimited goals in the pro version.
 			return true;
 		}
 
 		global $wpdb;
 		// Check for existing active goals in the database.
-		$existing_goals = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}burst_goals WHERE status = 'active'", ARRAY_A );
-		return count( $existing_goals ) < self::LIMIT_FREE;
+		$existing_goals = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}burst_goals", ARRAY_A );
+		return count( $existing_goals ) <= 0;
 	}
 
 	/**
@@ -331,28 +267,5 @@ class Goal {
 		}
 
 		return [];
-	}
-
-	/**
-	 * Look up a goal whose selector matches [data-burst-goal="<uid>"].
-	 * Returns null if no matching row is found.
-	 *
-	 * @param string $uid The unique block uid.
-	 */
-	public static function get_by_uid( string $uid ): ?self {
-		global $wpdb;
-		$uid      = sanitize_key( $uid );
-		$selector = '[data-burst-goal="' . $uid . '"]';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		$row = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT ID FROM {$wpdb->prefix}burst_goals WHERE selector = %s LIMIT 1",
-				$selector
-			)
-		);
-		if ( ! $row ) {
-			return null;
-		}
-		return new self( (int) $row->ID );
 	}
 }

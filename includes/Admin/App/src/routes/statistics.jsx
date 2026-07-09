@@ -47,6 +47,8 @@ function Statistics() {
 			<ErrorBoundary>
 				<DataTableBlock allowedConfigs={[ 'referrers' ]} id="statistics_referrers" />
 			</ErrorBoundary>
+
+
 		</>
 	);
 }

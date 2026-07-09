@@ -112,7 +112,7 @@ const burst_set_cookie = (name, value) => {
  */
 const burst_use_cookies = () => {
   if (burst.cache.useCookies !== null) return burst.cache.useCookies;
-  const result = navigator.cookieEnabled && !burst.options.cookieless && burst.options.privacy_level !== 'private_mode';
+  const result = navigator.cookieEnabled && !burst.options.cookieless;
   burst.cache.useCookies = result;
   return result;
 };
@@ -259,9 +259,28 @@ const burst_is_do_not_track = () => {
   burst.cache.isDoNotTrack = result;
   return result;
 };
+/**
+ * Debug is enabled by the localized option (BURST_DEBUG) or at runtime by the
+ * auto debug window inline flag, which can override a debug value baked into
+ * the combined script file.
+ * @returns {boolean}
+ */
+const burst_debug_enabled = () => !!( burst.options.debug || window.burst_debug );
+
 const burst_log_tracking_error = ({ status = 0, error = '', data = {} }) => {
-  if ( !burst.options.debug || !burst.tracking.ajaxUrl ) {
+  if ( !burst_debug_enabled() || !burst.tracking.ajaxUrl ) {
     return;
+  }
+
+  // Report at most one error per browser session: when tracking is down every
+  // pageview fails, and each report is a full admin-ajax request.
+  try {
+    if ( sessionStorage.getItem( 'burst_error_reported' ) ) {
+      return;
+    }
+    sessionStorage.setItem( 'burst_error_reported', '1' );
+  } catch ( e ) {
+    // sessionStorage unavailable; report anyway.
   }
 
   fetch(burst.tracking.ajaxUrl, {
@@ -278,7 +297,7 @@ const burst_log_tracking_error = ({ status = 0, error = '', data = {} }) => {
 
 const burst_beacon_request = (payload) => {
   const blob = new Blob([payload], { type: 'application/json' });
-  if ( burst.options.debug ) {
+  if ( burst_debug_enabled() ) {
     fetch( burst.tracking.beacon_url, {
       method: 'POST',
       body: blob,
@@ -373,13 +392,11 @@ async function burst_update_hit(
 
 	const [time, id] = await Promise.all([
 		burst_get_time_on_page(),
-		burst.options.privacy_level === 'private_mode'
-			? Promise.resolve(update_uid ? [false, false] : false)
-			: update_uid
-				? Promise.all([burst_uid(), burst_fingerprint()])
-				: burst_use_cookies()
-					? burst_uid()
-					: burst_fingerprint(),
+		update_uid
+			? Promise.all([burst_uid(), burst_fingerprint()])
+			: burst_use_cookies()
+				? burst_uid()
+				: burst_fingerprint(),
 	]);
 
 	const data = {
@@ -417,9 +434,7 @@ async function burst_track_hit(extraData = {}) {
 
   const [time, id] = await Promise.all([
     burst_get_time_on_page(),
-    burst.options.privacy_level === 'private_mode'
-      ? Promise.resolve(false)
-      : burst_use_cookies() ? burst_uid() : burst_fingerprint()
+    burst_use_cookies() ? burst_uid() : burst_fingerprint()
   ]);
 
   //wait for body document to resolve.

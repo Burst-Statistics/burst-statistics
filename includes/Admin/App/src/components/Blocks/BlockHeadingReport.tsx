@@ -17,14 +17,12 @@ type BlockHeadingReportProps = {
  * @param {React.ReactNode} props.controls - Optional controls to render on the right side.
  * @param {string} props.className - Additional CSS classes.
  * @param {number} props.reportBlockIndex - Index of the block in the report's content array.
- * @param {boolean} props.pro - Whether this block is a Pro feature.
- * @param {string} props.proId - Optional feature id for tier-specific Pro checks.
  * @return {JSX.Element} The block heading component.
  */
 export const BlockHeadingReport = memo( ({ title, controls, className = '', reportBlockIndex }: BlockHeadingReportProps ) => {
 	const { dateRangeText, filtersText, hasDateRange, hasFilters } = useBlockHeadingData( reportBlockIndex );
 
-	// Build subtitle text.
+	// Build subtitle text
 	const subtitle = useMemo( () => {
 		if ( hasDateRange && hasFilters ) {
 			return `${dateRangeText} • ${filtersText}`;

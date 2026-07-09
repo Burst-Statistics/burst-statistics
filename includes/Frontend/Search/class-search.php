@@ -449,58 +449,6 @@ class Search {
 			return true;
 		}
 
-		// Reject HTML / JS / CSS injection probes (XSS payloads) fired at the
-		// search box - these are attacks, not genuine on-site searches.
-		if ( self::is_injection_probe( $search ) ) {
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Detect HTML/JS/CSS injection probes fired at the search box (XSS payloads)
-	 * rather than genuine searches. The pattern list is filterable via
-	 * `burst_search_injection_patterns`.
-	 *
-	 * @param string $search Sanitized search term.
-	 * @return bool true when the term looks like an injection attempt.
-	 */
-	private static function is_injection_probe( string $search ): bool {
-		// Attackers often HTML-entity-encode the payload (&lt;div ...&gt;), which
-		// sanitize_text_field() leaves untouched because it contains no literal
-		// "<". Test a decoded copy as well as the raw string.
-		$decoded = html_entity_decode( $search, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
-
-		$patterns = [
-			// inline event handler attribute: onerror=, onload=, ononline= ...
-			'#\bon[a-z]{3,}\s*=#i',
-			// CSS expression() IE-XSS vector, plus its hex-obfuscated form.
-			'#expression\s*\(#i',
-			'#65787072657373696f6e#i',
-			// dangerous URI schemes.
-			'#\b(?:javascript|vbscript|data)\s*:#i',
-			// common JS XSS sinks invoked with a paren.
-			'#\b(?:alert|prompt|confirm|eval|atob|String\.fromCharCode)\s*\(#i',
-			// an HTML tag that carries an attribute, e.g. "<div style=", "<img src=".
-			'#<[a-z][a-z0-9]*\s[^>]*=#i',
-		];
-
-		/**
-		 * Filter the regex patterns used to detect injection-probe searches.
-		 *
-		 * @param string[] $patterns Array of preg_match patterns (with delimiters).
-		 */
-		$patterns = (array) apply_filters( 'burst_search_injection_patterns', $patterns );
-
-		foreach ( [ $search, $decoded ] as $haystack ) {
-			foreach ( $patterns as $pattern ) {
-				if ( preg_match( $pattern, $haystack ) ) {
-					return true;
-				}
-			}
-		}
-
 		return false;
 	}
 

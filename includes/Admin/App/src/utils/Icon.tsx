@@ -116,11 +116,7 @@ import {
 	Maximize2,
 	Menu,
 	Table2,
-	ShieldCheck,
-	Cookie,
-	Shield,
-	Fingerprint,
-	Plug
+	ShieldCheck
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -218,7 +214,6 @@ const iconComponents = {
 	alert: CircleAlert,
 	search: Search,
 	upload: Upload,
-	plug: Plug,
 
 	// Filter icons from useFiltersStore
 	bounce: LogOut,
@@ -243,9 +238,6 @@ const iconComponents = {
 	// Star icons
 	'star-filled': Star,
 	'star-outline': Star,
-	cookie: Cookie,
-	security: Shield,
-	fingerprint: Fingerprint,
 	'map-pinned': MapPinned,
 
 	// Additional icons

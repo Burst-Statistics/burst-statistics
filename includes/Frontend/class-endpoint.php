@@ -1,6 +1,7 @@
 <?php
 namespace Burst\Frontend;
 
+use Burst\Admin\Tracking_Health;
 use Burst\Traits\Helper;
 
 defined( 'ABSPATH' ) || die();
@@ -20,8 +21,14 @@ class Endpoint {
 
 		$last_test = get_option( 'burst_ran_test' );
 		$now       = time();
-		// check if last test was more than 24 hours ago, 10 minutes if there's an error, to re-check faster.
-		$time_between_tests = $status === 'error' ? 10 * MINUTE_IN_SECONDS : DAY_IN_SECONDS;
+		// Re-test daily, or every 10 minutes while in error to recover faster. But a
+		// failed loopback probe is not a real outage while hits are still recorded, so
+		// back off to the daily interval when recent hits exist instead of hammering
+		// the server. has_recent_hits() only runs in the error branch (short-circuit).
+        error_log("test has recent hits");
+        ( new Tracking_Health() )->has_recent_hits();
+		$fast_retry         = $status === 'error' && ! ( new Tracking_Health() )->has_recent_hits();
+		$time_between_tests = $fast_retry ? 10 * MINUTE_IN_SECONDS : DAY_IN_SECONDS;
 		$time_between_tests = apply_filters( 'burst_time_between_tests', $time_between_tests );
 		$should_test_again  = $last_test < $now - $time_between_tests;
 

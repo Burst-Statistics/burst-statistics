@@ -171,35 +171,15 @@ class Share_Routing {
 	/**
 	 * Extract the Burst REST endpoint path from the current request.
 	 *
-	 * When a dispatched `WP_REST_Request` is available (the real REST API path),
-	 * the endpoint is resolved *exclusively* from the route WordPress actually
-	 * matched (`$request->get_route()`). This is the authoritative source: it is
-	 * the same route whose callback executes, so authorization can never desync
-	 * from execution. Attacker-controlled `rest_action` / `path` params are
-	 * ignored in this case.
+	 * For real REST API requests (`/wp-json/burst/v1/...`), the endpoint must be
+	 * resolved from REQUEST_URI so auth and execution use the same route.
 	 *
-	 * For real REST API requests where no request object is passed
-	 * (`/wp-json/burst/v1/...`), the endpoint is resolved from REQUEST_URI.
+	 * For AJAX fallback requests, the endpoint can be resolved from `rest_action`
+	 * or request payload fields.
 	 *
-	 * Only for AJAX fallback requests (admin-ajax.php), where Burst itself
-	 * dispatches from `rest_action` / `path`, are those params consulted — there
-	 * the auth source and the execution source are identical, so no desync.
-	 *
-	 * @param \WP_REST_Request|null $request The dispatched REST request, when available.
 	 * @return string The relative endpoint path (e.g. 'data/insights'), or empty string if not a Burst REST request.
 	 */
-	public function get_current_rest_endpoint_path( ?\WP_REST_Request $request = null ): string {
-		// Authoritative source: resolve from the route WordPress dispatched, so
-		// the authorization decision uses the exact endpoint that will execute.
-		// Regex: `#burst/v1/(.+?)$#` extracts the path after `burst/v1/`.
-		// Example: route `/burst/v1/data/today` -> `data/today`.
-		if ( $request instanceof \WP_REST_Request ) {
-			$route = $request->get_route();
-			if ( is_string( $route ) && preg_match( '#burst/v1/(.+?)$#', $route, $matches ) ) {
-				return trim( $matches[1], '/' );
-			}
-		}
-
+	public function get_current_rest_endpoint_path(): string {
 		// Standard REST API: always parse REQUEST_URI first.
 		if ( ! isset( $_SERVER['REQUEST_URI'] ) ) {
 			$path = '';
@@ -332,10 +312,9 @@ class Share_Routing {
 	 *
 	 * Implements deny-by-default: unmapped endpoints are denied for shared viewers.
 	 *
-	 * @param \WP_REST_Request|null $request The dispatched REST request, when available.
 	 * @return bool True when the current shared request is allowed.
 	 */
-	public function current_shared_request_tab_is_allowed( ?\WP_REST_Request $request = null ): bool {
+	public function current_shared_request_tab_is_allowed(): bool {
 		$share_link = $this->share->tokens->get_current_share_link_data();
 		if ( empty( $share_link ) ) {
 			return false;
@@ -344,7 +323,7 @@ class Share_Routing {
 		$report_id = (int) ( $share_link['report_id'] ?? 0 );
 
 		// For REST API / AJAX requests, resolve the tab from the endpoint path.
-		$endpoint_path = $this->get_current_rest_endpoint_path( $request );
+		$endpoint_path = $this->get_current_rest_endpoint_path();
 		if ( ! empty( $endpoint_path ) ) {
 			// Report-based share links allow 'story' endpoints, and any endpoints mapped to shareable tabs.
 			if ( $report_id > 0 ) {
@@ -413,8 +392,8 @@ class Share_Routing {
 	 * @param \WP_REST_Request $request REST request (unused).
 	 */
 	public function apply_share_link_restrictions_filter( array $args, string $type, \WP_REST_Request $request ): array {
-		unset( $type );
-		return $this->apply_share_link_restrictions( $args, $request );
+		unset( $type, $request );
+		return $this->apply_share_link_restrictions( $args );
 	}
 
 	/**
@@ -422,11 +401,10 @@ class Share_Routing {
 	 * If the current request is from a shared viewer with restricted permissions,
 	 * override date_start, date_end, and filters with values from the share token's initial_state.
 	 *
-	 * @param array                 $args    The request arguments (date_start, date_end, filters, etc.).
-	 * @param \WP_REST_Request|null $request The dispatched REST request, when available.
+	 * @param array $args The request arguments (date_start, date_end, filters, etc.).
 	 * @return array Modified arguments with share-link restrictions applied.
 	 */
-	public function apply_share_link_restrictions( array $args, ?\WP_REST_Request $request = null ): array {
+	public function apply_share_link_restrictions( array $args ): array {
 		// Only enforce restrictions if the current user is a shared link viewer.
 		// This prevents admins who happen to have a share token from being restricted.
 		if ( ! self::is_shareable_link_viewer() ) {
@@ -452,7 +430,7 @@ class Share_Routing {
 		$report_id = (int) ( $share_link['report_id'] ?? 0 );
 		if ( $report_id > 0 ) {
 			// Story Mode restrictions: Apply block-specific filters and dates.
-			$endpoint_path = $this->get_current_rest_endpoint_path( $request );
+			$endpoint_path = $this->get_current_rest_endpoint_path();
 			if ( empty( $endpoint_path ) ) {
 				return $args;
 			}

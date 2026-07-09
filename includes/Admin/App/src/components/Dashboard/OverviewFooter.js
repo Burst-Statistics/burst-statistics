@@ -21,6 +21,7 @@ const OverviewFooter = () => {
 			if (
 				'beacon' === response.status ||
 				'rest' === response.status ||
+				'recording' === response.status ||
 				'disabled' === response.status
 			) {
 				const status = response.status ? response.status : 'error';
@@ -46,6 +47,7 @@ const OverviewFooter = () => {
 		error: __( 'Error checking tracking status', 'burst-statistics' ),
 		rest: __( 'Tracking with REST API', 'burst-statistics' ),
 		beacon: __( 'Tracking with an endpoint', 'burst-statistics' ),
+		recording: __( 'Tracking is working', 'burst-statistics' ),
 		disabled: __( 'Tracking is disabled', 'burst-statistics' )
 	};
 	const trackingTooltipTexts = {
@@ -60,6 +62,10 @@ const OverviewFooter = () => {
 		),
 		beacon: __(
 			'Tracking is working. You are using the Burst endpoint to collect statistics. This type of tracking is accurate and lightweight.',
+			'burst-statistics'
+		),
+		recording: __(
+			'Tracking is working. Hits are being recorded.',
 			'burst-statistics'
 		),
 		disabled: __( 'Tracking is disabled', 'burst-statistics' )
@@ -78,6 +84,10 @@ const OverviewFooter = () => {
 			color: 'green'
 		},
 		beacon: {
+			icon: 'circle-check',
+			color: 'green'
+		},
+		recording: {
 			icon: 'circle-check',
 			color: 'green'
 		},
