@@ -368,6 +368,12 @@ class Upgrade {
 			// Add block_goal column to burst_goals for Gutenberg block editor integration.
 			update_option( 'burst_db_upgrade_goals_add_block_goal_column', true, false );
 			update_option( 'burst_db_upgrade_goals_add_page_id_column', true, false );
+
+			if ( defined( 'BURST_FREE' ) ) {
+				delete_option( 'burst_trial_offered' );
+				\Burst\burst_loader()->admin->tasks->dismiss_task( 'trial_offer_loyal_users' );
+			}
+			\Burst\burst_loader()->admin->tasks->add_task( 'search_console_integration' );
 		}
 
 		$admin = new Admin();
