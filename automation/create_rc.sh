@@ -122,13 +122,16 @@ create_rc_zip() {
     "--exclude=.phpunit.result.cache"
     "--exclude=languages/*.json" #always exclude json files
     "--exclude=languages/*.po~" #loco translate backup files
+    "--exclude=coverage/"
+    "--exclude=.nyc_output/"
+    "--exclude=.fallow/"
+    "--exclude=.fallowrc.json"
     "--exclude=/node_modules/"
     "--exclude=/includes/Admin/Mailer/maizzle/node_modules/"
     "--exclude=/dashboard-widget/"
     "--exclude=/settings/"
     "--exclude=/includes/Admin/App/node_modules/"
     "--exclude=/includes/Admin/App/.tanstack"
-    "--exclude=/includes/Admin/App/.fallow"
     "--exclude=/includes/Admin/App/.prettierrc.js"
     "--exclude=/includes/Admin/App/src/.babelrc.js"
     "--exclude=/includes/Admin/Dashboard_Widget/node_modules/"
