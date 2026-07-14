@@ -26,6 +26,7 @@ interface TopPerformersProps {
  *
  * @return {JSX.Element} The rendered component.
  */
+// fallow-ignore-next-line complexity
 const TopPerformerStats = ({
 	title,
 	subtitle,

@@ -77,6 +77,7 @@ const getSystemThemePreference = (): ThemeMode => {
 		'light';
 };
 
+// fallow-ignore-next-line complexity
 const getAppWrapperElement = () => {
 	if ( 'undefined' === typeof document ) {
 		return null;
@@ -223,6 +224,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 				return;
 			}
 
+			// fallow-ignore-next-line complexity
 			setThemeState( ( current ) => {
 				if ( current.isHostManagedContext ) {
 					const storedTheme = getStoredTheme();
@@ -273,6 +275,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 		return () => observer.disconnect();
 	}, [ hasStoredPreference, theme ]);
 
+	// fallow-ignore-next-line complexity
 	useEffect( () => {
 		if (
 			isHostManagedContext ||

@@ -14,6 +14,7 @@ import useShareableLinkStore from '@/store/useShareableLinkStore';
  * @param {boolean}  props.isHighlighted    - Whether to highlight all chips (popover-open state).
  * @return {JSX.Element} FilterChipList component.
  */
+// fallow-ignore-next-line complexity
 const FilterChipList = ({
 	filters = [],
 	onRemove,

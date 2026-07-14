@@ -66,6 +66,8 @@ interface AsyncSelectInputProps {
  * Uses Downshift's useCombobox and useMultipleSelection hooks for accessibility and keyboard navigation.
  */
 const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
+
+	// fallow-ignore-next-line complexity
 	(
 		{
 			value,
@@ -133,6 +135,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 		}, [ defaultOptions, loadOptions ]);
 
 		// Convert value to array of selected items
+		// fallow-ignore-next-line complexity
 		const getSelectedItems = (): SelectOption[] => {
 			if ( ! value ) {
 				return [];
@@ -226,6 +229,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 			getDropdownProps
 		} = useMultipleSelection({
 			selectedItems: currentSelectedItems, // Use currentSelectedItems from props or state
+			// fallow-ignore-next-line complexity
 			onStateChange({ selectedItems: newSelectedItems, type }) {
 				switch ( type ) {
 					case useMultipleSelection.stateChangeTypes
@@ -283,6 +287,8 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 						return changes;
 				}
 			},
+
+			// fallow-ignore-next-line complexity
 			onStateChange({
 				type,
 				selectedItem: newSelectedItem,

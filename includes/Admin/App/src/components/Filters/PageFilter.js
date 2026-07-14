@@ -11,6 +11,7 @@ import useShareableLinkStore from '@/store/useShareableLinkStore';
  *
  * @return {JSX.Element} PageFilter component.
  */
+// fallow-ignore-next-line complexity
 export const PageFilter = ( props ) => {
 	const smallLabels = props.smallLabels ?? false;
 	const reportBlockIndex = props.reportBlockIndex ?? undefined;

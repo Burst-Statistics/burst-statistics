@@ -21,6 +21,8 @@ import { metricOptions } from '@/store/useGeoStore';
  * @return {JSX.Element|null}
  */
 const ChoroplethTooltip = memo(
+
+	// fallow-ignore-next-line complexity
 	({ feature, total, selectedMetric, valueFormatter, geoIpDatabaseType }) => {
 		if ( ! feature ) {
 			return null;

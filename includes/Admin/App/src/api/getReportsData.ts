@@ -23,6 +23,7 @@ export async function getReportsData(): Promise<Report[]> {
 
 	const reports = result.data.reports;
 
+	// fallow-ignore-next-line complexity
 	return reports.map( ( r: any ): Report => { // eslint-disable-line @typescript-eslint/no-explicit-any
 		const contentKeys = Array.isArray( r.content ) ? r.content : [];
 

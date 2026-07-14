@@ -1,5 +1,8 @@
-import FieldWrapper from '@/components/Fields/FieldWrapper';
 import RadioButtonsInput from '@/components/Inputs/RadioButtonsInput';
+import {
+	buildControllerFieldProps,
+	renderWrappedField
+} from '@/components/Fields/fieldHelpers';
 
 /**
  * RadioButtonsField component
@@ -16,30 +19,28 @@ import RadioButtonsInput from '@/components/Inputs/RadioButtonsInput';
  */
 const RadioButtonsField =
 	({ field, fieldState, label, help, context, className, ...props }) => {
-		const inputId = props.id || field.name;
-		return (
-			<FieldWrapper
-				label={label}
-				help={help}
-				error={fieldState?.error?.message}
-				context={context}
-				className={className}
-				inputId={inputId}
-				required={props.required}
-				recommended={props.recommended}
-				disabled={props.disabled}
-				{...props}
-			>
-				<RadioButtonsInput
-					id={inputId}
-					options={field.options}
-					value={field.value}
-					disabled={props.settingsIsUpdating || field.disabled}
-					goalId={field.goal_id} // Optional goal id for namespacing, if provided.
-					{...props}
-				/>
-			</FieldWrapper>
-		);
+		const { inputId, wrapperProps } = buildControllerFieldProps({
+			field,
+			fieldState,
+			props,
+			label,
+			help,
+			context,
+			className
+		});
+
+		return renderWrappedField({
+			wrapperProps,
+			InputComponent: RadioButtonsInput,
+			inputProps: {
+				id: inputId,
+				options: field.options,
+				value: field.value,
+				disabled: props.settingsIsUpdating || field.disabled,
+				goalId: field.goal_id, // Optional goal id for namespacing, if provided.
+				...props
+			}
+		});
 	};
 
 RadioButtonsField.displayName = 'RadioButtonsField';

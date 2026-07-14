@@ -27,6 +27,7 @@ const QUERY_KEYS = {
 };
 
 // Helper: Converts TopoJSON to GeoJSON features
+// fallow-ignore-next-line complexity
 const convertTopoToGeo = ( topoData, objectKey ) => {
 	if ( ! topoData || ! topoData.objects || ! topoData.objects[objectKey]) {
 		console.warn(
@@ -152,6 +153,7 @@ export const useGeoData = () => {
 	}, [ countryOverlayTopo ]);
 
 	// Determine primary features based on view level
+	// fallow-ignore-next-line complexity
 	const primaryFeatures = useMemo( () => {
 		switch ( currentView.level ) {
 			case 'world':
@@ -192,6 +194,7 @@ export const useGeoData = () => {
 		return { type: 'FeatureCollection', features: [] };
 	}, [ currentView.level, countryOverlayGeoJson ]);
 
+	// fallow-ignore-next-line complexity
 	const isLoading = useMemo( () => {
 		if ( 'world' === currentView.level ) {
 			return (

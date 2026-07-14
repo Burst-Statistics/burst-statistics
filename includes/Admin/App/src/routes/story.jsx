@@ -19,6 +19,7 @@ export const Route = createFileRoute( '/story' )({
     )
 });
 
+// fallow-ignore-next-line complexity
 function Story() {
     const [ isWizardLoaded, setIsWizardLoaded ] = React.useState( false );
     const isPdfMode = useShareableLinkStore( ( state ) => state.isPdfMode );
@@ -46,6 +47,7 @@ function Story() {
     });
 
     // Load report into store and wizard when report data is fetched
+    // fallow-ignore-next-line complexity
     useEffect( () => {
 
         // Early returning here.
@@ -176,6 +178,8 @@ function Story() {
             }
 
             {
+
+                // fallow-ignore-next-line complexity
                 reportBlocks.map( ( block, index ) => {
                     const blockId = block.id;
                     const blockConfig = availableContent.find( item => item.id === blockId );

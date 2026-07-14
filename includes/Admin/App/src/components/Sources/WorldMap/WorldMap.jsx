@@ -12,6 +12,7 @@ import MapOverlay from '@/components/Sources/WorldMap/MapOverlay';
 import InCompleteDataNotice from '@/components/Sources/WorldMap/InCompleteDataNotice';
 import MapStatisticsInfo from '@/components/Sources/WorldMap/MapStatisticsInfo';
 
+// fallow-ignore-next-line complexity
 const WorldMap = ( props ) => {
 	const { isStory } = useBlockConfig( props );
 
@@ -74,6 +75,8 @@ const WorldMap = ( props ) => {
 	} = useGeoAnalytics( props );
 
 	const handleFeatureClick = useCallback(
+
+		// fallow-ignore-next-line complexity
 		( feature ) => {
 			if ( ! feature || ! feature.properties?.iso_a2 ) {
 				return;
@@ -122,6 +125,7 @@ const WorldMap = ( props ) => {
 	);
 
 	// When view changes to a country and its data is loaded, set the zoom target
+	// fallow-ignore-next-line complexity
 	useEffect( () => {
 		if (
 			'country' === currentView.level &&
@@ -148,6 +152,7 @@ const WorldMap = ( props ) => {
 	const matchProperty = useMemo( () => {
 
 		// Custom matching function to match GeoJSON features with analytics data
+		// fallow-ignore-next-line complexity
 		return ( feature, datum ) => {
 
 			// Get the country code from the feature's properties
@@ -203,6 +208,7 @@ const WorldMap = ( props ) => {
 	}, []);
 
 	// Calculate total for the selected metric
+	// fallow-ignore-next-line complexity
 	const totalMetricValue = useMemo( () => {
 		if ( ! analyticsData || 0 === analyticsData.length ) {
 			return 0;

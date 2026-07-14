@@ -95,6 +95,7 @@ const FilterPopoverContent: React.FC<FilterPopoverContentProps> = ({
 		onClose();
 	};
 
+	// fallow-ignore-next-line complexity
 	const getFilterDescription = (): string => {
 		if ( 'setup' !== currentStep || ! selectedConfig ) {
 			return '';

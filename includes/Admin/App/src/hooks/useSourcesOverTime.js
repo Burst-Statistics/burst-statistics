@@ -13,7 +13,7 @@ import { getSourcesOverTimeData, getSourcesListData } from '@/api/getSourcesData
  * @param {Function} [params.select]   Optional selection transformer callback.
  * @return {Object} Query result object.
  */
-export function useSourcesOverTime({ startDate, endDate, range, args, select }) {
+function useSourcesOverTime({ startDate, endDate, range, args, select }) {
 	return useQuery({
 		queryKey: [ 'sources-over-time', startDate, endDate, range, args ],
 		queryFn: () => getSourcesOverTimeData({ startDate, endDate, range, args }),

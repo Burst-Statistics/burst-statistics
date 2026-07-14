@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import type { ReactElement } from 'react';
-import { TabsTrigger } from '@/components/Common/Tabs';
+import { TabsTrigger } from './TabsTrigger';
 import { useNonPersistedTabsStore } from '@/store/useTabsStore';
 
 /**

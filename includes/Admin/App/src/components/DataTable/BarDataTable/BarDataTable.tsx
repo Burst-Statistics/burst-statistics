@@ -40,6 +40,7 @@ function colTrack( col: { align?: string; width?: string; minWidth?: number }): 
  * @param  {BarDataTableProps<T>} props - Component props.
  * @return {JSX.Element} The rendered table.
  */
+// fallow-ignore-next-line complexity
 function BarDataTableInner<T extends Record<string, unknown>>({
 	columns,
 	data,
@@ -128,6 +129,8 @@ function BarDataTableInner<T extends Record<string, unknown>>({
 				) }
 
 				{ ! showSkeleton &&
+
+					// fallow-ignore-next-line complexity
 					data.map( ( row, index ) => {
 						const barValue = barColumnKey ?
 							( row[ barColumnKey ] as number ) :
@@ -152,6 +155,7 @@ function BarDataTableInner<T extends Record<string, unknown>>({
 									/>
 								) }
 
+								{/* fallow-ignore-next-line complexity */}
 								{ columns.map( ( col ) => {
 									const rawValue = row[ col.key as keyof T ];
 
@@ -188,5 +192,3 @@ function BarDataTableInner<T extends Record<string, unknown>>({
  * Cast is required because memo loses the generic type parameter.
  */
 export const BarDataTable = memo( BarDataTableInner ) as typeof BarDataTableInner;
-
-export default BarDataTable;

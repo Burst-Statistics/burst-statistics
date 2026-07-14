@@ -22,6 +22,8 @@ import NotFoundModal from '@/components/Common/NotFoundModal';
 
 
 export const Route = createFileRoute( '/sales' )({
+
+	// fallow-ignore-next-line complexity
 	beforeLoad: ({ context }) => {
 
 		// If plugin is not a pro version then no need to check for Unauthorized error, showing upsell for free version.

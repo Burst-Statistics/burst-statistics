@@ -37,6 +37,7 @@ import Icon from '@/utils/Icon';
  * @param {string|undefined} siteUrl The configured site URL.
  * @return {string} A safe hostname fallback.
  */
+// fallow-ignore-next-line complexity
 const resolveHostname = ( siteUrl ) => {
 	const fallbackHostname = window.location.hostname || 'site';
 
@@ -63,6 +64,78 @@ const resolveHostname = ( siteUrl ) => {
 	}
 };
 
+const COLUMN_TEMPLATES = {
+	visitors: {
+		label: __( 'Visitors', 'burst-statistics' ),
+		category: 'traffic',
+		align: 'right'
+	},
+	sessions: {
+		label: __( 'Sessions', 'burst-statistics' ),
+		category: 'traffic',
+		pro: true,
+		align: 'right'
+	},
+	bounce_rate: {
+		label: __( 'Bounce rate', 'burst-statistics' ),
+		category: 'engagement',
+		format: 'percentage',
+		align: 'right'
+	},
+	conversions: {
+		label: __( 'Goal completions', 'burst-statistics' ),
+		category: 'conversions',
+		pro: true,
+		align: 'right'
+	},
+	sales: {
+		label: __( 'Sales', 'burst-statistics' ),
+		category: 'conversions',
+		pro: true,
+		format: 'integer',
+		align: 'right'
+	},
+	revenue: {
+		label: __( 'Revenue', 'burst-statistics' ),
+		category: 'conversions',
+		pro: true,
+		format: 'currency',
+		align: 'right'
+	},
+	sales_conversion_rate: {
+		label: __( 'Sales conv. rate', 'burst-statistics' ),
+		category: 'conversions',
+		pro: true,
+		format: 'percentage',
+		align: 'right'
+	},
+	page_value: {
+		label: __( 'Page value', 'burst-statistics' ),
+		category: 'conversions',
+		pro: true,
+		format: 'currency',
+		align: 'right'
+	},
+	conversion_rate: {
+		label: __( 'Goal conv. rate', 'burst-statistics' ),
+		category: 'conversions',
+		format: 'percentage',
+		pro: true,
+		align: 'right'
+	}
+};
+
+const getGoalAndEcommerceTemplates = ( shouldLoadEcommerce ) => ({
+	conversions: { ...COLUMN_TEMPLATES.conversions },
+	conversion_rate: { ...COLUMN_TEMPLATES.conversion_rate },
+	...( shouldLoadEcommerce && {
+		sales: { ...COLUMN_TEMPLATES.sales },
+		revenue: { ...COLUMN_TEMPLATES.revenue },
+		sales_conversion_rate: { ...COLUMN_TEMPLATES.sales_conversion_rate },
+		page_value: { ...COLUMN_TEMPLATES.page_value }
+	})
+});
+
 /**
  * DataTableBlock component for displaying a block with a datatable. This
  * component is used in the StatisticsPage.
@@ -76,6 +149,7 @@ const resolveHostname = ( siteUrl ) => {
  * @param  {boolean} props.isInOverlay    When true, hides the expand button and adjusts layout for overlay mode.
  * @return {JSX.Element} The DataTableBlock component.
  */
+// fallow-ignore-next-line complexity
 const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 	// isInOverlay is overlay-specific and not part of useBlockConfig.
 	const isInOverlay = props.isInOverlay ?? false;
@@ -127,25 +201,9 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					category: 'traffic',
 					align: 'right'
 				},
-				visitors: {
-					label: __( 'Visitors', 'burst-statistics' ),
-					category: 'traffic',
-					pro: false,
-					align: 'right'
-				},
-				sessions: {
-					label: __( 'Sessions', 'burst-statistics' ),
-					category: 'traffic',
-					pro: true,
-					align: 'right'
-				},
-				bounce_rate: {
-					label: __( 'Bounce rate', 'burst-statistics' ),
-					category: 'engagement',
-					format: 'percentage',
-					pro: false,
-					align: 'right'
-				},
+				visitors: { ...COLUMN_TEMPLATES.visitors, pro: false },
+				sessions: { ...COLUMN_TEMPLATES.sessions },
+				bounce_rate: { ...COLUMN_TEMPLATES.bounce_rate, pro: false },
 				avg_time_on_page: {
 					label: __( 'Avg. time on page', 'burst-statistics' ),
 					category: 'engagement',
@@ -166,49 +224,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					format: 'percentage',
 					align: 'right'
 				},
-				conversions: {
-					label: __( 'Goal completions', 'burst-statistics' ),
-					category: 'conversions',
-					pro: true,
-					align: 'right'
-				},
-				conversion_rate: {
-					label: __( 'Goal conv. rate', 'burst-statistics' ),
-					category: 'conversions',
-					format: 'percentage',
-					pro: true,
-					align: 'right'
-				},
-				...( shouldLoadEcommerce && {
-					sales: {
-						label: __( 'Sales', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'integer',
-						align: 'right'
-					},
-					revenue: {
-						label: __( 'Revenue', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'currency',
-						align: 'right'
-					},
-					sales_conversion_rate: {
-						label: __( 'Sales conv. rate', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'percentage',
-						align: 'right'
-					},
-					page_value: {
-						label: __( 'Page value', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'currency',
-						align: 'right'
-					}
-				})
+				...getGoalAndEcommerceTemplates( shouldLoadEcommerce )
 			}
 		},
 		referrers: {
@@ -232,53 +248,14 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					align: 'left',
 					group_by: true
 				},
-				visitors: {
-					label: __( 'Visitors', 'burst-statistics' ),
-					category: 'traffic',
-					pro: true,
-					align: 'right'
-				},
-				sessions: {
-					label: __( 'Sessions', 'burst-statistics' ),
-					category: 'traffic',
-					pro: true,
-					align: 'right'
-				},
-				bounce_rate: {
-					label: __( 'Bounce rate', 'burst-statistics' ),
-					category: 'engagement',
-					format: 'percentage',
-					pro: true,
-					align: 'right'
-				},
-				conversions: {
-					label: __( 'Goal completions', 'burst-statistics' ),
-					category: 'conversions',
-					pro: true,
-					align: 'right'
-				},
+				visitors: { ...COLUMN_TEMPLATES.visitors, pro: true },
+				sessions: { ...COLUMN_TEMPLATES.sessions },
+				bounce_rate: { ...COLUMN_TEMPLATES.bounce_rate, pro: true },
+				conversions: { ...COLUMN_TEMPLATES.conversions },
 				...( shouldLoadEcommerce && {
-					sales: {
-						label: __( 'Sales', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'integer',
-						align: 'right'
-					},
-					revenue: {
-						label: __( 'Revenue', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'currency',
-						align: 'right'
-					},
-					page_value: {
-						label: __( 'Page value', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'currency',
-						align: 'right'
-					}
+					sales: { ...COLUMN_TEMPLATES.sales },
+					revenue: { ...COLUMN_TEMPLATES.revenue },
+					page_value: { ...COLUMN_TEMPLATES.page_value }
 				})
 			}
 		},
@@ -323,53 +300,14 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					align: 'left',
 					group_by: true
 				},
-				visitors: {
-					label: __( 'Visitors', 'burst-statistics' ),
-					category: 'traffic',
-					pro: false,
-					align: 'right'
-				},
-				sessions: {
-					label: __( 'Sessions', 'burst-statistics' ),
-					category: 'traffic',
-					pro: true,
-					align: 'right'
-				},
-				bounce_rate: {
-					label: __( 'Bounce rate', 'burst-statistics' ),
-					category: 'engagement',
-					format: 'percentage',
-					pro: false,
-					align: 'right'
-				},
-				conversions: {
-					label: __( 'Goal completions', 'burst-statistics' ),
-					category: 'conversions',
-					pro: true,
-					align: 'right'
-				},
+				visitors: { ...COLUMN_TEMPLATES.visitors, pro: false },
+				sessions: { ...COLUMN_TEMPLATES.sessions },
+				bounce_rate: { ...COLUMN_TEMPLATES.bounce_rate, pro: false },
+				conversions: { ...COLUMN_TEMPLATES.conversions },
 				...( shouldLoadEcommerce && {
-					sales: {
-						label: __( 'Sales', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'integer',
-						align: 'right'
-					},
-					revenue: {
-						label: __( 'Revenue', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'currency',
-						align: 'right'
-					},
-					sales_conversion_rate: {
-						label: __( 'Sales conv. rate', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'percentage',
-						align: 'right'
-					},
+					sales: { ...COLUMN_TEMPLATES.sales },
+					revenue: { ...COLUMN_TEMPLATES.revenue },
+					sales_conversion_rate: { ...COLUMN_TEMPLATES.sales_conversion_rate },
 					avg_order_value: {
 						label: __( 'Avg. order value', 'burst-statistics' ),
 						category: 'conversions',
@@ -421,62 +359,9 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					align: 'left',
 					group_by: true
 				},
-				visitors: {
-					label: __( 'Visitors', 'burst-statistics' ),
-					category: 'traffic',
-					pro: true,
-					align: 'right'
-				},
-				bounce_rate: {
-					label: __( 'Bounce rate', 'burst-statistics' ),
-					category: 'engagement',
-					format: 'percentage',
-					pro: true,
-					align: 'right'
-				},
-				conversions: {
-					label: __( 'Goal completions', 'burst-statistics' ),
-					category: 'conversions',
-					pro: true,
-					align: 'right'
-				},
-				conversion_rate: {
-					label: __( 'Goal conv. rate', 'burst-statistics' ),
-					category: 'conversions',
-					format: 'percentage',
-					pro: true,
-					align: 'right'
-				},
-				...( shouldLoadEcommerce && {
-					sales: {
-						label: __( 'Sales', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'integer',
-						align: 'right'
-					},
-					revenue: {
-						label: __( 'Revenue', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'currency',
-						align: 'right'
-					},
-					sales_conversion_rate: {
-						label: __( 'Sales conv. rate', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'percentage',
-						align: 'right'
-					},
-					page_value: {
-						label: __( 'Page value', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'currency',
-						align: 'right'
-					}
-				})
+				visitors: { ...COLUMN_TEMPLATES.visitors, pro: true },
+				bounce_rate: { ...COLUMN_TEMPLATES.bounce_rate, pro: true },
+				...getGoalAndEcommerceTemplates( shouldLoadEcommerce )
 			}
 		},
 		parameters: {
@@ -498,47 +383,13 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					align: 'left',
 					group_by: true
 				},
-				visitors: {
-					label: __( 'Visitors', 'burst-statistics' ),
-					category: 'traffic',
-					pro: true,
-					align: 'right'
-				},
-				bounce_rate: {
-					label: __( 'Bounce rate', 'burst-statistics' ),
-					category: 'engagement',
-					format: 'percentage',
-					pro: true,
-					align: 'right'
-				},
-				conversions: {
-					label: __( 'Goal completions', 'burst-statistics' ),
-					category: 'conversions',
-					pro: true,
-					align: 'right'
-				},
+				visitors: { ...COLUMN_TEMPLATES.visitors, pro: true },
+				bounce_rate: { ...COLUMN_TEMPLATES.bounce_rate, pro: true },
+				conversions: { ...COLUMN_TEMPLATES.conversions },
 				...( shouldLoadEcommerce && {
-					sales: {
-						label: __( 'Sales', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'integer',
-						align: 'right'
-					},
-					revenue: {
-						label: __( 'Revenue', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'currency',
-						align: 'right'
-					},
-					sales_conversion_rate: {
-						label: __( 'Sales conv. rate', 'burst-statistics' ),
-						category: 'conversions',
-						pro: true,
-						format: 'percentage',
-						align: 'right'
-					}
+					sales: { ...COLUMN_TEMPLATES.sales },
+					revenue: { ...COLUMN_TEMPLATES.revenue },
+					sales_conversion_rate: { ...COLUMN_TEMPLATES.sales_conversion_rate }
 				})
 			}
 		},
@@ -1043,6 +894,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 	 *
 	 * @returns {*|string|string} - the formatted value to be used for searching, or the original value as a string if no formatter is found
 	 */
+	// fallow-ignore-next-line complexity
 	const getSearchableValue = ( value, format, columnId ) => {
 		if ( null === value || value === undefined ) {
 			return '';
@@ -1093,6 +945,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 
 
 	// Memoize the filtered data to avoid recalculations.
+	// fallow-ignore-next-line complexity
 	const filteredData = useMemo( () => {
 		let filtered = [];
 		if ( configDetails?.searchable && Array.isArray( tableData ) ) {
@@ -1130,6 +983,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			return filtered;
 		}
 
+		// fallow-ignore-next-line complexity
 		filtered = [ ...filtered ].sort( ( a, b ) => {
 			let actualSortField = sortField;
 

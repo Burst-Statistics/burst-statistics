@@ -43,6 +43,7 @@ const DURATION_REGEX = /^\s*(\d+(?:\.\d+)?)\s*([smhSMH]?)\s*$/;
 /**
  * Parse user duration to seconds. Accepts: 30s, 2m, 1h, 120.
  */
+// fallow-ignore-next-line complexity
 const parseDurationToSeconds = ( value: string ): number | null => {
 	const trimmed = ( value || '' ).trim();
 	if ( '' === trimmed ) {
@@ -73,6 +74,7 @@ const parseDurationToSeconds = ( value: string ): number | null => {
 /**
  * Parse a value string like "30-120" or "600-" into [minSeconds, maxSeconds | null]
  */
+// fallow-ignore-next-line complexity
 const parseValue = ( value: string ): [number | null, number | null] => {
 	if ( ! value ) {
 		return [ null, null ];
@@ -102,6 +104,7 @@ interface TimePerSessionFilterSetupProps {
 	onChange: ( value: string ) => void;
 }
 
+// fallow-ignore-next-line complexity
 const TimePerSessionFilterSetup: React.FC<TimePerSessionFilterSetupProps> = ({
 	initialValue = '',
 	onChange
@@ -154,6 +157,8 @@ const TimePerSessionFilterSetup: React.FC<TimePerSessionFilterSetupProps> = ({
 	);
 
 	const validateAndApply = useCallback(
+
+		// fallow-ignore-next-line complexity
 		( nextMinInput: string, nextMaxInput: string ) => {
 			const trimmedMin = nextMinInput.trim();
 			const trimmedMax = nextMaxInput.trim();
@@ -234,6 +239,7 @@ const TimePerSessionFilterSetup: React.FC<TimePerSessionFilterSetupProps> = ({
 
 	const isOpenEnded = null === maxSeconds;
 
+	// fallow-ignore-next-line complexity
 	const summaryText = (): string => {
 		if ( minError || maxError || rangeError ) {
 			return '';

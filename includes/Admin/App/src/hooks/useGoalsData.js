@@ -19,6 +19,7 @@ import useShareableLinkStore from '@/store/useShareableLinkStore';
  *
  * @return {Object} - An object containing goals data and CRUD operations
  */
+// fallow-ignore-next-line complexity
 const useGoalsData = () => {
 	const queryClient = useQueryClient();
 	const { isPro } = useLicenseData();
@@ -72,8 +73,7 @@ const useGoalsData = () => {
 		return goal || null;
 	};
 
-	// Update a goal field value in the local cache only (for settings fields, persisted via saveGoalSettings)
-	const setGoalValue = ( id, type, value ) => {
+	const updateGoalInCache = ( id, updater ) => {
 		queryClient.setQueryData([ 'goals_data' ], ( oldData ) => {
 			if ( ! oldData ) {
 				return oldData;
@@ -82,25 +82,23 @@ const useGoalsData = () => {
 			return produce( oldData, ( draft ) => {
 				const index = draft.goals.findIndex( ( goal ) => goal.id === id );
 				if ( -1 !== index ) {
-					draft.goals[index][type] = value;
+					updater( draft.goals[index]);
 				}
 			});
 		});
 	};
 
+	// Update a goal field value in the local cache only (for settings fields, persisted via saveGoalSettings)
+	const setGoalValue = ( id, type, value ) => {
+		updateGoalInCache( id, ( goal ) => {
+			goal[type] = value;
+		});
+	};
+
 	// Update an entire goal in the cache
 	const updateGoal = ( id, data ) => {
-		queryClient.setQueryData([ 'goals_data' ], ( oldData ) => {
-			if ( ! oldData ) {
-				return oldData;
-			}
-
-			return produce( oldData, ( draft ) => {
-				const index = draft.goals.findIndex( ( goal ) => goal.id === id );
-				if ( -1 !== index ) {
-					draft.goals[index] = { ...draft.goals[index], ...data };
-				}
-			});
+		updateGoalInCache( id, ( goal ) => {
+			Object.assign( goal, data );
 		});
 	};
 

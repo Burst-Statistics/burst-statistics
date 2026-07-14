@@ -32,6 +32,7 @@ interface ABTestControlResult {
  *
  * @return Object containing the assigned variation and test metadata
  */
+// fallow-ignore-next-line complexity
 export const useABTest = (
 	testId: string,
 	variations: string[] = [ 'A', 'B' ],

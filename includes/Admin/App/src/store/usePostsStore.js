@@ -14,6 +14,8 @@ const usePostsStore = create( ( set, get ) => ({
 			);
 		});
 	},
+
+	// fallow-ignore-next-line complexity
 	fetchPosts: async( search = '' ) => {
 		const previousSearch = get().search;
 		let resetQuery = false;

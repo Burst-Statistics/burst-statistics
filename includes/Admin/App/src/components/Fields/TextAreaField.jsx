@@ -1,35 +1,11 @@
 import TextAreaInput from '@/components/Inputs/TextAreaInput';
-import FieldWrapper from '@/components/Fields/FieldWrapper';
+import { createFieldComponent } from '@/components/Fields/fieldHelpers';
 
 /**
  * TextAreaField component
  */
-const TextAreaField =
-	({ field, fieldState, label, help, context, className, ...props }) => {
-		const inputId = props.id || field.name;
-
-		return (
-			<FieldWrapper
-				label={label}
-				help={help}
-				error={fieldState?.error?.message}
-				context={context}
-				className={className}
-				inputId={inputId}
-				required={props.required}
-				recommended={props.recommended}
-				disabled={props.disabled}
-				{...props}
-			>
-				<TextAreaInput
-					id={inputId}
-					aria-invalid={!! fieldState?.error?.message}
-					{...field}
-					{...props}
-				/>
-			</FieldWrapper>
-		);
-	};
+const TextAreaField = createFieldComponent( TextAreaInput );
 
 TextAreaField.displayName = 'TextAreaField';
+
 export default TextAreaField;

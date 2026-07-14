@@ -1,14 +1,15 @@
-import { useWizardStore } from '@/store/reports/useWizardStore';
-import { __ } from '@wordpress/i18n';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
-import { useFormContext } from 'react-hook-form';
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useRef, useState } from 'react';
 import useLicenseData from '@/hooks/useLicenseData';
 import ProBadge from '@/components/Common/ProBadge';
-import { useReportConfigStore } from '@/store/reports/useReportConfigStore';
 import { ContentBlockId, ContentItem } from '@/store/reports/types';
 import Icon from '@/utils/Icon';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+	getSelectableContentBlocks,
+	useContentSelectionFormSync,
+	useReportWizardSelectionData
+} from './contentSelectionHelpers';
 
 interface AnimatingBlock {
 	block: ContentItem;
@@ -21,42 +22,18 @@ interface AnimatingBlock {
  * Displays a grid of content blocks with plus buttons for adding blocks to the story.
  */
 const StoryContentSelection = () => {
-	const availableContent = useReportConfigStore( ( state ) => state.availableContent );
-	const content = useWizardStore( ( state ) => state.wizard.content );
-	const addContent = useWizardStore( ( state ) => state.addContent );
-	const shouldLoadEcommerce = window.burst_settings?.shouldLoadEcommerce || false;
+	const {
+		availableContent,
+		content,
+		addContent,
+		shouldLoadEcommerce
+	} = useReportWizardSelectionData();
 
 	const { isLicenseValidFor } = useLicenseData();
 	const isAgency = isLicenseValidFor( 'reporting' );
-	const isFirstRender = useRef( true );
 	const [ animatingBlock, setAnimatingBlock ] = useState<AnimatingBlock | null>( null );
 	const containerRef = useRef<HTMLDivElement>( null );
-
-	const {
-		register,
-		setValue,
-		formState: { errors }
-	} = useFormContext();
-
-	useEffect( () => {
-		register( 'content', {
-			value: content,
-			validate: ( value: string[]) =>
-				0 < value.length ||
-				__( 'Please select at least one content item', 'burst-statistics' )
-		});
-	}, [ register, content ]); // eslint-disable-line react-hooks/exhaustive-deps
-
-	useEffect( () => {
-		if ( isFirstRender.current ) {
-			isFirstRender.current = false;
-			return;
-		}
-
-		setValue( 'content', content, {
-			shouldValidate: !! errors.content
-		});
-	}, [ content, setValue ]); // eslint-disable-line react-hooks/exhaustive-deps
+	const { errors } = useContentSelectionFormSync( content );
 
 	const handleClick = ( blockId: ContentBlockId, event: React.MouseEvent<HTMLButtonElement> ) => {
 		const block = availableContent.find( item => item.id === blockId );
@@ -87,9 +64,7 @@ const StoryContentSelection = () => {
 		<FieldWrapper error={errors.content?.message as string} label="" inputId="content_selection" fullWidthContent={ true } className="!pt-0 !px-0">
 			<div ref={containerRef} className="relative grid grid-cols-2 gap-3 py-4">
 				{
-					availableContent
-						.filter( ( block ) => ! block.ecommerce || shouldLoadEcommerce )
-						.filter( ( block ) => block.component )
+					getSelectableContentBlocks( availableContent, shouldLoadEcommerce, true )
 						.filter( ( block ) => ! block.pro || isAgency )
 						.map( ( block:ContentItem, index ) => {
 							const isBlockProDisabled = block.pro && ! isAgency;
@@ -108,7 +83,7 @@ const StoryContentSelection = () => {
 									className={`
 										flex flex-col items-center gap-3 p-4 bg-white rounded-lg ring-1 ring-gray-400 cursor-pointer transition-all shadow-layered-low-b
 										${isBlockProDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:ring-gray-500 hover:scale-105 hover:shadow-layered-mid-b'}
-										
+
 									`}
 								>
 									{block.icon && (

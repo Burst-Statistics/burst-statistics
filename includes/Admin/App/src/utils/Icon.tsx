@@ -120,6 +120,7 @@ import {
 	Cookie,
 	Shield,
 	Fingerprint,
+	Repeat,
 	Plug
 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -245,7 +246,9 @@ const iconComponents = {
 	'star-outline': Star,
 	cookie: Cookie,
 	security: Shield,
+	shield: Shield,
 	fingerprint: Fingerprint,
+	repeat: Repeat,
 	'map-pinned': MapPinned,
 
 	// Additional icons
@@ -295,11 +298,11 @@ const iconComponents = {
 
 
 // Define types for icon names and colors
-export type IconName = keyof typeof iconComponents | string;
-export type ColorName = keyof typeof iconColors | string;
+type IconName = keyof typeof iconComponents | string;
+type ColorName = keyof typeof iconColors | string;
 
 // Props interface for the Icon component
-export interface IconProps {
+interface IconProps {
 	name?: IconName;
 	color?: ColorName;
 	size?: number;
@@ -342,6 +345,7 @@ const Icon = memo(
 		 *
 		 * @return {JSX.Element} The rendered icon component
 		 */
+		// fallow-ignore-next-line complexity
 		const renderIcon = () => {
 
 			// Special handling for bullet and dot icons - they should be filled

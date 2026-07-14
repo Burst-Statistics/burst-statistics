@@ -3,9 +3,7 @@
  */
 
 export type {
-	InsightsChartDataset,
-	InsightsData,
-	BurstDataResponse
+	InsightsData
 } from './api-endpoints';
 
 export interface GetInsightsDataArgs {

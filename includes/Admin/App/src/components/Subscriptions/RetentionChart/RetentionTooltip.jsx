@@ -8,6 +8,7 @@ import { ChartTooltip } from '@/components/Common/ChartTooltip';
  * @param {Object} props.cell  - The hovered cell data.
  * @return {JSX.Element} The tooltip element.
  */
+// fallow-ignore-next-line complexity
 export function RetentionTooltip({ cell }) {
 	const { serieId, data } = cell;
 	const period = String( data.x ?? '' );

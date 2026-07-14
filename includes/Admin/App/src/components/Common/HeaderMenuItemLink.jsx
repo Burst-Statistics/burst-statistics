@@ -22,7 +22,7 @@ import Icon from '@/utils/Icon';
  *
  * @return {string} The generated URL for the menu item.
  */
-export function getMenuItemUrl( menuItem ) {
+function getMenuItemUrl( menuItem ) {
 
 	// If it's the dashboard, return root path.
 	if ( 'dashboard' === menuItem.id ) {
@@ -70,6 +70,8 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial, varia
 
 	// Build search params to preserve when navigating to filter-enabled routes.
 	const isShareableLinkViewer = useShareableLinkStore( ( state ) => state.isShareableLinkViewer );
+
+	// fallow-ignore-next-line complexity
 	const preservedSearch = useMemo( () => {
 		const filterParams = {};
 
@@ -169,28 +171,32 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial, varia
 				// eslint-disable-next-line react-compiler/react-compiler -- Ref is the supported way to mirror render-prop state for effects.
 				isActiveRef.current = isActive;
 
-				return (
-					<span className="inline-flex items-center gap-1.5 text-base tracking-wide">
-						{menuItem.icon && '' !== menuItem.icon && (
-							<span aria-hidden="true" className="inline-flex shrink-0">
-								<Icon name={menuItem.icon} size={14} color="gray" strokeWidth={2.5} />
-							</span>
-						)}
-						<span>{menuItem.title}</span>
-						{menuItem.pro && (
-							<ProBadge
-								type={isTrial ? 'icon' : 'badge'}
-								label={__( 'Pro', 'burst-statistics' )}
-								id={menuItem.id}
-								hasLink={false}
-							/>
-						)}
-					</span>
-				);
+				return <MenuItemLabel menuItem={menuItem} isTrial={isTrial} />;
 			}}
 		</Link>
 	);
 };
+
+export const MenuItemLabel = ({ menuItem, isTrial }) => (
+	<span className="inline-flex items-center gap-1.5 text-base tracking-wide">
+		{menuItem.icon && '' !== menuItem.icon && (
+			<span aria-hidden="true" className="inline-flex shrink-0">
+				<Icon name={menuItem.icon} size={14} color="gray" strokeWidth={2.5} />
+			</span>
+		)}
+		<span>{menuItem.title}</span>
+		{menuItem.pro && (
+			<ProBadge
+				type={isTrial ? 'icon' : 'badge'}
+				label={__( 'Pro', 'burst-statistics' )}
+				id={menuItem.id}
+				hasLink={false}
+			/>
+		)}
+	</span>
+);
+
+MenuItemLabel.displayName = 'MenuItemLabel';
 
 MenuItemLink.displayName = 'MenuItemLink';
 

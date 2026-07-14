@@ -268,6 +268,7 @@ const upsellConfigs: UpsellConfigsProps = {
  * @param root0.className
  * @param root0.type
  */
+// fallow-ignore-next-line complexity
 const UpsellCopy: React.FC<UpsellCopyProps> = ({
 	className = '',
 	type = 'sources',

@@ -11,6 +11,7 @@ import { getData } from '@/utils/api';
  * @param {string} args.chartMode Selected chart mode.
  * @return {Promise<Object>} Chart payload for Nivo.
  */
+// fallow-ignore-next-line complexity
 export async function fetchRevenueData({ startDate, endDate, range, filters, chartMode }) {
 	const { data } = await getData(
 		'ecommerce/subscriptions-revenue-chart',

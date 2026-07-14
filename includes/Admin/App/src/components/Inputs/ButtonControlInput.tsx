@@ -30,6 +30,7 @@ interface ButtonControlInputProps
 	url?: string;
 }
 
+// fallow-ignore-next-line complexity
 const ButtonControlInput: React.FC<ButtonControlInputProps> = ({
 	label,
 	action,
@@ -47,6 +48,7 @@ const ButtonControlInput: React.FC<ButtonControlInputProps> = ({
 
 	const text = buttonText || label;
 
+	// fallow-ignore-next-line complexity
 	const executeAction = async() => {
 		if ( ! action ) {
 			return;

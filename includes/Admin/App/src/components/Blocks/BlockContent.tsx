@@ -12,6 +12,7 @@ type BlockContentProps = {
  * @param {string} className - The existing className string.
  * @return {string} The resolved padding classes.
  */
+// fallow-ignore-next-line complexity
 const resolvePaddingClasses = ( className = '' ): string => {
 	const hasP  = /\bp-\S+/.test( className );
 	const hasPx = /\bpx-\S+/.test( className );

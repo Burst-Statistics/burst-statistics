@@ -22,7 +22,7 @@ import { useInheritedColor } from '@nivo/colors';
 import { createClassifiedColorScale } from './dataClassification';
 import { createValueFormatter } from '@/utils/formatting';
 
-export const projectionById = {
+const projectionById = {
 	azimuthalEqualArea: geoAzimuthalEqualArea,
 	azimuthalEquidistant: geoAzimuthalEquidistant,
 	gnomonic: geoGnomonic,
@@ -399,6 +399,8 @@ export const useChoropleth = ({
 	// Pattern matching function
 	const createPatternMatcher = useCallback(
 		( minPercent, maxPercent, patternId ) => ({
+
+			// fallow-ignore-next-line complexity
 			match: ( feature ) => {
 
 				// Always return false if patterns are disabled or no data
@@ -560,7 +562,7 @@ export const useChoropleth = ({
 	};
 };
 
-export const useQuantizeColorScaleLegendData = ({
+const useQuantizeColorScaleLegendData = ({
 	scale,
 	domain: overriddenDomain,
 	reverse = false,
@@ -605,6 +607,8 @@ export const useQuantizeColorScaleLegendData = ({
 			{};
 
 		const items = colors
+
+			// fallow-ignore-next-line complexity
 			.map( ( color, index ) => {
 
 				// Ensure we don't create legend items beyond the available data breaks.

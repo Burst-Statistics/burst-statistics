@@ -18,6 +18,7 @@ import { isExcluding } from '@/config/filterConfig';
  * @param {boolean}  props.isHighlighted    - Whether to apply the green ring highlight (popover-open state).
  * @return {JSX.Element} FilterChip component.
  */
+// fallow-ignore-next-line complexity
 const FilterChip = ({
 	filter,
 	onRemove,

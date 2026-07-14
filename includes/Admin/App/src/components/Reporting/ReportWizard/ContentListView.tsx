@@ -4,6 +4,7 @@ import { __ } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
 import { ContentBlock } from '@/store/reports/types';
 import { Reorder } from 'framer-motion';
+import { getContentBlockConfig } from './reportContentHelpers';
 
 /**
  * ContentListView displays a list of selected content blocks for the report.
@@ -16,15 +17,6 @@ export const ContentListView = () => {
 	const selectedBlockIndex = useWizardStore( ( state ) => state.selectedBlockIndex );
 	const setSelectedBlockIndex = useWizardStore( ( state ) => state.setSelectedBlockIndex );
 	const availableContent = useReportConfigStore( ( state ) => state.availableContent );
-
-	/**
-	 * Get content item details by block ID.
-	 *
-	 * @param blockId - The ID of the content block.
-	 */
-	const getContentItem = ( blockId: string ) => {
-		return availableContent.find( ( c ) => c.id === blockId );
-	};
 
 	/**
 	 * Handle block click to select it.
@@ -56,8 +48,9 @@ export const ContentListView = () => {
 				onReorder={reorderContent}
 				className="flex flex-col gap-2"
 			>
+				{/* fallow-ignore-next-line complexity */}
 				{content.map( ( block: ContentBlock, index: number ) => {
-					const contentItem = getContentItem( block.id );
+					const contentItem = getContentBlockConfig( availableContent, block.id );
 					const isSelected = selectedBlockIndex === index;
 					const itemClassName = isSelected ?
 						'border-gray-400' :

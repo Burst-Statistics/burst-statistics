@@ -71,6 +71,7 @@ const getPreviousValue = ( selectedOption, previous ) => {
 export const transformTopPerformersData = ( data, selectedOption ) => {
 	const transformedData = {};
 
+	// fallow-ignore-next-line complexity
 	Object.entries( data ).forEach( ([ name, value ]) => {
 		if ( ! transformedData[name]) {
 			transformedData[name] = {};

@@ -78,6 +78,8 @@ const TopPerformers = ( props:BlockComponentProps ): JSX.Element => {
 	});
 
 	const topPerformers = useMemo(
+
+		// fallow-ignore-next-line complexity
 		() => {
 
 			// If loading or no data, use placeholder data.

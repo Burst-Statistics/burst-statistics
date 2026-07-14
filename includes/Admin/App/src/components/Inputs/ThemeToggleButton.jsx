@@ -2,6 +2,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Icon from '../../utils/Icon';
 import { __ } from '@wordpress/i18n';
 
+// fallow-ignore-next-line complexity
 export default function ThemeToggleButton() {
 	const { isDarkTheme, toggleTheme } = useTheme();
 

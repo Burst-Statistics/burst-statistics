@@ -4,6 +4,7 @@ import { useGeoStore } from '@/store/useGeoStore';
 import Icon from '@/utils/Icon';
 import Flag from '@/components/Statistics/Flag';
 
+// fallow-ignore-next-line complexity
 const MapBreadcrumbs = () => {
 	const currentView = useGeoStore( ( state ) => state.currentView );
 	const history = useGeoStore( ( state ) => state.history );

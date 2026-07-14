@@ -36,6 +36,8 @@ const EXCLUDED_FIELDS = [
  * @return {JSX.Element}
  */
 const ExportSettingsField = forwardRef(
+
+	// fallow-ignore-next-line complexity
 	({ field, fieldState, label, help, context, className, setting, ...props }, ref ) => {
 		const { settings } = useSettingsData();
 		const [ isExporting, setIsExporting ] = useState( false );

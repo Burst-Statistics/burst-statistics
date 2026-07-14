@@ -16,6 +16,7 @@ import { getData } from '@/utils/api';
  *
  * @returns {Promise<{columns: Array, data: Array}>} Datatable-shaped response.
  */
+// fallow-ignore-next-line complexity
 export const getPageParameters = async({ pageUrl, startDate, endDate, range }) => {
 	if ( ! pageUrl ) {
 		return { columns: [], data: [] };
@@ -56,5 +57,3 @@ export const getPageParameterCounts = async({ startDate, endDate, range }) => {
 	}
 	return payload;
 };
-
-export default getPageParameters;

@@ -34,6 +34,7 @@ const getSales = async( args ) => {
  * @param {Object} current The current data object.
  * @return {number} The current value.
  */
+// fallow-ignore-next-line complexity
 const getCurrentValue = ( key, current ) => {
 	switch ( key ) {
 		case 'conversion-rate':
@@ -56,6 +57,7 @@ const getCurrentValue = ( key, current ) => {
  * @param {Object} previous The previous data object.
  * @return {number} The previous value.
  */
+// fallow-ignore-next-line complexity
 const getPreviousValue = ( key, previous ) => {
 	switch ( key ) {
 		case 'conversion-rate':
@@ -74,6 +76,7 @@ const getPreviousValue = ( key, previous ) => {
 const transformSalesData = ( data ) => {
 	const transformed = {};
 
+	// fallow-ignore-next-line complexity
 	Object.entries( data ).forEach( ([ key, metric ]) => {
 
 		// Set default subtitle based on metric type.

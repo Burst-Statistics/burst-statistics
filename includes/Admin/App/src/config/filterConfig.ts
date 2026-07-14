@@ -264,9 +264,6 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		exclusion_allowed: true
 	}
 };
-export type BlockFilters = {
-	[blockId: string]: FilterSearchParams;
-}
 
 // Get all filter keys from config.
 export const FILTER_KEYS = Object.keys( FILTER_CONFIG ) as FilterKey[];

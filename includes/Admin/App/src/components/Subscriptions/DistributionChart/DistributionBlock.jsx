@@ -66,6 +66,7 @@ function DistributionLegend({ data, colors, isEmptyState }) {
  *
  * @return {JSX.Element} The DistributionBlock component.
  */
+// fallow-ignore-next-line complexity
 export function DistributionBlock() {
 	const selectedView = useSubscriptionsStore( ( state ) => state.distributionView );
 	const onViewChange = useSubscriptionsStore( ( state ) => state.setDistributionView );

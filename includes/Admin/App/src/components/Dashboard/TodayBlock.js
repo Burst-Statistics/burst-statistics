@@ -4,14 +4,13 @@ import MetricInfo from '@/components/Common/MetricInfo';
 import { useQuery } from '@tanstack/react-query';
 import getTodayData from '@//api/getTodayData';
 import Icon from '@//utils/Icon';
-import { endOfDay, format, startOfDay } from 'date-fns';
 import { useRef, useMemo } from 'react';
-import { getDateWithOffset } from '@//utils/formatting';
 import { safeDecodeURI } from '@//utils/lib';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import { useLiveVisitorsData } from '@/hooks/useLiveVisitorsData';
+import useDashboardDateRange from '@/hooks/useDashboardDateRange';
 
 function selectVisitorIcon( value ) {
 	value = parseInt( value );
@@ -23,21 +22,13 @@ function selectVisitorIcon( value ) {
 	return 'visitor';
 }
 
+// fallow-ignore-next-line complexity
 const TodayBlock = () => {
 	const intervalRef = useRef( 5000 );
 	const setInterval = ( value ) => {
 		intervalRef.current = value;
 	};
-
-	const currentDateWithOffset = useMemo( () => getDateWithOffset(), []);
-	const startDate = useMemo(
-		() => format( startOfDay( currentDateWithOffset ), 'yyyy-MM-dd' ),
-		[ currentDateWithOffset ]
-	);
-	const endDate = useMemo(
-		() => format( endOfDay( currentDateWithOffset ), 'yyyy-MM-dd' ),
-		[ currentDateWithOffset ]
-	);
+	const { startDate, endDate } = useDashboardDateRange();
 
 	const placeholderData = useMemo(
 		() => ({

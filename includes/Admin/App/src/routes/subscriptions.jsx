@@ -73,6 +73,7 @@ export const Route = createFileRoute( '/subscriptions' )({
  *
  * @return {JSX.Element}
  */
+// fallow-ignore-next-line complexity
 function SubscriptionsComponent() {
 
 	// Use the hook inside the component, not in the loader

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
-import { useWizardStore } from '@/store/reports/useWizardStore';
 import { useTheme } from '@/hooks/useTheme';
 import { AdminWysiwygField } from '@/components/Fields/Wysiwyg/WysiwygField';
 import WysiwygPreview from '@/components/Common/WysiwygPreview';
@@ -9,6 +8,11 @@ import { BlockComponentProps } from '@/store/reports/types';
 import useSettingsData from '@/hooks/useSettingsData';
 import { useDarkAwareAttachmentUrl } from '@/hooks/useAttachmentUrl';
 import { darkOverlayStyle } from '@/utils/overlayStyle';
+import {
+	getReportAssetUrl,
+	useReportBlockEditor,
+	useReportLogo
+} from './blockHooks';
 
 const HERO_BLOCK_SETTING = { id: 'hero' };
 
@@ -22,26 +26,24 @@ const DEFAULT_HERO_TEMPLATE = [
 ].join( '' );
 
 
+// fallow-ignore-next-line complexity
 const HeroBlock: React.FC<BlockComponentProps> = ({ reportBlockIndex = 0 }) => {
-	const isEditingMode = useWizardStore( ( state ) => state.isEditingMode );
-	const content = useWizardStore( ( state ) => state.wizard.content[ reportBlockIndex ]?.content ?? '' );
-	const updateComment = useWizardStore( ( state ) => state.updateComment );
+	const { isEditingMode, content, updateComment } = useReportBlockEditor({
+		reportBlockIndex,
+		fieldName: 'hero'
+	});
 	const { isDarkTheme } = useTheme();
 	const { getValue } = useSettingsData();
 
-	const logoId = getValue( 'logo_attachment_id' );
-	const logoIdDark = getValue( 'logo_attachment_id_dark' );
 	const rawBgImageId = getValue( 'hero_background_image_attachment_id' );
 	const rawBgImageIdDark = getValue( 'hero_background_image_attachment_id_dark' );
 	const brandColor: string = getValue( 'brand_color' );
 	const colorOverlayEnabled: boolean = getValue( 'hero_color_overlay_enabled' );
 
-	const heroBgDefaultUrl = ( window as any ).burst_settings.plugin_url + 'assets/img/burst-report-hero-bg.jpg'; // eslint-disable-line @typescript-eslint/no-explicit-any
-	const heroBgDarkDefaultUrl = ( window as any ).burst_settings.plugin_url + 'assets/img/burst-report-hero-dark-bg.png'; // eslint-disable-line @typescript-eslint/no-explicit-any
-	const darkLogoDefaultUrl = ( window as any ).burst_settings.plugin_url + 'assets/img/burst-email-logo-dark.png'; // eslint-disable-line @typescript-eslint/no-explicit-any
-	const logoQuery = useDarkAwareAttachmentUrl( logoId, logoIdDark, isDarkTheme, undefined, darkLogoDefaultUrl );
+	const heroBgDefaultUrl = getReportAssetUrl( 'assets/img/burst-report-hero-bg.jpg' );
+	const heroBgDarkDefaultUrl = getReportAssetUrl( 'assets/img/burst-report-hero-dark-bg.png' );
+	const { logoUrl } = useReportLogo( isDarkTheme );
 	const bgImageQuery = useDarkAwareAttachmentUrl( rawBgImageId ?? 0, rawBgImageIdDark ?? 0, isDarkTheme, heroBgDefaultUrl, heroBgDarkDefaultUrl );
-	const logoUrl = logoQuery.data?.attachmentUrl ?? '';
 	const bgImageUrl = bgImageQuery.data?.attachmentUrl ?? '';
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -20,34 +20,6 @@ export interface StepStatistics {
 }
 
 /**
- * Simplified funnel step for key insights.
- */
-export interface FunnelStep {
-	name: string;
-	sessions: number;
-}
-
-/**
- * Information about the biggest drop-off in the funnel.
- */
-export interface BiggestDropOff {
-	fromStep: string;
-	toStep: string;
-	dropOffPercentage: number;
-}
-
-/**
- * Data structure for the purchased step.
- */
-export interface PurchasedStepData {
-	totalRevenue: number;
-	totalConversions: number;
-	averageOrderValue: number;
-	funnelConversionRate: number;
-	currency?: string;
-}
-
-/**
  * Sales data structure from API.
  */
 export interface SalesMetric {

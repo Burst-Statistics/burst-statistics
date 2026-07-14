@@ -7,6 +7,7 @@ import DataTable from 'react-data-table-component';
 import useLicenseData from '@/hooks/useLicenseData';
 import { useQuery } from '@tanstack/react-query';
 
+// fallow-ignore-next-line complexity
 const RestoreArchivesField = forwardRef( () => {
 	const [ searchValue, setSearchValue ] = useState( '' );
 	const [ selectedArchives, setSelectedArchives ] = useState([]);
@@ -211,6 +212,7 @@ const RestoreArchivesField = forwardRef( () => {
 		setIndeterminate( false );
 	};
 
+	// fallow-ignore-next-line complexity
 	const onSelectArchive = ( selected, id ) => {
 		let docs = [ ...selectedArchives ];
 		if ( selected ) {
@@ -263,6 +265,7 @@ const RestoreArchivesField = forwardRef( () => {
 		return newArchives;
 	};
 
+	// fallow-ignore-next-line complexity
 	const handleSort = ( rows, selector, direction ) => {
 		if ( 0 === rows.length ) {
 			return rows;

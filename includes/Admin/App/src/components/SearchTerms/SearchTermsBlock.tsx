@@ -10,6 +10,7 @@ import { BarDataTable } from '@/components/DataTable/BarDataTable';
 import { useSearchTermsData } from './useSearchTermsData';
 import { getSearchTermsColumns } from './columns';
 import MetricInfo from '@/components/Common/MetricInfo';
+import useColumnsBySiteUrl from '@/hooks/useColumnsBySiteUrl';
 
 type SearchTermsBlockProps = {
 
@@ -37,15 +38,7 @@ const SearchTermsBlock = memo( ({ className = '' }: SearchTermsBlockProps ) => {
 
 	const navigate = useNavigate();
 	const location = useRouterState({ select: ( s ) => s.location });
-
-	const siteUrl =
-		( window as unknown as { burst_settings?: { site_url?: string } })
-			?.burst_settings?.site_url ?? window.location.origin;
-
-	const columns = useMemo(
-		() => getSearchTermsColumns({ siteUrl }),
-		[ siteUrl ]
-	);
+	const columns = useColumnsBySiteUrl( getSearchTermsColumns );
 
 	const filteredData = useMemo( () => {
 		const base = noResultsOnly ? data.filter( ( r ) => 0 === r.results ) : data;

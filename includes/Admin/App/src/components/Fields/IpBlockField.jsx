@@ -1,15 +1,37 @@
 import { forwardRef } from 'react';
 import TextAreaInput from '@/components/Inputs/TextAreaInput';
 import ButtonInput from '@/components/Inputs/ButtonInput';
-import FieldWrapper from '@/components/Fields/FieldWrapper';
+import {
+	buildControllerFieldProps,
+	renderWrappedField
+} from '@/components/Fields/fieldHelpers';
 import { __ } from '@wordpress/i18n';
+
+const parseIPList = ( value ) => {
+	const normalized = ( value || '' )
+		.replace( /\r\n/g, '\n' )
+		.replace( /\r/g, '\n' );
+	const list = normalized
+		.split( '\n' )
+		.map( ( line ) => line.trim() )
+		.filter( ( line ) => '' !== line );
+	return { normalized, list };
+};
 
 /**
  * IpBlockField component
  */
 const IpBlockField = forwardRef(
 	({ field, fieldState, label, help, context, className, ...props }, ref ) => {
-		const inputId = props.id || field.name;
+		const { inputId, error, wrapperProps } = buildControllerFieldProps({
+			field,
+			fieldState,
+			props,
+			label,
+			help,
+			context,
+			className
+		});
 		const ip = burst_settings.current_ip;
 
 		// Ensure value is always a string
@@ -27,19 +49,7 @@ const IpBlockField = forwardRef(
 				return;
 			}
 
-			// Parse the current list of IPs
-			const currentValue = value || '';
-
-			// Normalize line endings and split
-			const normalizedValue = currentValue
-				.replace( /\r\n/g, '\n' )
-				.replace( /\r/g, '\n' );
-
-			// Split by newlines and filter out empty lines
-			const ipList = normalizedValue
-				.split( '\n' )
-				.map( ( line ) => line.trim() )
-				.filter( ( line ) => '' !== line );
+			const { normalized: normalizedValue, list: ipList } = parseIPList( value );
 
 			// Add IP to the list
 			let updatedIPList;
@@ -76,36 +86,19 @@ const IpBlockField = forwardRef(
 				return true;
 			}
 
-			const normalizedValue = value
-				.replace( /\r\n/g, '\n' )
-				.replace( /\r/g, '\n' );
-			const ipList = normalizedValue
-				.split( '\n' )
-				.map( ( line ) => line.trim() )
-				.filter( ( line ) => '' !== line );
-
+			const { list: ipList } = parseIPList( value );
 			return ipList.includes( ip );
 		};
 
-		return (
-			<FieldWrapper
-				label={label}
-				help={help}
-				error={fieldState?.error?.message}
-				context={context}
-				className={className}
-				inputId={inputId}
-				required={props.required}
-				recommended={props.recommended}
-				disabled={props.disabled}
-				{...props}
-			>
+		return renderWrappedField({
+			wrapperProps,
+			InputComponent: () => (
 				<div className="w-full flex flex-col gap-2">
 					<TextAreaInput
 						ref={ref}
 						id={inputId}
 						placeholder={'127.0.0.1\n192.168.0.1'}
-						aria-invalid={!! fieldState?.error?.message}
+						aria-invalid={!! error}
 						onChange={handleChange}
 						value={value}
 						rows={4}
@@ -120,8 +113,9 @@ const IpBlockField = forwardRef(
 						{__( 'Add current IP address', 'burst-statistics' )}
 					</ButtonInput>
 				</div>
-			</FieldWrapper>
-		);
+			),
+			inputProps: {}
+		});
 	}
 );
 
