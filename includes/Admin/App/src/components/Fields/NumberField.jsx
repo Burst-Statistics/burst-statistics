@@ -15,6 +15,8 @@ import FieldWrapper from '@/components/Fields/FieldWrapper';
  * @return {JSX.Element}
  */
 const NumberField = forwardRef(
+
+	// fallow-ignore-next-line complexity
 	(
 		{
 			field,

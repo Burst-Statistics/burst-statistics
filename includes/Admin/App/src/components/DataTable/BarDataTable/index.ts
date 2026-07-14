@@ -1,3 +1,2 @@
-export { BarDataTable, default } from './BarDataTable';
-export { default as BarCell } from './BarCell';
-export type { BarColumn, BarDataTableProps } from './types';
+export { BarDataTable } from './BarDataTable';
+export type { BarColumn } from './types';

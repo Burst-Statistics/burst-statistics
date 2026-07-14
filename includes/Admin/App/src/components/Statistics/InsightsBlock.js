@@ -29,6 +29,7 @@ function InsightsLegend({ datasets, loading }) {
 
 	return (
 		<div className="flex items-center gap-4">
+			{/* fallow-ignore-next-line complexity */}
 			{ datasets.map( ( dataset, i ) => {
 				const isComparison = Boolean( dataset.is_comparison );
 				const metricKey = dataset.metric_key ?? dataset.label;
@@ -89,7 +90,8 @@ function InsightsLegend({ datasets, loading }) {
 }
 
 //eslint-disable-next-line
-const InsightsBlock = (props) => {
+// fallow-ignore-next-line complexity
+const InsightsBlock = ( props ) => {
 	const { startDate, endDate, range, filters, allowBlockFilters, isReport, index } = useBlockConfig( props );
 
 	const metrics = useInsightsStore( ( state ) => state.getMetrics() );

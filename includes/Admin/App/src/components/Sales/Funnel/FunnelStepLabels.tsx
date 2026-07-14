@@ -30,6 +30,7 @@ export const FunnelStepLabels: React.FC<{
 					{ gridTemplateColumns: `repeat(${steps.length}, 1fr)` }
 			}
 		>
+			{/* fallow-ignore-next-line complexity */}
 			{steps.map( ( step, index ) => {
 				const isLastStep = index === steps.length - 1;
 

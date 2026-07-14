@@ -1,0 +1,60 @@
+{
+	"$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+	"entry": ["src/index.tsx"],
+	"ignorePatterns": [
+		"build/**",
+		"dist/**",
+		"coverage/**",
+		"node_modules/**",
+		"src/routeTree.gen.ts",
+		"postcss-remove-layers.mjs",
+		"tailwind.animations.mjs",
+		"webpack.dev.js",
+		"webpack.prod.js"
+	],
+	"ignoreDependencies": ["@wordpress/babel-plugin-import-jsx-pragma"],
+	"ignoreExports": [
+		{
+			"file": "src/components/Inputs/DateRangePicker.tsx",
+			"exports": ["*"]
+		},
+		{
+			"file": "src/utils/formatting.ts",
+			"exports": ["*"]
+		},
+		{
+			"file": "src/components/Common/Tabs/index.ts",
+			"exports": ["TabsTrigger"]
+		},
+		{
+			"file": "src/components/Sources/WorldMap/dataClassification.js",
+			"exports": ["createQuantizeColorScale", "normalizeToRate"]
+		},
+		{
+			"file": "src/hooks/useABTest.ts",
+			"exports": ["useABTestControl", "useABTestSummary"]
+		},
+		{
+			"file": "src/store/useTabsStore.ts",
+			"exports": ["usePersistedTabsStore"]
+		},
+		{
+			"file": "src/utils/api.js",
+			"exports": ["getBlock"]
+		}
+	],
+	"duplicates": {
+		"ignore": [
+			"src/styles/integrations/date-range.css",
+			"src/styles/theme/dark-scope-tokens.css",
+			"src/styles/theme/tokens.css",
+			"src/tailwind.generated.css"
+		]
+	},
+	"health": {
+		"maxCyclomatic": 20,
+		"maxCognitive": 15,
+		"maxCrap": 40,
+		"ignore": []
+	}
+}

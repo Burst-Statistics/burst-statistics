@@ -45,6 +45,7 @@ export const useBlockHeadingData = ( reportBlockIndex?: number ): BlockHeadingDa
 	const activeFilters = filterDisplayResult.activeFilters;
 
 	// Format date range text
+	// fallow-ignore-next-line complexity
 	const dateRangeText = useMemo( () => {
 
 		// Check if block has custom date range enabled

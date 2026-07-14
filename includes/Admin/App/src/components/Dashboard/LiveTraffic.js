@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Icon from '@/utils/Icon';
 import { User } from 'lucide-react';
 import HelpTooltip from '@/components/Common/HelpTooltip';
-import { listSlideAnimation } from './OverviewBlock';
+import { listSlideAnimation } from './listAnimations';
 import { safeDecodeURI } from '@/utils/lib';
 import { OverflowTooltip } from '@/components/Common/OverflowTooltip';
 

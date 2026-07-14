@@ -1,6 +1,10 @@
 import { forwardRef } from 'react';
 import { clsx } from 'clsx';
 import Icon from '@/utils/Icon';
+import {
+	getDefinedAriaAttributes,
+	handleButtonActivationKey
+} from '@/components/Inputs/buttonUtils';
 
 interface IconButtonProps
 	extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
@@ -42,6 +46,7 @@ interface IconButtonProps
  * @param {IconButtonProps} props - Props for configuring the button.
  * @return {JSX.Element} The rendered button component.
  */
+// fallow-ignore-next-line complexity
 const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>( (
 	{
 		onClick,
@@ -70,17 +75,12 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>( (
 				variant;
 
 	const handleKeyDown = ( e: React.KeyboardEvent<HTMLButtonElement> ) => {
-
-		// Handle keyboard activation for custom onClick handlers.
-		if ( ( 'Enter' === e.key || ' ' === e.key ) && onClick && ! disabled ) {
-			e.preventDefault();
-			onClick( e as any ); // eslint-disable-line @typescript-eslint/no-explicit-any
-		}
-
-		// Call any existing onKeyDown handler.
-		if ( props.onKeyDown ) {
-			props.onKeyDown( e );
-		}
+		handleButtonActivationKey({
+			e,
+			onClick,
+			disabled,
+			onKeyDown: props.onKeyDown
+		});
 	};
 
 	const classes = clsx(
@@ -127,14 +127,12 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>( (
 	);
 
 	// Build ARIA attributes, filtering out undefined values.
-	const ariaAttributes = Object.fromEntries(
-		Object.entries({
+	const ariaAttributes = getDefinedAriaAttributes({
 			'aria-label': ariaLabel || label,
 			'aria-pressed': ariaPressed,
 			'aria-expanded': ariaExpanded,
 			'aria-disabled': disabled ? true : undefined
-		}).filter( ([ _, value ]) => value !== undefined ) // eslint-disable-line @typescript-eslint/no-unused-vars
-	);
+		});
 
 	return (
 		<button

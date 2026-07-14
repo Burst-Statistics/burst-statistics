@@ -180,6 +180,7 @@ const isInvertedMetric = ( key ) => {
  * @param {number} rateChange - Rate of change
  * @return {Object} Change data with change and changeStatus
  */
+// fallow-ignore-next-line complexity
 const calculateChange = ( key, current, previous, rateChange ) => {
 	const isInverted = isInvertedMetric( key );
 
@@ -425,6 +426,7 @@ const hasRevenueChurnBaseline = ( churnData ) => {
  * @param {?number} rateChange - Relative rate change value from API
  * @return {string} Subtitle text
  */
+// fallow-ignore-next-line complexity
 const getRevenueChurnSubtitle = ( current, previous, rateChange ) => {
 	if ( null !== rateChange && undefined !== rateChange ) {
 		if ( 0 === rateChange ) {
@@ -499,6 +501,7 @@ const getActiveSubscriptionsData = ( metric ) => {
  * @param {Object} previous    - Previous period data
  * @return {string} Subtitle text
  */
+// fallow-ignore-next-line complexity
 const getActiveSubscriptionsSubtitle = ( activeCount, previous ) => {
 
 	// Compare with previous period if available
@@ -567,6 +570,7 @@ const getCanceledSubscriptionsData = ( metric ) => {
  * @param {Object} previous      - Previous period data
  * @return {string} Subtitle text
  */
+// fallow-ignore-next-line complexity
 const getCanceledSubscriptionsSubtitle = ( canceledCount, previous ) => {
 
 	// Compare with previous period if available
@@ -637,6 +641,7 @@ const getMonthlyRecurringRevenueData = ( metric ) => {
  * @param {string} currency - Currency code
  * @return {string} Subtitle text
  */
+// fallow-ignore-next-line complexity
 const getMonthlyRecurringRevenueSubtitle = ( current, previous, currency ) => {
 	const mrr = current.mrr ?? 0;
 

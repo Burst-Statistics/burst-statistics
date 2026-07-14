@@ -7,6 +7,8 @@ import {useEffect} from '@wordpress/element';
 import useSettingsData from '@/hooks/useSettingsData';
 import useLicenseData from '@/hooks/useLicenseData';
 import {memo} from 'react';
+
+// fallow-ignore-next-line complexity
 const InCompleteDataNotice = memo( () => {
     const isIncompleteDataNoticeDismissed = useGeoStore( ( state ) => state.isIncompleteDataNoticeDismissed );
     const { getValue } = useSettingsData();

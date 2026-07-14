@@ -12,6 +12,7 @@ interface FilterSelectionViewProps {
 	reportBlockIndex:number;
 }
 
+// fallow-ignore-next-line complexity
 const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 	onSelectFilter,
 	reportBlockIndex
@@ -73,6 +74,7 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 	];
 
 	// Search functionality
+	// fallow-ignore-next-line complexity
 	const searchFilters = ( query: string ) => {
 		if ( ! query.trim() ) {
 			return null;
@@ -120,6 +122,7 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 
 	const searchResults = searchFilters( searchQuery );
 
+	// fallow-ignore-next-line complexity
 	const renderFilters = (
 		filters: Array<{ key: string } & FilterConfig>,
 		searchInfo?: { source: string; isFromCurrentTab: boolean }

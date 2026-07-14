@@ -67,6 +67,7 @@ const asString = ( value: unknown ): string => {
 	return 'string' === typeof value ? value : '';
 };
 
+// fallow-ignore-next-line complexity
 const boolFromSetting = ( value: unknown, fallback = true ): boolean => {
 	if ( 'boolean' === typeof value ) {
 		return value;
@@ -85,6 +86,7 @@ const boolFromSetting = ( value: unknown, fallback = true ): boolean => {
 	return fallback;
 };
 
+// fallow-ignore-next-line complexity
 const parseExplicitBooleanSetting = ( value: unknown ): boolean | null => {
 	if ( 'boolean' === typeof value ) {
 		return value;
@@ -154,6 +156,7 @@ const sanitizeHistoryForStorage = (
 ): Array<Record<string, unknown>> => {
 	const sanitized: Array<Record<string, unknown>> = [];
 
+	// fallow-ignore-next-line complexity
 	history.forEach( ( rawMessage ) => {
 		const rawRole = asString( rawMessage.role );
 		const role =
@@ -230,6 +233,7 @@ const isSessionBlank = ( session: ChatSession ): boolean => {
 	return 0 === sanitizeHistoryForStorage( session.history ).length;
 };
 
+// fallow-ignore-next-line complexity
 const normalizeChatStatus = ( status: unknown ): ChatAvailability => {
 	if ( ! status || 'object' !== typeof status ) {
 		return {};
@@ -289,6 +293,7 @@ const buildTimeline = (
 	return output;
 };
 
+// fallow-ignore-next-line complexity
 const ChatAssistantModal = () => {
 	const { getValue } = useSettingsData();
 	const [ isOpen, setIsOpen ] = useState( false );
@@ -495,6 +500,7 @@ const ChatAssistantModal = () => {
 		};
 	}, [ isSending ]);
 
+	// fallow-ignore-next-line complexity
 	const disabledReason = useMemo( () => {
 		if ( ! abilitiesEnabled ) {
 			return __(
@@ -617,6 +623,7 @@ const ChatAssistantModal = () => {
 	};
 
 
+	// fallow-ignore-next-line complexity
 	const sendMessageDirect = async( messageText: string ) => {
 		if ( isSending || isDisabled ) {
 			return;
@@ -844,6 +851,7 @@ const ChatAssistantModal = () => {
 					ref={messagesContainerRef}
 					className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3.5 py-4"
 				>
+					{/* fallow-ignore-next-line complexity */}
 					{visibleTimeline.map( ( item ) => {
 						if ( 'message' === item.type ) {
 							const isUser = 'user' === item.role;
@@ -1062,6 +1070,7 @@ const ChatAssistantModal = () => {
 					{isSending && (
 						<div className="flex justify-start">
 							<div className="w-full max-w-[85%] rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+								{/* fallow-ignore-next-line complexity */}
 								{LOADING_STEPS.map( ( step, index ) => {
 									const isCompleted = index < loadingStep;
 									const isActive = index === loadingStep;

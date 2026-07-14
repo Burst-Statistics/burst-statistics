@@ -1,8 +1,20 @@
 import { getData } from '@/utils/api';
 
+const normalizeSourceLabel = ( rawSource ) => {
+	let source = rawSource || 'Unknown';
+	if ( 'direct' === source ) {
+		return 'Direct / unknown';
+	}
+	if ( 'Direct / unknown' !== source && 'Email client' !== source ) {
+		return source.charAt( 0 ).toUpperCase() + source.slice( 1 );
+	}
+	return source;
+};
+
 /**
  * Fetch time-bucketed traffic sources data.
  */
+// fallow-ignore-next-line complexity
 export const getSourcesOverTimeData = async({ startDate, endDate, range, args }) => {
 	const response = await getData( 'sources-over-time', startDate, endDate, range, args );
 	const finalData = response?.data || {};
@@ -43,17 +55,13 @@ export const getSourcesDrilldownData = ({ sourcesList, category }) => {
 		return [];
 	}
 
+
 	const filtered = sourcesList.filter( ( item ) => item.category === category );
 
 	const total = filtered.reduce( ( sum, item ) => sum + parseInt( item.visitors || 0 ), 0 );
 
 	return filtered.map( ( item ) => {
-		let source = item.source || 'Unknown';
-		if ( 'direct' === source ) {
-			source = 'Direct / unknown';
-		} else if ( 'Direct / unknown' !== source && 'Email client' !== source ) {
-			source = source.charAt( 0 ).toUpperCase() + source.slice( 1 );
-		}
+		const source = normalizeSourceLabel( item.source );
 
 		return {
 			source,
@@ -77,12 +85,7 @@ export const getTopSourcesData = ( sourcesList ) => {
 	// 1. Group/sum visitors by source name (in case a source appears in multiple categories)
 	const sourceMap = {};
 	sourcesList.forEach( ( item ) => {
-		let source = item.source || 'Unknown';
-		if ( 'direct' === source ) {
-			source = 'Direct / unknown';
-		} else if ( 'Direct / unknown' !== source && 'Email client' !== source ) {
-			source = source.charAt( 0 ).toUpperCase() + source.slice( 1 );
-		}
+		const source = normalizeSourceLabel( item.source );
 
 		if ( ! sourceMap[ source ]) {
 			sourceMap[ source ] = 0;

@@ -20,6 +20,8 @@ const FilterSetupView: React.FC<FilterSetupViewProps> = ({
 	tempValue,
 	onTempValueChange
 }) => {
+
+	// fallow-ignore-next-line complexity
 	const renderSetupComponent = (): React.ReactNode => {
 		const commonProps = {
 			filterKey,

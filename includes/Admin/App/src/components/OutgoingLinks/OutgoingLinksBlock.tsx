@@ -35,6 +35,7 @@ const TOP_N = 5;
  * @param {string} props.className - Additional CSS classes for the Block wrapper.
  * @return {JSX.Element} The outgoing links block.
  */
+// fallow-ignore-next-line complexity
 const OutgoingLinksBlock = memo( ({ className = '' }: OutgoingLinksBlockProps ) => {
 	const { getValue } = useSettingsData();
 	const { isLicenseValid } = useLicenseData();

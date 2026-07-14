@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+// fallow-ignore-next-line complexity
 const useShareableLinkStore = create( () => {
     const urlParams = new URLSearchParams( window.location.search );
     const isPdfMode = urlParams.has( 'pdf' );

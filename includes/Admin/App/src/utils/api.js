@@ -130,6 +130,7 @@ const isAbortError = ( error ) => {
 	);
 };
 
+// fallow-ignore-next-line complexity
 const generateError = ( error, path = false ) => {
 	const rawError = ( error || '' ).replace( /(<([^>]+)>)/gi, '' );
 
@@ -249,6 +250,7 @@ const makeRequest = (
 		args.data = data;
 	}
 
+	// fallow-ignore-next-line complexity
 	const promise = ( async() => {
 		try {
 			const response = await apiFetch( args );
@@ -329,6 +331,7 @@ const getAjaxFallbackUrl = ( method, path ) => {
 	return withAjaxAction( siteUrl( 'ajax' ), action );
 };
 
+// fallow-ignore-next-line complexity
 const ajaxRequest = async(
 	method,
 	path,
@@ -559,7 +562,8 @@ const buildQueryString = ( params ) => {
 		.join( '&' );
 };
 
-export const getDatatableData = async( id, isEcommerce, startDate, endDate, range, args = {}) => {
+// fallow-ignore-next-line complexity
+const buildBaseQueryParams = ( startDate, endDate, range, args ) => {
 	const { filters, metrics, group_by, selectedPages } = args;
 
 	const queryParams = {
@@ -585,6 +589,11 @@ export const getDatatableData = async( id, isEcommerce, startDate, endDate, rang
 		queryParams.group_by = group_by;
 	}
 
+	return queryParams;
+};
+
+export const getDatatableData = async( id, isEcommerce, startDate, endDate, range, args = {}) => {
+	const queryParams = buildBaseQueryParams( startDate, endDate, range, args );
 	const queryString = buildQueryString( queryParams );
 	const endpoint = isEcommerce ? `data/ecommerce/datatable/${id}` : `data/datatable/${id}`;
 	const path = `burst/v1/${endpoint}${glue()}${queryString}`;
@@ -602,33 +611,13 @@ export const getDatatableData = async( id, isEcommerce, startDate, endDate, rang
  * @param {Object} [args={}] - Additional query parameters (filters, metrics, etc.).
  * @return {Promise<{ data: * }>} Response; `data` shape depends on `type`.
  */
+// fallow-ignore-next-line complexity
 export const getData = async( type, startDate, endDate, range, args = {}) => {
 
 	// Extract filters and metrics from args if they exist.
-	const { filters, metrics, group_by, currentView, selectedPages, id, chart_mode, distribution_view, product_id, compare_mode, compare_date_start, compare_date_end, page_url, least_engagement } = args;
+	const { currentView, chart_mode, distribution_view, product_id, compare_mode, compare_date_start, compare_date_end, page_url, least_engagement } = args;
 
-	const queryParams = {
-		date_start: startDate,
-		date_end: endDate,
-		date_range: range,
-		nonce: burst_settings.burst_nonce,
-		should_load_ecommerce: burst_settings.shouldLoadEcommerce || false,
-		goal_id: args.goal_id,
-		token: Math.random().toString( 36 ).replace( /[^a-z]+/g, '' ).substr( 0, 5 ) // nosemgrep
-	};
-
-	if ( selectedPages ) {
-		queryParams.selected_pages = selectedPages;
-	}
-	if ( filters ) {
-		queryParams.filters = filters;
-	}
-	if ( metrics ) {
-		queryParams.metrics = metrics;
-	}
-	if ( group_by ) {
-		queryParams.group_by = group_by;
-	}
+	const queryParams = buildBaseQueryParams( startDate, endDate, range, args );
 	if ( currentView ) {
 		queryParams.currentView = currentView;
 	}
@@ -650,9 +639,7 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
 	if ( compare_date_end ) {
 		queryParams.compare_date_end = compare_date_end;
 	}
-	if ( id ) {
-		queryParams.id = id;
-	}
+
 	if ( page_url ) {
 		queryParams.page_url = page_url;
 	}

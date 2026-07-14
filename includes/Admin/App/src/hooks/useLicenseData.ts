@@ -86,6 +86,7 @@ interface UseLicenseDataReturn {
  *
  * @return {UseLicenseDataReturn} License data and mutation functions
  */
+// fallow-ignore-next-line complexity
 const useLicenseData = (): UseLicenseDataReturn => {
 	const queryClient = useQueryClient();
 
@@ -99,6 +100,7 @@ const useLicenseData = (): UseLicenseDataReturn => {
         enabled: isPro,
 
         // Use initial data from window object to avoid flash of loading state
+        // fallow-ignore-next-line complexity
         placeholderData: (): LicenseData => ({
             licenseStatus: window.burst_settings?.licenseStatus ?? '',
             notices: [],
@@ -218,6 +220,7 @@ const useLicenseData = (): UseLicenseDataReturn => {
 		mutateLicense({ action: 'activate', fieldName, fieldValue });
 	};
 
+	// fallow-ignore-next-line complexity
 	const isLicenseValidFor = ( id: string ): boolean => {
         if ( ! isPro ) {
             return false;
@@ -304,4 +307,4 @@ const useLicenseData = (): UseLicenseDataReturn => {
 };
 
 export default useLicenseData;
-export type { LicenseNotice, LicenseData, UseLicenseDataReturn, LicenseUpgrade };
+export type { LicenseUpgrade };

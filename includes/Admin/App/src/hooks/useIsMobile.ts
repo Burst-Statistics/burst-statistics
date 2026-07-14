@@ -44,3 +44,5 @@ export const useIsMobile = (): boolean => {
 
 	return isMobile;
 };
+
+export default useIsMobile;

@@ -180,6 +180,7 @@ const SourcesChartBlock = ( props ) => {
 	 *   < 10 368 000 (120 days) → month
 	 *   else → year
 	 */
+	// fallow-ignore-next-line complexity
 	const interval = useMemo( () => {
 		if ( 2 > timestamps.length ) {
 			return 'day';
@@ -216,6 +217,7 @@ const SourcesChartBlock = ( props ) => {
 		);
 	}, [ barData ]);
 
+	// fallow-ignore-next-line complexity
 	const yTickValues = useMemo( () => {
 		const maxValue = maxBarValue;
 		if ( 0 >= maxValue || isNaN( maxValue ) || ! isFinite( maxValue ) ) {

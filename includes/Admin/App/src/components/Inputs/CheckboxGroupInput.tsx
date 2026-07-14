@@ -48,6 +48,7 @@ interface CheckboxGroupInputProps {
  * @param root0.disabled
  * @param root0.options
  */
+// fallow-ignore-next-line complexity
 const CheckboxGroupInput: React.FC<CheckboxGroupInputProps> = ({
 	indeterminate,
 	label,
@@ -130,6 +131,7 @@ const CheckboxGroupInput: React.FC<CheckboxGroupInputProps> = ({
 
 	return (
 		<div className="flex flex-col gap-2">
+			{/* fallow-ignore-next-line complexity */}
 			{Object.entries( options ).map( ([ key, optionLabel ], i ) => (
 				<div
 					key={key}

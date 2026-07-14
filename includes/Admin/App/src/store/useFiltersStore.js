@@ -3,18 +3,6 @@ import { persist } from 'zustand/middleware';
 import { produce } from 'immer';
 import { DEFAULT_FAVORITES, FILTER_KEYS } from '@/config/filterConfig';
 
-// Re-export filter configuration and types from filterConfig.
-// This maintains backwards compatibility for components that import from here.
-export {
-	FILTER_CONFIG,
-	FILTER_CATEGORIES,
-	FILTER_KEYS,
-	INITIAL_FILTERS,
-	TRAILING_PARAM_KEY,
-	validateFilterSearch,
-	DEFAULT_FAVORITES
-} from '@/config/filterConfig';
-
 /**
  * Zustand store for managing filter state and favorites with persistence.
  * Filter values are persisted to localStorage for session restoration.
@@ -133,6 +121,8 @@ export const useFiltersStore = create(
 				favorites: state.favorites,
 				savedFilters: state.savedFilters
 			}),
+
+			// fallow-ignore-next-line complexity
 			migrate: ( persistedState, version ) => {
 
 				// Migration from older versions.

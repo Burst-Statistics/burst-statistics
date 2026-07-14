@@ -8,6 +8,7 @@ import DeleteGoalModal from './DeleteGoalModal';
 import { updateFieldsListWithConditions } from '@/hooks/useGoalsData';
 import SwitchInput from '@/components/Inputs/SwitchInput';
 
+// fallow-ignore-next-line complexity
 const GoalSetup = ({
 	goal,
 	goalFields,

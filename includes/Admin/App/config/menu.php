@@ -117,6 +117,10 @@ return [
 						'title' => __( 'General', 'burst-statistics' ),
 					],
 					[
+						'id'    => 'privacy',
+						'title' => __( 'Privacy', 'burst-statistics' ),
+					],
+					[
 						'id'    => 'anonymous_usage_data',
 						'title' => __( 'Anonymous usage data', 'burst-statistics' ),
 					],

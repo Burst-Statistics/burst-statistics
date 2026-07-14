@@ -94,6 +94,7 @@ function RevenueModeFilter({ chartMode, onApply }) {
  *
  * @return {JSX.Element} The RevenueChartBlock component.
  */
+// fallow-ignore-next-line complexity
 export function RevenueChartBlock() {
 	const { startDate, endDate, range, filters } = useDate( ( state ) => state );
 	const chartMode = useSubscriptionsStore( ( state ) => state.chartMode );

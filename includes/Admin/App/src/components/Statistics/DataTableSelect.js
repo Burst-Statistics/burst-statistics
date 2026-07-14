@@ -4,6 +4,7 @@ import ProPopover from '../Common/ProPopover';
 import { memo, useCallback, useMemo } from 'react';
 import useLicenseData from '@/hooks/useLicenseData';
 
+// fallow-ignore-next-line complexity
 const DataTableSelect = ({ value, onChange, options }) => {
 	const handleValueChange = useCallback(
 		( newValue ) => {

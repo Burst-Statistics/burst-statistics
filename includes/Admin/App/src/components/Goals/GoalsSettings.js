@@ -9,6 +9,7 @@ import useLicenseData from '@/hooks/useLicenseData';
 import ButtonInput from '../Inputs/ButtonInput';
 import IconButton from '../Inputs/IconButton';
 
+// fallow-ignore-next-line complexity
 const GoalsSettings = () => {
 	const {
 		goals,

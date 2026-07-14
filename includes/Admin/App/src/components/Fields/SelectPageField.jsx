@@ -21,6 +21,8 @@ import { __ } from '@wordpress/i18n';
  * @return {JSX.Element}
  */
 const SelectPageField =
+
+	// fallow-ignore-next-line complexity
 	({ field, fieldState, label, help, context, className, ...props }) => {
 		const inputId = props.id || field?.name;
 

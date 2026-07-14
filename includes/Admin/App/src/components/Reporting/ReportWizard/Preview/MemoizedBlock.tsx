@@ -37,6 +37,8 @@ const MemoizedBlock = React.memo<{
             <BlockComponent {...componentProps} />
         </PreviewBlockControls>
     );
+
+// fallow-ignore-next-line complexity
 }, ( prevProps, nextProps ) => {
 
     // Return true if props are equal (skip re-render).

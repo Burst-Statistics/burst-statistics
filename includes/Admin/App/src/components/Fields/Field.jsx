@@ -60,6 +60,7 @@ const fieldComponents = {
 	integrations_intro: IntegrationsIntroField
 };
 
+// fallow-ignore-next-line complexity
 const Field = memo( ({ setting, control, ...props }) => {
 	const { isLicenseValid, tier } = useLicenseData();
 

@@ -5,7 +5,7 @@ import { type ReactNode } from 'react';
 export type ToastType = 'success' | 'error' | 'info' | 'warning' | 'default';
 
 /** Options accepted by all toast creation calls. */
-export interface ToastOptions {
+interface ToastOptions {
 	toastId?: string;
 	autoClose?: number | false;
 	type?: ToastType;
@@ -33,13 +33,13 @@ export interface ToastItem {
 }
 
 /** Event emitted on state changes. Mirrors react-toastify's onChange payload. */
-export interface ToastChangeEvent {
+interface ToastChangeEvent {
 	id: string;
 	status: 'added' | 'updated' | 'removed';
 }
 
 /** Messages object used by toast.promise(). */
-export interface ToastPromiseMessages {
+interface ToastPromiseMessages {
 	pending: ReactNode;
 	success: ReactNode;
 	error: ReactNode;

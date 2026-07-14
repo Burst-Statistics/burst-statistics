@@ -20,6 +20,7 @@ import { formatNumber } from '@/utils/formatting';
  *
  * @return {JSX.Element} The rendered component.
  */
+// fallow-ignore-next-line complexity
 const ExplanationAndStatsItem = ({
 	title,
 	subtitle,

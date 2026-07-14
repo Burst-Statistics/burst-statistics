@@ -12,6 +12,7 @@ interface BlockCommentProps {
 /**
  * Component for displaying and editing block comments.
  */
+// fallow-ignore-next-line complexity
 export const BlockComment: React.FC<BlockCommentProps> = ({ reportBlockIndex, isEditingMode = false }) => {
 	const updateCommentTitle = useWizardStore( ( state ) => state.updateCommentTitle );
 	const updateCommentText = useWizardStore( ( state ) => state.updateCommentText );

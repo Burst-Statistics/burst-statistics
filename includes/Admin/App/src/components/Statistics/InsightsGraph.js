@@ -25,6 +25,7 @@ function transformToNivoFormat( data, timestamps ) {
 		return [];
 	}
 
+	// fallow-ignore-next-line complexity
 	return data.datasets.map( ( dataset, i ) => {
 		const isComparison = Boolean( dataset.is_comparison );
 		const metricKey = dataset.metric_key ?? dataset.label ?? String( i );

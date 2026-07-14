@@ -23,7 +23,7 @@ interface TabsState {
  *
  * @return A Zustand store with tab state management.
  */
-export const createTabsStore = ( persisted = true ) => {
+const createTabsStore = ( persisted = true ) => {
 	const stateCreator: StateCreator<TabsState> = ( set, get ) => ({
 		groups: {},
 

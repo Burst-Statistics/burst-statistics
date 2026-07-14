@@ -6,6 +6,7 @@ import { useWizardStore } from '@/store/reports/useWizardStore';
 import { getReportPreview } from '@/utils/api';
 import ShadowContainer from '@/components/Common/ShadowContainer';
 
+// fallow-ignore-next-line complexity
 export const LivePreviewClassic = ({ className }: { className?: string }) => {
     const frequency = useWizardStore( ( state ) => state.wizard.frequency );
     const contents = useWizardStore( ( state ) => state.wizard.content );

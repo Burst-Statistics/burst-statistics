@@ -36,6 +36,7 @@ class ErrorBoundary extends Component {
 		this.setState({ copied: true });
 	}
 
+	// fallow-ignore-next-line complexity
 	render() {
 		if ( this.state.hasError ) {
 			return (

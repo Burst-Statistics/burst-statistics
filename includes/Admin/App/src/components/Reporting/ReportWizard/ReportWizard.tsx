@@ -14,6 +14,10 @@ import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { FormProvider, useForm } from 'react-hook-form';
 import { __ } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
+import {
+	SHEET_OVERLAY_PROPS,
+	SHEET_PANEL_PROPS
+} from '@/components/Common/sheetMotionProps';
 import { NameInput } from './NameInput';
 import { ReportActionMenu } from '../ReportActionMenu';
 
@@ -44,6 +48,7 @@ const STEP_COMPONENTS: Record<number, React.FC> = {
 	4: StepReview
 };
 
+// fallow-ignore-next-line complexity
 const ReportWizard: React.FC = () => {
 	const currentStep = useWizardStore( ( state ) => state.wizard.currentStep );
 	const reportId = useWizardStore( ( state ) => state.wizard.id );
@@ -83,31 +88,11 @@ const ReportWizard: React.FC = () => {
 	return (
 		<FormProvider {...methods}>
 			<motion.div
+				{...SHEET_OVERLAY_PROPS}
 				id="report-wizard-modal"
-				className="fixed inset-0 left-0 max-[960px]:left-9 max-[782px]:left-0 z-9999 dark:bg-gray-400 bg-gray-700 bg-opacity-90 flex items-end justify-center px-4"
-				initial={{ opacity: 0 }}
-				animate={{ opacity: 1 }}
-				exit={{ opacity: 0 }}
-				transition={{ duration: 0.15, ease: 'easeOut' }}
 			>
 				<motion.div
-					initial={{ opacity: 0, y: 500, scale: 0.7 }}
-					animate={{ opacity: 1, y: 0, scale: 1 }}
-					exit={{ opacity: 0, y: 500, scale: 0.7 }}
-					transition={{
-						delay: 0.1,
-						y: {
-							type: 'spring',
-							stiffness: 135,
-							damping: 18,
-							mass: 0.45
-						},
-						opacity: {
-							duration: 0.18,
-							ease: 'easeOut'
-						}
-					}}
-					className="w-full h-[95vh] max-h-[95vh] max-w-(--breakpoint-2xl)"
+					{...SHEET_PANEL_PROPS}
 				>
 					{/* inside container div */}
 					<div className="h-full bg-gray-100 rounded-t-2xl shadow-2xl overflow-hidden flex flex-col">

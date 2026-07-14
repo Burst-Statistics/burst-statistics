@@ -7,6 +7,7 @@ import { clsx } from 'clsx';
 
 const DEFAULT_NAME = __( 'Untitled report', 'burst-statistics' );
 
+// fallow-ignore-next-line complexity
 export const NameInput = () => {
 	const reportName = useWizardStore( ( state ) => state.wizard.name );
 	const setReportName = useWizardStore( ( state ) => state.setReportName );

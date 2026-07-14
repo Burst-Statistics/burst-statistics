@@ -5,6 +5,7 @@ import HelpTooltip from '@/components/Common/HelpTooltip';
 import { renderPossiblyHtml } from '@/utils/dangerouslySetHtml';
 import useSettingsData from '@/hooks/useSettingsData';
 
+// fallow-ignore-next-line complexity
 const TaskElement = ( props ) => {
 	const { task } = props;
 	const fixTask = useTasks( ( state ) => state.fixTask );

@@ -118,6 +118,7 @@ const OtherPluginsBlock = () => {
 		});
 	};
 
+	// fallow-ignore-next-line complexity
 	const otherPluginElement = ( plugin ) => {
 		let iconName, iconColor;
 

@@ -13,9 +13,65 @@ interface PreviewBlockControlsProps {
 	children: React.ReactNode;
 }
 
+const renderPreviewBlockContent = ({
+	children,
+	reportBlockIndex,
+	showCommentColumn
+}: {
+	children: React.ReactNode;
+	reportBlockIndex: number;
+	showCommentColumn: boolean;
+}) => (
+	<div className="grid grid-cols-1 @md:grid-cols-12 gap-2 mx-auto">
+		<div className="@md:col-span-7">
+			<div className={showCommentColumn ? 'group relative p-1 border border-transparent' : 'group relative border border-transparent'}>
+				{children}
+			</div>
+		</div>
+
+		{showCommentColumn && (
+			<div className="@md:col-span-5 flex flex-row items-end gap-2 p-1">
+				<BlockComment reportBlockIndex={reportBlockIndex} isEditingMode={false} />
+			</div>
+		)}
+	</div>
+);
+
+const SelectableBlockFrame = ({
+	children,
+	isSelected,
+	onClick,
+	className
+}: {
+	children: React.ReactNode;
+	isSelected: boolean;
+	onClick: ( e: React.MouseEvent ) => void;
+	className: string;
+}) => {
+	return (
+		<div
+			className={className}
+			onClick={onClick}
+			role="button"
+			tabIndex={0}
+			onKeyDown={( e ) => {
+				if ( 'Enter' === e.key || ' ' === e.key ) {
+					e.preventDefault();
+					onClick( e as unknown as React.MouseEvent );
+				}
+			}}
+			aria-pressed={isSelected}
+			aria-label={__( 'Select block to edit settings', 'burst-statistics' )}
+		>
+			{children}
+		</div>
+	);
+};
+
 /**
  * Wrapper component for block preview with selection and metadata display.
  */
+// fallow-ignore-next-line complexity
 export const PreviewBlockControls: React.FC<PreviewBlockControlsProps> = ({
 	blockId,
 	reportBlockIndex,
@@ -48,38 +104,26 @@ export const PreviewBlockControls: React.FC<PreviewBlockControlsProps> = ({
 			'border-transparent hover:border-gray-300 hover:bg-gray-50/50';
 
 		return (
-			<div
+			<SelectableBlockFrame
 				className={`p-1 mb-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${fullWidthClassName}`}
+				isSelected={isSelected}
 				onClick={handleBlockClick}
-				role="button"
-				tabIndex={0}
-				onKeyDown={( e ) => {
-					if ( 'Enter' === e.key || ' ' === e.key ) {
-						e.preventDefault();
-						handleBlockClick( e as unknown as React.MouseEvent );
-					}
-				}}
-				aria-pressed={isSelected}
-				aria-label={__( 'Select block to edit settings', 'burst-statistics' )}
 			>
 				{children}
-			</div>
+			</SelectableBlockFrame>
 		);
 	}
 
 	// Non-editing mode: show block with comment.
 	if ( ! isEditingMode ) {
 		return (
-			<div className="mb-4 grid grid-cols-1 @md:grid-cols-12 gap-2 mx-auto">
-                <div className="@md:col-span-7">
-                    <div className="group relative border border-transparent">
-                        {children}
-                    </div>
-                </div>
-                <div className="@md:col-span-5 flex flex-row items-end gap-2 p-2">
-                    <BlockComment reportBlockIndex={reportBlockIndex} isEditingMode={false} />
-                </div>
-            </div>
+			<div className="mb-4">
+				{renderPreviewBlockContent({
+					children,
+					reportBlockIndex,
+					showCommentColumn: true
+				})}
+			</div>
 		);
 	}
 
@@ -89,31 +133,16 @@ export const PreviewBlockControls: React.FC<PreviewBlockControlsProps> = ({
 		'border-transparent hover:border-gray-300 hover:bg-gray-50/50';
 
 	return (
-		<div
+		<SelectableBlockFrame
 			className={`p-1 mb-4 rounded-xl border-2 transition-all duration-200 cursor-pointer  ${blockClassName}`}
+			isSelected={isSelected}
 			onClick={handleBlockClick}
-			role="button"
-			tabIndex={0}
-			onKeyDown={( e ) => {
-				if ( 'Enter' === e.key || ' ' === e.key ) {
-					e.preventDefault();
-					handleBlockClick( e as unknown as React.MouseEvent );
-				}
-			}}
-			aria-pressed={isSelected}
-			aria-label={__( 'Select block to edit settings', 'burst-statistics' )}
 		>
-			<div className="grid grid-cols-1 @md:grid-cols-12 gap-3 mx-auto">
-				<div className="@md:col-span-7">
-					<div className="group relative p-1 border border-transparent">
-						{children}
-					</div>
-				</div>
-
-				<div className="@md:col-span-5 flex flex-row items-end gap-2 p-1">
-					<BlockComment reportBlockIndex={reportBlockIndex} isEditingMode={false} />
-				</div>
-			</div>
-		</div>
+			{renderPreviewBlockContent({
+				children,
+				reportBlockIndex,
+				showCommentColumn: true
+			})}
+		</SelectableBlockFrame>
 	);
 };

@@ -7,11 +7,8 @@ import SourcesChartBlock from '@/components/Sources/SourcesChartBlock';
 import SourcesBlock from '@/components/Statistics/SourcesBlock';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import TrialPopup from '@/components/Upsell/TrialPopup';
-import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
+import OverlayBlock from '@/components/Upsell/OverlayBlock';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
-import { Block } from '@/components/Blocks/Block';
-import { BlockHeading } from '@/components/Blocks/BlockHeading';
-import { BlockContent } from '@/components/Blocks/BlockContent';
 import useLicenseData from '@/hooks/useLicenseData';
 import { shouldLoadRoute } from '@/utils/helper';
 import SearchConsoleBlock from '@/components/Statistics/SearchConsoleBlock';
@@ -34,38 +31,35 @@ export const Route = createFileRoute( '/sources' )({
 });
 
 /**
- * Per-block upsell for the (Pro-only) campaigns table, mirroring the Engagement
+ * Per-block upsell for the Pro-only source blocks, mirroring the Engagement
  * tab's pattern (e.g. FormsBlock).
  *
- * @return {JSX.Element} The campaigns upsell block.
+ * @param {Object} props           - Component props.
+ * @param {string} props.title     - Block heading title.
+ * @param {string} props.blurLabel - Blurred placeholder label behind the overlay.
+ * @param {string} props.className - Grid placement classes for the Block wrapper.
+ * @return {JSX.Element} The upsell block.
  */
-function CampaignsUpsellBlock() {
+function SourcesUpsellBlock({ title, blurLabel, className }) {
 	return (
-		<Block className="relative min-h-[320px] overflow-hidden">
-			<BlockHeading title={ __( 'Campaigns', 'burst-statistics' ) } pro={ true } />
-			<BlockContent className="px-0 py-0 overflow-y-auto">
-				<div className="flex h-48 flex-col items-center justify-center p-4 text-center text-sm text-gray-400 select-none blur-[1px]">
-					<p className="font-medium text-gray-500 mb-1">
-						{ __( 'Campaign tracking is a Pro feature.', 'burst-statistics' ) }
-					</p>
-				</div>
-				<UpsellOverlay
-					className="flex items-center justify-center pt-0 mt-0 m-0 border-0 bg-transparent"
-					containerClassName="pt-1 m-1 mt-4"
-					cardClassName="mx-4 min-w-fit rounded-md border border-gray-300 bg-gray-100 px-6 py-6 shadow-sm"
-				>
-					<UpsellCopy type="sources" compact={ true } />
-				</UpsellOverlay>
-			</BlockContent>
-		</Block>
+		<OverlayBlock
+			title={ title }
+			blurLabel={ blurLabel }
+			className={ className }
+		>
+			<UpsellCopy type="sources" compact={ true } />
+		</OverlayBlock>
 	);
 }
 
 function Sources() {
 
 	// The Sources tab is no longer gated as a whole: the world map and locations
-	// (country) data are free. Campaigns remain a Pro feature, gated per-block.
-	const { isPro } = useLicenseData();
+	// (country) data are free. The chart, top-sources and campaigns blocks remain
+	// Pro features, gated per-block: hidden in free, upsell in Pro without a
+	// valid license.
+	const { isPro, isLicenseValidFor } = useLicenseData();
+	const sourcesUnlocked = isLicenseValidFor( 'sources' );
 
 	return (
 		<>
@@ -74,13 +68,29 @@ function Sources() {
 
 			{ isPro && (
 				<ErrorBoundary>
-					<SourcesChartBlock />
+					{ sourcesUnlocked ? (
+						<SourcesChartBlock />
+					) : (
+						<SourcesUpsellBlock
+							title={ __( 'Sources over time', 'burst-statistics' ) }
+							blurLabel={ __( 'Source tracking is a Pro feature.', 'burst-statistics' ) }
+							className="row-span-2 @lg:col-span-12 @xl:col-span-9"
+						/>
+					) }
 				</ErrorBoundary>
 			) }
 
 			{ isPro && (
 				<ErrorBoundary>
-					<SourcesBlock />
+					{ sourcesUnlocked ? (
+						<SourcesBlock />
+					) : (
+						<SourcesUpsellBlock
+							title={ __( 'Traffic sources', 'burst-statistics' ) }
+							blurLabel={ __( 'Source tracking is a Pro feature.', 'burst-statistics' ) }
+							className="row-span-2 @lg:col-span-6 @xl:col-span-3"
+						/>
+					) }
 				</ErrorBoundary>
 			) }
 
@@ -93,10 +103,14 @@ function Sources() {
 			</ErrorBoundary>
 
 			<ErrorBoundary>
-				{ isPro ? (
+				{ sourcesUnlocked ? (
 					<DataTableBlock allowedConfigs={[ 'campaigns' ]} id="sources_campaigns" />
 				) : (
-					<CampaignsUpsellBlock />
+					<SourcesUpsellBlock
+						title={ __( 'Campaigns', 'burst-statistics' ) }
+						blurLabel={ __( 'Campaign tracking is a Pro feature.', 'burst-statistics' ) }
+						className="row-span-2 @xl:col-span-6"
+					/>
 				) }
 			</ErrorBoundary>
 

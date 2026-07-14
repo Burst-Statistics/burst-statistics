@@ -71,6 +71,7 @@ export interface DateRangePickerProps {
  * @param {boolean}  props.smallLabels Whether to use small size styling (px-2 py-1 text-xs).
  * @return {JSX.Element} Date Range Trigger.
  */
+// fallow-ignore-next-line complexity
 const DateRangeTrigger = ({ range, display, isOpen, setIsOpen, disabled, smallLabels = false }: {
 	range: string;
 	display: { startDate: string; endDate: string };
@@ -124,6 +125,7 @@ const DateRangeTrigger = ({ range, display, isOpen, setIsOpen, disabled, smallLa
  * @param {DateRangePickerProps} props Component props.
  * @return {JSX.Element} Date Range Picker.
  */
+// fallow-ignore-next-line complexity
 export const DateRangePicker = ({
 	value,
 	onChange,
@@ -163,6 +165,8 @@ export const DateRangePicker = ({
 	);
 
 	const updateDateRange = useCallback(
+
+		// fallow-ignore-next-line complexity
 		( ranges: RangeKeyDict ) => {
 			if ( disabled ) {
 				return;

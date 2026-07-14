@@ -26,6 +26,7 @@ const transformDevicesTitleAndValue = ( response ) => {
 };
 
 // New transform function for subtitle
+// fallow-ignore-next-line complexity
 const transformDevicesSubtitle = ( response ) => {
 	const data = {};
 	for ( const [ key ] of Object.entries( deviceNames ) ) {

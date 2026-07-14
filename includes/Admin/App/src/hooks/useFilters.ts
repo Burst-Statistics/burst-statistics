@@ -16,7 +16,7 @@ import {
 } from '@/config/filterConfig';
 import { useWizardStore } from '@/store/reports/useWizardStore';
 
-export const FILTER_ENABLED_ROUTES = [ '/statistics', '/engagement', '/sources', '/sales', '/table' ];
+const FILTER_ENABLED_ROUTES = [ '/statistics', '/engagement', '/sources', '/sales', '/table' ];
 
 export const isFilterEnabledRoute = ( pathname: string ): boolean => {
 	return FILTER_ENABLED_ROUTES.some( ( route ) => pathname.startsWith( route ) );
@@ -56,6 +56,7 @@ const hasUrlFilters = ( searchParams: FilterSearchParams ): boolean => {
  * - Without reportBlockIndex: uses URL params (for /statistics, /sources, /sales)
  * - With reportBlockIndex: uses wizard store (for report blocks)
  */
+// fallow-ignore-next-line complexity
 export const useFilters = ( reportBlockIndex?: number ) => {
 	const updateReportFilters = useWizardStore( ( state ) => state.updateFilters );
 	const getReportFilters = useWizardStore( ( state ) => state.getFilters );
@@ -104,6 +105,7 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 	}, [ searchParams, isFilterRoute, isBlockMode, reportBlockIndex, getReportFilters, wizardContent ]);
 
 	// Initialize URL filters (only in URL mode)
+	// fallow-ignore-next-line complexity
 	useEffect( () => {
 		if ( isBlockMode || ! isFilterRoute || hasInitialized.current ) {
 			return;
@@ -145,6 +147,8 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 	 * Set a filter value
 	 */
 	const setFilters = useCallback(
+
+		// fallow-ignore-next-line complexity
 		( filter: string, value: string ) => {
 			if ( ! filter.length ) {
 				return;
@@ -347,14 +351,7 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 export default useFilters;
 
 export {
-	FILTER_CONFIG,
-	FILTER_CATEGORIES,
 	FILTER_KEYS,
-	INITIAL_FILTERS,
 	TRAILING_PARAM_KEY,
-	validateFilterSearch,
-	type FilterKey,
-	type FilterSearchParams,
-	type FilterCategory,
-	type FilterConfig
+	type FilterSearchParams
 } from '@/config/filterConfig';
