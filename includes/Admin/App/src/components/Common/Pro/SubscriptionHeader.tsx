@@ -4,6 +4,7 @@ import Icon from '@/utils/Icon';
 import { createInterpolateElement } from '@wordpress/element';
 import { motion } from 'framer-motion';
 
+// fallow-ignore-next-line complexity
 const SubscriptionHeader = () => {
 	const {
 		isPro,

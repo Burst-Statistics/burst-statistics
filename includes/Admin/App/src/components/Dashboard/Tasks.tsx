@@ -4,7 +4,7 @@ import useTasks from '@/store/useTasksStore';
 import { useEffect } from 'react';
 import { LiveVisitorTaskElement } from '@/components/Dashboard/LiveVisitorTaskElement';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
-import { listSlideAnimation } from './OverviewBlock';
+import { listSlideAnimation } from './listAnimations';
 
 /**
  * Loading component to show while tasks are being fetched

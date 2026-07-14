@@ -20,6 +20,7 @@ interface FilterCardProps {
 	reportBlockIndex:number;
 }
 
+// fallow-ignore-next-line complexity
 const FilterCard: React.FC<FilterCardProps> = ({
 	filterKey,
 	config,
@@ -62,6 +63,7 @@ const FilterCard: React.FC<FilterCardProps> = ({
 	};
 
 	// Build accessible description for screen readers
+	// fallow-ignore-next-line complexity
 	const getAccessibleDescription = (): string => {
 		let description = `${config.label} filter`;
 

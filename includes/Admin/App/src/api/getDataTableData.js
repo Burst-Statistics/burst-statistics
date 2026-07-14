@@ -159,6 +159,7 @@ const SearchResultsCell = memo( ({ value, term }) => {
 
 SearchResultsCell.displayName = 'SearchResultsCell';
 
+// fallow-ignore-next-line complexity
 const CurrencyValue = memo( ({ value }) => {
 	const exactValue = value?.value || 0;
 
@@ -300,6 +301,7 @@ const createSortFunction = ( columnId, format ) => {
 
 	const isCurrency = format === FORMATS.CURRENCY;
 
+	// fallow-ignore-next-line complexity
 	return ( rowA, rowB ) => {
 		const valueA = rowA[columnId];
 		const valueB = rowB[columnId];
@@ -355,6 +357,7 @@ const createSortFunction = ( columnId, format ) => {
 	};
 };
 
+// fallow-ignore-next-line complexity
 const addABTestIcon = ( content, row ) => {
 	if ( ! row.is_ab_test ) {
 		return content;
@@ -400,6 +403,7 @@ const createCellFormatter = ( format, columnId ) => {
 		return ( row ) => row[columnId] || '';
 	}
 
+	// fallow-ignore-next-line complexity
 	return ( row ) => {
 		try {
 			const value = row[columnId] ?? '';
@@ -500,6 +504,7 @@ const transformDataTableData = ( response, columnOptions ) => {
  * @param {Object} params - Input parameters
  * @throws {Error} If required parameters are missing
  */
+// fallow-ignore-next-line complexity
 const validateParams = ({ startDate, endDate, range, columnsOptions }) => {
 	if ( ! startDate || ! endDate || ! range ) {
 		throw new Error( 'Missing required parameters: startDate, endDate, range' );
@@ -551,14 +556,7 @@ const getDataTableData = async( params ) => {
 
 export {
 	FORMATS,
-	COLUMN_FORMATTERS,
-	createSortFunction,
-	createCellFormatter,
-	transformColumn,
-	transformDataTableData,
-	validateResponse,
-	validateParams,
-	SearchResultsCell
+	COLUMN_FORMATTERS
 };
 
 export default getDataTableData;

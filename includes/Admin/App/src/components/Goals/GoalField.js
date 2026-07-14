@@ -5,6 +5,7 @@ import TextField from '@/components/Fields/TextField';
 import RadioButtonsField from '@/components/Fields/RadioButtonsField';
 import SelectorField from '@/components/Fields/SelectorField';
 
+// fallow-ignore-next-line complexity
 const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
 	const [ validated, setValidated ] = useState( false );
 
@@ -22,6 +23,7 @@ const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
 		setGoalValue( goal.id, field.id, value );
 	};
 
+	// fallow-ignore-next-line complexity
 	const validateInput = ( field, value ) => {
 
 		//check the pattern

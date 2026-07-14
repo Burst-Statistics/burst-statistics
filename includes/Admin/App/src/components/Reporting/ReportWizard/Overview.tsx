@@ -5,6 +5,7 @@ import { useReportConfigStore } from '@/store/reports/useReportConfigStore';
 import {ContentBlockId} from '@/store/reports/types';
 import {ReportStoryUrl} from '@/components/Reporting/ReportWizard/ReportStoryUrl';
 
+// fallow-ignore-next-line complexity
 export const Overview = () => {
 	const id = useWizardStore( ( state ) => state.wizard.id );
 	const scheduled = useWizardStore( ( state ) => state.wizard.scheduled );

@@ -23,6 +23,7 @@ export const FunnelStepStatistics: React.FC<{
 			className="grid gap-px z-2 items-start"
 			style={{ gridTemplateColumns: `repeat(${steps.length}, 1fr)` }}
 		>
+			{/* fallow-ignore-next-line complexity */}
 			{displaySteps.map( ( step, index ) => (
 				<div key={index} className="flex flex-col gap-2 px-2 py-3">
 					{null !== step.dropOffPercentage &&

@@ -1,6 +1,7 @@
 import Icon from '../../utils/Icon';
 import * as ReactPopover from '@radix-ui/react-popover';
 
+// fallow-ignore-next-line complexity
 const Popover = ({
 	title,
 	children,

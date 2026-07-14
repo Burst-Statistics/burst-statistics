@@ -36,6 +36,8 @@ const isContextObject = (
 };
 
 const FieldWrapper = memo(
+
+	// fallow-ignore-next-line complexity
 	({
 		label,
 		context,

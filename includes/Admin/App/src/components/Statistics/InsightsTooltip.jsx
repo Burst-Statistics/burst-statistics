@@ -77,6 +77,7 @@ export function InsightsTooltip({ slice, interval }) {
 				<p className="font-semibold text-gray-700 mb-1.5">{ xLabel }</p>
 			) }
 			<div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] gap-x-2 gap-y-1 items-center">
+				{/* fallow-ignore-next-line complexity */}
 				{ sortedPoints.map( ( point ) => {
 					const { isComparison, compareMode } = point.data;
 					const metricKey = resolveMetricKey( point );

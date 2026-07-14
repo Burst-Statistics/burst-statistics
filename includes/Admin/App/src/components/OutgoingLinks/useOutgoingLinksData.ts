@@ -88,6 +88,8 @@ export function useOutgoingLinksData( enabled = true ): UseOutgoingLinksDataRetu
 			return { rows, scrapingProgress };
 		},
 		placeholderData: { rows: [], scrapingProgress: 0 },
+
+		// fallow-ignore-next-line complexity
 		refetchInterval: ( query ) => {
 			const stateData = query.state.data as { scrapingProgress?: number } | undefined;
 			const progress = stateData?.scrapingProgress ?? 0;

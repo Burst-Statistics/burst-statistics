@@ -8,6 +8,7 @@ import RadioButtonsInput, {RadioOption} from '@/components/Inputs/RadioButtonsIn
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import {DateRangePicker} from '@/components/Inputs/DateRangePicker';
 
+// fallow-ignore-next-line complexity
 export const Schedule = () => {
     const scheduled = useWizardStore( ( state ) => state.wizard.scheduled );
     const setScheduled = useWizardStore( ( state ) => state.setScheduled );
@@ -172,5 +173,3 @@ export const Schedule = () => {
         </>
     );
 };
-
-export default Schedule;

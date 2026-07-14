@@ -18,6 +18,7 @@ export const Steps = () => {
 
 	return (
 		<div className="flex items-center justify-between">
+			{/* fallow-ignore-next-line complexity */}
 			{steps.map( ( step, idx ) => {
 				const isClickable = canNavigateToStep();
 

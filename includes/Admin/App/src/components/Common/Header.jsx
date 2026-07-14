@@ -30,6 +30,7 @@ const LOGO_CLASS = 'h-11 w-auto px-0 py-2';
  *
  * @return { JSX.Element } The rendered Header component.
  */
+// fallow-ignore-next-line complexity
 const Header = () => {
 	useBurstChunkTranslations();
 

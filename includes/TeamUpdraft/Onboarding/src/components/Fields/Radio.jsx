@@ -2,63 +2,40 @@
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 // eslint-disable-next-line import/no-unresolved
 import Icon from '@/utils/Icon';
+import { __ } from '@wordpress/i18n';
+import { clsx } from 'clsx';
+
+const METER_SEGMENTS = 3;
 
 const Radio = ( { field, onChange, value } ) => {
 	const options = field.options || {};
 
-	const renderBadge = ( badgeFormat, badgeLevel, badgeColor ) => {
-		if ( ! badgeFormat ) {
-			return null;
-		}
-
-		if ( ! badgeLevel ) {
-			return (
-				<span className="text-sm text-text-gray">{ badgeFormat }</span>
-			);
-		}
-
-		let colorClass = 'text-text-gray font-semibold';
-		if ( 'blue' === badgeColor ) {
-			colorClass = 'text-blue-500 font-semibold';
-		} else if ( 'green' === badgeColor ) {
-			colorClass = 'text-green-500 font-semibold';
-		}
-
-		const parts = badgeFormat.split( '%s' );
-		return (
-			<span className="text-sm text-text-gray">
-				{ parts[ 0 ] }
-				<span className={ colorClass }>{ badgeLevel }</span>
-				{ parts[ 1 ] }
-			</span>
-		);
-	};
-
 	return (
 		<FieldWrapper label={ '' } inputId={ field.id }>
-			<div className="flex flex-col gap-4">
+			<div className="flex flex-col gap-3">
+				{ /* fallow-ignore-next-line complexity */ }
 				{ Object.entries( options ).map( ( [ val, option ] ) => {
 					const optionLabel =
 						'string' === typeof option ? option : option.label;
-					const optionContext =
-						'object' === typeof option && option.context
-							? option.context
-							: null;
 					const optionIcon =
 						'object' === typeof option && option.icon
 							? option.icon
 							: null;
-					const optionBadge =
-						'object' === typeof option && option.badge
-							? option.badge
+					const optionReturning =
+						'object' === typeof option && option.returning
+							? option.returning
 							: null;
-					const optionBadgeLevel =
-						'object' === typeof option && option.badge_level
-							? option.badge_level
+					const optionDescription =
+						'object' === typeof option && option.description
+							? option.description
 							: null;
-					const optionBadgeColor =
-						'object' === typeof option && option.badge_color
-							? option.badge_color
+					const optionMeter =
+						'object' === typeof option && option.meter
+							? option.meter
+							: 0;
+					const optionLevel =
+						'object' === typeof option && option.level
+							? option.level
 							: null;
 					const isChecked = value === val;
 
@@ -66,23 +43,24 @@ const Radio = ( { field, onChange, value } ) => {
 						<label
 							key={ `${ field.id }-${ val }` }
 							htmlFor={ `${ field.id }-${ val }` }
-							className={ `flex items-center justify-between gap-4 rounded-xl border p-4 transition-all duration-200 cursor-pointer ${
+							className={ clsx(
+								'flex items-start gap-4 rounded-xl border-2 p-4 transition-all duration-200 cursor-pointer',
 								isChecked
-									? 'border-blue-500 bg-blue-50/10'
+									? 'border-primary bg-primary-50'
 									: 'border-gray-200 bg-white hover:border-gray-300'
-							}` }
+							) }
 						>
-							<div className="flex items-start gap-3">
-								<input
-									type="radio"
-									id={ `${ field.id }-${ val }` }
-									name={ field.id }
-									value={ val }
-									checked={ isChecked }
-									onChange={ () => onChange( val ) }
-									className="h-5 w-5 rounded-full border border-gray-400 focus:ring-primary focus:ring-offset-0 cursor-pointer mt-0.5"
-								/>
-								<div className="flex flex-col">
+							<input
+								type="radio"
+								id={ `${ field.id }-${ val }` }
+								name={ field.id }
+								value={ val }
+								checked={ isChecked }
+								onChange={ () => onChange( val ) }
+								className="h-5 w-5 shrink-0 rounded-full border border-gray-400 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer mt-0.5"
+							/>
+							<div className="flex flex-1 items-start justify-between gap-4">
+								<div className="flex flex-col gap-1">
 									<div className="flex items-center gap-2">
 										{ optionIcon && (
 											<Icon
@@ -91,26 +69,58 @@ const Radio = ( { field, onChange, value } ) => {
 												className="text-text-gray"
 											/>
 										) }
-										<span className="font-semibold text-text-black text-base">
+										<span className="font-semibold text-text-black text-md">
 											{ optionLabel }
 										</span>
 									</div>
-									{ optionContext && (
+									{ optionReturning && (
+										<div className="flex items-center gap-1.5 mt-1">
+											<Icon
+												name="repeat"
+												size={ 14 }
+												color="gray"
+												className="shrink-0"
+											/>
+											<span className="text-base font-medium text-text-gray">
+												{ optionReturning }
+											</span>
+										</div>
+									) }
+									{ optionDescription && (
 										<span className="text-sm text-text-gray mt-1">
-											{ optionContext }
+											{ optionDescription }
 										</span>
 									) }
 								</div>
+								{ optionLevel && (
+									<div className="flex flex-col items-end gap-1 shrink-0">
+										<span className="text-xs text-text-gray whitespace-nowrap">
+											{ __(
+												'Privacy',
+												'burst-statistics'
+											) }
+										</span>
+										<div className="flex items-center gap-1">
+											{ Array.from( {
+												length: METER_SEGMENTS,
+											} ).map( ( _, index ) => (
+												<span
+													key={ `${ field.id }-${ val }-meter-${ index }` }
+													className={ clsx(
+														'h-1.5 w-4 rounded-full',
+														index < optionMeter
+															? 'bg-primary'
+															: 'bg-gray-200'
+													) }
+												/>
+											) ) }
+										</div>
+										<span className="text-xs font-bold text-text-black whitespace-nowrap">
+											{ optionLevel }
+										</span>
+									</div>
+								) }
 							</div>
-							{ optionBadge && (
-								<div className="flex items-center">
-									{ renderBadge(
-										optionBadge,
-										optionBadgeLevel,
-										optionBadgeColor
-									) }
-								</div>
-							) }
 						</label>
 					);
 				} ) }

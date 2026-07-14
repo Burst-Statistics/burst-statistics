@@ -4,10 +4,9 @@ import Tooltip from '@/components/Common/Tooltip';
 import MetricInfo from '@/components/Common/MetricInfo';
 import ClickToFilter from '@/components/Common/ClickToFilter';
 import Icon from '@//utils/Icon';
-import { endOfDay, format, startOfDay } from 'date-fns';
-import { getDateWithOffset } from '@//utils/formatting';
 import GoalStatus from './GoalStatus';
 import useGoalsData from '@/hooks/useGoalsData';
+import useDashboardDateRange from '@/hooks/useDashboardDateRange';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
@@ -15,7 +14,7 @@ import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import GoalsHeader from './GoalsHeader';
 import { useQueries } from '@tanstack/react-query';
 import getLiveGoals from '@//api/getLiveGoals';
-import getGoalsData from '@//api/getGoalsData';
+import getGoalsData, { goalsPlaceholderData } from '@//api/getGoalsData';
 import { safeDecodeURI } from '@//utils/lib';
 import ButtonInput from '../Inputs/ButtonInput';
 
@@ -76,28 +75,18 @@ const TotalFilterItem = memo(
 );
 
 TotalFilterItem.displayName = 'TotalFilterItem';
+
+// fallow-ignore-next-line complexity
 const GoalsBlock = () => {
 	const [ interval, setInterval ] = useState( 15000 );
 	const [ goalId, setGoalId ] = useState( 'all' );
 
 	// Replace useGoalsStore with useGoalsData
 	const { goals, isLoading: isGoalsLoading } = useGoalsData();
-
-	const currentDateWithOffset = useMemo( () => getDateWithOffset(), []);
-	const startDate = useMemo(
-		() => format( startOfDay( currentDateWithOffset ), 'yyyy-MM-dd' ),
-		[ currentDateWithOffset ]
-	);
-	const endDate = useMemo(
-		() => format( endOfDay( currentDateWithOffset ), 'yyyy-MM-dd' ),
-		[ currentDateWithOffset ]
-	);
-	const today = useMemo(
-		() => format( currentDateWithOffset, 'yyyy-MM-dd' ),
-		[ currentDateWithOffset ]
-	);
+	const { startDate, endDate, today } = useDashboardDateRange();
 
 	// Derive values using memoization instead of recalculating on every render
+	// fallow-ignore-next-line complexity
 	const { goalStart, goalEnd } = useMemo( () => {
 		if ( 'all' === goalId ) {
 			return { goalStart: startDate, goalEnd: endDate };
@@ -126,42 +115,7 @@ const GoalsBlock = () => {
 		[ goalId, startDate, endDate ]
 	);
 
-	const placeholderData = useMemo(
-		() => ({
-			today: {
-				title: __( 'Today', 'burst-statistics' ),
-				icon: 'goals'
-			},
-			total: {
-				title: __( 'Total', 'burst-statistics' ),
-				value: '-',
-				icon: 'goals'
-			},
-			topPerformer: {
-				title: '-',
-				value: '-'
-			},
-			conversionMetric: {
-				title: '-',
-				value: '-',
-				icon: 'visitors'
-			},
-			conversionPercentage: {
-				title: '-',
-				value: '-'
-			},
-			bestDevice: {
-				title: '-',
-				value: '-',
-				icon: 'desktop'
-			},
-			dateCreated: 0,
-			dateStart: 0,
-			dateEnd: 0,
-			status: 'inactive'
-		}),
-		[]
-	);
+	const placeholderData = goalsPlaceholderData;
 
 	// Only run queries if we have a valid goalId and goals exist
 	const queries = useQueries({

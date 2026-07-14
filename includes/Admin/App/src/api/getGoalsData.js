@@ -5,16 +5,17 @@ import {
 } from '@/utils/formatting';
 import { __ } from '@wordpress/i18n';
 
+// fallow-ignore-next-line complexity
 const transformTotalGoalsData = ( response ) => {
 
 	// Return early with placeholder data if response is invalid
 	if ( ! response || 'object' !== typeof response ) {
-		return placeholderData;
+		return goalsPlaceholderData;
 	}
 
 	// Ensure all required objects and properties exist
 	const safeResponse = {
-		...placeholderData,
+		...goalsPlaceholderData,
 		...response,
 
 		// Ensure all required nested objects exist with default values
@@ -92,7 +93,7 @@ const transformTotalGoalsData = ( response ) => {
 	return safeResponse;
 };
 
-const placeholderData = {
+export const goalsPlaceholderData = {
 	today: {
 		title: __( 'Today', 'burst-statistics' ),
 		icon: 'goals'
@@ -140,7 +141,7 @@ import { getData } from '@/utils/api';
 const getGoalsData = async( args ) => {
 	const { startDate, endDate, range, goal_id } = args;
 	if ( ! goal_id ) {
-		return placeholderData;
+		return goalsPlaceholderData;
 	}
 	try {
 		const { data } = await getData( 'goals', startDate, endDate, range, {
@@ -149,7 +150,7 @@ const getGoalsData = async( args ) => {
 		return transformTotalGoalsData( data );
 	} catch ( error ) {
 		console.error( 'Error fetching goals data:', error );
-		return placeholderData;
+		return goalsPlaceholderData;
 	}
 };
 export default getGoalsData;

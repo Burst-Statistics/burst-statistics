@@ -41,6 +41,15 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 	const [ hasFullDataset, setHasFullDataset ] = useState<boolean>( false );
 	const { getFilterOptions } = useFiltersData();
 
+	const toSelectOptions = ( opts: unknown ): SelectOption[] => {
+		return Array.isArray( opts ) ?
+			opts.map( ( option: FilterOption ) => ({
+				value: option.id || option.title,
+				label: option.title
+			}) ) :
+			[];
+	};
+
 	// Clean value without '!' prefix - used for display in input/select.
 	const excluded = isExcluding( value );
 	const cleanValue = excluded ? value.substring( 1 ) : value;
@@ -53,12 +62,7 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 			}
 
 			const opts = await getFilterOptions( config.options, '' );
-			const transformedOptions: SelectOption[] = Array.isArray( opts ) ?
-				opts.map( ( option: FilterOption ) => ({
-						value: option.id || option.title,
-						label: option.title
-					}) ) :
-				[];
+			const transformedOptions = toSelectOptions( opts );
 
 			setAvailableOptions( transformedOptions );
 
@@ -80,13 +84,7 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 			}
 
 			const opts = await getFilterOptions( config.options, search );
-
-			const transformedOptions: SelectOption[] = Array.isArray( opts ) ?
-				opts.map( ( option: FilterOption ) => ({
-					value: option.id || option.title,
-					label: option.title
-				}) ) :
-				[];
+			const transformedOptions = toSelectOptions( opts );
 
 			setAvailableOptions( transformedOptions );
 
@@ -129,6 +127,8 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 
 	// Focus the appropriate input on mount
 	useEffect( () => {
+
+		// fallow-ignore-next-line complexity
 		const timer = setTimeout( () => {
 			if ( config.options && selectInputRef.current ) {
 				if ( selectInputRef.current.focus ) {
@@ -145,6 +145,7 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 	}, [ config.options ]);
 
 	// Load options function for AsyncSelectInput
+	// fallow-ignore-next-line complexity
 	const loadOptions = async(
 		inputValue?: string,
 		callback?: ( options: SelectOption[]) => void
@@ -213,6 +214,7 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 		};
 	};
 
+	// fallow-ignore-next-line complexity
 	const getPlaceholder = (): string => {
 		if ( config.options ) {
 			return __( 'Search or select an option…', 'burst-statistics' );

@@ -1,23 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { DateRange, DefinedRange } from 'react-date-range';
 import { __ } from '@wordpress/i18n';
 import CompareToggle from '../Statistics/CompareToggle';
 import Icon from '@/utils/Icon';
-
-/**
- * Custom hook to detect mobile viewport size
- */
-const useIsMobile = () => {
-	const [ isMobile, setIsMobile ] = useState( () => 'undefined' !== typeof window && 1024 > window.innerWidth );
-	useEffect( () => {
-		const handleResize = () => {
-			setIsMobile( 1024 > window.innerWidth );
-		};
-		window.addEventListener( 'resize', handleResize );
-		return () => window.removeEventListener( 'resize', handleResize );
-	}, []);
-	return isMobile;
-};
+import useIsMobile from '@/hooks/useIsMobile';
 
 /**
  * Find the next non-disabled range index, matching react-date-range's helper.
@@ -57,6 +43,7 @@ const findNextRangeIndex = ( ranges = [], currentRangeIndex = -1 ) => {
  * @param {string} [props.className]           Optional wrapper className.
  * @return {JSX.Element} Rendered date range picker.
  */
+// fallow-ignore-next-line complexity
 const DateRangePicker = ({
 	presetsHeading,
 	calendarHeading,

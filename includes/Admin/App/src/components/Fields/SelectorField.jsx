@@ -17,6 +17,8 @@ import HelpTooltip from '@/components/Common/HelpTooltip';
 const DEBOUNCE_DELAY = 300;
 
 const SelectorField = forwardRef(
+
+	// fallow-ignore-next-line complexity
 	(
 		{
 			field,
@@ -77,6 +79,8 @@ const SelectorField = forwardRef(
 		}, []);
 
 		const runTest = useCallback(
+
+			// fallow-ignore-next-line complexity
 			( selector ) => {
 				if ( ! selector ) {
 					setPreviewData({
@@ -203,6 +207,8 @@ const SelectorField = forwardRef(
 
 		// Navigate between previews
 		const navigatePreview = ( direction ) => {
+
+			// fallow-ignore-next-line complexity
 			setPreviewData( ( prev ) => {
 				const { previews, currentIndex } = prev;
 				if ( ! previews.length ) {

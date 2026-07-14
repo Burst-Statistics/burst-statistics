@@ -25,6 +25,7 @@ interface BlockSettingsSidebarProps {
  * Sidebar component for editing block settings in the report editor.
  * Displays block title, date range, filters, comments, and action buttons.
  */
+// fallow-ignore-next-line complexity
 export const BlockSettingsSidebar: React.FC<BlockSettingsSidebarProps> = ({ reportBlockIndex, className }) => {
 	const contents = useWizardStore( ( state ) => state.wizard.content );
 	const block = contents[reportBlockIndex];

@@ -11,6 +11,7 @@ import ButtonInput from '@/components/Inputs/ButtonInput';
 import { __ } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
 
+// fallow-ignore-next-line complexity
 const UnifiedMapPopover = () => {
 	const [ isOpen, setIsOpen ] = useState( false );
 

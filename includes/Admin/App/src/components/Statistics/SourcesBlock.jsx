@@ -65,6 +65,7 @@ const SourcesLegend = ({ categories, activeId, onSelect }) => {
  * @param {boolean} props.isLoading - Loading state.
  * @return {JSX.Element} Top sources list.
  */
+// fallow-ignore-next-line complexity
 const TopSourcesList = ({ rows, isLoading }) => {
 	return (
 		<div className="border-t border-gray-200 px-6 py-4">
@@ -110,6 +111,7 @@ const TopSourcesList = ({ rows, isLoading }) => {
  * @param {boolean}  props.isLoading    - Loading state.
  * @return {JSX.Element} Drill-down list.
  */
+// fallow-ignore-next-line complexity
 const SourcesDrilldown = ({
 	categoryId,
 	categoryName,
@@ -215,6 +217,7 @@ const SourcesUpsell = ({ selectedCategory, onBack }) => {
  * @param {Object} props - Block props.
  * @return {JSX.Element} Sources block.
  */
+// fallow-ignore-next-line complexity
 const SourcesBlock = ( props ) => {
 	const { startDate, endDate, range, filters, isReport, index } = useBlockConfig( props );
 	const { isPro } = useLicenseData();

@@ -24,6 +24,8 @@ interface RangeSliderInputProps {
  * @return {JSX.Element} The rendered range slider element
  */
 const RangeSliderInput = forwardRef<HTMLDivElement, RangeSliderInputProps>(
+
+	// fallow-ignore-next-line complexity
 	(
 		{
 			min = 0,

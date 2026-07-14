@@ -60,6 +60,7 @@ import {
 	Cookie,
 	Shield,
 	Fingerprint,
+	Repeat,
 } from 'lucide-react';
 
 // Color mapping from our custom colors to CSS variables
@@ -71,6 +72,7 @@ const iconColors = {
 	blue: 'var(--teamupdraft-blue)',
 	gray: 'var(--teamupdraft-grey-400)',
 	white: 'var(--teamupdraft-white)',
+	primary: 'var(--color-primary)',
 };
 
 // Map existing icon names to Lucide icon components
@@ -142,7 +144,9 @@ const iconComponents = {
 	'external-link': ExternalLink,
 	cookie: Cookie,
 	security: Shield,
+	shield: Shield,
 	fingerprint: Fingerprint,
+	repeat: Repeat,
 };
 
 // Define types for icon names and colors

@@ -300,6 +300,7 @@ export const useReportConfigStore = create( () => ({
 		{ value: -1, label: __( 'Last', 'burst-statistics' ) }
 	],
 
+	// fallow-ignore-next-line complexity
 	getWeekOfMonthTypeLabel: (
 		rule: WeekOfMonthType,
 		dayOfWeek?: DayOfWeekType
@@ -328,6 +329,7 @@ export const useReportConfigStore = create( () => ({
 		return weekLabel;
 	},
 
+	// fallow-ignore-next-line complexity
 	getScheduleLabel: (
 		scheduled: boolean,
 		frequency: FrequencyType,

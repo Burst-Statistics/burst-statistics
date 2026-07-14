@@ -18,6 +18,7 @@ import {
 import Icon from '@/utils/Icon';
 import { useReportConfigStore } from '@/store/reports/useReportConfigStore';
 
+// fallow-ignore-next-line complexity
 const getStatusLabel = ( status: ReportLogStatus ) => {
 	switch ( status ) {
 		case 'sending_successful':

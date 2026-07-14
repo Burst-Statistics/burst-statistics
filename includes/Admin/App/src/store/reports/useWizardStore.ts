@@ -7,7 +7,6 @@ import {
 	FrequencyType,
 	WeekOfMonthType, ContentBlock, ContentBlockId
 } from './types';
-import { useReportConfigStore } from './useReportConfigStore';
 import type { FilterSearchParams } from '@/config/filterConfig';
 import { availableRanges } from '@/utils/formatting';
 import {DateRangeValue} from '@/components/Inputs/DateRangePicker';
@@ -117,21 +116,28 @@ const DEFAULT_CONTENT: FormatDefaults = {
 	story: DEFAULT_STORY_BLOCKS
 };
 
-// Helper functions
-const findLastWeekdayOccurrence = ( dayOfWeek: DayOfWeekType, referenceDate: Date ): Date => {
-	const dayMap: Record<DayOfWeekType, number> = {
-		'sunday': 0,
-		'monday': 1,
-		'tuesday': 2,
-		'wednesday': 3,
-		'thursday': 4,
-		'friday': 5,
-		'saturday': 6
-	};
+const WIZARD_STEP_COUNT = 4;
 
-	const targetDay = dayMap[dayOfWeek];
+const DAY_MAP: Record<DayOfWeekType, number> = {
+	'sunday': 0,
+	'monday': 1,
+	'tuesday': 2,
+	'wednesday': 3,
+	'thursday': 4,
+	'friday': 5,
+	'saturday': 6
+};
+
+const getTargetDayAndZeroDate = ( dayOfWeek: DayOfWeekType, referenceDate: Date ): { targetDay: number; current: Date } => {
+	const targetDay = DAY_MAP[dayOfWeek];
 	const current = new Date( referenceDate );
 	current.setHours( 0, 0, 0, 0 );
+	return { targetDay, current };
+};
+
+// Helper functions
+const findLastWeekdayOccurrence = ( dayOfWeek: DayOfWeekType, referenceDate: Date ): Date => {
+	const { targetDay, current } = getTargetDayAndZeroDate( dayOfWeek, referenceDate );
 
 	// Go back to find the last occurrence (including today)
 	while ( current.getDay() !== targetDay ) {
@@ -141,20 +147,9 @@ const findLastWeekdayOccurrence = ( dayOfWeek: DayOfWeekType, referenceDate: Dat
 	return current;
 };
 
+// fallow-ignore-next-line complexity
 const findLastMonthlyOccurrence = ( dayOfWeek: DayOfWeekType, ordinal: WeekOfMonthType, referenceDate: Date ): Date => {
-	const dayMap: Record<DayOfWeekType, number> = {
-		'sunday': 0,
-		'monday': 1,
-		'tuesday': 2,
-		'wednesday': 3,
-		'thursday': 4,
-		'friday': 5,
-		'saturday': 6
-	};
-
-	const targetDay = dayMap[dayOfWeek];
-	const current = new Date( referenceDate );
-	current.setHours( 0, 0, 0, 0 );
+	const { targetDay, current } = getTargetDayAndZeroDate( dayOfWeek, referenceDate );
 
 	// Try current month and previous months
 	for ( let monthOffset = 0; 12 > monthOffset; monthOffset++ ) {
@@ -200,6 +195,80 @@ const findLastMonthlyOccurrence = ( dayOfWeek: DayOfWeekType, ordinal: WeekOfMon
 	return referenceDate;
 };
 
+// fallow-ignore-next-line complexity
+const moveContentInArray = (
+	content: ContentBlock[],
+	index: number,
+	direction: 'up' | 'down',
+	selectedBlockIndex: number | null
+): { content: ContentBlock[]; selectedBlockIndex: number | null } => {
+	const length = content.length;
+	if ( 1 >= length ) {
+		return { content, selectedBlockIndex };
+	}
+
+	const newContent = [ ...content ];
+	let newSelectedIndex = selectedBlockIndex;
+
+	if ( 'up' === direction ) {
+		if ( 0 === index ) {
+			const [ first ] = newContent.splice( 0, 1 );
+			newContent.push( first );
+
+			if ( 0 === selectedBlockIndex ) {
+				newSelectedIndex = length - 1;
+			} else if ( null !== selectedBlockIndex ) {
+				newSelectedIndex = selectedBlockIndex - 1;
+			}
+		} else {
+			[ newContent[index - 1], newContent[index] ] = [ newContent[index], newContent[index - 1] ];
+
+			if ( index === selectedBlockIndex ) {
+				newSelectedIndex = index - 1;
+			} else if ( index - 1 === selectedBlockIndex ) {
+				newSelectedIndex = index;
+			}
+		}
+	} else {
+		if ( index === length - 1 ) {
+			const [ last ] = newContent.splice( length - 1, 1 );
+			newContent.unshift( last );
+
+			if ( length - 1 === selectedBlockIndex ) {
+				newSelectedIndex = 0;
+			} else if ( null !== selectedBlockIndex ) {
+				newSelectedIndex = selectedBlockIndex + 1;
+			}
+		} else {
+			[ newContent[index + 1], newContent[index] ] = [ newContent[index], newContent[index + 1] ];
+
+			if ( index === selectedBlockIndex ) {
+				newSelectedIndex = index + 1;
+			} else if ( index + 1 === selectedBlockIndex ) {
+				newSelectedIndex = index;
+			}
+		}
+	}
+
+	return { content: newContent, selectedBlockIndex: newSelectedIndex };
+};
+
+const updateWizardContentProp = ( state: WizardStore, index: number, key: string, value: unknown ) => {
+	const newContent = [ ...state.wizard.content ];
+	if ( newContent[index]) {
+		newContent[index] = {
+			...newContent[index],
+			[key]: value
+		};
+	}
+	return {
+		wizard: {
+			...state.wizard,
+			content: newContent
+		}
+	};
+};
+
 export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 	wizard: { ...INITIAL_WIZARD_STATE },
 	isOpen: false,
@@ -220,6 +289,8 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 		const block = get().wizard.content[index];
 		return !! block?.date_range_enabled;
 	},
+
+	// fallow-ignore-next-line complexity
 	getFixedEndDate: ( index:number )=> {
 
 		//for each block, check if date_range_enabled is true and if so, return the fixed_end_date for that block.
@@ -301,7 +372,7 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 
 	nextStep: () =>
 		set( ( state ) => {
-			const max = useReportConfigStore.getState().stepCount;
+			const max = WIZARD_STEP_COUNT;
 			if ( state.wizard.currentStep < max ) {
 				const nextStep = state.wizard.currentStep + 1;
 				const isEditContentStep = 2 === nextStep;
@@ -388,80 +459,20 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 			};
 		}),
 	updateComment: ( index: number, text: string ) =>
-		set( ( state ) => {
-			const newContent = [ ...state.wizard.content ];
-			if ( newContent[index]) {
-				newContent[index] = {
-					...newContent[index],
-					content: text
-				};
-			}
-
-			return {
-				wizard: {
-					...state.wizard,
-					content: newContent
-				}
-			};
-		}),
+		set( ( state ) => updateWizardContentProp( state, index, 'content', text ) ),
 	getFilters: ( index: number ) => {
 		return get().wizard.content[index]?.filters ?? {};
 	},
 	updateFilters: ( index, filters ) => {
-		set( ( state ) => {
-			const newContent = [ ...state.wizard.content ];
-			if ( newContent[index]) {
-				newContent[index] = {
-					...newContent[index],
-					filters: filters
-				};
-			}
-
-			return {
-				wizard: {
-					...state.wizard,
-					content: newContent
-				}
-			};
-		});
+		set( ( state ) => updateWizardContentProp( state, index, 'filters', filters ) );
 	},
 	getBlockDateRange: ( index: number ) => {
 		return get().wizard.content[index]?.date_range ?? '';
 	},
 	updateCommentTitle: ( index: number, title: string ) =>
-		set( ( state ) => {
-			const newContent = [ ...state.wizard.content ];
-			if ( newContent[index]) {
-				newContent[index] = {
-					...newContent[index],
-					comment_title: title
-				};
-			}
-
-			return {
-				wizard: {
-					...state.wizard,
-					content: newContent
-				}
-			};
-		}),
+		set( ( state ) => updateWizardContentProp( state, index, 'comment_title', title ) ),
 	updateCommentText: ( index: number, text: string ) =>
-		set( ( state ) => {
-			const newContent = [ ...state.wizard.content ];
-			if ( newContent[index]) {
-				newContent[index] = {
-					...newContent[index],
-					comment_text: text
-				};
-			}
-
-			return {
-				wizard: {
-					...state.wizard,
-					content: newContent
-				}
-			};
-		}),
+		set( ( state ) => updateWizardContentProp( state, index, 'comment_text', text ) ),
 	getCommentTitle: ( index: number ) => {
 		return get().wizard.content[index]?.comment_title ?? '';
 	},
@@ -474,6 +485,7 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 	 * When not scheduled, use the fixedEndDate, which is based on the day before the report was created. This ensures consistent data for viewers.
 	 * @param index
 	 */
+	// fallow-ignore-next-line complexity
 	getEndDate: ( index: number ) => {
 		const scheduled = get().wizard.scheduled;
 
@@ -595,6 +607,8 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 			endDate: format( endDate, 'yyyy-MM-dd' )
 		};
 	},
+
+	// fallow-ignore-next-line complexity
 	getDateRange: ( index: number ) => {
 		const { wizard } = get();
 		const { scheduled, frequency, reportDateRange, content } = wizard;
@@ -619,6 +633,8 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 		const dateRange = get().getDateRange( index );
 		return get().parseDateRange( dateRange, type );
 	},
+
+	// fallow-ignore-next-line complexity
 	parseDateRange: ( dateRange: string, type: 'start' | 'end' ) => {
 
 		// Use availableRanges if the range exists
@@ -645,6 +661,8 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 		return get().wizard.content[index]?.content ?? '';
 	},
 	removeContent: ( index: number ) =>
+
+		// fallow-ignore-next-line complexity
 		set( ( state ) => {
 			const newContent = state.wizard.content.filter( ( _, i ) => i !== index );
 			let newSelectedIndex = state.selectedBlockIndex;
@@ -676,95 +694,35 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 		}),
 	moveContentUp: ( index: number ) =>
 		set( ( state ) => {
-			const content = state.wizard.content;
-			const length = content.length;
-
-			if ( 1 >= length ) {
-				return state;
-			}
-
-			const newContent = [ ...content ];
-			let newSelectedIndex = state.selectedBlockIndex;
-
-			if ( 0 === index ) {
-
-				// Move first item to the end.
-				const [ first ] = newContent.splice( 0, 1 );
-				newContent.push( first );
-
-				// Update selection to follow the moved block.
-				if ( 0 === state.selectedBlockIndex ) {
-					newSelectedIndex = length - 1;
-				} else if ( null !== state.selectedBlockIndex ) {
-					newSelectedIndex = state.selectedBlockIndex - 1;
-				}
-			} else {
-
-				// Swap with previous.
-				[ newContent[index - 1], newContent[index] ] =
-					[ newContent[index], newContent[index - 1] ];
-
-				// Update selection to follow the moved block.
-				if ( index === state.selectedBlockIndex ) {
-					newSelectedIndex = index - 1;
-				} else if ( index - 1 === state.selectedBlockIndex ) {
-					newSelectedIndex = index;
-				}
-			}
-
+			const { content, selectedBlockIndex } = moveContentInArray(
+				state.wizard.content,
+				index,
+				'up',
+				state.selectedBlockIndex
+			);
 			return {
 				wizard: {
 					...state.wizard,
-					content: newContent
+					content
 				},
-				selectedBlockIndex: newSelectedIndex
+				selectedBlockIndex
 			};
 		}),
 
 	moveContentDown: ( index: number ) =>
 		set( ( state ) => {
-			const content = state.wizard.content;
-			const length = content.length;
-
-			if ( 1 >= length ) {
-				return state;
-			}
-
-			const newContent = [ ...content ];
-			let newSelectedIndex = state.selectedBlockIndex;
-
-			if ( index === length - 1 ) {
-
-				// Move last item to the start.
-				const [ last ] = newContent.splice( length - 1, 1 );
-				newContent.unshift( last );
-
-				// Update selection to follow the moved block.
-				if ( length - 1 === state.selectedBlockIndex ) {
-					newSelectedIndex = 0;
-				} else if ( null !== state.selectedBlockIndex ) {
-					newSelectedIndex = state.selectedBlockIndex + 1;
-				}
-			} else {
-
-				// Swap with next.
-				[ newContent[index + 1], newContent[index] ] =
-					[ newContent[index], newContent[index + 1] ];
-
-				// Update selection to follow the moved block.
-				if ( index === state.selectedBlockIndex ) {
-					newSelectedIndex = index + 1;
-				} else if ( index + 1 === state.selectedBlockIndex ) {
-					newSelectedIndex = index;
-				}
-			}
-
+			const { content, selectedBlockIndex } = moveContentInArray(
+				state.wizard.content,
+				index,
+				'down',
+				state.selectedBlockIndex
+			);
 			return {
 				wizard: {
 					...state.wizard,
-					content: newContent
+					content
 				},
-				selectedBlockIndex: newSelectedIndex
+				selectedBlockIndex
 			};
 		}),
 

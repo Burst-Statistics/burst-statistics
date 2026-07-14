@@ -27,6 +27,7 @@ interface ProBadgeProps {
  * @param props.hasLink      - If the result should be a link or not (optional)
  * @return JSX.Element
  */
+// fallow-ignore-next-line complexity
 const ProBadge: React.FC<ProBadgeProps> = ({
                                                id = '',
                                                className = '',

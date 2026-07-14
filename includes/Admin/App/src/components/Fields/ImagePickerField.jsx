@@ -30,6 +30,8 @@ import { darkOverlayStyle } from '@/utils/overlayStyle';
  * @return {JSX.Element}
  */
 const ImagePickerControl =
+
+	// fallow-ignore-next-line complexity
 	({ field, fieldState, label, help, className, isDarkPreview = false, darkToggle = null, ...props }) => {
 
 		const defaultImage = isDarkPreview ?

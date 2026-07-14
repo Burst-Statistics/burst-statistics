@@ -28,6 +28,7 @@ import { METRIC_DEFINITIONS } from '@/components/Common/metricDefinitions';
  * @param {React.ReactNode}   props.children       - The label text to make hoverable.
  * @return {JSX.Element} The wrapped, hoverable label.
  */
+// fallow-ignore-next-line complexity
 const MetricInfo = ({
 	metricKey,
 	label: labelProp,

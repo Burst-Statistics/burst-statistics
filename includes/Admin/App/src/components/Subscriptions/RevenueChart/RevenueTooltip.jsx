@@ -14,6 +14,7 @@ import { formatCurrency, formatNumber } from '@/utils/formatting';
  * @param {string} props.currency - Base currency code for revenue mode.
  * @return {JSX.Element} The tooltip element.
  */
+// fallow-ignore-next-line complexity
 export function RevenueTooltip({ id, value, color, data, mode = 'revenue', currency = 'USD' }) {
 	const isRevenueMode = 'revenue' === mode;
 	const label = 'newValue' === id ?

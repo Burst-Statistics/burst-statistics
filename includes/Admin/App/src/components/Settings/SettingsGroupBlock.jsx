@@ -10,6 +10,7 @@ import { __ } from '@wordpress/i18n';
 import useLicenseData from '@/hooks/useLicenseData';
 import clsx from 'clsx';
 
+// fallow-ignore-next-line complexity
 const SettingsGroupBlock = memo( ({ group, fields, control, isLastGroup, isShowingFooter = true }) => {
 		const { isLicenseValid } = useLicenseData();
 

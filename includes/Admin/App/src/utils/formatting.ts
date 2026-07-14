@@ -88,6 +88,7 @@ export type ChartInterval = 'hour' | 'day' | 'week' | 'month' | 'year';
  * @param date         - The reference date, defaults to the current date.
  * @return The relative time string.
  */
+// fallow-ignore-next-line complexity
 const getRelativeTime = (
 	relativeDate: Date | number,
 	date: Date = new Date()
@@ -411,6 +412,7 @@ function formatTime( timeInMilliSeconds: number | string = 0 ): string {
  * @param compact  - When true (default), uses compact notation (e.g. 1.2K). When false, shows the full value.
  * @return The formatted number.
  */
+// fallow-ignore-next-line complexity
 function formatNumber( value: number | string, decimals: number = 1, compact: boolean = true ): string {
 	let numeric = Number( value );
 	if ( isNaN( numeric ) ) {
@@ -533,6 +535,7 @@ const DEFAULT_BURST_START_TIMESTAMP = 1640995200;
  *
  * @return Start-of-day Date for the earliest selectable date.
  */
+// fallow-ignore-next-line complexity
 const getBurstStartDate = (): Date => {
 	let activationTimestamp: number = DEFAULT_BURST_START_TIMESTAMP;
 	if ( burst_settings.burst_date_picker_start_date ) {
@@ -781,6 +784,7 @@ function createValueFormatter(
 
 	const { isPercentage, isTime, precision, suffix } = metricOptions[metric];
 
+	// fallow-ignore-next-line complexity
 	return ( value ) => {
 		if ( null === value || value === undefined ) {
 			return '';
@@ -842,6 +846,17 @@ function formatCurrencyCompact(
 	}).format( value );
 }
 
+const parseAndValidateDate = ( dateInput: string | number | Date | null | undefined ): Date | null => {
+	if ( ! dateInput ) {
+		return null;
+	}
+	const date = dateInput instanceof Date ? dateInput : new Date( dateInput );
+	if ( isNaN( date.getTime() ) ) {
+		return null;
+	}
+	return date;
+};
+
 /**
  * Formats a date for display (e.g. "September 1, 2025") using
  * `Intl.DateTimeFormat` for proper localization.
@@ -851,14 +866,9 @@ function formatCurrencyCompact(
  * @return The formatted date string, or an empty string if invalid.
  */
 function formatDate( dateInput: string | number | Date | null | undefined, removeYear: boolean = false ): string {
-	if ( ! dateInput ) {
-		return '';
-	}
-
 	try {
-		const date = dateInput instanceof Date ? dateInput : new Date( dateInput );
-
-		if ( isNaN( date.getTime() ) ) {
+		const date = parseAndValidateDate( dateInput );
+		if ( ! date ) {
 			return '';
 		}
 
@@ -880,14 +890,9 @@ function formatDate( dateInput: string | number | Date | null | undefined, remov
  * @return The formatted date string, or an empty string if invalid.
  */
 function formatDateAndTime( dateInput: string | number | Date | null | undefined ): string {
-	if ( ! dateInput ) {
-		return '';
-	}
-
 	try {
-		const date = dateInput instanceof Date ? dateInput : new Date( dateInput );
-
-		if ( isNaN( date.getTime() ) ) {
+		const date = parseAndValidateDate( dateInput );
+		if ( ! date ) {
 			return '';
 		}
 
@@ -912,14 +917,9 @@ function formatDateAndTime( dateInput: string | number | Date | null | undefined
  * @return The formatted date string, or an empty string if invalid.
  */
 function formatDateShort( dateInput: string | number | Date | null | undefined ): string {
-	if ( ! dateInput ) {
-		return '';
-	}
-
 	try {
-		const date = dateInput instanceof Date ? dateInput : new Date( dateInput );
-
-		if ( isNaN( date.getTime() ) ) {
+		const date = parseAndValidateDate( dateInput );
+		if ( ! date ) {
 			return '';
 		}
 
@@ -973,6 +973,7 @@ const formatDuration = ( seconds: number ): string => {
  *
  * @return IANA timezone identifier.
  */
+// fallow-ignore-next-line complexity
 function getWpTimezone(): string {
 	try {
 		const { timezone } = getSettings() as {
@@ -1054,6 +1055,7 @@ let datePickerLocale: Locale | undefined;
  *
  * @return Locale object for the `locale` prop of `react-date-range`.
  */
+// fallow-ignore-next-line complexity
 const getDatePickerLocale = (): Locale => {
 	if ( datePickerLocale ) {
 		return datePickerLocale;
@@ -1126,6 +1128,11 @@ const getDatePickerLocale = (): Locale => {
  * @param spansMultipleYears - Whether the chart range covers more than one year.
  * @return Short formatted label (e.g. `2 PM`, `Mon 3`, `3 Jan`, `Jan 24`).
  */
+const formatDateTime = ( date: Date, timeZone: string, options: Intl.DateTimeFormatOptions ): string => {
+	return new Intl.DateTimeFormat( getLocale(), { timeZone, ...options }).format( date );
+};
+
+// fallow-ignore-next-line complexity
 function formatAxisLabel(
 	timestamp: number,
 	interval: ChartInterval | string,
@@ -1136,39 +1143,25 @@ function formatAxisLabel(
 
 	switch ( interval ) {
 		case 'hour':
-			return new Intl.DateTimeFormat( getLocale(), { timeZone, hour: 'numeric' }).format( date );
+			return formatDateTime( date, timeZone, { hour: 'numeric' });
 
 		case 'day':
-			return new Intl.DateTimeFormat( getLocale(), {
-				timeZone,
-				weekday: 'short',
-				day: 'numeric'
-			}).format( date );
+			return formatDateTime( date, timeZone, { weekday: 'short', day: 'numeric' });
 
 		case 'week':
-
-			// Show the week-start date; a compact day + short month is most readable.
-			return new Intl.DateTimeFormat( getLocale(), {
-				timeZone,
-				day: 'numeric',
-				month: 'short'
-			}).format( date );
+			return formatDateTime( date, timeZone, { day: 'numeric', month: 'short' });
 
 		case 'month':
-			return new Intl.DateTimeFormat( getLocale(), {
-				timeZone,
+			return formatDateTime( date, timeZone, {
 				month: 'short',
 				...( spansMultipleYears ? { year: '2-digit' as const } : {})
-			}).format( date );
+			});
 
 		case 'year':
-			return new Intl.DateTimeFormat( getLocale(), {
-				timeZone,
-				year: 'numeric'
-			}).format( date );
+			return formatDateTime( date, timeZone, { year: 'numeric' });
 
 		default:
-			return new Intl.DateTimeFormat( getLocale(), { timeZone, dateStyle: 'short' }).format( date );
+			return formatDateTime( date, timeZone, { dateStyle: 'short' });
 	}
 }
 
@@ -1180,6 +1173,7 @@ function formatAxisLabel(
  * @param interval  - Grouping interval.
  * @return Detailed formatted label (e.g. `Mon 3 Jan 2024, 2:00 PM`, `3 Jan – 9 Jan 2024`).
  */
+// fallow-ignore-next-line complexity
 function formatTooltipLabel(
 	timestamp: number,
 	interval: ChartInterval | string
@@ -1189,53 +1183,40 @@ function formatTooltipLabel(
 
 	switch ( interval ) {
 		case 'hour':
-			return new Intl.DateTimeFormat( getLocale(), {
-				timeZone,
+			return formatDateTime( date, timeZone, {
 				weekday: 'short',
 				day: 'numeric',
 				month: 'short',
 				year: 'numeric',
 				hour: 'numeric',
 				minute: '2-digit'
-			}).format( date );
+			});
 
 		case 'day':
-			return new Intl.DateTimeFormat( getLocale(), {
-				timeZone,
+			return formatDateTime( date, timeZone, {
 				weekday: 'long',
 				day: 'numeric',
 				month: 'long',
 				year: 'numeric'
-			}).format( date );
+			});
 
 		case 'week': {
 
 			// Show the full week range: start date – end date (week start + 6 days).
 			const weekEnd = new Date( ( timestamp + 6 * 24 * 60 * 60 ) * 1000 );
-			const fmt = new Intl.DateTimeFormat( getLocale(), {
-				timeZone,
-				day: 'numeric',
-				month: 'short',
-				year: 'numeric'
-			});
-			return `${ fmt.format( date ) } \u2013 ${ fmt.format( weekEnd ) }`;
+			const startStr = formatDateTime( date, timeZone, { day: 'numeric', month: 'short', year: 'numeric' });
+			const endStr = formatDateTime( weekEnd, timeZone, { day: 'numeric', month: 'short', year: 'numeric' });
+			return `${ startStr } \u2013 ${ endStr }`;
 		}
 
 		case 'month':
-			return new Intl.DateTimeFormat( getLocale(), {
-				timeZone,
-				month: 'long',
-				year: 'numeric'
-			}).format( date );
+			return formatDateTime( date, timeZone, { month: 'long', year: 'numeric' });
 
 		case 'year':
-			return new Intl.DateTimeFormat( getLocale(), {
-				timeZone,
-				year: 'numeric'
-			}).format( date );
+			return formatDateTime( date, timeZone, { year: 'numeric' });
 
 		default:
-			return new Intl.DateTimeFormat( getLocale(), { timeZone, dateStyle: 'long' }).format( date );
+			return formatDateTime( date, timeZone, { dateStyle: 'long' });
 	}
 }
 

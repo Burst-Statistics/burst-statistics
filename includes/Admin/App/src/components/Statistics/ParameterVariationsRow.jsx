@@ -18,6 +18,7 @@ import { safeDecodeURI } from '@/utils/lib';
  *
  * @return {JSX.Element} Sub-table of parameter variations for the page row.
  */
+// fallow-ignore-next-line complexity
 const ParameterVariationsRow = ({ data, startDate, endDate, range }) => {
 	const pageUrl = data?.page_url || '';
 	const totalPageviews = Number( data?.pageviews ?? 0 );

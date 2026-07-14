@@ -61,9 +61,3 @@ export interface InsightsData {
 	datasets: InsightsChartDataset[];
 }
 
-export interface BurstDataResponse<T = unknown> {
-	data: T;
-	request_success?: boolean;
-	message?: string;
-	code?: number;
-}

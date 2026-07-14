@@ -6,6 +6,7 @@ import {useMemo} from '@wordpress/element';
 import {createValueFormatter} from '@/utils/formatting';
 import {memo} from 'react';
 
+// fallow-ignore-next-line complexity
 const MapStatisticsInfo = memo( ({dataStatistics, missingDataCount}) => {
     const currentView = useGeoStore( ( state ) => state.currentView );
 

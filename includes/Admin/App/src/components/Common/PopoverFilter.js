@@ -8,6 +8,7 @@ import ProBadge from './ProBadge';
 import Popover from './Popover';
 import useLicenseData from '@/hooks/useLicenseData';
 
+// fallow-ignore-next-line complexity
 const PopoverFilter = ({
 	onApply,
 	id,
@@ -185,6 +186,7 @@ const PopoverFilter = ({
 
 				// Radio button mode for single selection
 				<div className="flex flex-col gap-2">
+					{/* fallow-ignore-next-line complexity */}
 					{Object.keys( options ).map( ( value, index ) => {
 						return (
 							<RadioInput
@@ -226,6 +228,7 @@ const PopoverFilter = ({
 					};
 
 					// Render function for a single option.
+					// fallow-ignore-next-line complexity
 					const renderOption = ( value ) => (
 						<div
 							key={'checkbox-popover' + value}

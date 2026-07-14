@@ -41,6 +41,8 @@ const EXCLUDED_FIELDS = [
  * @return {JSX.Element}
  */
 	const UploadField = (
+
+	// fallow-ignore-next-line complexity
 	({ field, fieldState, label, help, context, className, ...props }) => {
 		const { settings, saveSettings, isSavingSettings } = useSettingsData();
 		const [ file, setFile ] = useState( false );

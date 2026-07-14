@@ -3,6 +3,7 @@ import ButtonInput from '@/components/Inputs/ButtonInput';
 import { __ } from '@wordpress/i18n';
 import { useFormState } from 'react-hook-form';
 
+// fallow-ignore-next-line complexity
 function SettingsFooter({ onSubmit, control }) {
 	const { isDirty, isSubmitting, isValidating } = useFormState({
 		control

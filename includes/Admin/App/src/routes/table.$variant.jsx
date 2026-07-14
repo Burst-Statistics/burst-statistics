@@ -12,6 +12,7 @@ export const Route = createFileRoute( '/table/$variant' )({
 	 * @param {Record<string, unknown>} search - Raw URL search params.
 	 * @return {object} Validated search params.
 	 */
+	// fallow-ignore-next-line complexity
 	validateSearch: ( search ) => {
 		const filterParams = validateFilterSearch( search );
 

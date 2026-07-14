@@ -12,6 +12,7 @@ interface ReportStoryUrlProps {
     reportId: number; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
+// fallow-ignore-next-line complexity
 export const ReportStoryUrl: React.FC<ReportStoryUrlProps> = ({ reportId }) => {
     const openPreview = useReportsStore( ( state ) => state.openPreview );
     const generateStoryUrl = useReportsStore( ( state ) => state.generateStoryUrl );

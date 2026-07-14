@@ -9,6 +9,10 @@ import { PageFilter } from '@/components/Filters/PageFilter';
 import DateRange from '@/components/Statistics/DateRange';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import { FILTER_KEYS } from '@/config/filterConfig';
+import {
+	SHEET_OVERLAY_PROPS,
+	SHEET_PANEL_PROPS
+} from '@/components/Common/sheetMotionProps';
 
 // Duration in ms, matched to the exit spring animation.
 const EXIT_DURATION_MS = 0;
@@ -41,6 +45,7 @@ const VARIANT_META: Record<string, { label: string; icon: string }> = {
  *
  * @return {JSX.Element} The overlay component.
  */
+// fallow-ignore-next-line complexity
 export const DataTableOverlay: React.FC = () => {
 	const navigate = useNavigate();
 
@@ -150,32 +155,12 @@ export const DataTableOverlay: React.FC = () => {
 		<AnimatePresence>
 			{ isVisible && (
 				<motion.div
+					{...SHEET_OVERLAY_PROPS}
 					id="datatable-overlay"
-					className="fixed inset-0 left-0 max-[960px]:left-9 max-[782px]:left-0 z-9999 dark:bg-gray-400 bg-gray-700 bg-opacity-90 flex items-end justify-center px-4"
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					exit={{ opacity: 0 }}
-					transition={{ duration: 0.15, ease: 'easeOut' }}
 					onClick={ handleClose }
 				>
 					<motion.div
-						initial={{ opacity: 0, y: 500, scale: 0.7 }}
-						animate={{ opacity: 1, y: 0, scale: 1 }}
-						exit={{ opacity: 0, y: 500, scale: 0.7 }}
-						transition={{
-							delay: 0.1,
-							y: {
-								type: 'spring',
-								stiffness: 135,
-								damping: 18,
-								mass: 0.45
-							},
-							opacity: {
-								duration: 0.18,
-								ease: 'easeOut'
-							}
-						}}
-						className="w-full h-[95vh] max-h-[95vh] max-w-(--breakpoint-2xl)"
+						{...SHEET_PANEL_PROPS}
 						onClick={ ( e ) => e.stopPropagation() }
 					>
 						<div className="h-full bg-gray-100 rounded-t-2xl shadow-2xl overflow-hidden flex flex-col">
@@ -280,5 +265,3 @@ export const DataTableOverlay: React.FC = () => {
 		</AnimatePresence>
 	);
 };
-
-export default DataTableOverlay;

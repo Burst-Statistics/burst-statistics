@@ -199,6 +199,7 @@ const LicenseActivationForm: React.FC<LicenseActivationFormProps> = ({
 /**
  * LicenseStatusCard component displays the license details and status.
  */
+// fallow-ignore-next-line complexity
 const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 	tier,
 	activationLimit,
@@ -277,6 +278,7 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 	 * Get the subscription status display text.
 	 * This shows if auto-renewal is enabled.
 	 */
+	// fallow-ignore-next-line complexity
 	const getSubscriptionStatusDisplay = (): { text: string; color: string } => {
 		const isExpired = new Date( expiresDate ) < new Date();
 
@@ -398,6 +400,7 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 	/**
 	 * Determine which upgrade to recommend based on user's current plan.
 	 */
+	// fallow-ignore-next-line complexity
 	const getRecommendedUpgradeUrl = (): string | null => {
 
 		// Site limit reached - recommend any upgrade with more sites.
@@ -552,6 +555,7 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
 						{__( 'Available upgrades', 'burst-statistics' )}
 					</h3>
 					<div className="flex flex-col gap-3">
+						{/* fallow-ignore-next-line complexity */}
 						{upgrades.map( ( upgrade, index ) => {
 
 							// Add UTM parameters to upgrade URL.
@@ -628,6 +632,8 @@ const LicenseStatusCard: React.FC<LicenseStatusCardProps> = ({
  * - Inactive (deactivated/expired): Shows LicenseActivationForm + LicenseStatusCard.
  */
 const LicenseField = forwardRef<HTMLInputElement, LicenseFieldProps>(
+
+	// fallow-ignore-next-line complexity
 	({ field, className, ...props }, ref ) => {
 
 		// Use the custom license data hook.

@@ -4,6 +4,7 @@ import getSubscriptionsProgressData from '@/api/getSubscriptionsProgressData';
 import Icon from '@/utils/Icon';
 import { formatNumber } from '@/utils/formatting';
 
+// fallow-ignore-next-line complexity
 const SubscriptionsLargeSiteNotice = () => {
 	const { data, isError } = useQuery({
 		queryKey: [ 'subscriptions-backfill-progress' ],

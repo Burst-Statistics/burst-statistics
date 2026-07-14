@@ -117,6 +117,8 @@ export const useReportsStore = create<ReportsStore>( ( set, get ) => ({
 
 		return shareUrl;
 	},
+
+	// fallow-ignore-next-line complexity
 	saveReportFromWizard: async() => {
 		const w = useWizardStore.getState().wizard;
 

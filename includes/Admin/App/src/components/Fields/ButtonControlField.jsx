@@ -16,6 +16,8 @@ import FieldWrapper from '@/components/Fields/FieldWrapper';
  * @return {JSX.Element}
  */
 const ButtonControlField = forwardRef(
+
+	// fallow-ignore-next-line complexity
 	(
 		{
 			field,

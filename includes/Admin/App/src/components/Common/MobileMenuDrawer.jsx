@@ -3,9 +3,8 @@ import { Link, useLocation } from '@tanstack/react-router';
 import clsx from 'clsx';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useState } from '@wordpress/element';
-import ProBadge from '@/components/Common/ProBadge';
 import Icon from '@/utils/Icon';
-import MenuItemLink from './HeaderMenuItemLink';
+import MenuItemLink, { MenuItemLabel } from './HeaderMenuItemLink';
 import ButtonInput from '../Inputs/ButtonInput';
 
 /** Top-level menu IDs that expand into a dropdown in the mobile drawer. */
@@ -164,21 +163,8 @@ const DrawerDropdownSection = ({ menuItem, isTrial, onNavigate }) => {
 					hasActiveChild && DRAWER_ACTIVE_CLASS
 				)}
 			>
-				<span className="inline-flex min-w-0 items-center gap-1.5 text-base tracking-wide">
-					{menuItem.icon && '' !== menuItem.icon && (
-						<span aria-hidden="true" className="inline-flex shrink-0">
-							<Icon name={menuItem.icon} size={14} color="gray" strokeWidth={2.5} />
-						</span>
-					)}
-					<span>{menuItem.title}</span>
-					{menuItem.pro && (
-						<ProBadge
-							type={isTrial ? 'icon' : 'badge'}
-							label={__( 'Pro', 'burst-statistics' )}
-							id={menuItem.id}
-							hasLink={false}
-						/>
-					)}
+				<span className="min-w-0">
+					<MenuItemLabel menuItem={menuItem} isTrial={isTrial} />
 				</span>
 				<Icon
 					name="chevron-down"

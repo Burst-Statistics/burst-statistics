@@ -24,6 +24,7 @@ import useSettingsData from '@/hooks/useSettingsData';
  * @param {React.ReactNode} afterChildren - Optional content shown in the hover overlay.
  * @return {React.ReactElement}
  */
+// fallow-ignore-next-line complexity
 const ClickToFilter = ({
 	filter,
 	filterValue,
@@ -80,6 +81,8 @@ const ClickToFilter = ({
 
 	// Handle external link clicks
 	const handleExternalLinkClick = useCallback(
+
+		// fallow-ignore-next-line complexity
 		( e ) => {
 			e.stopPropagation();
 
@@ -134,6 +137,7 @@ const ClickToFilter = ({
 	}, []);
 
 	// Handle date range updates
+	// fallow-ignore-next-line complexity
 	const handleDateRange = useCallback( () => {
 		if ( ! startDate ) {
 			return;

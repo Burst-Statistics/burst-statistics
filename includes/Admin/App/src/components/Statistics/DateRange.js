@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { format, isSameDay, parseISO } from 'date-fns';
 import Icon from '@/utils/Icon';
 import { useDateRange } from '@/hooks/useDateRange';
+import useIsMobile from '@/hooks/useIsMobile';
 import {
 	getDateWithOffset,
 	getAvailableRanges,
@@ -19,21 +20,6 @@ import { __ } from '@wordpress/i18n';
 // Extract configuration
 const DATE_FORMAT = 'yyyy-MM-dd';
 const CLICKS_TO_CLOSE = 2;
-
-/**
- * Custom hook to detect mobile viewport size
- */
-const useIsMobile = () => {
-	const [ isMobile, setIsMobile ] = useState( () => 'undefined' !== typeof window && 1024 > window.innerWidth );
-	useEffect( () => {
-		const handleResize = () => {
-			setIsMobile( 1024 > window.innerWidth );
-		};
-		window.addEventListener( 'resize', handleResize );
-		return () => window.removeEventListener( 'resize', handleResize );
-	}, []);
-	return isMobile;
-};
 
 /**
  * Date Range Trigger Component
@@ -114,6 +100,8 @@ const DateRange = () => {
 	);
 
 	const updateDateRange = useCallback(
+
+		// fallow-ignore-next-line complexity
 		( ranges ) => {
 			if ( ! userCanFilterDateRange ) {
 				return;

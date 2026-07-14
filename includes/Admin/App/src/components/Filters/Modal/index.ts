@@ -8,16 +8,4 @@
  * import { StringFilterSetup, BooleanFilterSetup, IntFilterSetup, DeviceFilterSetup } from '@/components/Filters/Modal/Setup';
  */
 
-export { default as FilterModal } from './FilterModal';
 export { default as FilterPopoverContent } from './FilterPopoverContent';
-export { default as FilterCard } from './FilterCard';
-export { default as FilterSelectionView } from './FilterSelectionView';
-export { default as FilterSetupView } from './FilterSetupView';
-
-// Re-export Setup components for convenience
-export {
-	StringFilterSetup,
-	BooleanFilterSetup,
-	IntFilterSetup,
-	DeviceFilterSetup
-} from './Setup';

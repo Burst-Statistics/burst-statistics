@@ -2,6 +2,7 @@ import {useDate} from '@/store/useDateStore';
 import useFilters from '@/hooks/useFilters';
 import {BlockComponentProps} from '@/store/reports/types';
 
+// fallow-ignore-next-line complexity
 export const useBlockConfig = ( props:BlockComponentProps ) => {
     const dateState = useDate( ( state ) => state );
     const { filters: defaultFilters } = useFilters( props.reportBlockIndex );

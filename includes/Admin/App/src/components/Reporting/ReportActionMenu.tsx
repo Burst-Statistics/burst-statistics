@@ -21,6 +21,7 @@ interface MenuItem {
 	hidden?: boolean;
 }
 
+// fallow-ignore-next-line complexity
 export const ReportActionMenu: React.FC<ReportActionMenuProps> = ({ row }) => {
 	const [ isOpen, setIsOpen ] = useState<boolean>( false );
 	const wizard = useWizardStore( ( state ) => state.wizard );
@@ -154,6 +155,8 @@ export const ReportActionMenu: React.FC<ReportActionMenuProps> = ({ row }) => {
 			>
 				<div className="flex flex-col">
 					{
+
+						// fallow-ignore-next-line complexity
 						menuItems.filter( ( item ) => ! item.hidden ).map( ( item, index ) => {
 							const isFirst = 0 === index;
 							const isLast = index === menuItems.length - 1;

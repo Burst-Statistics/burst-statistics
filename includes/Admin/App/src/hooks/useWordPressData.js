@@ -11,6 +11,7 @@ import '@wordpress/core-data';
  * @param {Array | string} options.fields - Optional specific field(s) to extract from site settings
  * @return {Object} - Site settings data and utility functions
  */
+// fallow-ignore-next-line complexity
 const useWordPressData = ({ fields } = {}) => {
 	const queryClient = useQueryClient();
 

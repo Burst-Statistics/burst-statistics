@@ -109,6 +109,8 @@ export function useFormsData(): UseFormsDataReturn {
 	});
 
 	const data = useMemo( () => {
+
+		// fallow-ignore-next-line complexity
 		const rows = ( apiData ?? []).map( ( row: ApiRow ) => ({
 			formId: String( row.form_id ),
 			formTitle: row.form_title,

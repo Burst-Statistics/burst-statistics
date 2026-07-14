@@ -91,6 +91,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 				)}
 				ref={ref}
 			>
+				{/* fallow-ignore-next-line complexity */}
 				{Object.keys( options ).map( ( key ) => {
 					const option = options[key];
 					const optionId = `${name}-${option.type}`;

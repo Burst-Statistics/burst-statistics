@@ -45,6 +45,7 @@ export const useFilterDisplay = ( reportBlockIndex ) => {
 		);
 	}, [ filters, filtersConf ]); // eslint-disable-line react-hooks/exhaustive-deps
 
+	// fallow-ignore-next-line complexity
 	const getFilterDisplayValue = async(
 		filterKey,
 		value

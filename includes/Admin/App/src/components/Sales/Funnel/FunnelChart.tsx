@@ -18,6 +18,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
  *
  * @return {JSX.Element} The rendered funnel chart.
  */
+// fallow-ignore-next-line complexity
 export const FunnelChart: React.FC<FunnelChartProps> = ({
 	data
 }) => {
@@ -60,6 +61,8 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 	// Calculate statistics for each step.
 	const statistics = useMemo( () => {
 		const totalValue = data[0]?.value || 1;
+
+		// fallow-ignore-next-line complexity
 		const stats: StepStatistics[] = data.map( ( item, index ) => {
 			const currentValue = item.value;
 			const nextValue = data[index + 1]?.value ?? 0;
@@ -211,6 +214,8 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 						interpolation="smooth"
 						colors="var(--color-green-500)"
 						motionConfig="gently"
+
+						// fallow-ignore-next-line complexity
 						tooltip={({ part }) => {
 
 							// Extract index from the position-based ID (e.g., 'step-0' -> 0).

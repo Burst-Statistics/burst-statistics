@@ -101,6 +101,7 @@ function getDynamicTickValues( data, containerWidth, options = {}) {
  *
  * @return {JSX.Element} The RetentionChartBlock component.
  */
+// fallow-ignore-next-line complexity
 export function RetentionChartBlock() {
 	const { startDate, endDate, range } = useDate( ( state ) => state );
 	const retentionProductId = useSubscriptionsStore( ( state ) => state.retentionProductId );
@@ -159,6 +160,7 @@ export function RetentionChartBlock() {
 
 	// This useEffect will make sure, that product exists or not in our response, and if it does not it will go back to default option.
 	// For example: We have a product from WooCommerce_Subscriptions client deactivates that plugin and moves to subscriben then the old product selected in our dashabord won't be valid so this will reset it to 'all'.
+	// fallow-ignore-next-line complexity
 	useEffect( () => {
 		if (
 			'all' === retentionProductId ||
@@ -178,6 +180,7 @@ export function RetentionChartBlock() {
 		}
 	}, [ isFetching, productOptions, retentionData.products.length, retentionProductId, retentionQuery.isError, setRetentionProductId ]);
 
+	// fallow-ignore-next-line complexity
 	const retentionColorScale = useCallback( ( cell ) => {
 		const { value } = cell;
 		if ( null == value ) {

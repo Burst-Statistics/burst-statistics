@@ -1,5 +1,9 @@
 import { Link } from '@tanstack/react-router';
 import { clsx } from 'clsx';
+import {
+	getDefinedAriaAttributes,
+	handleButtonActivationKey
+} from '@/components/Inputs/buttonUtils';
 
 interface ButtonInputProps
 	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -46,17 +50,12 @@ const ButtonInput: React.FC<ButtonInputProps> = ({
 	...props
 }) => {
 	const handleKeyDown = ( e: React.KeyboardEvent<HTMLButtonElement> ) => {
-
-		// Handle keyboard activation for custom onClick handlers
-		if ( ( 'Enter' === e.key || ' ' === e.key ) && onClick && ! disabled ) {
-			e.preventDefault();
-			onClick( e as any ); // eslint-disable-line @typescript-eslint/no-explicit-any
-		}
-
-		// Call any existing onKeyDown handler
-		if ( props.onKeyDown ) {
-			props.onKeyDown( e );
-		}
+		handleButtonActivationKey({
+			e,
+			onClick,
+			disabled,
+			onKeyDown: props.onKeyDown
+		});
 	};
 
 	const classes = clsx(
@@ -95,14 +94,12 @@ const ButtonInput: React.FC<ButtonInputProps> = ({
 	);
 
 	// Build ARIA attributes, filtering out undefined values
-	const ariaAttributes = Object.fromEntries(
-		Object.entries({
+	const ariaAttributes = getDefinedAriaAttributes({
 			'aria-label': ariaLabel,
 			'aria-pressed': ariaPressed,
 			'aria-expanded': ariaExpanded,
 			'aria-disabled': disabled ? true : undefined
-		}).filter( ([ _, value ]) => value !== undefined ) // eslint-disable-line @typescript-eslint/no-unused-vars
-	);
+		});
 
 	if ( link ) {
 		if ( disabled ) {

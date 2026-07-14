@@ -1,6 +1,6 @@
 import DOMPurify from 'isomorphic-dompurify';
 
-export const isLikelyHtml = ( s: string ) => /<[^>]+>/.test( s );
+const isLikelyHtml = ( s: string ) => /<[^>]+>/.test( s );
 
 /**
  * Sanitizes HTML string using DOMPurify unless a custom sanitizer is provided.

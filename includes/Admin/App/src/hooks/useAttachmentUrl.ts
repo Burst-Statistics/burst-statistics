@@ -39,6 +39,8 @@ export const useAttachmentUrl = (
 
 	return useQuery<UseAttachmentResult, Error>({
 		queryKey: [ 'attachment', attachmentId, resolvedDefault ],
+
+		// fallow-ignore-next-line complexity
 		queryFn: async(): Promise<UseAttachmentResult> => {
 
 		// Server-resolved URL instead of an attachment ID (story/frontend view,
@@ -86,6 +88,7 @@ const isSetAttachmentId = ( value: number | string | undefined ): boolean =>
  * @param lightDefaultUrl - Default URL when no light image is set.
  * @param darkDefaultUrl  - Default URL when no image is set in dark mode.
  */
+// fallow-ignore-next-line complexity
 export const useDarkAwareAttachmentUrl = (
 	lightId: number | string | undefined,
 	darkId: number | string | undefined,
