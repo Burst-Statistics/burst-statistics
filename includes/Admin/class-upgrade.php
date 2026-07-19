@@ -376,6 +376,14 @@ class Upgrade {
 			\Burst\burst_loader()->admin->tasks->add_task( 'search_console_integration' );
 		}
 
+		if ( $prev_version && version_compare( $prev_version, '3.6.2', '<' ) ) {
+			// Add `status` column to wp_burst_statistics for 404-page tracking.
+			// The column was added to the dbDelta schema but no ALTER TABLE migration
+			// was ever created, so existing installs (including those already at 3.6.1)
+			// silently miss the column. dbDelta() never adds columns to existing tables.
+			update_option( 'burst_db_upgrade_add_status_column_to_statistics', true, false );
+		}
+
 		$admin = new Admin();
 		$admin->run_table_init_hook();
 		$admin->create_js_file();

@@ -84,6 +84,11 @@ export const METRIC_DEFINITIONS = {
 		whyItMatters: __( 'Zero-result searches reveal content gaps. Topics your visitors want but cannot find on your site.', 'burst-statistics' ),
 		url: 'https://burst-statistics.com/guides/search-insights-see-what-visitors-are-looking-for-on-your-website/'
 	},
+	not_found_pages: {
+		label: __( '404 Pages', 'burst-statistics' ),
+		definition: __( 'Pages that returned a 404 (Not Found) status code, showing which broken URLs visitors are hitting.', 'burst-statistics' ),
+		whyItMatters: __( 'Frequently hit 404 URLs point to broken inbound links, missing redirects, or old pages that need fixing.', 'burst-statistics' )
+	},
 
 	// Live count.
 	live_visitors: {

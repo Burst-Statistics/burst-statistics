@@ -111,6 +111,7 @@ class Metric_Bootstrap {
 			'parameter'        => 'parameter',
 			'parameters'       => 'statistics.parameters',
 			'goal_id'          => 'goals.goal_id',
+			'status'           => 'statistics.status',
 		];
 		foreach ( $free_filters as $key => $column ) {
 			Filter_Registry::register( $key, $column );

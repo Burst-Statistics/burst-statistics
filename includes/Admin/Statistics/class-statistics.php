@@ -66,6 +66,7 @@ class Statistics extends Statistics_Data {
         `parameters` TEXT NOT NULL,
         `fragment` varchar(255) NOT NULL,
         `session_id` int,
+        `status` int NOT NULL DEFAULT 200,
         PRIMARY KEY (ID)
     ) $charset_collate;",
 			'burst_browsers'         => "CREATE TABLE {$wpdb->prefix}burst_browsers (

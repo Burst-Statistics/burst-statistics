@@ -81,6 +81,36 @@ export interface MetricOption {
 /** Grouping interval understood by the chart axis/tooltip formatters. */
 export type ChartInterval = 'hour' | 'day' | 'week' | 'month' | 'year';
 
+const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * Parse a date input for display. Date-only strings represent calendar days,
+ * not UTC timestamps, so create them in local time to avoid timezone shifts.
+ *
+ * @param dateInput - The date string, timestamp, or Date object.
+ * @return Parsed Date object.
+ */
+const parseDateForDisplay = (
+	dateInput: string | number | Date
+): Date => {
+	if ( dateInput instanceof Date ) {
+		return dateInput;
+	}
+
+	if ( 'string' === typeof dateInput ) {
+		const match = DATE_ONLY_PATTERN.exec( dateInput );
+		if ( match ) {
+			return new Date(
+				Number( match[1]),
+				Number( match[2]) - 1,
+				Number( match[3])
+			);
+		}
+	}
+
+	return new Date( dateInput );
+};
+
 /**
  * Returns a formatted string that represents the relative time between two dates.
  *
@@ -525,8 +555,6 @@ function getDateWithOffset( currentDate: Date = new Date() ): Date {
 
 	return new Date( currentUnixWithOffsets * 1000 );
 }
-const currentDateWithOffset = getDateWithOffset();
-
 const DEFAULT_BURST_START_TIMESTAMP = 1640995200;
 
 /**
@@ -563,34 +591,44 @@ const availableRanges = {
 		get label() {
 			return __( 'Today', 'burst-statistics' );
 		},
-		range: () => ({
-			startDate: startOfDay( currentDateWithOffset ),
-			endDate: endOfDay( currentDateWithOffset )
-		})
+		range: () => {
+			const currentDateWithOffset = getDateWithOffset();
+			return {
+				startDate: startOfDay( currentDateWithOffset ),
+				endDate: endOfDay( currentDateWithOffset )
+			};
+		}
 	} as RangeDefinition,
 	yesterday: {
 		get label() {
 			return __( 'Yesterday', 'burst-statistics' );
 		},
-		range: () => ({
-			startDate: startOfDay( addDays( currentDateWithOffset, -1 ) ),
-			endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
-		})
+		range: () => {
+			const currentDateWithOffset = getDateWithOffset();
+			return {
+				startDate: startOfDay( addDays( currentDateWithOffset, -1 ) ),
+				endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
+			};
+		}
 	} as RangeDefinition,
 	'last-7-days': {
 		get label() {
 			return __( 'Last 7 days', 'burst-statistics' );
 		},
-		range: () => ({
-			startDate: startOfDay( addDays( currentDateWithOffset, -7 ) ),
-			endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
-		})
+		range: () => {
+			const currentDateWithOffset = getDateWithOffset();
+			return {
+				startDate: startOfDay( addDays( currentDateWithOffset, -7 ) ),
+				endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
+			};
+		}
 	} as RangeDefinition,
 	'last-week': {
 		get label() {
 			return __( 'Last week', 'burst-statistics' );
 		},
 		range: () => {
+			const currentDateWithOffset = getDateWithOffset();
 			const daysFromSunday = currentDateWithOffset.getDay();
 			const startOfThisWeek = addDays( currentDateWithOffset, -daysFromSunday );
 			return {
@@ -603,75 +641,101 @@ const availableRanges = {
 		get label() {
 			return __( 'Last 30 days', 'burst-statistics' );
 		},
-		range: () => ({
-			startDate: startOfDay( addDays( currentDateWithOffset, -30 ) ),
-			endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
-		})
+		range: () => {
+			const currentDateWithOffset = getDateWithOffset();
+			return {
+				startDate: startOfDay( addDays( currentDateWithOffset, -30 ) ),
+				endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
+			};
+		}
 	} as RangeDefinition,
 	'last-90-days': {
 		get label() {
 			return __( 'Last 90 days', 'burst-statistics' );
 		},
-		range: () => ({
-			startDate: startOfDay( addDays( currentDateWithOffset, -90 ) ),
-			endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
-		})
+		range: () => {
+			const currentDateWithOffset = getDateWithOffset();
+			return {
+				startDate: startOfDay( addDays( currentDateWithOffset, -90 ) ),
+				endDate: endOfDay( addDays( currentDateWithOffset, -1 ) )
+			};
+		}
 	} as RangeDefinition,
 	'last-month': {
 		get label() {
 			return __( 'Last month', 'burst-statistics' );
 		},
-		range: () => ({
-			startDate: startOfMonth( addMonths( currentDateWithOffset, -1 ) ),
-			endDate: endOfMonth( addMonths( currentDateWithOffset, -1 ) )
-		})
+		range: () => {
+			const currentDateWithOffset = getDateWithOffset();
+			const lastMonthDate = addMonths( currentDateWithOffset, -1 );
+			return {
+				startDate: startOfMonth( lastMonthDate ),
+				endDate: endOfMonth( lastMonthDate )
+			};
+		}
 	} as RangeDefinition,
 	'week-to-date': {
 		get label() {
 			return __( 'Week to date', 'burst-statistics' );
 		},
-		range: () => ({
-			startDate: startOfDay(
-				addDays( currentDateWithOffset, -currentDateWithOffset.getDay() )
-			),
-			endDate: endOfDay( currentDateWithOffset )
-		})
+		range: () => {
+			const currentDateWithOffset = getDateWithOffset();
+			return {
+				startDate: startOfDay(
+					addDays( currentDateWithOffset, -currentDateWithOffset.getDay() )
+				),
+				endDate: endOfDay( currentDateWithOffset )
+			};
+		}
 	} as RangeDefinition,
 	'month-to-date': {
 		get label() {
 			return __( 'Month to date', 'burst-statistics' );
 		},
-		range: () => ({
-			startDate: startOfMonth( currentDateWithOffset ),
-			endDate: endOfDay( currentDateWithOffset )
-		})
+		range: () => {
+			const currentDateWithOffset = getDateWithOffset();
+			return {
+				startDate: startOfMonth( currentDateWithOffset ),
+				endDate: endOfDay( currentDateWithOffset )
+			};
+		}
 	} as RangeDefinition,
 	'year-to-date': {
 		get label() {
 			return __( 'Year to date', 'burst-statistics' );
 		},
-		range: () => ({
-			startDate: startOfYear( currentDateWithOffset ),
-			endDate: endOfDay( currentDateWithOffset )
-		})
+		range: () => {
+			const currentDateWithOffset = getDateWithOffset();
+			return {
+				startDate: startOfYear( currentDateWithOffset ),
+				endDate: endOfDay( currentDateWithOffset )
+			};
+		}
 	} as RangeDefinition,
 	'last-year': {
 		get label() {
 			return __( 'Last year', 'burst-statistics' );
 		},
-		range: () => ({
-			startDate: startOfYear( addYears( currentDateWithOffset, -1 ) ),
-			endDate: endOfYear( addYears( currentDateWithOffset, -1 ) )
-		})
+		range: () => {
+			const currentDateWithOffset = getDateWithOffset();
+			const lastYearDate = addYears( currentDateWithOffset, -1 );
+			return {
+				startDate: startOfYear( lastYearDate ),
+				endDate: endOfYear( lastYearDate )
+			};
+		}
 	} as RangeDefinition,
 	'all-time': {
 		get label() {
 			return __( 'All time', 'burst-statistics' );
 		},
-		range: () => ({
-			startDate: BURST_START_DATE,
-			endDate: endOfDay( currentDateWithOffset )
-		})
+		range: () => {
+			const currentDateWithOffset = getDateWithOffset();
+			return {
+				startDate: BURST_START_DATE,
+				endDate: endOfDay( currentDateWithOffset )
+			};
+		}
 	} as RangeDefinition
 };
 
@@ -737,8 +801,8 @@ const getDisplayDates = (
 	startDate: string,
 	endDate: string
 ): { startDate: string; endDate: string } => {
-	const startDateObj = new Date( startDate );
-	const endDateObj = new Date( endDate );
+	const startDateObj = parseDateForDisplay( startDate );
+	const endDateObj = parseDateForDisplay( endDate );
 
 	// if both are in the same year remove the year for startDate
 	const removeYear = startDateObj.getFullYear() === endDateObj.getFullYear();
@@ -867,10 +931,12 @@ const parseAndValidateDate = ( dateInput: string | number | Date | null | undefi
  */
 function formatDate( dateInput: string | number | Date | null | undefined, removeYear: boolean = false ): string {
 	try {
-		const date = parseAndValidateDate( dateInput );
-		if ( ! date ) {
+		const validateDate = parseAndValidateDate( dateInput );
+		if ( ! validateDate ) {
 			return '';
 		}
+
+		const date = parseDateForDisplay( validateDate );
 
 		return new Intl.DateTimeFormat( getLocale(), {
 			month: 'long',
@@ -891,10 +957,12 @@ function formatDate( dateInput: string | number | Date | null | undefined, remov
  */
 function formatDateAndTime( dateInput: string | number | Date | null | undefined ): string {
 	try {
-		const date = parseAndValidateDate( dateInput );
-		if ( ! date ) {
+		const validateDate = parseAndValidateDate( dateInput );
+		if ( ! validateDate ) {
 			return '';
 		}
+
+		const date = parseDateForDisplay( validateDate );
 
 		return new Intl.DateTimeFormat( getLocale(), {
 			month: 'long',
@@ -918,10 +986,12 @@ function formatDateAndTime( dateInput: string | number | Date | null | undefined
  */
 function formatDateShort( dateInput: string | number | Date | null | undefined ): string {
 	try {
-		const date = parseAndValidateDate( dateInput );
-		if ( ! date ) {
+		const validateDate = parseAndValidateDate( dateInput );
+		if ( ! validateDate ) {
 			return '';
 		}
+
+		const date = parseDateForDisplay( validateDate );
 
 		return new Intl.DateTimeFormat( getLocale(), {
 			month: 'short',

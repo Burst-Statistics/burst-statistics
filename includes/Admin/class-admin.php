@@ -18,6 +18,7 @@ use Burst\Admin\Posts\Posts;
 use Burst\Admin\Reports\Report_Logs;
 use Burst\Admin\Reports\Reports;
 use Burst\Admin\Search\Search;
+use Burst\Admin\Errors\Errors;
 use Burst\Admin\Integrations\Integrations_Settings;
 use Burst\Admin\Search_Console\Search_Console;
 use Burst\Admin\Engagement\Reading_Engagement;
@@ -129,6 +130,8 @@ class Admin {
 			}
 			$search = new Search();
 			$search->init();
+			$errors = new Errors();
+			$errors->init();
 			$integrations_settings = new Integrations_Settings();
 			$integrations_settings->init();
 			$search_console = new Search_Console();

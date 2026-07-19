@@ -1379,6 +1379,16 @@ class Statistics_Query {
 		}
 
 		$this->build_filter_where( $q );
+
+		// Default to status 200 (OK) if status filter is not explicitly set.
+		// Guard: only emit the WHERE clause when the column actually exists so that
+		// REST API calls fired during the upgrade window (before the async ALTER
+		// TABLE migration runs) do not produce a hard MySQL error.
+		$filters = $this->get_filters();
+		if ( ! isset( $filters['status'] ) && self::statistics_has_status_column() ) {
+			$q->where( 'statistics.status', 200, '=', '%d' );
+		}
+
 		$q->where_between( 'statistics.time', $this->get_date_start(), $this->get_date_end(), '%d' );
 
 		// Correlated EXISTS support: tie this subquery to an outer statistic id. Emitted here
@@ -1583,6 +1593,9 @@ class Statistics_Query {
 
 		foreach ( $filters as $filter => $value ) {
 			if ( ! array_key_exists( $filter, $possible_filters ) ) {
+				continue;
+			}
+			if ( $filter === 'status' && $value === 'all' ) {
 				continue;
 			}
 			$column     = $possible_filters[ $filter ];
@@ -1835,5 +1848,22 @@ class Statistics_Query {
 		$q          = $this->to_query();
 		$timeout_ms = $this->get_query_timeout_ms();
 		return $this->add_query_timeout_hint( $q->prepare_sql(), $timeout_ms );
+	}
+
+	/**
+	 * Check whether the `status` column exists in wp_burst_statistics.
+	 *
+	 * Caches the result in a static variable so the underlying DESC query
+	 * runs at most once per PHP process, regardless of how many statistics
+	 * queries are executed in a single request.
+	 */
+	private static function statistics_has_status_column(): bool {
+		static $has_status = null;
+		if ( null === $has_status ) {
+			global $wpdb;
+			$columns    = $wpdb->get_col( "DESC {$wpdb->prefix}burst_statistics", 0 ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$has_status = in_array( 'status', $columns, true );
+		}
+		return $has_status;
 	}
 }

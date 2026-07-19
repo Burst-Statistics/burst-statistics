@@ -468,6 +468,9 @@ class Tracking {
 		$sanitized_data['page_type']             = $this->sanitize_page_identifier( $data['page_type'] );
 		$sanitized_data['should_load_ecommerce'] = filter_var( $data['should_load_ecommerce'], FILTER_VALIDATE_BOOLEAN );
 		$sanitized_data['search_term']           = isset( $data['search_term'] ) ? sanitize_text_field( wp_unslash( (string) $data['search_term'] ) ) : '';
+
+		$sanitized_data['status'] = '404' === $sanitized_data['page_type'] ? 404 : 200;
+
 		return $sanitized_data;
 	}
 
@@ -490,7 +493,7 @@ class Tracking {
 		$today       = gmdate( 'Y-m-d' );
 
 		if ( ! is_array( $stored ) || empty( $stored['salt'] ) || empty( $stored['date'] ) || $stored['date'] !== $today ) {
-			$salt   = wp_generate_password( 64, true, true );
+			$salt   = bin2hex( random_bytes( 32 ) );
 			$stored = [
 				'date' => $today,
 				'salt' => $salt,

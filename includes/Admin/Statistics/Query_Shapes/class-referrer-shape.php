@@ -23,7 +23,7 @@ class Referrer_Shape implements From_Strategy_Interface {
 	 */
 	public function apply( Statistics_Query $qd ): void {
 		$inner = Query::create()
-			->select_raw( 'statistics.ID, statistics.time, statistics.page_url, statistics.page_id, statistics.page_type, statistics.uid, statistics.time_on_page, statistics.session_id' )
+			->select_raw( 'statistics.ID, statistics.time, statistics.page_url, statistics.page_id, statistics.page_type, statistics.uid, statistics.time_on_page, statistics.session_id, statistics.status' )
 			->from( 'burst_statistics', 'statistics' )
 			->inner_join( 'burst_sessions', 'statistics.session_id = sessions.ID', 'sessions' )
 			->where_between( 'statistics.time', $qd->get_date_start(), $qd->get_date_end(), '%d' )

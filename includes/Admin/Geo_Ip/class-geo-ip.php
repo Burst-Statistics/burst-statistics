@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || die();
  *
  * Downloads and maintains the MaxMind GeoLite2 Country database. Shared with the
  * free plugin so country tracking works without Pro. The country database is
- * refreshed once per year and that cadence is deliberately not filterable. Pro
+ * refreshed once per quarter and that cadence is deliberately not filterable. Pro
  * extends this class (Geo_Ip_Pro) to use the City database at a higher frequency.
  *
  * http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz
@@ -35,13 +35,13 @@ class Geo_Ip {
 	}
 
 	/**
-	 * How often the database is refreshed, in seconds. Country = yearly.
+	 * How often the database is refreshed, in seconds. Country = quarterly.
 	 *
 	 * Intentionally a method, not a filter: the free refresh cadence cannot be
 	 * altered through hooks. Pro overrides this for the City database.
 	 */
 	protected function refresh_interval(): int {
-		return YEAR_IN_SECONDS;
+		return 3 * MONTH_IN_SECONDS;
 	}
 
 	/**

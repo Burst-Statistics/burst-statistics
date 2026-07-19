@@ -534,6 +534,25 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				}
 			}
 		},
+		not_found_pages: {
+			label: __( '404 Pages', 'burst-statistics' ),
+			searchable: true,
+			defaultColumns: [ 'page_url', 'hits' ],
+			columnsOptions: {
+				page_url: {
+					label: __( 'Page URL', 'burst-statistics' ),
+					default: true,
+					format: 'url',
+					align: 'left',
+					group_by: true
+				},
+				hits: {
+					label: __( 'Hits', 'burst-statistics' ),
+					format: 'integer',
+					align: 'right'
+				}
+			}
+		},
 		search_console: {
 			label: __( 'Google Searches', 'burst-statistics' ),
 			searchable: true,
