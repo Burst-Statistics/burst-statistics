@@ -1380,13 +1380,10 @@ class Statistics_Query {
 
 		$this->build_filter_where( $q );
 
-		// Default to status 200 (OK) if status filter is not explicitly set.
-		// Guard: only emit the WHERE clause when the column actually exists so that
-		// REST API calls fired during the upgrade window (before the async ALTER
-		// TABLE migration runs) do not produce a hard MySQL error.
+		// Exclude 404 hits (stored with page_type '404') unless a status filter is explicitly set.
 		$filters = $this->get_filters();
-		if ( ! isset( $filters['status'] ) && self::statistics_has_status_column() ) {
-			$q->where( 'statistics.status', 200, '=', '%d' );
+		if ( ! isset( $filters['status'] ) ) {
+			$q->where( 'statistics.page_type', '404', '!=' );
 		}
 
 		$q->where_between( 'statistics.time', $this->get_date_start(), $this->get_date_end(), '%d' );
@@ -1650,6 +1647,14 @@ class Statistics_Query {
 		$eq_operator  = $is_exclude ? '!=' : '=';
 		$like_keyword = $is_exclude ? 'NOT LIKE' : 'LIKE';
 
+		if ( $filter === 'status' ) {
+			// Virtual filter: there is no status column, 404 hits are stored with page_type '404'.
+			// '404' selects those rows, '200' selects everything else; exclusion inverts the match.
+			$matches_404 = ( $value === '404' ) !== $is_exclude;
+			$query->where( 'statistics.page_type', '404', $matches_404 ? '=' : '!=' );
+			return;
+		}
+
 		if ( $filter === 'entry_exit_pages' && $value !== '' ) {
 			// entry_exit_pages is not in Filter_Registry, so the auto-join loop
 			// won't pull in sessions; force the join here.
@@ -1848,22 +1853,5 @@ class Statistics_Query {
 		$q          = $this->to_query();
 		$timeout_ms = $this->get_query_timeout_ms();
 		return $this->add_query_timeout_hint( $q->prepare_sql(), $timeout_ms );
-	}
-
-	/**
-	 * Check whether the `status` column exists in wp_burst_statistics.
-	 *
-	 * Caches the result in a static variable so the underlying DESC query
-	 * runs at most once per PHP process, regardless of how many statistics
-	 * queries are executed in a single request.
-	 */
-	private static function statistics_has_status_column(): bool {
-		static $has_status = null;
-		if ( null === $has_status ) {
-			global $wpdb;
-			$columns    = $wpdb->get_col( "DESC {$wpdb->prefix}burst_statistics", 0 ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$has_status = in_array( 'status', $columns, true );
-		}
-		return $has_status;
 	}
 }

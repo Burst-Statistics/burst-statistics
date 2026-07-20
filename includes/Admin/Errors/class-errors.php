@@ -95,7 +95,7 @@ class Errors {
 		$q = Query::create()
 			->select( [ 's.page_url AS page_url', 'COUNT(*) AS hits' ] )
 			->from( 'burst_statistics', 's' )
-			->where( 's.status', 404, '=', '%d' )
+			->where( 's.page_type', '404' )
 			->where_between( 's.time', $start, $end, '%d' )
 			->group_by( 's.page_url' )
 			->order_by( 'hits', 'DESC' );

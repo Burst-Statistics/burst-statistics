@@ -246,18 +246,6 @@ class DB_Upgrade {
 			$this->clean_spam_browsers();
 		}
 
-		if ( 'goals_add_block_goal_column' === $do_upgrade ) {
-			$this->upgrade_goals_add_block_goal_column();
-		}
-
-		if ( 'goals_add_page_id_column' === $do_upgrade ) {
-			$this->upgrade_goals_add_page_id_column();
-		}
-
-		if ( 'add_status_column_to_statistics' === $do_upgrade ) {
-			$this->upgrade_add_status_column_to_statistics();
-		}
-
 		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
 		if ( $this->get_progress( 'free', 'all' ) < 100 ) {
 			// free upgrades not finished yet.
@@ -406,13 +394,6 @@ class DB_Upgrade {
 				'3.6.0'   => [
 					'clean_spam_browsers',
 				],
-				'3.6.1'   => [
-					'goals_add_block_goal_column',
-					'goals_add_page_id_column',
-				],
-				'3.6.2'   => [
-					'add_status_column_to_statistics',
-				],
 			]
 		);
 
@@ -559,101 +540,6 @@ class DB_Upgrade {
 			delete_option( 'burst_db_upgrade_bounces' );
 		} else {
 			self::error_log( 'db upgrade bounces failed' );
-		}
-	}
-
-	/**
-	 * Add block_goal column to the goals table for the Gutenberg block integration.
-	 */
-	private function upgrade_goals_add_block_goal_column(): void {
-		if ( ! $this->has_admin_access() ) {
-			return;
-		}
-
-		$option_name = 'burst_db_upgrade_goals_add_block_goal_column';
-		if ( ! get_option( $option_name ) ) {
-			return;
-		}
-
-		global $wpdb;
-		// Check if column already exists.
-		$columns = $wpdb->get_col( "DESC {$wpdb->prefix}burst_goals", 0 );
-		if ( in_array( 'block_goal', $columns, true ) ) {
-			delete_option( $option_name );
-			return;
-		}
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange
-		$result = $wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_goals ADD COLUMN `block_goal` tinyint NOT NULL DEFAULT 0" );
-
-		if ( $result !== false ) {
-			delete_option( $option_name );
-		}
-	}
-
-	/**
-	 * Add `status` column to wp_burst_statistics for 404 page tracking.
-	 *
-	 * The column was introduced in the dbDelta schema when 404-page tracking
-	 * was added, but no ALTER TABLE migration was ever created alongside it.
-	 * WordPress's dbDelta() only adds columns to existing tables when the
-	 * schema changes — it never backfills on upgrade. This migration ensures
-	 * all pre-404-tracking installs receive the column.
-	 */
-	private function upgrade_add_status_column_to_statistics(): void {
-		if ( ! $this->has_admin_access() ) {
-			return;
-		}
-
-		$option_name = 'burst_db_upgrade_add_status_column_to_statistics';
-		if ( ! get_option( $option_name ) ) {
-			return;
-		}
-
-		// Idempotent: safe to run on fresh installs that already have the column.
-		if ( $this->column_exists( 'burst_statistics', 'status' ) ) {
-			delete_option( $option_name );
-			return;
-		}
-
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange
-		$result = $wpdb->query(
-			"ALTER TABLE {$wpdb->prefix}burst_statistics ADD COLUMN `status` int NOT NULL DEFAULT 200"
-		);
-
-		if ( $result !== false ) {
-			delete_option( $option_name );
-		}
-	}
-
-	/**
-	 * Add page_id column to the goals table.
-	 */
-	private function upgrade_goals_add_page_id_column(): void {
-		if ( ! $this->has_admin_access() ) {
-			return;
-		}
-
-		$option_name = 'burst_db_upgrade_goals_add_page_id_column';
-		if ( ! get_option( $option_name ) ) {
-			return;
-		}
-
-		global $wpdb;
-		// Check if column already exists.
-		$columns = $wpdb->get_col( "DESC {$wpdb->prefix}burst_goals", 0 );
-		if ( in_array( 'page_id', $columns, true ) ) {
-			delete_option( $option_name );
-			return;
-		}
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange
-		$result = $wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_goals ADD COLUMN `page_id` int(11) NULL" );
-
-		if ( $result !== false ) {
-			delete_option( $option_name );
 		}
 	}
 

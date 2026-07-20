@@ -20,19 +20,7 @@ class Goals {
 	 * Constructor
 	 */
 	public function init(): void {
-		add_action( 'burst_install_tables', [ $this, 'install_goals_table' ], 10 );
 		add_action( 'save_post', [ $this, 'update_goal_urls_on_post_save' ], 10, 3 );
-	}
-
-	/**
-	 * Install goal table
-	 * */
-	public function install_goals_table(): void {
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-
-		if ( ! empty( $wpdb->last_error ) ) {
-			self::error_log( 'Error creating goals table: ' . $wpdb->last_error );
-		}
 	}
 
 	/**
@@ -216,12 +204,6 @@ class Goals {
 		$table_name   = $wpdb->prefix . 'burst_goals';
 		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name;
 		if ( ! $table_exists ) {
-			return;
-		}
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$columns = $wpdb->get_col( "DESCRIBE {$table_name}" );
-		if ( ! in_array( 'page_id', $columns, true ) ) {
 			return;
 		}
 

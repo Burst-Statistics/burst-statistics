@@ -469,8 +469,6 @@ class Tracking {
 		$sanitized_data['should_load_ecommerce'] = filter_var( $data['should_load_ecommerce'], FILTER_VALIDATE_BOOLEAN );
 		$sanitized_data['search_term']           = isset( $data['search_term'] ) ? sanitize_text_field( wp_unslash( (string) $data['search_term'] ) ) : '';
 
-		$sanitized_data['status'] = '404' === $sanitized_data['page_type'] ? 404 : 200;
-
 		return $sanitized_data;
 	}
 
@@ -1093,7 +1091,6 @@ class Tracking {
 		global $wpdb;
 		unset( $data['host'] );
 		$data = $this->remove_empty_values( $data );
-
 		// Ensure 'ID' is present for update.
 		if ( ! isset( $data['ID'] ) ) {
             // phpcs:ignore

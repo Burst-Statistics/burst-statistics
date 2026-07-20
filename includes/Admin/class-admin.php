@@ -14,6 +14,7 @@ use Burst\Admin\Dashboard_Widget\Dashboard_Widget;
 use Burst\Admin\Data_Sharing\Data_Sharing;
 use Burst\Admin\DB_Upgrade\DB_Upgrade;
 use Burst\Admin\Debug\Debug;
+use Burst\Admin\Plugins\Plugin_Updates;
 use Burst\Admin\Posts\Posts;
 use Burst\Admin\Reports\Report_Logs;
 use Burst\Admin\Reports\Reports;
@@ -152,6 +153,15 @@ class Admin {
 
 			$review = new Review();
 			$review->init();
+
+			// Smart update timing (Integrations > Smart update timing). Hooks
+			// register unconditionally and gate themselves on the settings
+			// toggles and stored opt-ins, so cron events keep a handler, stored
+			// per-plugin opt-ins keep updating inside the window and enabling a
+			// toggle takes effect in the request that saves it.
+			$plugin_updates = new Plugin_Updates();
+			$plugin_updates->init();
+
 			$this->tasks = new Tasks();
 			$widget      = new Dashboard_Widget();
 			$widget->init();
@@ -973,6 +983,7 @@ class Admin {
 			$this->update_option( 'combine_vars_and_script', true );
 			$this->update_option( 'enable_turbo_mode', true );
 			$this->update_option( 'privacy_level', 'cookie' );
+			$this->update_option( 'plugin_update_suggestions', true );
 			$this->create_js_file();
 
 			$this->tasks->add_initial_tasks();
