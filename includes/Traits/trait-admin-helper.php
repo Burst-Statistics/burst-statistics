@@ -20,6 +20,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 trait Admin_Helper {
 	use Helper;
 
+	/**
+	 * Explicit no-op for upgrade versions without Pro-specific data changes.
+	 */
+	private function mark_noop_upgrade( string $target_version, string $previous_version ): void {
+		do_action( 'burst_noop_upgrade', $target_version, $previous_version );
+	}
 
 	/**
 	 * Check if user has Burst view permissions

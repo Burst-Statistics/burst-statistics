@@ -250,6 +250,7 @@ class Statistics_Allowlist {
 			'device',
 			'browser',
 			'platform',
+			'status',
 		];
 
 		if ( ! $this->strict ) {

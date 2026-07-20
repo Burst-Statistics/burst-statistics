@@ -89,6 +89,14 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		category: 'behavior',
 		exclusion_allowed: false
 	},
+	status: {
+		label: __( 'Status', 'burst-statistics' ),
+		icon: 'page',
+		type: 'boolean',
+		pro: false,
+		category: 'content',
+		exclusion_allowed: true
+	},
 	device_id: {
 		label: __( 'Device', 'burst-statistics' ),
 		icon: 'desktop',

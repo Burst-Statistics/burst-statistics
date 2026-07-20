@@ -56,6 +56,10 @@ class Integrations_Settings {
 					'id'    => 'integrations',
 					'title' => __( 'Plugin integrations', 'burst-statistics' ),
 				],
+				[
+					'id'    => 'smart_update_timing',
+					'title' => __( 'Smart update timing', 'burst-statistics' ),
+				],
 			],
 		];
 
@@ -98,6 +102,36 @@ class Integrations_Settings {
 	public function add_fields( array $fields ): array {
 		$all_integrations = $this->get_all_integrations();
 		$active_rows      = $this->build_active_rows( $all_integrations );
+
+		// Smart update timing: two independent toggles for the low-traffic plugin
+		// update feature on the plugins screen (Plugin_Updates).
+		$fields[] = [
+			'id'       => 'plugin_update_suggestions',
+			'menu_id'  => 'integrations',
+			'group_id' => 'smart_update_timing',
+			'type'     => 'checkbox',
+			'label'    => __( 'Show recommended update time in plugin overview', 'burst-statistics' ),
+			'context'  => [
+				'text' => __( 'Shows the quietest moment to update plugins on the Plugins page, based on your traffic.', 'burst-statistics' ),
+				'url'  => 'update-plugins-when-traffic-is-low/',
+			],
+			'disabled' => false,
+			'default'  => true,
+		];
+
+		$fields[] = [
+			'id'       => 'plugin_update_scheduling',
+			'menu_id'  => 'integrations',
+			'group_id' => 'smart_update_timing',
+			'type'     => 'checkbox',
+			'label'    => __( 'Schedule auto-updates during quiet traffic periods', 'burst-statistics' ),
+			'context'  => [
+				'text' => __( 'Only reschedules plugin updates that already have WordPress auto-updates enabled, to run during your quietest traffic period.', 'burst-statistics' ),
+				'url'  => 'update-plugins-when-traffic-is-low/',
+			],
+			'disabled' => false,
+			'default'  => false,
+		];
 
 		// The intro field is always present so the group is always visible.
 		$fields[] = [

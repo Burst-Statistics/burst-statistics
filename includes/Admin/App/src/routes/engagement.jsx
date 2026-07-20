@@ -7,6 +7,7 @@ import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import { shouldLoadRoute } from '@/utils/helper';
 import { SearchTermsBlock } from '@/components/SearchTerms';
+import NotFoundPagesBlock from '@/components/NotFoundPages/NotFoundPagesBlock';
 import { OutgoingLinksBlock } from '@/components/OutgoingLinks';
 import { FormsBlock } from '@/components/Forms';
 import { ReadingEngagementBlock } from '@/components/ReadingEngagement';
@@ -42,12 +43,7 @@ function Engagement() {
 
 			<SearchTermsBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
 
-			<Block className="row-span-1 @lg:col-span-6 @xl:col-span-4">
-				<BlockHeading title={__( 'Goals', 'burst-statistics' )} />
-				<BlockContent className="flex items-center justify-center h-48 text-gray-400 text-sm font-medium italic">
-					{__( 'Coming soon', 'burst-statistics' )}
-				</BlockContent>
-			</Block>
+			<NotFoundPagesBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
 		</>
 	);
 }

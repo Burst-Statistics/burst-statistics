@@ -1379,6 +1379,13 @@ class Statistics_Query {
 		}
 
 		$this->build_filter_where( $q );
+
+		// Exclude 404 hits (stored with page_type '404') unless a status filter is explicitly set.
+		$filters = $this->get_filters();
+		if ( ! isset( $filters['status'] ) ) {
+			$q->where( 'statistics.page_type', '404', '!=' );
+		}
+
 		$q->where_between( 'statistics.time', $this->get_date_start(), $this->get_date_end(), '%d' );
 
 		// Correlated EXISTS support: tie this subquery to an outer statistic id. Emitted here
@@ -1585,6 +1592,9 @@ class Statistics_Query {
 			if ( ! array_key_exists( $filter, $possible_filters ) ) {
 				continue;
 			}
+			if ( $filter === 'status' && $value === 'all' ) {
+				continue;
+			}
 			$column     = $possible_filters[ $filter ];
 			$is_exclude = ( $this->get_filter_exclusions()[ $filter ] ?? 'include' ) === 'exclude';
 			$this->add_filter_condition( $query, $filter, $column, $value, $is_exclude );
@@ -1636,6 +1646,14 @@ class Statistics_Query {
 		global $wpdb;
 		$eq_operator  = $is_exclude ? '!=' : '=';
 		$like_keyword = $is_exclude ? 'NOT LIKE' : 'LIKE';
+
+		if ( $filter === 'status' ) {
+			// Virtual filter: there is no status column, 404 hits are stored with page_type '404'.
+			// '404' selects those rows, '200' selects everything else; exclusion inverts the match.
+			$matches_404 = ( $value === '404' ) !== $is_exclude;
+			$query->where( 'statistics.page_type', '404', $matches_404 ? '=' : '!=' );
+			return;
+		}
 
 		if ( $filter === 'entry_exit_pages' && $value !== '' ) {
 			// entry_exit_pages is not in Filter_Registry, so the auto-join loop
