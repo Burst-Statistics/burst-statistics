@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.0
-Stable tag: 3.6.1
+Stable tag: 3.6.2
 
 Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner needed.
  
@@ -54,7 +54,8 @@ Optimized database queries. A tiny tracking script under 4 KB. No external depen
 * Breakdown of visitors by device (desktop, tablet, mobile)
 * Filter data by custom date ranges
 * Compare traffic between periods
- 
+* Search Console integration, view Google searches right on your dashboard
+
 **Real-time analytics**
  
 * Identify the real-time source for live visitors
@@ -281,6 +282,19 @@ We value your feedback. You can [submit a support request on the WordPress forum
  
 
 == Change log ==
+= 3.6.2 =
+* July 21st 2026
+* New: 404 tracking: hits on not-found pages are now tracked and shown in a new 404 pages block on the Engagement tab, while regular statistics exclude 404 hits.
+* Improvement: database upgrades are now protected by an atomic upgrade lock, so concurrent requests can no longer run the same upgrade twice and fill debug.log with duplicate column warnings.
+* Improvement: plugin icons on the Integrations page are only requested for plugins hosted on WordPress.org, preventing failed icon requests for premium integrations.
+* Fix: with Ghost mode and combined scripts enabled, the tracking script could be silently dropped when the obfuscated filename was missing; script generation is now consistent, including improved e-commerce handling.
+* Fix: enabling the headless setup now correctly enables and generates the combined tracking script file.
+* Fix: date labels could show the wrong day in some time zones due to UTC parsing of date-only values.
+* Fix: the insights graph falls back to automatic grouping when the selected date range is too small for the chosen interval.
+* Fix: license activation links pointed to an incorrect settings URL.
+* Fix: database query error on statistics.status when upgrading from versions before 3.6.1 due to missing column migration.
+* Fix: salt generation on endpoint causing fatal error due to missing function.
+
 = 3.6.1 =
 * July 14th 2026
 * New: Google Search Console integration: connect your Google account on the new Integrations settings page to see your top Google search queries in a new statistics block.

@@ -93,6 +93,24 @@ const BooleanFilterSetup: React.FC<BooleanFilterSetupProps> = ({
 					label: __( 'Exit pages', 'burst-statistics' )
 				}
 			};
+		} else if ( 'status' === filterKey ) {
+			return {
+				all: {
+					type: 'all',
+					icon: 'total',
+					label: __( 'All statuses', 'burst-statistics' )
+				},
+				'200': {
+					type: '200',
+					icon: 'circle-check',
+					label: __( 'OK', 'burst-statistics' )
+				},
+				'404': {
+					type: '404',
+					icon: 'file-disabled',
+					label: __( 'Not Found', 'burst-statistics' )
+				}
+			};
 		}
 
 		// Fallback for any other boolean filters

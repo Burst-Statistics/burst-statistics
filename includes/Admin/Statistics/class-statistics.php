@@ -156,6 +156,7 @@ class Statistics extends Statistics_Data {
 			[ 'time', 'session_id' ],
 			[ 'uid', 'time' ],
 			[ 'page_id', 'page_type' ],
+			[ 'page_type', 'time' ],
 		];
 
 		foreach ( $indexes as $index ) {

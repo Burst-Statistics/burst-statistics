@@ -365,15 +365,20 @@ class Upgrade {
 			$cookieless = $this->get_option_bool( 'enable_cookieless_tracking' );
 			$this->update_option( 'privacy_level', $cookieless ? 'fingerprint' : 'cookie' );
 
-			// Add block_goal column to burst_goals for Gutenberg block editor integration.
-			update_option( 'burst_db_upgrade_goals_add_block_goal_column', true, false );
-			update_option( 'burst_db_upgrade_goals_add_page_id_column', true, false );
-
 			if ( defined( 'BURST_FREE' ) ) {
 				delete_option( 'burst_trial_offered' );
 				\Burst\burst_loader()->admin->tasks->dismiss_task( 'trial_offer_loyal_users' );
 			}
 			\Burst\burst_loader()->admin->tasks->add_task( 'search_console_integration' );
+		}
+
+		if ( $prev_version && version_compare( $prev_version, '3.6.2', '<' ) ) {
+			// Enable the low-traffic plugin update suggestions for existing
+			// installs. Free feature; fresh installs get it via setup_defaults().
+			$this->update_option( 'plugin_update_suggestions', true );
+			// Calculate the low-traffic window shortly after the upgrade, so the
+			// update-timing hints on plugins.php have data on their first render.
+			wp_schedule_single_event( time() + 10 * MINUTE_IN_SECONDS, 'burst_calculate_low_traffic_time' );
 		}
 
 		$admin = new Admin();
