@@ -363,21 +363,25 @@ class Plugin_Updates {
 	 * Confine automatic updates of managed plugins to the low-traffic window.
 	 * Unmanaged plugins keep the WordPress default.
 	 *
-	 * @param mixed  $update Whether to update, as determined by WordPress. Mixed on
-	 *                       purpose: earlier filters may pass non-boolean values
-	 *                       through and we must return those unchanged rather than
-	 *                       fatal on a strict type hint.
-	 * @param object $item   The update offer object.
+	 * @param mixed $update Whether to update, as determined by WordPress. Mixed on
+	 *                      purpose: earlier filters may pass non-boolean values
+	 *                      through and we must return those unchanged rather than
+	 *                      fatal on a strict type hint.
+	 * @param mixed $item   The update offer object.
 	 * @return mixed The update decision: a bool for managed plugins, otherwise the
 	 *               incoming value untouched.
 	 */
-	public function filter_auto_update_plugin( mixed $update, object $item ): mixed {
+	public function filter_auto_update_plugin( mixed $update, mixed $item = null ): mixed {
 		// Null is core's UI probe for force-enabled/disabled auto-updates
 		// (wp_is_auto_update_forced_for_item). Returning a bool there replaces
 		// the enable/disable toggle with a static "Auto-updates enabled/disabled"
 		// label; we only steer actual update runs, so leave the probe untouched.
 		if ( null === $update ) {
 			return null;
+		}
+
+		if ( ! is_object( $item ) ) {
+			return $update;
 		}
 
 		if ( $this->get_window_start_hour() === false ) {
