@@ -200,6 +200,10 @@ class Settings_Data extends Data_Collector {
 			'enable_mainwp_integration'           => $this->get_burst_setting_bool( 'enable_mainwp_integration' ),
 			'enable_abilities_api'                => $this->get_burst_setting_bool( 'enable_abilities_api' ),
 			'burst_headless_domain'               => defined( 'BURST_HEADLESS_DOMAIN' ),
+			'enable_beta_features'                => $this->get_burst_setting_bool( 'beta' ),
+			'enable_search_console'               => $this->get_burst_setting_bool( 'enable_search_console' ),
+			'plugin_update_suggestions'           => $this->get_burst_setting_bool( 'plugin_update_suggestions', true ),
+			'plugin_update_scheduling'            => $this->get_burst_setting_bool( 'plugin_update_scheduling', false ),
 		];
 	}
 

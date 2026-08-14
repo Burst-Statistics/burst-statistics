@@ -286,7 +286,7 @@ const ClickToFilter = ({
 
 			{( afterChildren || ( ! useContainerForFilter || isExternalLinkable ) ) && (
 				<div
-					className="pointer-events-none absolute right-1 top-1/2 z-10 flex -translate-y-1/2 p-1 items-center gap-1 pl-5 pr-1 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100"
+					className="pointer-events-none absolute right-1 top-1/2 z-interactive flex -translate-y-1/2 p-1 items-center gap-1 pl-5 pr-1 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100"
 					style={{
 						background: 'linear-gradient(to right, transparent, var(--color-gray-50) 20px)'
 					}}

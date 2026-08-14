@@ -5,86 +5,18 @@ import { ResponsiveBar } from '@nivo/bar';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
-import PopoverFilter from '@/components/Common/PopoverFilter';
+import { ChartLegend } from '@/components/Common/ChartLegend';
+import { ChartModeFilter } from '@/components/Common/ChartModeFilter';
+import { ChartEmptyState } from '@/components/Common/ChartEmptyState';
+import { ChartErrorNotice } from '@/components/Common/ChartErrorNotice';
 import { useDate } from '@/store/useDateStore';
 import { useSubscriptionsStore } from '@/store/useSubscriptionsStore';
 import { formatCurrencyCompact, formatNumber, getChartXAxisTickValues } from '@/utils/formatting';
 import { RevenueTooltip } from './RevenueTooltip';
-import {
-	REVENUE_COLORS,
-	fetchRevenueData
-} from './revenueData';
+import { getRevenueChartData } from '@/api/getRevenueChartData';
 
-/**
- * Legend displayed in the BlockHeading controls area.
- *
- * @param {Object} props Component props.
- * @param {string} props.chartMode Selected chart mode.
- * @return {JSX.Element} The legend element.
- */
-function RevenueLegend({ chartMode }) {
-	const isRevenueMode = 'revenue' === chartMode;
-	const items = [
-		{
-			color: REVENUE_COLORS[ 0 ],
-			label: isRevenueMode ? __( 'New Revenue', 'burst-statistics' ) : __( 'New Sales', 'burst-statistics' )
-		},
-		{
-			color: REVENUE_COLORS[ 1 ],
-			label: isRevenueMode ? __( 'Renewal Revenue', 'burst-statistics' ) : __( 'Renewal Sales', 'burst-statistics' )
-		}
-	];
-
-	return (
-		<div className="flex items-center gap-4">
-			{ items.map( ({ color, label }) => (
-				<div key={ label } className="flex items-center gap-1.5">
-					<span
-						className="inline-block w-3 h-3 rounded-sm flex-shrink-0"
-						style={{ backgroundColor: color }}
-					/>
-					<span className="text-sm text-gray-500">{ label }</span>
-				</div>
-			) ) }
-		</div>
-	);
-}
-
-/**
- * Chart mode filter
- *
- * @param {Object}   props Component props.
- * @param {string}   props.chartMode Active mode.
- * @param {Function} props.onApply Mode apply handler.
- * @return {JSX.Element}
- */
-function RevenueModeFilter({ chartMode, onApply }) {
-	const modeOptions = {
-		revenue: {
-			label: __( 'Revenue', 'burst-statistics' ),
-			default: true
-		},
-		sales: {
-			label: __( 'Sales', 'burst-statistics' )
-		}
-	};
-
-	const handleApply = ( selectedOptions ) => {
-		const nextMode = selectedOptions?.[ 0 ] ?? 'revenue';
-		onApply( nextMode );
-	};
-
-	return (
-		<PopoverFilter
-			id="subscriptions_revenue_chart_mode"
-			selectedOptions={[ chartMode ]}
-			options={ modeOptions }
-			defaultOptions={[ 'revenue' ]}
-			selectionMode="single"
-			onApply={ handleApply }
-		/>
-	);
-}
+/** Colors for new and recurring revenue bars respectively. */
+const REVENUE_COLORS = [ 'var(--color-primary-700)', 'var(--color-primary-300)' ];
 
 /**
  * RevenueChartBlock component.
@@ -96,7 +28,12 @@ function RevenueModeFilter({ chartMode, onApply }) {
  */
 // fallow-ignore-next-line complexity
 export function RevenueChartBlock() {
-	const { startDate, endDate, range, filters } = useDate( ( state ) => state );
+
+	// Subscription daily rows are site-wide: visitor filters do not apply
+	// here, so none are sent and none participate in the query key. The key
+	// matches SubscriptionForecastChartBlock's (without comparison) so the
+	// shared historical request is deduplicated.
+	const { startDate, endDate, range } = useDate( ( state ) => state );
 	const chartMode = useSubscriptionsStore( ( state ) => state.chartMode );
 	const setChartMode = useSubscriptionsStore( ( state ) => state.setChartMode );
 	const PLACEHOLDER_DATA = {
@@ -108,8 +45,8 @@ export function RevenueChartBlock() {
 	};
 
 	const revenueQuery = useQuery({
-		queryKey: [ 'revenueChart', chartMode, startDate, endDate, range, filters ],
-		queryFn: () => fetchRevenueData({ startDate, endDate, range, filters, chartMode }),
+		queryKey: [ 'revenueChart', chartMode, startDate, endDate, range ],
+		queryFn: () => getRevenueChartData({ startDate, endDate, range, chartMode }),
 		placeholderData: PLACEHOLDER_DATA,
 		gcTime: 10000
 	});
@@ -153,9 +90,24 @@ export function RevenueChartBlock() {
 				controls={
 					! showEmptyState ? (
 						<div className="flex items-center gap-4 flex-wrap justify-end">
-							<RevenueLegend chartMode={ chartMode } />
+							<ChartLegend
+								items={ [
+									{
+										key: 'new',
+										color: REVENUE_COLORS[ 0 ],
+										square: true,
+										label: isRevenueMode ? __( 'New Revenue', 'burst-statistics' ) : __( 'New Sales', 'burst-statistics' )
+									},
+									{
+										key: 'renewal',
+										color: REVENUE_COLORS[ 1 ],
+										square: true,
+										label: isRevenueMode ? __( 'Renewal Revenue', 'burst-statistics' ) : __( 'Renewal Sales', 'burst-statistics' )
+									}
+								] }
+							/>
 
-							<RevenueModeFilter chartMode={ chartMode } onApply={ setChartMode } />
+							<ChartModeFilter id="subscriptions_revenue_chart_mode" chartMode={ chartMode } onApply={ setChartMode } />
 						</div>
 					) : null
 				}
@@ -165,41 +117,30 @@ export function RevenueChartBlock() {
 			<BlockContent className="px-0 py-0">
 				{
 					revenueQuery.isError && (
-						<p className="px-6 py-4 text-sm text-red-600">
-							{ __( 'Failed to load chart data.', 'burst-statistics' ) }
-						</p>
+						<ChartErrorNotice message={ __( 'Failed to load chart data.', 'burst-statistics' ) } />
 					)
 				}
 
 				{
 					showEmptyState ? (
-						<div className="h-[360px] flex items-center justify-center px-6 py-8 text-center">
-							<div className="max-w-md">
-								<div className="mb-4 flex justify-center">
-									<svg
-										className="h-14 w-14 text-gray-300"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke="currentColor"
-										strokeWidth={1}
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-										/>
-									</svg>
-								</div>
-
-								<h3 className="mb-1 text-base font-medium text-gray-600">
-									{ __( 'No data to display', 'burst-statistics' ) }
-								</h3>
-
-								<p className="text-sm text-gray-400">
-									{ emptyStateMessage }
-								</p>
-							</div>
-						</div>
+						<ChartEmptyState
+							message={ emptyStateMessage }
+							icon={
+								<svg
+									className="h-14 w-14 text-gray-300"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									strokeWidth={1}
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+									/>
+								</svg>
+							}
+						/>
 					) : (
 						<div
 							style={{ height: 360 }}

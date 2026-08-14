@@ -13,6 +13,12 @@ export type ReadingEngagementRow = {
 
 	/** Average time spent on this page in milliseconds. */
 	avg_time_on_page: number;
+
+	/** Word count of the page content. */
+	word_count?: number;
+
+	/** Reading engagement score from 0 to 100. */
+	reading_engagement_score: number;
 };
 
 type UseReadingEngagementDataReturn = {

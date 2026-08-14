@@ -27,7 +27,7 @@ const AccessStateModal: React.FC<AccessStateModalProps> = ({
 	const router = useRouter();
 
 	return (
-		<div className="burst-upsell-overlay absolute inset-0 z-50">
+		<div className="burst-upsell-overlay absolute inset-0 z-overlay">
 			<div className="relative flex justify-center pt-8 m-8 mt-24">
 				<div className="mx-4 min-w-fit rounded-md border border-gray-300 bg-gray-100 px-8 py-12 shadow-sm">
 					<div className="max-w-lg text-center px-4">

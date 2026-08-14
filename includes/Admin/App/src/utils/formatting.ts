@@ -1,4 +1,5 @@
 import { dateI18n, getSettings } from '@wordpress/date';
+import countryContinentsMap from '../../../../../assets/maps/country-continents.json';
 import {
 	addDays,
 	addMonths,
@@ -6,6 +7,7 @@ import {
 	endOfDay,
 	endOfMonth,
 	endOfYear,
+	format,
 	isSameDay,
 	startOfDay,
 	startOfMonth,
@@ -322,8 +324,58 @@ const formatUnixToTime = ( unixTimestamp: number ): string => {
 const DEFAULT_X_AXIS_TICK_COUNT = 7;
 
 /**
+ * Last day of the previous month as a yyyy-MM-dd date string.
+ *
+ * Monthly forecast charts treat the current (incomplete) month as forecast
+ * territory: the measured series runs through the last complete month and the
+ * forecast starts at the current month.
+ *
+ * @return Date string for the final day of the previous calendar month.
+ */
+const getLastCompleteMonthEndDate = (): string => {
+	return format( endOfMonth( addMonths( new Date(), -1 ) ), 'yyyy-MM-dd' );
+};
+
+const FORECAST_YEAR_INTERVAL_DAYS = 730;
+
+/**
+ * Resolve the forecast view's bucket interval and anchored end date.
+ *
+ * Forecast charts bucket per calendar month; selections longer than two
+ * years switch to calendar years so the axis stays readable. The end date is
+ * anchored to the last complete bucket period (previous month or previous
+ * year), so the forecast always starts at the current period and never
+ * projects periods that are already measured. The backend applies the same
+ * threshold to the same month-anchored range, keeping chart and forecast in
+ * lockstep.
+ *
+ * @param startDate - Selected range start as a yyyy-MM-dd date string.
+ * @return The bucket interval and the anchored end date.
+ */
+const getForecastRange = ( startDate: string ): { groupBy: 'month' | 'year'; endDate: string } => {
+	const monthEnd = getLastCompleteMonthEndDate();
+	const elapsedDays = ( new Date( `${ monthEnd }T00:00:00` ).getTime() -
+		new Date( `${ startDate }T00:00:00` ).getTime() ) / ( 24 * 60 * 60 * 1000 );
+
+	if ( elapsedDays > FORECAST_YEAR_INTERVAL_DAYS ) {
+		return {
+			groupBy: 'year',
+			endDate: format( endOfYear( addYears( new Date(), -1 ) ), 'yyyy-MM-dd' )
+		};
+	}
+
+	return { groupBy: 'month', endDate: monthEnd };
+};
+
+/**
  * Reduces a full x-axis value list to a stable, evenly spaced subset.
  * Keeps the first and last values so charts align on range boundaries.
+ *
+ * A uniform integer step keeps the gap between ticks constant; interpolating
+ * index positions with rounding produces alternating 2/3-position gaps, which
+ * reads as random dates on a time axis (e.g. jan, apr, jun, sep for monthly
+ * buckets). Only the final gap may be shorter, where the last value is
+ * appended to close the range.
  *
  * @param values   - Ordered x-axis values.
  * @param maxTicks - Maximum number of labels to display.
@@ -342,15 +394,16 @@ function getChartXAxisTickValues<T>(
 	}
 
 	const lastIndex = values.length - 1;
-	const tickIndexes = new Set<number>([ 0, lastIndex ]);
+	const step = Math.ceil( values.length / ( maxTicks - 1 ) );
+	const ticks: T[] = [];
 
-	for ( let index = 1; index < maxTicks - 1; index++ ) {
-		tickIndexes.add( Math.round( ( index * lastIndex ) / ( maxTicks - 1 ) ) );
+	for ( let index = 0; index < lastIndex; index += step ) {
+		ticks.push( values[index]);
 	}
 
-	return Array.from( tickIndexes )
-		.sort( ( left, right ) => left - right )
-		.map( ( index ) => values[index]);
+	ticks.push( values[lastIndex]);
+
+	return ticks;
 }
 
 /**
@@ -516,12 +569,27 @@ function getCountryName( countryCode: string | undefined | null ): string {
  * Returns the name of a continent based on its continent code, or a fallback.
  *
  * @param continentCode - The continent code.
+ * @param countryCode   - Optional country code for continent fallback mapping.
  * @return The continent name.
  */
-function getContinentName( continentCode: string | undefined | null ): string {
-	if ( continentCode ) {
+// fallow-ignore-next-line complexity
+function getContinentName(
+	continentCode: string | undefined | null,
+	countryCode?: string | undefined | null
+): string {
+	let code = continentCode ? continentCode.toUpperCase() : '';
+	if ( ! code && countryCode ) {
+		const fallbackContinent = ( countryContinentsMap as Record<string, string> )[
+			countryCode.toUpperCase()
+		];
+		if ( fallbackContinent ) {
+			code = fallbackContinent;
+		}
+	}
+
+	if ( code ) {
 		return (
-			burst_settings.continents[continentCode.toUpperCase()] ||
+			burst_settings.continents[code] ||
 			__( 'Not set', 'burst-statistics' )
 		);
 	}
@@ -948,6 +1016,31 @@ function formatDate( dateInput: string | number | Date | null | undefined, remov
 	}
 }
 
+function getValidDisplayDate( dateInput: string | number | Date | null | undefined ): Date | null {
+	const validateDate = parseAndValidateDate( dateInput );
+	return validateDate ? parseDateForDisplay( validateDate ) : null;
+}
+
+/**
+ * Helper to format a date with Intl.DateTimeFormat options.
+ *
+ * @param dateInput - The date string or object.
+ * @param options - Intl.DateTimeFormatOptions.
+ * @return Formatted date string or empty string.
+ */
+function formatDateWithIntl( dateInput: string | number | Date | null | undefined, options: Intl.DateTimeFormatOptions ): string {
+	try {
+		const date = getValidDisplayDate( dateInput );
+		if ( ! date ) {
+			return '';
+		}
+
+		return new Intl.DateTimeFormat( getLocale(), options ).format( date );
+	} catch {
+		return '';
+	}
+}
+
 /**
  * Formats a date and time for display (e.g. "September 1, 2025 12:00:00")
  * using `Intl.DateTimeFormat` for proper localization.
@@ -956,25 +1049,14 @@ function formatDate( dateInput: string | number | Date | null | undefined, remov
  * @return The formatted date string, or an empty string if invalid.
  */
 function formatDateAndTime( dateInput: string | number | Date | null | undefined ): string {
-	try {
-		const validateDate = parseAndValidateDate( dateInput );
-		if ( ! validateDate ) {
-			return '';
-		}
-
-		const date = parseDateForDisplay( validateDate );
-
-		return new Intl.DateTimeFormat( getLocale(), {
-			month: 'long',
-			day: 'numeric',
-			year: 'numeric',
-			hour: 'numeric',
-			minute: 'numeric',
-			second: 'numeric'
-		}).format( date );
-	} catch {
-		return '';
-	}
+	return formatDateWithIntl( dateInput, {
+		month: 'long',
+		day: 'numeric',
+		year: 'numeric',
+		hour: 'numeric',
+		minute: 'numeric',
+		second: 'numeric'
+	});
 }
 
 /**
@@ -985,22 +1067,11 @@ function formatDateAndTime( dateInput: string | number | Date | null | undefined
  * @return The formatted date string, or an empty string if invalid.
  */
 function formatDateShort( dateInput: string | number | Date | null | undefined ): string {
-	try {
-		const validateDate = parseAndValidateDate( dateInput );
-		if ( ! validateDate ) {
-			return '';
-		}
-
-		const date = parseDateForDisplay( validateDate );
-
-		return new Intl.DateTimeFormat( getLocale(), {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric'
-		}).format( date );
-	} catch {
-		return '';
-	}
+	return formatDateWithIntl( dateInput, {
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric'
+	});
 }
 
 /**
@@ -1345,5 +1416,7 @@ export {
 	formatAxisLabel,
 	formatTooltipLabel,
 	getChartXAxisTickValues,
+	getForecastRange,
+	getLastCompleteMonthEndDate,
 	truncateMiddle
 };

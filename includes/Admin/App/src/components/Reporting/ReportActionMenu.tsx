@@ -149,7 +149,7 @@ export const ReportActionMenu: React.FC<ReportActionMenuProps> = ({ row }) => {
 			</Popover.Trigger>
 
 			<Popover.Content
-				className="z-200 min-w-[200px] rounded-lg border border-gray-200 bg-white shadow-xl"
+				className="z-dropdown min-w-[200px] rounded-lg border border-gray-200 bg-white shadow-xl"
 				align="end"
 				sideOffset={8}
 			>

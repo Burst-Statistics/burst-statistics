@@ -79,6 +79,40 @@ class Search_Terms_Store {
 	}
 
 	/**
+	 * Return read-only storage coverage for the selected property.
+	 *
+	 * @param string $property Search Console property.
+	 * @return array{table_exists:bool,row_count:int,first_date:string,last_date:string}
+	 */
+	public function diagnostics( string $property ): array {
+		if ( ! $this->table_exists( self::TABLE ) ) {
+			return [
+				'table_exists' => false,
+				'row_count'    => 0,
+				'first_date'   => '',
+				'last_date'    => '',
+			];
+		}
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is interpolated from $wpdb->prefix; property is prepared.
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT COUNT(*) AS row_count, MIN(`date`) AS first_date, MAX(`date`) AS last_date FROM `{$wpdb->prefix}burst_search_terms` WHERE `property` = %s",
+				$property
+			),
+			ARRAY_A
+		);
+
+		return [
+			'table_exists' => true,
+			'row_count'    => (int) ( $row['row_count'] ?? 0 ),
+			'first_date'   => (string) ( $row['first_date'] ?? '' ),
+			'last_date'    => (string) ( $row['last_date'] ?? '' ),
+		];
+	}
+
+	/**
 	 * Replace a single day's rows for a property (delete-then-insert) so a
 	 * re-sync is idempotent. Returns false when the table is missing, so the
 	 * caller does not treat the day as synced.

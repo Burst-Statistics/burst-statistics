@@ -41,6 +41,9 @@ class Sessions {
             `device_id` int NOT NULL DEFAULT 0,
             `first_time_visit` tinyint NOT NULL DEFAULT 0,
             `bounce` tinyint DEFAULT 1,
+            `source` varchar(255) DEFAULT NULL,
+            `source_category` varchar(255) DEFAULT NULL,
+            `source_mapped` tinyint NOT NULL DEFAULT 0,
             PRIMARY KEY (ID)
         ) $charset_collate;";
 

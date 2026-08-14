@@ -19,6 +19,7 @@ import {
 import { StyleSheetManager } from 'styled-components';
 import isPropValid from '@emotion/is-prop-valid';
 import { ThemeProvider } from './hooks/useTheme';
+import { startScrollLockWatchdog } from './utils/scrollLockWatchdog';
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
@@ -218,6 +219,8 @@ const initApp = () => {
 
 	// Signal that the React app has loaded (used by ad blocker detection)
 	window.burstLoaded = true;
+
+	startScrollLockWatchdog();
 
 	// Remove the skeleton styles after React app is mounted
 	setTimeout( () => {

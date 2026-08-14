@@ -92,11 +92,23 @@ const burst_get_cookie = name => {
   return Promise.reject(false);
 };
 /**
+ * Check if tracking consent is granted via WP Consent API or consent managers.
+ * @returns {boolean}
+ */
+const burst_has_tracking_consent = () => {
+  if (typeof wp_has_consent === 'function') {
+    return wp_has_consent('statistics');
+  }
+  return true;
+};
+
+/**
  * Set a cookie
  * @param name
  * @param value
  */
 const burst_set_cookie = (name, value) => {
+  if (!burst_has_tracking_consent()) return;
   const path = '/';
   let domain = '';
   let secure = location.protocol === 'https:' ? ';secure' : '';
@@ -111,6 +123,9 @@ const burst_set_cookie = (name, value) => {
  * @returns {boolean}
  */
 const burst_use_cookies = () => {
+  if (!burst_has_tracking_consent()) {
+    return false;
+  }
   if (burst.cache.useCookies !== null) return burst.cache.useCookies;
   const result = navigator.cookieEnabled && !burst.options.cookieless && burst.options.privacy_level !== 'private_mode';
   burst.cache.useCookies = result;
@@ -259,9 +274,28 @@ const burst_is_do_not_track = () => {
   burst.cache.isDoNotTrack = result;
   return result;
 };
+/**
+ * Debug is enabled by the localized option (BURST_DEBUG) or at runtime by the
+ * auto debug window inline flag, which can override a debug value baked into
+ * the combined script file.
+ * @returns {boolean}
+ */
+const burst_debug_enabled = () => !!( burst.options.debug || window.burst_debug );
+
 const burst_log_tracking_error = ({ status = 0, error = '', data = {} }) => {
-  if ( !burst.options.debug || !burst.tracking.ajaxUrl ) {
+  if ( !burst_debug_enabled() || !burst.tracking.ajaxUrl ) {
     return;
+  }
+
+  // Report at most one error per browser session: when tracking is down every
+  // pageview fails, and each report is a full admin-ajax request.
+  try {
+    if ( sessionStorage.getItem( 'burst_error_reported' ) ) {
+      return;
+    }
+    sessionStorage.setItem( 'burst_error_reported', '1' );
+  } catch ( e ) {
+    // sessionStorage unavailable; report anyway.
   }
 
   fetch(burst.tracking.ajaxUrl, {
@@ -278,7 +312,7 @@ const burst_log_tracking_error = ({ status = 0, error = '', data = {} }) => {
 
 const burst_beacon_request = (payload) => {
   const blob = new Blob([payload], { type: 'application/json' });
-  if ( burst.options.debug ) {
+  if ( burst_debug_enabled() ) {
     fetch( burst.tracking.beacon_url, {
       method: 'POST',
       body: blob,
@@ -358,7 +392,7 @@ async function burst_update_hit(
 	extraData = {},
 ) {
 	await pageIsRendered;
-	if (burst_is_user_agent() || burst_is_do_not_track()) return;
+	if (burst_is_user_agent() || burst_is_do_not_track() || !burst_has_tracking_consent()) return;
 	if (burst.tracking.isInitialHit) {
 		burst_track_hit(extraData);
 		return;
@@ -409,7 +443,7 @@ async function burst_track_hit(extraData = {}) {
     burst_update_hit(false, false, extraData);
     return;
   }
-  if (burst_is_user_agent() || burst_is_do_not_track()) return;
+  if (burst_is_user_agent() || burst_is_do_not_track() || !burst_has_tracking_consent()) return;
 
   if (Date.now() - burst.tracking.lastUpdateTimestamp < 300) return;
 
@@ -583,6 +617,7 @@ function burst_init_events() {
 document.addEventListener('wp_listen_for_consent_change', e => {
   const changed = e.detail;
   if (changed.statistics === 'allow') {
+    burst.cache.useCookies = null;
     burst_init_events();
   }
 });

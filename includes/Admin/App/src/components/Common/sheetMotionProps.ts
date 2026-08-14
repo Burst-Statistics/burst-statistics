@@ -7,7 +7,7 @@ type MotionDivPreset = Pick<
 
 export const SHEET_OVERLAY_PROPS: MotionDivPreset = {
 	className:
-		'fixed inset-0 left-0 max-[960px]:left-9 max-[782px]:left-0 z-9999 dark:bg-gray-400 bg-gray-700 bg-opacity-90 flex items-end justify-center px-4',
+		'fixed inset-0 left-0 max-[960px]:left-9 max-[782px]:left-0 z-overlay bg-black/80 flex items-end justify-center px-4',
 	initial: { opacity: 0 },
 	animate: { opacity: 1 },
 	exit: { opacity: 0 },

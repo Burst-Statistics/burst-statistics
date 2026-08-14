@@ -125,7 +125,18 @@ class Data_Sharing {
 
 		$aggregation = new Data_Aggregation( $this->capture_data_from, $this->current_send_time );
 		try {
-			$aggregation->send_to_api( $this->get_api_url() );
+			$response = $aggregation->send_to_api( $this->get_api_url(), [], true );
+
+			if ( ! is_wp_error( $response ) ) {
+				$status_code = wp_remote_retrieve_response_code( $response );
+				if ( $status_code >= 200 && $status_code < 300 ) {
+					$body        = wp_remote_retrieve_body( $response );
+					$parsed_body = json_decode( $body, true );
+					if ( is_array( $parsed_body ) && isset( $parsed_body['community_data'] ) ) {
+						set_transient( 'burst_community_data', $parsed_body['community_data'], YEAR_IN_SECONDS );
+					}
+				}
+			}
 
 			update_option( 'burst_last_telemetry_send', $this->current_send_time, false );
 			delete_option( 'burst_ai_chat_questions' );
@@ -199,6 +210,10 @@ class Data_Sharing {
 			$status_code = wp_remote_retrieve_response_code( $response );
 			$body        = wp_remote_retrieve_body( $response );
 			$parsed_body = json_decode( $body, true );
+
+			if ( is_array( $parsed_body ) && isset( $parsed_body['community_data'] ) ) {
+				set_transient( 'burst_community_data', $parsed_body['community_data'], YEAR_IN_SECONDS );
+			}
 
 			return [
 				'success'     => $status_code >= 200 && $status_code < 300,

@@ -45,7 +45,10 @@ interface IntegrationRowFieldProps {
  * When a required parent integration is turned off, this row's toggle is forced
  * off and non-interactive until the parent is re-enabled.
  */
+// fallow-ignore-next-line complexity -- Renders conditional activation states, plan gates, and user-feedback paths; splitting would fragment tightly-coupled display logic.
 const IntegrationRowField = forwardRef<HTMLButtonElement, IntegrationRowFieldProps>(
+
+	// fallow-ignore-next-line complexity
 	({ field, disabled, setting, control }, ref ) => {
 	const meta: IntegrationMeta = ( setting?.meta as IntegrationMeta | undefined ) ?? {
 		slug: '',

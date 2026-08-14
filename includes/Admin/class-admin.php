@@ -12,6 +12,8 @@ use Burst\Admin\Burst_Wp_Cli\Burst_Wp_Cli;
 use Burst\Admin\Cron\Cron;
 use Burst\Admin\Dashboard_Widget\Dashboard_Widget;
 use Burst\Admin\Data_Sharing\Data_Sharing;
+use Burst\Admin\Diagnostics\Tracking_Diagnostics;
+use Burst\Admin\Diagnostics\Tracking_Health_Email;
 use Burst\Admin\DB_Upgrade\DB_Upgrade;
 use Burst\Admin\Debug\Debug;
 use Burst\Admin\Plugins\Plugin_Updates;
@@ -113,6 +115,8 @@ class Admin {
 			$cron = new Cron();
 			$cron->init();
 
+			$this->init_tracking_health();
+
 			$archive = new Archive();
 			$archive->init();
 
@@ -154,7 +158,7 @@ class Admin {
 			$review = new Review();
 			$review->init();
 
-			// Smart update timing (Integrations > Smart update timing). Hooks
+			// Smart update timing (Features > Smart update timing). Hooks
 			// register unconditionally and gate themselves on the settings
 			// toggles and stored opt-ins, so cron events keep a handler, stored
 			// per-plugin opt-ins keep updating inside the window and enabling a
@@ -185,6 +189,21 @@ class Admin {
 			$this->share = new Share();
 			$this->share->init();
 		}
+	}
+
+	/**
+	 * Initialize the tracking health stack: the detector, the diagnostic
+	 * collectors that run when it reports an issue, and the diagnostic email.
+	 */
+	private function init_tracking_health(): void {
+		$tracking_health = new Tracking_Health();
+		$tracking_health->init();
+
+		$tracking_diagnostics = new Tracking_Diagnostics();
+		$tracking_diagnostics->init();
+
+		$tracking_health_email = new Tracking_Health_Email();
+		$tracking_health_email->init();
 	}
 
 	/**
@@ -594,10 +613,9 @@ class Admin {
 		global $wpdb;
 		$table = "{$wpdb->prefix}burst_$table";
 		foreach ( $rows as $row ) {
-			$wpdb->insert(
-				$table,
-				$row
-			);
+			// Use INSERT IGNORE so re-running (e.g. demo data via WP-CLI) does not log duplicate-key errors on the UNIQUE name column.
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
+			$wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO $table (name) VALUES (%s)", $row['name'] ) );
 		}
 	}
 

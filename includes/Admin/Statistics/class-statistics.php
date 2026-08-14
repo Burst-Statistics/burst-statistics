@@ -66,32 +66,32 @@ class Statistics extends Statistics_Data {
         `parameters` TEXT NOT NULL,
         `fragment` varchar(255) NOT NULL,
         `session_id` int,
-        PRIMARY KEY (ID)
+        PRIMARY KEY  (ID)
     ) $charset_collate;",
 			'burst_browsers'         => "CREATE TABLE {$wpdb->prefix}burst_browsers (
         `ID` int(11) NOT NULL AUTO_INCREMENT,
-        `name` varchar(255) NOT NULL,
-        PRIMARY KEY (ID)
+        `name` varchar(191) NOT NULL UNIQUE,
+        PRIMARY KEY  (ID)
     ) $charset_collate;",
 			'burst_browser_versions' => "CREATE TABLE {$wpdb->prefix}burst_browser_versions (
         `ID` int(11) NOT NULL AUTO_INCREMENT,
-        `name` varchar(255) NOT NULL,
-        PRIMARY KEY (ID)
+        `name` varchar(191) NOT NULL UNIQUE,
+        PRIMARY KEY  (ID)
     ) $charset_collate;",
 			'burst_platforms'        => "CREATE TABLE {$wpdb->prefix}burst_platforms (
         `ID` int(11) NOT NULL AUTO_INCREMENT,
-        `name` varchar(255) NOT NULL,
-        PRIMARY KEY (ID)
+        `name` varchar(191) NOT NULL UNIQUE,
+        PRIMARY KEY  (ID)
     ) $charset_collate;",
 			'burst_devices'          => "CREATE TABLE {$wpdb->prefix}burst_devices (
         `ID` int(11) NOT NULL AUTO_INCREMENT,
-        `name` varchar(255) NOT NULL,
-        PRIMARY KEY (ID)
+        `name` varchar(191) NOT NULL UNIQUE,
+        PRIMARY KEY  (ID)
     ) $charset_collate;",
 			'burst_referrers'        => "CREATE TABLE {$wpdb->prefix}burst_referrers (
         `ID` int(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(255) NOT NULL UNIQUE,
-        PRIMARY KEY (ID)
+        PRIMARY KEY  (ID)
     ) $charset_collate;",
 			'burst_goals'            => "CREATE TABLE {$wpdb->prefix}burst_goals (
         `ID` int NOT NULL AUTO_INCREMENT,
@@ -108,13 +108,13 @@ class Statistics extends Statistics_Data {
         `hook` varchar(255) NOT NULL,
         `block_goal` tinyint NOT NULL DEFAULT 0,
         `page_id` int(11) NULL,
-        PRIMARY KEY (ID)
+        PRIMARY KEY  (ID)
     ) $charset_collate;",
 			'burst_known_uids'       => "CREATE TABLE {$wpdb->prefix}burst_known_uids (
             `uid` varchar(64) NOT NULL,
         `first_seen` INT UNSIGNED NOT NULL,
         `last_seen` INT UNSIGNED NOT NULL,
-        PRIMARY KEY (uid)
+        PRIMARY KEY  (uid)
     ) $charset_collate;",
 			'burst_query_stats'      => "CREATE TABLE {$wpdb->prefix}burst_query_stats (
         `ID` int NOT NULL AUTO_INCREMENT,
@@ -126,7 +126,7 @@ class Statistics extends Statistics_Data {
         `last_updated` int NOT NULL,
         `execution_count` int NOT NULL,
         `date_range_days` int NOT NULL DEFAULT 0,
-        PRIMARY KEY (ID),
+        PRIMARY KEY  (ID),
         UNIQUE KEY sql_hash (sql_hash)
     ) $charset_collate;",
 		];

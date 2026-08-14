@@ -3,7 +3,7 @@
         'name' => '__root__',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => 'be3be58c16e2c28345f4489fced58cf8c00f34b8',
+        'reference' => '09d3927dd871fb8347a6954db23594b807a56e3c',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         '__root__' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => 'be3be58c16e2c28345f4489fced58cf8c00f34b8',
+            'reference' => '09d3927dd871fb8347a6954db23594b807a56e3c',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -61,6 +61,15 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'matomo/searchengine-and-social-list' => array(
+            'pretty_version' => '3.14.0',
+            'version' => '3.14.0.0',
+            'reference' => '2331533592dbfc5df354fd2313136907b1a19075',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../matomo/searchengine-and-social-list',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'maxmind-db/reader' => array(
             'pretty_version' => 'v1.13.1',
             'version' => '1.13.1.0',
@@ -80,6 +89,12 @@
             'dev_requirement' => false,
         ),
         'piwik/referrer-spam-blacklist' => array(
+            'dev_requirement' => false,
+            'replaced' => array(
+                0 => '*',
+            ),
+        ),
+        'piwik/searchengine-and-social-list' => array(
             'dev_requirement' => false,
             'replaced' => array(
                 0 => '*',

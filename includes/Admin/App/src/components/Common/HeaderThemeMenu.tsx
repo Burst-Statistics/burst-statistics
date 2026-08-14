@@ -48,7 +48,7 @@ const HeaderThemeMenu = () => {
 				</button>
 			</Popover.Trigger>
 			<Popover.Content
-				className="z-200 min-w-[280px] rounded-lg border border-gray-200 bg-white p-4 shadow-xl"
+				className="z-popover min-w-[280px] rounded-lg border border-gray-200 bg-white p-4 shadow-xl"
 				align="end"
 				sideOffset={8}
 			>

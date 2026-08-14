@@ -615,7 +615,7 @@ export const getDatatableData = async( id, isEcommerce, startDate, endDate, rang
 export const getData = async( type, startDate, endDate, range, args = {}) => {
 
 	// Extract filters and metrics from args if they exist.
-	const { currentView, chart_mode, distribution_view, product_id, compare_mode, compare_date_start, compare_date_end, page_url, least_engagement } = args;
+	const { currentView, chart_mode, distribution_view, product_id, compare_mode, compare_date_start, compare_date_end, page_url, least_engagement, source, metric } = args;
 
 	const queryParams = buildBaseQueryParams( startDate, endDate, range, args );
 	if ( currentView ) {
@@ -645,6 +645,12 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
 	}
 	if ( least_engagement !== undefined ) {
 		queryParams.least_engagement = least_engagement;
+	}
+	if ( source ) {
+		queryParams.source = source;
+	}
+	if ( metric ) {
+		queryParams.metric = metric;
 	}
 
 

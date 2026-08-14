@@ -2,16 +2,19 @@
  * Burst Statistics — Gutenberg Block Editor Integration
  *
  * Adds a "Burst Goal" control group to both the Block Toolbar and the
- * Block Inspector panel for core/button, core/image, and core/navigation-link.
+ * Block Inspector panel for all available Gutenberg blocks. Inherently clickable
+ * blocks (core/button, core/image, core/navigation-link) support both Click and
+ * Visibility goals; static content blocks default to Visibility goals.
  *
  * attributes:
  *   - burstGoalUid    (string): Unique selector UID (e.g. burst-xxxxxxxx).
  *   - burstGoalActive (boolean): True when the goal is currently active.
  *   - burstGoalId     (number): Database ID of the goal.
+ *   - burstGoalType   (string): Goal trigger type ('clicks' or 'views').
  *
  * central source of truth:
  *   - The goals data list is localized on mount/load from the PHP database.
- *   - The block pulls its current settings (title, metric, scope) from the DB.
+ *   - The block pulls its current settings (title, type, metric, scope) from the DB.
  *   - On toggling/saving, fields are persisted to the database and the client state is synced.
  */
 ( function () {
@@ -39,7 +42,51 @@
 	const GOAL_LIMIT      = parseInt( settings.goal_limit, 10 );   // -1 = unlimited (Pro)
 	const IS_PRO          = String( settings.is_pro ) === '1' || settings.is_pro === true || String( settings.is_pro ) === 'true';
 
-	const ALLOWED_BLOCKS  = [ 'core/button', 'core/image', 'core/navigation-link' ];
+	const CLICKABLE_BLOCKS = [ 'core/button', 'core/image', 'core/navigation-link' ];
+
+	/**
+	 * Check if a block type is allowed to have a Burst Goal attached.
+	 *
+	 * @param {string} name Block type name.
+	 * @returns {boolean}
+	 */
+	function isAllowedBlock( name ) {
+		if ( ! name || typeof name !== 'string' ) {
+			return false;
+		}
+		const excluded = [ 'core/freeform' ];
+		return ! excluded.includes( name );
+	}
+
+	/**
+	 * Return true if the block type is inherently interactive/clickable.
+	 *
+	 * @param {string} name Block type name.
+	 * @returns {boolean}
+	 */
+	function isClickableBlock( name ) {
+		if ( ! name || typeof name !== 'string' ) {
+			return false;
+		}
+		const clickableList = ( settings.clickable_blocks && Array.isArray( settings.clickable_blocks ) )
+			? settings.clickable_blocks
+			: CLICKABLE_BLOCKS;
+		if ( clickableList.includes( name ) ) {
+			return true;
+		}
+		const lower = name.toLowerCase();
+		return lower.includes( 'button' ) || lower.includes( 'nav-link' ) || lower.includes( 'cta' );
+	}
+
+	/**
+	 * Determine default goal trigger type based on block nature.
+	 *
+	 * @param {string} name Block type name.
+	 * @returns {string} 'clicks' or 'views'
+	 */
+	function getDefaultGoalType( name ) {
+		return isClickableBlock( name ) ? 'clicks' : 'views';
+	}
 
 	let activeGoalCount = INITIAL_GOAL_COUNT;
 
@@ -130,7 +177,7 @@
 		'blocks.registerBlockType',
 		'burst/add-goal-attributes',
 		function ( settings, name ) {
-			if ( ! ALLOWED_BLOCKS.includes( name ) ) {
+			if ( ! isAllowedBlock( name ) ) {
 				return settings;
 			}
 			return Object.assign( {}, settings, {
@@ -147,6 +194,10 @@
 						type:    'number',
 						default: 0,
 					},
+					burstGoalType: {
+						type:    'string',
+						default: getDefaultGoalType( name ),
+					},
 				} ),
 			} );
 		}
@@ -159,7 +210,7 @@
 		'blocks.getSaveContent.extraProps',
 		'burst/inject-data-burst-goal',
 		function ( extraProps, blockType, attributes ) {
-			if ( ! ALLOWED_BLOCKS.includes( blockType.name ) ) {
+			if ( ! isAllowedBlock( blockType.name ) ) {
 				return extraProps;
 			}
 			if ( ! attributes.burstGoalUid || ! attributes.burstGoalActive ) {
@@ -178,14 +229,18 @@
 		return function ( props ) {
 			const { name, attributes, setAttributes, isSelected, clientId } = props;
 
-			if ( ! ALLOWED_BLOCKS.includes( name ) ) {
+			if ( ! isAllowedBlock( name ) ) {
 				return el( BlockEdit, props );
 			}
+
+			const isClickable = isClickableBlock( name );
+			const defaultType = getDefaultGoalType( name );
 
 			// ---- local state ----
 			const [ saving, setSaving ]         = useState( false );
 			const [ error, setError ]           = useState( '' );
 			const [ goalTitle, setGoalTitle ]   = useState( '' );
+			const [ goalType, setGoalType ]     = useState( attributes.burstGoalType || defaultType );
 			const [ convMetric, setConvMetric ] = useState( 'visitors' );
 			const isTemplateOrPattern = ( function () {
 				try {
@@ -241,46 +296,47 @@
 			const isTracking     = !! attributes.burstGoalActive;
 			const limitReached   = isLimitReached( isTracking );
 
-			// Derive a default title from the block content.
-			function defaultTitle() {
+			// Derive a default title from the block content and trigger type.
+			function defaultTitle( typeVal ) {
+				const currentType = typeVal || goalType || defaultType;
 				let text = '';
 				let typeLabel = '';
 				if ( name === 'core/button' ) {
 					text = attributes.text
 						? ( attributes.text.replace ? attributes.text.replace( /<[^>]+>/g, '' ) : String( attributes.text ) )
 						: '';
-					typeLabel = 'button';
+					typeLabel = __( 'button', 'burst-statistics' );
 				} else if ( name === 'core/image' ) {
 					text = attributes.alt || attributes.caption || '';
-					typeLabel = 'image';
+					typeLabel = __( 'image', 'burst-statistics' );
 				} else if ( name === 'core/navigation-link' ) {
 					text = attributes.label || '';
-					typeLabel = 'navigation';
+					typeLabel = __( 'navigation', 'burst-statistics' );
+				} else if ( name === 'core/heading' || name === 'core/paragraph' ) {
+					text = attributes.content
+						? ( attributes.content.replace ? attributes.content.replace( /<[^>]+>/g, '' ) : String( attributes.content ) )
+						: '';
+					typeLabel = name === 'core/heading' ? __( 'heading', 'burst-statistics' ) : __( 'text', 'burst-statistics' );
+				} else {
+					const parts = name.split( '/' );
+					typeLabel = parts.length > 1 ? parts[ 1 ] : name;
+				}
+
+				if ( text && typeof text === 'string' && text.length > 30 ) {
+					text = text.substring( 0, 30 ) + '…';
+				}
+
+				if ( currentType === 'views' ) {
+					if ( text ) {
+						return sprintf( __( '%s %s visibility', 'burst-statistics' ), text, typeLabel );
+					}
+					return sprintf( __( '%s visibility', 'burst-statistics' ), typeLabel );
 				}
 
 				if ( text ) {
-					if ( typeLabel === 'button' ) {
-						return sprintf( __( '%s button click', 'burst-statistics' ), text );
-					}
-					if ( typeLabel === 'image' ) {
-						return sprintf( __( '%s image click', 'burst-statistics' ), text );
-					}
-					if ( typeLabel === 'navigation' ) {
-						return sprintf( __( '%s navigation click', 'burst-statistics' ), text );
-					}
+					return sprintf( __( '%s %s click', 'burst-statistics' ), text, typeLabel );
 				}
-
-				if ( typeLabel === 'button' ) {
-					return __( 'button click', 'burst-statistics' );
-				}
-				if ( typeLabel === 'image' ) {
-					return __( 'image click', 'burst-statistics' );
-				}
-				if ( typeLabel === 'navigation' ) {
-					return __( 'navigation click', 'burst-statistics' );
-				}
-
-				return __( 'block click', 'burst-statistics' );
+				return sprintf( __( '%s click', 'burst-statistics' ), typeLabel );
 			}
 
 			// --------------------------------------------------------------
@@ -312,6 +368,7 @@
 							burstGoalUid:    generateUid(),
 							burstGoalId:     0,
 							burstGoalActive: false,
+							burstGoalType:   defaultType,
 						} );
 					}
 				}
@@ -341,6 +398,7 @@
 								burstGoalUid:    '',
 								burstGoalId:     0,
 								burstGoalActive: false,
+								burstGoalType:   defaultType,
 							} );
 							return;
 						}
@@ -348,6 +406,7 @@
 
 					// Seed state variables from the database record.
 					setGoalTitle( matchingGoal.title );
+					setGoalType( matchingGoal.type || defaultType );
 					setConvMetric( matchingGoal.conversion_metric || 'visitors' );
 					
 					let scope = 'website';
@@ -368,6 +427,7 @@
 							burstGoalUid:    '',
 							burstGoalId:     0,
 							burstGoalActive: false,
+							burstGoalType:   defaultType,
 						} );
 					}
 				}
@@ -376,9 +436,9 @@
 			// Sync default title changes if user has not customized it yet.
 			useEffect( function () {
 				if ( ! isTitleCustomized && ! goalId ) {
-					setGoalTitle( defaultTitle() );
+					setGoalTitle( defaultTitle( goalType ) );
 				}
-			}, [ attributes.text, attributes.alt, attributes.label, isTitleCustomized, goalId ] );
+			}, [ attributes.text, attributes.alt, attributes.label, attributes.content, isTitleCustomized, goalId, goalType ] );
 
 			// ---- handlers ----
 
@@ -414,11 +474,12 @@
 
 				// Enable: reuse stored uid or generate a new one.
 				const targetUid = uid || generateUid();
+				const targetType = isClickable ? ( goalType || defaultType ) : 'views';
 				setSaving( true );
 				upsertGoal( {
 					uid:               targetUid,
-					title:             goalTitle || defaultTitle(),
-					type:              'clicks',
+					title:             goalTitle || defaultTitle( targetType ),
+					type:              targetType,
 					status:            'active',
 					conversion_metric: convMetric,
 					page_or_website:   pageScope,
@@ -461,8 +522,8 @@
 								burstGoalUid:    targetUid,
 								burstGoalId:     newId,
 								burstGoalActive: true,
+								burstGoalType:   targetType,
 							} );
-							// active_block_goal_uids was already updated above; no separate counter needed.
 						} else {
 							setError(
 								( response && response.message ) ||
@@ -480,10 +541,11 @@
 				if ( ! isTracking ) return;
 				setError( '' );
 				setSaving( true );
+				const targetType = isClickable ? ( goalType || defaultType ) : 'views';
 				upsertGoal( {
 					uid:               uid,
 					title:             goalTitle,
-					type:              'clicks',
+					type:              targetType,
 					status:            'active',
 					conversion_metric: convMetric,
 					page_or_website:   pageScope,
@@ -496,6 +558,7 @@
 								const existing = settings.goals.find( function ( g ) { return g.uid === uid; } );
 								if ( existing ) {
 									existing.title             = response.goal.title;
+									existing.type              = response.goal.type;
 									existing.conversion_metric = response.goal.conversion_metric;
 									existing.url               = response.goal.url;
 								}
@@ -535,11 +598,11 @@
 			panelContent.push(
 				el( ToggleControl, {
 					key:      'burst-toggle',
-					label:    __( 'Track clicks with a Burst Goal', 'burst-statistics' ),
+					label:    __( 'Track with a Burst Goal', 'burst-statistics' ),
 					checked:  isTracking,
 					disabled: saving || ( ! isTracking && limitReached ),
 					onChange: handleToggle,
-					help:     saving ? __( 'Saving\u2026', 'burst-statistics' ) : undefined,
+					help:     saving ? __( 'Saving\u2026' , 'burst-statistics' ) : undefined,
 				} )
 			);
 
@@ -561,6 +624,54 @@
 			}
 
 			if ( isTracking ) {
+				// Show trigger type selection for interactive blocks; static blocks default to Visibility tracking.
+				if ( isClickable ) {
+					panelContent.push(
+						el( SelectControl, {
+							key:     'burst-type',
+							label:   __( 'Goal trigger type', 'burst-statistics' ),
+							value:   goalType,
+							options: [
+								{ label: __( 'Click (on user click)',           'burst-statistics' ), value: 'clicks' },
+								{ label: __( 'Visibility (scrolled into view)', 'burst-statistics' ), value: 'views' },
+							],
+							onChange: function ( v ) {
+								setGoalType( v );
+								setAttributes( { burstGoalType: v } );
+								let newTitle = goalTitle;
+								if ( ! isTitleCustomized ) {
+									newTitle = defaultTitle( v );
+									setGoalTitle( newTitle );
+								}
+								upsertGoal( { uid: uid, type: v, title: newTitle } )
+									.then( function ( response ) {
+										if ( response && response.success && response.goal && settings.goals ) {
+											const existing = settings.goals.find( function ( g ) { return g.uid === uid; } );
+											if ( existing ) {
+												existing.type  = response.goal.type;
+												existing.title = response.goal.title;
+											}
+										}
+									} )
+									.catch( function () {} );
+							},
+						} )
+					);
+				} else {
+					panelContent.push(
+						el( SelectControl, {
+							key:      'burst-type-static',
+							label:    __( 'Goal trigger type', 'burst-statistics' ),
+							value:    'views',
+							disabled: true,
+							options:  [
+								{ label: __( 'Visibility (scrolled into view)', 'burst-statistics' ), value: 'views' },
+							],
+							onChange: function () {},
+						} )
+					);
+				}
+
 				panelContent.push(
 					el( TextControl, {
 						key:      'burst-title',
@@ -643,7 +754,7 @@
 						null,
 						el( ToolbarButton, {
 							icon:     'analytics',
-							title:    __( 'Track clicks with a Burst Goal', 'burst-statistics' ),
+							title:    __( 'Track with a Burst Goal', 'burst-statistics' ),
 							isActive: isTracking,
 							disabled: saving || ( ! isTracking && limitReached ),
 							onClick:  function () {
@@ -681,11 +792,12 @@
 		'blocks.switchToBlockType.transformedBlock',
 		'burst/reset-uid-on-paste',
 		function ( block ) {
-			if ( ALLOWED_BLOCKS.includes( block.name ) && block.attributes.burstGoalUid ) {
+			if ( isAllowedBlock( block.name ) && block.attributes.burstGoalUid ) {
 				block.attributes = Object.assign( {}, block.attributes, {
 					burstGoalUid:    '',
 					burstGoalId:     0,
 					burstGoalActive: false,
+					burstGoalType:   getDefaultGoalType( block.name ),
 				} );
 			}
 			return block;
@@ -810,7 +922,7 @@
 						return;
 					}
 					if (
-						ALLOWED_BLOCKS.includes( block.name ) &&
+						isAllowedBlock( block.name ) &&
 						block.attributes &&
 						block.attributes.burstGoalUid &&
 						block.attributes.burstGoalActive

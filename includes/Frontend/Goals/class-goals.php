@@ -24,6 +24,27 @@ class Goals {
 	}
 
 	/**
+	 * Get the list of block types considered clickable for goal tracking.
+	 * Allows site developers/extensions to customize via the `burst_clickable_blocks` filter.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function get_clickable_blocks(): array {
+		$clickable_blocks = [
+			'core/button',
+			'core/image',
+			'core/navigation-link',
+		];
+
+		/**
+		 * Filter the list of Gutenberg block names that support click goal tracking.
+		 *
+		 * @param array<int, string> $clickable_blocks Array of block type names.
+		 */
+		return (array) apply_filters( 'burst_clickable_blocks', $clickable_blocks );
+	}
+
+	/**
 	 * Sanitize the orderby parameter.
 	 */
 	public function sanitize_orderby( string $orderby ): string {
@@ -71,9 +92,16 @@ class Goals {
 				continue;
 			}
 
-			$predefined_goals = array_merge( $details['goals'], $predefined_goals );
+			foreach ( $details['goals'] as $goal ) {
+				$goal_id = $goal['id'] ?? '';
+				if ( ! empty( $goal_id ) ) {
+					$predefined_goals[ $goal_id ] = $goal;
+				} else {
+					$predefined_goals[] = $goal;
+				}
+			}
 		}
-		return $predefined_goals;
+		return array_values( $predefined_goals );
 	}
 
 	/**

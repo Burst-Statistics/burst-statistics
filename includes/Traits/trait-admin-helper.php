@@ -78,6 +78,10 @@ trait Admin_Helper {
 			return burst_loader()->user_can_view_sales;
 		}
 
+		if ( wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+			return burst_loader()->user_can_view_sales = true;
+		}
+
 		if ( $this->is_mainwp_request() && current_user_can( 'view_burst_statistics' ) ) {
 			return burst_loader()->user_can_view_sales = true;
 		}
@@ -104,6 +108,28 @@ trait Admin_Helper {
 		}
 
 		return burst_loader()->user_can_view_sales = true;
+	}
+
+	/**
+	 * Whether the current request is a shared-link viewer that was not granted the
+	 * can_filter permission.
+	 *
+	 * Filter-dependent handlers (advanced filter options, goals) use this as an
+	 * independent authorization boundary so access can never silently depend on
+	 * whichever route happened to reach them. The result is derived from the
+	 * active share token only, not from any endpoint/route parameter, so it holds
+	 * regardless of how execution arrives at the handler. Non-shared users (e.g.
+	 * admins with a view capability) are unaffected.
+	 *
+	 * @return bool True when a shared viewer lacks the can_filter permission.
+	 */
+	protected function shared_viewer_cannot_filter(): bool {
+		if ( ! self::is_shareable_link_viewer() ) {
+			return false;
+		}
+
+		$permissions = burst_loader()->admin->share->tokens->get_current_share_link_permissions();
+		return empty( $permissions['can_filter'] );
 	}
 
 	/**

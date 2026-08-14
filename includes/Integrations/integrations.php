@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || die( 'you do not have access to this page!' );
  */
 return [
 	// Consent plugins.
-	'complianz'                  => [
+	'complianz'                   => [
 		'constant_or_function' => 'cmplz_version',
 		'label'                => 'Complianz GDPR/CCPA',
 		'category'             => 'consent',
@@ -33,7 +33,7 @@ return [
 			'frontend_scripts' => [ 'frontend.php' ],
 		],
 	],
-	'duplicate-post'             => [
+	'duplicate-post'              => [
 		'constant_or_function' => 'DUPLICATE_POST_CURRENT_VERSION',
 		'label'                => 'Yoast Duplicate Post',
 		'category'             => 'other',
@@ -45,7 +45,7 @@ return [
 		],
 	],
 	// Pagebuilders.
-	'elementor'                  => [
+	'elementor'                   => [
 		'constant_or_function' => 'ELEMENTOR_VERSION',
 		'label'                => 'Elementor Website Builder',
 		'category'             => 'page_builders',
@@ -71,7 +71,7 @@ return [
 			],
 	],
 	// eCommerce plugins.
-	'woocommerce'                => [
+	'woocommerce'                 => [
 		'constant_or_function'       => 'WC_VERSION',
 		'label'                      => 'WooCommerce',
 		'category'                   => 'ecommerce',
@@ -111,7 +111,7 @@ return [
 				],
 			],
 	],
-	'woocommerce-payments'       => [
+	'woocommerce-payments'        => [
 		'constant_or_function' => 'WCPAY_PLUGIN_FILE',
 		'label'                => 'WooCommerce Payments',
 		'category'             => 'ecommerce',
@@ -125,7 +125,7 @@ return [
 			'frontend_scripts' => [ 'frontend.php' ],
 		],
 	],
-	'easy-digital-downloads'     => [
+	'easy-digital-downloads'      => [
 		'constant_or_function'       => 'EDD_PLUGIN_FILE',
 		'label'                      => 'Easy Digital Downloads',
 		'category'                   => 'ecommerce',
@@ -161,7 +161,7 @@ return [
 			],
 	],
 	// Duplicate of easy-digital-downloads, kept for behavioural comparison pending cleanup.
-	'easy-digital-downloads-pro' => [
+	'easy-digital-downloads-pro'  => [
 		'constant_or_function'       => 'EDD_PLUGIN_FILE',
 		'label'                      => 'Easy Digital Downloads',
 		'category'                   => 'ecommerce',
@@ -195,7 +195,7 @@ return [
 				],
 			],
 	],
-	'edd-multi-currency'         => [
+	'edd-multi-currency'          => [
 		'constant_or_function' => 'EDD_MULTI_CURRENCY_FILE',
 		'label'                => 'Easy Digital Downloads - Multi Currency',
 		'category'             => 'ecommerce',
@@ -208,7 +208,7 @@ return [
 			'frontend_scripts' => [ 'frontend.php' ],
 		],
 	],
-	'give-wp'                    => [
+	'give-wp'                     => [
 		'constant_or_function' => 'GIVE_VERSION',
 		'label'                => 'Give - Donation Plugin',
 		'category'             => 'ecommerce',
@@ -238,7 +238,55 @@ return [
 		],
 	],
 	// Contact form plugins.
-	'contact-form-7'             => [
+	'admin-site-enhancements'     => [
+		// Contact Form module class, only loaded when the module is enabled.
+		// ASENHA_VERSION is defined by both ASE Free and ASE Pro, so it cannot
+		// distinguish version or module state.
+		'constant_or_function' => 'ASENHA\Classes\Contact_Form_Handler',
+		'label'                => 'Admin and Site Enhancements (ASE)',
+		'category'             => 'forms',
+		'status'               => 'tracks_form_submissions',
+		'wporg_slug'           => 'admin-site-enhancements',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [],
+		],
+		'goals'                =>
+			[
+				[
+					'id'       => 'ase_contact_form_submit_click',
+					'type'     => 'clicks',
+					'selector' => '.asenha-cf-submit-button',
+				],
+			],
+	],
+	'admin-site-enhancements-pro' => [
+		// Defined by the Pro-only Form Builder module when it is enabled. ASE
+		// Pro has no pro-specific version constant: it defines ASENHA_VERSION
+		// just like ASE Free.
+		'constant_or_function' => 'FORMBUILDER_VERSION',
+		'label'                => 'Admin and Site Enhancements (ASE) Pro',
+		'category'             => 'forms',
+		'status'               => 'tracks_form_submissions',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [],
+		],
+		'goals'                =>
+			[
+				[
+					'id'   => 'formbuilder_after_email',
+					'type' => 'hook',
+					'hook' => 'formbuilder_after_email',
+				],
+				[
+					'id'       => 'ase_pro_form_submit_click',
+					'type'     => 'clicks',
+					'selector' => '.fb-submit-button',
+				],
+			],
+	],
+	'contact-form-7'              => [
 		'constant_or_function' => 'WPCF7_VERSION',
 		'label'                => 'Contact Form 7',
 		'category'             => 'forms',
@@ -262,7 +310,7 @@ return [
 				],
 			],
 	],
-	'wpforms'                    => [
+	'wpforms'                     => [
 		'constant_or_function' => 'WPFORMS_VERSION',
 		'label'                => 'WPForms',
 		'category'             => 'forms',
@@ -286,7 +334,7 @@ return [
 				],
 			],
 	],
-	'fluentform'                 => [
+	'fluentform'                  => [
 		'constant_or_function' => 'FLUENTFORM',
 		'label'                => 'Fluent Forms',
 		'category'             => 'forms',
@@ -306,7 +354,7 @@ return [
 				],
 			],
 	],
-	'happy-forms'                => [
+	'happy-forms'                 => [
 		'constant_or_function' => 'HAPPYFORMS_VERSION',
 		'label'                => 'Happyforms',
 		'category'             => 'forms',
@@ -321,7 +369,7 @@ return [
 				],
 			],
 	],
-	'ws-form'                    => [
+	'ws-form'                     => [
 		'constant_or_function' => 'WS_FORM_VERSION',
 		'label'                => 'WS Form',
 		'category'             => 'forms',
@@ -341,7 +389,7 @@ return [
 				],
 			],
 	],
-	'gravity_forms'              => [
+	'gravity_forms'               => [
 		'constant_or_function' => 'gravity_form',
 		'label'                => 'Gravity Forms',
 		'category'             => 'forms',
@@ -364,7 +412,7 @@ return [
 				],
 			],
 	],
-	'formidable-forms'           => [
+	'formidable-forms'            => [
 		'constant_or_function' => 'frm_forms_autoloader',
 		'label'                => 'Formidable Forms',
 		'category'             => 'forms',
@@ -383,7 +431,7 @@ return [
 				],
 			],
 	],
-	'ninja-forms'                => [
+	'ninja-forms'                 => [
 		'constant_or_function' => 'Ninja_Forms',
 		'label'                => 'Ninja Forms',
 		'category'             => 'forms',
@@ -403,7 +451,7 @@ return [
 			],
 	],
 	// Caching plugins.
-	'wp-rocket'                  => [
+	'wp-rocket'                   => [
 		'constant_or_function' => 'WP_ROCKET_VERSION',
 		'label'                => 'WP Rocket',
 		'category'             => 'performance',
@@ -413,7 +461,7 @@ return [
 			'frontend_scripts' => [ 'frontend.php' ],
 		],
 	],
-	'woocommerce-subscriptions'  => [
+	'woocommerce-subscriptions'   => [
 		'constant_or_function'       => 'WC_Subscriptions',
 		'load_ecommerce_integration' => true,
 		'required_plugins'           => [
@@ -427,7 +475,7 @@ return [
 			'frontend_scripts' => [ 'event-listener.php' ],
 		],
 	],
-	'edd-recurring'              => [
+	'edd-recurring'               => [
 		'constant_or_function'       => 'EDD_RECURRING_VERSION',
 		'load_ecommerce_integration' => true,
 		'label'                      => 'Easy Digital Downloads - Recurring Payments',
@@ -454,7 +502,7 @@ return [
 			],
 		],
 	],
-	'subscriben'                 => [
+	'subscriben'                  => [
 		'constant_or_function'       => 'SUBSCRIBEN_VERSION',
 		'load_ecommerce_integration' => true,
 		'required_plugins'           => [

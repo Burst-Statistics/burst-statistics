@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { __ } from '@wordpress/i18n';
@@ -149,120 +150,148 @@ export const DataTableOverlay: React.FC = () => {
 			}) );
 	}, [ allowedConfigs ]);
 
+	const handleBackdropClick = useCallback( ( e: React.MouseEvent ) => {
+		if ( e.target === e.currentTarget ) {
+			handleClose();
+		}
+	}, [ handleClose ]);
+
+	const [ isDark, setIsDark ] = useState( false );
+
+	useEffect( () => {
+		if ( ! isVisible ) {
+			return;
+		}
+		const mainAppContainer = Array.from( document.querySelectorAll( '#burst-statistics' ) )
+			.find( ( el ) => ! el.classList.contains( 'datatable-portal-wrapper' ) );
+		if ( mainAppContainer ) {
+			setIsDark( mainAppContainer.classList.contains( 'dark' ) );
+		}
+	}, [ isVisible ]);
+
 	const currentLabel = VARIANT_META[ selectedVariant ]?.label || selectedVariant;
 	const showDropdown = 1 < variantOptions.length;
 
-	return (
-		<AnimatePresence>
-			{ isVisible && (
-				<motion.div
-					{...SHEET_OVERLAY_PROPS}
-					id="datatable-overlay"
-					onClick={ handleClose }
-				>
+	return createPortal(
+		<div
+			id="burst-statistics"
+			className={ `burst datatable-portal-wrapper ${ isDark ? 'dark' : '' }` }
+		>
+			<AnimatePresence>
+				{ isVisible && (
 					<motion.div
-						{...SHEET_PANEL_PROPS}
-						onClick={ ( e ) => e.stopPropagation() }
+						{...SHEET_OVERLAY_PROPS}
+						id="datatable-overlay"
+						onClick={ handleBackdropClick }
 					>
-						<div className="h-full bg-gray-100 rounded-t-2xl shadow-2xl overflow-hidden flex flex-col">
+						<motion.div
+							{...SHEET_PANEL_PROPS}
+						>
+							<div className="h-full bg-gray-100 rounded-t-2xl shadow-2xl overflow-hidden flex flex-col">
 
-							{/* Header: variant switcher, filters + date range, close button. */}
-							<div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-gray-200 shrink-0">
+								{/* Header: variant switcher, filters + date range, close button. */}
+								<div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-gray-200 shrink-0">
 
-								{/* Variant switcher. */}
-								<div className="flex items-center gap-2 shrink-0">
-									{ showDropdown ? (
-										<Select.Root value={ selectedVariant } onValueChange={ handleVariantChange }>
-											<Select.Trigger className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium shadow-sm transition-all cursor-pointer hover:border-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
+									{/* Left side: switcher trigger. */}
+									<div className="flex items-center gap-2 max-xxs:gap-1 shrink-0">
+										{ showDropdown ? (
+											<Select.Root
+												value={ selectedVariant }
+												onValueChange={ handleVariantChange }
+											>
+												<Select.Trigger
+													className="flex items-center gap-2 max-xxs:gap-1 px-4 py-2 border border-gray-400 bg-white rounded-xl shadow-xs cursor-pointer hover:bg-gray-100 hover:shadow-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+													aria-label={ __( 'Select Variant', 'burst-statistics' ) }
+												>
+													<Icon
+														name={ VARIANT_META[ selectedVariant ]?.icon || 'page' }
+														size={ 18 }
+														color="gray"
+													/>
+													<Select.Value>{ currentLabel }</Select.Value>
+													<Select.Icon>
+														<Icon name="chevron-down" size={ 14 } color="gray" />
+													</Select.Icon>
+												</Select.Trigger>
+
+												<Select.Portal>
+													<Select.Content
+														className="z-dropdown min-w-[200px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl animate-in fade-in-0 zoom-in-95"
+														position="popper"
+														sideOffset={ 6 }
+														align="start"
+													>
+														<Select.Viewport className="p-1.5">
+															{ variantOptions.map( ( option ) => (
+																<Select.Item
+																	key={ option.key }
+																	value={ option.key }
+																	className="relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm cursor-pointer select-none transition-colors data-highlighted:bg-green-50 data-highlighted:outline-none data-[state=checked]:text-green-700 data-[state=checked]:font-medium"
+																>
+																	<Select.ItemText className="flex items-center gap-2">
+																		<span className="flex items-center gap-2">
+																			<Icon name={ option.icon } size={ 16 } color="gray" />
+																			{ option.label }
+																		</span>
+																	</Select.ItemText>
+																</Select.Item>
+															) ) }
+														</Select.Viewport>
+													</Select.Content>
+												</Select.Portal>
+											</Select.Root>
+										) : (
+											<div className="flex items-center gap-2 font-semibold text-lg text-text-black px-4 py-2 bg-gray-100 rounded-xl">
 												<Icon
 													name={ VARIANT_META[ selectedVariant ]?.icon || 'page' }
-													size={ 16 }
+													size={ 18 }
 													color="gray"
 												/>
-												<Select.Value>{ currentLabel }</Select.Value>
-												<Select.Icon>
-													<Icon name="chevron-down" size={ 14 } color="gray" />
-												</Select.Icon>
-											</Select.Trigger>
-
-											<Select.Portal>
-												<Select.Content
-													className="z-99999 min-w-[200px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl animate-in fade-in-0 zoom-in-95"
-													position="popper"
-													sideOffset={ 6 }
-													align="start"
-												>
-													<Select.Viewport className="p-1.5">
-														{ variantOptions.map( ( option ) => (
-															<Select.Item
-																key={ option.key }
-																value={ option.key }
-																className="relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm cursor-pointer select-none transition-colors data-highlighted:bg-green-50 data-highlighted:outline-none data-[state=checked]:text-green-700 data-[state=checked]:font-medium"
-															>
-																<Icon
-																	name={ option.icon }
-																	size={ 16 }
-																	color="gray"
-																/>
-																<Select.ItemText>
-																	{ option.label }
-																</Select.ItemText>
-															</Select.Item>
-														) )}
-													</Select.Viewport>
-												</Select.Content>
-											</Select.Portal>
-										</Select.Root>
-									) : (
-										<div className="flex items-center gap-2 px-1">
-											<Icon
-												name={ VARIANT_META[ selectedVariant ]?.icon || 'page' }
-												size={ 16 }
-												color="gray"
-											/>
-											<h2 className="text-lg font-semibold m-0">
 												{ currentLabel }
-											</h2>
+											</div>
+										) }
+									</div>
+
+									{/* Right side: filter popover + date range + close. */}
+									<div className="flex items-center gap-3 shrink-0">
+										<div className="max-[850px]:hidden flex items-center gap-2">
+											<ErrorBoundary>
+												<PageFilter />
+											</ErrorBoundary>
+
+											<ErrorBoundary>
+												<DateRange />
+											</ErrorBoundary>
 										</div>
-									)}
+
+										{/* Close button. */}
+										<button
+											type="button"
+											className="shrink-0 bg-gray-100 border border-gray-400 focus:ring-blue-500 rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2"
+											onClick={ handleClose }
+											aria-label={ __( 'Close', 'burst-statistics' ) }
+										>
+											<Icon name="times" />
+										</button>
+									</div>
 								</div>
 
-								{/* Filters + date range. */}
-								<div className="flex items-center gap-3 flex-wrap flex-1 justify-end">
+								{/* Table area — fills remaining space, scrollable. */}
+								<div className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 gap-4">
 									<ErrorBoundary>
-										<PageFilter />
-									</ErrorBoundary>
-
-									<ErrorBoundary>
-										<DateRange />
+										<DataTableBlock
+											allowedConfigs={ [ selectedVariant ] }
+											id={ dataTableId }
+											isInOverlay={ true }
+										/>
 									</ErrorBoundary>
 								</div>
-
-								{/* Close button. */}
-								<button
-									type="button"
-									className="shrink-0 bg-gray-100 border border-gray-400 focus:ring-blue-500 rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2"
-									onClick={ handleClose }
-									aria-label={ __( 'Close', 'burst-statistics' ) }
-								>
-									<Icon name="times" />
-								</button>
 							</div>
-
-						{/* Table area — fills remaining space, scrollable. */}
-						<div className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 gap-4">
-							<ErrorBoundary>
-								<DataTableBlock
-									allowedConfigs={ [ selectedVariant ] }
-									id={ dataTableId }
-									isInOverlay={ true }
-								/>
-							</ErrorBoundary>
-						</div>
-						</div>
+						</motion.div>
 					</motion.div>
-				</motion.div>
-			) }
-		</AnimatePresence>
+				) }
+			</AnimatePresence>
+		</div>,
+		document.body
 	);
 };

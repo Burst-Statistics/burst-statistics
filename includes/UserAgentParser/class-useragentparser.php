@@ -98,10 +98,35 @@ class UserAgentParser {
 		}
 
 		// change version to browser_version.
-		$ua['browser_version'] = $ua['version'];
+		$ua['browser_version'] = $this->normalize_browser_version( $ua['version'] );
 		unset( $ua['version'] );
 
 		return wp_parse_args( $ua, $defaults );
+	}
+
+	/**
+	 * Normalize a browser version to a bounded, numeric-dotted form.
+	 *
+	 * Real browser versions are numeric and dot-separated (e.g. "120.0.6099").
+	 * Anything else is fallback/garbage from an unrecognized or forged user
+	 * agent; storing it verbatim lets an anonymous client mint unlimited distinct
+	 * lookup rows. Non-conforming values collapse to a single "other" bucket,
+	 * bounding the cardinality of the browser_versions lookup table.
+	 *
+	 * @param string $version Raw version string from the parser.
+	 * @return string Normalized version, '' when empty, or 'other' when it isn't a real version.
+	 */
+	private function normalize_browser_version( string $version ): string {
+		$version = trim( $version );
+		if ( $version === '' ) {
+			return '';
+		}
+
+		if ( strlen( $version ) <= 24 && preg_match( '/^[0-9]+(\.[0-9]+)*$/', $version ) ) {
+			return $version;
+		}
+
+		return 'other';
 	}
 
 	/**

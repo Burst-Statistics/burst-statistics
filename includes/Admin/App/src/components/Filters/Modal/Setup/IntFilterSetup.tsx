@@ -49,17 +49,12 @@ const IntFilterSetup: React.FC<IntFilterSetupProps> = ({
 		setRangeValue( parseInitialValue( initialValue ) );
 	}, [ initialValue ]);
 
-	// Set appropriate min/max based on filter type
+	// Set appropriate min/max based on filter type.
 	useEffect( () => {
 		switch ( filterKey ) {
-			case 'bounce_rate':
-			case 'conversion_rate':
-				setMin( 0 );
-				setMax( 100 );
-				break;
 			case 'time_per_session':
 				setMin( 0 );
-				setMax( 3600 ); // 1 hour in seconds
+				setMax( 3600 ); // 1 hour in seconds.
 				break;
 			default:
 				setMin( 0 );
@@ -116,9 +111,6 @@ const IntFilterSetup: React.FC<IntFilterSetupProps> = ({
 		const numVal = 'string' === typeof val ? parseFloat( val ) : val;
 
 		switch ( filterKey ) {
-			case 'bounce_rate':
-			case 'conversion_rate':
-				return `${numVal}%`;
 			case 'time_per_session': {
 				const minutes = Math.floor( numVal / 60 );
 				const seconds = numVal % 60;

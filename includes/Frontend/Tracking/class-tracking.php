@@ -29,6 +29,15 @@ class Tracking {
 	public array $goals              = [];
 
 	/**
+	 * Maximum number of completed goals accepted from a single hit.
+	 *
+	 * A real page view completes only a handful of goals; the cap bounds the
+	 * work a single anonymous request can trigger, since every reported id
+	 * becomes a row in one INSERT on burst_goal_statistics.
+	 */
+	private const MAX_COMPLETED_GOALS_PER_HIT = 50;
+
+	/**
 	 * Register the GeoIP enrichment on construction.
 	 *
 	 * Done in the constructor (not init) so it also applies on the SHORTINIT beacon
@@ -119,7 +128,6 @@ class Tracking {
 		$filtered_previous_hit = $previous_hit ?? [];
 		$sanitized_data        = apply_filters( 'burst_before_track_hit', $sanitized_data, $hit_type, $filtered_previous_hit );
 
-		// Centralize all session-level fields in $session.
 		$session = [
 			'last_visited_url'   => $this->create_path( $sanitized_data ),
 			'city_code'          => $sanitized_data['city_code'] ?? '',
@@ -130,6 +138,7 @@ class Tracking {
 			'platform_id'        => $sanitized_data['platform_id'] ?? 0,
 			'device_id'          => $sanitized_data['device_id'] ?? 0,
 		];
+		$session = apply_filters( 'burst_session_data', $session, $sanitized_data, $filtered_previous_hit );
 
 		$search_term = $sanitized_data['search_term'] ?? '';
 
@@ -645,19 +654,30 @@ class Tracking {
 	/**
 	 * Sanitize completed goal IDs.
 	 *
-	 * Filters out inactive or duplicate IDs and ensures all values are integers.
+	 * Casts every value to a positive integer, drops zero/duplicate ids and caps
+	 * the total. The endpoint is unauthenticated, so the cap keeps a single hit
+	 * from turning an arbitrarily large client array into one oversized INSERT.
 	 *
 	 * @param array<int, mixed> $completed_goals Array of goal IDs from the client.
-	 * @return array<int> Cleaned list of unique, active goal IDs as integers.
+	 * @return array<int> Cleaned list of unique, positive goal IDs as integers.
 	 */
 	public function sanitize_completed_goal_ids( array $completed_goals ): array {
-		$completed_goals = array_unique( $completed_goals );
 		$completed_goals = array_map( 'absint', $completed_goals );
-		return array_values( $completed_goals );
+		// Drop the zeros left by absint on non-numeric input.
+		$completed_goals = array_filter( $completed_goals, static fn ( int $id ): bool => $id > 0 );
+		$completed_goals = array_values( array_unique( $completed_goals ) );
+		return array_slice( $completed_goals, 0, self::MAX_COMPLETED_GOALS_PER_HIT );
 	}
 
 	/**
 	 * Get the id of the lookup table for the given item and value.
+	 *
+	 * Resolves a single value with a targeted query instead of loading the whole
+	 * lookup table into memory. The table can only grow by one row per hit (one
+	 * distinct value), the same ceiling as the statistics table, but a large
+	 * table must never make the tracking hot path more expensive - so lookups are
+	 * bounded regardless of table size, backed by a per-request memo and a
+	 * per-value object cache.
 	 */
 	public function get_lookup_table_id( string $item, ?string $value ): int {
 		if ( empty( $value ) ) {
@@ -669,46 +689,73 @@ class Tracking {
 			return 0;
 		}
 
-		// Load all items for this type if not cached yet.
-		if ( ! isset( $this->lookup_table_cache[ $item ] ) ) {
-			$cache_key = 'burst_' . $item . '_all';
-			$all_items = wp_cache_get( $cache_key, 'burst' );
-
-			if ( false === $all_items ) {
-				// Cache miss - load all items from database.
-				global $wpdb;
-                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name cannot be parameterized. Selected from safe list above.
-				$results = $wpdb->get_results( "SELECT ID, name FROM {$wpdb->prefix}burst_{$item}s", OBJECT_K );
-
-				$all_items = [];
-				foreach ( $results as $result ) {
-					$all_items[ $result->name ] = (int) $result->ID;
-				}
-
-				wp_cache_set( $cache_key, $all_items, 'burst' );
-			}
-
-			$this->lookup_table_cache[ $item ] = $all_items;
-		}
-
-		// Check if value exists.
+		// Per-request memo: a value that recurs within one request costs no query.
 		if ( isset( $this->lookup_table_cache[ $item ][ $value ] ) ) {
 			return $this->lookup_table_cache[ $item ][ $value ];
 		}
 
-		// Value doesn't exist - insert it.
+		// Per-value object cache: a warm cache resolves without touching the DB.
+		// Short TTL so admin cleanups (see App::clear_spam_browsers) self-heal.
+		$cache_key = self::lookup_cache_key( $item, $value );
+		$id        = wp_cache_get( $cache_key, 'burst' );
+
+		if ( false === $id ) {
+			$id = $this->resolve_lookup_table_id( $item, $value );
+			if ( $id > 0 ) {
+				// Literal TTL (seconds): time constants aren't guaranteed on the
+				// SHORTINIT beacon path, matching get_active_goals() above.
+				wp_cache_set( $cache_key, $id, 'burst', 300 );
+			}
+		}
+
+		$id = (int) $id;
+		if ( $id > 0 ) {
+			$this->lookup_table_cache[ $item ][ $value ] = $id;
+		}
+
+		return $id;
+	}
+
+	/**
+	 * Build the object-cache key for a single lookup value.
+	 *
+	 * @param string $item  Validated lookup type.
+	 * @param string $value The looked-up value.
+	 */
+	public static function lookup_cache_key( string $item, string $value ): string {
+		return 'burst_' . $item . '_lookup_' . crc32( $value );
+	}
+
+	/**
+	 * Find (or create) the lookup-table row ID for a single value.
+	 *
+	 * Targeted SELECT first, INSERT only on a miss. INSERT IGNORE plus the UNIQUE
+	 * index on `name` makes concurrent inserts of the same value race-safe: the
+	 * loser's insert is ignored and the winning id is re-read.
+	 *
+	 * @param string $item  Validated lookup type (browser|browser_version|platform|device).
+	 * @param string $value The value to resolve.
+	 */
+	private function resolve_lookup_table_id( string $item, string $value ): int {
 		global $wpdb;
-		$wpdb->insert(
-			$wpdb->prefix . "burst_{$item}s",
-			[ 'name' => $value ]
-		);
-		$id = $wpdb->insert_id;
+		$table = $wpdb->prefix . "burst_{$item}s";
 
-		// Invalidate caches.
-		unset( $this->lookup_table_cache[ $item ] );
-		wp_cache_delete( 'burst_' . $item . '_all', 'burst' );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table derived from the validated $item safe list; value is prepared.
+		$id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM {$table} WHERE name = %s LIMIT 1", $value ) );
+		if ( $id > 0 ) {
+			return $id;
+		}
 
-		return (int) $id;
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table derived from the validated $item safe list; value is prepared.
+		$wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO {$table} (name) VALUES (%s)", $value ) );
+		$id = (int) $wpdb->insert_id;
+		if ( $id > 0 ) {
+			return $id;
+		}
+
+		// Insert was ignored (a concurrent request already created the row): re-read it.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table derived from the validated $item safe list; value is prepared.
+		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM {$table} WHERE name = %s ORDER BY ID ASC LIMIT 1", $value ) );
 	}
 
 	/**
@@ -1078,7 +1125,26 @@ class Tracking {
 			self::error_log( 'Failed to create statistic. Error: ' . $wpdb->last_error );
 			return 0;
 		}
+
+		$this->stamp_last_hit_time( (int) ( $data['time'] ?? time() ) );
+
 		return $wpdb->insert_id;
+	}
+
+	/**
+	 * Record the newest hit's timestamp in the burst_last_hit_time option, at most
+	 * once per hour. Tracking_Health::has_recent_hits() reads this stamp so the
+	 * loopback re-test backoff and the dashboard tracking notice never have to run
+	 * a statistics query on requests without the admin bootstrap. Autoloaded on
+	 * purpose: this runs on the beacon hot path, where alloptions is already
+	 * loaded and a non-autoloaded read would add a query per hit.
+	 *
+	 * @param int $time Unix timestamp of the hit being recorded.
+	 */
+	private function stamp_last_hit_time( int $time ): void {
+		if ( $time - (int) get_option( 'burst_last_hit_time', 0 ) > HOUR_IN_SECONDS ) {
+			update_option( 'burst_last_hit_time', $time, true );
+		}
 	}
 
 	/**

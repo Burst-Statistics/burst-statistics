@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/Common/PageHeader';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import TopPerformers from '@/components/Sales/TopPerformers';
 import Sales from '@/components/Sales/Sales';
+import { SalesChartBlock } from '@/components/Sales/SalesChart';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import QuickWins from '@/components/Sales/QuickWins';
 import FunnelChartSection from '@/components/Sales/FunnelChartSection';
@@ -123,6 +124,10 @@ function SalesComponent() {
 
 			<ErrorBoundary>
 				<TopPerformers />
+			</ErrorBoundary>
+
+			<ErrorBoundary>
+				<SalesChartBlock />
 			</ErrorBoundary>
 
 			<ErrorBoundary>
