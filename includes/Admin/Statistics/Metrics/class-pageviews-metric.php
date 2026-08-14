@@ -30,7 +30,7 @@ class Pageviews_Metric implements Metric_Handler_Interface {
 		$non_bounce = 'COALESCE(sessions.bounce, 0) = 0';
 		$expr       = $qd->get_exclude_bounces()
 			? "COUNT(DISTINCT CASE WHEN $non_bounce THEN statistics.ID END) AS pageviews"
-			: 'COUNT(DISTINCT statistics.ID) AS pageviews';
+			: 'COUNT(statistics.ID) AS pageviews';
 		$qd->add_select( $expr );
 		if ( $qd->get_exclude_bounces() ) {
 			$qd->with( 'sessions' );

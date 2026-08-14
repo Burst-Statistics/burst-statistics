@@ -38,6 +38,39 @@ export interface BurstMenuPage {
 
 export type BurstMenuConfig = BurstMenuPage[] | Record<number, BurstMenuPage>;
 
+export interface BurstCommunityPercentiles {
+	p5: number;
+	p10: number;
+	p25: number;
+	p50: number;
+	p75: number;
+	p90: number;
+	p95: number;
+}
+
+export interface BurstCommunityDistribution {
+	percentiles: BurstCommunityPercentiles;
+	average: number;
+}
+
+export interface BurstCommunityData {
+	range: { min: number; max: number | null };
+	sample_size: number;
+	insufficient_data?: boolean;
+	bounce_rate?: BurstCommunityDistribution;
+	pageviews_per_session?: BurstCommunityDistribution;
+	time_per_session?: BurstCommunityDistribution;
+	new_visitors_percentage?: { average: number };
+	conversion_rate?: BurstCommunityDistribution;
+	average_time_on_page?: BurstCommunityDistribution;
+	devices?: {
+		desktop: number;
+		tablet: number;
+		mobile: number;
+		other: number;
+	};
+}
+
 /**
  * Script localization object on `window.burst_settings`.
  */
@@ -75,6 +108,7 @@ export interface BurstSettings {
 	ecommerceActivationTime?: number;
 	countries?: Record<string, string>;
 	continents?: Record<string, string>;
+	community_data?: BurstCommunityData | null;
 	is_mainwp?: boolean;
 	root?: string;
 	child_token?: string;

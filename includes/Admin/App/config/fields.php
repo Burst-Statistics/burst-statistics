@@ -10,7 +10,7 @@ defined( 'ABSPATH' ) || die();
  * ---------------------------
  *
  * @property string $id                 Unique identifier for the setting
- * @property string $menu_id            Menu/tab where the setting appears (e.g., 'general', 'advanced', 'data', 'goals')
+ * @property string $menu_id            Menu/tab where the setting appears (e.g., 'general', 'features', 'advanced', 'data', 'goals')
  * @property string $group_id           Group within the menu where the setting belongs
  * @property string $type               Input type: 'checkbox', 'radio', 'select', 'number', 'text', 'button', 'hidden',
  *                                      'email_reports', 'image_picker', 'goals', 'ip_blocklist', 'restore_archives', 'checkbox_group'
@@ -175,9 +175,18 @@ return [
 		'default'  => false,
 	],
 	[
-		'id'       => 'track_external_links',
+		'id'       => 'dismiss_non_error_notices',
 		'menu_id'  => 'general',
 		'group_id' => 'general',
+		'type'     => 'checkbox',
+		'label'    => __( 'Dismiss all notices in your dashboard except critical ones', 'burst-statistics' ),
+		'disabled' => false,
+		'default'  => false,
+	],
+	[
+		'id'       => 'track_external_links',
+		'menu_id'  => 'features',
+		'group_id' => 'features',
 		'type'     => 'checkbox',
 		'label'    => __( 'Track external link clicks', 'burst-statistics' ),
 		'context'  => __( 'Record outgoing link clicks so you can analyze which external destinations are most used.', 'burst-statistics' ),
@@ -189,11 +198,41 @@ return [
 		],
 	],
 	[
-		'id'       => 'dismiss_non_error_notices',
-		'menu_id'  => 'general',
-		'group_id' => 'general',
+		'id'       => 'enable_shortcodes',
+		'menu_id'  => 'features',
+		'group_id' => 'features',
 		'type'     => 'checkbox',
-		'label'    => __( 'Dismiss all notices in your dashboard except critical ones', 'burst-statistics' ),
+		'label'    => __( 'Enable shortcodes', 'burst-statistics' ),
+		'context'  => [
+			'text' => __( 'Enable statistics shortcodes for use on your website.', 'burst-statistics' ),
+			'url'  => 'burst-statistics-shortcodes/',
+		],
+		'disabled' => false,
+		'default'  => false,
+	],
+	[
+		'id'       => 'plugin_update_suggestions',
+		'menu_id'  => 'features',
+		'group_id' => 'smart_update_timing',
+		'type'     => 'checkbox',
+		'label'    => __( 'Show recommended update time in plugin overview', 'burst-statistics' ),
+		'context'  => [
+			'text' => __( 'Shows the quietest moment to update plugins on the Plugins page, based on your traffic.', 'burst-statistics' ),
+			'url'  => 'update-plugins-when-traffic-is-low/',
+		],
+		'disabled' => false,
+		'default'  => true,
+	],
+	[
+		'id'       => 'plugin_update_scheduling',
+		'menu_id'  => 'features',
+		'group_id' => 'smart_update_timing',
+		'type'     => 'checkbox',
+		'label'    => __( 'Schedule auto-updates during quiet traffic periods', 'burst-statistics' ),
+		'context'  => [
+			'text' => __( 'Only reschedules plugin updates that already have WordPress auto-updates enabled, to run during your quietest traffic period.', 'burst-statistics' ),
+			'url'  => 'update-plugins-when-traffic-is-low/',
+		],
 		'disabled' => false,
 		'default'  => false,
 	],
@@ -252,19 +291,6 @@ return [
 			'title'       => __( 'Using custom block rules', 'burst-statistics' ),
 			'description' => __( 'The hit will be blocked if this string is found in the referrer, user agent, or URL. You can also use regex patterns, e.g. /facebook(externalhit|bot|crawler|preview)/i', 'burst-statistics' ),
 		],
-	],
-	[
-		'id'       => 'enable_shortcodes',
-		'menu_id'  => 'advanced',
-		'group_id' => 'tracking',
-		'type'     => 'checkbox',
-		'label'    => __( 'Enable shortcodes', 'burst-statistics' ),
-		'context'  => [
-			'text' => __( 'Enable statistics shortcodes for use on your website.', 'burst-statistics' ),
-			'url'  => 'burst-statistics-shortcodes/',
-		],
-		'disabled' => false,
-		'default'  => false,
 	],
 	[
 		'id'       => 'update_to_city_geo_database_time',
@@ -475,6 +501,18 @@ return [
 		'group_id' => 'anonymous_usage_data',
 		'type'     => 'anonymous_usage_data',
 		'label'    => ' ',
+		'disabled' => false,
+		'default'  => false,
+	],
+	[
+		'id'       => 'beta',
+		'menu_id'  => 'advanced',
+		'group_id' => 'beta',
+		'type'     => 'checkbox',
+		'label'    => __( 'Get early access to the latest features by enabling beta features', 'burst-statistics' ),
+		'context'  => [
+			'text' => __( 'Beta features are tested in the automated testing queue, but contain major new features that may not yet be stable. Not recommended on production.', 'burst-statistics' ),
+		],
 		'disabled' => false,
 		'default'  => false,
 	],

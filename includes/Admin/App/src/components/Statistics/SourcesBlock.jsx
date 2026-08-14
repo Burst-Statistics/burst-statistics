@@ -28,31 +28,43 @@ import { getSourceCategoryMeta } from '@/api/getDataTableData';
  * @param {Function} props.onSelect   - Category click callback.
  * @return {JSX.Element} Category legend.
  */
-const SourcesLegend = ({ categories, activeId, onSelect }) => {
+// fallow-ignore-next-line complexity
+const SourcesLegend = ({ categories, activeId, onSelect, isLoading }) => {
 	return (
 		<div className="flex flex-col gap-1.5 px-2">
-			{ categories.map( ( item ) => (
-				<button
-					key={ item.id }
-					type="button"
-					onClick={() => onSelect( item.id )}
-					className={`flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1 text-xs transition-colors ${
-						activeId === item.id ?
-							'bg-gray-100 text-text-black' :
-							'text-text-gray hover:bg-gray-100 hover:text-text-black'
-					}`}
-					aria-pressed={ activeId === item.id }
-				>
-					<span className="flex items-center gap-1.5">
-						<span
-							className="inline-block h-2.5 w-2.5 rounded-full"
-							style={{ backgroundColor: getSourceCategoryMeta( item.id ).color }}
-						/>
-						<span>{ item.label }</span>
-					</span>
-					<span className="font-medium text-text-black">{ formatPercentage( item.value ) }</span>
-				</button>
-			) ) }
+			{
+
+				// fallow-ignore-next-line complexity
+				categories.map( ( item ) => {
+				const isDisabled = isLoading || 0 === item.value;
+				return (
+					<button
+						key={ item.id }
+						type="button"
+						disabled={ isDisabled }
+						onClick={() => ! isDisabled && onSelect( item.id )}
+						className={`flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1 text-xs transition-colors ${
+							isDisabled ?
+								'cursor-not-allowed text-gray-300 opacity-60' :
+								activeId === item.id ?
+									'bg-gray-100 text-text-black' :
+									'text-text-gray hover:bg-gray-100 hover:text-text-black'
+						}`}
+						aria-pressed={ activeId === item.id }
+					>
+						<span className="flex items-center gap-1.5">
+							<span
+								className="inline-block h-2.5 w-2.5 rounded-full"
+								style={{ backgroundColor: getSourceCategoryMeta( item.id ).color }}
+							/>
+							<span>{ item.label }</span>
+						</span>
+						<span className="font-medium text-text-black">
+							{ ( isLoading || 0 === item.value ) ? '-' : formatPercentage( item.value ) }
+						</span>
+					</button>
+				);
+			}) }
 		</div>
 	);
 };
@@ -360,36 +372,43 @@ const SourcesBlock = ( props ) => {
 								</div>
 							) : (
 								<div className="flex items-center gap-3 px-4 py-4">
-									<div
-										className={sourcesOverTimeQuery.isFetching ? 'animate-pulse' : undefined}
-										style={{ height: 120, width: 120 }}
-									>
-										<ResponsivePie
-											data={categoriesData}
-											margin={{ top: 8, right: 8, bottom: 8, left: 8 }}
-											innerRadius={0.7}
-											padAngle={1.2}
-											cornerRadius={3}
-											activeOuterRadiusOffset={3}
-											borderWidth={0}
-											arcLabel={false}
-											enableArcLinkLabels={false}
-											colors={({ id }) => getSourceCategoryMeta( id ).color}
-											tooltip={({ datum }) => (
-												<ChartTooltip className="text-xs min-w-0 px-2 py-1">
-													{datum.label}: {formatPercentage( datum.value )}
-												</ChartTooltip>
-											)}
-											onClick={( datum ) => {
-												setSelectedCategoryId( datum.id );
-											}}
-										/>
-									</div>
+									{ ( sourcesOverTimeQuery.isFetching || sourcesOverTimeQuery.isLoading ) ? (
+										<div
+											className="flex items-center justify-center"
+											style={{ height: 120, width: 120 }}
+										>
+											<div className="h-[104px] w-[104px] animate-pulse rounded-full border-[16px] border-gray-200" />
+										</div>
+									) : (
+										<div style={{ height: 120, width: 120 }}>
+											<ResponsivePie
+												data={categoriesData}
+												margin={{ top: 8, right: 8, bottom: 8, left: 8 }}
+												innerRadius={0.7}
+												padAngle={1.2}
+												cornerRadius={3}
+												activeOuterRadiusOffset={3}
+												borderWidth={0}
+												arcLabel={false}
+												enableArcLinkLabels={false}
+												colors={({ id }) => getSourceCategoryMeta( id ).color}
+												tooltip={({ datum }) => (
+													<ChartTooltip className="text-xs min-w-0 px-2 py-1">
+														{datum.label}: {formatPercentage( datum.value )}
+													</ChartTooltip>
+												)}
+												onClick={( datum ) => {
+													setSelectedCategoryId( datum.id );
+												}}
+											/>
+										</div>
+									) }
 									<div className="min-w-0 flex-1">
 										<SourcesLegend
 											categories={categoriesData}
 											activeId={selectedCategoryId}
 											onSelect={setSelectedCategoryId}
+											isLoading={sourcesOverTimeQuery.isLoading || sourcesOverTimeQuery.isFetching}
 										/>
 									</div>
 								</div>

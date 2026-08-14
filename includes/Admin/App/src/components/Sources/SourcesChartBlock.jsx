@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from '@wordpress/element';
+import { useMemo, useCallback, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 import { ResponsiveBar } from '@nivo/bar';
@@ -8,6 +8,7 @@ import { BlockContent } from '@/components/Blocks/BlockContent';
 import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import { ChartTooltip } from '@/components/Common/ChartTooltip';
 import HelpTooltip from '@/components/Common/HelpTooltip';
+import PopoverFilter from '@/components/Common/PopoverFilter';
 import * as Popover from '@radix-ui/react-popover';
 import Icon from '@/utils/Icon';
 import { useBlockConfig } from '@/hooks/useBlockConfig';
@@ -91,6 +92,8 @@ function transformToBarData( data, timestamps ) {
  * @return {JSX.Element} Tooltip content.
  */
 function SourcesBarTooltip({ data, interval }) {
+	const selectedMetric = useSourcesStore( ( state ) => state.selectedMetric );
+	const metricLabel = METRIC_POPOVER_OPTIONS[ selectedMetric ]?.label ?? __( 'Visitors', 'burst-statistics' );
 	const dateLabel = formatAxisLabel( data.timestamp, interval, false );
 
 	const total = SOURCE_KEYS.reduce( ( sum, key ) => sum + Number( data[ key ] ?? 0 ), 0 );
@@ -102,7 +105,7 @@ function SourcesBarTooltip({ data, interval }) {
 				<thead>
 					<tr className="border-b border-gray-200 text-xs text-gray-600">
 						<th className="pb-1.5 text-left font-medium">{ __( 'Source', 'burst-statistics' ) }</th>
-						<th className="pb-1.5 text-right font-medium">{ __( 'Visits', 'burst-statistics' ) }</th>
+						<th className="pb-1.5 text-right font-medium">{ metricLabel }</th>
 						<th className="pb-1.5 text-right font-medium">%</th>
 					</tr>
 				</thead>
@@ -147,16 +150,138 @@ function SourcesBarTooltip({ data, interval }) {
 	);
 }
 
+import useSourcesStore from '@/store/useSourcesStore';
+
+const INTERVAL_OPTIONS = [
+	{ value: 'auto', label: __( 'Auto', 'burst-statistics' ) },
+	{ value: 'day', label: __( 'Day', 'burst-statistics' ) },
+	{ value: 'week', label: __( 'Week', 'burst-statistics' ) },
+	{ value: 'month', label: __( 'Month', 'burst-statistics' ) }
+];
+
+const METRIC_POPOVER_OPTIONS = {
+	visitors: { label: __( 'Visitors', 'burst-statistics' ), default: true },
+	pageviews: { label: __( 'Pageviews', 'burst-statistics' ) },
+	sessions: { label: __( 'Sessions', 'burst-statistics' ) }
+};
+
+const INTERVAL_THRESHOLDS = {
+	day: 90,   // disable 'day' when range > 90 days
+	week: 365, // disable 'week' when range > 365 days
+	month: Infinity,
+	auto: Infinity
+};
+
+/**
+ * SourcesHeader renders the popover for metric and grouping selection using PopoverFilter.
+ *
+ * @param {Object} props           - Component props.
+ * @param {number} props.rangeDays - Active date range span in days.
+ * @return {JSX.Element} Popover filter for sources chart header.
+ */
+function SourcesHeader({ rangeDays }) {
+	const groupBy = useSourcesStore( ( state ) => state.groupBy );
+	const setGroupBy = useSourcesStore( ( state ) => state.setGroupBy );
+	const selectedMetric = useSourcesStore( ( state ) => state.selectedMetric );
+	const setSelectedMetric = useSourcesStore( ( state ) => state.setSelectedMetric );
+
+	const onApply = ( selectedOptions ) => {
+		if ( selectedOptions && selectedOptions[ 0 ]) {
+			setSelectedMetric( selectedOptions[ 0 ]);
+		}
+	};
+
+	const renderIntervalSelector = ( pendingValue, setPendingValue ) => (
+		<div className="flex flex-col gap-1.5">
+			<span className="text-xs font-semibold text-text-gray uppercase tracking-wide">
+				{ __( 'Group by', 'burst-statistics' ) }
+			</span>
+			<div
+				role="radiogroup"
+				aria-label={ __( 'Group by', 'burst-statistics' ) }
+				className="grid grid-flow-col auto-cols-fr gap-0.5 border border-gray-300 rounded-md bg-gray-200 p-0.5 shadow-xs"
+			>
+				{ INTERVAL_OPTIONS.map( ( option ) => {
+					const isActive   = pendingValue === option.value;
+					const isDisabled = 0 < rangeDays && INTERVAL_THRESHOLDS[ option.value ] < rangeDays;
+					return (
+						<button
+							key={ option.value }
+							type="button"
+							role="radio"
+							aria-checked={ isActive }
+							disabled={ isDisabled }
+							title={
+								isDisabled ?
+									__( 'Too many data points for this date range', 'burst-statistics' ) :
+									undefined
+							}
+							onClick={ () => ! isDisabled && setPendingValue( option.value ) }
+							className={ [
+								'text-xs px-2 py-1 transition-colors rounded-xs focus:outline-hidden font-medium',
+								isDisabled ?
+									'bg-white text-gray-300 border border-transparent cursor-not-allowed' :
+									isActive ?
+										'bg-green-50 text-green border-green border' :
+										'bg-white text-text-gray hover:bg-gray-50 border border-transparent'
+							].join( ' ' ) }
+						>
+							{ option.label }
+						</button>
+					);
+				}) }
+			</div>
+		</div>
+	);
+
+	return (
+		<PopoverFilter
+			id="sources_chart_filter"
+			selectedOptions={ [ selectedMetric ] }
+			options={ METRIC_POPOVER_OPTIONS }
+			selectionMode="single"
+			onApply={ onApply }
+			extraSection={ renderIntervalSelector }
+			extraSectionValue={ groupBy }
+			onExtraSectionChange={ setGroupBy }
+		/>
+	);
+}
+
 /**
  * Sources over-time stacked bar chart block.
  *
  * @param {Object} props - Block component props.
  * @return {JSX.Element} The rendered block.
  */
+// fallow-ignore-next-line complexity
 const SourcesChartBlock = ( props ) => {
 	const { startDate, endDate, range, filters, isReport, index } = useBlockConfig( props );
 
-	const args = useMemo( () => ({ filters }), [ filters ]);
+	const groupBy = useSourcesStore( ( state ) => state.groupBy );
+	const setGroupBy = useSourcesStore( ( state ) => state.setGroupBy );
+	const selectedMetric = useSourcesStore( ( state ) => state.selectedMetric );
+
+	const args = useMemo(
+		() => ({ filters, group_by: groupBy, metric: selectedMetric }),
+		[ filters, groupBy, selectedMetric ]
+	);
+
+	// Compute the date range in days so we can disable overly-granular intervals.
+	// fallow-ignore-next-line complexity
+	const rangeDays = useMemo( () => {
+		const startMs = Date.parse( startDate || '' );
+		const endMs   = Date.parse( endDate || '' );
+		return ( ! isNaN( startMs ) && ! isNaN( endMs ) && endMs > startMs ) ?
+			Math.round( ( endMs - startMs ) / 86400000 ) : 0;
+	}, [ startDate, endDate ]);
+
+	// Auto-reset groupBy to 'auto' if the current value is now disabled.
+	useEffect( () => {
+		if ( 0 < rangeDays && INTERVAL_THRESHOLDS[ groupBy ] < rangeDays ) {
+			setGroupBy( 'auto' );
+		}
+	}, [ rangeDays, groupBy, setGroupBy ]);
 
 	const query = useSourcesOverTime({
 		startDate,
@@ -165,10 +290,27 @@ const SourcesChartBlock = ( props ) => {
 		args
 	});
 
-	const timestamps = useMemo(
-		() => query.data?.timestamps ?? [],
-		[ query.data ]
-	);
+	const isLoading = query.isFetching || query.isLoading;
+
+	// fallow-ignore-next-line complexity
+	const timestamps = useMemo( () => {
+		if ( query.data?.timestamps?.length ) {
+			return query.data.timestamps;
+		}
+		const startMs = Date.parse( startDate || '' );
+		const endMs   = Date.parse( endDate || '' );
+		if ( ! isNaN( startMs ) && ! isNaN( endMs ) && endMs > startMs ) {
+			const startSec = Math.floor( startMs / 1000 );
+			const endSec   = Math.floor( endMs / 1000 );
+			const step     = ( endSec - startSec ) / 6;
+			const dummy    = [];
+			for ( let i = 0; 7 > i; i++ ) {
+				dummy.push( Math.round( startSec + i * step ) );
+			}
+			return dummy;
+		}
+		return [];
+	}, [ query.data, startDate, endDate ]);
 
 	/**
 	 * Detect the time granularity from the gap between the first two timestamps.
@@ -205,6 +347,19 @@ const SourcesChartBlock = ( props ) => {
 		() => transformToBarData( query.data, timestamps ),
 		[ query.data, timestamps ]
 	);
+
+	const displayedBarData = useMemo( () => {
+		if ( isLoading ) {
+			return timestamps.map( ( ts ) => {
+				const emptyRow = { timestamp: ts };
+				SOURCE_KEYS.forEach( ( key ) => {
+					emptyRow[ key ] = 0;
+				});
+				return emptyRow;
+			});
+		}
+		return barData;
+	}, [ isLoading, timestamps, barData ]);
 
 	const maxBarValue = useMemo( () => {
 		if ( ! barData || 0 === barData.length ) {
@@ -278,23 +433,25 @@ const SourcesChartBlock = ( props ) => {
 	);
 
 	return (
-		<Block className="row-span-2 @lg:col-span-12 @xl:col-span-9">
+		<Block className="row-span-2 @lg:col-span-12 @xl:col-span-9 group/root">
 			<BlockHeading
 				title={ __( 'Sources over time', 'burst-statistics' ) }
 				isReport={ isReport }
 				reportBlockIndex={ index }
-				isLoading={ query.isFetching }
+				isLoading={ query.isFetching || query.isLoading }
 				controls={
-					<Popover.Root>
-						<Popover.Trigger asChild>
-							<button
-								type="button"
-								aria-label={ __( 'Source definitions', 'burst-statistics' ) }
-								className="flex items-center justify-center rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-							>
-								<Icon name="help" size={ 18 } />
-							</button>
-						</Popover.Trigger>
+					<div className="flex items-center gap-2">
+						<SourcesHeader rangeDays={ rangeDays } />
+						<Popover.Root>
+							<Popover.Trigger asChild>
+								<button
+									type="button"
+									aria-label={ __( 'Source definitions', 'burst-statistics' ) }
+									className="flex items-center justify-center rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+								>
+									<Icon name="help" size={ 18 } />
+								</button>
+							</Popover.Trigger>
 							<Popover.Content
 								side="bottom"
 								align="end"
@@ -309,19 +466,20 @@ const SourcesChartBlock = ( props ) => {
 								<div className="max-h-[420px] overflow-y-auto px-4 py-3">
 									<SourcesInfoContent />
 								</div>
-								<Popover.Arrow className="fill-white drop-shadow-sm" />
+								<Popover.Arrow className="fill-white drop-shadow-xs" />
 							</Popover.Content>
-					</Popover.Root>
+						</Popover.Root>
+					</div>
 				}
 			/>
 			<BlockContent className="px-0 py-0">
 				<div
-					className={ query.isFetching ? 'animate-pulse' : undefined }
+					className={ isLoading ? 'animate-pulse opacity-70 transition-opacity duration-300' : 'transition-opacity duration-300' }
 					style={{ height: 320 }}
 				>
-					{ 0 < barData.length && (
+					{ 0 < displayedBarData.length && (
 						<ResponsiveBar
-							data={ barData }
+							data={ displayedBarData }
 							keys={ SOURCE_KEYS }
 							indexBy="timestamp"
 							groupMode="stacked"
@@ -330,7 +488,9 @@ const SourcesChartBlock = ( props ) => {
 							colors={ ({ id }) => getSourceCategoryMeta( id ).color }
 							borderRadius={ 2 }
 							enableLabel={ false }
-							tooltip={ ( tooltipProps ) => <SourcesBarTooltip { ...tooltipProps } interval={ interval } /> }
+							animate={ true }
+							motionConfig="gentle"
+							tooltip={ ( tooltipProps ) => isLoading ? null : <SourcesBarTooltip { ...tooltipProps } interval={ interval } /> }
 							axisBottom={{
 								tickSize: 0,
 								tickPadding: 12,

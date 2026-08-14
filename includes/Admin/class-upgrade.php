@@ -381,6 +381,10 @@ class Upgrade {
 			wp_schedule_single_event( time() + 10 * MINUTE_IN_SECONDS, 'burst_calculate_low_traffic_time' );
 		}
 
+		if ( '' !== $prev_version && version_compare( $prev_version, '3.6.3', '<' ) ) {
+			$this->mark_noop_upgrade( '3.6.3', $prev_version );
+		}
+
 		$admin = new Admin();
 		$admin->run_table_init_hook();
 		$admin->create_js_file();

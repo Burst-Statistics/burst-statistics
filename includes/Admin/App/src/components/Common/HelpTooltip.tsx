@@ -49,13 +49,13 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
 	const isRich = 'rich' === variant;
 
 	const contentClassName = isRich ?
-		`burst-tooltip z-99999 max-w-[300px] font-normal tracking-normal border px-4 py-3 rounded-lg
+		`burst-tooltip z-toast max-w-[300px] font-normal tracking-normal border px-4 py-3 rounded-lg text-left
             animate-in fade-in-50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0
             data-[state=delayed-open]:data-[side=top]:slide-in-from-bottom-2
             data-[state=delayed-open]:data-[side=bottom]:slide-in-from-top-2
             data-[state=delayed-open]:data-[side=left]:slide-in-from-right-2
             data-[state=delayed-open]:data-[side=right]:slide-in-from-left-2` :
-		`burst-tooltip z-99999 max-w-xs font-normal tracking-normal border px-2 py-1.5 text-base rounded
+		`burst-tooltip z-toast max-w-xs font-normal tracking-normal border px-2 py-1.5 text-base rounded text-left
             animate-in fade-in-50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0
             data-[state=delayed-open]:data-[side=top]:slide-in-from-bottom-2
             data-[state=delayed-open]:data-[side=bottom]:slide-in-from-top-2

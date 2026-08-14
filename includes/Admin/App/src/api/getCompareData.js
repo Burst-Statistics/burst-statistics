@@ -12,15 +12,28 @@ const metrics = {
 	pageviews: __( 'Pageviews', 'burst-statistics' ),
 	sessions: __( 'Sessions', 'burst-statistics' ),
 	visitors: __( 'Visitors', 'burst-statistics' ),
-	bounce_rate: __( 'Bounce Rate', 'burst-statistics' )
+	bounce_rate: __( 'Bounce Rate', 'burst-statistics' ),
+	avg_time_on_page: __( 'Avg. time on page', 'burst-statistics' )
 };
 
 const goalMetrics = {
 	conversions: __( 'Conversions', 'burst-statistics' ),
 	pageviews: __( 'Pageviews', 'burst-statistics' ),
 	sessions: __( 'Sessions', 'burst-statistics' ),
-	visitors: __( 'Visitors', 'burst-statistics' )
+	visitors: __( 'Visitors', 'burst-statistics' ),
+	avg_time_on_page: __( 'Avg. time on page', 'burst-statistics' )
 };
+
+const divide = ( value, total ) => 0 < total ? value / total : 0;
+
+const getPageviewsPerSession = ( data ) =>
+	divide( data.pageviews, data.sessions );
+
+const getTimePerSession = ( data ) =>
+	getPageviewsPerSession( data ) * data.avg_time_on_page;
+
+const getNewVisitorsPercentage = ( data ) =>
+	divide( data.first_time_visitors, data.visitors ) * 100;
 
 const templates = {
 	default: {
@@ -29,20 +42,22 @@ const templates = {
 			subtitle: __(
 				'%s pageviews per session',
 				'burst-statistics'
-			).replace( '%s', formatNumber( curr.pageviews / curr.sessions ) ),
+			).replace( '%s', formatNumber( getPageviewsPerSession( curr ) ) ),
 			value: formatNumber( curr.pageviews ),
-			exactValue: curr.pageviews
+			exactValue: curr.pageviews,
+			communityMetricKey: 'pageviews_per_session',
+			communityMetricValue: getPageviewsPerSession( curr )
 		}),
 		sessions: ( curr ) => ({
 			title: __( 'Sessions', 'burst-statistics' ),
 			subtitle: __( '%s per session', 'burst-statistics' ).replace(
 				'%s',
-				formatTime(
-					( curr.pageviews / curr.sessions ) * curr.avg_time_on_page
-				)
+				formatTime( getTimePerSession( curr ) )
 			),
 			value: formatNumber( curr.sessions ),
-			exactValue: curr.sessions
+			exactValue: curr.sessions,
+			communityMetricKey: 'time_per_session',
+			communityMetricValue: getTimePerSession( curr )
 		}),
 		visitors: ( curr ) => ({
 			title: __( 'Visitors', 'burst-statistics' ),
@@ -51,7 +66,9 @@ const templates = {
 				getPercentage( curr.first_time_visitors, curr.visitors )
 			),
 			value: formatNumber( curr.visitors ),
-			exactValue: curr.visitors
+			exactValue: curr.visitors,
+			communityMetricKey: 'new_visitors_percentage',
+			communityMetricValue: getNewVisitorsPercentage( curr )
 		}),
 		bounce_rate: ( curr ) => ({
 			title: __( 'Bounce Rate', 'burst-statistics' ),
@@ -60,7 +77,20 @@ const templates = {
 				curr.bounced_sessions
 			),
 			value: formatNumber( curr.bounce_rate ) + '%',
-			exactValue: curr.bounce_rate
+			exactValue: curr.bounce_rate,
+			communityMetricKey: 'bounce_rate',
+			communityMetricValue: curr.bounce_rate
+		}),
+		avg_time_on_page: ( curr ) => ({
+			title: __( 'Avg. time on page', 'burst-statistics' ),
+			subtitle: __( 'Across %s pageviews', 'burst-statistics' ).replace(
+				'%s',
+				formatNumber( curr.pageviews )
+			),
+			value: formatTime( curr.avg_time_on_page ),
+			exactValue: null,
+			communityMetricKey: 'average_time_on_page',
+			communityMetricValue: curr.avg_time_on_page
 		})
 	},
 	goalSelected: {
@@ -71,7 +101,9 @@ const templates = {
 				'burst-statistics'
 			).replace( '%s', getPercentage( curr.conversion_rate, 100 ) ),
 			value: formatNumber( curr.conversions ),
-			exactValue: curr.conversions
+			exactValue: curr.conversions,
+			communityMetricKey: 'conversion_rate',
+			communityMetricValue: curr.conversion_rate
 		}),
 		pageviews: ( curr ) => ({
 			title: __( 'Pageviews', 'burst-statistics' ),

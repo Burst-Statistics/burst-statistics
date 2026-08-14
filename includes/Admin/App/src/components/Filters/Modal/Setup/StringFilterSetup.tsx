@@ -24,6 +24,7 @@ interface StringFilterSetupProps {
 	onChange: ( value: string ) => void;
 }
 
+// fallow-ignore-next-line complexity
 const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 	filterKey,
 	config,
@@ -31,7 +32,7 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 	onChange
 }) => {
 	const value = initialValue;
-	const selectInputRef = useRef<any>( null ); // eslint-disable-line @typescript-eslint/no-explicit-any
+	const selectInputRef = useRef<HTMLInputElement>( null );
 	const textInputRef = useRef<HTMLInputElement>( null );
 	const [ availableOptions, setAvailableOptions ] = useState<SelectOption[]>(
 		[]
@@ -131,11 +132,7 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 		// fallow-ignore-next-line complexity
 		const timer = setTimeout( () => {
 			if ( config.options && selectInputRef.current ) {
-				if ( selectInputRef.current.focus ) {
-					selectInputRef.current.focus();
-				} else if ( selectInputRef.current.select?.inputRef?.current ) {
-					selectInputRef.current.select.inputRef.current.focus();
-				}
+				selectInputRef.current.focus();
 			} else if ( ! config.options && textInputRef.current ) {
 				textInputRef.current.focus();
 			}
@@ -179,13 +176,22 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 		setFilteredOptions( filtered );
 	};
 
+	const maxSelections = config.multi_select ? Number.POSITIVE_INFINITY : 1;
+
 	const handleTextChange = ( e: React.ChangeEvent<HTMLInputElement> ) => {
 		const newValue = modifyValueBasedOnExclusionConfig({ value: e.target.value, excluded });
 		onChange( newValue );
 	};
 
-	const handleSelectChange = ( selectedOption: any ) => {  // eslint-disable-line @typescript-eslint/no-explicit-any
-		const newValue = modifyValueBasedOnExclusionConfig({ value: selectedOption ? selectedOption.value + '' : '', excluded });
+	const handleSelectChange = ( selected: SelectOption | SelectOption[] | null ) => {
+		let rawValue = '';
+		if ( Array.isArray( selected ) ) {
+			rawValue = selected.map( ( opt ) => ( opt?.value ?? opt ) + '' ).filter( Boolean ).join( ',' );
+		} else if ( selected ) {
+			rawValue = ( selected.value ?? selected ) + '';
+		}
+
+		const newValue = modifyValueBasedOnExclusionConfig({ value: rawValue, excluded });
 		onChange( newValue );
 	};
 
@@ -194,14 +200,24 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 	};
 
 	// Create option object for AsyncSelectInput current value
-	const getSelectValue = (): SelectOption | null => {
+	const getSelectValue = (): SelectOption | SelectOption[] | null => {
 		if ( ! cleanValue ) {
-			return null;
+			return 1 < maxSelections ? [] : null;
+		}
+
+		if ( 1 < maxSelections ) {
+			const rawValues = cleanValue.split( ',' ).map( ( v ) => v.trim() ).filter( Boolean );
+			return rawValues.map( ( val ) => {
+				const foundOption = availableOptions.find(
+					( option: SelectOption ) => String( option.value ) === String( val )
+				);
+				return foundOption || { value: val, label: val };
+			});
 		}
 
 		// Try to find the option in available options
 		const foundOption = availableOptions.find(
-			( option: SelectOption ) => option.value === cleanValue
+			( option: SelectOption ) => String( option.value ) === String( cleanValue )
 		);
 		if ( foundOption ) {
 			return foundOption;
@@ -228,16 +244,20 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 					'Enter referrer URL (e.g., google.com)',
 					'burst-statistics'
 				);
-			case 'campaign':
+			case 'utm_campaign':
 				return __( 'Enter campaign name', 'burst-statistics' );
 			case 'source':
 				return __( 'Enter traffic source', 'burst-statistics' );
-			case 'medium':
-				return __( 'Enter traffic medium', 'burst-statistics' );
-			case 'term':
-				return __( 'Enter search term', 'burst-statistics' );
-			case 'content':
-				return __( 'Enter content identifier', 'burst-statistics' );
+			case 'source_category':
+				return __( 'Enter source category', 'burst-statistics' );
+			case 'utm_source':
+				return __( 'Enter UTM source', 'burst-statistics' );
+			case 'utm_medium':
+				return __( 'Enter UTM medium', 'burst-statistics' );
+			case 'utm_term':
+				return __( 'Enter UTM term', 'burst-statistics' );
+			case 'utm_content':
+				return __( 'Enter UTM content', 'burst-statistics' );
 			case 'parameter':
 				return __(
 					'Enter URL parameter (e.g., utm_campaign)',
@@ -253,10 +273,19 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 
 			<div className="relative flex flex-col gap-2">
 				<label className="block text-sm font-medium text-text-gray">
-					{ __( 'Filter value', 'burst-statistics' ) }
+					{ __( 'Only show data where…', 'burst-statistics' ) }
 				</label>
+				<div className="flex items-start gap-2 pr-0.5">
+					<span className="whitespace-nowrap text-sm font-medium text-text-black mt-2">
+						{config.label}
+					</span>
 
-				<div className="flex items-center gap-2 pr-0.5">
+					{
+						config.exclusion_allowed && (
+							<FilterExclusion value={value} onChange={handleExclusionChange} />
+						)
+					}
+
 					{
 						config.options ? (
 							<AsyncSelectInput
@@ -268,8 +297,14 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 								placeholder={getPlaceholder()}
 								isSearchable={true}
 								disabled={false}
-								insideModal={true}
 								allowCustomValue={0 === filteredOptions.length}
+								maxSelections={maxSelections}
+								initialIsOpen={true}
+								selectionSeparator={
+									config.multi_select ?
+										__( 'or', 'burst-statistics' ) :
+										undefined
+								}
 							/>
 					) : (
 						<TextInput
@@ -280,12 +315,6 @@ const StringFilterSetup: React.FC<StringFilterSetupProps> = ({
 							className="w-full"
 						/>
 					)
-					}
-
-					{
-						config.exclusion_allowed && (
-							<FilterExclusion value={value} onChange={handleExclusionChange} />
-						)
 					}
 				</div>
 			</div>

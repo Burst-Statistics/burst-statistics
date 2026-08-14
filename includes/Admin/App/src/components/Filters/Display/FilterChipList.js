@@ -4,6 +4,10 @@ import useShareableLinkStore from '@/store/useShareableLinkStore';
 /**
  * Reusable FilterChipList component for displaying a list of filter chips.
  *
+ * Filters with 2+ values still render as a single chip (collapsed into a
+ * count badge inside FilterChip); clicking any chip opens the edit wizard,
+ * same as a single-value filter.
+ *
  * @param {Object}   props                  - Component props.
  * @param {Array}    props.filters          - Array of filter objects.
  * @param {Function} props.onRemove         - Callback function when a filter is removed.

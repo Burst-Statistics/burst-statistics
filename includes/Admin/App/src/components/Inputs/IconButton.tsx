@@ -86,9 +86,16 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>( (
 	const classes = clsx(
 
 		// Base styles for all button variants.
-		'inline-flex items-center gap-2 rounded transition-all duration-200 min-w-fit cursor-pointer',
+		'inline-flex items-center gap-2 transition-all duration-200 min-w-fit cursor-pointer',
 		'focus:outline-hidden focus:ring-2 focus:ring-offset-2',
 		{ 'justify-center': ! hasLabel },
+
+		// Border radius. "dashed" uses the larger radius shared with the DateRange
+		// and filter chip triggers so it sits visually consistent in the filter row.
+		{
+			'rounded-md': 'dashed' === normalizedVariant,
+			rounded: 'dashed' !== normalizedVariant
+		},
 
 		// Variant-specific styles.
 		{
@@ -103,7 +110,8 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>( (
 			'bg-red text-text-white hover:bg-red hover:shadow-ringDanger focus:ring-red':
 			'danger' === normalizedVariant,
 
-			// Keep custom dashed styling used by AddFilterButton.
+			// Keep custom dashed styling used by AddFilterButton, aligned with the
+			// DateRange trigger's neutral surface (border-gray-300/bg-white/shadow-sm).
 			'bg-white border border-gray-300 border-dashed shadow-sm hover:bg-gray-50 hover:shadow-ringSubtle':
 			'dashed' === normalizedVariant
 		},
@@ -145,9 +153,9 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>( (
 			{...ariaAttributes}
 			{...props}
 		>
-			{icon && ! shouldRenderIconOnRight && <Icon name={icon} size={iconSize} />}
+			{icon && ! shouldRenderIconOnRight && <Icon name={icon} size={iconSize} className='text-text-gray-light'/>}
 			{label && <span>{label}</span>}
-			{icon && shouldRenderIconOnRight && <Icon name={icon} size={iconSize} />}
+			{icon && shouldRenderIconOnRight && <Icon name={icon} size={iconSize} className='text-text-gray-light'/>}
 		</button>
 	);
 });

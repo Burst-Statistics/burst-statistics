@@ -52,6 +52,8 @@ function SourcesUpsellBlock({ title, blurLabel, className }) {
 	);
 }
 
+
+// fallow-ignore-next-line complexity -- Sources conditionally renders pro-gated blocks vs. free blocks based on license and feature flags; branching reflects product feature-gating, not reducible further.
 function Sources() {
 
 	// The Sources tab is no longer gated as a whole: the world map and locations

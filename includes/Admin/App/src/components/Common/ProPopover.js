@@ -24,7 +24,7 @@ const ProPopover = ({
 			</Popover.Trigger>
 			<Popover.Portal>
 				<Popover.Content
-					className="z-9999 min-w-[320px] max-w-[400px] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"
+					className="z-modal min-w-[320px] max-w-[400px] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"
 					align={'end'}
 					sideOffset={10}
 					arrowPadding={10}

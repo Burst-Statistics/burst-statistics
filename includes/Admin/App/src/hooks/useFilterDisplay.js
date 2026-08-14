@@ -4,7 +4,16 @@ import { useInsightsStore } from '../store/useInsightsStore';
 import useFiltersData from '@/hooks/useFiltersData';
 import { __, sprintf } from '@wordpress/i18n';
 import { formatDuration } from '@/utils/formatting';
-import { isExcluding } from '@/config/filterConfig';
+import { getFilterOperator, isExcluding, splitFilterValues } from '@/config/filterConfig';
+
+const getCodeLabels = ( value, map ) => {
+	if ( ! value ) {
+		return '';
+	}
+	const codes = String( value ).split( ',' ).map( ( c ) => c.trim().toUpperCase() ).filter( Boolean );
+	const labels = codes.map( ( code ) => map?.[code] || code );
+	return labels.join( ', ' );
+};
 
 /**
  * Custom hook for managing filter display logic.
@@ -13,7 +22,15 @@ import { isExcluding } from '@/config/filterConfig';
  * @return {Object} Filter display utilities and operations.
  */
 export const useFilterDisplay = ( reportBlockIndex ) => {
-	const { filters, filtersConf, setFilters } = useFilters( reportBlockIndex );
+	const {
+		filters,
+		filtersConf,
+		setFilters,
+		isPinned,
+		savePinnedFilters,
+		clearPinnedFilters,
+		pinnedFilters
+	} = useFilters( reportBlockIndex );
 	const { getFilterOptionById } = useFiltersData();
 	const { setMetrics, getMetrics } = useInsightsStore();
 
@@ -33,13 +50,38 @@ export const useFilterDisplay = ( reportBlockIndex ) => {
 			([ _, value ]) => '' !== value // eslint-disable-line @typescript-eslint/no-unused-vars
 		);
 		return await Promise.all(
+
+			// fallow-ignore-next-line complexity
 			active.map( async([ key, value ]) => {
+				const config = filtersConf?.[key] || null;
+				const exclusionAllowed = !! config?.exclusion_allowed;
+				const isExcluded = exclusionAllowed && isExcluding( value );
+				const cleanValue = isExcluded ? value.substring( 1 ) : value;
+				const rawValues = splitFilterValues( cleanValue );
+				const isMultiValue = 1 < rawValues.length;
+
+				// Keep the joined display string for single-value chips and any other consumer.
 				const displayValue = await getFilterDisplayValue( key, value );
+
+				// Resolve each raw value's display label individually so the
+				// multi-value chip's hover tooltip can list them one per row.
+				const values = isMultiValue ?
+					await Promise.all(
+						rawValues.map( async( raw ) => ({
+							raw,
+							display: await getFilterDisplayValue( key, raw )
+						}) )
+					) :
+					[ { raw: cleanValue, display: displayValue } ];
+
 				return {
 					key,
 					value,
 					displayValue,
-					config: filtersConf?.[key] || null
+					values,
+					isExcluded,
+					operator: getFilterOperator({ isExcluded, isMultiValue }),
+					config
 				};
 			})
 		);
@@ -85,23 +127,40 @@ export const useFilterDisplay = ( reportBlockIndex ) => {
 		}
 
 	switch ( filterKey ) {
-		case 'country_code': {
-			if ( ! value ) {
-				return '';
-			}
-			const code = value.toUpperCase();
-			const countryLabel = window.burst_settings?.countries?.[ code ];
-			return countryLabel || code;
-		}
+		case 'country_code':
+			return getCodeLabels( value, window.burst_settings?.countries );
+		case 'continent_code':
+			return getCodeLabels( value, window.burst_settings?.continents );
 		case 'bounces':
 			return 'include' === value ?
-				__( 'Bounced visitors', 'burst-statistics' ) :
-				__( 'Active visitors', 'burst-statistics' );
+				__( 'Bounced', 'burst-statistics' ) :
+				__( 'Active', 'burst-statistics' );
 
 		case 'new_visitor':
-			return 'true' === value ?
-				__( 'New visitors', 'burst-statistics' ) :
-				__( 'Returning visitors', 'burst-statistics' );
+			return 'include' === value ?
+				__( 'New', 'burst-statistics' ) :
+				__( 'Returning', 'burst-statistics' );
+
+		case 'entry_exit_pages':
+			if ( 'entry' === value ) {
+				return __( 'Entry', 'burst-statistics' );
+			}
+			if ( 'exit' === value ) {
+				return __( 'Exit', 'burst-statistics' );
+			}
+			return value;
+
+		case 'status':
+			if ( '200' === value ) {
+				return __( 'OK', 'burst-statistics' );
+			}
+			if ( '404' === value ) {
+				return __( 'Not Found', 'burst-statistics' );
+			}
+			if ( 'all' === value ) {
+				return __( 'All statuses', 'burst-statistics' );
+			}
+			return value;
 
 		case 'time_per_session': {
 			const dashIdx = String( value ).indexOf( '-' );
@@ -180,7 +239,13 @@ export const useFilterDisplay = ( reportBlockIndex ) => {
 		// Expose underlying store methods for advanced usage
 		setFilter: setFilters,
 		filters,
-		filtersConf
+		filtersConf,
+
+		// Pinned filters
+		isPinned,
+		savePinnedFilters,
+		clearPinnedFilters,
+		pinnedFilters
 	};
 };
 

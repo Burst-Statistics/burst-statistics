@@ -5,19 +5,23 @@ import { doAction, getAction } from '@/utils/api';
 import { toast } from '@/utils/toast';
 
 type GSCStatus = 'connected' | 'disconnected' | 'needs-reconnect';
-type GSCPropertyStatus = 'matched' | 'none' | 'pending';
+type GSCPropertyStatus = 'matched' | 'none' | 'paused' | 'pending';
 
 interface GSCStatusResponse {
 	status: GSCStatus;
 	connect_failed?: boolean;
 	property?: string;
 	property_status?: GSCPropertyStatus;
+	site_url?: string;
+	retry_at?: number;
 }
 
 interface UseGSCDataReturn {
 	status: GSCStatus;
 	property: string;
 	propertyStatus: GSCPropertyStatus | null;
+	siteUrl: string;
+	retryAt: number;
 	isFetching: boolean;
 	isConnecting: boolean;
 	isDisconnecting: boolean;
@@ -40,6 +44,7 @@ const POLL_TIMEOUT = 5 * 60 * 1000;
  *
  * @return {UseGSCDataReturn} Connection state and actions.
  */
+// fallow-ignore-next-line complexity
 const useGSCData = (): UseGSCDataReturn => {
 	const queryClient = useQueryClient();
 	const [ isConnecting, setIsConnecting ] = useState( false );
@@ -67,6 +72,8 @@ const useGSCData = (): UseGSCDataReturn => {
 	const status: GSCStatus = data?.status ?? 'disconnected';
 	const property: string = data?.property ?? '';
 	const propertyStatus: GSCPropertyStatus | null = data?.property_status ?? null;
+	const siteUrl: string = data?.site_url ?? '';
+	const retryAt: number = data?.retry_at ?? 0;
 
 	const stopPolling = useCallback( () => {
 		if ( pollTimer.current ) {
@@ -118,6 +125,7 @@ const useGSCData = (): UseGSCDataReturn => {
 			}
 		};
 
+		// fallow-ignore-next-line complexity -- Arrow handles multiple OAuth error paths that must remain in sequence.
 		doAction( 'gsc_connect', {}).then( ( res: any ) => { // eslint-disable-line @typescript-eslint/no-explicit-any
 			if ( 'locked' === res?.error ) {
 				popup?.close();
@@ -137,6 +145,8 @@ const useGSCData = (): UseGSCDataReturn => {
 			popup.location.href = res.url;
 
 			const startedAt = Date.now();
+
+			// fallow-ignore-next-line complexity -- Poll function manages timeout, popup-closed, and status-check branches; cannot be simplified further.
 			const poll = async() => {
 				if ( Date.now() - startedAt > POLL_TIMEOUT ) {
 					finish( false, __( 'The connection timed out. Please try again.', 'burst-statistics' ) );
@@ -181,6 +191,8 @@ const useGSCData = (): UseGSCDataReturn => {
 		status,
 		property,
 		propertyStatus,
+		siteUrl,
+		retryAt,
 		isFetching,
 		isConnecting,
 		isDisconnecting,
@@ -192,4 +204,5 @@ const useGSCData = (): UseGSCDataReturn => {
 };
 
 export default useGSCData;
+
 export type { GSCStatus, GSCPropertyStatus, UseGSCDataReturn };

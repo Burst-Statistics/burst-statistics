@@ -163,6 +163,22 @@ return [
 				],
 			],
 			[
+				'id'       => 'features',
+				'group_id' => 'features',
+				'icon'     => 'zap',
+				'title'    => __( 'Features', 'burst-statistics' ),
+				'groups'   => [
+					[
+						'id'    => 'features',
+						'title' => __( 'Features', 'burst-statistics' ),
+					],
+					[
+						'id'    => 'smart_update_timing',
+						'title' => __( 'Smart update timing', 'burst-statistics' ),
+					],
+				],
+			],
+			[
 				'id'       => 'advanced',
 				'group_id' => 'tracking',
 				'icon'     => 'sliders-vertical',

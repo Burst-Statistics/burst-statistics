@@ -305,7 +305,7 @@ class Statistics_Query {
 			return $device;
 		}
 
-		self::error_log( "QueryData error: Device filter value '$device' is not allowed." );
+		self::error_log( "Statistics_Query error: Device filter value '$device' is not allowed." );
 		return '';
 	}
 
@@ -341,6 +341,25 @@ class Statistics_Query {
 		$id = sanitize_key( $this->id );
 
 		return $id !== '' ? $id : 'unknown_query';
+	}
+
+	/**
+	 * SQL expression yielding a session's source category.
+	 *
+	 * Stored values win; sessions without a stored category (rows from before
+	 * the source columns existed) fall back to classifying the raw referrer
+	 * and campaign parameters on the fly. The CASE expression is provided via
+	 * the burst_source_category_case_sql filter (registered by Pro); without a
+	 * registrant the stored column is used as-is. Queries using the fallback
+	 * form must join both the sessions and campaigns tables.
+	 */
+	public static function source_category_sql(): string {
+		$case_expr = (string) apply_filters( 'burst_source_category_case_sql', '' );
+		if ( $case_expr === '' ) {
+			return 'sessions.source_category';
+		}
+
+		return "COALESCE(NULLIF(sessions.source_category, ''), ({$case_expr}))";
 	}
 
 	/**
@@ -583,7 +602,7 @@ class Statistics_Query {
 	 */
 	public function set_custom_where( string $sql, array $params ): self {
 		if ( $this->strict ) {
-			self::error_log( 'QueryData error: custom_where is not allowed in strict mode.' );
+			self::error_log( 'Statistics_Query error: custom_where is not allowed in strict mode.' );
 			return $this;
 		}
 		$prepared = $this->get_prepared_custom_sql( $sql, 'where' );
@@ -603,7 +622,7 @@ class Statistics_Query {
 	 */
 	public function append_custom_select( string $sql, array $params ): self {
 		if ( $this->strict ) {
-			self::error_log( 'QueryData error: custom_select is not allowed in strict mode.' );
+			self::error_log( 'Statistics_Query error: custom_select is not allowed in strict mode.' );
 			return $this;
 		}
 		// Temporarily swap parameters so get_prepared_custom_sql sees only this fragment's
@@ -746,7 +765,7 @@ class Statistics_Query {
 	 */
 	public function where_raw( string $expr, array $params = [] ): self {
 		if ( $this->strict ) {
-			self::error_log( 'QueryData error: where_raw is not allowed in strict mode.' );
+			self::error_log( 'Statistics_Query error: where_raw is not allowed in strict mode.' );
 			return $this;
 		}
 		$this->additional_wheres[] = [
@@ -764,7 +783,7 @@ class Statistics_Query {
 	 */
 	public function having_raw( string $condition ): self {
 		if ( $this->strict ) {
-			self::error_log( 'QueryData error: having_raw is not allowed in strict mode.' );
+			self::error_log( 'Statistics_Query error: having_raw is not allowed in strict mode.' );
 			return $this;
 		}
 		$this->having[] = $condition;
@@ -856,7 +875,7 @@ class Statistics_Query {
 				} elseif ( is_scalar( $value ) ) {
 					$this->select( (string) $value );
 				} else {
-					self::error_log( "QueryData error: apply_args ignoring 'select' — expected string|array, got " . gettype( $value ) );
+					self::error_log( "Statistics_Query error: apply_args ignoring 'select' — expected string|array, got " . gettype( $value ) );
 				}
 			} elseif ( $key === 'group_by' ) {
 				if ( is_array( $value ) ) {
@@ -864,7 +883,7 @@ class Statistics_Query {
 				} elseif ( is_scalar( $value ) ) {
 					$this->group_by( (string) $value );
 				} else {
-					self::error_log( "QueryData error: apply_args ignoring 'group_by' — expected string|array, got " . gettype( $value ) );
+					self::error_log( "Statistics_Query error: apply_args ignoring 'group_by' — expected string|array, got " . gettype( $value ) );
 				}
 			} elseif ( $key === 'order_by' ) {
 				if ( is_array( $value ) ) {
@@ -872,19 +891,19 @@ class Statistics_Query {
 				} elseif ( is_scalar( $value ) ) {
 					$this->order_by( (string) $value );
 				} else {
-					self::error_log( "QueryData error: apply_args ignoring 'order_by' — expected string|array, got " . gettype( $value ) );
+					self::error_log( "Statistics_Query error: apply_args ignoring 'order_by' — expected string|array, got " . gettype( $value ) );
 				}
 			} elseif ( $key === 'filters' ) {
 				if ( is_array( $value ) || is_string( $value ) || $value === null ) {
 					$this->filters( $value );
 				} else {
-					self::error_log( "QueryData error: apply_args ignoring 'filters' — expected array|string|null, got " . gettype( $value ) );
+					self::error_log( "Statistics_Query error: apply_args ignoring 'filters' — expected array|string|null, got " . gettype( $value ) );
 				}
 			} elseif ( $key === 'limit' ) {
 				if ( is_numeric( $value ) ) {
 					$this->limit( (int) $value );
 				} else {
-					self::error_log( "QueryData error: apply_args ignoring 'limit' — expected numeric, got " . gettype( $value ) );
+					self::error_log( "Statistics_Query error: apply_args ignoring 'limit' — expected numeric, got " . gettype( $value ) );
 				}
 			}
 		}
@@ -927,7 +946,7 @@ class Statistics_Query {
 				if ( is_array( $decoded ) ) {
 					$filters = $decoded;
 				} else {
-					self::error_log( 'QueryData error: filters() ignoring non-array value: ' . substr( $filters, 0, 100 ) );
+					self::error_log( 'Statistics_Query error: filters() ignoring non-array value: ' . substr( $filters, 0, 100 ) );
 					$filters = [];
 				}
 			}
@@ -955,7 +974,7 @@ class Statistics_Query {
 		$custom_parameters = $context === 'select' ? $this->custom_select_parameters : $this->custom_where_parameters;
 
 		if ( ! $this->sanitizer->validate_custom_sql_safety( $custom_sql, $context ) ) {
-			self::error_log( "QueryData error: Custom $context clause failed safety validation. Returning empty custom_" . $context );
+			self::error_log( "Statistics_Query error: Custom $context clause failed safety validation. Returning empty custom_" . $context );
 			return '';
 		}
 
@@ -963,7 +982,7 @@ class Statistics_Query {
 		$placeholder_count = preg_match_all( '/%[sdf]/', $custom_sql );
 		if ( $placeholder_count !== count( $custom_parameters ) ) {
 			self::error_log(
-				'QueryData error: Custom SQL clause placeholder count (' . $placeholder_count
+				'Statistics_Query error: Custom SQL clause placeholder count (' . $placeholder_count
 				. ') does not match parameter count (' . count( $custom_parameters )
 				. '). Returning empty custom_' . $context
 			);
@@ -1223,7 +1242,7 @@ class Statistics_Query {
 		// $correlate_column is developer-supplied (never request data), but validate its shape
 		// as defense-in-depth before splicing it into the raw correlation condition.
 		if ( ! preg_match( '/^[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*$/', $correlate_column ) ) {
-			self::error_log( 'QueryData error: filtered_statistics_exists_sql() rejected correlate column: ' . $correlate_column );
+			self::error_log( 'Statistics_Query error: filtered_statistics_exists_sql() rejected correlate column: ' . $correlate_column );
 			return '';
 		}
 
@@ -1331,7 +1350,7 @@ class Statistics_Query {
 		// the downstream SELECT cannot leak every column of burst_statistics. This
 		// path is reachable e.g. when select_raw() no-ops in strict mode.
 		if ( empty( $this->accumulated_selects ) ) {
-			self::error_log( 'QueryData error: build_query_internal produced no SELECT expressions; emitting "SELECT 0" placeholder. Query id: ' . $this->get_id() );
+			self::error_log( 'Statistics_Query error: build_query_internal produced no SELECT expressions; emitting "SELECT 0" placeholder. Query id: ' . $this->get_id() );
 			$this->accumulated_selects[] = [
 				'expr'   => '0 AS empty_select_guard',
 				'params' => [],
@@ -1343,6 +1362,10 @@ class Statistics_Query {
 		// registry alias whose column is referenced by a filter but not yet joined.
 		$filter_map = Filter_Registry::all();
 		foreach ( $this->get_filters() as $filter_key => $_value ) {
+			if ( $filter_key === 'source_category' ) {
+				$this->with( 'sessions', 'campaigns' );
+				continue;
+			}
 			$col = $filter_map[ $filter_key ] ?? '';
 			if ( $col === '' || strpos( $col, '.' ) === false ) {
 				continue;
@@ -1588,6 +1611,14 @@ class Statistics_Query {
 			}
 		}
 
+		// Handle virtual filters that have no SQL column mapping in Filter_Registry.
+		if ( ! empty( $filters['source_category'] ) ) {
+			$sc_value      = $filters['source_category'];
+			$sc_is_exclude = ( $this->get_filter_exclusions()['source_category'] ?? 'include' ) === 'exclude';
+			$this->add_filter_condition( $query, 'source_category', '', $sc_value, $sc_is_exclude );
+			unset( $filters['source_category'] );
+		}
+
 		foreach ( $filters as $filter => $value ) {
 			if ( ! array_key_exists( $filter, $possible_filters ) ) {
 				continue;
@@ -1673,6 +1704,23 @@ class Statistics_Query {
 					)
 				);
 			}
+		} elseif ( $filter === 'source_category' && $value !== '' ) {
+			// source_category is stored on sessions (with dynamic fallback for historic sessions).
+			$case_expr = (string) apply_filters( 'burst_source_category_case_sql', '' );
+			if ( $case_expr === '' ) {
+				return;
+			}
+			$this->with( 'sessions', 'campaigns' );
+
+			$cat_expr = self::source_category_sql();
+
+			// Bind the value as %s like every other filter: esc_sql plus string
+			// interpolation would leave a literal '%' in the value to desync the
+			// placeholder count when the assembled query is prepared.
+			$operator = $is_exclude ? '!=' : '=';
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+			$query->where_raw( "({$cat_expr}) {$operator} %s", [ $value ] );
+			return;
 		} elseif ( $value === 'include' ) {
 			$query->where( $column, 1, '=', '%d' );
 		} elseif ( $value === 'exclude' ) {
@@ -1683,26 +1731,25 @@ class Statistics_Query {
 			$like = $wpdb->esc_like( substr( $value, 0, -1 ) ) . '%';
 			$query->where( $column, $like, $like_keyword );
 		} elseif ( str_contains( $value, ',' ) ) {
-			$values = array_map( 'intval', explode( ',', $value ) );
-			if ( $is_exclude ) {
-				foreach ( $values as $v ) {
-					$query->where( $column, $v, '!=', '%d' );
+			$raw_values  = array_filter( array_map( 'trim', explode( ',', $value ) ), static fn( string $v ): bool => '' !== $v );
+			$are_numeric = true;
+			foreach ( $raw_values as $v ) {
+				if ( ! is_numeric( $v ) ) {
+					$are_numeric = false;
+					break;
 				}
-			} else {
-				$query->where_group(
-					array_merge(
-						[ 'relation' => 'OR' ],
-						array_map(
-							static fn( $v ) => [
-								'column'   => $column,
-								'value'    => $v,
-								'operator' => '=',
-								'type'     => '%d',
-							],
-							$values
-						)
-					)
-				);
+			}
+			$type   = $are_numeric ? '%d' : '%s';
+			$values = $are_numeric
+				? array_map( 'intval', $raw_values )
+				: array_map( 'sanitize_text_field', $raw_values );
+
+			if ( ! empty( $values ) ) {
+				if ( $is_exclude ) {
+					$query->where_not_in( $column, $values, $type );
+				} else {
+					$query->where_in( $column, $values, $type );
+				}
 			}
 		} elseif ( $filter === 'parameter' ) {
 			$include_value = str_contains( $value, '=' );

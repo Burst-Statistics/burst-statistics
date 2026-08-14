@@ -62,7 +62,7 @@ export const Steps = () => {
 								)}
 							</div>
 
-							<div className="flex flex-col">
+							<div className="flex flex-col max-sm:hidden">
 								<p className="text-xs text-text-gray-light uppercase tracking-[0.05em] whitespace-nowrap">
 									{sprintf( __( 'Step %d', 'burst-statistics' ), step.number )}
 								</p>
@@ -74,7 +74,7 @@ export const Steps = () => {
 						</div>
 
 						{idx < steps.length - 1 && (
-							<div className="@md:block h-0.5 w-full mx-5 bg-gray-300 rounded-xs" />
+							<div className="h-0.5 w-full mx-1 sm:mx-3 md:mx-5 bg-gray-300 rounded-xs min-w-[8px]" />
 						)}
 					</React.Fragment>
 				);

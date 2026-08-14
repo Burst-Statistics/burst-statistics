@@ -71,7 +71,7 @@ use Burst\Admin\Search_Console\Search_Console;
 		define( 'BURST_DASHBOARD_URL', admin_url( 'admin.php?page=burst' ) );
 		define( 'BURST_PLUGIN', plugin_basename( BURST_FILE ) );
 		define( 'BURST_PLUGIN_NAME', defined( 'BURST_PRO' ) ? 'Burst Pro' : 'Burst Statistics' );
-		define( 'BURST_VERSION', '3.6.2' );
+		define( 'BURST_VERSION', '3.6.3' );
 		define( 'BURST_PUBLIC_KEY', 'bst_7k9mQpX2vL4nWzR8jYhF6tGcU5eBxN3dS1aM0iKoHgJfVq' );
 		// deprecated constant.
         //phpcs:ignore
@@ -125,8 +125,8 @@ use Burst\Admin\Search_Console\Search_Console;
 		}
 
 		// The Google Search Console OAuth popup returns to admin-post.php and must be
-		// handled even when the capability gate above is closed: its only trust anchor
-		// is the single-use OAuth nonce, not the login cookie.
+		// handled even when the broader admin bootstrap gate above is closed. The
+		// callback itself requires the Burst capability and its single-use OAuth nonce.
 		if ( is_admin() && $this->get_option_bool( 'enable_search_console' ) ) {
 			( new Search_Console() )->register_oauth_callback();
 		}

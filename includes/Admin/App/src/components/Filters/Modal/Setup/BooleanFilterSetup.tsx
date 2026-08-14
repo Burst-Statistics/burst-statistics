@@ -49,12 +49,12 @@ const BooleanFilterSetup: React.FC<BooleanFilterSetupProps> = ({
 				include: {
 					type: 'include',
 					icon: 'bounce',
-					label: __( 'Bounced visitors', 'burst-statistics' )
+					label: __( 'Bounced', 'burst-statistics' )
 				},
 				exclude: {
 					type: 'exclude',
 					icon: 'user-check',
-					label: __( 'Active visitors', 'burst-statistics' )
+					label: __( 'Active', 'burst-statistics' )
 				}
 			};
 		} else if ( 'new_visitor' === filterKey ) {
@@ -67,12 +67,12 @@ const BooleanFilterSetup: React.FC<BooleanFilterSetupProps> = ({
 				include: {
 					type: 'include',
 					icon: 'user-plus',
-					label: __( 'New visitors', 'burst-statistics' )
+					label: __( 'New', 'burst-statistics' )
 				},
 				exclude: {
 					type: 'exclude',
 					icon: 'user-check',
-					label: __( 'Returning visitors', 'burst-statistics' )
+					label: __( 'Returning', 'burst-statistics' )
 				}
 			};
 		} else if ( 'entry_exit_pages' === filterKey ) {
@@ -85,12 +85,12 @@ const BooleanFilterSetup: React.FC<BooleanFilterSetupProps> = ({
 				entry: {
 					type: 'entry',
 					icon: 'user-plus',
-					label: __( 'Entry pages', 'burst-statistics' )
+					label: __( 'Entry', 'burst-statistics' )
 				},
 				exit: {
 					type: 'exit',
 					icon: 'user-check',
-					label: __( 'Exit pages', 'burst-statistics' )
+					label: __( 'Exit', 'burst-statistics' )
 				}
 			};
 		} else if ( 'status' === filterKey ) {
