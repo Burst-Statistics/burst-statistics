@@ -594,6 +594,7 @@ class Statistics_Data {
 	 *         pageviews: int,
 	 *         sessions: int,
 	 *         visitors: int,
+	 *         avg_time_on_page: int,
 	 *         bounced_sessions: int,
 	 *         bounce_rate: float
 	 *     }
@@ -614,7 +615,7 @@ class Statistics_Data {
 		$prev    = $this->calculate_comparison_dates( $start, $end, $args );
 
 		$current  = $this->get_data( [ 'visitors', 'pageviews', 'sessions', 'first_time_visitors', 'avg_time_on_page', 'bounce_rate' ], $start, $end, $filters );
-		$previous = $this->get_data( [ 'pageviews', 'sessions', 'visitors', 'bounce_rate' ], $prev['start'], $prev['end'], $filters );
+		$previous = $this->get_data( [ 'pageviews', 'sessions', 'visitors', 'avg_time_on_page', 'bounce_rate' ], $prev['start'], $prev['end'], $filters );
 
 		return [
 			'current'  => [
@@ -630,6 +631,7 @@ class Statistics_Data {
 				'pageviews'        => (int) $previous['pageviews'],
 				'sessions'         => (int) $previous['sessions'],
 				'visitors'         => (int) $previous['visitors'],
+				'avg_time_on_page' => (int) $previous['avg_time_on_page'],
 				'bounced_sessions' => $this->get_bounces( $prev['start'], $prev['end'], $filters ),
 				'bounce_rate'      => $previous['bounce_rate'],
 			],
@@ -652,6 +654,7 @@ class Statistics_Data {
 	 *         visitors: int,
 	 *         sessions: int,
 	 *         first_time_visitors: int,
+	 *         avg_time_on_page: int,
 	 *         conversions: int,
 	 *         conversion_rate: float
 	 *     },
@@ -659,6 +662,7 @@ class Statistics_Data {
 	 *         pageviews: int,
 	 *         visitors: int,
 	 *         sessions: int,
+	 *         avg_time_on_page: int,
 	 *         conversions: int,
 	 *         conversion_rate: float
 	 *     }
@@ -681,8 +685,8 @@ class Statistics_Data {
 		$filters_without_goal = $filters;
 		unset( $filters_without_goal['goal_id'] );
 
-		$current_main  = $this->get_data( [ 'pageviews', 'visitors', 'sessions', 'first_time_visitors' ], $start, $end, $filters_without_goal );
-		$previous_main = $this->get_data( [ 'pageviews', 'visitors', 'sessions' ], $prev['start'], $prev['end'], $filters_without_goal );
+		$current_main  = $this->get_data( [ 'pageviews', 'visitors', 'sessions', 'first_time_visitors', 'avg_time_on_page' ], $start, $end, $filters_without_goal );
+		$previous_main = $this->get_data( [ 'pageviews', 'visitors', 'sessions', 'avg_time_on_page' ], $prev['start'], $prev['end'], $filters_without_goal );
 
 		$current_conversions  = $this->get_conversions( $start, $end, $filters );
 		$previous_conversions = $this->get_conversions( $prev['start'], $prev['end'], $filters );
@@ -694,15 +698,17 @@ class Statistics_Data {
 				'visitors'            => (int) $current_main['visitors'],
 				'sessions'            => (int) $current_main['sessions'],
 				'first_time_visitors' => (int) $current_main['first_time_visitors'],
+				'avg_time_on_page'    => (int) $current_main['avg_time_on_page'],
 				'conversions'         => $current_conversions,
 				'conversion_rate'     => $this->calculate_conversion_rate( $current_conversions, (int) $current_main['pageviews'] ),
 			],
 			'previous' => [
-				'pageviews'       => (int) $previous_main['pageviews'],
-				'visitors'        => (int) $previous_main['visitors'],
-				'sessions'        => (int) $previous_main['sessions'],
-				'conversions'     => $previous_conversions,
-				'conversion_rate' => $this->calculate_conversion_rate( $previous_conversions, (int) $previous_main['pageviews'] ),
+				'pageviews'        => (int) $previous_main['pageviews'],
+				'visitors'         => (int) $previous_main['visitors'],
+				'sessions'         => (int) $previous_main['sessions'],
+				'avg_time_on_page' => (int) $previous_main['avg_time_on_page'],
+				'conversions'      => $previous_conversions,
+				'conversion_rate'  => $this->calculate_conversion_rate( $previous_conversions, (int) $previous_main['pageviews'] ),
 			],
 		];
 	}
@@ -864,6 +870,7 @@ class Statistics_Data {
 				'os'        => $platform ?: '',
 				'browser'   => $browser ?: '',
 				'device_id' => \Burst\burst_loader()->frontend->tracking->get_lookup_table_id( 'device', $device ),
+				'top_count' => (int) ( $row['count'] ?? 0 ),
 			];
 		}
 
@@ -872,21 +879,25 @@ class Statistics_Data {
 				'os'        => '',
 				'browser'   => '',
 				'device_id' => 0,
+				'top_count' => 0,
 			],
 			'tablet'  => [
 				'os'        => '',
 				'browser'   => '',
 				'device_id' => 0,
+				'top_count' => 0,
 			],
 			'mobile'  => [
 				'os'        => '',
 				'browser'   => '',
 				'device_id' => 0,
+				'top_count' => 0,
 			],
 			'other'   => [
 				'os'        => '',
 				'browser'   => '',
 				'device_id' => 0,
+				'top_count' => 0,
 			],
 		];
 

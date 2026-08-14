@@ -40,15 +40,17 @@ export function useSearchTermsData(): UseSearchTermsDataReturn {
 	const { getActiveFilters } = useFilters();
 	const filters = getActiveFilters();
 
-	const query = useQuery({
+	const { data = [], isLoading, isFetching, error } = useQuery({
 		queryKey: [ 'search_terms', startDate, endDate, filters ],
+
+		// fallow-ignore-next-line code-duplication -- Idiomatic React Query pattern; each hook owns its distinct query key and fetcher; shared abstraction would reduce type safety.
 		queryFn: () => getSearchTermsData({ startDate, endDate, range, filters }),
 		enabled: !! startDate && !! endDate
 	});
 
 	return {
-		data: query.data ?? [],
-		isLoading: query.isLoading || query.isFetching,
-		error: ( query.error as Error | null ) ?? null
+		data,
+		isLoading: isLoading || isFetching,
+		error: ( error as Error | null ) ?? null
 	};
 }

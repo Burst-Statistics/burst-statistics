@@ -125,12 +125,27 @@ class Token_Store {
 			return;
 		}
 
-		wp_remote_post(
-			'https://oauth2.googleapis.com/revoke',
+		$endpoint = 'https://oauth2.googleapis.com/revoke';
+		$args     = [
+			'timeout'   => 25,
+			'sslverify' => true,
+			'body'      => [ 'token' => $refresh ],
+		];
+		$started  = microtime( true );
+		$response = wp_remote_post(
+			$endpoint,
+			$args
+		);
+		$this->log_remote_result(
+			'oauth.revoke',
+			$response,
 			[
-				'timeout'   => 25,
-				'sslverify' => true,
-				'body'      => [ 'token' => $refresh ],
+				'request'     => [
+					'method'  => 'POST',
+					'url'     => $endpoint,
+					'timeout' => $args['timeout'],
+				],
+				'duration_ms' => (int) round( ( microtime( true ) - $started ) * 1000 ),
 			]
 		);
 	}
@@ -239,19 +254,32 @@ class Token_Store {
 	 *                    null on a transient failure (network / 429 / 5xx).
 	 */
 	private function request_token( array $body ): ?array {
+		$endpoint = Search_Console::relay_base() . '/token';
+		$args     = [
+			'timeout'   => 25,
+			'sslverify' => true,
+			'headers'   => [ 'HTTP_X_BURST_SIGNATURE' => BURST_PUBLIC_KEY ],
+			'body'      => $body,
+		];
+		$started  = microtime( true );
 		$response = wp_remote_post(
-			Search_Console::relay_base() . '/token',
-			[
-				'timeout'   => 25,
-				'sslverify' => true,
-				'headers'   => [ 'HTTP_X_BURST_SIGNATURE' => BURST_PUBLIC_KEY ],
-				'body'      => $body,
-			]
+			$endpoint,
+			$args
 		);
+		$context  = [
+			'request'     => [
+				'method'     => 'POST',
+				'url'        => $endpoint,
+				'timeout'    => $args['timeout'],
+				'grant_type' => (string) ( $body['grant_type'] ?? '' ),
+			],
+			'duration_ms' => (int) round( ( microtime( true ) - $started ) * 1000 ),
+		];
 
 		if ( is_wp_error( $response ) ) {
 			// Network-level message only; never the request/response body.
 			self::error_log( 'GSC token request failed: ' . $response->get_error_message() );
+			$this->log_remote_result( 'oauth.token', $response, $context );
 			return null;
 		}
 
@@ -260,6 +288,7 @@ class Token_Store {
 		if ( ! is_array( $decoded ) ) {
 			$decoded = [];
 		}
+		$this->log_remote_result( 'oauth.token', $response, $context );
 
 		if ( 200 === $code ) {
 			return $decoded;
@@ -272,6 +301,52 @@ class Token_Store {
 
 		self::error_log( 'GSC token request returned HTTP ' . $code );
 		return null;
+	}
+
+	/**
+	 * Store the OAuth request outcome without recording its request or response
+	 * body. Diagnostics retain only operational metadata and error codes.
+	 *
+	 * @param string          $event    Event name.
+	 * @param \WP_Error|array $response The wp_remote_* result.
+	 * @param array           $context  Request context.
+	 */
+	private function log_remote_result( string $event, \WP_Error|array $response, array $context ): void {
+		if ( is_wp_error( $response ) ) {
+			( new Diagnostic_Logs() )->add(
+				$event,
+				'error',
+				'OAuth request failed before receiving a response.',
+				array_merge(
+					$context,
+					[
+						'wp_error' => [
+							'code'    => $response->get_error_code(),
+							'message' => $response->get_error_message(),
+						],
+					]
+				)
+			);
+			return;
+		}
+
+		$raw     = wp_remote_retrieve_body( $response );
+		$decoded = json_decode( $raw, true );
+		( new Diagnostic_Logs() )->add(
+			$event,
+			200 === (int) wp_remote_retrieve_response_code( $response ) ? 'success' : 'error',
+			'OAuth request completed.',
+			array_merge(
+				$context,
+				[
+					'response' => [
+						'http_status' => (int) wp_remote_retrieve_response_code( $response ),
+						'body_bytes'  => strlen( $raw ),
+						'error_code'  => is_scalar( $decoded['error'] ?? null ) ? sanitize_key( (string) $decoded['error'] ) : '',
+					],
+				]
+			)
+		);
 	}
 
 	/**

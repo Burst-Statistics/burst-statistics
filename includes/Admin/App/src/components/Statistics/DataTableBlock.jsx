@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import getDataTableData from '@/api/getDataTableData';
 import { getPageParameterCounts } from '@/api/getPageParameters';
 import ParameterVariationsRow from './ParameterVariationsRow';
+import SourceReferrersRow from './SourceReferrersRow';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
@@ -63,6 +64,87 @@ const resolveHostname = ( siteUrl ) => {
 		}
 	}
 };
+
+/**
+ * Build the expandable-rows props for the DataTable based on the active config.
+ *
+ * Extracted from the `dataTableProps` useMemo to keep that callback's cyclomatic
+ * complexity below the fallow CRAP threshold. Returns an empty object when no
+ * expandable-row behaviour applies.
+ *
+ * @param {Object}  params                    Configuration object.
+ * @param {boolean} params.paramVariationsEnabled Whether page-parameter expansion is on.
+ * @param {boolean} params.isPro              Whether the site has a Pro licence.
+ * @param {string}  params.selectedConfig     The currently active datatable variant.
+ * @param {string}  params.startDate          Active start date.
+ * @param {string}  params.endDate            Active end date.
+ * @param {string}  params.range              Active date-range identifier.
+ *
+ * @return {Object} Partial DataTable props for expandable rows (may be empty).
+ */
+// fallow-ignore-next-line complexity -- Minor branching from optional chaining and category matches.
+const isReferrerRowDisabled = ( row, activeColumns ) => {
+	if ( activeColumns.includes( 'referrer' ) ) {
+		return true;
+	}
+	const category = row?.source_category;
+	return ! category || 'referral' === category || 'direct' === category;
+};
+
+const getExpandableRowsProps = ({ paramVariationsEnabled, isPro, selectedConfig, startDate, endDate, range, activeColumns }) => {
+	if ( paramVariationsEnabled ) {
+		return {
+			expandableRows: true,
+			expandableRowDisabled: ( row ) =>
+				! row || 0 >= Number( row.parameter_count ?? 0 ),
+			expandableRowsComponent: ParameterVariationsRow,
+			expandableRowsComponentProps: { startDate, endDate, range }
+		};
+	}
+
+	if ( isPro && 'referrers' === selectedConfig ) {
+		return {
+			expandableRows: true,
+			expandableRowDisabled: ( row ) => isReferrerRowDisabled( row, activeColumns ),
+			expandableRowsComponent: SourceReferrersRow,
+			expandableRowsComponentProps: { startDate, endDate, range }
+		};
+	}
+
+	return {};
+};
+
+/**
+ * Resolve the 1-based DataTable sort column index for `defaultSortFieldId`.
+ *
+ * When the saved `sortField` is no longer visible (e.g. a Pro column hidden for
+ * unlicensed users), falls back to the first common metric column
+ * (visitors / pageviews / sessions), then to the second column, then to 2.
+ *
+ * Extracted from the `dataTableProps` useMemo to keep that callback's cyclomatic
+ * complexity below the fallow CRAP threshold.
+ *
+ * @param {Array}  columns   The currently visible, enhanced column definitions.
+ * @param {string} sortField The saved sort-field ID.
+ *
+ * @return {number} 1-based column index for DataTable's defaultSortFieldId.
+ */
+// fallow-ignore-next-line complexity -- Priority fallback chain (exact → metric column → second column → 2); each branch is a distinct fallback level, not reducible further.
+const getActiveSortFieldId = ( columns, sortField ) => {
+	const exactIndex = columns.findIndex( ( col ) => col.id === sortField );
+	if ( -1 !== exactIndex ) {
+		return exactIndex + 1;
+	}
+
+	const fallbackField =
+		columns.find( ( col ) => [ 'visitors', 'pageviews', 'sessions' ].includes( col.id ) )?.id ||
+		columns[ 1 ]?.id ||
+		'';
+
+	const fallbackIndex = columns.findIndex( ( col ) => col.id === fallbackField );
+	return -1 !== fallbackIndex ? fallbackIndex + 1 : 2;
+};
+
 
 const COLUMN_TEMPLATES = {
 	visitors: {
@@ -230,8 +312,9 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		referrers: {
 			label: __( 'Referrers', 'burst-statistics' ),
 			searchable: true,
-			defaultColumns: [
-				'referrer', 'visitors', 'bounce_rate', ...( shouldLoadEcommerce ? [ 'sales', 'revenue' ] : [ 'conversions' ]) ],
+			defaultColumns: isPro ?
+				[ 'source', 'source_category', 'visitors', 'bounce_rate', ...( shouldLoadEcommerce ? [ 'sales', 'revenue' ] : [ 'conversions' ]) ] :
+				[ 'referrer', 'visitors', 'bounce_rate', ...( shouldLoadEcommerce ? [ 'sales', 'revenue' ] : [ 'conversions' ]) ],
 			columnsOptions: {
 				referrer: {
 					label: __( 'Referrer', 'burst-statistics' ),
@@ -248,10 +331,18 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					align: 'left',
 					group_by: true
 				},
-				visitors: { ...COLUMN_TEMPLATES.visitors, pro: true },
+				source: {
+					label: __( 'Source', 'burst-statistics' ),
+					default: false,
+					format: 'source',
+					pro: true,
+					align: 'left',
+					group_by: true
+				},
+				visitors: { ...COLUMN_TEMPLATES.visitors, pro: false },
 				sessions: { ...COLUMN_TEMPLATES.sessions },
-				bounce_rate: { ...COLUMN_TEMPLATES.bounce_rate, pro: true },
-				conversions: { ...COLUMN_TEMPLATES.conversions },
+				bounce_rate: { ...COLUMN_TEMPLATES.bounce_rate, pro: false },
+				conversions: { ...COLUMN_TEMPLATES.conversions, pro: false },
 				...( shouldLoadEcommerce && {
 					sales: { ...COLUMN_TEMPLATES.sales },
 					revenue: { ...COLUMN_TEMPLATES.revenue },
@@ -554,7 +645,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			}
 		},
 		search_console: {
-			label: __( 'Google Searches', 'burst-statistics' ),
+			label: __( 'Google searches', 'burst-statistics' ),
 			searchable: true,
 			defaultColumns: [ 'query', 'clicks', 'impressions', 'click_through_rate', 'position' ],
 			columnsOptions: {
@@ -590,7 +681,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		reading_engagement: {
 			label: __( 'Reading engagement', 'burst-statistics' ),
 			searchable: true,
-			defaultColumns: [ 'page_url', 'avg_time_on_page' ],
+			defaultColumns: [ 'page_url', 'reading_engagement_score' ],
 			columnsOptions: {
 				page_url: {
 					label: __( 'Page', 'burst-statistics' ),
@@ -598,6 +689,11 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					format: 'url',
 					align: 'left',
 					group_by: true
+				},
+				reading_engagement_score: {
+					label: __( 'Score', 'burst-statistics' ),
+					format: 'number',
+					align: 'right'
 				},
 				avg_time_on_page: {
 					label: __( 'Avg. time on page', 'burst-statistics' ),
@@ -711,7 +807,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		setRowsPerPage: setRowsPerPageStore
 	} = useDataTableStore();
 
-	const { isPro } = useLicenseData();
+	const { isPro, isLicenseValid } = useLicenseData();
 
 	const [ selectedConfig, setSelectedConfigState ] = useState( () => getSelectedConfig( id, defaultConfig ) );
 
@@ -747,6 +843,13 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			availableColumns.includes( column )
 		);
 	});
+
+	// Filter out pro columns if the license is not valid to prevent empty pro columns from showing on deactivation.
+	const activeColumns = useMemo( () => {
+		return columns.filter( ( column ) =>
+			! columnsOptions[column]?.pro || isLicenseValid
+		);
+	}, [ columns, columnsOptions, isLicenseValid ]);
 
 	// Sort state: initialize from localStorage
 	const [ sortField, setSortFieldState ] = useState( () => {
@@ -851,21 +954,27 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		const queryArgs = {
 			filters,
 			metrics: Object.keys( columnsOptions ).filter( ( column ) =>
-				columns.includes( column )
+				activeColumns.includes( column )
 			),
 			id: id,
 			group_by: []
 		};
 
 		// Add group by based on the columnOptions.
-		columns.forEach( ( column ) => {
+		activeColumns.forEach( ( column ) => {
 			if ( columnsOptions[column]?.group_by ) {
 				queryArgs.group_by.push( column );
 			}
 		});
 
+		if ( 'referrers' === selectedConfig && isPro ) {
+			if ( ! queryArgs.metrics.includes( 'source_category' ) ) {
+				queryArgs.metrics.push( 'source_category' );
+			}
+		}
+
 		return queryArgs;
-	}, [ filters, columnsOptions, columns, id ]);
+	}, [ filters, columnsOptions, activeColumns, id, selectedConfig, isPro ]);
 
 	const query = useQuery({
 		queryKey: [ selectedConfig, startDate, endDate, args ],
@@ -950,17 +1059,22 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			return [];
 		}
 
+		// Filter out elements that are not in activeColumns.
+		const filteredColumnsData = columnsData.filter( ( col ) =>
+			activeColumns.includes( col.id )
+		);
+
 		// Create an array from columnsOptions keys to define the order.
 		const order = Object.keys( columnsOptions );
 
 		// Sort columnsData based on the order of columns in columnsOptions.
-		return columnsData.sort( ( a, b ) => {
-			const orderA = order.indexOf( a.selector );
-			const orderB = order.indexOf( b.selector );
+		return filteredColumnsData.sort( ( a, b ) => {
+			const orderA = order.indexOf( a.id );
+			const orderB = order.indexOf( b.id );
 
 			return orderA - orderB;
 		});
-	}, [ columnsData, columnsOptions ]);
+	}, [ columnsData, columnsOptions, activeColumns ]);
 
 
 	// Memoize the filtered data to avoid recalculations.
@@ -1006,9 +1120,12 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		filtered = [ ...filtered ].sort( ( a, b ) => {
 			let actualSortField = sortField;
 
-			// If sortField is not in sortedColumnsData, use the second column as default.
-			if ( ! actualSortField && 1 < sortedColumnsData.length ) {
-				actualSortField = sortedColumnsData[1].id;
+			// If sortField is not in sortedColumnsData, use a metric column as default.
+			if ( ! actualSortField || ! sortedColumnsData.some( col => col.id === actualSortField ) ) {
+				const metricCol = sortedColumnsData.find( col =>
+					[ 'visitors', 'pageviews', 'sessions' ].includes( col.id )
+				);
+				actualSortField = metricCol ? metricCol.id : ( sortedColumnsData[1]?.id || '' );
 			}
 
 			const aValue = a[actualSortField];
@@ -1148,12 +1265,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 	const dataTableProps = useMemo(
 
 		() => {
-			const sortColumnIndex = enhancedColumnsData.findIndex( col =>
-				col.id === sortField
-			);
-
-			// findIndex returns -1 if not found, default to 2, otherwise use 1-based index
-			const sortFieldId = -1 !== sortColumnIndex ? sortColumnIndex + 1 : 2;
+			const sortFieldId = getActiveSortFieldId( enhancedColumnsData, sortField );
 
 			const baseProps = {
 				className: 'burst-data-table',
@@ -1187,19 +1299,10 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				)
 			};
 
-			if ( paramVariationsEnabled ) {
-				baseProps.expandableRows = true;
-				baseProps.expandableRowDisabled = ( row ) =>
-					! row || 0 >= Number( row.parameter_count ?? 0 );
-				baseProps.expandableRowsComponent = ParameterVariationsRow;
-				baseProps.expandableRowsComponentProps = {
-					startDate,
-					endDate,
-					range
-				};
-			}
-
-			return baseProps;
+			return {
+				...baseProps,
+				...getExpandableRowsProps({ paramVariationsEnabled, isPro, selectedConfig, startDate, endDate, range, activeColumns })
+			};
 		},
 		[
 			enhancedColumnsData,
@@ -1215,7 +1318,10 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			startDate,
 			endDate,
 			range,
-			isInOverlay
+			isInOverlay,
+			isPro,
+			selectedConfig,
+			activeColumns
 		]
 	);
 
@@ -1295,7 +1401,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 	const fileName = `${safeDomain}-${selectedConfig}-${startDate}-${endDate}`;
 
 	return (
-		<Block className={ isInOverlay ? 'flex-1 min-h-0 group/root' : 'row-span-2 overflow-hidden @xl:col-span-6 group/root' }>
+		<Block id={id} className={ isInOverlay ? 'flex-1 min-h-0 group/root' : 'row-span-2 overflow-hidden @xl:col-span-6 group/root' }>
 			<BlockHeading
 				className="border-b border-gray-200"
 				isReport={isReport}

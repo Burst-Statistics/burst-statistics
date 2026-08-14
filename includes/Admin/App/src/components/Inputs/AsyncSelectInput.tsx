@@ -1,4 +1,4 @@
-import React, {useState, useEffect, forwardRef, useMemo} from 'react';
+import React, {useState, useEffect, forwardRef, useMemo, Fragment} from 'react';
 import { useCombobox, useMultipleSelection } from 'downshift';
 import { debounce } from 'lodash';
 import { __ } from '@wordpress/i18n';
@@ -43,9 +43,6 @@ interface AsyncSelectInputProps {
 	/** Placeholder text */
 	placeholder?: string;
 
-	/** If true, positions dropdown with fixed positioning (useful inside modals) */
-	insideModal?: boolean;
-
 	/** Maximum number of selections allowed (default: 1) */
 	maxSelections?: number;
 
@@ -54,6 +51,15 @@ interface AsyncSelectInputProps {
 
 	/** Whether to allow creating custom options when no matches are found */
 	allowCustomValue?: boolean;
+
+	/** Whether the options menu should be open as soon as the component mounts (default: false) */
+	initialIsOpen?: boolean;
+
+	/**
+	 * Optional label rendered between selected tags (e.g. "or" for filter multi-select).
+	 * Only shown when maxSelections allows multiple values.
+	 */
+	selectionSeparator?: string;
 
 	/** Additional classes for the container */
 	className?: string;
@@ -65,6 +71,15 @@ interface AsyncSelectInputProps {
  * A combobox component that supports async loading of options and multiple selections.
  * Uses Downshift's useCombobox and useMultipleSelection hooks for accessibility and keyboard navigation.
  */
+const isSelectOption = ( item: unknown ): item is SelectOption => {
+	return (
+		null !== item &&
+		'object' === typeof item &&
+		Object.prototype.hasOwnProperty.call( item, 'value' ) &&
+		Object.prototype.hasOwnProperty.call( item, 'label' )
+	);
+};
+
 const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 
 	// fallow-ignore-next-line complexity
@@ -79,10 +94,11 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 			name,
 			disabled = false,
 			placeholder = __( 'Select an option...', 'burst-statistics' ),
-			insideModal = false,
 			maxSelections = 1,
 			showRemoveButton = true,
 			allowCustomValue = true,
+			initialIsOpen = false,
+			selectionSeparator,
 			className,
 			...props
 		},
@@ -144,17 +160,26 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 			// Handle array values (multiple selections)
 			if ( Array.isArray( value ) ) {
 				return value.map( ( item ) => {
-					if (
-						'object' === typeof item &&
-						Object.prototype.hasOwnProperty.call( item, 'value' ) &&
-						Object.prototype.hasOwnProperty.call( item, 'label' )
-					) {
+					if ( isSelectOption( item ) ) {
 						return item;
 					}
 
 					// Find in items or create basic option
 					const foundOption = items.find(
-						( option ) => option.value === item
+						( option ) => String( option.value ) === String( item )
+					);
+					return (
+						foundOption || { value: item, label: item.toString() }
+					);
+				});
+			}
+
+			// Handle string value with multiple selections
+			if ( 1 < maxSelections && 'string' === typeof value ) {
+				const rawValues = value.split( ',' ).map( ( v ) => v.trim() ).filter( Boolean );
+				return rawValues.map( ( item ) => {
+					const foundOption = items.find(
+						( option ) => String( option.value ) === String( item )
 					);
 					return (
 						foundOption || { value: item, label: item.toString() }
@@ -163,16 +188,12 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 			}
 
 			// Handle single value
-			if (
-				'object' === typeof value &&
-				Object.prototype.hasOwnProperty.call( value, 'value' ) &&
-				Object.prototype.hasOwnProperty.call( value, 'label' )
-			) {
+			if ( isSelectOption( value ) ) {
 				return [ value ];
 			}
 
 			// If value is primitive, try to find it in items
-			const foundOption = items.find( ( option ) => option.value === value );
+			const foundOption = items.find( ( option ) => String( option.value ) === String( value ) );
 			if ( foundOption ) {
 				return [ foundOption ];
 			}
@@ -193,7 +214,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 		let availableItems = items.filter(
 			( item ) =>
 				! currentSelectedItems.some(
-					( selected ) => selected.value === item.value
+					( selected ) => String( selected.value ) === String( item.value )
 				)
 		);
 
@@ -272,6 +293,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 			items: availableItems,
 			selectedItem: null,
 			inputValue,
+			initialIsOpen,
 			stateReducer( state, actionAndChanges ) {
 				const { changes, type } = actionAndChanges;
 				switch ( type ) {
@@ -380,39 +402,48 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 					<div className="flex flex-1 flex-wrap items-center gap-1 p-1">
 						{/* Selected items (tags) */}
 						{1 < maxSelections && currentSelectedItems.map( ( selectedItem, index ) => (
-							<span
-								key={`selected-item-${index}`}
-								{...getSelectedItemProps({
-									selectedItem,
-									index
-								})}
-								className="inline-flex items-center gap-1 rounded bg-primary-100 px-2 py-1 text-base text-primary-700 focus:bg-primary focus:text-text-white focus:outline-hidden"
-							>
-								{selectedItem.label}
-								{showRemoveButton && (
-									<button
-										type="button"
-										onClick={( e ) => {
-											e.stopPropagation();
-											handleRemoveItem( selectedItem );
-										}}
-										className="ml-1 rounded-full hover:bg-primary hover:text-text-white focus:bg-primary focus:text-text-white focus:outline-hidden"
-										aria-label={`Remove ${selectedItem.label}`}
+							<Fragment key={`selected-item-${index}`}>
+								{0 < index && selectionSeparator && (
+									<span
+										aria-hidden="true"
+										className="px-0.5 text-sm text-text-gray"
 									>
-										<svg
-											className="h-3 w-3"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-										>
-											<path
-												fillRule="evenodd"
-												d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-												clipRule="evenodd"
-											/>
-										</svg>
-									</button>
+										{selectionSeparator}
+									</span>
 								)}
-							</span>
+								<span
+									{...getSelectedItemProps({
+										selectedItem,
+										index
+									})}
+									className="inline-flex items-center gap-1 rounded bg-primary-100 px-2 py-1 text-base text-primary-700 focus:bg-primary focus:text-text-white focus:outline-hidden"
+								>
+									{selectedItem.label}
+									{showRemoveButton && (
+										<button
+											type="button"
+											onClick={( e ) => {
+												e.stopPropagation();
+												handleRemoveItem( selectedItem );
+											}}
+											className="ml-1 rounded-full hover:bg-primary hover:text-text-white focus:bg-primary focus:text-text-white focus:outline-hidden"
+											aria-label={`Remove ${selectedItem.label}`}
+										>
+											<svg
+												className="h-3 w-3"
+												fill="currentColor"
+												viewBox="0 0 20 20"
+											>
+												<path
+													fillRule="evenodd"
+													d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+													clipRule="evenodd"
+												/>
+											</svg>
+										</button>
+									)}
+								</span>
+							</Fragment>
 						) )}
 
 						{/* Input field */}
@@ -428,9 +459,11 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 										placeholder:
 											0 === currentSelectedItems.length ?
 												placeholder :
-												1 < maxSelections ?
+												1 < maxSelections && Number.isFinite( maxSelections ) ?
 													`Add ${maxSelections - currentSelectedItems.length} more...` :
-													'',
+													1 < maxSelections ?
+														placeholder :
+														'',
 										readOnly: ! isSearchable,
 										onKeyDown: handleKeyDown,
 										...props
@@ -444,8 +477,8 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 
 					{/* Selection counter and toggle button */}
 					<div className="flex items-center border-l border-gray-300">
-						{/* Max selections indicator */}
-						{1 < maxSelections && (
+						{/* Max selections indicator (hidden when there is no cap) */}
+						{1 < maxSelections && Number.isFinite( maxSelections ) && (
 							<span className="px-2 text-xs text-text-gray-light border-r border-gray-200">
 								{currentSelectedItems.length}/{maxSelections}
 							</span>
@@ -485,16 +518,20 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 				<div
 					{...getMenuProps()}
 					className={clsx(
-						'absolute left-0 z-9999 mt-1 w-full',
-						insideModal && 'fixed',
+						'absolute left-0 top-full z-[10002] mt-1 w-full',
 						! isOpen && 'hidden'
 					)}
 				>
 					<ul
-						className={`relative top-0 z-9999 max-h-60 overflow-y-auto w-full rounded-md border border-gray-300 bg-white shadow-lg ${
+						className={`relative top-0 z-[10002] max-h-32 overflow-y-auto w-full rounded-md border border-gray-300 bg-white shadow-lg ${
 							! ( isOpen && availableItems.length ) ? 'hidden' : ''
 						}`}
 					>
+						{loading && 0 === availableItems.length && (
+							<li className="px-3 py-2 text-sm text-text-gray-light">
+								{__( 'Loading…', 'burst-statistics' )}
+							</li>
+						)}
 						{availableItems.map( ( item, index ) => (
 							<li
 								key={item.value}

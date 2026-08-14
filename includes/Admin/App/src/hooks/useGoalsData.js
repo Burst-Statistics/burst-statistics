@@ -29,6 +29,8 @@ const useGoalsData = () => {
 	const shouldFetchGoals = ! isShareableLinkViewer || userCanFilter;
 	const goalsQuery = useQuery({
 		queryKey: [ 'goals_data' ],
+
+		// fallow-ignore-next-line complexity
 		queryFn: async() => {
 			const response = await getGoals();
 			return {
@@ -73,6 +75,7 @@ const useGoalsData = () => {
 		return goal || null;
 	};
 
+	// fallow-ignore-next-line code-duplication -- setQueryData+produce is an intentional immer pattern; the two usages update different shapes (field vs. status) and merging would add unnecessary indirection.
 	const updateGoalInCache = ( id, updater ) => {
 		queryClient.setQueryData([ 'goals_data' ], ( oldData ) => {
 			if ( ! oldData ) {
@@ -137,16 +140,8 @@ const useGoalsData = () => {
 		onSuccess: ( _response, { id, status }) => {
 
 			// Update cache optimistically and then invalidate to sync active_goals_count
-			queryClient.setQueryData([ 'goals_data' ], ( oldData ) => {
-				if ( ! oldData ) {
-					return oldData;
-				}
-				return produce( oldData, ( draft ) => {
-					const index = draft.goals.findIndex( ( goal ) => goal.id === id );
-					if ( -1 !== index ) {
-						draft.goals[index].status = status;
-					}
-				});
+			updateGoalInCache( id, ( goal ) => {
+				goal.status = status;
 			});
 			queryClient.invalidateQueries([ 'goals_data' ]);
 		},

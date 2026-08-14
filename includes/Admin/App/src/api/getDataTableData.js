@@ -32,7 +32,8 @@ const FORMATS = {
 	STRING: 'string',
 	EXTERNAL_LINK: 'external_link',
 	FORM_TITLE: 'form_title',
-	SOURCE_CATEGORY: 'source_category'
+	SOURCE_CATEGORY: 'source_category',
+	SOURCE: 'source'
 };
 
 export const getSourceCategoryMeta = ( key ) => {
@@ -89,9 +90,9 @@ const CountryFilter = memo( ({ value }) => (
 
 CountryFilter.displayName = 'CountryFilter';
 
-const ContinentFilter = memo( ({ value }) => (
+const ContinentFilter = memo( ({ value, row }) => (
 	<MemoizedClickToFilter filter="continent_code" filterValue={value}>
-		{getContinentName( value )}
+		{getContinentName( value, row?.country_code )}
 	</MemoizedClickToFilter>
 ) );
 
@@ -105,11 +106,38 @@ const UrlFilter = memo( ({ value, row }) => (
 
 UrlFilter.displayName = 'UrlFilter';
 
-const TextFilter = memo( ({ filter, value }) => (
-	<MemoizedClickToFilter filter={filter} filterValue={value}>
-		{value}
-	</MemoizedClickToFilter>
-) );
+// fallow-ignore-next-line complexity
+const TextFilter = memo( ({ filter, value }) => {
+	const isLocationField = 'state' === filter || 'city' === filter;
+	const isEmptyLocation = isLocationField && ( ! value || '' === value || 'Unknown' === value );
+
+	if ( isEmptyLocation ) {
+		return (
+			<HelpTooltip
+				content={ __(
+					'Burst resolves visitor IP addresses using MaxMind GeoLite2 databases on your server. Certain IPs (such as local networks, VPNs, or unassigned ranges) cannot be resolved and are categorized as Unknown.',
+					'burst-statistics'
+				) }
+			>
+				<span className="inline-flex items-center gap-1.5 text-text-gray cursor-help">
+					<span>{ __( 'Unknown', 'burst-statistics' ) }</span>
+					<Icon
+						name="help"
+						size={14}
+						color="blue"
+						className="bg-blue-50 rounded-full shrink-0"
+					/>
+				</span>
+			</HelpTooltip>
+		);
+	}
+
+	return (
+		<MemoizedClickToFilter filter={filter} filterValue={value}>
+			{value}
+		</MemoizedClickToFilter>
+	);
+});
 
 TextFilter.displayName = 'TextFilter';
 
@@ -120,6 +148,32 @@ const ReferrerFilter = memo( ({ value }) => (
 ) );
 
 ReferrerFilter.displayName = 'ReferrerFilter';
+
+const SourceFilter = memo( ({ value }) => (
+	<MemoizedClickToFilter filter="source" filterValue={value}>
+		{value}
+	</MemoizedClickToFilter>
+) );
+
+SourceFilter.displayName = 'SourceFilter';
+
+const SourceCategoryFilter = memo( ({ value }) => {
+	const key = String( value || '' );
+	const meta = getSourceCategoryMeta( key );
+	return (
+		<MemoizedClickToFilter filter="source_category" filterValue={key}>
+			<span className="inline-flex items-center gap-2">
+				<span
+					className="inline-block h-2.5 w-2.5 rounded-full"
+					style={{ backgroundColor: meta.color }}
+				/>
+				<span>{ meta.label }</span>
+			</span>
+		</MemoizedClickToFilter>
+	);
+});
+
+SourceCategoryFilter.displayName = 'SourceCategoryFilter';
 
 /**
  * Renders the "Results" cell for the search-terms datatable.
@@ -201,9 +255,9 @@ const COLUMN_FORMATTERS = {
 		}
 		return <CountryFilter value={value} />;
 	},
-	[FORMATS.CONTINENT]: ( value ) => <ContinentFilter value={value} />,
+	[FORMATS.CONTINENT]: ( value, _columnId, row ) => <ContinentFilter value={value} row={row} />,
 	[FORMATS.URL]: ( value, columnId, row ) => <UrlFilter filter={columnId} value={value} row={row} />,
-	[FORMATS.TEXT]: ( value, columnId ) => <TextFilter filter={columnId} value={value} />,
+	[FORMATS.TEXT]: ( value, columnId, row ) => <TextFilter filter={columnId} value={value} row={row} />,
 	[FORMATS.REFERRER]: ( value ) => <ReferrerFilter value={value} />,
 	[FORMATS.FLOAT]: ( value ) => parseFloat( value ),
 	[FORMATS.CURRENCY]: ( value ) => <CurrencyValue value={value} />,
@@ -211,20 +265,8 @@ const COLUMN_FORMATTERS = {
 		<SearchResultsCell value={value} term={ row?.term } />
 	),
 	[FORMATS.STRING]: ( value ) => value,
-	[FORMATS.SOURCE_CATEGORY]: ( value ) => {
-		const key = String( value || '' );
-		const meta = getSourceCategoryMeta( key );
-
-		return (
-			<span className="inline-flex items-center gap-2">
-				<span
-					className="inline-block h-2.5 w-2.5 rounded-full"
-					style={{ backgroundColor: meta.color }}
-				/>
-				<span>{ meta.label }</span>
-			</span>
-		);
-	},
+	[FORMATS.SOURCE_CATEGORY]: ( value ) => <SourceCategoryFilter value={value} />,
+	[FORMATS.SOURCE]: ( value ) => <SourceFilter value={value} />,
 	[FORMATS.EXTERNAL_LINK]: ( value ) => {
 		let display = value;
 		try {

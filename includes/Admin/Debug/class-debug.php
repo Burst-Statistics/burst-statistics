@@ -1,6 +1,8 @@
 <?php
 namespace Burst\Admin\Debug;
 
+use Burst\Admin\Search_Console\Diagnostic_Logs;
+use Burst\Admin\Search_Console\Sync;
 use Burst\Frontend\Ip\Ip;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
@@ -39,44 +41,8 @@ class Debug {
 			)
 		);
 
-		$server_data = $_SERVER;
-		$remove_keys = [
-			'REDIRECT_STATUS',
-			'DOCUMENT_ROOT',
-			'DOCUMENT_URI',
-			'PATH_TRANSLATED',
-			'PATH_INFO',
-			'SCRIPT_NAME',
-			'SCRIPT_FILENAME',
-			'CONTENT_LENGTH',
-			'CONTENT_TYPE',
-			'REQUEST_METHOD',
-			'QUERY_STRING',
-			'FCGI_ROLE',
-			'PHP_SELF',
-			'REQUEST_TIME_FLOAT',
-			'REQUEST_TIME',
-			'PATH',
-			'GS_LIB',
-			'MAGICK_CODER_MODULE_PATH',
-			'USER',
-			'HOME',
-			'HTTP_COOKIE',
-			'HTTP_ACCEPT_LANGUAGE',
-			'HTTP_ACCEPT_ENCODING',
-			'HTTP_REFERER',
-			'HTTP_ACCEPT',
-			'HTTP_USER_AGENT',
-			'HTTP_UPGRADE_INSECURE_REQUESTS',
-			'HTTP_CACHE_CONTROL',
-			'HTTP_CONNECTION',
-		];
+		$server_data = $this->sanitize_server_data( $_SERVER );
 
-		foreach ( $remove_keys as $key ) {
-			if ( isset( $server_data[ $key ] ) ) {
-				unset( $server_data[ $key ] );
-			}
-		}
 		$settings = get_option( 'burst_options_settings', [] );
 		if ( ! is_array( $settings ) ) {
 			$settings = [];
@@ -87,6 +53,10 @@ class Debug {
 		// WordPress burst options. Get all options that start with 'burst_'.
 		$wp_options = $wpdb->get_results( $wpdb->prepare( "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'burst_' ) . '%' ), ARRAY_A );
 		$wp_options = wp_list_pluck( $wp_options, 'option_value', 'option_name' );
+		unset( $wp_options['burst_gsc_tokens'] );
+		// Share-link tokens are stored in plaintext and grant statistics access
+		// to anyone holding them; a pasted Site Health export must not leak them.
+		unset( $wp_options['burst_share_tokens'] );
 		$wp_options = $this->format_array_as_string( $wp_options );
 		unset( $wp_options['burst_options_settings'] );
 
@@ -98,6 +68,9 @@ class Debug {
 			)
 		);
 		$burst_transients = wp_list_pluck( $burst_transients, 'option_value', 'option_name' );
+		// Holds the in-flight PKCE code_verifier and single-use nonce while a
+		// Search Console connect is pending; exporting it mid-flow leaks both.
+		unset( $burst_transients['_transient_burst_gsc_connect'] );
 		$burst_transients = $this->format_array_as_string( $burst_transients );
 
 		$debug_log_lines = $this->get_burst_debug_log_lines();
@@ -162,12 +135,152 @@ class Debug {
 			],
 		];
 
+		$fields = array_merge( $fields, $this->get_search_console_fields() );
+
 		$info['burst_debug'] = [
 			'label'  => __( 'Burst Debug Information', 'burst-statistics' ),
 			'fields' => apply_filters( 'burst_debug_fields', $fields ),
 		];
 
 		return $info;
+	}
+
+	/**
+	 * Keep only explicitly approved diagnostic data before exposing $_SERVER in
+	 * Site Health or its clipboard export. An allowlist prevents host-specific
+	 * environment variables from disclosing credentials or infrastructure data.
+	 *
+	 * @param array $server_data Raw server data.
+	 * @return array Safe server data.
+	 */
+	private function sanitize_server_data( array $server_data ): array {
+		$allowed_keys = [
+			'APP_ENGINE',
+			'APP_ENGINE_VERSION',
+			'ENVIRONMENT',
+			'GATEWAY_INTERFACE',
+			'GEOIP_CITY',
+			'GEOIP_COUNTRY_CODE',
+			'GEOIP_COUNTRY_NAME',
+			'GEOIP_LATITUDE',
+			'GEOIP_LONGITUDE',
+			'GEOIP_REGION',
+			'HTTPS',
+			'REMOTE_ADDR',
+			'REQUEST_SCHEME',
+			'SERVER_PROTOCOL',
+			'SERVER_SOFTWARE',
+		];
+
+		return array_intersect_key( $server_data, array_flip( $allowed_keys ) );
+	}
+
+	/**
+	 * Add stored Search Console state and persistent activity to Site Health.
+	 * This path performs no Google API calls and writes no diagnostic events.
+	 *
+	 * @return array Site Health fields.
+	 */
+	private function get_search_console_fields(): array {
+		if ( ! $this->get_option_bool( 'enable_search_console' ) ) {
+			return [
+				'search_console' => [
+					'label' => __( 'Google Search Console', 'burst-statistics' ),
+					'value' => __( 'Disabled', 'burst-statistics' ),
+				],
+			];
+		}
+
+		$diagnostics = ( new Sync() )->diagnostics();
+		$storage     = is_array( $diagnostics['storage'] ?? null ) ? $diagnostics['storage'] : [];
+		$summary     = [
+			__( 'Connection', 'burst-statistics' )         => (string) ( $diagnostics['status'] ?? '' ),
+			__( 'Site', 'burst-statistics' )               => (string) ( $diagnostics['site_url'] ?? '' ),
+			__( 'Site URL source', 'burst-statistics' )    => (string) ( $diagnostics['site_url_source'] ?? '' ),
+			__( 'Property selection', 'burst-statistics' ) => (string) ( $diagnostics['property_status'] ?? '' ),
+			__( 'Stored property', 'burst-statistics' )    => (string) ( $diagnostics['stored_property'] ?? '' ),
+			__( 'Property scope', 'burst-statistics' )     => (string) ( $diagnostics['property_scope'] ?? '' ),
+			__( 'Property retry', 'burst-statistics' )     => ! empty( $diagnostics['property_retry'] ) ? wp_date( DATE_ATOM, (int) $diagnostics['property_retry'] ) : __( 'Not scheduled', 'burst-statistics' ),
+			__( 'Stored rows', 'burst-statistics' )        => isset( $storage['row_count'] ) ? (string) $storage['row_count'] : __( 'Not available', 'burst-statistics' ),
+			__( 'Stored date range', 'burst-statistics' )  => ! empty( $storage['first_date'] ) ? $storage['first_date'] . ' – ' . $storage['last_date'] : __( 'No stored rows', 'burst-statistics' ),
+			__( 'Sync state', 'burst-statistics' )         => $this->format_search_console_value( $diagnostics['sync_state'] ?? [] ),
+			__( 'Next hourly sync', 'burst-statistics' )   => ! empty( $diagnostics['next_sync'] ) ? wp_date( DATE_ATOM, (int) $diagnostics['next_sync'] ) : __( 'Not scheduled', 'burst-statistics' ),
+		];
+
+		return [
+			'search_console'          => [
+				'label' => __( 'Google Search Console', 'burst-statistics' ),
+				'value' => $summary,
+			],
+			'search_console_activity' => [
+				'label' => __( 'Google Search Console Activity', 'burst-statistics' ),
+				'value' => $this->format_search_console_activity( ( new Diagnostic_Logs() )->recent() ),
+			],
+		];
+	}
+
+	/**
+	 * Format compact diagnostic metadata for Site Health's one-level field value
+	 * format and its clipboard export.
+	 *
+	 * @param array $logs Stored diagnostic events.
+	 * @return array<string, string> Timestamped event details.
+	 */
+	private function format_search_console_activity( array $logs ): array {
+		if ( empty( $logs ) ) {
+			return [ __( 'Activity', 'burst-statistics' ) => __( 'No Search Console activity has been recorded for this site yet.', 'burst-statistics' ) ];
+		}
+
+		$activity = [];
+		foreach ( $logs as $log ) {
+			$time    = isset( $log['time'] ) ? wp_date( DATE_ATOM, (int) $log['time'] ) : __( 'Unknown time', 'burst-statistics' );
+			$event   = (string) ( $log['event'] ?? 'unknown' );
+			$status  = (string) ( $log['status'] ?? 'info' );
+			$message = (string) ( $log['message'] ?? '' );
+			$context = $this->format_search_console_value( $log['context'] ?? [] );
+
+			$activity[ $time . ' — ' . $event ] = sprintf(
+				'%1$s: %2$s | %3$s',
+				$status,
+				$message,
+				$context
+			);
+		}
+
+		return $activity;
+	}
+
+	/**
+	 * Format nested diagnostics as readable metadata rather than JSON payloads.
+	 *
+	 * @param mixed $value Diagnostic value.
+	 */
+	private function format_search_console_value( mixed $value ): string {
+		if ( ! is_array( $value ) ) {
+			return (string) $value;
+		}
+
+		$parts = [];
+		$this->flatten_search_console_value( $value, $parts );
+		return empty( $parts ) ? __( 'No details', 'burst-statistics' ) : implode( '; ', $parts );
+	}
+
+	/**
+	 * Flatten diagnostic metadata for the native Site Health table.
+	 *
+	 * @param array<int|string, mixed> $value  Nested diagnostic value.
+	 * @param array<int, string>       $parts  Formatted values.
+	 * @param string                   $prefix Parent key.
+	 */
+	private function flatten_search_console_value( array $value, array &$parts, string $prefix = '' ): void {
+		foreach ( $value as $key => $item ) {
+			$name = '' === $prefix ? (string) $key : $prefix . '.' . $key;
+			if ( is_array( $item ) ) {
+				$this->flatten_search_console_value( $item, $parts, $name );
+				continue;
+			}
+			$parts[] = $name . ': ' . ( is_bool( $item ) ? ( $item ? 'true' : 'false' ) : (string) $item );
+		}
 	}
 
 	/**

@@ -5,7 +5,7 @@ defined( 'ABSPATH' ) || die( 'you do not have access to this page!' );
  * If we load it earlier, it will cause PHP warnings from WordPress.
  */
 return [
-	'elementor'                  => [
+	'elementor'                   => [
 		'goals' =>
 			[
 				[
@@ -18,7 +18,7 @@ return [
 				],
 			],
 	],
-	'woocommerce'                => [
+	'woocommerce'                 => [
 		'goals' =>
 			[
 				[
@@ -43,7 +43,7 @@ return [
 				],
 			],
 	],
-	'easy-digital-downloads'     => [
+	'easy-digital-downloads'      => [
 		'goals' =>
 			[
 				[
@@ -64,7 +64,7 @@ return [
 				],
 			],
 	],
-	'easy-digital-downloads-pro' => [
+	'easy-digital-downloads-pro'  => [
 		'goals' =>
 			[
 				[
@@ -85,7 +85,7 @@ return [
 				],
 			],
 	],
-	'edd-recurring'              => [
+	'edd-recurring'               => [
 		'goals' => [
 			[
 				'id'    => 'edd_subscription_post_create',
@@ -97,7 +97,7 @@ return [
 			],
 		],
 	],
-	'give-wp'                    => [
+	'give-wp'                     => [
 		'goals' => [
 			[
 				'id'    => 'give_click_donation_open_modal',
@@ -115,7 +115,29 @@ return [
 		],
 	],
 	// Contact from plugins.
-	'contact-form-7'             => [
+	'admin-site-enhancements'     => [
+		'goals' =>
+			[
+				[
+					'id'    => 'ase_contact_form_submit_click',
+					'title' => 'Admin and Site Enhancements (ASE) - ' . __( 'Submit button clicked', 'burst-statistics' ),
+				],
+			],
+	],
+	'admin-site-enhancements-pro' => [
+		'goals' =>
+			[
+				[
+					'id'    => 'formbuilder_after_email',
+					'title' => 'Admin and Site Enhancements (ASE) Pro - ' . __( 'Form submitted', 'burst-statistics' ),
+				],
+				[
+					'id'    => 'ase_pro_form_submit_click',
+					'title' => 'Admin and Site Enhancements (ASE) Pro - ' . __( 'Submit button clicked', 'burst-statistics' ),
+				],
+			],
+	],
+	'contact-form-7'              => [
 		'goals' =>
 			[
 				[
@@ -128,7 +150,7 @@ return [
 				],
 			],
 	],
-	'wpforms'                    => [
+	'wpforms'                     => [
 		'goals' =>
 			[
 				[
@@ -141,7 +163,7 @@ return [
 				],
 			],
 	],
-	'ws-form'                    => [
+	'ws-form'                     => [
 		'goals' =>
 			[
 				[
@@ -151,7 +173,7 @@ return [
 				],
 			],
 	],
-	'fluentform'                 => [
+	'fluentform'                  => [
 		'goals' =>
 			[
 				[
@@ -165,7 +187,7 @@ return [
 				],
 			],
 	],
-	'happy-forms'                => [
+	'happy-forms'                 => [
 		'constant_or_function' => 'HAPPYFORMS_VERSION',
 		'label'                => 'Happyforms',
 		'goals'                =>
@@ -176,7 +198,7 @@ return [
 				],
 			],
 	],
-	'gravity_forms'              => [
+	'gravity_forms'               => [
 		'goals' =>
 			[
 				[
@@ -189,7 +211,7 @@ return [
 				],
 			],
 	],
-	'formidable-forms'           => [
+	'formidable-forms'            => [
 		'goals' =>
 			[
 				[
@@ -198,7 +220,7 @@ return [
 				],
 			],
 	],
-	'ninja-forms'                => [
+	'ninja-forms'                 => [
 		'goals' =>
 			[
 				[

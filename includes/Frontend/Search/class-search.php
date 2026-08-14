@@ -21,11 +21,18 @@ class Search {
 	/**
 	 * Capture search queries and the resulting posts.
 	 *
-	 * @param array     $posts The posts returned by the search query.
+	 * @param mixed     $posts The posts returned by the search query. An upstream
+	 *                        filter may incorrectly pass null.
 	 * @param \WP_Query $query The WP_Query instance for the search.
 	 * @return array The original posts, unmodified.
 	 */
-	public function capture_search_and_posts( array $posts, \WP_Query $query ): array {
+	public function capture_search_and_posts( mixed $posts, \WP_Query $query ): array {
+		// The `the_posts` contract is an array, but third-party filters can return
+		// null. Keep the malformed value from causing a TypeError in this observer.
+		if ( ! is_array( $posts ) ) {
+			return [];
+		}
+
 		if ( ! $query->is_search() ) {
 			return $posts;
 		}

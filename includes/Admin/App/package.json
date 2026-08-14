@@ -12,6 +12,7 @@
     "tailwind": "postcss src/styles/tailwind.css -o src/tailwind.generated.css",
     "build:css": "postcss src/styles/tailwind.css -o src/tailwind.generated.css",
     "build:css:watch": "postcss src/styles/tailwind.css -o src/tailwind.generated.css --watch",
+    "test": "tsx --test src/components/Forecast/forecastSeries.test.ts src/components/Subscriptions/ForecastChart/subscriptionForecastData.test.ts",
     "lint": "eslint 'src/**/*.{js,jsx,ts,tsx}'",
     "lint:fix": "eslint --fix 'src/**/*.{js,jsx,ts,tsx}'",
     "knip": "knip",

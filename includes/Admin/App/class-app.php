@@ -1,17 +1,19 @@
 <?php
 namespace Burst\Admin\App;
 
-use Burst\Admin\Abilities_Api\Abilities_Api;
 use Burst\Admin\App\Fields\Fields;
 use Burst\Admin\App\Fields\Reporting_Fields;
 use Burst\Admin\App\Menu\Menu;
 use Burst\Admin\Burst_Onboarding\Burst_Onboarding;
 use Burst\Admin\Reports\Reports;
+use Burst\Admin\Statistics\Filter_Registry;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Tasks;
+use Burst\Admin\Tracking_Health;
 use Burst\Frontend\Endpoint;
 use Burst\Frontend\Goals\Goal;
 use Burst\Frontend\Goals\Goals;
+use Burst\Frontend\Tracking\Tracking;
 use Burst\TeamUpdraft\Installer\Installer;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
@@ -318,7 +320,10 @@ class App {
 				// Unused variable, but required by the function signature.
 				unset( $src );
 				if ( $handle === 'burst-settings' ) {
-					return str_replace( ' src', ' fetchpriority="high" src', $tag );
+					// The onerror flag feeds the ad blocker detection in dashboard(): a
+					// blocked/failed bundle request is the only reliable signal that
+					// something is actually preventing the app from loading.
+					return str_replace( ' src', ' onerror="window.burstScriptFailed=true" fetchpriority="high" src', $tag );
 				}
 				return $tag;
 			},
@@ -369,8 +374,12 @@ class App {
 	 * @return array<string, mixed>
 	 */
 	public function extend_localized_settings_for_dashboard( array $data ): array {
-		$data['menu']   = $this->menu->get();
-		$data['fields'] = $this->fields->get();
+		$data['menu']           = $this->menu->get();
+		$data['fields']         = $this->fields->get();
+		$community_data         = get_transient( 'burst_community_data' );
+		$data['community_data'] = is_array( $community_data ) ? $community_data : null;
+		$pinned_filters         = get_user_meta( get_current_user_id(), 'burst_pinned_filters', true );
+		$data['pinned_filters'] = is_array( $pinned_filters ) ? $pinned_filters : (object) [];
 		return $data;
 	}
 
@@ -528,6 +537,19 @@ class App {
 			}
 		}
 
+		// Authorize against the final action, after a JSON body path has overridden
+		// rest_action. This keeps shared-link tab checks aligned with dispatch.
+		$authorization_request = new \WP_REST_Request(
+			'GET',
+			'/' . ltrim( strtok( (string) $action, '?' ), '/' )
+		);
+		if ( ! $this->user_can_view( $authorization_request ) ) {
+			$error = true;
+		}
+		if ( str_contains( (string) $action, 'burst/v1/data/ecommerce/' ) && ! $this->user_can_view_sales( $authorization_request ) ) {
+			$error = true;
+		}
+
 		$nonce = $get_params['nonce'] ?? ( $request_data['data']['nonce'] ?? null );
 		if ( ! $this->verify_nonce( $nonce, 'burst_nonce' ) ) {
 			$response = new \WP_REST_Response(
@@ -570,7 +592,7 @@ class App {
 		}
 
 		// Build WP_REST_Request with merged params.
-		$request = new \WP_REST_Request();
+		$request = new \WP_REST_Request( 'GET', $authorization_request->get_route() );
 		foreach ( [ 'goal_id', 'type', 'nonce', 'date_start', 'date_end', 'args', 'search', 'filters', 'metrics', 'group_by', 'id', 'is_ecommerce' ] as $arg ) {
 			if ( isset( $merged[ $arg ] ) ) {
 				$request->set_param( $arg, $merged[ $arg ] );
@@ -580,6 +602,24 @@ class App {
 		// If we detected /data/, make sure 'type' is set from the path.
 		if ( $data_type ) {
 			$request->set_param( 'type', $data_type );
+		}
+
+		// Authoritative authorization (post-override). The POST body 'path' can
+		// override $action *after* the initial user_can_view() check above, so the
+		// permission decision must be re-evaluated against the endpoint we are
+		// actually about to dispatch. Setting the route lets
+		// user_can_view()/user_can_view_sales() resolve the shared-link tab from the
+		// same $action that selects the data, closing the auth/execution desync: a
+		// one-tab share viewer could otherwise name an allowed endpoint in
+		// rest_action and a non-granted endpoint in the POST path.
+		if ( is_string( $action ) && '' !== $action ) {
+			$request->set_route( $action );
+
+			if ( ! $this->user_can_view( $request ) ) {
+				$error = true;
+			} elseif ( str_contains( $action, 'burst/v1/data/ecommerce/' ) && ! $this->user_can_view_sales( $request ) ) {
+				$error = true;
+			}
 		}
 
 		if ( ! $error ) {
@@ -935,40 +975,45 @@ class App {
 					</div>
 				</div>
 			</div>
-		</div>
-		<div id="burst-adblocker-modal" style="display:none;">
-			<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100000;display:flex;align-items:center;justify-content:center;">
-				<div style="background:#fff;border-radius:12px;padding:32px;max-width:520px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-					<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-						<h2 style="margin:0;font-size:18px;font-weight:600;color:#111827;"><?php esc_html_e( 'Burst Statistics could not load', 'burst-statistics' ); ?></h2>
-					</div>
-					<p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#4b5563;">
-						<?php esc_html_e( 'It looks like an ad blocker or browser extension is preventing Burst Statistics from loading. Burst Statistics does not display ads, but some ad blockers may block analytics tools.', 'burst-statistics' ); ?>
-					</p>
-					<p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#4b5563;">
-						<?php esc_html_e( 'Please disable your ad blocker for this site and reload the page.', 'burst-statistics' ); ?>
-					</p>
-					<div style="display:flex;gap:12px;">
-						<button onclick="location.reload();" style="padding:8px 20px;background:#4f46e5;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">
-							<?php esc_html_e( 'Reload page', 'burst-statistics' ); ?>
-						</button>
-						<button onclick="document.getElementById('burst-adblocker-modal').style.display='none';" style="padding:8px 20px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">
-							<?php esc_html_e( 'Dismiss', 'burst-statistics' ); ?>
-						</button>
-					</div>
+		<div id="burst-adblocker-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:var(--z-max,150000);align-items:center;justify-content:center;pointer-events:auto;">
+			<div style="background:#fff;border-radius:12px;padding:32px;max-width:520px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;pointer-events:auto;">
+				<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+					<h2 style="margin:0;font-size:18px;font-weight:600;color:#111827;"><?php esc_html_e( 'Burst Statistics could not load', 'burst-statistics' ); ?></h2>
+				</div>
+				<p id="burst-adblocker-modal-reason" data-timeout-text="<?php esc_attr_e( 'Burst Statistics is taking unusually long to load. This can be caused by a slow connection or server, or by something blocking the request.', 'burst-statistics' ); ?>" style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#4b5563;">
+					<?php esc_html_e( 'It looks like an ad blocker or browser extension is preventing Burst Statistics from loading. Burst Statistics does not display ads, but some ad blockers may block analytics tools.', 'burst-statistics' ); ?>
+				</p>
+				<p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#4b5563;">
+					<?php esc_html_e( 'Please disable your ad blocker for this site and reload the page.', 'burst-statistics' ); ?>
+				</p>
+				<div style="display:flex;gap:12px;">
+					<button type="button" onclick="location.reload();" style="padding:8px 20px;background:#4f46e5;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">
+						<?php esc_html_e( 'Reload page', 'burst-statistics' ); ?>
+					</button>
+					<button type="button" onclick="document.getElementById('burst-adblocker-modal').style.display='none';" style="padding:8px 20px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">
+						<?php esc_html_e( 'Dismiss', 'burst-statistics' ); ?>
+					</button>
 				</div>
 			</div>
 		</div>
+		<?php
+		// Ad blocker detection, minified because it is inlined on every load of
+		// this page. Polls every 1s, gives up after 5 min. Readable logic:
+		// - window.burstLoaded set by the app (initApp) => hide any warning, stop.
+		// - "failed" means a real blocker signature: the bundle request failed
+		// (script onerror set window.burstScriptFailed), or the burst-settings
+		// script tag was removed / neutralized (type rewritten to a
+		// non-javascript, non-module value) before it could run.
+		// - Show the ad blocker text on "failed"; after 30s without any failure
+		// signal show the neutral data-timeout-text instead (slow host is not
+		// proof of blocking).
+		// - The modal is moved into #onboarding-modal-root when present: Radix UI
+		// Dialog intercepts pointer events outside its portal container, inside
+		// it our buttons stay clickable.
+		?>
 		<script>
-			setTimeout( function() {
-				if ( ! window.burstLoaded ) {
-					var modal = document.getElementById( 'burst-adblocker-modal' );
-					if ( modal ) {
-						modal.style.display = 'block';
-					}
-				}
-			}, 2000 );
+			(function(){var t=Date.now(),c=setInterval(function(){var m=document.getElementById('burst-adblocker-modal'),e=Date.now()-t;if(window.burstLoaded){m&&(m.style.display='none');clearInterval(c);return}if(!m)return;var s=document.getElementById('burst-settings-js'),f=window.burstScriptFailed||!s||!!s.type&&'module'!==s.type&&s.type.toLowerCase().indexOf('javascript')<0;if((f||e>3e4)&&'flex'!==m.style.display){var p=document.getElementById('onboarding-modal-root')||document.body;p!==m.parentNode&&p.appendChild(m);if(!f){var r=document.getElementById('burst-adblocker-modal-reason');r&&r.dataset.timeoutText&&(r.textContent=r.dataset.timeoutText)}m.style.display='flex'}e>3e5&&clearInterval(c)},1e3)})();
 		</script>
 		<?php
 	}
@@ -1260,6 +1305,30 @@ class App {
 					burst_loader()->admin->tasks->dismiss_task( $id );
 				}
 				break;
+			case 'save_pinned_filters':
+				if ( isset( $data['filters'] ) && is_array( $data['filters'] ) ) {
+					$valid_filter_keys = array_merge( array_keys( Filter_Registry::all() ), [ 'source_category' ] );
+					$clean_filters     = [];
+					foreach ( $data['filters'] as $key => $val ) {
+						$sanitized_key = sanitize_key( $key );
+						if ( in_array( $sanitized_key, $valid_filter_keys, true ) && is_scalar( $val ) && '' !== (string) $val ) {
+							$clean_filters[ $sanitized_key ] = sanitize_text_field( (string) $val );
+						}
+					}
+					if ( ! empty( $clean_filters ) ) {
+						update_user_meta( get_current_user_id(), 'burst_pinned_filters', $clean_filters );
+					} else {
+						delete_user_meta( get_current_user_id(), 'burst_pinned_filters' );
+					}
+				} else {
+					delete_user_meta( get_current_user_id(), 'burst_pinned_filters' );
+				}
+				$pinned_filters = get_user_meta( get_current_user_id(), 'burst_pinned_filters', true );
+				$data           = [
+					'success'        => true,
+					'pinned_filters' => is_array( $pinned_filters ) ? $pinned_filters : (object) [],
+				];
+				break;
 			default:
 				$data = is_array( $data ) ? $data : [];
 				$data = apply_filters( 'burst_do_action', [], $action, $data );
@@ -1312,6 +1381,13 @@ class App {
 				break;
 			case 'tracking':
 				$data = Endpoint::get_tracking_status_and_time();
+				// The loopback probe is unreliable (server can't reach itself,
+				// firewall, CDN, staging auth). Don't raise a tracking error while
+				// hits are still being recorded — only a genuine absence of recent
+				// hits counts as an error.
+				if ( 'error' === $data['status'] && ( new Tracking_Health() )->has_recent_hits() ) {
+					$data['status'] = 'recording';
+				}
 				break;
 			case 'get_article_data':
 				$data = $this->get_articles();
@@ -1348,8 +1424,15 @@ class App {
 			return [];
 		}
 
+		// Independent can_filter boundary: filter options are a filter-dependent
+		// resource, so deny shared viewers without that permission regardless of
+		// how execution reached this handler (defense-in-depth for the routing).
+		if ( $this->shared_viewer_cannot_filter() ) {
+			return [];
+		}
+
 		global $wpdb;
-		$valid_types = [ 'hosts', 'devices', 'browsers', 'platforms', 'countries', 'states', 'continents', 'cities', 'pages', 'referrers', 'campaigns', 'sources', 'mediums', 'contents', 'terms' ];
+		$valid_types = [ 'hosts', 'devices', 'browsers', 'platforms', 'countries', 'states', 'continents', 'cities', 'pages', 'referrers', 'campaigns', 'sources', 'mediums', 'contents', 'terms', 'traffic_sources', 'source_categories' ];
 
 		// Return invalid data type error.
 		if ( empty( $data_type ) || ! in_array( $data_type, $valid_types, true ) ) {
@@ -1370,18 +1453,20 @@ class App {
 		$where = $where_queries[ $data_type ] ?? '';
 		// Define data type queries.
 		$queries = [
-			'devices'   => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_devices GROUP BY name ORDER BY name ASC",
-			'browsers'  => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_browsers GROUP BY name ORDER BY name ASC",
-			'platforms' => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_platforms GROUP BY name ORDER BY name ASC",
-			'states'    => "SELECT DISTINCT state AS name FROM {$wpdb->prefix}burst_locations ORDER BY name ASC",
-			'cities'    => "SELECT DISTINCT city AS name FROM {$wpdb->prefix}burst_locations ORDER BY name ASC",
-			'pages'     => "SELECT page_url as name FROM {$wpdb->prefix}burst_statistics $where GROUP BY page_url HAVING COUNT(*) > 1 ORDER BY COUNT(*) DESC limit 1000",
-			'campaigns' => "SELECT DISTINCT campaign AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
-			'sources'   => "SELECT DISTINCT source AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
-			'mediums'   => "SELECT DISTINCT medium AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
-			'contents'  => "SELECT DISTINCT content AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
-			'terms'     => "SELECT DISTINCT term AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
-			'hosts'     => "SELECT DISTINCT host as name FROM {$wpdb->prefix}burst_sessions ORDER BY name ASC",
+			'devices'           => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_devices GROUP BY name ORDER BY name ASC",
+			'browsers'          => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_browsers GROUP BY name ORDER BY name ASC",
+			'platforms'         => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_platforms GROUP BY name ORDER BY name ASC",
+			'states'            => "SELECT DISTINCT state AS name FROM {$wpdb->prefix}burst_locations ORDER BY name ASC",
+			'cities'            => "SELECT DISTINCT city AS name FROM {$wpdb->prefix}burst_locations ORDER BY name ASC",
+			'pages'             => "SELECT page_url as name FROM {$wpdb->prefix}burst_statistics $where GROUP BY page_url HAVING COUNT(*) > 1 ORDER BY COUNT(*) DESC limit 1000",
+			'campaigns'         => "SELECT DISTINCT campaign AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
+			'sources'           => "SELECT DISTINCT source AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
+			'mediums'           => "SELECT DISTINCT medium AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
+			'contents'          => "SELECT DISTINCT content AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
+			'terms'             => "SELECT DISTINCT term AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
+			'hosts'             => "SELECT DISTINCT host as name FROM {$wpdb->prefix}burst_sessions ORDER BY name ASC",
+			'traffic_sources'   => "SELECT DISTINCT source AS name FROM {$wpdb->prefix}burst_sessions WHERE source IS NOT NULL AND source != '' ORDER BY name ASC",
+			'source_categories' => "SELECT DISTINCT source_category AS name FROM {$wpdb->prefix}burst_sessions WHERE source_category IS NOT NULL AND source_category != '' ORDER BY name ASC",
 		];
 
 		// Get raw data based on data type.
@@ -1556,14 +1641,16 @@ class App {
 			return 0;
 		}
 
-		$parser   = new UserAgentParser();
-		$junk_ids = [];
+		$parser     = new UserAgentParser();
+		$junk_ids   = [];
+		$junk_names = [];
 		foreach ( $browsers as $browser ) {
 			if ( ! $parser->is_invalid_browser_name( $browser['name'] ) ) {
 				continue;
 			}
 
-			$junk_ids[] = (int) $browser['ID'];
+			$junk_ids[]   = (int) $browser['ID'];
+			$junk_names[] = (string) $browser['name'];
 			if ( $max_browsers > 0 && count( $junk_ids ) >= $max_browsers ) {
 				break;
 			}
@@ -1597,8 +1684,11 @@ class App {
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- values are prepared above.
 		$wpdb->query( $wpdb->prepare( $browsers_sql, ...$junk_ids ) );
 
-		// Invalidate the cached browser lookup table.
-		wp_cache_delete( 'burst_browser_all', 'burst' );
+		// Invalidate the per-value tracking lookup cache for each removed browser,
+		// so a later hit re-resolves the name instead of reusing a deleted id.
+		foreach ( $junk_names as $junk_name ) {
+			wp_cache_delete( Tracking::lookup_cache_key( 'browser', $junk_name ), 'burst' );
+		}
 
 		self::error_log( sprintf( 'Burst: removed %d spam browser(s) and their visit data.', count( $junk_ids ) ) );
 
@@ -1709,7 +1799,7 @@ class App {
 	 * @return array<string, mixed> Processed request data or error.
 	 */
 	private function process_rest_request( \WP_REST_Request $request, string $permission_level = 'view' ): array {
-		$can_access = $permission_level === 'manage' ? $this->user_can_manage() : $this->user_can_view();
+		$can_access = $permission_level === 'manage' ? $this->user_can_manage() : $this->user_can_view( $request );
 		if ( ! $can_access ) {
 			return [
 				'success' => false,
@@ -1831,7 +1921,7 @@ class App {
 			],
 			// In free sources_referrers becomes statistics_referrers.
 			'statistics_referrers'  => [
-				'metrics'    => [ 'referrer', 'source_category', 'visitors', 'sessions', 'bounce_rate', 'conversions', 'sales', 'revenue', 'page_value' ],
+				'metrics'    => [ 'referrer', 'source_category', 'source', 'visitors', 'sessions', 'bounce_rate', 'conversions', 'sales', 'revenue', 'page_value' ],
 				'capability' => 'view_burst_statistics',
 			],
 			'dummy_data'            => [
@@ -2266,6 +2356,18 @@ class App {
 	 */
 	public function rest_api_goals_get( \WP_REST_Request $request ): \WP_REST_Response {
 		if ( ! $this->user_can_view() ) {
+			return new \WP_REST_Response(
+				[
+					'success' => false,
+					'message' => 'You do not have permission to perform this action.',
+				]
+			);
+		}
+
+		// Independent can_filter boundary: goals are a filter-dependent resource,
+		// so deny shared viewers without that permission regardless of how
+		// execution reached this handler (defense-in-depth for the routing).
+		if ( $this->shared_viewer_cannot_filter() ) {
 			return new \WP_REST_Response(
 				[
 					'success' => false,

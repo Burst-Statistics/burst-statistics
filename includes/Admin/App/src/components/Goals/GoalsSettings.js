@@ -30,6 +30,7 @@ const GoalsSettings = () => {
 	const isLimitReached = ! isLicenseValid && 0 < goalLimit && goalLimit <= activeGoalsCount;
 
 	const [ searchQuery, setSearchQuery ] = useState( '' );
+	const [ predefinedSearch, setPredefinedSearch ] = useState( '' );
 
 	const filteredGoals = useMemo( () => {
 		if ( ! searchQuery.trim() ) {
@@ -40,14 +41,6 @@ const GoalsSettings = () => {
 			goal && 'string' === typeof goal.title && goal.title.toLowerCase().includes( query )
 		);
 	}, [ goals, searchQuery ]);
-	const popoverContainer =
-		'undefined' !== typeof document ?
-			document.querySelector( '.burst' ) :
-			null;
-
-	const handleAddPredefinedGoal = async( goal ) => {
-		await addPredefinedGoal( goal.id );
-	};
 
 	const getGoalTypeNice = ( type ) => {
 		switch ( type ) {
@@ -60,6 +53,30 @@ const GoalsSettings = () => {
 			default:
 				return type;
 		}
+	};
+
+	const filteredPredefinedGoals = useMemo( () => {
+		if ( ! predefinedGoals ) {
+			return [];
+		}
+		if ( ! predefinedSearch.trim() ) {
+			return predefinedGoals;
+		}
+		const query = predefinedSearch.toLowerCase();
+		return predefinedGoals.filter( ( goal ) => {
+			const title = ( goal.title || '' ).toLowerCase();
+			const type = ( getGoalTypeNice( goal.type ) || '' ).toLowerCase();
+			return title.includes( query ) || type.includes( query );
+		});
+	}, [ predefinedGoals, predefinedSearch ]);
+
+	const popoverContainer =
+		'undefined' !== typeof document ?
+			( document.querySelector( '#burst-statistics' ) || document.querySelector( '.burst' ) ) :
+			null;
+
+	const handleAddPredefinedGoal = async( goal ) => {
+		await addPredefinedGoal( goal.id );
 	};
 
 	const predefinedGoalsButtonClass =
@@ -138,7 +155,7 @@ const GoalsSettings = () => {
 						</ButtonInput>
 
 						{predefinedGoals && (
-							<Popover.Root>
+							<Popover.Root onOpenChange={() => setPredefinedSearch( '' )}>
 								<Popover.Trigger asChild>
 									<IconButton
 										label={__(
@@ -157,53 +174,94 @@ const GoalsSettings = () => {
 									<Popover.Content
 										sideOffset={5}
 										align={'end'}
-										className="burst-predefined-goals-list z-50 flex flex-col gap-2 rounded-lg border border-gray-400 bg-white p-2"
+										className="burst-predefined-goals-container z-50 flex w-80 sm:w-[420px] max-h-[460px] flex-col gap-2.5 rounded-xl border border-gray-400 bg-white p-3.5 shadow-xl"
 									>
-										{predefinedGoals.map( ( goal, index ) => {
-											return (
-												<Popover.Close asChild key={index}>
-													<div
-														className={
-															'relative z-50 flex cursor-pointer flex-row gap-1 rounded-lg border border-gray-400 bg-gray-100 hover:bg-gray-200 p-2'
-														}
-														onClick={() =>
-															handleAddPredefinedGoal(
-																goal
-															)
-														}
-													>
-														<Icon
-															name={'plus'}
-															size={18}
-															color="gray"
-														/>
-														{goal.title +
-															' (' +
-															getGoalTypeNice( goal.type ) +
-															')'}
-													</div>
-												</Popover.Close>
-											);
-										})}
-										{__(
-											'Plug-in you\'re looking for not listed?',
-											'burst-statistics'
-										) + ' '}
-										<a
-											className="underline"
-											href={burst_get_website_url(
-												'/request-goal-integration/',
-												{
-													utm_source:
-														'goals-integration-request'
-												}
+										<div className="relative flex items-center">
+											<div className="pointer-events-none absolute left-3 flex items-center justify-center text-text-gray">
+												<Icon
+													name={'search'}
+													size={16}
+												/>
+											</div>
+											<input
+												type="text"
+												value={predefinedSearch}
+												onChange={( e ) => setPredefinedSearch( e.target.value )}
+												placeholder={__( 'Search predefined goals...', 'burst-statistics' )}
+												className="w-full rounded-lg border border-gray-400 bg-gray-100 py-2 pl-9 pr-8 text-sm text-text-black placeholder:text-text-gray focus:border-primary focus:bg-white focus:outline-hidden"
+											/>
+											{predefinedSearch && (
+												<button
+													type="button"
+													onClick={() => setPredefinedSearch( '' )}
+													className="absolute right-2.5 flex items-center justify-center text-text-gray hover:text-text-black"
+													aria-label={__( 'Clear search', 'burst-statistics' )}
+												>
+													<Icon name={'times'} size={14} />
+												</button>
 											)}
-										>
+										</div>
+
+										<div className="flex max-h-[300px] flex-col gap-2 overflow-y-auto burst-custom-scrollbar pr-1.5">
+											{0 < filteredPredefinedGoals.length ? (
+												filteredPredefinedGoals.map( ( goal, index ) => {
+													return (
+														<Popover.Close asChild key={index}>
+															<div
+																className={
+																	'burst-predefined-goals-list relative z-50 flex cursor-pointer flex-row items-center gap-2.5 rounded-lg border border-gray-400 bg-gray-100 hover:bg-gray-200 p-2.5 text-sm font-medium text-text-black transition-colors'
+																}
+																onClick={() =>
+																	handleAddPredefinedGoal(
+																		goal
+																	)
+																}
+															>
+																<Icon
+																	name={'plus'}
+																	size={16}
+																	className="shrink-0 text-text-gray"
+																/>
+																<span className="truncate">
+																	{goal.title +
+																		' (' +
+																		getGoalTypeNice( goal.type ) +
+																		')'}
+																</span>
+															</div>
+														</Popover.Close>
+													);
+												})
+											) : (
+												<div className="p-4 text-center text-sm text-text-gray">
+													{__( 'No matching predefined goals found', 'burst-statistics' )}
+												</div>
+											)}
+										</div>
+
+										<div className="border-t border-gray-400 pt-2.5 text-center text-xs text-text-gray">
 											{__(
-												'Request it here!',
+												'Plug-in you\'re looking for not listed?',
 												'burst-statistics'
-											)}
-										</a>
+											) + ' '}
+											<a
+												className="font-medium text-wp-blue hover:underline"
+												target="_blank"
+												rel="noopener noreferrer"
+												href={burst_get_website_url(
+													'/request-goal-integration/',
+													{
+														utm_source:
+															'goals-integration-request'
+													}
+												)}
+											>
+												{__(
+													'Request it here!',
+													'burst-statistics'
+												)}
+											</a>
+										</div>
 									</Popover.Content>
 								</Popover.Portal>
 							</Popover.Root>

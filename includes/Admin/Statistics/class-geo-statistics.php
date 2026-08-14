@@ -267,27 +267,27 @@ class Geo_Statistics {
 	 */
 	public function add_geo_filter_validation_config( array $config ): array {
 		$geo_config = [
-			'country_code' => [
+			'country_code'   => [
 				'sanitize' => [ $this, 'sanitize_country_code' ],
 				'type'     => 'string',
 			],
-			'city'         => [
+			'city'           => [
 				'sanitize' => 'sanitize_text_field',
 				'type'     => 'string',
 			],
-			'city_code'    => [
+			'city_code'      => [
 				'sanitize' => 'sanitize_text_field',
 				'type'     => 'string',
 			],
-			'state'        => [
+			'state'          => [
 				'sanitize' => 'sanitize_text_field',
 				'type'     => 'string',
 			],
-			'state_code'   => [
+			'state_code'     => [
 				'sanitize' => 'sanitize_text_field',
 				'type'     => 'string',
 			],
-			'continent'    => [
+			'continent_code' => [
 				'sanitize' => [ $this, 'sanitize_continent_code' ],
 				'type'     => 'string',
 			],
@@ -303,14 +303,27 @@ class Geo_Statistics {
 	 * @return string Sanitized country code.
 	 */
 	public function sanitize_country_code( string $country_code ): string {
-		$country_code      = strtoupper( sanitize_text_field( $country_code ) );
-		$allowed_countries = array_keys( self::get_country_list() );
+		$is_exclude  = str_starts_with( $country_code, '!' );
+		$clean_code  = $is_exclude ? substr( $country_code, 1 ) : $country_code;
+		$codes       = array_filter( array_map( 'trim', explode( ',', $clean_code ) ), static fn( string $c ): bool => '' !== $c );
+		$allowed     = array_keys( self::get_country_list() );
+		$valid_codes = [];
 
-		if ( in_array( $country_code, $allowed_countries, true ) ) {
-			return $country_code;
+		foreach ( $codes as $code ) {
+			$upper = strtoupper( sanitize_text_field( $code ) );
+			if ( in_array( $upper, $allowed, true ) ) {
+				$valid_codes[] = $upper;
+			} else {
+				self::error_log( 'Country code is not allowed: ' . $code );
+			}
 		}
-		self::error_log( 'Country code is not allowed: ' . $country_code );
-		return '';
+
+		if ( empty( $valid_codes ) ) {
+			return '';
+		}
+
+		$result = implode( ',', $valid_codes );
+		return $is_exclude ? '!' . $result : $result;
 	}
 
 	/**
@@ -320,14 +333,27 @@ class Geo_Statistics {
 	 * @return string Sanitized continent code.
 	 */
 	public function sanitize_continent_code( string $continent_code ): string {
-		$continent_code     = strtoupper( sanitize_text_field( $continent_code ) );
-		$allowed_continents = array_keys( self::get_continent_list() );
+		$is_exclude  = str_starts_with( $continent_code, '!' );
+		$clean_code  = $is_exclude ? substr( $continent_code, 1 ) : $continent_code;
+		$codes       = array_filter( array_map( 'trim', explode( ',', $clean_code ) ), static fn( string $c ): bool => '' !== $c );
+		$allowed     = array_keys( self::get_continent_list() );
+		$valid_codes = [];
 
-		if ( in_array( $continent_code, $allowed_continents, true ) ) {
-			return $continent_code;
+		foreach ( $codes as $code ) {
+			$upper = strtoupper( sanitize_text_field( $code ) );
+			if ( in_array( $upper, $allowed, true ) ) {
+				$valid_codes[] = $upper;
+			} else {
+				self::error_log( 'Continent code is not allowed: ' . $code );
+			}
 		}
-		self::error_log( 'Continent code is not allowed: ' . $continent_code );
-		return '';
+
+		if ( empty( $valid_codes ) ) {
+			return '';
+		}
+
+		$result = implode( ',', $valid_codes );
+		return $is_exclude ? '!' . $result : $result;
 	}
 
 	/**
@@ -343,10 +369,40 @@ class Geo_Statistics {
 	}
 
 	/**
-	 * Get continent nice name.
+	 * Get continent code for a given ISO country code using JSON mapping.
+	 *
+	 * @param string $country_code ISO-3166-1 alpha-2 country code.
+	 * @return string Continent code (e.g. 'EU', 'NA', 'AS') or '' if unknown.
 	 */
-	public static function get_continent_nice_name( string $continent_code ): string {
+	public static function get_continent_for_country( string $country_code ): string {
+		static $map = null;
+		if ( null === $map ) {
+			$file = defined( 'BURST_PATH' )
+				? BURST_PATH . 'assets/maps/country-continents.json'
+				: dirname( __DIR__, 3 ) . '/assets/maps/country-continents.json';
+			if ( file_exists( $file ) ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local JSON file.
+				$map = json_decode( (string) file_get_contents( $file ), true ) ?: [];
+			} else {
+				$map = [];
+			}
+		}
+		$country_code = strtoupper( trim( $country_code ) );
+		return $map[ $country_code ] ?? '';
+	}
+
+	/**
+	 * Get continent nice name.
+	 *
+	 * @param string $continent_code Continent code.
+	 * @param string $country_code   Optional country code fallback if continent_code is empty.
+	 * @return string Localized continent name or 'Unknown'.
+	 */
+	public static function get_continent_nice_name( string $continent_code, string $country_code = '' ): string {
 		$continent_list = self::get_continent_list();
+		if ( empty( $continent_code ) && ! empty( $country_code ) ) {
+			$continent_code = self::get_continent_for_country( $country_code );
+		}
 		if ( empty( $continent_code ) ) {
 			return __( 'Unknown', 'burst-statistics' );
 		}

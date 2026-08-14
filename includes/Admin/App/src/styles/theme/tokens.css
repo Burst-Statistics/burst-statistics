@@ -8,6 +8,19 @@
 	--breakpoint-xxs: 576px;
 	--breakpoint-2xl: 1600px;
 
+	/* z-index scale. */
+	--z-deep: -10;
+	--z-base: 1;
+	--z-interactive: 10;
+	--z-sticky: 100;
+	--z-dropdown: 1000;
+	--z-popover: 2000;
+	--z-overlay: 10000;
+	--z-drawer: 10010;
+	--z-modal: 11000;
+	--z-toast: 12000;
+	--z-max: 150000;
+
 	/* Font sizes. */
 	--text-xxs: 0.5625rem;
 	--text-xxs--line-height: 0.8125rem;
@@ -129,7 +142,7 @@
 	--color-text-white: oklch(1 0.0017 var(--gray-hue) / 0.90);
 	--color-text-black: oklch(0.2 0.0017 var(--gray-hue) / 0.90);
 	--color-text-gray: oklch(0.45 0.0072 var(--gray-hue) / 0.95);
-	--color-text-gray-light: oklch(0.7 0.0072 var(--gray-hue) / 0.95);
+	--color-text-gray-light: oklch(0.55 0.0072 var(--gray-hue) / 0.95);
 
 	/* Neutral/app tokens. */
 

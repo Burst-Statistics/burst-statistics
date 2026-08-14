@@ -104,7 +104,7 @@ const ReadingEngagementBlock = memo( ({ className = '' }: ReadingEngagementBlock
 					columns={columns}
 					data={slicedData}
 					rowKey={( row ) => row.page_url as string}
-					barColumnKey="avg_time_on_page"
+					barColumnKey="reading_engagement_score"
 					isLoading={isLoading}
 					emptyState={
 						__( 'No reading engagement data recorded yet.', 'burst-statistics' )

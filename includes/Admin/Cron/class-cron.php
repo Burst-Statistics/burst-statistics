@@ -49,7 +49,7 @@ class Cron {
 	/**
 	 * Check if the cron has run the last 24 hours
 	 */
-	public function is_cron_active(): bool {
+	public static function is_cron_active(): bool {
 		$now           = time();
 		$last_cron_hit = get_option( 'burst_last_cron_hit', 0 );
 		$diff          = $now - $last_cron_hit;
@@ -60,7 +60,7 @@ class Cron {
 	 * Check if the cron has run the last 24 hours
 	 */
 	public function maybe_handle_cron_task(): void {
-		$cron_active     = $this->is_cron_active();
+		$cron_active     = self::is_cron_active();
 		$cron_task_added = \Burst\burst_loader()->admin->tasks->has_task( 'cron' );
 		if ( $cron_active && $cron_task_added ) {
 			\Burst\burst_loader()->admin->tasks->dismiss_task( 'cron' );

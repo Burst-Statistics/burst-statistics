@@ -14,6 +14,9 @@ import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import { RevenueChartBlock } from '@/components/Subscriptions/RevenueChart';
 import { RetentionChartBlock } from '@/components/Subscriptions/RetentionChart';
 import { DistributionBlock } from '@/components/Subscriptions/DistributionChart';
+import {
+	SubscriptionForecastChartBlock
+} from '@/components/Subscriptions/ForecastChart';
 import getSubscriptionsProgressData from '@/api/getSubscriptionsProgressData';
 import { shouldLoadRoute } from '@/utils/helper';
 import NotFoundModal from '@/components/Common/NotFoundModal';
@@ -127,7 +130,7 @@ function SubscriptionsComponent() {
 	if ( isProgressLoading ) {
 		return (
 			<>
-				<PageHeader />
+				<PageHeader showFilter={false} />
 			</>
 		);
 	}
@@ -142,7 +145,7 @@ function SubscriptionsComponent() {
 	if ( hasProviders && ! backfillCompleted ) {
 		return (
 			<>
-				<PageHeader />
+				<PageHeader showFilter={false} />
 				<SubscriptionsLargeSiteNotice />
 			</>
 		);
@@ -150,12 +153,19 @@ function SubscriptionsComponent() {
 
 	return (
 		<>
-			<PageHeader />
+			<PageHeader showFilter={false} />
 
 			<ErrorBoundary>
 				<RevenueChartBlock />
 				<SubscriptionsBlock />
 				<DistributionBlock />
+			</ErrorBoundary>
+
+			<ErrorBoundary>
+				<SubscriptionForecastChartBlock />
+			</ErrorBoundary>
+
+			<ErrorBoundary>
 				<RetentionChartBlock />
 			</ErrorBoundary>
 

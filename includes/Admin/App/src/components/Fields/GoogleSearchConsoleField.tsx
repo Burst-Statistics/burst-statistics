@@ -1,10 +1,11 @@
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { createInterpolateElement } from '@wordpress/element';
 import { useEffect, useState } from 'react';
 import useGSCData from '@/hooks/useGSCData';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import Modal from '@/components/Common/Modal';
 import Icon from '@/utils/Icon';
+import { formatUnixToDateTime } from '@/utils/formatting';
 
 /**
  * Google Search Console product mark. Inlined (no asset) following the BurstLogo
@@ -46,8 +47,10 @@ const GoogleSearchConsoleIcon = ({ size = 24 }: { size?: number }) => (
  *
  * @return {JSX.Element} The rendered field.
  */
+
+// fallow-ignore-next-line complexity -- Manages OAuth connect/disconnect UI states with status-conditional rendering; branching is inherent to multi-step authorization flow.
 const GoogleSearchConsoleField = () => {
-	const { status, isFetching, isConnecting, isDisconnecting, error, connect, cancelConnect, disconnect } = useGSCData();
+	const { status, propertyStatus, siteUrl, retryAt, isFetching, isConnecting, isDisconnecting, error, connect, cancelConnect, disconnect } = useGSCData();
 	const [ connectOpen, setConnectOpen ] = useState( false );
 	const [ disconnectOpen, setDisconnectOpen ] = useState( false );
 
@@ -117,6 +120,28 @@ const GoogleSearchConsoleField = () => {
 					}
 				) }
 			</p>
+
+			{ isConnected && 'none' === propertyStatus && (
+				<p className="mt-4 text-sm text-red">
+					{ sprintf(
+
+						/* translators: %s is the site URL that needs a Search Console property. */
+						__( 'No matching property found — add a URL-prefix property for %s in Search Console.', 'burst-statistics' ),
+						siteUrl
+					) }
+				</p>
+			) }
+
+			{ isConnected && 'paused' === propertyStatus && (
+				<p className="mt-4 text-sm text-text-gray">
+					{ sprintf(
+
+						/* translators: %s is the time when Search Console property resolution will retry. */
+						__( 'Search Console access was temporarily denied. Stored data is retained and syncing will retry after %s.', 'burst-statistics' ),
+						formatUnixToDateTime( retryAt )
+					) }
+				</p>
+			) }
 
 			<Modal
 				title={ __( 'Connect Google Search Console', 'burst-statistics' ) }

@@ -52,6 +52,7 @@ class Environment_Data extends Data_Collector {
 			'wordpress' => [
 				'version'   => wp_get_wp_version(),
 				'multisite' => is_multisite(),
+				'language'  => get_locale(),
 			],
 			'php'       => [
 				'version' => phpversion(),

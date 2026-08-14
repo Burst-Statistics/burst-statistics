@@ -82,6 +82,7 @@ class Search_Console {
 		if ( ! $this->get_option_bool( 'enable_search_console' ) ) {
 			return;
 		}
+		( new Diagnostic_Logs() )->init();
 
 		add_filter( 'burst_do_action', [ $this, 'handle_do_action' ], 10, 2 );
 		add_filter( 'burst_get_action', [ $this, 'handle_get_action' ], 10, 2 );
@@ -134,7 +135,6 @@ class Search_Console {
 		if ( ! $this->user_can_view() ) {
 			return $output;
 		}
-
 		return match ( $action ) {
 			'get_gsc_status' => $this->status_payload(),
 			default          => $output,
@@ -156,6 +156,7 @@ class Search_Console {
 			&& (int) $existing['user_id'] !== get_current_user_id()
 		) {
 			// Another admin is mid-connect; the relay state is single-use.
+			$this->log( 'oauth.start', 'warning', 'Connection attempt blocked because another administrator is connecting.' );
 			return [ 'error' => 'locked' ];
 		}
 
@@ -168,6 +169,7 @@ class Search_Console {
 			$verifier = rtrim( strtr( base64_encode( random_bytes( 32 ) ), '+/', '-_' ), '=' );
 		} catch ( \Exception $e ) {
 			self::error_log( 'GSC: failed to generate PKCE verifier: ' . $e->getMessage() );
+			$this->log( 'oauth.start', 'error', 'Could not generate the secure connection verifier.' );
 			return [ 'error' => 'server' ];
 		}
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- PKCE challenge encoding, not obfuscation.
@@ -183,12 +185,12 @@ class Search_Console {
 			],
 			5 * MINUTE_IN_SECONDS
 		);
-
 		// add_query_arg does not encode the values it appends (only the base
 		// URL's pre-existing query string), so encode them here. The relay
 		// decodes once and checks the site contains action=burst_gsc_callback.
 		$site = admin_url( 'admin-post.php?action=burst_gsc_callback' );
-		$url  = add_query_arg(
+		$this->log( 'oauth.start', 'info', 'Started Google authorization.', [ 'callback_url' => $site ] );
+		$url = add_query_arg(
 			[
 				'site'           => rawurlencode( $site ),
 				'nonce'          => rawurlencode( $nonce ),
@@ -229,6 +231,7 @@ class Search_Console {
 			&& isset( $stored['user_id'] )
 			&& (int) $stored['user_id'] !== get_current_user_id()
 		) {
+			$this->log( 'oauth.callback', 'warning', 'Authorization callback belonged to a different administrator.' );
 			$this->render_popup( __( 'This connection request was started by another account. Please try again.', 'burst-statistics' ), false );
 		}
 
@@ -238,6 +241,7 @@ class Search_Console {
 			|| '' === $nonce
 			|| ! hash_equals( (string) $stored['nonce'], $nonce )
 		) {
+			$this->log( 'oauth.callback', 'error', 'Authorization callback was invalid or expired.' );
 			$this->render_popup( __( 'This connection request is invalid or has expired. Please try again.', 'burst-statistics' ), false );
 		}
 
@@ -248,6 +252,7 @@ class Search_Console {
 			// No code means the user cancelled/denied (relay forwards ?error) or
 			// Google returned nothing. Either way, stop the opener's spinner.
 			$this->flag_connect_failed();
+			$this->log( 'oauth.callback', 'warning', 'Google authorization was cancelled or did not return a code.', [ 'error' => $error ] );
 			$this->render_popup(
 				'access_denied' === $error
 					? __( 'Connection cancelled. You can close this window.', 'burst-statistics' )
@@ -260,9 +265,11 @@ class Search_Console {
 
 		if ( ! $ok ) {
 			$this->flag_connect_failed();
+			$this->log( 'oauth.exchange', 'error', 'Could not exchange the authorization code for a connection.' );
 		} else {
 			// Let the sync resolve the matching property and kick off the first fetch.
 			do_action( 'burst_gsc_connected' );
+			$this->log( 'oauth.exchange', 'success', 'Google Search Console connection was stored.' );
 		}
 
 		$this->render_popup(
@@ -286,6 +293,7 @@ class Search_Console {
 		// fetched terms. resolve_property() resumes the daily increment when the same
 		// property resolves again, and clears the stale data + state when it differs.
 		delete_option( 'burst_gsc_property_checked' );
+		$this->log( 'oauth.disconnect', 'info', 'Google Search Console connection was disconnected.' );
 		return [ 'status' => 'disconnected' ];
 	}
 
@@ -306,6 +314,7 @@ class Search_Console {
 			delete_transient( self::TRANSIENT );
 		}
 		delete_transient( self::FAIL_TRANSIENT );
+		$this->log( 'oauth.cancel', 'info', 'Google authorization was cancelled by the administrator.' );
 		return [ 'status' => 'cancelled' ];
 	}
 
@@ -324,10 +333,22 @@ class Search_Console {
 	}
 
 	/**
+	 * Store a redacted connection-flow event for the current site.
+	 *
+	 * @param string $event Event name.
+	 * @param string $status Event status.
+	 * @param string $message Event message.
+	 * @param array  $context Non-sensitive context.
+	 */
+	private function log( string $event, string $status, string $message, array $context = [] ): void {
+		( new Diagnostic_Logs() )->add( $event, $status, $message, $context );
+	}
+
+	/**
 	 * Status payload for the connect poll: the connection state plus whether the
 	 * current user's in-flight attempt failed.
 	 *
-	 * @return array{status:string,connect_failed:bool}
+	 * @return array{status:string,connect_failed:bool,property?:string,property_status?:string,site_url?:string,retry_at?:int}
 	 */
 	private function status_payload(): array {
 		$failed    = get_transient( self::FAIL_TRANSIENT );
@@ -347,12 +368,35 @@ class Search_Console {
 			// and the "no matching site" notice.
 			$property = (string) get_option( 'burst_gsc_property', '' );
 			$checked  = (bool) get_option( 'burst_gsc_property_checked', false );
+			$state    = (string) get_option( 'burst_gsc_property_status', '' );
+			$retry_at = (int) get_option( 'burst_gsc_property_retry_at', 0 );
+			if ( ! $checked ) {
+				$state = 'pending';
+			} elseif ( ! in_array( $state, [ 'matched', 'none', 'paused' ], true ) ) {
+				$state = '' === $property ? 'none' : 'matched';
+			}
 
-			$payload['property']        = $property;
-			$payload['property_status'] = '' !== $property ? 'matched' : ( $checked ? 'none' : 'pending' );
+			$payload['property']        = 'none' === $state ? '' : $property;
+			$payload['property_status'] = $state;
+			$payload['site_url']        = $this->site_url_for_status();
+			$payload['retry_at']        = $retry_at;
 		}
 
 		return $payload;
+	}
+
+	/**
+	 * Effective site URL used by property matching, for actionable settings copy.
+	 */
+	private function site_url_for_status(): string {
+		if ( defined( 'BURST_GSC_SITE_URL' ) && '' !== BURST_GSC_SITE_URL ) {
+			$url = BURST_GSC_SITE_URL;
+			if ( ! wp_parse_url( $url, PHP_URL_SCHEME ) ) {
+				$url = 'https://' . $url;
+			}
+			return trailingslashit( $url );
+		}
+		return trailingslashit( home_url() );
 	}
 
 	/**

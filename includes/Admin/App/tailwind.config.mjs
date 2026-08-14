@@ -68,6 +68,19 @@ export default {
 				xxs: "576px",
 				"2xl": "1600px",
 			},
+			zIndex: {
+				deep: '-10',       // Background elements
+				base: '1',         // Content defaults
+				interactive: '10', // Hover states, click-to-filter
+				sticky: '100',      // Sticky tables, headers
+				dropdown: '1000',   // Dropdown menus, selects
+				popover: '2000',    // Tooltips, help bubbles
+				overlay: '10000',   // Fullscreen backdrop overlays (must be > 9990 to cover WP admin sidebar)
+				drawer: '10010',    // Sidebar drawers, slider panels
+				modal: '11000',     // Standard dialogs, popup overlays
+				toast: '12000',     // Toast notifications
+				max: '150000',      // Blocking overlays (e.g. adblocker modal, must be > 99999 to cover WP admin bar)
+			},
 			boxShadow: {
 				rsp: "rgba(0,0,0,0.1) 0 4px 6px -1px, rgba(0,0,0,0.06) 0 2px 4px -1px",
 				greenShadow: `inset 0 0 3px 2px ${greenColor.light}`,

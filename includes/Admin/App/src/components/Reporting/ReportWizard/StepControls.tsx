@@ -114,19 +114,21 @@ export const StepControls = () => {
 	};
 
 	return (
-		<div className="relative z-100 flex justify-center bg-gray-50 px-10 pt-5 pb-4 gap-4 w-full shadow-layered-high-t">
+		<div className="relative z-100 flex justify-center bg-gray-50 px-4 sm:px-10 py-3 sm:py-4 gap-2 sm:gap-4 w-full shadow-layered-high-t">
 			{/* vertical line grey surounding the buttons */}
-			<span className="block h-6 w-px bg-gray-400 mt-1"></span>
-			<div className="flex gap-2 max-w-4xl w-full">
-				<div className="flex gap-2 flex-1">{renderNavButtons()}</div>
-				<div className="flex gap-2 flex-1 justify-end">
+			<span className="hidden md:block h-6 w-px bg-gray-400 mt-1"></span>
+			<div className="flex flex-col sm:flex-row gap-3 max-w-4xl w-full justify-between items-center">
+				<div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-start">
+					{renderNavButtons()}
+				</div>
+				<div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
 					<ButtonInput btnVariant="tertiary" onClick={handleSave}>{__( 'Save', 'burst-statistics' )}</ButtonInput>
 					<ButtonInput onClick={isLastStep ? handleFinalSubmit : handleNext}>
 						{getActionButtonText()}
 					</ButtonInput>
 				</div>
 			</div>
-			<span className="block h-6 w-px bg-gray-400 mt-1"></span>
+			<span className="hidden md:block h-6 w-px bg-gray-400 mt-1"></span>
 		</div>
 	);
 };

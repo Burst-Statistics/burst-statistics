@@ -266,11 +266,11 @@ const MobileMenuDrawer = ({ leftMenuItems, rightMenuItems, supportUrl, upgradeUr
 			 */}
 			<Dialog.Portal container={document.getElementById( 'modal-root' )}>
 				{/* Backdrop overlay — covers the app container. */}
-				<Dialog.Overlay className="absolute inset-0 z-40 bg-black/40 data-[state=open]:animate-fadeIn data-[state=closed]:animate-fadeOut" />
+				<Dialog.Overlay className="absolute inset-0 z-overlay bg-black/40 data-[state=open]:animate-fadeIn data-[state=closed]:animate-fadeOut" />
 
 				{/* Drawer panel — slides in from the right edge of the app container. */}
 			<Dialog.Content
-				className="absolute top-0 right-0 z-50 flex h-full max-h-dvh w-[85%] max-w-sm flex-col bg-white shadow-layered-high-b data-[state=open]:animate-drawerSlideIn data-[state=closed]:animate-drawerSlideOut focus:outline-hidden"
+				className="absolute top-0 right-0 z-drawer flex h-full max-h-dvh w-[85%] max-w-sm flex-col bg-white shadow-layered-high-b data-[state=open]:animate-drawerSlideIn data-[state=closed]:animate-drawerSlideOut focus:outline-hidden"
 					aria-label={__( 'Navigation menu', 'burst-statistics' )}
 				>
 					{/* Drawer header: close button only. */}

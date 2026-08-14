@@ -1,38 +1,36 @@
-import { isExcluding } from '@/config/filterConfig';
-import SelectInput from '@/components/Inputs/SelectInput';
+import { FILTER_OPERATOR_LABELS, isExcluding } from '@/config/filterConfig';
+import LabelSwitchInput from '@/components/Inputs/LabelSwitchInput';
 import React from 'react';
-import { __ } from '@wordpress/i18n';
-
-const EXCLUSION_OPTIONS = [
-	{ value: 'include', label: __( 'Include', 'burst-statistics' ) },
-	{ value: 'exclude', label: __( 'Exclude', 'burst-statistics' ) }
-];
 
 /**
  * Component to toggle between including or excluding a filter condition.
  *
- * This component uses a SelectInput to allow users to choose whether they want to include or exclude a filter condition.
- * It checks if the current value indicates exclusion (by checking if it starts with '!') and updates the value accordingly when the user changes the selection.
+ * Renders a `TabsList`-styled segmented switch between the "is" and "is not"
+ * operator labels, both of which stay visible so the current state is
+ * always readable. It checks if the current value indicates exclusion (by
+ * checking if it starts with '!') and updates the value accordingly when
+ * the user toggles the switch.
  */
 export const FilterExclusion: React.FC<{ value: string; onChange: ( value: string ) => void; }> = ({ value, onChange }) => {
-	const filterOptionSelectedOption = isExcluding( value ) ? 'exclude' : 'include';
+	const excluded = isExcluding( value );
 
-	const handleChange = ( exclusionValue: string ) => {
+	const handleChange = ( checked: boolean ) => {
 		onChange(
 			modifyValueBasedOnExclusionConfig(
 				{
 					value,
-					excluded: 'exclude' === exclusionValue
+					excluded: checked
 				}
 			)
 		);
 	};
 
 	return (
-		<SelectInput
-			value={ filterOptionSelectedOption }
+		<LabelSwitchInput
+			value={excluded}
 			onChange={handleChange}
-			options={EXCLUSION_OPTIONS}
+			leftLabel={FILTER_OPERATOR_LABELS.is}
+			rightLabel={FILTER_OPERATOR_LABELS['is-not']}
 		/>
 	);
 };

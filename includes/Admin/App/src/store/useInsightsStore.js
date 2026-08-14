@@ -27,6 +27,7 @@ const VALID_GROUP_BY = [ 'auto', 'day', 'week', 'month' ];
  * @param {string} endDate   - Range end (yyyy-MM-dd).
  * @return {boolean} True when the interval fits the range.
  */
+// fallow-ignore-next-line complexity -- Evaluates date-range/groupBy compatibility across calendar granularities; conditionals are domain logic, not reducible without losing clarity.
 export const groupByFitsRange = ( groupBy, startDate, endDate ) => {
 	if ( 'auto' === groupBy || ! startDate || ! endDate ) {
 		return true;

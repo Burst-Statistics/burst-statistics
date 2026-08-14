@@ -104,13 +104,13 @@ const ReportingField = ({ field, fieldState, help, context, ...props }) => {
 				const severity = getSeverity( row.lastSendStatus );
 
 				return (
-					<span className={`px-2 py-1 rounded-full text-xs font-medium ${ statusSeverityClasses[ severity ] }`}>
+					<span className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${ statusSeverityClasses[ severity ] }`}>
 						{ row.lastSendMessage }
 					</span>
 				);
 			},
 			sortable: true,
-			minWidth: '60px',
+			minWidth: '120px',
 			maxWidth: '200px'
 		},
 		{
@@ -118,14 +118,14 @@ const ReportingField = ({ field, fieldState, help, context, ...props }) => {
 			cell: ( row ) => {
 				const formatObj = formats.find( ( f ) => f.key === row.format );
 				return (
-					<span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue">
+					<span className="px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-blue-50 text-blue">
 						{formatObj?.label ?? row.format}
 					</span>
 				);
 			},
 			sortable: true,
-			minWidth: '60px',
-			maxWidth: '70px'
+			minWidth: '70px',
+			maxWidth: '90px'
 		},
 		{
 			name: __( 'Schedule', 'burst-statistics' ),

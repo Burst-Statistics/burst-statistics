@@ -3,6 +3,7 @@ namespace Burst\Frontend;
 
 use Burst\Frontend\Goals\Goals;
 use Burst\Frontend\Goals\Goals_Tracker;
+use Burst\Frontend\Ip\Ip;
 use Burst\Frontend\Search\Search;
 use Burst\Frontend\Share\Share_Expired;
 use Burst\Frontend\Tracking\Tracking;
@@ -26,6 +27,61 @@ class Frontend {
 	public Frontend_Statistics $statistics;
 
 	/**
+	 * Option holding the auto debug window state: remaining budget, collected
+	 * browser errors and the arm timestamp. A window collects for
+	 * DEBUG_WINDOW_COLLECT_SECONDS after arming; its errors are retained for
+	 * DEBUG_WINDOW_RETENTION, after which a new incident can open a fresh one.
+	 *
+	 * Deliberately autoloaded (an empty array when idle): debug_window_active()
+	 * runs on every front-end pageload, so the state must ride along with
+	 * alloptions instead of costing a DB query per pageload like a transient.
+	 * Expiry is enforced inline and the option is reset on `burst_daily`.
+	 *
+	 * @var string
+	 */
+	private const DEBUG_WINDOW_OPTION = 'burst_debug_tracking_errors';
+
+	/**
+	 * How long an armed debug window collects browser errors. Kept short on
+	 * purpose: while collecting, every pageload injects the debug flag and
+	 * failing visitors POST error reports to admin-ajax, so the extra server
+	 * load must last no longer than needed to capture a handful of samples.
+	 *
+	 * @var int
+	 */
+	private const DEBUG_WINDOW_COLLECT_SECONDS = DAY_IN_SECONDS;
+
+	/**
+	 * How long the collected errors are retained after arming. The floor is the
+	 * weekly diagnostic e-mail throttle: the follow-up e-mail a week after
+	 * arming must still find the collected errors, so an earlier daily check
+	 * must not re-arm (and thereby empty) the window. The extra days are slack
+	 * for incidents that flap around the throttle boundary and for skipped
+	 * cron days — each day of slack tolerates one such day.
+	 *
+	 * @var int
+	 */
+	private const DEBUG_WINDOW_RETENTION = WEEK_IN_SECONDS + 3 * DAY_IN_SECONDS;
+
+	/**
+	 * Number of browser error reports collected per debug window.
+	 *
+	 * @var int
+	 */
+	private const DEBUG_WINDOW_BUDGET = 10;
+
+	/**
+	 * Maximum reports a single reporter (IP) can contribute to one window.
+	 *
+	 * The reporting endpoint is anonymous and nonce-less by design (it runs on
+	 * cached frontend pages), so without a per-reporter share one client could
+	 * spend the entire budget and crowd out genuine visitor errors.
+	 *
+	 * @var int
+	 */
+	private const DEBUG_WINDOW_REPORTER_BUDGET = 3;
+
+	/**
 	 * Memoized result of uses_obfuscated_combined_file().
 	 */
 	private ?bool $uses_obfuscated_combined_file = null;
@@ -45,6 +101,11 @@ class Frontend {
 		add_action( 'init', [ $this, 'use_logged_out_state_for_tests' ] );
 		add_action( 'wp_ajax_burst_tracking_error', [ $this, 'log_tracking_error' ] );
 		add_action( 'wp_ajax_nopriv_burst_tracking_error', [ $this, 'log_tracking_error' ] );
+		// Priority 20: both callbacks discard collected errors (re-arm wipes them,
+		// reset clears an expired window), so they must run after the priority-10
+		// health check → diagnostics → summary email chain has read those errors.
+		add_action( 'burst_tracking_health_checked', [ $this, 'maybe_arm_debug_window' ], 20 );
+		add_action( 'burst_daily', [ $this, 'reset_expired_debug_window' ], 20 );
 		add_action( 'template_redirect', [ $this, 'start_buffer' ] );
 		add_action( 'shutdown', [ $this, 'end_buffer' ], 999 );
 		$sessions = new Sessions();
@@ -267,10 +328,11 @@ class Frontend {
 	}
 
 	/**
-	 * Log payload of 400 response errors on tracking requests if BURST_DEBUG is enabled
+	 * Log payload of 400 response errors on tracking requests if BURST_DEBUG or the auto debug window is enabled
 	 */
 	public function log_tracking_error(): void {
-		if ( ! defined( 'BURST_DEBUG' ) || ! BURST_DEBUG ) {
+		$debug_constant = defined( 'BURST_DEBUG' ) && BURST_DEBUG;
+		if ( ! $debug_constant && ! $this->debug_window_active() ) {
 			// If debug mode is not enabled, do not log errors.
 			return;
 		}
@@ -307,9 +369,158 @@ class Frontend {
 		// no nonce verification, as we are logging public 400 response errors.
 		// phpcs:ignore
 		$error = sanitize_text_field( $_POST['error'] );
-		// usage of print_r is intentional here, as this is a debug log.
-		// phpcs:ignore
-		$this::error_log( "Burst tracking error: status=$status, error=$error, data=" . print_r( $data, true ) );
+
+		if ( $debug_constant ) {
+			// usage of print_r is intentional here, as this is a debug log.
+			// phpcs:ignore
+			$this::error_log( "Burst tracking error: status=$status, error=$error, data=" . print_r( $data, true ) );
+		}
+
+		$this->record_debug_window_error( $status, $error, $data );
+	}
+
+	/**
+	 * Open the auto debug window when the tracking health check reports an issue.
+	 *
+	 * Browser-side tracking errors are only reported when debug mode is enabled,
+	 * so on a suspected drop we temporarily enable error reporting with a small
+	 * budget. An existing window — even one that stopped collecting — is never
+	 * re-armed until its retention (DEBUG_WINDOW_RETENTION) has passed, so the
+	 * collected errors survive until the follow-up e-mail has been sent.
+	 *
+	 * @param array $health_result The result fired by Tracking_Health.
+	 */
+	public function maybe_arm_debug_window( array $health_result ): void {
+		$status = $health_result['status'] ?? 'ok';
+		if ( ! in_array( $status, [ 'suspect', 'down' ], true ) ) {
+			return;
+		}
+
+		$window = get_option( self::DEBUG_WINDOW_OPTION );
+		if ( is_array( $window ) && isset( $window['armed_at'] ) && ! $this->debug_window_expired( $window ) ) {
+			return;
+		}
+
+		update_option(
+			self::DEBUG_WINDOW_OPTION,
+			[
+				'budget'   => self::DEBUG_WINDOW_BUDGET,
+				'errors'   => [],
+				'armed_at' => time(),
+			],
+			true
+		);
+	}
+
+	/**
+	 * Whether the auto debug window is collecting errors: armed, budget left and
+	 * the collection period has not closed yet.
+	 */
+	private function debug_window_active(): bool {
+		$window = get_option( self::DEBUG_WINDOW_OPTION );
+		return is_array( $window ) && ( $window['budget'] ?? 0 ) > 0 && ! $this->debug_window_collection_closed( $window );
+	}
+
+	/**
+	 * Whether a debug window is past its collection period: the debug flag is
+	 * no longer injected and reported errors are no longer stored.
+	 *
+	 * @param array $window The stored debug window state.
+	 */
+	private function debug_window_collection_closed( array $window ): bool {
+		return (int) ( $window['armed_at'] ?? 0 ) + self::DEBUG_WINDOW_COLLECT_SECONDS < time();
+	}
+
+	/**
+	 * Whether a debug window is past its retention after arming: the collected
+	 * errors are no longer needed and the window may be cleared or re-armed.
+	 *
+	 * @param array $window The stored debug window state.
+	 */
+	private function debug_window_expired( array $window ): bool {
+		return (int) ( $window['armed_at'] ?? 0 ) + self::DEBUG_WINDOW_RETENTION < time();
+	}
+
+	/**
+	 * Keep the debug window option autoloaded and current: seed the idle state
+	 * when the option does not exist yet — a missing option would cost a DB
+	 * query on every pageload — and clear an expired window so its collected
+	 * errors do not stay in alloptions forever. Runs on `burst_daily`.
+	 */
+	public function reset_expired_debug_window(): void {
+		$window = get_option( self::DEBUG_WINDOW_OPTION );
+		if ( ! is_array( $window ) || $this->debug_window_expired( $window ) ) {
+			update_option( self::DEBUG_WINDOW_OPTION, [], true );
+		}
+	}
+
+	/**
+	 * Store a reported tracking error in the debug window and decrement its budget.
+	 *
+	 * At budget zero or after the collection period closes the window stops
+	 * collecting; the window is kept until its retention passes, storing the
+	 * collected errors for the summary email.
+	 *
+	 * @param int    $status HTTP status reported by the browser.
+	 * @param string $error  Error message reported by the browser.
+	 * @param array  $data   Sanitized tracking payload.
+	 */
+	private function record_debug_window_error( int $status, string $error, array $data ): void {
+		$window = get_option( self::DEBUG_WINDOW_OPTION );
+		if ( ! is_array( $window ) || ( $window['budget'] ?? 0 ) <= 0 || $this->debug_window_collection_closed( $window ) ) {
+			return;
+		}
+
+		// Cap field lengths: the endpoint is unauthenticated and sanitize_text_field /
+		// esc_url_raw do not limit length, so without a cap a handful of multi-MB
+		// reports would bloat the option that is loaded on every pageview while
+		// the window is active.
+		$error      = mb_substr( $error, 0, 500 );
+		$url        = mb_substr( $data['url'] ?? '', 0, 500 );
+		$user_agent = mb_substr( $data['user_agent'] ?? '', 0, 300 );
+
+		// A repeat of an already-collected report adds no diagnostic signal;
+		// drop it without a write so repeats can neither spend the budget nor
+		// invalidate the alloptions cache on every request.
+		foreach ( $window['errors'] ?? [] as $entry ) {
+			if ( ( $entry['status'] ?? 0 ) === $status && ( $entry['error'] ?? '' ) === $error && ( $entry['url'] ?? '' ) === $url ) {
+				return;
+			}
+		}
+
+		// Per-reporter share of the budget; salted so the stored hash cannot be
+		// reversed to an IP from a pasted Site Health export (this option is
+		// part of the burst_% options dump).
+		$reporter       = hash( 'sha256', wp_salt( 'nonce' ) . Ip::get_ip_address() );
+		$reporter_count = (int) ( $window['reporters'][ $reporter ] ?? 0 );
+		if ( $reporter_count >= self::DEBUG_WINDOW_REPORTER_BUDGET ) {
+			return;
+		}
+		$window['reporters'][ $reporter ] = $reporter_count + 1;
+
+		--$window['budget'];
+		$window['errors'][] = [
+			'time'       => time(),
+			'status'     => $status,
+			'error'      => $error,
+			'url'        => $url,
+			'user_agent' => $user_agent,
+		];
+
+		update_option( self::DEBUG_WINDOW_OPTION, $window, true );
+	}
+
+	/**
+	 * The browser errors collected by the auto debug window, for the diagnostics summary.
+	 *
+	 * @return array<int, array{time: int, status: int, error: string, url: string, user_agent: string}>
+	 */
+	public function get_debug_window_errors(): array {
+		$window = get_option( self::DEBUG_WINDOW_OPTION );
+		if ( ! is_array( $window ) || ! isset( $window['errors'] ) || ! is_array( $window['errors'] ) ) {
+			return [];
+		}
+		return $window['errors'];
 	}
 
 	/**
@@ -394,7 +605,8 @@ class Frontend {
 		// fix phpcs warning.
 		unset( $hook );
 		// don't enqueue if headless.
-		if ( defined( 'BURST_HEADLESS_DOMAIN' ) || $this->get_option_bool( 'headless' ) ) {
+		$is_headless = (bool) apply_filters( 'burst_is_headless', defined( 'BURST_HEADLESS_DOMAIN' ) || $this->get_option_bool( 'headless' ) );
+		if ( $is_headless ) {
 			return;
 		}
 
@@ -425,6 +637,9 @@ class Frontend {
 				}
 			}
 			$deps = $this->tracking->beacon_enabled() ? [ $prefix . '-timeme' ] : [ $prefix . '-timeme', 'wp-api-fetch' ];
+			if ( wp_script_is( 'wp-consent-api', 'registered' ) || function_exists( 'wp_has_consent' ) ) {
+				$deps[] = 'wp-consent-api';
+			}
 			wp_enqueue_script(
 				$prefix,
 				$file_url,
@@ -439,6 +654,13 @@ class Frontend {
 					'burst',
 					$this->tracking->get_options()
 				);
+			}
+
+			if ( $this->debug_window_active() ) {
+				// The debug flag must be injected inline on every request.
+				// Localized script data gets baked into the combined script file when in ghost mode,
+				// so a flag passed that way is frozen at file generation time and cannot be toggled at runtime.
+				wp_add_inline_script( $prefix, 'window.burst_debug = 1;', 'before' );
 			}
 		}
 	}
@@ -641,6 +863,7 @@ class Frontend {
 				'is_pro'                 => $is_pro_valid ? 1 : 0,
 				'active_block_goal_uids' => $active_block_goals,
 				'goals'                  => $goals_list,
+				'clickable_blocks'       => \Burst\Frontend\Goals\Goals::get_clickable_blocks(),
 			]
 		);
 

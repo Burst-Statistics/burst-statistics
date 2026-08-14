@@ -40,11 +40,11 @@ const activationConfigs: Record<string, ActivationConfig> = {
 	search_console: {
 		to: '/settings/integrations',
 		disabled: {
-			message: __( 'To view your Google Searches, enable the Search Console integration.', 'burst-statistics' ),
+			message: __( 'To view your Google searches, enable the Search Console integration.', 'burst-statistics' ),
 			cta: __( 'Enable Search Console', 'burst-statistics' )
 		},
 		disconnected: {
-			message: __( 'To view your Google Searches, connect the Search Console integration.', 'burst-statistics' ),
+			message: __( 'To view your Google searches, connect the Search Console integration.', 'burst-statistics' ),
 			cta: __( 'Connect Search Console', 'burst-statistics' )
 		}
 	}

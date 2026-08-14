@@ -5,8 +5,8 @@ Tags: analytics, visitor tracking, statistics, google analytics, cookieless anal
 Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
-Tested up to: 7.0
-Stable tag: 3.6.2
+Tested up to: 7.2
+Stable tag: 3.6.3
 
 Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner needed.
  
@@ -282,6 +282,30 @@ We value your feedback. You can [submit a support request on the WordPress forum
  
 
 == Change log ==
+= 3.6.3 =
+* August 19th 2026
+* New: tracking health monitoring: a daily check verifies that tracking still works; when a drop is detected, Burst collects diagnostics (security plugins blocking the REST API, .htaccess rules, consent plugins, endpoint reachability and recent plugin or setting changes) and emails the site administrator at most once per week.
+* New: community benchmarks: with anonymous data sharing enabled, the dashboard compares your visitors, bounce rate, session duration, time on page and device split against anonymized community averages, including your percentile rank.
+* New: visibility goals for all Gutenberg block types, smarter goal trigger selection for third-party button, link and CTA blocks, and a new burst_clickable_blocks filter for custom block support.
+* New: pinned filters: pin your preferred dashboard filters as personal defaults.
+* New: added an "Unknown" location type to the Locations datatable, and continent grouping now falls back to a country's continent when the raw continent code is missing.
+* New: diagnostic logging for the Search Console integration, visible in Site Health, with sensitive values redacted and a 90-day retention.
+* New: beta features setting to try out upcoming features early.
+* Improvement: reduced query overhead for the pageviews and count metrics.
+* Improvement: the Reading Engagement score is now calculated as a single weighted score based on estimated reading time, instead of exposing separate raw metrics.
+* Improvement: mobile and responsive layout improvements for the reporting dashboard and the email report wizard.
+* Improvement: the GeoIP Country database now refreshes monthly.
+* Improvement: moved feature toggles from Settings to a dedicated Features menu.
+* Improvement: removed filter types that could no longer be created.
+* Security: share-link viewers restricted to specific dashboard tabs could read data from non-shared tabs via the admin-ajax REST fallback, because the request body could override the requested route after authorization had run; authorization now runs against the final dispatched route, with independent permission checks in the underlying handlers as defense-in-depth, props Dipak Panchal.
+* Security: hardened the public tracking endpoint against resource exhaustion: lookup values are resolved with targeted queries and unique indexes instead of loading entire lookup tables into memory, browser versions are normalized to a bounded set, and the number of completed goals per hit is capped, props Gaurang Maheta.
+* Security: the Site Health debug report now redacts Search Console tokens and filters server variables through an allowlist.
+* Fix: the burst_uid cookie is no longer created before statistics consent has been given via the WP Consent API.
+* Fix: the dashboard could become unclickable when an ad blocker or a missing stylesheet left an invisible dialog's scroll lock active; stuck scroll locks are now detected and released.
+* Fix: capturing on-site search terms no longer causes a fatal error when a third-party plugin filters search results to a non-array value.
+* Fix: the low-traffic auto-update filter no longer fatals when called with an unexpected update item type.
+* Fix: resolved datatable overlay display issues, an overlap with ad blocker elements, and normalized z-index layering across the dashboard.
+
 = 3.6.2 =
 * July 21st 2026
 * New: 404 tracking: hits on not-found pages are now tracked and shown in a new 404 pages block on the Engagement tab, while regular statistics exclude 404 hits.

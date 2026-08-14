@@ -1,8 +1,9 @@
 import { memo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { __, sprintf } from '@wordpress/i18n';
 import { getPageParameters } from '@/api/getPageParameters';
 import { safeDecodeURI } from '@/utils/lib';
+import useExpandableRowQuery from '@/hooks/useExpandableRowQuery';
+import ExpandableRowSkeleton from './ExpandableRowSkeleton';
 
 /**
  * Row used inside react-data-table-component's `expandableRowsComponent`.
@@ -23,7 +24,7 @@ const ParameterVariationsRow = ({ data, startDate, endDate, range }) => {
 	const pageUrl = data?.page_url || '';
 	const totalPageviews = Number( data?.pageviews ?? 0 );
 
-	const query = useQuery({
+	const { isLoading, error, rows } = useExpandableRowQuery({
 		queryKey: [ 'page-parameters', pageUrl, startDate, endDate ],
 		queryFn: () =>
 			getPageParameters({
@@ -32,15 +33,8 @@ const ParameterVariationsRow = ({ data, startDate, endDate, range }) => {
 				endDate,
 				range
 			}),
-		enabled: !! pageUrl && !! startDate && !! endDate,
-
-		// Variations rarely change for an already-loaded date range.
-		staleTime: 1000 * 60 * 5
+		enabled: !! pageUrl && !! startDate && !! endDate
 	});
-
-	const isLoading = query.isLoading || query.isFetching;
-	const error = query.error;
-	const rows = query.data?.data || [];
 
 	const totalLabel = sprintf(
 
@@ -58,25 +52,7 @@ const ParameterVariationsRow = ({ data, startDate, endDate, range }) => {
 				<span className="text-text-gray">({totalLabel})</span>
 			</div>
 
-			{isLoading && (
-				<div className="space-y-1.5 py-1" aria-busy="true">
-					{[ 0, 1, 2 ].map( ( i ) => (
-						<div
-							key={`burst-param-skeleton-${i}`}
-							className="flex items-center gap-3 pl-6"
-						>
-							<div
-								className="h-3 flex-1 max-w-[280px] animate-pulseSlow rounded bg-gray-200"
-								style={{ animationDelay: `${i * 100}ms` }}
-							/>
-							<div
-								className="h-3 w-16 animate-pulseSlow rounded bg-gray-200"
-								style={{ animationDelay: `${i * 100}ms` }}
-							/>
-						</div>
-					) )}
-				</div>
-			)}
+			{isLoading && <ExpandableRowSkeleton />}
 
 			{! isLoading && error && (
 				<div className="pl-6 text-sm text-red-500">

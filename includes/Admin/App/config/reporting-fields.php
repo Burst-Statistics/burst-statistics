@@ -3,6 +3,16 @@ defined( 'ABSPATH' ) || die();
 
 return [
 	[
+		'id'       => 'enable_diagnostic_email',
+		'menu_id'  => 'reports',
+		'group_id' => 'reports',
+		'type'     => 'checkbox',
+		'label'    => __( 'Send a diagnostic email when tracking seems broken', 'burst-statistics' ),
+		'context'  => __( 'When the daily check detects that tracking stopped recording hits, Burst emails the site administrator one diagnostic summary, at most once a week.', 'burst-statistics' ),
+		'disabled' => false,
+		'default'  => true,
+	],
+	[
 		'id'       => 'email_reports_mailinglist',
 		'menu_id'  => 'reports',
 		'group_id' => 'reports',

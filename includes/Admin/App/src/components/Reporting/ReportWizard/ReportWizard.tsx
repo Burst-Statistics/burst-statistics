@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Steps } from '@/components/Reporting/ReportWizard/Steps';
 import { StepControls } from '@/components/Reporting/ReportWizard/StepControls';
 import { LivePreview } from '@/components/Reporting/ReportWizard/LivePreview';
@@ -59,6 +59,8 @@ const ReportWizard: React.FC = () => {
 	const reports = useReportsStore( ( state ) => state.reports );
 	const currentReport = reports.find( ( r ) => r.id === reportId );
 
+	const [ mobileTab, setMobileTab ] = useState<'form' | 'preview'>( 'form' );
+
 	const previousStep = useRef<number>( currentStep );
 	const direction: Direction = currentStep > previousStep.current ? 1 : -1;
 	previousStep.current = currentStep;
@@ -96,30 +98,71 @@ const ReportWizard: React.FC = () => {
 				>
 					{/* inside container div */}
 					<div className="h-full bg-gray-100 rounded-t-2xl shadow-2xl overflow-hidden flex flex-col">
-						{/* Title, steps progress and close button div. Steps should be perfectly in the middle using css grid. But should become resposive when too small.*/}
-						<div className="grid grid-cols-12 items-center justify-between gap-4 px-6 py-4">
-							<div className="col-span-3">
-								<NameInput />
+						{/* Header bar */}
+						<div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+							{/* Top row on < lg: Name input on left, action controls on right */}
+							<div className="flex items-center justify-between w-full lg:w-auto gap-4">
+								<div className="shrink min-w-0 max-w-[200px] sm:max-w-xs">
+									<NameInput />
+								</div>
+								<div className="flex items-center justify-end gap-2 shrink-0 lg:hidden">
+									{! currentReport || null !== currentReport.id && <ReportActionMenu row={currentReport} />}
+									<button
+										type="button"
+										className="bg-gray-100 border border-gray-400 focus:ring-blue-500 rounded-full p-2 sm:p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2 cursor-pointer"
+										onClick={() => closeWizard()}
+										aria-label={__( 'Close', 'burst-statistics' )}
+									>
+										<Icon name="times" />
+									</button>
+								</div>
 							</div>
-							<div className="col-span-6">
+
+							{/* Steps component: shifted to next line on viewports below 1024px (< lg) */}
+							<div className="flex-1 flex justify-center min-w-0 w-full lg:w-auto pt-2 lg:pt-0 border-t border-gray-200 lg:border-t-0">
 								<Steps />
 							</div>
-							<div className="col-span-3 flex items-center justify-end gap-3">
+
+							{/* Desktop action controls (>= lg) */}
+							<div className="hidden lg:flex items-center justify-end gap-2 shrink-0 z-10">
 								{! currentReport || null !== currentReport.id && <ReportActionMenu row={currentReport} />}
-								<button type="button" className="bg-gray-100 border border-gray-400 focus:ring-blue-500 rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2" onClick={() => {
-									closeWizard();
-								}}
-								aria-label={__( 'Close', 'burst-statistics' )}
+								<button
+									type="button"
+									className="bg-gray-100 border border-gray-400 focus:ring-blue-500 rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2 cursor-pointer"
+									onClick={() => closeWizard()}
+									aria-label={__( 'Close', 'burst-statistics' )}
 								>
-								<Icon name="times" />
-							</button>
+									<Icon name="times" />
+								</button>
 							</div>
+						</div>
+
+						{/* Mobile tab switcher bar (< lg) */}
+						<div className="lg:hidden flex justify-center py-2 px-4 bg-gray-200 border-b border-gray-300 gap-2 shrink-0">
+							<button
+								type="button"
+								onClick={() => setMobileTab( 'form' )}
+								className={`px-4 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+									'form' === mobileTab ? 'bg-blue text-white shadow-xs' : 'bg-gray-100 text-text-gray-light hover:text-text-gray'
+								}`}
+							>
+								{__( 'Form', 'burst-statistics' )}
+							</button>
+							<button
+								type="button"
+								onClick={() => setMobileTab( 'preview' )}
+								className={`px-4 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+									'preview' === mobileTab ? 'bg-blue text-white shadow-xs' : 'bg-gray-100 text-text-gray-light hover:text-text-gray'
+								}`}
+							>
+								{isEditingMode ? __( 'Editor Preview', 'burst-statistics' ) : __( 'Live Preview', 'burst-statistics' )}
+							</button>
 						</div>
 
 						{/* Main content div */}
 						<div className="flex flex-1 min-h-0 overflow-x-hidden">
 							{/* Steps and stepcontrols div */}
-							<div className={`${isEditingMode ? 'basis-1/5' : 'basis-2/5'} flex flex-col gap-8 max-xl:basis-full min-h-0 transition-all duration-300 ease-in-out`}>
+							<div className={`flex flex-col gap-8 min-h-0 transition-all duration-300 ease-in-out ${isEditingMode ? 'lg:basis-1/5' : 'lg:basis-2/5'} ${'form' === mobileTab ? 'w-full flex-1' : 'max-lg:hidden'}`}>
 								{/* scrollable div */}
 								<div className="flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden burst-scroll">
 									<AnimatePresence mode="wait" custom={direction}>
@@ -148,7 +191,7 @@ const ReportWizard: React.FC = () => {
 								</div>
 							</div>
 							{/* Live preview div */}
-							<div className={`${isEditingMode ? 'basis-4/5' : 'basis-3/5'} flex flex-col min-h-0 pt-4 overflow-hidden transition-all duration-300 ease-in-out`}>
+							<div className={`flex flex-col min-h-0 pt-4 overflow-hidden transition-all duration-300 ease-in-out ${isEditingMode ? 'lg:basis-4/5' : 'lg:basis-3/5'} ${'preview' === mobileTab ? 'w-full flex-1' : 'max-lg:hidden'}`}>
 								<LivePreview />
 							</div>
 						</div>

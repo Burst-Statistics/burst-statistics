@@ -2,6 +2,7 @@ import { useMemo, useCallback } from '@wordpress/element';
 import { ResponsiveLine } from '@nivo/line';
 import { InsightsTooltip } from './InsightsTooltip';
 import { formatAxisLabel, getChartXAxisTickValues } from '@/utils/formatting';
+import { LINE_CHART_AXIS_BASE, LINE_CHART_BASE_PROPS, buildLineChartLayers } from '@/components/Common/nivoLineConfig';
 import { METRIC_COLORS } from './insightsConfig';
 
 /**
@@ -144,57 +145,26 @@ const InsightsGraph = ({ data, timestamps, interval, spansMultipleYears }) => {
 	// its own strokeDasharray while all other Nivo layers (slices, points, etc.) remain.
 	// Memoised so Nivo receives a stable array reference and avoids unnecessary remounts.
 	const layers = useMemo(
-		() => [
-			'grid',
-			'markers',
-			'axes',
-			'areas',
-			'crosshair',
-			CustomLines,
-			'slices',
-			'points',
-			'mesh',
-			'legends'
-		],
+		() => buildLineChartLayers( CustomLines ),
 		[]
 	);
 
 	return (
 		<ResponsiveLine
 			data={ nivoData }
-			margin={{ top: 30, right: 48, bottom: 56, left: 72 }}
-			xScale={{ type: 'time', format: 'native' }}
-			xFormat="time:%Q"
-			yScale={{ type: 'linear', min: 0, max: 'auto', stacked: false }}
-			colors={{ datum: 'color' }}
+			{ ...LINE_CHART_BASE_PROPS }
 			axisBottom={{
-				tickSize: 0,
-				tickPadding: 12,
+				...LINE_CHART_AXIS_BASE,
 				tickValues: xTickValues,
 				format: formatTick
 			}}
 			axisLeft={{
-				tickSize: 0,
-				tickPadding: 12,
+				...LINE_CHART_AXIS_BASE,
 				tickValues: 6
 			}}
-			enableGridX={ false }
-			enableGridY={ true }
 			gridYValues={ 6 }
-			pointSize={ 8 }
-			lineWidth={ 3 }
-			enablePointLabel={ false }
-			enableSlices="x"
 			sliceTooltip={ sliceTooltip }
 			layers={ layers }
-			theme={{
-				grid: { line: { stroke: 'var(--color-gray-300)', strokeWidth: 1 } },
-				axis: {
-					ticks: { text: { fill: 'var(--color-gray-600)', fontSize: 12 } },
-					domain: { line: { stroke: 'var(--color-gray-400)', strokeWidth: 1 } }
-				}
-			}}
-			curve="catmullRom"
 		/>
 	);
 };

@@ -167,7 +167,7 @@ return [
 	],
 	[
 		'id'          => 'external_links_tracking',
-		'msg'         => __( 'New: external link click tracking is now enabled. You can manage this in Settings > General.', 'burst-statistics' ),
+		'msg'         => __( 'New: external link click tracking is now enabled. You can manage this in Settings > Features.', 'burst-statistics' ),
 		'icon'        => 'new',
 		'dismissible' => true,
 		'plusone'     => false,
