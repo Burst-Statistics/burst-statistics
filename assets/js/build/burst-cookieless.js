@@ -90,7 +90,12 @@ const burst_get_cookie = name => {
   const ca = document.cookie.split(';');
   for (let c of ca) {
     c = c.trim();
-    if (c.indexOf(nameEQ) === 0) return Promise.resolve(c.substring(nameEQ.length));
+    if (c.indexOf(nameEQ) === 0) {
+      // An empty value counts as absent. Browsers that stored an empty burst_uid
+      // cookie would otherwise keep reading it back as their identifier.
+      const value = c.substring(nameEQ.length);
+      if (value) return Promise.resolve(value);
+    }
   }
   return Promise.reject(false);
 };
@@ -149,7 +154,7 @@ function burst_enable_cookies() {
  * @returns {Promise}
  */
 const burst_uid = () => {
-  if (burst.cache.uid !== null) return Promise.resolve(burst.cache.uid);
+  if (burst.cache.uid) return Promise.resolve(burst.cache.uid);
   return burst_get_cookie('burst_uid').then(cookie_uid => {
     burst.cache.uid = cookie_uid;
     return cookie_uid;
@@ -162,10 +167,20 @@ const burst_uid = () => {
 };
 /**
  * Generate a random string
+ *
+ * Built with a plain loop on purpose. Legacy libraries that themes still load
+ * (Prototype, MooTools) overwrite Array.from with a single-argument version
+ * that silently ignores the map callback, which turned this into an empty
+ * string and left every visitor on such a site without an identifier.
+ *
  * @returns {string}
  */
 const burst_generate_uid = () => {
-  return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join(''); // nosemgrep
+  let uid = '';
+  for (let i = 0; i < 32; i++) {
+    uid += Math.floor(Math.random() * 16).toString(16); // nosemgrep
+  }
+  return uid;
 };
 
 const burst_fingerprint = () => {

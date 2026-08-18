@@ -295,12 +295,14 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Improvement: the Reading Engagement score is now calculated as a single weighted score based on estimated reading time, instead of exposing separate raw metrics.
 * Improvement: mobile and responsive layout improvements for the reporting dashboard and the email report wizard.
 * Improvement: the GeoIP Country database now refreshes monthly.
+* Improvement: GeoIP database downloads are verified with a SHA-256 integrity check, skipped entirely when the remote database is unchanged, and retried with increasing backoff after failures.
 * Improvement: moved feature toggles from Settings to a dedicated Features menu.
 * Improvement: removed filter types that could no longer be created.
 * Security: share-link viewers restricted to specific dashboard tabs could read data from non-shared tabs via the admin-ajax REST fallback, because the request body could override the requested route after authorization had run; authorization now runs against the final dispatched route, with independent permission checks in the underlying handlers as defense-in-depth, props Dipak Panchal.
 * Security: hardened the public tracking endpoint against resource exhaustion: lookup values are resolved with targeted queries and unique indexes instead of loading entire lookup tables into memory, browser versions are normalized to a bounded set, and the number of completed goals per hit is capped, props Gaurang Maheta.
 * Security: the Site Health debug report now redacts Search Console tokens and filters server variables through an allowlist.
 * Fix: the burst_uid cookie is no longer created before statistics consent has been given via the WP Consent API.
+* Fix: blocks marked as a Burst goal no longer cause attribute errors during server-side rendering in the block editor.
 * Fix: the dashboard could become unclickable when an ad blocker or a missing stylesheet left an invisible dialog's scroll lock active; stuck scroll locks are now detected and released.
 * Fix: capturing on-site search terms no longer causes a fatal error when a third-party plugin filters search results to a non-array value.
 * Fix: the low-traffic auto-update filter no longer fatals when called with an unexpected update item type.

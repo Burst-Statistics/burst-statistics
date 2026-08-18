@@ -74,6 +74,11 @@ class Query {
 	private int $limit = 0;
 
 	/**
+	 * Explicit query timeout override in milliseconds.
+	 */
+	private ?int $timeout_ms = null;
+
+	/**
 	 * Having clause for grouped data.
 	 */
 	private array $having = [];
@@ -517,6 +522,17 @@ class Query {
 	}
 
 	/**
+	 * Override the context-derived query timeout.
+	 *
+	 * @param int $timeout_ms Maximum execution time in milliseconds; 0 disables the hint.
+	 * @return self Return the current instance for chaining use.
+	 */
+	public function timeout_ms( int $timeout_ms ): self {
+		$this->timeout_ms = max( 0, $timeout_ms );
+		return $this;
+	}
+
+	/**
 	 * Build the final SQL query: compile, prepare once, and add timeout hint.
 	 */
 	public function build_sql(): string {
@@ -531,15 +547,18 @@ class Query {
 			$sql = $this->wpdb->prepare( $sql, $values );
 		}
 
-		$timeout_ms = $this->resolve_query_timeout_ms(
-			'burst_subscription_query_timeout_ms',
-			'burst_subscription_query_timeout_ms_background',
-			null,
-			30000,
-			900000,
-			0,
-			true
-		);
+		$timeout_ms = $this->timeout_ms;
+		if ( null === $timeout_ms ) {
+			$timeout_ms = $this->resolve_query_timeout_ms(
+				'burst_subscription_query_timeout_ms',
+				'burst_subscription_query_timeout_ms_background',
+				null,
+				30000,
+				900000,
+				0,
+				true
+			);
+		}
 
 		return $this->add_query_timeout_hint( $sql, $timeout_ms );
 	}
