@@ -4,6 +4,7 @@ namespace Burst\Admin\Debug;
 use Burst\Admin\Search_Console\Diagnostic_Logs;
 use Burst\Admin\Search_Console\Sync;
 use Burst\Frontend\Ip\Ip;
+use Burst\Frontend\Tracking\Tracking_GeoIp;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 
@@ -80,20 +81,18 @@ class Debug {
 
 		$constants = [
 			// @phpstan-ignore-next-line
-			'WP_DEBUG'                     => defined( 'WP_DEBUG' ) ? ( WP_DEBUG ? 'true' : 'false' ) : 'undefined',
-			'BURST_DEBUG'                  => defined( 'BURST_DEBUG' ) ? ( BURST_DEBUG ? 'true' : 'false' ) : 'undefined',
-			'BURST_VERSION'                => defined( 'BURST_VERSION' ) ? BURST_VERSION : 'undefined',
-			'BURST_PRO'                    => defined( 'BURST_PRO' ) ? BURST_PRO : 'undefined',
-			'BURST_DO_NOT_UPDATE_GEO_IP'   => defined( 'BURST_DO_NOT_UPDATE_GEO_IP' ) ? ( BURST_DO_NOT_UPDATE_GEO_IP ? 'true' : 'false' ) : 'undefined',
-			'BURST_HEADLESS_DOMAIN'        => defined( 'BURST_HEADLESS_DOMAIN' ) ? BURST_HEADLESS_DOMAIN : 'undefined',
-			'BURST_DONT_USE_SUMMARY_TABLE' => defined( 'BURST_DONT_USE_SUMMARY_TABLE' ) ? ( BURST_DONT_USE_SUMMARY_TABLE ? 'true' : 'false' ) : 'undefined',
+			'WP_DEBUG'                   => defined( 'WP_DEBUG' ) ? ( WP_DEBUG ? 'true' : 'false' ) : 'undefined',
+			'BURST_DEBUG'                => defined( 'BURST_DEBUG' ) ? ( BURST_DEBUG ? 'true' : 'false' ) : 'undefined',
+			'BURST_VERSION'              => defined( 'BURST_VERSION' ) ? BURST_VERSION : 'undefined',
+			'BURST_PRO'                  => defined( 'BURST_PRO' ) ? BURST_PRO : 'undefined',
+			'BURST_DO_NOT_UPDATE_GEO_IP' => defined( 'BURST_DO_NOT_UPDATE_GEO_IP' ) ? ( BURST_DO_NOT_UPDATE_GEO_IP ? 'true' : 'false' ) : 'undefined',
+			'BURST_HEADLESS_DOMAIN'      => defined( 'BURST_HEADLESS_DOMAIN' ) ? BURST_HEADLESS_DOMAIN : 'undefined',
 		];
 
 		$fields = [
 			'geo_ip'              => [
 				'label' => __( 'Geo IP File', 'burst-statistics' ),
-				'value' => [ 'Premium' => 'Pro version required' ],
-
+				'value' => $this->get_geo_ip_file_info(),
 			],
 			'detected_ip'         => [
 				'label' => __( 'Detected Geo IP', 'burst-statistics' ),
@@ -101,11 +100,11 @@ class Debug {
 			],
 			'location_data'       => [
 				'label' => __( 'Location Data', 'burst-statistics' ),
-				'value' => [ 'Premium' => 'Pro version required' ],
+				'value' => $this->get_location_data_info(),
 			],
 			'burst_tables'        => [
 				'label' => __( 'Burst Database Tables', 'burst-statistics' ),
-				'value' => $tables ?: 'No burst_ tables found',
+				'value' => $this->get_table_row_counts( $tables ) ?: 'No burst_ tables found',
 			],
 			'burst_settings'      => [
 				'label' => __( 'Burst Settings', 'burst-statistics' ),
@@ -143,6 +142,137 @@ class Debug {
 		];
 
 		return $info;
+	}
+
+	/**
+	 * Report roughly how much data each Burst table holds, so Site Health shows at
+	 * a glance whether a table is populated.
+	 *
+	 * Deliberately an estimate: a COUNT(*) on a multi-million row statistics table
+	 * scans the whole index and would slow down opening Site Health. The optimizer
+	 * estimate from information_schema is free, and a single-row probe covers the
+	 * case where InnoDB reports 0 for a small table.
+	 *
+	 * @param array<int, string> $tables Table names as returned by SHOW TABLES.
+	 * @return array<string, string> Table name => approximate row count.
+	 */
+	private function get_table_row_counts( array $tables ): array {
+		global $wpdb;
+
+		$estimates = $this->get_estimated_row_counts();
+
+		$counts = [];
+		foreach ( $tables as $table ) {
+			// Table names can't be parameterized. Only names SHOW TABLES returned for
+			// this site's Burst prefix get here; re-validate before interpolating.
+			if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $table ) ) {
+				continue;
+			}
+
+			$estimate = $estimates[ $table ] ?? 0;
+			if ( $estimate > 0 ) {
+				$counts[ $table ] = $this->sprintf(
+					// translators: %s is an approximate number of rows.
+					__( '~%s rows (estimate)', 'burst-statistics' ),
+					number_format_i18n( $estimate )
+				);
+				continue;
+			}
+
+			// InnoDB reports 0 for small or never-analyzed tables, so a single-row
+			// probe is what actually separates "empty" from "a handful of rows".
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$has_rows         = $wpdb->get_var( "SELECT 1 FROM `{$table}` LIMIT 1" );
+			$counts[ $table ] = null === $has_rows ? __( 'Empty', 'burst-statistics' ) : __( 'Contains data', 'burst-statistics' );
+		}
+
+		return $counts;
+	}
+
+	/**
+	 * Get the optimizer's row estimate for every Burst table in one query.
+	 *
+	 * @return array<string, int> Table name => estimated row count.
+	 */
+	private function get_estimated_row_counts(): array {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT TABLE_NAME AS table_name, TABLE_ROWS AS row_estimate
+				FROM information_schema.TABLES
+				WHERE TABLE_SCHEMA = %s AND TABLE_NAME LIKE %s',
+				$wpdb->dbname,
+				$wpdb->esc_like( $wpdb->prefix . 'burst_' ) . '%'
+			),
+			ARRAY_A
+		);
+
+		if ( ! is_array( $rows ) ) {
+			return [];
+		}
+
+		$estimates = [];
+		foreach ( $rows as $row ) {
+			$estimates[ (string) $row['table_name'] ] = (int) $row['row_estimate'];
+		}
+
+		return $estimates;
+	}
+
+	/**
+	 * Describe the state of the MaxMind database on disk.
+	 *
+	 * Country tracking ships with the free plugin, so this reports the actual
+	 * database state for both free and Pro. Pro downloads the City database, free
+	 * the Country database; the file name tells the two apart.
+	 *
+	 * @return array<string, string> Site Health field value.
+	 */
+	private function get_geo_ip_file_info(): array {
+		if ( ! apply_filters( 'burst_geo_ip_enabled', true ) ) {
+			return [ __( 'Status', 'burst-statistics' ) => __( 'Disabled with the burst_geo_ip_enabled filter', 'burst-statistics' ) ];
+		}
+
+		$file = (string) get_option( 'burst_geo_ip_file' );
+		if ( '' === $file ) {
+			$info = [ __( 'File', 'burst-statistics' ) => __( 'No Geo IP file set', 'burst-statistics' ) ];
+		} else {
+			$exists = file_exists( $file );
+			$info   = [
+				__( 'File', 'burst-statistics' )        => $file,
+				__( 'File exists', 'burst-statistics' ) => $exists ? 'true' : 'false',
+				__( 'File size', 'burst-statistics' )   => $exists ? size_format( (int) filesize( $file ) ) : '-',
+			];
+		}
+
+		$last_update  = (int) get_option( 'burst_last_update_geo_ip' );
+		$import_error = (string) get_option( 'burst_geo_ip_import_error' );
+
+		$info[ __( 'Last update', 'burst-statistics' ) ]      = $last_update > 0 ? wp_date( DATE_ATOM, $last_update ) : __( 'Never', 'burst-statistics' );
+		$info[ __( 'Import error', 'burst-statistics' ) ]     = '' !== $import_error ? $import_error : __( 'None', 'burst-statistics' );
+		$info[ __( 'Import scheduled', 'burst-statistics' ) ] = (bool) get_option( 'burst_import_geo_ip_on_activation' ) ? 'true' : 'false';
+
+		return $info;
+	}
+
+	/**
+	 * Resolve the location data for the current visitor as the tracking path does.
+	 *
+	 * The reader is resolved through the burst_geoip_handler filter, so free
+	 * reports the country lookup and Pro the city lookup, without duplicating the
+	 * lookup logic here.
+	 *
+	 * @return array<string, string> Site Health field value.
+	 */
+	private function get_location_data_info(): array {
+		if ( ! apply_filters( 'burst_geo_ip_enabled', true ) ) {
+			return [ __( 'Status', 'burst-statistics' ) => __( 'Disabled with the burst_geo_ip_enabled filter', 'burst-statistics' ) ];
+		}
+
+		$handler = apply_filters( 'burst_geoip_handler', Tracking_GeoIp::class );
+
+		return $this->format_array_as_string( $handler::get_location_data() );
 	}
 
 	/**

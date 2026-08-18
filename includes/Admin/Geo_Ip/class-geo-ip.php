@@ -66,13 +66,79 @@ class Geo_Ip {
 			return;
 		}
 
-		$last_update = get_option( 'burst_last_update_geo_ip' );
-		$time_passed = time() - (int) $last_update;
+		$last_update = (int) get_option( 'burst_last_update_geo_ip', 0 );
+		$time_passed = time() - $last_update;
+		$file_name   = (string) get_option( 'burst_geo_ip_file', '' );
+		$force       = (bool) get_option( 'burst_import_geo_ip_on_activation' )
+			|| '' === $file_name
+			|| ! file_exists( $file_name )
+			|| $this->should_force_redownload( $file_name );
 
 		// If the file was never downloaded, or older than the refresh interval, redownload.
-		if ( ! $last_update || $time_passed > $this->refresh_interval() ) {
-			$this->get_geo_ip_database_file( true );
+		if ( $force || 0 === $last_update || $time_passed > $this->refresh_interval() ) {
+			if ( $this->get_geo_ip_database_file( true ) ) {
+				update_option( 'burst_import_geo_ip_on_activation', false, false );
+			}
 		}
+	}
+
+	/**
+	 * Retrieve the SHA-256 hash published beside the database archive.
+	 *
+	 * @return string|null The normalized hash, or null when unavailable or malformed.
+	 */
+	private function get_remote_database_hash(): ?string {
+		$response = wp_remote_get( $this->db_url . '.sha256', [ 'timeout' => 25 ] );
+		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) < 200 || wp_remote_retrieve_response_code( $response ) >= 300 ) {
+			return null;
+		}
+
+		$body = trim( wp_remote_retrieve_body( $response ) );
+		if ( 1 !== preg_match( '/^([a-f0-9]{64})/i', $body, $matches ) ) {
+			return null;
+		}
+
+		return strtolower( $matches[1] );
+	}
+
+	/**
+	 * Get the delay before another failed import may be retried.
+	 *
+	 * @param int $failed_attempts Number of consecutive failed attempts.
+	 */
+	private function get_import_retry_delay( int $failed_attempts ): int {
+		$delays = [
+			5 * MINUTE_IN_SECONDS,
+			HOUR_IN_SECONDS,
+			6 * HOUR_IN_SECONDS,
+			DAY_IN_SECONDS,
+			3 * DAY_IN_SECONDS,
+			7 * DAY_IN_SECONDS,
+		];
+		$index  = min( max( 0, $failed_attempts - 1 ), count( $delays ) - 1 );
+
+		return $delays[ $index ];
+	}
+
+	/**
+	 * Record a failed GeoIP import for retry backoff.
+	 */
+	private function record_import_failure(): void {
+		$failed_attempts = (int) get_option( 'burst_geo_ip_failed_attempts', 0 );
+		if ( 0 === $failed_attempts ) {
+			update_option( 'burst_geo_ip_first_failed_attempt', time(), false );
+		}
+		update_option( 'burst_geo_ip_failed_attempts', $failed_attempts + 1, false );
+		update_option( 'burst_geo_ip_last_failed_attempt', time(), false );
+	}
+
+	/**
+	 * Reset the GeoIP import retry backoff after recovery.
+	 */
+	private function clear_import_failures(): void {
+		delete_option( 'burst_geo_ip_failed_attempts' );
+		delete_option( 'burst_geo_ip_first_failed_attempt' );
+		delete_option( 'burst_geo_ip_last_failed_attempt' );
 	}
 
 	/**
@@ -86,8 +152,9 @@ class Geo_Ip {
 		}
 
 		if ( $this->has_admin_access() && get_option( 'burst_import_geo_ip_on_activation' ) ) {
-			$this->get_geo_ip_database_file();
-			update_option( 'burst_import_geo_ip_on_activation', false );
+			if ( $this->get_geo_ip_database_file( true ) ) {
+				update_option( 'burst_import_geo_ip_on_activation', false, false );
+			}
 		}
 
 		$file_name = get_option( 'burst_geo_ip_file' );
@@ -102,10 +169,18 @@ class Geo_Ip {
 		}
 
 		// If manually uploaded after an error was detected, the error can be removed now.
+		// Compare against the first failure since the last success: later failed retries
+		// would otherwise keep pushing the threshold past the manual upload's mtime.
 		if ( ( $this->is_burst_page() || $this->is_logged_in_rest() ) && get_option( 'burst_geo_ip_import_error' ) ) {
-			$file_name = get_option( 'burst_geo_ip_file' );
-			if ( file_exists( $file_name ) ) {
+			$file_name            = (string) get_option( 'burst_geo_ip_file', '' );
+			$first_failed_attempt = (int) get_option( 'burst_geo_ip_first_failed_attempt', 0 );
+			if ( 0 === $first_failed_attempt ) {
+				$first_failed_attempt = (int) get_option( 'burst_geo_ip_last_failed_attempt', 0 );
+			}
+			$file_modified = file_exists( $file_name ) ? (int) filemtime( $file_name ) : 0;
+			if ( file_exists( $file_name ) && ! $this->should_force_redownload( $file_name ) && ( 0 === $first_failed_attempt || $file_modified > $first_failed_attempt ) ) {
 				delete_option( 'burst_geo_ip_import_error' );
+				$this->clear_import_failures();
 			}
 		}
 	}
@@ -115,30 +190,68 @@ class Geo_Ip {
 	 *
 	 * @since 2.0.3
 	 */
-	private function get_geo_ip_database_file( bool $renew = false ): void {
+	private function get_geo_ip_database_file( bool $renew = false ): bool {
 		if ( ! wp_doing_cron() && ! $this->user_can_manage() ) {
-			return;
+			return false;
 		}
 
 		if ( defined( 'BURST_DO_NOT_UPDATE_GEO_IP' ) && BURST_DO_NOT_UPDATE_GEO_IP ) {
-			return;
+			return false;
 		}
 
 		if ( get_transient( 'burst_importing' ) ) {
-			return;
+			return false;
 		}
 		// prevent more than one attempt every 5 minutes.
-		$last_attempt     = get_option( 'burst_geo_ip_last_attempt' );
-		$five_minutes_ago = time() - MINUTE_IN_SECONDS;
-		if ( $last_attempt && $last_attempt > $five_minutes_ago ) {
-			return;
+		$last_attempt     = (int) get_option( 'burst_geo_ip_last_attempt', 0 );
+		$five_minutes_ago = time() - ( 5 * MINUTE_IN_SECONDS );
+		if ( 0 !== $last_attempt && $last_attempt > $five_minutes_ago ) {
+			return false;
 		}
 
-		set_transient( 'burst_importing', true, 5 * MINUTE_IN_SECONDS );
+		$failed_attempts     = (int) get_option( 'burst_geo_ip_failed_attempts', 0 );
+		$last_failed_attempt = (int) get_option( 'burst_geo_ip_last_failed_attempt', 0 );
+		if ( 0 < $failed_attempts && 0 !== $last_failed_attempt && $last_failed_attempt > time() - $this->get_import_retry_delay( $failed_attempts ) ) {
+			return false;
+		}
+
+		$file_name        = (string) get_option( 'burst_geo_ip_file', '' );
+		$has_current_file = '' !== $file_name && file_exists( $file_name ) && ! $this->should_force_redownload( $file_name );
+		$needs_download   = $renew || ! $has_current_file;
+		$import_succeeded = ! $needs_download;
 		// only run if it doesn't exist yet, or if it should renew.
-		if ( $renew
-			|| ! get_option( 'burst_geo_ip_file' )
-			|| ! file_exists( get_option( 'burst_geo_ip_file' ) ) ) {
+		if ( $needs_download ) {
+			set_transient( 'burst_importing', true, 5 * MINUTE_IN_SECONDS );
+			$import_succeeded = false;
+			update_option( 'burst_geo_ip_last_attempt', time(), false );
+
+			$expected_hash    = $this->get_remote_database_hash();
+			$stored_hash      = get_option( 'burst_geo_ip_db_hash', '' );
+			$stored_file_hash = get_option( 'burst_geo_ip_file_hash', '' );
+
+			// Only hash the on-disk database once the cheap conditions hold.
+			if (
+				$has_current_file
+				&& null !== $expected_hash
+				&& is_string( $stored_hash )
+				&& hash_equals( $stored_hash, $expected_hash )
+				&& is_string( $stored_file_hash )
+				&& '' !== $stored_file_hash
+			) {
+				$current_file_hash = hash_file( 'sha256', $file_name );
+				if ( is_string( $current_file_hash ) && hash_equals( $stored_file_hash, strtolower( $current_file_hash ) ) ) {
+					if ( get_option( 'burst_geo_ip_import_error' ) ) {
+						delete_option( 'burst_geo_ip_import_error' );
+						// re-run the tasks validation to ensure that the geo ip warning is removed.
+						\Burst\burst_loader()->admin->tasks->schedule_task_validation();
+					}
+					$this->clear_import_failures();
+					update_option( 'burst_last_update_geo_ip', time(), false );
+					delete_transient( 'burst_importing' );
+					return true;
+				}
+			}
+
 			global $wp_filesystem;
 
 			if ( ! $wp_filesystem || ! is_a( $wp_filesystem, 'WP_Filesystem_Base' ) ) {
@@ -146,9 +259,6 @@ class Geo_Ip {
 				WP_Filesystem();
 			}
 
-			update_option( 'burst_geo_ip_file', false );
-
-			update_option( 'burst_geo_ip_last_attempt', time() );
 			$upload_dir = $this->upload_dir( 'maxmind' );
 			$name       = $this->db_name;
 
@@ -167,15 +277,26 @@ class Geo_Ip {
 			// check for errors.
 			if ( ! $wp_filesystem->is_dir( $upload_dir ) ) {
 				// store the error for use in the callback notice for geo ip.
-				update_option( 'burst_geo_ip_import_error', __( 'Required directory does not exist:', 'burst-statistics' ) . ' ' . $upload_dir );
+				update_option( 'burst_geo_ip_import_error', __( 'Required directory does not exist:', 'burst-statistics' ) . ' ' . $upload_dir, false );
 			} elseif ( $this->has_open_basedir_restriction( $zip_file_name ) ) {
-				update_option( 'burst_geo_ip_import_error', 'Open Base dir restriction detected. Please upload manually.' );
+				update_option( 'burst_geo_ip_import_error', 'Open Base dir restriction detected. Please upload manually.', false );
 			} elseif ( is_wp_error( $tmpfile ) ) {
 				// store the error for use in the callback notice for geo ip.
-				update_option( 'burst_geo_ip_import_error', $tmpfile->get_error_message() );
+				update_option( 'burst_geo_ip_import_error', $tmpfile->get_error_message(), false );
 			} else {
+				$download_hash = hash_file( 'sha256', $tmpfile );
+
+				if ( null !== $expected_hash && ( ! is_string( $download_hash ) || ! hash_equals( $expected_hash, strtolower( $download_hash ) ) ) ) {
+					$verification_error = __( 'The downloaded GeoIP database failed SHA-256 verification. The existing database has been kept.', 'burst-statistics' );
+					self::error_log( $verification_error );
+					update_option( 'burst_geo_ip_import_error', $verification_error, false );
+					$this->record_import_failure();
+					wp_delete_file( $tmpfile );
+					delete_transient( 'burst_importing' );
+					return false;
+				}
+
 				// Extract tar.gz.
-				update_option( 'burst_geo_ip_file', $unzipped );
 				$new_file         = str_replace( '.mmdb', '-new.mmdb', $unzipped );
 				$new_file_renamed = str_replace( '.mmdb', '-new-renamed.mmdb', $unzipped );
 				// Clean up any leftover temp files from a previous failed attempt.
@@ -186,9 +307,16 @@ class Geo_Ip {
 					wp_delete_file( $new_file_renamed );
 				}
 
-				// Copy the tar.gz if it does not exist yet.
-				if ( ! $wp_filesystem->is_file( $zip_file_name ) ) {
-					copy( $tmpfile, $zip_file_name );
+				// Always extract the archive that was just verified.
+				if ( $wp_filesystem->is_file( $zip_file_name ) ) {
+					wp_delete_file( $zip_file_name );
+				}
+				if ( ! copy( $tmpfile, $zip_file_name ) ) {
+					update_option( 'burst_geo_ip_import_error', __( 'The GeoIP database archive could not be copied for extraction.', 'burst-statistics' ), false );
+					$this->record_import_failure();
+					wp_delete_file( $tmpfile );
+					delete_transient( 'burst_importing' );
+					return false;
 				}
 
 				try {
@@ -206,12 +334,13 @@ class Geo_Ip {
 					} else {
 						update_option(
 							'burst_geo_ip_import_error',
-							__( 'The PHP Phar extension is not available on this server. Please enable the Phar extension or contact your hosting provider.', 'burst-statistics' )
+							__( 'The PHP Phar extension is not available on this server. Please enable the Phar extension or contact your hosting provider.', 'burst-statistics' ),
+							false
 						);
 					}
 				} catch ( \Throwable $e ) {
 					// Catches both \Exception and \Error (e.g. missing extensions).
-					update_option( 'burst_geo_ip_import_error', $e->getMessage() );
+					update_option( 'burst_geo_ip_import_error', $e->getMessage(), false );
 				}
 
 				// now look up the uncompressed folder.
@@ -240,7 +369,10 @@ class Geo_Ip {
 						if ( $wp_filesystem->is_file( $unzipped ) ) {
 							wp_delete_file( $unzipped );
 						}
-						$wp_filesystem->move( $new_file_renamed, $unzipped );
+						if ( $wp_filesystem->move( $new_file_renamed, $unzipped ) ) {
+							update_option( 'burst_geo_ip_file', $unzipped );
+							$import_succeeded = true;
+						}
 					} else {
 						// Rename failed: leave the original in place and report the error.
 						self::error_log( 'Renaming the GeoIP database did not produce the expected file. The existing database has been kept.' );
@@ -261,10 +393,21 @@ class Geo_Ip {
 				}
 
 				// if there was an error saved previously, remove it.
-				if ( file_exists( $unzipped ) ) {
+				if ( $import_succeeded ) {
 					delete_option( 'burst_geo_ip_import_error' );
 					// re-run the tasks validation to ensure that the geo ip warning is removed.
 					\Burst\burst_loader()->admin->tasks->schedule_task_validation();
+					if ( is_string( $download_hash ) ) {
+						update_option( 'burst_geo_ip_db_hash', strtolower( $download_hash ), false );
+					}
+					$file_hash = hash_file( 'sha256', $unzipped );
+					if ( is_string( $file_hash ) ) {
+						update_option( 'burst_geo_ip_file_hash', strtolower( $file_hash ), false );
+					} else {
+						delete_option( 'burst_geo_ip_file_hash' );
+					}
+					$this->clear_import_failures();
+					update_option( 'burst_last_update_geo_ip', time(), false );
 				}
 			}
 
@@ -273,8 +416,12 @@ class Geo_Ip {
 				wp_delete_file( $tmpfile );
 			}
 			delete_transient( 'burst_importing' );
-			update_option( 'burst_last_update_geo_ip', time(), false );
+			if ( ! $import_succeeded ) {
+				$this->record_import_failure();
+			}
 		}
+
+		return $import_succeeded;
 	}
 
 	/**
@@ -289,13 +436,21 @@ class Geo_Ip {
 			return $notices;
 		}
 
+		// A refresh failure with a working database on disk needs different wording:
+		// tracking still works with the previous database in that case.
+		$file_name    = (string) get_option( 'burst_geo_ip_file', '' );
+		$has_database = '' !== $file_name && file_exists( $file_name );
+		$intro        = $has_database
+			? __( 'The GEO IP database could not be updated. The previously downloaded database is still being used.', 'burst-statistics' )
+			: __( "The GEO IP database hasn't been downloaded yet. It is necessary for tracking country information.", 'burst-statistics' );
+
 		$notices[] = [
 			'id'          => 'burst_geo_ip_import_error',
 			'condition'   => [
 				'type'     => 'serverside',
 				'function' => 'wp_option_burst_geo_ip_import_error',
 			],
-			'msg'         => __( "The GEO IP database hasn't been downloaded yet. It is necessary for tracking country information.", 'burst-statistics' ) .
+			'msg'         => $intro .
 							// translators: %s is the actual error message returned from the failed GEO IP import.
 							' ' . $this->sprintf( __( 'The following error was reported: %s', 'burst-statistics' ), get_option( 'burst_geo_ip_import_error' ) ),
 			'icon'        => 'warning',

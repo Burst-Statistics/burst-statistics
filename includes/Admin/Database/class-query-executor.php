@@ -54,6 +54,11 @@ class Query_Executor {
 	public bool $timed_out = false;
 
 	/**
+	 * Whether the last run() encountered any database query error.
+	 */
+	public bool $failed = false;
+
+	/**
 	 * Create a new Query_Executor instance.
 	 */
 	public static function create(): self {
@@ -165,6 +170,7 @@ class Query_Executor {
 		global $wpdb;
 
 		$this->timed_out   = false;
+		$this->failed      = false;
 		$is_single_row     = ( 'get_row' === $method );
 		$stress_iterations = $this->get_stress_test_query_iterations();
 		$cache_key         = '';
@@ -219,10 +225,12 @@ class Query_Executor {
 				return $result;
 			}
 
-			$result   = $this->execute( $wpdb, $sql, $method, $output_type );
-			$end_time = microtime( true );
+			$result       = $this->execute( $wpdb, $sql, $method, $output_type );
+			$query_error  = $wpdb->last_error;
+			$this->failed = '' !== $query_error;
+			$end_time     = microtime( true );
 
-			if ( $this->is_timeout_error( $wpdb->last_error ) ) {
+			if ( $this->is_timeout_error( $query_error ) ) {
 				$this->timed_out = true;
 				self::error_log( 'Burst query timed out in ' . $method . ' for fingerprint ' . $this->fingerprint );
 
