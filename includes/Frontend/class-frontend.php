@@ -93,6 +93,7 @@ class Frontend {
 		add_action( 'admin_init', [ $this, 'maybe_redirect_to_settings_page' ], 1 );
 
 		add_action( 'init', [ $this, 'register_pageviews_block' ] );
+		add_filter( 'register_block_type_args', [ $this, 'register_burst_goal_block_attributes' ], 10, 2 );
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_burst_block_editor_assets' ] );
 		add_filter( 'render_block', [ $this, 'render_block_filter' ], 10, 2 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_time_tracking_script' ], 0 );
@@ -908,6 +909,39 @@ class Frontend {
 		$text = sprintf( _n( 'This page has been viewed %d time.', 'This page has been viewed %d times.', $count, 'burst-statistics' ), $count );
 
 		return '<p class="burst-pageviews">' . esc_html( $text ) . '</p>';
+	}
+
+	/**
+	 * Register Burst goal block attributes in the PHP block registry.
+	 *
+	 * Ensures server-side rendered blocks (e.g. wpforms/form-selector, WooCommerce)
+	 * and the /wp/v2/block-renderer endpoint validate burstGoal* attributes added
+	 * by the block editor script without throwing "Invalid parameter(s): attributes" errors.
+	 *
+	 * No defaults are declared on purpose: only the schema properties matter for
+	 * validation, while a default would make prepare_attributes_for_render() inject
+	 * these keys into the attributes of every dynamic block on every render. The
+	 * block editor script supplies its own client-side defaults.
+	 *
+	 * @param array<string, mixed> $args       Array of block type arguments.
+	 * @param string               $block_type Block type name.
+	 * @return array<string, mixed> Filtered block type arguments.
+	 */
+	public function register_burst_goal_block_attributes( array $args, string $block_type ): array {
+		if ( 'core/freeform' === $block_type ) {
+			return $args;
+		}
+
+		if ( ! isset( $args['attributes'] ) || ! is_array( $args['attributes'] ) ) {
+			$args['attributes'] = [];
+		}
+
+		$args['attributes']['burstGoalUid']    = [ 'type' => 'string' ];
+		$args['attributes']['burstGoalActive'] = [ 'type' => 'boolean' ];
+		$args['attributes']['burstGoalId']     = [ 'type' => 'number' ];
+		$args['attributes']['burstGoalType']   = [ 'type' => 'string' ];
+
+		return $args;
 	}
 
 	/**

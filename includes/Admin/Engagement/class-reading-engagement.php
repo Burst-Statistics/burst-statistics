@@ -14,6 +14,37 @@ class Reading_Engagement {
 	use Helper;
 
 	/**
+	 * Maximum pages fetched for scoring.
+	 *
+	 * The engagement score needs a word count per page, which costs a post
+	 * lookup, so the candidate set must be bounded. Each candidate pulls the
+	 * full post (including post_content) through memory, which is what caps
+	 * this number: 500 posts stay comfortably within a default PHP memory
+	 * limit, where 1000 long page-builder posts would start to risk it.
+	 *
+	 * @var int
+	 */
+	private const WORD_COUNT_CANDIDATES = 500;
+
+	/**
+	 * Assumed reading speed in words per minute: the basis for the expected
+	 * reading time that a page's measured time on page is scored against.
+	 *
+	 * @var int
+	 */
+	private const WORDS_PER_MINUTE = 200;
+
+	/**
+	 * Word count assumed for pages without a resolvable post or with minimal
+	 * content (archives, homepage, page-builder content outside post_content),
+	 * so those pages get a neutral expected reading time instead of an
+	 * extreme score.
+	 *
+	 * @var int
+	 */
+	private const DEFAULT_WORD_COUNT = 200;
+
+	/**
 	 * Initialize the reading engagement class
 	 */
 	public function init(): void {
@@ -116,7 +147,8 @@ class Reading_Engagement {
 	 * Query the reading engagement metrics within a date range and compute engagement score.
 	 *
 	 * @param array $args  Normalized request args with date_start/date_end.
-	 * @param int   $limit Max rows to return; 0 means no limit.
+	 * @param int   $limit Max rows to return; 0 returns all scored candidates
+	 *                     (itself capped at WORD_COUNT_CANDIDATES).
 	 * @return array<int, array{page_url: string, avg_time_on_page: int, word_count: int, reading_engagement_score: int}>
 	 */
 	private function query_reading_engagement( array $args, int $limit = 10 ): array {
@@ -125,19 +157,29 @@ class Reading_Engagement {
 		$least = isset( $args['least_engagement'] ) && (bool) $args['least_engagement'];
 
 		// Built natively on Statistics_Query: base table is burst_statistics.
+		// The candidate set is capped in SQL: scoring needs a word count per
+		// page, so an uncapped query would cost a post lookup for every
+		// distinct URL in the range. Candidates are pre-sorted on time on page
+		// in the direction of the requested ranking — on sites with fewer
+		// distinct URLs than the cap this is exact, beyond that it is an
+		// approximation that errs in the direction of the ranking.
 		$qd = Statistics_Query::create( 'reading_engagement' )
 			->date_range( $start, $end )
 			->filters( (array) ( $args['filters'] ?? [] ) )
 			->select( [ 'page_url', 'avg_time_on_page' ] )
 			->where( 'statistics.time_on_page', 0, '>', '%d' )
 			->where( 'statistics.page_url', '', '!=' )
-			->group_by( 'page_url' );
+			->group_by( 'page_url' )
+			->order_by( 'avg_time_on_page ' . ( $least ? 'ASC' : 'DESC' ) )
+			->limit( self::WORD_COUNT_CANDIDATES );
 
 		$rows = $qd->fetch( ARRAY_A );
 
 		if ( empty( $rows ) ) {
 			return [];
 		}
+
+		$page_ids = $this->get_page_ids_for_urls( array_column( $rows, 'page_url' ) );
 
 		/**
 		 * Cache word count per page_url.
@@ -151,8 +193,16 @@ class Reading_Engagement {
 			$page_url = (string) $row['page_url'];
 
 			if ( ! isset( $word_count_cache[ $page_url ] ) ) {
-				$words   = 0;
-				$post_id = url_to_postid( home_url( $page_url ) );
+				$words = 0;
+				// The tracked post ID from our own statistics table: a free
+				// primary-key lookup instead of url_to_postid(), which parses
+				// the full rewrite-rule set per call. The fallback only runs
+				// for legacy rows without a stored page_id, bounded by the
+				// candidate cap.
+				$post_id = (int) ( $page_ids[ $page_url ] ?? 0 );
+				if ( $post_id <= 0 ) {
+					$post_id = url_to_postid( home_url( $page_url ) );
+				}
 				if ( $post_id > 0 ) {
 					$post = get_post( $post_id );
 					if ( $post instanceof \WP_Post && ! empty( $post->post_content ) ) {
@@ -163,14 +213,14 @@ class Reading_Engagement {
 						}
 					}
 				}
-				// Default to 200 words if post not found or word count minimal.
-				$word_count_cache[ $page_url ] = ( $words >= 20 ) ? $words : 200;
+				// Fall back to the default when no post was found or the word count is minimal.
+				$word_count_cache[ $page_url ] = ( $words >= 20 ) ? $words : self::DEFAULT_WORD_COUNT;
 			}
 
 			$words = $word_count_cache[ $page_url ];
 
-			// Expected reading time in seconds at 200 WPM (3.33 words/sec).
-			$expected_time_sec = max( 15.0, ( $words / 200.0 ) * 60.0 );
+			// Expected reading time in seconds at the assumed reading speed.
+			$expected_time_sec = max( 15.0, ( $words / (float) self::WORDS_PER_MINUTE ) * 60.0 );
 			$avg_time_ms       = (float) $row['avg_time_on_page'];
 			$avg_time_sec      = $avg_time_ms / 1000.0;
 
@@ -205,5 +255,43 @@ class Reading_Engagement {
 		}
 
 		return $processed;
+	}
+
+	/**
+	 * Resolve tracked post IDs for a set of page URLs from the statistics table.
+	 *
+	 * One indexed query for the whole candidate set: the tracking payload
+	 * stores the queried post ID per hit, so within one page_url the value is
+	 * constant (or 0 for non-singular pages) and MAX() simply picks the
+	 * stored ID over untracked zeros.
+	 *
+	 * @param string[] $page_urls Page URLs from the candidate rows.
+	 * @return array<string, int> Map of page_url to post ID (0 when unknown).
+	 */
+	private function get_page_ids_for_urls( array $page_urls ): array {
+		$page_urls = array_values( array_unique( array_filter( array_map( 'strval', $page_urls ), static fn( string $url ): bool => $url !== '' ) ) );
+		if ( empty( $page_urls ) ) {
+			return [];
+		}
+
+		global $wpdb;
+		$placeholders = implode( ', ', array_fill( 0, count( $page_urls ), '%s' ) );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- placeholder list built above, values bound via prepare.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT page_url, MAX(page_id) AS page_id FROM {$wpdb->prefix}burst_statistics WHERE page_url IN ( {$placeholders} ) GROUP BY page_url",
+				$page_urls
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+		$map = [];
+		foreach ( (array) $rows as $row ) {
+			$map[ (string) $row['page_url'] ] = (int) $row['page_id'];
+		}
+
+		return $map;
 	}
 }
