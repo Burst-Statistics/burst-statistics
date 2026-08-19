@@ -69,27 +69,46 @@ class Share_Tokens {
 	 * @return array Array of share link data.
 	 */
 	public function get_share_links( string $type = 'all', string $token = '', int $report_id = 0 ): array {
-		$tokens = get_option( 'burst_share_tokens', [] );
-		// if this is requested for a report, we should check if it has a connected share url. If not, generate the token.
+		$tokens       = get_option( 'burst_share_tokens', [] );
+		$current_time = time();
+		// if this is requested for a report, ensure the report has a token that is valid
+		// for the full expiration window starting now: the emailed link should not
+		// expire (shortly) after the email is sent because the token was created at an
+		// earlier send or when the report was created. An expired token is refreshed
+		// instead of skipped, so recurring reports keep a stable share URL.
 		if ( $type === 'report' && $report_id > 0 ) {
-			$tokens = array_filter(
-				$tokens,
-				function ( $link ) use ( $report_id ) {
-					return $link['report_id'] === $report_id;
+			$has_report_token = false;
+			$refreshed        = false;
+			foreach ( $tokens as $key => $token_data ) {
+				if ( (int) ( $token_data['report_id'] ?? 0 ) !== $report_id ) {
+					continue;
 				}
-			);
-			// if there are no tokens for this report, we should generate them now.
-			if ( empty( $tokens ) ) {
+				$has_report_token = true;
+				// Re-anchor the expiration to now, keeping the original duration (0 = never expires).
+				$expires = (int) ( $token_data['expires'] ?? 0 );
+				if ( $expires !== 0 ) {
+					$created                   = (int) ( $token_data['created'] ?? 0 );
+					$duration                  = ( $created > 0 && $expires > $created ) ? $expires - $created : self::EXPIRATION_MAP['7d'];
+					$tokens[ $key ]['created'] = $current_time;
+					$tokens[ $key ]['expires'] = $current_time + $duration;
+					$refreshed                 = true;
+				}
+			}
+			if ( ! $has_report_token ) {
+				// no token yet for this report, generate it now.
 				$burst_scheme = wp_parse_url( BURST_URL, PHP_URL_SCHEME );
 				$view_url     = set_url_scheme( site_url( '/burst-dashboard/story/' ), $burst_scheme );
 				$this->generate_token( '7d', $view_url, [], [], [], $report_id );
 				$tokens = get_option( 'burst_share_tokens', [] );
+			} elseif ( $refreshed ) {
+				update_option( 'burst_share_tokens', $tokens );
 			}
 		}
 
-		$share_links  = [];
-		$current_time = time();
-		// Clean up expired tokens while we're at it.
+		$share_links = [];
+		// Clean up expired tokens while we're at it. $tokens always holds the full
+		// stored list at this point, so persisting the cleaned list below never
+		// drops tokens that belong to other reports or share links.
 		$valid_tokens = [];
 
 		foreach ( $tokens as $token_data ) {
