@@ -4,11 +4,13 @@ use PHPUnit\Framework\TestCase;
 class BurstVersionConsistencyTest extends TestCase {
 
     /**
-     * Verifies that the "Tested up to" version in the free plugin's readme.txt is
-     * greater than or equal to the latest WordPress release when ignoring patch
-     * versions. The free repo only requires a major.minor match, so "Tested up to: 6.9"
-     * covers all 6.9.x releases. A warning only appears when the major.minor of the
-     * latest WP version exceeds the tested up to value.
+     * Verifies that the "Tested up to" version in the free plugin's readme.txt matches
+     * the major.minor of the latest official WordPress release, or of an available
+     * beta/RC. It may not lag behind the stable release, and it may only be higher when
+     * that higher version actually exists as a beta or RC — e.g. latest WP 7.0.3 requires
+     * "Tested up to: 7.0", but once 7.1-RC1 is out, "Tested up to: 7.1" is also allowed.
+     * This intentionally differs from burst-pro, where the value must be higher than the
+     * current WP version because of the EDD updater bug.
      */
     public function test_free_tested_up_to_version() {
         $plugin_dir = dirname( __FILE__, 3 );
@@ -18,33 +20,55 @@ class BurstVersionConsistencyTest extends TestCase {
         $tested_up_to = $this->get_tested_up_to( $readme_path );
         $this->assertNotNull( $tested_up_to, 'Could not find "Tested up to" in readme.txt' );
 
-        // Fetch latest WordPress version from the official API
-        $response = file_get_contents( 'https://api.wordpress.org/core/version-check/1.7/' );
+        // The readme value itself must be major.minor only, without a patch version.
+        $this->assertMatchesRegularExpression(
+            '/^\d+\.\d+$/',
+            $tested_up_to,
+            "\"Tested up to\" ($tested_up_to) must be a major.minor version without a patch version (e.g. 7.0, not 7.0.3)."
+        );
+
+        // Fetch WordPress versions from the official API. The beta channel includes both
+        // the latest stable release ('upgrade' offer) and any beta/RC ('development' offer).
+        $response = file_get_contents( 'https://api.wordpress.org/core/version-check/1.7/?channel=beta' );
         $this->assertNotFalse( $response, 'Could not fetch WordPress version from API' );
 
         $data = json_decode( $response, true );
         $this->assertNotNull( $data, 'Could not parse WordPress version API response' );
+        $this->assertNotEmpty( $data['offers'] ?? [], 'No offers found in WordPress API response' );
 
-        $latest_wp_version = $data['offers'][0]['version'] ?? null;
-        $this->assertNotNull( $latest_wp_version, 'Could not find version in WordPress API response' );
+        $latest_stable = null;
+        $allowed       = [];
+        foreach ( $data['offers'] as $offer ) {
+            $version = $offer['version'] ?? '';
+            if ( $latest_stable === null && ( $offer['response'] ?? '' ) === 'upgrade' ) {
+                // Latest official stable release, e.g. 7.0.4.
+                $latest_stable = $this->normalize_to_minor( $version );
+                $allowed[]     = $latest_stable;
+            } elseif ( preg_match( '/-(beta|RC)/i', $version ) ) {
+                // Available beta/RC of an upcoming release, e.g. 7.1-RC4 -> 7.1 is allowed.
+                $allowed[] = $this->normalize_to_minor( $version );
+            }
+        }
+        $allowed = array_values( array_unique( $allowed ) );
 
-        // Strip patch version from both values, leaving only major.minor (e.g. 6.9.1 -> 6.9)
-        $tested_up_to_normalized  = $this->normalize_to_minor( $tested_up_to );
-        $latest_wp_normalized     = $this->normalize_to_minor( $latest_wp_version );
+        $this->assertNotNull( $latest_stable, 'Could not find latest stable version in WordPress API response' );
 
-        // Tested up to major.minor must be >= latest WP major.minor
-        $this->assertGreaterThanOrEqual(
-            0,
-            version_compare( $tested_up_to_normalized, $latest_wp_normalized ),
-            "\"Tested up to\" ($tested_up_to) must be greater than or equal to the latest WordPress major.minor version ($latest_wp_normalized)."
+        // Tested up to may not lag behind the latest stable release, and may only exceed
+        // it for a version that exists as a beta/RC (wordpress.org rejects anything higher).
+        $this->assertContains(
+            $tested_up_to,
+            $allowed,
+            "\"Tested up to\" ($tested_up_to) must match the latest official WordPress major.minor version, or that of an available beta/RC. Allowed value(s): " . implode( ', ', $allowed ) . '.'
         );
     }
 
     private function normalize_to_minor( string $version ): string {
-        $parts = explode( '.', $version );
+        // Strip any pre-release suffix (e.g. 7.1-RC4 -> 7.1), then return major.minor.
+        if ( preg_match( '/^(\d+\.\d+)/', $version, $matches ) ) {
+            return $matches[1];
+        }
 
-        // Return only major.minor (first two segments)
-        return implode( '.', array_slice( $parts, 0, 2 ) );
+        return $version;
     }
 
     private function get_tested_up_to( string $file_path ): ?string {
