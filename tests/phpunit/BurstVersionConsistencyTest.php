@@ -4,11 +4,12 @@ use PHPUnit\Framework\TestCase;
 class BurstVersionConsistencyTest extends TestCase {
 
     /**
-     * Verifies that the "Tested up to" version in the free plugin's readme.txt is
-     * greater than or equal to the latest WordPress release when ignoring patch
-     * versions. The free repo only requires a major.minor match, so "Tested up to: 6.9"
-     * covers all 6.9.x releases. A warning only appears when the major.minor of the
-     * latest WP version exceeds the tested up to value.
+     * Verifies that the "Tested up to" version in the free plugin's readme.txt exactly
+     * matches the major.minor of the latest official WordPress release. It may not lag
+     * behind, but it may also not be higher than the current official version — e.g.
+     * latest WP 7.0.3 requires "Tested up to: 7.0", and latest WP 7.1 or 7.1.2 requires
+     * "Tested up to: 7.1". This intentionally differs from burst-pro, where the value
+     * must be higher than the current WP version because of the EDD updater bug.
      */
     public function test_free_tested_up_to_version() {
         $plugin_dir = dirname( __FILE__, 3 );
@@ -17,6 +18,13 @@ class BurstVersionConsistencyTest extends TestCase {
         // Get "Tested up to" from free readme.txt
         $tested_up_to = $this->get_tested_up_to( $readme_path );
         $this->assertNotNull( $tested_up_to, 'Could not find "Tested up to" in readme.txt' );
+
+        // The readme value itself must be major.minor only, without a patch version.
+        $this->assertMatchesRegularExpression(
+            '/^\d+\.\d+$/',
+            $tested_up_to,
+            "\"Tested up to\" ($tested_up_to) must be a major.minor version without a patch version (e.g. 7.0, not 7.0.3)."
+        );
 
         // Fetch latest WordPress version from the official API
         $response = file_get_contents( 'https://api.wordpress.org/core/version-check/1.7/' );
@@ -32,11 +40,12 @@ class BurstVersionConsistencyTest extends TestCase {
         $tested_up_to_normalized  = $this->normalize_to_minor( $tested_up_to );
         $latest_wp_normalized     = $this->normalize_to_minor( $latest_wp_version );
 
-        // Tested up to major.minor must be >= latest WP major.minor
-        $this->assertGreaterThanOrEqual(
+        // Tested up to must equal the latest WP major.minor: not lower (outdated readme),
+        // and not higher (wordpress.org rejects a value above the current official release).
+        $this->assertSame(
             0,
             version_compare( $tested_up_to_normalized, $latest_wp_normalized ),
-            "\"Tested up to\" ($tested_up_to) must be greater than or equal to the latest WordPress major.minor version ($latest_wp_normalized)."
+            "\"Tested up to\" ($tested_up_to) must exactly match the latest official WordPress major.minor version ($latest_wp_normalized). It may not be higher or lower."
         );
     }
 
