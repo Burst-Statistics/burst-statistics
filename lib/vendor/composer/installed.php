@@ -3,7 +3,7 @@
         'name' => '__root__',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => '0cce8326d5776a9769f7c4dc38f9e2d6b059bc5c',
+        'reference' => '0794dcb6e1ff8e12a44e9dcc27d39be836ef1d57',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,20 +13,17 @@
         '__root__' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => '0cce8326d5776a9769f7c4dc38f9e2d6b059bc5c',
+            'reference' => '0794dcb6e1ff8e12a44e9dcc27d39be836ef1d57',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
         'composer/ca-bundle' => array(
-            'pretty_version' => '1.5.13',
-            'version' => '1.5.13.0',
-            'reference' => 'c008272789979f709f7fcb32c2ecf1d2db5e84e5',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/./ca-bundle',
-            'aliases' => array(),
             'dev_requirement' => false,
+            'replaced' => array(
+                0 => '*',
+            ),
         ),
         'donatj/phpuseragentparser' => array(
             'pretty_version' => 'v1.12.0',

@@ -25,10 +25,6 @@ class ComposerStaticInite441b0d17b685417726cf14761f71db6
         array (
             'GeoIp2\\' => 7,
         ),
-        'C' => 
-        array (
-            'Composer\\CaBundle\\' => 18,
-        ),
     );
 
     public static $prefixDirsPsr4 = array (
@@ -51,10 +47,6 @@ class ComposerStaticInite441b0d17b685417726cf14761f71db6
         'GeoIp2\\' => 
         array (
             0 => __DIR__ . '/..' . '/geoip2/geoip2/src',
-        ),
-        'Composer\\CaBundle\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/composer/ca-bundle/src',
         ),
     );
 
