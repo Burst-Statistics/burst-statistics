@@ -3,7 +3,7 @@
         'name' => '__root__',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => '0cce8326d5776a9769f7c4dc38f9e2d6b059bc5c',
+        'reference' => 'ee0a75d2430d00a102b3d2e885d249468ac308ea',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,20 +13,17 @@
         '__root__' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => '0cce8326d5776a9769f7c4dc38f9e2d6b059bc5c',
+            'reference' => 'ee0a75d2430d00a102b3d2e885d249468ac308ea',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
         'composer/ca-bundle' => array(
-            'pretty_version' => '1.5.13',
-            'version' => '1.5.13.0',
-            'reference' => 'c008272789979f709f7fcb32c2ecf1d2db5e84e5',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/./ca-bundle',
-            'aliases' => array(),
             'dev_requirement' => false,
+            'replaced' => array(
+                0 => '*',
+            ),
         ),
         'donatj/phpuseragentparser' => array(
             'pretty_version' => 'v1.12.0',
@@ -80,13 +77,10 @@
             'dev_requirement' => false,
         ),
         'maxmind/web-service-common' => array(
-            'pretty_version' => 'v0.9.0',
-            'version' => '0.9.0.0',
-            'reference' => '4dc5a3e8df38aea4ca3b1096cee3a038094e9b53',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../maxmind/web-service-common',
-            'aliases' => array(),
             'dev_requirement' => false,
+            'replaced' => array(
+                0 => '*',
+            ),
         ),
         'piwik/referrer-spam-blacklist' => array(
             'dev_requirement' => false,
