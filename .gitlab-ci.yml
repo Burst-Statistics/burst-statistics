@@ -9,7 +9,7 @@ workflow:
   variables:
     BASE_URL: "http://localhost"
   image:
-    name: source.updraftplus.com:5050/ci/playwright-e2e:php-8.4-wp-7.0-beta1
+    name: source.updraftplus.com:5050/ci/playwright-e2e:php-8.5-wp-7.1-RC3
     entrypoint: [""]
   cache:
     - key:
@@ -26,6 +26,11 @@ workflow:
     # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
     - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
     - chown -R www-data:www-data /var/www/html/
+    # Pre-create debug.log writable for both root (wp-cli) and www-data (web).
+    # On PHP 8.5 the root-run wp-cli commands below log deprecations from the
+    # wp-cli phar, which would otherwise create debug.log as root:root — after
+    # which all web-request log lines are silently dropped.
+    - touch /var/www/html/wp-content/debug.log && chown www-data:www-data /var/www/html/wp-content/debug.log && chmod 666 /var/www/html/wp-content/debug.log
     - wp plugin activate burst-statistics --path=/var/www/html
   after_script:
     - cp /var/log/php_errors.log error.log || true
@@ -50,6 +55,8 @@ test:phpunit:
     - cp -R . /var/www/html/wp-content/plugins/burst-statistics/
     # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
     - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
+    # See e2e_base: keep debug.log writable for www-data despite root wp-cli writes.
+    - touch /var/www/html/wp-content/debug.log && chown www-data:www-data /var/www/html/wp-content/debug.log && chmod 666 /var/www/html/wp-content/debug.log
     - wp plugin activate burst-statistics --path=/var/www/html
     - curl -sS https://getcomposer.org/installer | php
     - php composer.phar install
@@ -69,6 +76,8 @@ test:onboarding:
     - cp -R . /var/www/html/wp-content/plugins/burst-statistics/
     # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
     - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics/
+    # See e2e_base: keep debug.log writable for www-data despite root wp-cli writes.
+    - touch /var/www/html/wp-content/debug.log && chown www-data:www-data /var/www/html/wp-content/debug.log && chmod 666 /var/www/html/wp-content/debug.log
     - curl -sS https://getcomposer.org/installer | php
     - php composer.phar install
   script:
@@ -97,6 +106,8 @@ test:e2e:upgrade:
     - cp -R . /var/www/html/wp-content/plugins/burst-statistics-new/
     # The directory needs to be owned by www-data (without this attempting to write translation files will fail)
     - chown -R www-data:www-data /var/www/html/wp-content/plugins/burst-statistics-new/
+    # See e2e_base: keep debug.log writable for www-data despite root wp-cli writes.
+    - touch /var/www/html/wp-content/debug.log && chown www-data:www-data /var/www/html/wp-content/debug.log && chmod 666 /var/www/html/wp-content/debug.log
     - wp plugin install burst-statistics --activate --path=/var/www/html
   script:
     - npm run e2e:upgrade
