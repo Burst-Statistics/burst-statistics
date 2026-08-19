@@ -3,7 +3,7 @@
         'name' => '__root__',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => '0794dcb6e1ff8e12a44e9dcc27d39be836ef1d57',
+        'reference' => 'ee0a75d2430d00a102b3d2e885d249468ac308ea',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         '__root__' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => '0794dcb6e1ff8e12a44e9dcc27d39be836ef1d57',
+            'reference' => 'ee0a75d2430d00a102b3d2e885d249468ac308ea',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -77,13 +77,10 @@
             'dev_requirement' => false,
         ),
         'maxmind/web-service-common' => array(
-            'pretty_version' => 'v0.9.0',
-            'version' => '0.9.0.0',
-            'reference' => '4dc5a3e8df38aea4ca3b1096cee3a038094e9b53',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../maxmind/web-service-common',
-            'aliases' => array(),
             'dev_requirement' => false,
+            'replaced' => array(
+                0 => '*',
+            ),
         ),
         'piwik/referrer-spam-blacklist' => array(
             'dev_requirement' => false,
