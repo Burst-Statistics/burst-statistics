@@ -5,7 +5,7 @@ Tags: analytics, visitor tracking, statistics, google analytics, cookieless anal
 Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
-Tested up to: 7.2
+Tested up to: 7.1
 Stable tag: 3.6.3
 
 Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner needed.
