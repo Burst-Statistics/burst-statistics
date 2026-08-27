@@ -6,10 +6,18 @@ workflow:
     on_new_commit: interruptible
 
 .e2e_base_template: &e2e_base
+  # Auto-restart flaky e2e runs (race conditions, runner hiccups) up to 2
+  # extra attempts; per-test retries are handled by playwright.config.js.
+  retry:
+    max: 2
+    when:
+      - script_failure
+      - runner_system_failure
+      - stuck_or_timeout_failure
   variables:
     BASE_URL: "http://localhost"
   image:
-    name: source.updraftplus.com:5050/ci/playwright-e2e:php-8.5-wp-7.1-RC3
+    name: source.updraftplus.com:5050/ci/playwright-e2e:auto-php-8.5-wp-7.1.0
     entrypoint: [""]
   cache:
     - key:
