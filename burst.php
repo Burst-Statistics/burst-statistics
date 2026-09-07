@@ -79,12 +79,34 @@ try {
 
     if ( ! function_exists( '\Burst\burst_clear_scheduled_hooks' ) && ! function_exists( 'burst_clear_scheduled_hooks' ) ) {
         /**
-         * Clear scheduled hooks
+         * Clear every scheduled Burst cron event on deactivation.
+         *
+         * Scans the cron array for hooks with the burst_ prefix instead of
+         * keeping a list: recurring schedules, chained single events and hooks
+         * scheduled with arguments are all removed, including ones added later.
          */
         function burst_clear_scheduled_hooks(): void {
-            wp_clear_scheduled_hook( 'burst_every_hour' );
-            wp_clear_scheduled_hook( 'burst_daily' );
-            wp_clear_scheduled_hook( 'burst_weekly' );
+            $crons = _get_cron_array();
+            if ( ! is_array( $crons ) ) {
+                return;
+            }
+
+            $hooks = [];
+            foreach ( $crons as $events ) {
+                // The array also carries a scalar 'version' entry.
+                if ( ! is_array( $events ) ) {
+                    continue;
+                }
+                foreach ( array_keys( $events ) as $hook ) {
+                    if ( str_starts_with( (string) $hook, 'burst_' ) ) {
+                        $hooks[ $hook ] = true;
+                    }
+                }
+            }
+
+            foreach ( array_keys( $hooks ) as $hook ) {
+                wp_unschedule_hook( $hook );
+            }
         }
         register_deactivation_hook( __FILE__, '\Burst\burst_clear_scheduled_hooks' );
     }
