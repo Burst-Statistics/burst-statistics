@@ -564,7 +564,7 @@ const buildQueryString = ( params ) => {
 
 // fallow-ignore-next-line complexity
 const buildBaseQueryParams = ( startDate, endDate, range, args ) => {
-	const { filters, metrics, group_by, selectedPages } = args;
+	const { filters, metrics, group_by, selectedPages, page_id } = args;
 
 	const queryParams = {
 		date_start: startDate,
@@ -587,6 +587,9 @@ const buildBaseQueryParams = ( startDate, endDate, range, args ) => {
 	}
 	if ( group_by ) {
 		queryParams.group_by = group_by;
+	}
+	if ( page_id !== undefined ) {
+		queryParams.page_id = page_id;
 	}
 
 	return queryParams;
@@ -615,7 +618,7 @@ export const getDatatableData = async( id, isEcommerce, startDate, endDate, rang
 export const getData = async( type, startDate, endDate, range, args = {}) => {
 
 	// Extract filters and metrics from args if they exist.
-	const { currentView, chart_mode, distribution_view, product_id, compare_mode, compare_date_start, compare_date_end, page_url, least_engagement, source, metric } = args;
+	const { currentView, chart_mode, distribution_view, product_id, compare_mode, compare_date_start, compare_date_end, page_url, page_id, least_engagement, include_page_metrics, source, metric } = args;
 
 	const queryParams = buildBaseQueryParams( startDate, endDate, range, args );
 	if ( currentView ) {
@@ -643,8 +646,14 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
 	if ( page_url ) {
 		queryParams.page_url = page_url;
 	}
+	if ( page_id !== undefined ) {
+		queryParams.page_id = page_id;
+	}
 	if ( least_engagement !== undefined ) {
 		queryParams.least_engagement = least_engagement;
+	}
+	if ( include_page_metrics !== undefined ) {
+		queryParams.include_page_metrics = include_page_metrics;
 	}
 	if ( source ) {
 		queryParams.source = source;

@@ -71,13 +71,13 @@ export function SubscriptionForecastChartBlock(): JSX.Element {
 		__( 'Previous year', 'burst-statistics' ) :
 		__( 'Previous period', 'burst-statistics' );
 
-	// While the forecast is shown, chart and forecast share one bucket
-	// granularity (months, or years for selections beyond two years) and the
-	// end date is anchored to the last complete period — also when the
-	// picked range ends earlier — so the forecast always starts at the
-	// current period and never projects periods that are already measured.
-	const forecastRange = getForecastRange( startDate );
+	// While the forecast is shown, the chart pins itself to the forecast
+	// view's fixed window — the last 12 complete months, bucketed per
+	// month — regardless of the picked range, so the projection is always
+	// exactly the next 12 months starting at the current month.
+	const forecastRange = getForecastRange();
 	const groupBy = showForecast ? forecastRange.groupBy : 'auto';
+	const historicalStartDate = showForecast ? forecastRange.startDate : startDate;
 	const historicalEndDate = showForecast ? forecastRange.endDate : endDate;
 
 	// Without comparison or forecast this key is identical to
@@ -88,14 +88,14 @@ export function SubscriptionForecastChartBlock(): JSX.Element {
 		queryKey: [
 			'revenueChart',
 			chartMode,
-			startDate,
+			historicalStartDate,
 			historicalEndDate,
 			range,
 			...( 'auto' !== groupBy ? [ groupBy ] : []),
 			...( showComparison ? [ compareMode ] : [])
 		],
 		queryFn: () => getRevenueChartData({
-			startDate,
+			startDate: historicalStartDate,
 			endDate: historicalEndDate,
 			range,
 			chartMode,
@@ -183,7 +183,7 @@ export function SubscriptionForecastChartBlock(): JSX.Element {
 								{ hasHistoricalData && (
 									<ForecastToggle
 										active={ showForecast }
-										label={ __( 'Forecast', 'burst-statistics' ) }
+										label={ __( 'Next 12 months', 'burst-statistics' ) }
 										onClick={ toggleForecast }
 									/>
 								) }

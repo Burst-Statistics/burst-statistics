@@ -299,6 +299,15 @@ class Share_UI {
 						padding-left:23px;
 					}
 				</style>
+				<?php
+				// Print enqueued styles in the head. Without this they are only
+				// printed by wp_print_footer_scripts() after the app markup.
+				// Core keeps the deprecated print_emoji_styles() on this hook for
+				// backwards compatibility; it is only unhooked on wp_enqueue_scripts,
+				// which never fires on this template.
+				remove_action( 'wp_print_styles', 'print_emoji_styles' );
+				wp_print_styles();
+				?>
 			</head>
 			<body class="burst-shared-view">
 			<?php

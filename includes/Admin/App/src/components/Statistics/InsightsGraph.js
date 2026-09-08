@@ -26,6 +26,17 @@ function transformToNivoFormat( data, timestamps ) {
 		return [];
 	}
 
+	// Skip zero/invalid timestamps: they all map to the same epoch-0 Date,
+	// which Nivo keys ticks and slices by (Date.valueOf()) — a response with
+	// zeroed timestamps would render duplicate React keys and a bogus 1970
+	// axis. Computed once, outside the per-dataset point closure.
+	const validIndices = [];
+	timestamps.forEach( ( ts, j ) => {
+		if ( 0 < Number( ts ) ) {
+			validIndices.push( j );
+		}
+	});
+
 	// fallow-ignore-next-line complexity
 	return data.datasets.map( ( dataset, i ) => {
 		const isComparison = Boolean( dataset.is_comparison );
@@ -41,10 +52,11 @@ function transformToNivoFormat( data, timestamps ) {
 		return {
 			id,
 			color,
-			data: timestamps.map( ( ts, j ) => {
+
+			data: validIndices.map( ( j ) => {
 				const compareTs = dataset.comparison_timestamps?.[ j ];
 				return {
-					x: new Date( ts * 1000 ),
+					x: new Date( timestamps[ j ] * 1000 ),
 					y: dataset.data[ j ] ?? 0,
 					isComparison,
 					metric_key: metricKey,
@@ -110,7 +122,9 @@ const InsightsGraph = ({ data, timestamps, interval, spansMultipleYears }) => {
 	);
 
 	const allDates = useMemo(
-		() => ( timestamps ?? []).map( ( ts ) => new Date( ts * 1000 ) ),
+		() => ( timestamps ?? [])
+			.filter( ( ts ) => 0 < Number( ts ) )
+			.map( ( ts ) => new Date( ts * 1000 ) ),
 		[ timestamps ]
 	);
 

@@ -44,6 +44,8 @@ class Query_Executor {
 	private int $timeout_ms             = 30000;
 	private int $date_range_days        = 0;
 	private int $timeout_cooldown_ttl   = 0;
+	private bool $cache_empty_results   = false;
+	private string $cache_salt          = '';
 
 	/**
 	 * Whether the last run() hit a MySQL execution timeout. A timeout returns
@@ -63,6 +65,32 @@ class Query_Executor {
 	 */
 	public static function create(): self {
 		return new self();
+	}
+
+	/**
+	 * Also cache empty result sets. Off by default: statistics queries must not
+	 * pin an empty answer while a backfill is filling the range. Opt in for
+	 * sources whose data only changes through a known write path (e.g. the
+	 * Search Console store), where an empty range is a stable answer.
+	 *
+	 * @param bool $on Cache empty results.
+	 */
+	public function cache_empty_results( bool $on ): self {
+		$this->cache_empty_results = $on;
+		return $this;
+	}
+
+	/**
+	 * Mix an extra value into the cache key. Callers whose data changes through
+	 * a known write path (e.g. the Search Console sync) pass a version that the
+	 * write path bumps, so a long TTL never pins stale or empty results after
+	 * new data lands.
+	 *
+	 * @param string $salt Version value to mix into the cache key.
+	 */
+	public function cache_salt( string $salt ): self {
+		$this->cache_salt = $salt;
+		return $this;
 	}
 
 	/**
@@ -169,6 +197,14 @@ class Query_Executor {
 	public function run( string $sql, string $method, string $output_type = 'OBJECT' ): mixed {
 		global $wpdb;
 
+		// Applied before cache-key derivation so cached results stay keyed to the
+		// SQL that actually ran.
+		$modified_sql = $this->add_big_result_modifier( $sql, $this->date_range_days );
+		if ( $modified_sql !== $sql ) {
+			$this->maybe_raise_session_temp_table_size();
+			$sql = $modified_sql;
+		}
+
 		$this->timed_out   = false;
 		$this->failed      = false;
 		$is_single_row     = ( 'get_row' === $method );
@@ -233,6 +269,11 @@ class Query_Executor {
 			if ( $this->is_timeout_error( $query_error ) ) {
 				$this->timed_out = true;
 				self::error_log( 'Burst query timed out in ' . $method . ' for fingerprint ' . $this->fingerprint );
+				// Record the timeout in query stats at its true (burned) cost:
+				// without this, a query that always times out is invisible in
+				// the stats export — the dashboard is slow while every
+				// *recorded* query looks healthy.
+				$this->store_query_execution_time( $sql, $start_time, $end_time, $this->fingerprint );
 
 				if ( $this->cache_ttl > 0 && '' !== $cache_key ) {
 					$cooldown_ttl = $this->timeout_cooldown_ttl > 0
@@ -247,7 +288,15 @@ class Query_Executor {
 			$this->store_query_execution_time( $sql, $start_time, $end_time, $this->fingerprint );
 
 			if ( $this->cache_ttl > 0 && '' !== $cache_key && $this->is_cacheable_result( $result, $method ) ) {
-				wp_cache_set( $cache_key, $result, $this->cache_group, $this->cache_ttl );
+				$ttl = $this->cache_ttl;
+				// Large row sets (full-fetch datatables) can be megabytes per
+				// (range × filters × columns) combination; capping their TTL
+				// bounds object-cache memory while the small aggregates that
+				// benefit most from long caching keep the full TTL.
+				if ( in_array( $method, [ 'get', 'get_col' ], true ) && is_array( $result ) && count( $result ) > 5000 && $ttl > 300 ) {
+					$ttl = 300;
+				}
+				wp_cache_set( $cache_key, $result, $this->cache_group, $ttl );
 			}
 
 			return $result;
@@ -306,7 +355,7 @@ class Query_Executor {
 	 */
 	private function is_cacheable_result( mixed $result, string $method ): bool {
 		if ( 'get' === $method ) {
-			return ! empty( $result );
+			return $this->cache_empty_results ? is_array( $result ) : ! empty( $result );
 		}
 		return null !== $result;
 	}
@@ -549,7 +598,9 @@ class Query_Executor {
 			}
 
 			if ( ! $this->is_deadlock_db_error( $error_message ) ) {
-				self::error_log( 'Query stats write failed: ' . $error_message );
+				if ( false === strpos( strtolower( $error_message ), "doesn't exist" ) ) {
+					self::error_log( 'Query stats write failed: ' . $error_message );
+				}
 				return false;
 			}
 
@@ -659,7 +710,7 @@ class Query_Executor {
 				$auth_context = 'viewer';
 			}
 		}
-		$hash = hash( 'sha256', $sql . '|' . $output_type . '|' . ( $single_row ? 'row' : 'results' ) . '|' . $auth_context );
+		$hash = hash( 'sha256', $sql . '|' . $output_type . '|' . ( $single_row ? 'row' : 'results' ) . '|' . $auth_context . '|' . $this->cache_salt );
 
 		return 'burst_query_' . $hash;
 	}

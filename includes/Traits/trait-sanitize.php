@@ -400,6 +400,41 @@ trait Sanitize {
 	}
 
 	/**
+	 * Sanitize the scroll-zone dwell times sent by the tracker: a JSON object
+	 * with exactly the four fixed zone keys and a millisecond integer each.
+	 * Anything else — unknown keys, non-numeric values, malformed or oversized
+	 * input — is dropped, and values are clamped to one day, so the TEXT
+	 * column only ever stores the ~60-byte canonical shape (the beacon is
+	 * public, so the raw value is attacker-controlled) and the aggregation can
+	 * trust the numbers.
+	 *
+	 * @param mixed $dwell_zones Raw request value.
+	 * @return string Canonical JSON, or '' when nothing valid was sent.
+	 */
+	public function sanitize_dwell_zones( mixed $dwell_zones ): string {
+		if ( ! is_string( $dwell_zones ) || '' === $dwell_zones || strlen( $dwell_zones ) > 255 ) {
+			return '';
+		}
+		$decoded = json_decode( wp_unslash( $dwell_zones ), true );
+		if ( ! is_array( $decoded ) ) {
+			return '';
+		}
+		$max_ms    = DAY_IN_SECONDS * 1000;
+		$sanitized = [];
+		foreach ( [ '0_25', '25_50', '50_75', '75_100' ] as $zone ) {
+			$value = $decoded[ $zone ] ?? 0;
+			if ( ! is_int( $value ) && ! is_float( $value ) ) {
+				$value = 0;
+			}
+			$sanitized[ $zone ] = min( $max_ms, max( 0, (int) $value ) );
+		}
+		if ( 0 === array_sum( $sanitized ) ) {
+			return '';
+		}
+		return (string) wp_json_encode( $sanitized );
+	}
+
+	/**
 	 * Sanitize a referrer URL.
 	 *
 	 * @param string|null $referrer Referrer URL to sanitize.
@@ -697,16 +732,18 @@ trait Sanitize {
 	}
 
 	/**
-	 * Sanitize include or exclude values
+	 * Sanitize include or exclude values.
+	 *
+	 * Accepts canonical string values ('include' / 'exclude') as well as the
+	 * common boolean-like string aliases ('1', '0', 'true', 'false') that the
+	 * frontend or REST API may transmit.
 	 *
 	 * @param string $value value to sanitize.
-	 * @return string Sanitized value
+	 * @return string 'include' or 'exclude'.
 	 */
 	public function sanitize_include_exclude( string $value ): string {
-		$allowed = [ 'include', 'exclude' ];
-
-		if ( in_array( $value, $allowed, true ) ) {
-			return $value;
+		if ( $value === 'include' || $value === '1' || $value === 'true' ) {
+			return 'include';
 		}
 
 		return 'exclude';

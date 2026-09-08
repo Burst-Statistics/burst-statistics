@@ -23,6 +23,19 @@ class Capability {
 	}
 
 	/**
+	 * Full capability names Burst can grant (view_burst_statistics, manage_burst_statistics
+	 * and any type Pro adds), for diagnostics and access checks.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function get_capability_names(): array {
+		return array_map(
+			static fn( string $type ): string => "{$type}_burst_statistics",
+			( new self() )->get_possible_capabilities()
+		);
+	}
+
+	/**
 	 * Add capability to a user
 	 */
 	public static function add_capability( string $type = 'view', array $roles = [ 'administrator' ], bool $handle_subsites = true ): void {

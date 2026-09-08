@@ -243,7 +243,8 @@ export const DateRangePicker = ({
 							align={align}
 							sideOffset={10}
 							arrowPadding={10}
-							id="burst-statistics"
+							className="burst"
+							style={{ zIndex: 100001 }}
 						>
 							<span className="absolute right-4 mt-1 h-4 w-4 -translate-y-2 rotate-45 transform bg-green-50" />
 

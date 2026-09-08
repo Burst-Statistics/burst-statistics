@@ -34,7 +34,7 @@ interface DateRangeSearchParams {
 }
 
 // Routes where URL date range sync is enabled.
-const DATE_RANGE_ENABLED_ROUTES = [ '/statistics', '/engagement', '/sources', '/sales', '/table' ];
+const DATE_RANGE_ENABLED_ROUTES = [ '/statistics', '/engagement', '/sources', '/sales', '/table', '/page' ];
 
 /**
  * Check if current route supports URL date range sync.

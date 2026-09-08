@@ -23,19 +23,19 @@ class Parameter_Conversion_Shape implements From_Strategy_Interface {
 	 */
 	public function apply( Statistics_Query $qd ): void {
 		$inner = Query::create()
-			->select_raw( 'p.parameter, p.value, s.uid, MIN(s.time) AS first_visit_time' )
+			->select_raw( 'p.parameter, p.value, s.uid_id, MIN(s.time) AS first_visit_time' )
 			->from( 'burst_parameters', 'p' )
 			->inner_join( 'burst_statistics', 's.ID = p.statistic_id', 's' )
 			->where_between( 's.time', $qd->get_date_start(), $qd->get_date_end(), '%d' )
 			->where_not_null( 's.parameters' )
 			->where( 's.parameters', '', '!=' )
-			->group_by( 'p.parameter, p.value, s.uid' );
+			->group_by( 'p.parameter, p.value, s.uid_id' );
 
 		$qd->set_from_subquery( $inner, 'params' );
 		$qd->join(
 			'statistics',
 			'burst_statistics',
-			'statistics.uid = params.uid AND statistics.time >= params.first_visit_time',
+			'statistics.uid_id = params.uid_id AND statistics.time >= params.first_visit_time',
 			'LEFT'
 		);
 		$qd->set_group_by_aliases( [ 'parameter' => 'params.parameter, params.value' ] );

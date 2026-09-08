@@ -9,25 +9,73 @@
 	}
 }
 
-@utility burst-scroll {
-	/* Track */
-	&::-webkit-scrollbar-track {
-		border-radius: 10px;
-		-webkit-box-shadow: inset 0 0 2px rgba(0, 0, 0, 0);
-		background-color: transparent;
-	}
+/* Global theme scrollbars for all scrollable containers, modals, popovers, and portals */
+#burst-statistics [class*="overflow-y-auto"],
+#burst-statistics [class*="overflow-x-auto"],
+#burst-statistics [class*="overflow-auto"],
+#burst-statistics [class*="overflow-y-scroll"],
+#burst-statistics [class*="overflow-x-scroll"],
+#burst-statistics [class*="overflow-scroll"],
+[data-radix-portal] [class*="overflow-y-auto"],
+[data-radix-portal] [class*="overflow-x-auto"],
+[data-radix-portal] [class*="overflow-auto"],
+[data-radix-portal] [class*="overflow-y-scroll"],
+[data-radix-portal] [class*="overflow-x-scroll"],
+[data-radix-portal] [class*="overflow-scroll"],
+.burst [class*="overflow-y-auto"],
+.burst [class*="overflow-x-auto"],
+.burst [class*="overflow-auto"],
+.burst [class*="overflow-y-scroll"],
+.burst [class*="overflow-x-scroll"],
+.burst [class*="overflow-scroll"] {
+	scrollbar-width: thin;
+	scrollbar-color: var(--color-gray-300, #cbd5e1) transparent;
 
-	/* Scrollbar */
 	&::-webkit-scrollbar {
-		width: 8px;
-		background-color: var(--color-gray-300);
-		cursor: pointer;
+		height: 6px;
+		width: 6px;
 	}
 
-	/* Thumb */
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
 	&::-webkit-scrollbar-thumb {
-		background-color: var(--color-gray-400);
-		border-radius: 10px;
+		background-color: var(--color-gray-300, #cbd5e1);
+		border-radius: 9999px;
+	}
+
+	&::-webkit-scrollbar-thumb:hover {
+		background-color: var(--color-gray-400, #94a3b8);
+	}
+}
+
+.dark #burst-statistics [class*="overflow-y-auto"],
+.dark #burst-statistics [class*="overflow-x-auto"],
+.dark #burst-statistics [class*="overflow-auto"],
+.dark #burst-statistics [class*="overflow-y-scroll"],
+.dark #burst-statistics [class*="overflow-x-scroll"],
+.dark #burst-statistics [class*="overflow-scroll"],
+.dark [data-radix-portal] [class*="overflow-y-auto"],
+.dark [data-radix-portal] [class*="overflow-x-auto"],
+.dark [data-radix-portal] [class*="overflow-auto"],
+.dark [data-radix-portal] [class*="overflow-y-scroll"],
+.dark [data-radix-portal] [class*="overflow-x-scroll"],
+.dark [data-radix-portal] [class*="overflow-scroll"],
+.dark .burst [class*="overflow-y-auto"],
+.dark .burst [class*="overflow-x-auto"],
+.dark .burst [class*="overflow-auto"],
+.dark .burst [class*="overflow-y-scroll"],
+.dark .burst [class*="overflow-x-scroll"],
+.dark .burst [class*="overflow-scroll"] {
+	scrollbar-color: #475569 transparent;
+
+	&::-webkit-scrollbar-thumb {
+		background-color: #475569;
+	}
+
+	&::-webkit-scrollbar-thumb:hover {
+		background-color: #64748b;
 	}
 }
 
@@ -104,6 +152,19 @@
 #burst-statistics:has(.burst-story-page) {
 	margin: 0 !important;
 	padding: 0 !important;
+}
+
+/* Suppress WP Admin Screen Options and Contextual Help tabs on Burst pages */
+body.toplevel_page_burst #screen-meta,
+body.toplevel_page_burst #screen-meta-links,
+body[class*="burst"] #screen-meta,
+body[class*="burst"] #screen-meta-links,
+body[class*="page_burst"] #screen-meta,
+body[class*="page_burst"] #screen-meta-links {
+	display: none !important;
+}
+
+#burst-statistics:has(.burst-story-page) {
 	width: 100% !important;
 }
 

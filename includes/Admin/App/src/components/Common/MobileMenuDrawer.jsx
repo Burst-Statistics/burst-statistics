@@ -264,13 +264,22 @@ const MobileMenuDrawer = ({ leftMenuItems, rightMenuItems, supportUrl, upgradeUr
 			 * Combined with position:relative on #burst-statistics, the absolute-
 			 * positioned overlay and panel are contained within the plugin area.
 			 */}
-			<Dialog.Portal container={document.getElementById( 'modal-root' )}>
+			<Dialog.Portal
+				container={
+					document.getElementById( 'modal-root' ) ||
+					document.getElementById( 'burst-statistics' ) ||
+					document.getElementById( 'burst-mainwp' ) ||
+					document.querySelector( '.burst' ) ||
+					undefined
+				}
+			>
 				{/* Backdrop overlay — covers the app container. */}
 				<Dialog.Overlay className="absolute inset-0 z-overlay bg-black/40 data-[state=open]:animate-fadeIn data-[state=closed]:animate-fadeOut" />
 
 				{/* Drawer panel — slides in from the right edge of the app container. */}
 			<Dialog.Content
-				className="absolute top-0 right-0 z-drawer flex h-full max-h-dvh w-[85%] max-w-sm flex-col bg-white shadow-layered-high-b data-[state=open]:animate-drawerSlideIn data-[state=closed]:animate-drawerSlideOut focus:outline-hidden"
+				id="burst-statistics"
+				className="burst absolute top-0 right-0 z-drawer flex h-full max-h-dvh w-[85%] max-w-sm flex-col bg-white shadow-layered-high-b data-[state=open]:animate-drawerSlideIn data-[state=closed]:animate-drawerSlideOut focus:outline-hidden"
 					aria-label={__( 'Navigation menu', 'burst-statistics' )}
 				>
 					{/* Drawer header: close button only. */}

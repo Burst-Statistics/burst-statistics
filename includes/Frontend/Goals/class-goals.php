@@ -244,35 +244,25 @@ class Goals {
 			[ '%d' ]
 		);
 
-		// 2. Perform a post-save cleanup of block goals on this page.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$block_goals = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table_name} WHERE block_goal = 1 AND page_id = %d", $post_id ), ARRAY_A );
-		if ( ! empty( $block_goals ) ) {
-			foreach ( $block_goals as $goal ) {
-				$goal_id = (int) $goal['ID'];
-				$uid     = '';
-				if ( preg_match( '/data-burst-goal="([^"]+)"/', $goal['selector'], $matches ) ) {
-					$uid = $matches[1];
-				}
-				if ( empty( $uid ) ) {
-					continue;
-				}
+		// 2. Perform a post-save cleanup of block goals on this page (for Gutenberg posts).
+		$is_elementor = 'builder' === get_post_meta( $post_id, '_elementor_edit_mode', true );
+		if ( ! $is_elementor ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$block_goals = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table_name} WHERE block_goal = 1 AND page_id = %d", $post_id ), ARRAY_A );
+			if ( ! empty( $block_goals ) && is_array( $block_goals ) ) {
+				foreach ( $block_goals as $goal ) {
+					$goal_id = (int) $goal['ID'];
+					$uid     = '';
+					if ( preg_match( '/data-burst-goal="([^"]+)"/', $goal['selector'], $matches ) ) {
+						$uid = $matches[1];
+					}
+					if ( empty( $uid ) ) {
+						continue;
+					}
 
-				// If the goal's unique ID is no longer present in the post content, clean it up.
-				if ( strpos( $post->post_content, $uid ) === false ) {
-					// Check if this goal has statistics.
-					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-					$has_data = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_goal_statistics WHERE goal_id = %d", $goal_id ) ) > 0;
-
-					if ( ! $has_data ) {
-						// Delete goal completely if it has no stats.
-						$goal_obj = new Goal( $goal_id );
-						$goal_obj->delete();
-					} elseif ( $goal['status'] !== 'inactive' ) {
-						// Otherwise deactivate it to preserve stats.
-						// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-						$wpdb->update( $table_name, [ 'status' => 'inactive' ], [ 'ID' => $goal_id ], [ '%s' ], [ '%d' ] );
-						wp_cache_delete( 'burst_goal_' . $goal_id, 'burst' );
+					// If the goal's unique ID is no longer present in the post content, clean it up.
+					if ( strpos( $post->post_content, $uid ) === false ) {
+						self::retire_goal_if_orphaned( $goal_id );
 					}
 				}
 			}
@@ -280,5 +270,42 @@ class Goals {
 
 		// Ensure updates are synchronized.
 		do_action( 'burst_after_updated_goals' );
+	}
+
+	/**
+	 * Retire an orphaned block/element goal: delete if it has no statistics, or deactivate to preserve history.
+	 *
+	 * @param int $goal_id The goal ID to retire.
+	 * @return bool True if deleted or deactivated, false otherwise.
+	 */
+	public static function retire_goal_if_orphaned( int $goal_id ): bool {
+		global $wpdb;
+
+		if ( $goal_id <= 0 ) {
+			return false;
+		}
+
+		$table_name = $wpdb->prefix . 'burst_goals';
+
+		// Check if this goal has statistics.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$has_data = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_goal_statistics WHERE goal_id = %d", $goal_id ) ) > 0;
+
+		if ( ! $has_data ) {
+			$goal_obj = new Goal( $goal_id );
+			return $goal_obj->delete();
+		}
+
+		// Otherwise deactivate it to preserve stats.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$current_status = $wpdb->get_var( $wpdb->prepare( "SELECT status FROM {$table_name} WHERE ID = %d", $goal_id ) );
+		if ( 'inactive' !== $current_status ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->update( $table_name, [ 'status' => 'inactive' ], [ 'ID' => $goal_id ], [ '%s' ], [ '%d' ] );
+			wp_cache_delete( 'burst_goal_' . $goal_id, 'burst' );
+			return true;
+		}
+
+		return false;
 	}
 }

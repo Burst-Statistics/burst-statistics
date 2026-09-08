@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import DataTable, { TableColumn } from 'react-data-table-component';
+import type { TableColumn } from 'react-data-table-component';
+import DataTable from '@/components/DataTable/DataTable';
 import { __ } from '@wordpress/i18n';
 
 import FieldWrapper from '@/components/Fields/FieldWrapper';

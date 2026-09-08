@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="SmartMatch Search">
+  <defs>
+    <linearGradient id="smsbg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#232842"/>
+      <stop offset="1" stop-color="#111527"/>
+    </linearGradient>
+    <radialGradient id="smslens" cx="0.4" cy="0.35" r="0.8">
+      <stop offset="0" stop-color="#2e3560"/>
+      <stop offset="1" stop-color="#151a30"/>
+    </radialGradient>
+    <clipPath id="smsclip"><circle cx="116" cy="116" r="52"/></clipPath>
+  </defs>
+  <rect width="256" height="256" fill="url(#smsbg)"/>
+  <circle cx="116" cy="116" r="52" fill="url(#smslens)"/>
+  <g clip-path="url(#smsclip)">
+    <path d="M116 80 Q122 102 144 108 Q122 114 116 136 Q110 114 88 108 Q110 102 116 80 Z" fill="#fbbf24"/>
+    <path d="M94 129 Q96 138 105 140 Q96 142 94 151 Q92 142 83 140 Q92 138 94 129 Z" fill="#ffffff" opacity="0.9"/>
+    <path d="M146 78 Q148 84 154 86 Q148 88 146 94 Q144 88 138 86 Q144 84 146 78 Z" fill="#fbbf24" opacity="0.85"/>
+    <circle cx="98" cy="94" r="2.5" fill="#ffffff" opacity="0.55"/>
+    <circle cx="140" cy="134" r="2" fill="#ffffff" opacity="0.5"/>
+  </g>
+  <circle cx="116" cy="116" r="60" fill="none" stroke="#ffffff" stroke-width="18"/>
+  <line x1="161" y1="161" x2="205" y2="205" stroke="#ffffff" stroke-width="22" stroke-linecap="round"/>
+  <path d="M199 49 Q202 60 213 63 Q202 66 199 77 Q196 66 185 63 Q196 60 199 49 Z" fill="#fbbf24" opacity="0.7"/>
+</svg>

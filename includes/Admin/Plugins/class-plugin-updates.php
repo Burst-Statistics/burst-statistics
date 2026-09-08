@@ -241,7 +241,7 @@ class Plugin_Updates {
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table prefix only.
-				"SELECT MOD( time + %d, 86400 ) DIV 3600 AS hr, COUNT( DISTINCT uid ) AS visitors
+				"SELECT MOD( time + %d, 86400 ) DIV 3600 AS hr, COUNT( DISTINCT uid_id ) AS visitors
 				FROM {$wpdb->prefix}burst_statistics
 				WHERE time > %d
 				GROUP BY hr",

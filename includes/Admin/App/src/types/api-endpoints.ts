@@ -22,13 +22,17 @@ export type BurstProDataType =
 	| 'geo'
 	| 'page-parameters'
 	| 'page-parameter-counts'
-	| 'sources-over-time';
+	| 'sources-over-time'
+	| 'visitor-flow'
+	| 'page-revisions'
+	| 'search-queries';
 
 /** Ecommerce segment after `ecommerce/` (Pro). */
 export type BurstEcommerceDataType =
 	| 'ecommerce/sales'
 	| 'ecommerce/sales-chart'
 	| 'ecommerce/sales-forecast'
+	| 'ecommerce/growth'
 	| 'ecommerce/quick-wins'
 	| 'ecommerce/top-performers'
 	| 'ecommerce/sales-funnel'
@@ -58,6 +62,26 @@ export interface ForecastData {
 	mode: ForecastMode;
 	currency: string | null;
 	metadata: ForecastMetadata;
+}
+
+/**
+ * Maps to PHP: `Growth::get_data()` (`ecommerce/growth`).
+ */
+export interface GrowthRow {
+	label: string;
+	subtitle: string;
+	value: number;
+	rate_change: number | null;
+	is_forecast: boolean;
+}
+
+export interface GrowthData {
+	rows: Record<string, GrowthRow>;
+	currency: string;
+	metadata: {
+		growth_rate: number;
+		limited_data: boolean;
+	};
 }
 
 /** All known `getData` type strings used in Admin App `src/api/`. */

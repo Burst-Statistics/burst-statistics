@@ -29,13 +29,16 @@ interface IntegrationsIntroFieldProps {
  * line and a subtle "View all supported integrations" link.
  */
 const IntegrationsIntroField = forwardRef<HTMLDivElement, IntegrationsIntroFieldProps>(
-	({ setting }) => {
+
+	// The ( props, ref ) signature is required: React warns on forwardRef
+	// render functions that do not accept exactly two parameters.
+	({ setting }, ref ) => {
 		const hasIntegrations = setting?.meta?.has_integrations ?? false;
 		const integrationsUrl = burst_get_website_url( 'integrations/' );
 
 		if ( ! hasIntegrations ) {
 			return (
-				<div className="w-full px-6 py-4">
+				<div className="w-full px-6 py-4" ref={ ref }>
 					<p className="mb-1 text-sm text-text-gray">
 						{ __(
 							'No compatible plugins detected. Burst integrates with WooCommerce, Contact Form 7, Elementor, and more.',
@@ -55,7 +58,7 @@ const IntegrationsIntroField = forwardRef<HTMLDivElement, IntegrationsIntroField
 		}
 
 		return (
-			<div className="w-full px-6 py-4">
+			<div className="w-full px-6 py-4" ref={ ref }>
 				<p className="text-sm text-text-gray">
 					{ __(
 						'Burst automatically detects compatible plugins and tracks relevant events. Disable an integration if you don\'t want Burst to interact with it.',

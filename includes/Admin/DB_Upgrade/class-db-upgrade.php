@@ -7,6 +7,8 @@ use Burst\Admin\Reports\DomainTypes\Report_Format;
 use Burst\Admin\Reports\DomainTypes\Report_Frequency;
 use Burst\Admin\Reports\DomainTypes\Report_Week_Of_Month;
 use Burst\Admin\Reports\Report;
+use Burst\Admin\Statistics\Visitor_Bitmaps;
+use Burst\Frontend\Tracking\Tracking;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
@@ -20,27 +22,151 @@ class DB_Upgrade {
 	use Sanitize;
 
 	private int $cron_interval = MINUTE_IN_SECONDS;
-	private int $batch         = 100000;
+
+	/**
+	 * Retry budget of the finalize step (straggler conversion + index build)
+	 * before it is marked stalled and backed off to one attempt per day.
+	 */
+	private const FINALIZE_MAX_ATTEMPTS = 3;
+	private int $batch                  = 100000;
+
+	/**
+	 * Lookup item => id column on burst_sessions (and on burst_statistics for
+	 * installs that still carry the pre-3.1.4.1 legacy columns).
+	 */
+	private const LOOKUP_TABLES = [
+		'browser'         => 'browser_id',
+		'browser_version' => 'browser_version_id',
+		'platform'        => 'platform_id',
+		'device'          => 'device_id',
+	];
+
+	/**
+	 * Lookup items whose ids key a dimension scope in the visitor bitmap store.
+	 * Re-pointing sessions to another id invalidates those day sets.
+	 */
+	private const LOOKUP_BITMAP_ITEMS = [ 'browser', 'platform', 'device' ];
+
+	/**
+	 * Length of the lookup tables' `name` column since 3.6.3.
+	 */
+	private const LOOKUP_NAME_LENGTH = 191;
+
+	/**
+	 * The burst_install_tables firing the lookup dedupe last ran for. In Pro both
+	 * DB_Upgrade and DB_Upgrade_Pro are initialised, so the hook is registered
+	 * twice; the second callback of the same firing must not run the scan again.
+	 */
+	private static int $lookup_dedupe_action_count = -1;
 
 	/**
 	 * DB_Upgrade constructor.
 	 */
 	public function init(): void {
 		add_action( 'burst_daily', [ $this, 'upgrade' ] );
-		add_action( 'admin_init', [ $this, 'maybe_fire_upgrade' ] );
+		add_action( 'admin_init', [ $this, 'ensure_upgrade_scheduled' ] );
 		add_action( 'burst_upgrade_iteration', [ $this, 'upgrade' ] );
 		add_filter( 'burst_tasks', [ $this, 'add_progress_notice' ] );
+		// Priority 9: duplicate lookup names must be gone before
+		// Statistics::install_statistics_table() (10) adds the unique index.
+		add_action( 'burst_install_tables', [ $this, 'dedupe_lookup_tables' ], 9 );
 	}
 
 	/**
-	 * Ensure upgrade progress even when Cron is not working, when the user visits the dashboard.
+	 * Keep the upgrade pipeline moving when WP-Cron is unreliable — without
+	 * ever running a task inside the page request. Upgrade tasks can take
+	 * minutes (index builds on large tables) and must not land in an admin's
+	 * page load; instead a Burst dashboard page load checks, early and cheaply
+	 * (one autoloaded option), whether a pending pipeline still has an
+	 * iteration coming. If the iteration event is missing or overdue it is
+	 * re-scheduled for now and cron is spawned: WP-Cron then runs it in a
+	 * detached loopback request, a system cron picks it up on its next tick,
+	 * and a stalled task's daily backoff (see upgrade()) is respected because
+	 * a future-dated event counts as "coming".
 	 */
-	public function maybe_fire_upgrade(): void {
-		// no data is used from the form data. only compared.
-        //phpcs:ignore
-		if ( isset( $_GET['page'] ) && $_GET['page'] === 'burst' ) {
-			$this->upgrade();
+	public function ensure_upgrade_scheduled(): void {
+		// Burst dashboard page loads only (as the old dashboard fallback was):
+		// keep this off every other admin request, and never inside a cron
+		// run, which is already the thing we are trying to start.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only comparison, no form data used.
+		if ( ! isset( $_GET['page'] ) || 'burst' !== $_GET['page'] || wp_doing_cron() ) {
+			return;
 		}
+		if ( ! $this->has_pending_db_upgrade() || ! $this->has_admin_access() ) {
+			return;
+		}
+		if ( get_transient( 'burst_upgrade_running' ) ) {
+			return;
+		}
+		$next = (int) wp_next_scheduled( 'burst_upgrade_iteration' );
+		if ( $next > 0 && $next > time() - $this->cron_interval ) {
+			return;
+		}
+		if ( $next > 0 ) {
+			wp_unschedule_event( $next, 'burst_upgrade_iteration' );
+		}
+		wp_schedule_single_event( time() - 1, 'burst_upgrade_iteration' );
+
+		// Spawn only when spawning is a detached, non-blocking loopback POST
+		// to wp-cron.php — the current request is not touched. Under
+		// ALTERNATE_WP_CRON, spawn_cron() would instead redirect THIS request
+		// (?doing_wp_cron) and run the cron jobs inline in it, and under
+		// DISABLE_WP_CRON the site relies on a system cron that a loopback
+		// must not bypass. When no cron can be spawned and the iteration is
+		// overdue anyway, run one iteration right here — the original
+		// dashboard fallback — so a site whose cron is not firing at all still
+		// makes progress on every Burst page load (the advisory lock in
+		// upgrade() keeps it from overlapping a late cron run).
+		$can_spawn = ! ( defined( 'ALTERNATE_WP_CRON' ) && ALTERNATE_WP_CRON ) && ! ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON );
+		if ( $can_spawn ) {
+			spawn_cron();
+			return;
+		}
+		$this->upgrade();
+	}
+
+	/**
+	 * Take a MySQL advisory lock for the dispatcher run. Unlike the
+	 * burst_upgrade_running transient, the lock is released by the server the
+	 * moment the holding connection dies, so a PHP process killed mid-task
+	 * (gateway timeout, host limits) never leaves the pipeline parked behind
+	 * a stale flag. Non-blocking: a second runner simply skips its turn.
+	 */
+	private function acquire_upgrade_lock(): bool {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return 1 === (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK( %s, 0 )', $this->upgrade_lock_name() ) );
+	}
+
+	/**
+	 * Release the dispatcher lock taken by acquire_upgrade_lock().
+	 */
+	private function release_upgrade_lock(): void {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK( %s )', $this->upgrade_lock_name() ) );
+	}
+
+	/**
+	 * Per-blog lock name (the table prefix is per blog on multisite).
+	 */
+	private function upgrade_lock_name(): string {
+		global $wpdb;
+		return substr( $wpdb->prefix . 'burst_db_upgrade', 0, 64 );
+	}
+
+	/**
+	 * A task that keeps failing: [ 'slug' => …, 'error' => …, 'attempts' => … ].
+	 * Written by a task after its retry budget is spent (see
+	 * upgrade_finalize_uid_id()), cleared by that task on success. While set,
+	 * upgrade() backs off to one attempt per day instead of one per minute and
+	 * the task notice shows the error.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function stalled_task(): array {
+		$stalled = get_option( 'burst_db_upgrade_stalled', [] );
+		return is_array( $stalled ) ? $stalled : [];
 	}
 
 	/**
@@ -51,6 +177,65 @@ class DB_Upgrade {
 	}
 
 	/**
+	 * Every task slug the dispatcher knows about (free + pro, all versions).
+	 * The authoritative list of what "a pending upgrade" can be — used by
+	 * db_upgrades_complete() so it ignores stray burst_db_upgrade_* options
+	 * that are state flags, not migration tasks.
+	 *
+	 * @return string[]
+	 */
+	public function get_all_upgrade_slugs(): array {
+		return $this->get_db_upgrades( 'all', 'all' );
+	}
+
+	/**
+	 * Delete burst_db_upgrade_* options whose task slug no longer exists in the
+	 * registry: leftovers from removed upgrade routines would linger in
+	 * wp_options forever. Options belonging to a registered slug are kept —
+	 * the task flag itself and its derived state (`{slug}_last_id` watermarks,
+	 * `{slug}_attempts` retry counters). Called once per version change, from
+	 * Upgrade::check_upgrade().
+	 */
+	public function delete_orphaned_upgrade_options(): void {
+		global $wpdb;
+		$prefix = 'burst_db_upgrade_';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- one-time cleanup on version change.
+		$option_names = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+				$wpdb->esc_like( $prefix ) . '%'
+			)
+		);
+		if ( empty( $option_names ) ) {
+			return;
+		}
+
+		$slugs = $this->get_all_upgrade_slugs();
+		// Derived state stored under a legacy, non-slug-prefixed name: keep it
+		// as long as its owning slug is registered.
+		$legacy_aliases = [
+			'column_offset' => 'drop_path_from_parameters_column',
+		];
+
+		foreach ( $option_names as $option_name ) {
+			$candidate = substr( $option_name, strlen( $prefix ) );
+			if ( isset( $legacy_aliases[ $candidate ] ) && in_array( $legacy_aliases[ $candidate ], $slugs, true ) ) {
+				continue;
+			}
+			$keep = false;
+			foreach ( $slugs as $slug ) {
+				if ( $candidate === $slug || 0 === strpos( $candidate, $slug . '_' ) ) {
+					$keep = true;
+					break;
+				}
+			}
+			if ( ! $keep ) {
+				delete_option( $option_name );
+			}
+		}
+	}
+
+	/**
 	 * Add a notice about the progress to the admin dashboard in burst.
 	 * phpcs:ignore
      * @param array $warnings //array of warnings in burst.
@@ -58,7 +243,11 @@ class DB_Upgrade {
      * @return array
 	 */
 	public function add_progress_notice( array $warnings ): array {
-		$progress = $this->get_progress( 'all', BURST_VERSION );
+		// All registered slugs, not just the ones keyed >= BURST_VERSION: a
+		// stuck older task disables the fast paths (db_upgrades_complete())
+		// just the same, so anything pending must be visible here and run to
+		// completion — the notice and db_upgrades_complete() agree.
+		$progress = $this->get_progress( 'all', 'all' );
 		if ( $progress < 100 ) {
 			$progress   = round( $progress, 2 );
 			$warnings[] = [
@@ -75,6 +264,27 @@ class DB_Upgrade {
 				) . ' ' .
 					__( 'For large databases this process may take a while. Your data will be tracked as usual.', 'burst-statistics' ),
 				'icon'        => 'open',
+				'dismissible' => false,
+			];
+		}
+
+		$stalled = $this->stalled_task();
+		if ( ! empty( $stalled['slug'] ) ) {
+			$warnings[] = [
+				'id'          => 'upgrade_stalled',
+				'condition'   => [
+					'type'     => 'serverside',
+					'function' => '!empty( (new \Burst\Admin\DB_Upgrade\DB_Upgrade() )->stalled_task() )',
+				],
+				'status'      => 'all',
+				'msg'         => $this->sprintf(
+					// translators: 1: upgrade task name, 2: number of attempts, 3: last database error.
+					__( 'The database upgrade step "%1$s" failed %2$s times and is now retried once a day. Last error: %3$s', 'burst-statistics' ),
+					(string) $stalled['slug'],
+					(string) ( $stalled['attempts'] ?? '' ),
+					(string) ( $stalled['error'] ?? '' )
+				),
+				'icon'        => 'warning',
 				'dismissible' => false,
 			];
 		}
@@ -135,6 +345,12 @@ class DB_Upgrade {
 		}
 		$upgrade_running = get_transient( 'burst_upgrade_running' );
 		if ( $upgrade_running ) {
+			return;
+		}
+		// The transient is the cheap cross-request flag; the advisory lock is
+		// the guarantee (server-released when the runner dies), so a task
+		// outrunning the 60 seconds cannot be joined by a second runner.
+		if ( ! $this->acquire_upgrade_lock() ) {
 			return;
 		}
 		set_transient( 'burst_upgrade_running', true, 60 );
@@ -246,10 +462,41 @@ class DB_Upgrade {
 			$this->clean_spam_browsers();
 		}
 
+		if ( 'seed_uid_dictionary' === $do_upgrade ) {
+			$this->upgrade_seed_uid_dictionary();
+		}
+
+		if ( 'statistics_uid_id' === $do_upgrade ) {
+			$this->upgrade_statistics_uid_id();
+		}
+
+		if ( 'sessions_first_time' === $do_upgrade ) {
+			$this->upgrade_sessions_first_time();
+		}
+
+		if ( 'finalize_uid_id' === $do_upgrade ) {
+			$this->upgrade_finalize_uid_id();
+		}
+
+		if ( 'seed_page_urls' === $do_upgrade ) {
+			$this->upgrade_seed_page_urls();
+		}
+
+		if ( 'statistics_page_id' === $do_upgrade ) {
+			$this->upgrade_statistics_page_id();
+		}
+
+		if ( 'drop_session_visited_urls' === $do_upgrade ) {
+			$this->upgrade_drop_session_visited_urls();
+		}
+
 		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
 		if ( $this->get_progress( 'free', 'all' ) < 100 ) {
-			// free upgrades not finished yet.
-			wp_schedule_single_event( time() + $this->cron_interval, 'burst_upgrade_iteration' );
+			// free upgrades not finished yet. A task that spent its retry
+			// budget is retried once a day instead of every minute, so a
+			// structurally failing step does not burn a worker per minute.
+			$interval = empty( $this->stalled_task() ) ? $this->cron_interval : DAY_IN_SECONDS;
+			wp_schedule_single_event( time() + $interval, 'burst_upgrade_iteration' );
 		} else {
 			wp_clear_scheduled_hook( 'burst_upgrade_iteration' );
 			// if pro upgrades are not finished yet, do them.
@@ -257,9 +504,16 @@ class DB_Upgrade {
 				delete_transient( 'burst_upgrade_running' );
 				do_action( 'burst_upgrade_pro_iteration' );
 			}
+			// Free and pro both done: clear the autoloaded pending flag, so the
+			// read paths stop checking the per-slug task options
+			// (db_upgrades_complete()). Re-armed by the next arm_db_upgrade().
+			if ( $this->get_progress( 'pro', 'all' ) >= 100 ) {
+				update_option( 'burst_has_db_upgrade', false );
+			}
 		}
 
 		delete_transient( 'burst_upgrade_running' );
+		$this->release_upgrade_lock();
 	}
 
 	/**
@@ -394,8 +648,41 @@ class DB_Upgrade {
 				'3.6.0'   => [
 					'clean_spam_browsers',
 				],
+				'3.7.0'   => [
+					// uid dictionary pipeline — order matters, the dispatcher
+					// runs the first pending task only.
+					'seed_uid_dictionary',
+					'statistics_uid_id',
+					'sessions_first_time',
+					'finalize_uid_id',
+					// page dictionary pipeline: seed burst_page_urls (with the
+					// WP post id per url and an initial canonical flag), then
+					// replace the historic page_id = 0 rows with negative
+					// dictionary ids so page queries can group on page_id.
+					'seed_page_urls',
+					'statistics_page_id',
+					// first/last_visited_url on sessions are no longer written
+					// (entry/exit pages are derived from burst_statistics),
+					// but dropping the columns is deferred one release so a
+					// rollback to the previous version — which writes them on
+					// every session create/update — hits no database errors.
+					// @todo 3.7.1: add a '3.7.1' group here with
+					// 'drop_session_visited_urls' (and the deferred legacy uid
+					// column/table drops, see upgrade_finalize_uid_id() and
+					// convert_uid_table_to_dictionary_ids()), and arm the task
+					// from the 3.7.1 block in class-upgrade.php.
+				],
 			]
 		);
+
+		// Dispatch order follows version order. Pro merges its tasks in via
+		// the filter: a version key core already has is merged in place, a new
+		// key lands at the end of the array — so without sorting a 3.7.0 Pro
+		// task would run before a 3.6.3 one and a task that waits on an
+		// earlier task (pro_sessions_source_category on
+		// pro_referrers_normalization) would deadlock the dispatcher, which
+		// only runs the first pending task per iteration.
+		uksort( $upgrades, 'version_compare' );
 
 		// Get all upgrades from all versions.
 		$all_upgrades = [];
@@ -540,6 +827,700 @@ class DB_Upgrade {
 			delete_option( 'burst_db_upgrade_bounces' );
 		} else {
 			self::error_log( 'db upgrade bounces failed' );
+		}
+	}
+
+	/**
+	 * Mark a watermark-batched task complete: delete its task option, its
+	 * `_last_id` watermark option and its progress transient. Also used by the
+	 * per-task self-heal guards when a task turns out to have nothing to do.
+	 */
+	protected function complete_watermarked_task( string $slug ): void {
+		delete_option( "burst_db_upgrade_{$slug}" );
+		delete_option( "burst_db_upgrade_{$slug}_last_id" );
+		delete_transient( "burst_progress_{$slug}" );
+	}
+
+	/**
+	 * Shared mechanics for a watermark-batched upgrade task: read the
+	 * `_last_id` watermark, apply the batch-size filter, run one bounded batch
+	 * via $run_batch, and either advance the watermark (writing the progress
+	 * transient for the dashboard notice) or clean the task up when the
+	 * watermark passes MAX(ID) of $watermark_table. Per-task prerequisites and
+	 * self-heal guards stay in the task methods; only the batch SQL and an
+	 * optional completion step differ per task.
+	 *
+	 * @param string        $slug                    Task slug, without the burst_db_upgrade_ prefix.
+	 * @param string        $watermark_table         Table whose MAX(ID) bounds the watermark (without the WP prefix).
+	 * @param string        $batch_filter            Filter name for the per-iteration batch size.
+	 * @param int           $batch_size              Default number of ids per iteration.
+	 * @param callable      $run_batch               function( int $last_id, int $end_id ): int|false — runs one bounded, idempotent batch.
+	 * @param callable|null $on_complete             Runs once when the watermark passes MAX(ID), before cleanup.
+	 * @param bool          $schedule_next_iteration Schedule the next burst_upgrade_iteration after an advancing batch — for tasks running outside the free dispatcher loop (the pro iteration), which schedules no follow-up itself.
+	 */
+	protected function run_watermarked_batch( string $slug, string $watermark_table, string $batch_filter, int $batch_size, callable $run_batch, ?callable $on_complete = null, bool $schedule_next_iteration = false ): void {
+		global $wpdb;
+		$watermark_option = "burst_db_upgrade_{$slug}_last_id";
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- callers pass burst_-prefixed filter names.
+		$batch_size = (int) apply_filters( $batch_filter, $batch_size );
+		$last_id    = (int) get_option( $watermark_option, 0 );
+		$end_id     = $last_id + $batch_size;
+		$table_name = $wpdb->prefix . $this->validate_table_name( $watermark_table );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated above.
+		$max_id = (int) $wpdb->get_var( "SELECT MAX(ID) FROM {$table_name}" );
+
+		$result = $run_batch( $last_id, $end_id );
+
+		if ( $result === false ) {
+			self::error_log( "db upgrade {$slug} failed: " . $wpdb->last_error );
+			return;
+		}
+
+		if ( $end_id >= $max_id ) {
+			if ( null !== $on_complete ) {
+				$on_complete();
+			}
+			$this->complete_watermarked_task( $slug );
+			return;
+		}
+
+		// Jump the watermark to just before the next existing row instead of
+		// advancing blindly by batch size: on tables whose leading IDs were
+		// archived away (or that hold large mid-table gaps) a fixed advance
+		// burns thousands of empty one-minute iterations before touching a
+		// real row — days in which every fast path stays disabled. One
+		// indexed MIN() seek per iteration buys skipping any gap in one step.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated above.
+		$next_id = $wpdb->get_var( $wpdb->prepare( "SELECT MIN(ID) FROM {$table_name} WHERE ID > %d", $end_id ) );
+		if ( null === $next_id ) {
+			// Nothing beyond this window (rows deleted since MAX(ID) was read).
+			if ( null !== $on_complete ) {
+				$on_complete();
+			}
+			$this->complete_watermarked_task( $slug );
+			return;
+		}
+		$watermark = max( $end_id, (int) $next_id - 1 );
+
+		update_option( $watermark_option, $watermark, false );
+		// Intermediate progress for the upgrade notice (fraction of this task).
+		set_transient( "burst_progress_{$slug}", min( 0.99, $watermark / max( 1, $max_id ) ), HOUR_IN_SECONDS );
+
+		if ( $schedule_next_iteration ) {
+			// More batches to go: keep the iteration loop alive. Once free and
+			// pro upgrades are done, upgrade() clears this hook again.
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'burst_upgrade_iteration' );
+		}
+	}
+
+	/**
+	 * Seed the uid dictionary (burst_uids) with every historic uid string, so
+	 * the later backfill and finalize mappings always find a dictionary row.
+	 * Iterates by statistics-ID watermark; INSERT IGNORE makes uids that appear
+	 * in multiple windows converge on one row. New hits register themselves via
+	 * Tracking::resolve_uid_id() from the moment the new code runs.
+	 */
+	private function upgrade_seed_uid_dictionary(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+		if ( ! get_option( 'burst_db_upgrade_seed_uid_dictionary' ) ) {
+			return;
+		}
+
+		// Nothing to migrate when the legacy uid column is gone (fresh install,
+		// or the 3.7.1 drop has run while a stale version option re-armed the
+		// pipeline). Gated on the column, not on uid_id_active(): after a
+		// rollback the older build writes new uid strings with uid_id 0, and
+		// the re-upgrade must seed those even though the indexes already exist.
+		if ( ! $this->legacy_uid_column_exists() ) {
+			$this->complete_watermarked_task( 'seed_uid_dictionary' );
+			return;
+		}
+
+		// Table init may not have created the dictionary yet — retry next iteration.
+		if ( ! $this->table_exists( 'burst_uids' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$this->run_watermarked_batch(
+			'seed_uid_dictionary',
+			'burst_statistics',
+			'burst_uid_dictionary_batch_size',
+			100000,
+			function ( int $last_id, int $end_id ) use ( $wpdb ) {
+				return $wpdb->query(
+					$wpdb->prepare(
+						"INSERT IGNORE INTO {$wpdb->prefix}burst_uids (uid)
+						SELECT DISTINCT uid FROM {$wpdb->prefix}burst_statistics
+						WHERE ID > %d AND ID <= %d AND uid != ''",
+						$last_id,
+						$end_id
+					)
+				);
+			},
+			function () use ( $wpdb ): void {
+				// Cart uids without any hit are an edge case, but register them too
+				// so the finalize mapping never orphans a cart row. Pro-only table,
+				// checked without validate_table_name to avoid free-tier log noise.
+				$cart_table = $wpdb->prefix . 'burst_cart';
+				if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $cart_table ) ) ) {
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table names.
+					$wpdb->query( "INSERT IGNORE INTO {$wpdb->prefix}burst_uids (uid) SELECT DISTINCT uid FROM {$cart_table} WHERE uid != ''" );
+				}
+			}
+		);
+	}
+
+	/**
+	 * Backfill statistics.uid_id from the dictionary. Iterates by statistics-ID
+	 * watermark; the uid_id = 0 condition makes re-runs (and the re-arm from the
+	 * finalize verification) cheap and idempotent.
+	 */
+	private function upgrade_statistics_uid_id(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+		if ( ! get_option( 'burst_db_upgrade_statistics_uid_id' ) ) {
+			return;
+		}
+
+		// Dictionary must be complete first; column must exist.
+		if ( (bool) get_option( 'burst_db_upgrade_seed_uid_dictionary' ) || ! $this->column_exists( 'burst_statistics', 'uid_id' ) ) {
+			return;
+		}
+
+		// Legacy uid column gone: nothing to backfill (see the seed task) —
+		// waiting on legacy string data would stall the pipeline.
+		if ( ! $this->legacy_uid_column_exists() ) {
+			$this->complete_watermarked_task( 'statistics_uid_id' );
+			return;
+		}
+
+		global $wpdb;
+		$this->run_watermarked_batch(
+			'statistics_uid_id',
+			'burst_statistics',
+			'burst_statistics_uid_id_batch_size',
+			25000,
+			function ( int $last_id, int $end_id ) use ( $wpdb ) {
+				return $wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$wpdb->prefix}burst_statistics s
+						JOIN {$wpdb->prefix}burst_uids d ON s.uid = d.uid
+						SET s.uid_id = d.ID
+						WHERE s.ID > %d AND s.ID <= %d AND s.uid_id = 0",
+						$last_id,
+						$end_id
+					)
+				);
+			}
+		);
+	}
+
+	/**
+	 * Backfill sessions.start_time (session start) and sessions.uid_id (the
+	 * visitor's dictionary id) from the first hit of each session. Runs after
+	 * the statistics backfill so uid_id is available on the hits. Iterates by
+	 * session-ID watermark so every batch is bounded and idempotent; sessions
+	 * without any statistics rows are skipped naturally and keep start_time = 0.
+	 */
+	private function upgrade_sessions_first_time(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+		if ( ! get_option( 'burst_db_upgrade_sessions_first_time' ) ) {
+			return;
+		}
+
+		// Legacy uid column gone: the tables were freshly created (see the seed
+		// task) — sessions were then populated with uid_id at creation, so
+		// there is nothing to backfill. Gated on the column so a re-upgrade
+		// after a rollback still backfills the sessions the older build wrote.
+		if ( ! $this->legacy_uid_column_exists() ) {
+			$this->complete_watermarked_task( 'sessions_first_time' );
+			return;
+		}
+
+		// Prerequisites: statistics backfill done, columns present.
+		if ( (bool) get_option( 'burst_db_upgrade_statistics_uid_id' )
+			|| ! $this->column_exists( 'burst_sessions', 'start_time' )
+			|| ! $this->column_exists( 'burst_sessions', 'uid_id' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$this->run_watermarked_batch(
+			'sessions_first_time',
+			'burst_sessions',
+			'burst_sessions_first_time_batch_size',
+			25000,
+			function ( int $last_id, int $end_id ) use ( $wpdb ) {
+				return $wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$wpdb->prefix}burst_sessions s
+						JOIN (
+							SELECT session_id, MIN(time) AS start_time,
+								COALESCE(MIN(NULLIF(uid_id, 0)), 0) AS uid_id
+							FROM {$wpdb->prefix}burst_statistics
+							WHERE session_id > %d AND session_id <= %d
+							GROUP BY session_id
+						) st ON st.session_id = s.ID
+						SET s.start_time = st.start_time, s.uid_id = st.uid_id
+						WHERE s.start_time = 0 OR s.uid_id = 0",
+						$last_id,
+						$end_id
+					)
+				);
+			}
+		);
+	}
+
+	/**
+	 * Finalize the uid dictionary migration: convert the straggler rows, build
+	 * the uid_id indexes (online index operations — the legacy varchar uid
+	 * column is left untouched, see uid_id_active(); 3.7.1 drops it), convert
+	 * the cart table to uid_id so identity joins stay int = int, and retire the
+	 * known_uids crons. Every sub-step is idempotent, so a run that dies
+	 * halfway simply continues on the next iteration, and a re-upgrade after a
+	 * rollback re-converges on the string data the older build wrote.
+	 *
+	 * Only ever runs from cron / WP-CLI (upgrade() is never called from a page
+	 * request); a run that keeps failing is capped by its retry budget and
+	 * backed off to daily, with the error surfaced as a task notice.
+	 */
+	private function upgrade_finalize_uid_id(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+		$option_name = 'burst_db_upgrade_finalize_uid_id';
+		if ( ! get_option( $option_name ) ) {
+			return;
+		}
+
+		// All previous pipeline steps must be complete.
+		if ( (bool) get_option( 'burst_db_upgrade_seed_uid_dictionary' )
+			|| (bool) get_option( 'burst_db_upgrade_statistics_uid_id' )
+			|| (bool) get_option( 'burst_db_upgrade_sessions_first_time' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$stats_table = $wpdb->prefix . 'burst_statistics';
+
+		// Retry budget for the whole step, counted BEFORE the work so a run
+		// that is killed mid-way (no last_error to report) still counts. After
+		// the budget the step is marked stalled: upgrade() then retries once a
+		// day instead of every minute and the task notice shows the error.
+		$attempts = (int) get_option( 'burst_db_upgrade_finalize_uid_id_attempts', 0 ) + 1;
+		update_option( 'burst_db_upgrade_finalize_uid_id_attempts', $attempts, false );
+		if ( $attempts > self::FINALIZE_MAX_ATTEMPTS && empty( $this->stalled_task() ) ) {
+			$this->mark_task_stalled( 'finalize_uid_id', $attempts, 'previous attempts did not complete (process terminated?)' );
+		}
+
+		// Rows written while the pipeline ran (or restored from an archive, or
+		// by an older build after a rollback) can still be unconverted — and a
+		// row whose dictionary insert failed on the beacon has no dictionary
+		// entry at all, so re-arming the full backfill would rescan the whole
+		// table without ever converting it. Seed and convert the (bounded)
+		// straggler set directly instead, on every run: the predicate is
+		// cheap (uid_id = 0 range on the (uid_id, time) index once it exists)
+		// and empty on a converged table.
+		if ( $this->legacy_uid_column_exists() ) {
+	        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table names.
+			$unconverted = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$stats_table} WHERE uid != '' AND uid_id = 0" );
+			if ( $unconverted > 0 ) {
+				$wpdb->query( "INSERT IGNORE INTO {$wpdb->prefix}burst_uids (uid) SELECT DISTINCT uid FROM {$stats_table} WHERE uid != '' AND uid_id = 0" );
+				$wpdb->query( "UPDATE {$stats_table} s JOIN {$wpdb->prefix}burst_uids d ON s.uid = d.uid SET s.uid_id = d.ID WHERE s.uid != '' AND s.uid_id = 0" );
+				$unconverted = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$stats_table} WHERE uid != '' AND uid_id = 0" );
+			}
+	        // phpcs:enable
+			if ( $unconverted > 0 ) {
+				// Still unconverted after direct seeding: something structural
+				// (dictionary table broken, permissions). Retry within the
+				// budget, then proceed — those rows lose their identity (uid_id
+				// 0), which beats a pipeline that never completes and keeps
+				// integer mode, session grain and bitmaps off forever.
+				if ( $attempts < self::FINALIZE_MAX_ATTEMPTS ) {
+					self::error_log( "db upgrade finalize_uid_id: {$unconverted} rows still unconverted after direct seeding, retrying." );
+					return;
+				}
+				self::error_log( "db upgrade finalize_uid_id: proceeding with {$unconverted} unconverted rows after {$attempts} attempts." );
+			}
+		}
+
+		if ( ! $this->uid_id_active() ) {
+			// The legacy uid indexes only served the string query paths, which
+			// stop being used the moment the uid_id indexes exist; dropping
+			// them is a metadata change. When the column itself is dropped in
+			// 3.7.1, any index still containing it must be dropped first:
+			// MySQL's DROP COLUMN silently reduces an index to its remaining
+			// columns under the same name — e.g. (time, page_id, uid) shrinking
+			// to (time, page_id) — which name-based probes cannot detect.
+			$legacy_uid_indexes = [
+				'time_uid_index',
+				'uid_time_index',
+				'time_page_url_uid_index',
+				'time_page_id_uid_index',
+			];
+			foreach ( $legacy_uid_indexes as $index_name ) {
+				$this->drop_index( 'burst_statistics', $index_name );
+			}
+
+			// Build the uid_id indexes in one ALTER: a single INPLACE, online
+			// index build (one scan of the table, reads and writes continue),
+			// never a table rebuild — the legacy column is deliberately not
+			// modified. uid_id_active() flips on the first of these indexes
+			// existing. Index definitions and names come from the shared
+			// Database_Helper::uid_id_index_columns() / index_name_for_columns(),
+			// the same source the installer uses, so the standalone add_index()
+			// calls below no-op. Probe per index: on a resumed run one may
+			// still exist, and ADD INDEX on an existing name would abort the
+			// whole ALTER. No PHP time limit: this runs in cron / WP-CLI only.
+			$add_clauses = [];
+			foreach ( $this->uid_id_index_columns() as $index_columns ) {
+				$index_name = $this->index_name_for_columns( $index_columns );
+				if ( ! $this->index_exists( 'burst_statistics', $index_name ) ) {
+					$add_clauses[] = "ADD INDEX {$index_name} (`" . implode( '`, `', array_map( 'sanitize_key', $index_columns ) ) . '`)';
+				}
+			}
+			if ( ! empty( $add_clauses ) ) {
+				if ( function_exists( 'set_time_limit' ) ) {
+					// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- some hosts disable it; a failure only shortens the budget.
+					@set_time_limit( 0 );
+				}
+				ignore_user_abort( true );
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table name, fixed index definitions.
+				$wpdb->query( "ALTER TABLE {$stats_table} " . implode( ', ', $add_clauses ) );
+				if ( $wpdb->last_error ) {
+					self::error_log( 'db upgrade finalize_uid_id index build failed: ' . $wpdb->last_error );
+					if ( $attempts >= self::FINALIZE_MAX_ATTEMPTS ) {
+						$this->mark_task_stalled( 'finalize_uid_id', $attempts, $wpdb->last_error );
+					}
+					return;
+				}
+			}
+			// Integer mode flips with the schema: drop the cached probe so this
+			// request and (via the object cache) concurrent ones see it
+			// immediately instead of after the cache TTL.
+			$this->flush_uid_id_active_cache();
+		}
+
+		// Ensure the uid_id indexes exist (same names as the install list);
+		// no-ops when they already exist. Kept outside the combined ALTER
+		// above for resume-idempotency: a run that previously died after the
+		// first index committed skips the branch above (uid_id_active() is
+		// already true) and still gets the remaining indexes here.
+		foreach ( $this->uid_id_index_columns() as $index_columns ) {
+			$this->add_index( 'burst_statistics', $index_columns );
+		}
+
+		// With the (time, page_url, uid_id) covering index in place its
+		// (time, page_url) prefix is redundant; the installer performs the
+		// same drop on later table inits, gated on uid_id_active().
+		$this->drop_index( 'burst_statistics', 'time_page_url_index' );
+
+		// known_uids is obsolete once the dictionary is active: first_time_visit
+		// is then set at session creation (the dictionary insert is the "first
+		// time ever seen" event), so its recalculation crons are unscheduled.
+		// The table itself is deliberately NOT dropped in this release: the
+		// previous version's ten-minute cron reads and upserts it, so keeping
+		// it (stale, unused by this version) lets a rollback run without
+		// database errors — the old cron simply resumes maintaining it.
+		// @todo 3.7.1: add a task under the 3.7.1 registry group that runs
+		// DROP TABLE IF EXISTS {$prefix}burst_known_uids.
+		wp_clear_scheduled_hook( 'burst_recalculate_known_uids_cron' );
+		wp_clear_scheduled_hook( 'burst_recalculate_first_time_visits_cron' );
+
+		// Backstop for the migration window: sessions created while the
+		// pipeline ran got no first_time_visit flag from tracking (a created
+		// dictionary row did not mean "new" while the seed was still inserting
+		// historic uids). One bounded sweep: a window session is a first visit
+		// when its visitor has no hit before the session start — a point probe
+		// per window session via the (uid_id, time) index, valid now that the
+		// legacy uid column is dropped.
+		$migration_started = (int) get_option( 'burst_uid_migration_started' );
+		if ( $migration_started > 0 ) {
+	        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table names, value prepared.
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}burst_sessions s
+					SET s.first_time_visit = 1
+					WHERE s.start_time >= %d AND s.first_time_visit = 0 AND s.uid_id > 0
+					AND NOT EXISTS (
+						SELECT 1 FROM {$stats_table} st
+						WHERE st.uid_id = s.uid_id AND st.time < s.start_time
+					)",
+					$migration_started
+				)
+			);
+	        // phpcs:enable
+		}
+		delete_option( 'burst_uid_migration_started' );
+		// Bookkeeping of the removed known-uids recalculation crons.
+		delete_option( 'burst_last_known_uids_sync' );
+		delete_option( 'burst_last_first_time_visit_update' );
+
+		if ( ! $this->convert_uid_table_to_dictionary_ids( 'burst_cart' ) ) {
+			return;
+		}
+
+		// Integer-uid mode is NOT activated here: uid_id_active() derives its
+		// state from the schema (uid_id indexes present) and flipped the moment
+		// the index build above committed. Deleting the task option only marks
+		// the pipeline task complete for db_upgrades_complete(); the retry
+		// bookkeeping and a stalled marker for this step go with it.
+		delete_option( 'burst_db_upgrade_finalize_uid_id_attempts' );
+		$this->clear_task_stalled( 'finalize_uid_id' );
+		delete_option( $option_name );
+	}
+
+	/**
+	 * Record that a task spent its retry budget (see stalled_task()).
+	 *
+	 * @param string $slug     Task slug.
+	 * @param int    $attempts Attempts so far.
+	 * @param string $error    Last error, for the task notice.
+	 */
+	private function mark_task_stalled( string $slug, int $attempts, string $error ): void {
+		update_option(
+			'burst_db_upgrade_stalled',
+			[
+				'slug'     => $slug,
+				'attempts' => $attempts,
+				'error'    => $error,
+				'time'     => time(),
+			],
+			false
+		);
+	}
+
+	/**
+	 * Clear the stalled marker once the task completes.
+	 *
+	 * @param string $slug Task slug.
+	 */
+	private function clear_task_stalled( string $slug ): void {
+		$stalled = $this->stalled_task();
+		if ( ( $stalled['slug'] ?? '' ) === $slug ) {
+			delete_option( 'burst_db_upgrade_stalled' );
+		}
+	}
+
+	/**
+	 * Seed the page dictionary (burst_page_urls) from historic hits: one row
+	 * per distinct page_url, carrying the WP post id (page_id) it belonged to.
+	 * Iterates by statistics-ID watermark; INSERT ... ON DUPLICATE makes urls
+	 * that appear in multiple windows converge on one row and keeps the
+	 * highest known post id. On completion, every post id gets an initial
+	 * canonical row (its most recently seen url) — save_post and the weekly
+	 * permalink sweep keep those current afterwards.
+	 */
+	private function upgrade_seed_page_urls(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+		if ( ! get_option( 'burst_db_upgrade_seed_page_urls' ) ) {
+			return;
+		}
+
+		// Table init may not have added the new columns yet — retry next iteration.
+		if ( ! $this->column_exists( 'burst_page_urls', 'is_canonical' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$this->run_watermarked_batch(
+			'seed_page_urls',
+			'burst_statistics',
+			'burst_page_urls_batch_size',
+			100000,
+			function ( int $last_id, int $end_id ) use ( $wpdb ) {
+				return $wpdb->query(
+					$wpdb->prepare(
+						"INSERT INTO {$wpdb->prefix}burst_page_urls (page_url, page_id)
+						SELECT page_url, MAX(GREATEST(page_id, 0)) FROM {$wpdb->prefix}burst_statistics
+						WHERE ID > %d AND ID <= %d AND page_url != '' AND page_type != '404'
+						GROUP BY page_url
+						ON DUPLICATE KEY UPDATE page_id = GREATEST(page_id, VALUES(page_id))",
+						$last_id,
+						$end_id
+					)
+				);
+			},
+			function (): void {
+				$this->assign_initial_canonical_page_urls();
+			}
+		);
+	}
+
+	/**
+	 * Give every post id in the dictionary that has no canonical row yet one:
+	 * its most recently inserted url. save_post and the weekly permalink sweep
+	 * refine these with the real permalink afterwards.
+	 */
+	private function assign_initial_canonical_page_urls(): void {
+		global $wpdb;
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table names, integer id lists.
+		$row_ids = $wpdb->get_col(
+			"SELECT MAX(d.ID) FROM {$wpdb->prefix}burst_page_urls d
+			WHERE d.page_id > 0 AND d.page_id NOT IN (
+				SELECT page_id FROM ( SELECT page_id FROM {$wpdb->prefix}burst_page_urls WHERE is_canonical = 1 ) has_canonical
+			)
+			GROUP BY d.page_id"
+		);
+		foreach ( array_chunk( array_map( 'intval', $row_ids ), 1000 ) as $chunk ) {
+			$id_list = implode( ',', $chunk );
+			$wpdb->query( "UPDATE {$wpdb->prefix}burst_page_urls SET is_canonical = 1 WHERE ID IN ({$id_list})" );
+		}
+        // phpcs:enable
+	}
+
+	/**
+	 * Replace the historic page_id = 0 rows in statistics with the negative
+	 * dictionary id of their url, so page queries can group on the integer
+	 * page_id column without a 0-bucket. Runs after the dictionary seed;
+	 * iterates by statistics-ID watermark, idempotent via the page_id = 0
+	 * condition. 404 rows keep 0 — they are excluded from every page query.
+	 */
+	private function upgrade_statistics_page_id(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+		if ( ! get_option( 'burst_db_upgrade_statistics_page_id' ) ) {
+			return;
+		}
+
+		// Dictionary must be complete first.
+		if ( (bool) get_option( 'burst_db_upgrade_seed_page_urls' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$this->run_watermarked_batch(
+			'statistics_page_id',
+			'burst_statistics',
+			'burst_statistics_page_id_batch_size',
+			25000,
+			function ( int $last_id, int $end_id ) use ( $wpdb ) {
+				return $wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$wpdb->prefix}burst_statistics s
+						JOIN {$wpdb->prefix}burst_page_urls d ON s.page_url = d.page_url
+						SET s.page_id = IF(d.page_id > 0, d.page_id, -d.ID)
+						WHERE s.ID > %d AND s.ID <= %d AND s.page_id = 0 AND s.page_type != '404'",
+						$last_id,
+						$end_id
+					)
+				);
+			}
+		);
+	}
+
+	/**
+	 * Convert a visitor-keyed table's uid column from uid strings to dictionary
+	 * ids. Rows whose uid never produced a dictionary entry cannot be mapped
+	 * and are removed. Idempotent: skips tables that are absent or already
+	 * converted.
+	 *
+	 * @param string $table Table name without the WordPress prefix.
+	 * @return bool True when the table is absent or converted successfully.
+	 */
+	private function convert_uid_table_to_dictionary_ids( string $table ): bool {
+		global $wpdb;
+		$table_name = $wpdb->prefix . $table;
+
+		if ( ! $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) ) {
+			return true;
+		}
+
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table names.
+		$columns = $wpdb->get_col( "DESC {$table_name}" );
+		if ( ! in_array( 'uid', $columns, true ) ) {
+			// No legacy uid column: fresh install or already converted.
+			return true;
+		}
+
+		// The uid_id column ships in the table schema; ensure it exists in case
+		// the table init has not re-run yet on this blog.
+		if ( ! in_array( 'uid_id', $columns, true ) ) {
+			$wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN `uid_id` int unsigned NOT NULL DEFAULT 0" );
+		}
+
+		// Rows whose uid never appeared in the dictionary (no hit and not
+		// registered by the seed) cannot be mapped to an identity — drop them.
+		// Rows written since the 3.7.0 table init carry the dictionary id and
+		// an empty uid, so they never match this sweep and the UPDATE below
+		// leaves them alone — which also makes a resumed or repeated run
+		// harmless, so no "already converted" marker is needed.
+		//
+		// The legacy column itself is left untouched: making it nullable
+		// would be a full table rebuild for a signal nobody reads any more
+		// (the cart write paths gate on tracking_schema_current()), and a
+		// rollback to the previous release finds the column exactly as it
+		// left it. The legacy uid indexes stay with the column.
+		// @todo 3.7.1: drop the legacy `uid` column and its indexes here for
+		// real (uid_index, uid_updated_at_converted_index — drop the indexes
+		// BEFORE the column: DROP COLUMN silently shrinks an index to its
+		// remaining columns under the same name).
+		$wpdb->query( "DELETE t FROM {$table_name} t LEFT JOIN {$wpdb->prefix}burst_uids d ON t.uid = d.uid WHERE t.uid != '' AND d.ID IS NULL" );
+		$wpdb->query( "UPDATE {$table_name} t JOIN {$wpdb->prefix}burst_uids d ON t.uid = d.uid SET t.uid_id = d.ID WHERE t.uid_id = 0" );
+        // phpcs:enable
+		if ( $wpdb->last_error ) {
+			self::error_log( "db upgrade finalize_uid_id: converting {$table} failed: " . $wpdb->last_error );
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Drop the unused first_visited_url / last_visited_url columns from the
+	 * sessions table. They were written on every session create/update but
+	 * never read back: entry and exit pages are derived from burst_statistics
+	 * (MIN/MAX ID per session), so the two TEXT columns only added row weight.
+	 * Tracking stopped writing them in 3.7.0; dbDelta never drops columns,
+	 * hence this one-time ALTER.
+	 *
+	 * Currently dormant: not registered in get_db_upgrades() and not armed by
+	 * any upgrade block — the drop is deferred one release so a rollback to
+	 * the pre-3.7.0 version (which writes these columns) hits no database
+	 * errors.
+	 *
+	 * @todo 3.7.1: re-register this task under the 3.7.1 registry group and
+	 * arm it from the 3.7.1 block in class-upgrade.php.
+	 */
+	private function upgrade_drop_session_visited_urls(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+		$option_name = 'burst_db_upgrade_drop_session_visited_urls';
+		if ( ! get_option( $option_name ) ) {
+			return;
+		}
+
+		// Drop only what is present: fresh installs already have the new
+		// schema, and a resumed run may have dropped one column already.
+		$drops = [];
+		foreach ( [ 'first_visited_url', 'last_visited_url' ] as $column ) {
+			if ( $this->column_exists( 'burst_sessions', $column ) ) {
+				$drops[] = "DROP COLUMN `{$column}`";
+			}
+		}
+		if ( empty( $drops ) ) {
+			delete_option( $option_name );
+			return;
+		}
+
+		global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- fixed table and column names.
+		$result = $wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_sessions " . implode( ', ', $drops ) );
+
+		if ( $result !== false ) {
+			delete_option( $option_name );
+		} else {
+			self::error_log( 'db upgrade drop_session_visited_urls failed: ' . $wpdb->last_error );
 		}
 	}
 
@@ -808,8 +1789,8 @@ class DB_Upgrade {
 			$table = $item . 's';
 			// check if table exists. If not, start the create upgrade again.
 			if ( ! $this->table_exists( 'burst_' . $table ) ) {
-				update_option( "burst_db_upgrade_create_lookup_tables_$item", true, false );
-				update_option( 'burst_db_upgrade_create_lookup_tables', true, false );
+				$this->arm_db_upgrade( "create_lookup_tables_$item" );
+				$this->arm_db_upgrade( 'create_lookup_tables' );
 				return;
 			}
 
@@ -818,8 +1799,8 @@ class DB_Upgrade {
             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $item is selected from a predefined array.
 			$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_{$item}s" );
 			if ( 0 === $count ) {
-				update_option( "burst_db_upgrade_create_lookup_tables_$item", true, false );
-				update_option( 'burst_db_upgrade_create_lookup_tables', true, false );
+				$this->arm_db_upgrade( "create_lookup_tables_$item" );
+				$this->arm_db_upgrade( 'create_lookup_tables' );
 				return;
 			}
 
@@ -1299,7 +2280,7 @@ class DB_Upgrade {
 		}
 
 		if ( ! get_option( 'burst_db_upgrade_move_columns_to_sessions' ) ) {
-			update_option( 'burst_db_upgrade_move_columns_to_sessions', true, false );
+			$this->arm_db_upgrade( 'move_columns_to_sessions' );
 		}
 
 		$batch = $this->batch;
@@ -1424,6 +2405,181 @@ class DB_Upgrade {
 		if ( $removed < $batch ) {
 			delete_option( $option_name );
 			self::error_log( 'clean_spam_browsers upgrade complete.' );
+		}
+	}
+
+	/**
+	 * Remove duplicate names from the browser / browser_version / platform /
+	 * device lookup tables before dbDelta adds the UNIQUE index on `name`.
+	 *
+	 * Before 3.6.3 these tables had no unique index and the tracking code did
+	 * SELECT-then-INSERT, so concurrent first hits of a new value (typically a
+	 * burst of bot requests sharing one user agent) created duplicate rows.
+	 * 3.6.3 changed `name` to varchar(191) UNIQUE; dbDelta emits
+	 * `ALTER TABLE … CHANGE COLUMN name … UNIQUE`, which fails with
+	 * "Duplicate entry" on those installs and leaves the table without the
+	 * index — on every subsequent upgrade, and with INSERT IGNORE unable to
+	 * prevent new duplicates in the meantime.
+	 *
+	 * Runs on burst_install_tables at priority 9, before
+	 * Statistics::install_statistics_table() (10), so the dbDelta that follows
+	 * succeeds. Only tables that still lack the unique index are touched, which
+	 * makes this a cheap no-op once a site has healed.
+	 */
+	public function dedupe_lookup_tables(): void {
+		$action_count = (int) did_action( 'burst_install_tables' );
+		if ( $action_count === self::$lookup_dedupe_action_count ) {
+			return;
+		}
+		self::$lookup_dedupe_action_count = $action_count;
+
+		global $wpdb;
+		$bitmaps_affected = false;
+
+		foreach ( self::LOOKUP_TABLES as $item => $id_column ) {
+			$table = 'burst_' . $item . 's';
+			if ( ! $this->table_exists( $table ) || $this->lookup_has_unique_name_index( $table ) ) {
+				continue;
+			}
+
+			$this->lookup_truncate_long_names( $table );
+
+			$duplicates = $this->lookup_get_duplicates( $table );
+			if ( empty( $duplicates ) ) {
+				continue;
+			}
+
+			if ( ! $this->lookup_remap_ids( $table, $id_column ) ) {
+				// A killed or failed UPDATE (long-query killer, timeout) would
+				// leave rows pointing at ids the DELETE below removes. Keep the
+				// duplicates; the next burst_install_tables run retries.
+				self::error_log( sprintf( 'Lookup dedupe for %s aborted: re-pointing referencing rows failed (%s). Duplicates kept.', $table, $wpdb->last_error ) );
+				continue;
+			}
+			$this->lookup_delete_rows( $table, array_map( 'intval', array_column( $duplicates, 'old_id' ) ) );
+			$this->lookup_flush_cache( $item, array_column( $duplicates, 'name' ) );
+
+			if ( in_array( $item, self::LOOKUP_BITMAP_ITEMS, true ) ) {
+				$bitmaps_affected = true;
+			}
+			self::error_log( sprintf( 'Removed %d duplicate rows from %s before adding the unique name index.', count( $duplicates ), $table ) );
+		}
+
+		if ( $bitmaps_affected ) {
+			// Dimension day sets are keyed on the old ids; rebuild the store.
+			( new Visitor_Bitmaps() )->reset_store();
+		}
+	}
+
+	/**
+	 * Whether the lookup table already has a unique index on `name`.
+	 *
+	 * @param string $table Table name without prefix.
+	 */
+	private function lookup_has_unique_name_index( string $table ): bool {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table from the LOOKUP_TABLES allowlist.
+		return null !== $wpdb->get_var( "SHOW INDEX FROM `{$wpdb->prefix}{$table}` WHERE Column_name = 'name' AND Non_unique = 0" );
+	}
+
+	/**
+	 * Shorten names that no longer fit the varchar(191) column dbDelta is about
+	 * to create; a failed CHANGE COLUMN on length would block the index as well.
+	 *
+	 * @param string $table Table name without prefix.
+	 */
+	private function lookup_truncate_long_names( string $table ): void {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table from the LOOKUP_TABLES allowlist.
+		$wpdb->query( $wpdb->prepare( "UPDATE `{$wpdb->prefix}{$table}` SET name = LEFT(name, %d) WHERE CHAR_LENGTH(name) > %d", self::LOOKUP_NAME_LENGTH, self::LOOKUP_NAME_LENGTH ) );
+	}
+
+	/**
+	 * Derived table mapping every duplicate row to the lowest id with the same
+	 * name. Name comparison follows the column collation, exactly like the
+	 * unique index dbDelta is going to add.
+	 *
+	 * @param string $table Table name without prefix.
+	 */
+	private function lookup_duplicate_map_sql( string $table ): string {
+		global $wpdb;
+		$full = $wpdb->prefix . $table;
+
+		return "SELECT d.ID AS old_id, d.name, k.keep_id
+			FROM `{$full}` d
+			JOIN ( SELECT name, MIN(ID) AS keep_id FROM `{$full}` GROUP BY name HAVING COUNT(*) > 1 ) k ON k.name = d.name
+			WHERE d.ID <> k.keep_id";
+	}
+
+	/**
+	 * Rows that will be removed: old_id, name and the keep_id they map to.
+	 *
+	 * @param string $table Table name without prefix.
+	 * @return array<int, array{old_id: string, name: string, keep_id: string}>
+	 */
+	private function lookup_get_duplicates( string $table ): array {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Static SQL over an allowlisted table.
+		$rows = $wpdb->get_results( $this->lookup_duplicate_map_sql( $table ), ARRAY_A );
+
+		return is_array( $rows ) ? $rows : [];
+	}
+
+	/**
+	 * Re-point sessions (and legacy statistics rows) from every duplicate id to
+	 * the kept id, one set-based UPDATE per referencing table.
+	 *
+	 * The browser_version_id column carries no index on burst_sessions, so that
+	 * UPDATE is a full scan; the others resolve through their index. Every
+	 * statement is checked: the caller must not delete the duplicate rows while
+	 * a referencing table may still point at them.
+	 *
+	 * @param string $table     Lookup table name without prefix.
+	 * @param string $id_column Referencing column, from LOOKUP_TABLES.
+	 * @return bool True when every referencing table was re-pointed.
+	 */
+	private function lookup_remap_ids( string $table, string $id_column ): bool {
+		global $wpdb;
+		$map = $this->lookup_duplicate_map_sql( $table );
+
+		$targets = [ 'burst_sessions' ];
+		if ( $this->column_exists( 'burst_statistics', $id_column ) ) {
+			$targets[] = 'burst_statistics';
+		}
+		foreach ( $targets as $target ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table and column from the LOOKUP_TABLES allowlist; $map is static SQL.
+			$result = $wpdb->query( "UPDATE `{$wpdb->prefix}{$target}` t JOIN ( {$map} ) m ON t.`{$id_column}` = m.old_id SET t.`{$id_column}` = m.keep_id" );
+			if ( false === $result ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Delete the duplicate lookup rows by id.
+	 *
+	 * @param string $table Table name without prefix.
+	 * @param int[]  $ids   Row ids to delete.
+	 */
+	private function lookup_delete_rows( string $table, array $ids ): void {
+		global $wpdb;
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- %d placeholders built from the id count; table allowlisted.
+		$wpdb->query( $wpdb->prepare( "DELETE FROM `{$wpdb->prefix}{$table}` WHERE ID IN ({$placeholders})", ...$ids ) );
+	}
+
+	/**
+	 * Drop the tracking's name → id object-cache entries for the affected
+	 * names: they may hold an id that no longer exists.
+	 *
+	 * @param string   $item  Lookup item (browser|browser_version|platform|device).
+	 * @param string[] $names Names whose duplicates were removed.
+	 */
+	private function lookup_flush_cache( string $item, array $names ): void {
+		foreach ( array_unique( $names ) as $name ) {
+			wp_cache_delete( Tracking::lookup_cache_key( $item, (string) $name ), 'burst' );
 		}
 	}
 }

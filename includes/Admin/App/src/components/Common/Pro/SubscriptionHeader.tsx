@@ -2,7 +2,6 @@ import useLicenseData from '@/hooks/useLicenseData';
 import { __, sprintf } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
 import { createInterpolateElement } from '@wordpress/element';
-import { motion } from 'framer-motion';
 
 // fallow-ignore-next-line complexity
 const SubscriptionHeader = () => {
@@ -100,26 +99,13 @@ const SubscriptionHeader = () => {
 
 	if ( showSubscriptionHeader ) {
 		return (
-			<motion.div
-				className={'flex border-b border-gray-200 ' + bgColor}
-				initial={{ opacity: 0, y: -20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{
-					duration: 0.5,
-					ease: 'easeOut'
-				}}
+			<div
+				className={'flex border-b border-gray-200 animate-in fade-in slide-in-from-top-5 duration-500 ease-out fill-mode-both ' + bgColor}
 			>
 				<div className="mx-auto flex max-w-(--breakpoint-2xl) items-center justify-between gap-5 px-5 py-2.5">
 					<div className="flex items-center gap-2.5 text-sm text-text-gray">
-						<motion.div
-							className="flex items-center justify-center w-5 h-5 rounded-full bg-white border border-gray-100"
-							initial={{ scale: 0, rotate: -180 }}
-							animate={{ scale: 1, rotate: 0 }}
-							transition={{
-								duration: 0.6,
-								delay: 0.2,
-								ease: 'easeOut'
-							}}
+						<div
+							className="flex items-center justify-center w-5 h-5 rounded-full bg-white border border-gray-100 animate-in zoom-in -spin-in-180 duration-600 delay-200 ease-out fill-mode-both"
 						>
 							<Icon
 								color={iconColor}
@@ -127,7 +113,7 @@ const SubscriptionHeader = () => {
 								size={14}
 								strokeWidth={2}
 							/>
-						</motion.div>
+						</div>
 						<span>{text}</span>
 					</div>
 					<a
@@ -137,7 +123,7 @@ const SubscriptionHeader = () => {
 						{__( 'Manage subscription', 'burst-statistics' )}
 					</a>
 				</div>
-			</motion.div>
+			</div>
 		);
 	}
 

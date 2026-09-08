@@ -51,7 +51,7 @@ class ErrorBoundary extends Component {
 						<p className="mb-2 text-base text-text-black">
 							{this.state.error && this.state.error.toString()}
 						</p>
-						<p className="max-h-48 overflow-x-scroll text-xs text-text-black">
+						<p className="max-h-48 overflow-auto text-xs text-text-black">
 							Stack trace:{' '}
 							{this.state.errorInfo &&
 								this.state.errorInfo.componentStack}

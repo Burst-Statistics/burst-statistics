@@ -10,6 +10,10 @@ interface ForecastAnnotationProps {
 	source: ForecastSource;
 	mode: ForecastMode;
 	metadata: ForecastMetadata;
+
+	// Layout override for hosts whose container already pads (default fits
+	// the chart blocks' unpadded content area).
+	className?: string;
 }
 
 /**
@@ -19,14 +23,15 @@ interface ForecastAnnotationProps {
 export function ForecastAnnotation({
 	source,
 	mode,
-	metadata
+	metadata,
+	className = 'px-6 pt-3'
 }: ForecastAnnotationProps ): JSX.Element {
 	const growthRate = metadata.growth_rate;
 	const growthLabel = `${ 0 <= growthRate ? '+' : '' }${ formatPercentage( growthRate ) }`;
 	const churnRate = metadata.churn_rate ?? 0;
 
 	return (
-		<div className="px-6 pt-3 text-xs text-text-gray-light">
+		<div className={ `${ className } text-xs text-text-gray-light` }>
 			<span>
 				{
 					sprintf(

@@ -14,6 +14,7 @@ import DevicesBlock from '@/components/Statistics/DevicesBlock';
 import WorldMapBlock from '@/components/Sources/WorldMapBlock';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import Sales from '@/components/Sales/Sales';
+import GrowthBlock from '@/components/Sales/GrowthBlock';
 import TopPerformers from '@/components/Sales/TopPerformers';
 import FunnelChartSection from '@/components/Sales/FunnelChartSection';
 import Logo from '@/components/Reporting/ReportWizard/Blocks/Logo';
@@ -143,6 +144,14 @@ const AVAILABLE_CONTENT = once( (): ContentItems => [
 		icon: 'shopping-cart',
 		pro: true,
 		component: Sales,
+		ecommerce: true
+	},
+	{
+		id: 'growth',
+		label: __( 'Growth', 'burst-statistics' ),
+		icon: 'trending-up',
+		pro: true,
+		component: GrowthBlock,
 		ecommerce: true
 	},
 	{

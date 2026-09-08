@@ -39,10 +39,11 @@ export interface FilterConfig {
 	pro: boolean;
 	category: FilterCategory;
 	reloadOnSearch?: boolean;
+	coming_soon?: boolean;
 	exclusion_allowed?: boolean;
 	multi_select?: boolean;
 
-	/** When set, shows a time-limited "New" badge. */
+	/** When set, shows a time-limited "New" badge. Remove coming_soon and add this when launching a feature. */
 	new_badge?: { version: string; days: number; tooltip?: string };
 
 	/** Singular/plural noun used in the collapsed multi-value chip count badge, e.g. "page" / "pages". */
@@ -137,6 +138,14 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		category: 'behavior',
 		exclusion_allowed: false
 	},
+	bounce_rate: {
+		label: __( 'Bounce Rate', 'burst-statistics' ),
+		icon: 'bounce',
+		type: 'int',
+		pro: true,
+		category: 'behavior',
+		coming_soon: true
+	},
 	entry_exit_pages: {
 		label: __( 'Page type', 'burst-statistics' ),
 		icon: 'bounce',
@@ -144,6 +153,14 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		pro: true,
 		category: 'behavior',
 		exclusion_allowed: false
+	},
+	conversion_rate: {
+		label: __( 'Conversion Rate', 'burst-statistics' ),
+		icon: 'conversion',
+		type: 'int',
+		pro: true,
+		category: 'behavior',
+		coming_soon: true
 	},
 	parameter: {
 		label: __( 'URL parameter', 'burst-statistics' ),

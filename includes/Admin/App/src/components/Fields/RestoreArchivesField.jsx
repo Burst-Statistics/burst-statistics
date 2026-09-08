@@ -3,12 +3,15 @@ import { __, _n, sprintf } from '@wordpress/i18n';
 import Icon from '../../utils/Icon';
 import useArchiveStore from '@/store/useArchivesStore';
 import useSettingsData from '@/hooks/useSettingsData';
-import DataTable from 'react-data-table-component';
+import DataTable from '@/components/DataTable/DataTable';
 import useLicenseData from '@/hooks/useLicenseData';
 import { useQuery } from '@tanstack/react-query';
 
+// The ( _props, ref ) signature is required: React warns on forwardRef render
+// functions that do not accept exactly two parameters, and the field renderer
+// passes a ref to every field component.
 // fallow-ignore-next-line complexity
-const RestoreArchivesField = forwardRef( () => {
+const RestoreArchivesField = forwardRef( ( _props, ref ) => {
 	const [ searchValue, setSearchValue ] = useState( '' );
 	const [ selectedArchives, setSelectedArchives ] = useState([]);
 	const [ downloading, setDownloading ] = useState( false );
@@ -380,7 +383,7 @@ const RestoreArchivesField = forwardRef( () => {
 	const displayProgress = restoring ? localProgress : 0;
 
 	return (
-		<div className="w-full">
+		<div className="w-full" ref={ref}>
 			<div className="flex py-2.5 px-6 justify-between">
 				<input
 					type="text"

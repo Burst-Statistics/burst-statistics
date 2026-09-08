@@ -45,7 +45,7 @@ const TimeAgo = memo( ({ timestamp }) => {
 		const updateTime = () => {
 			const currentTime = Date.now() / 1000; // Convert to seconds
 			const timeDifference = currentTime - timestamp;
-			const diff = Math.floor( timeDifference );
+			const diff = Math.max( 0, Math.floor( timeDifference ) );
 
 			if ( 60 > diff ) {
 				setTimeText(

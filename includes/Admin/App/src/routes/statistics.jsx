@@ -1,11 +1,11 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
+import { __ } from '@wordpress/i18n';
 import { PageHeader } from '@/components/Common/PageHeader';
 import InsightsBlock from '@/components/Statistics/InsightsBlock';
 import CompareBlock from '@/components/Statistics/CompareBlock';
 import DevicesBlock from '@/components/Statistics/DevicesBlock';
 import DataTableBlock from '@/components/Statistics/DataTableBlock';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
-import { __ } from '@wordpress/i18n';
 import { shouldLoadRoute } from '@/utils/helper';
 
 export const Route = createFileRoute( '/statistics' )({
@@ -24,6 +24,7 @@ export const Route = createFileRoute( '/statistics' )({
 });
 
 function Statistics() {
+
 	return (
 		<>
 			<PageHeader />
