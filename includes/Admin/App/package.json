@@ -33,7 +33,7 @@
   "license": "ISC",
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",
-    "@tailwindcss/postcss": "^4.2.2",
+    "@tailwindcss/postcss": "^4.3.3",
     "@tanstack/router-devtools": "1.62.0",
     "@tanstack/router-plugin": "1.62.0",
     "@types/lodash": "^4.17.20",
@@ -113,6 +113,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.522.0",
     "prop-types": "^15.8.1",
+    "react": "^18.3.1",
     "react-data-table-component": "^7.5.3",
     "react-date-range": "^1.4.0",
     "react-hook-form": "^7.54.2",
