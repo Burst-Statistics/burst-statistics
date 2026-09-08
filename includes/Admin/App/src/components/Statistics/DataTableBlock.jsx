@@ -6,7 +6,7 @@ import SearchButton from '../Common/SearchButton';
 import DataTableSelect from './DataTableSelect';
 import { useDataTableStore } from '@/store/useDataTableStore';
 import EmptyDataTable from './EmptyDataTable';
-import DataTable from 'react-data-table-component';
+import DataTable from '@/components/DataTable/DataTable';
 import { useQuery } from '@tanstack/react-query';
 import getDataTableData from '@/api/getDataTableData';
 import { getPageParameterCounts } from '@/api/getPageParameters';
@@ -19,7 +19,7 @@ import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import useSettingsData from '@/hooks/useSettingsData';
 import useLicenseData from '@/hooks/useLicenseData';
 import DownloadCsvButton from '@/components/Statistics/DownloadCsvButton';
-import { COLUMN_FORMATTERS, FORMATS } from '@/api/getDataTableData';
+import { COLUMN_FORMATTERS, FORMATS, isUnknownLocationRow } from '@/api/getDataTableData';
 import ClickToFilter from '@/components/Common/ClickToFilter';
 import {
 	getCountryName,
@@ -426,7 +426,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					align: 'left',
 					group_by: true
 				},
-				source: {
+				utm_source: {
 					label: __( 'Source', 'burst-statistics' ),
 					format: 'text',
 					align: 'left',
@@ -1126,6 +1126,15 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					[ 'visitors', 'pageviews', 'sessions' ].includes( col.id )
 				);
 				actualSortField = metricCol ? metricCol.id : ( sortedColumnsData[1]?.id || '' );
+			}
+
+			// An "Unknown" location row aggregates many unresolved cities or
+			// states, so ranking it against real locations is meaningless:
+			// pin it to the bottom regardless of sort field and direction.
+			const aUnknownLocation = isUnknownLocationRow( a );
+			const bUnknownLocation = isUnknownLocationRow( b );
+			if ( aUnknownLocation !== bUnknownLocation ) {
+				return aUnknownLocation ? 1 : -1;
 			}
 
 			const aValue = a[actualSortField];

@@ -71,9 +71,18 @@ const Modal: React.FC<ModalProps> = ({
 					{children}
 				</Dialog.Trigger>
 			)}
-			<Dialog.Portal container={document.getElementById( 'modal-root' )}>
+			<Dialog.Portal
+				container={
+					document.getElementById( 'modal-root' ) ||
+					document.getElementById( 'burst-statistics' ) ||
+					document.getElementById( 'burst-mainwp' ) ||
+					document.querySelector( '.burst' ) ||
+					undefined
+				}
+			>
 				<Dialog.Overlay className="bg-black/50 fixed inset-0 z-modal" />
 				<Dialog.Content
+					id="burst-statistics"
 					onPointerDownOutside={( e ) => {
 						if ( isDismissingPopperRef.current ) {
 							e.preventDefault();
@@ -88,7 +97,7 @@ const Modal: React.FC<ModalProps> = ({
 						}
 						onInteractOutside?.( e );
 					}}
-					className={`fixed top-[calc(var(--wp-admin--admin-bar--height,0px)+12px)] left-1/2 -translate-x-1/2 w-[calc(100%-20px)] max-h-[90vh] m-0 px-4 py-3 rounded-md z-modal bg-gray-100 shadow-md focus:outline-hidden data-[state=open]:animate-contentShow flex flex-col overflow-x-visible ${contentSizeClasses}`}
+					className={`burst fixed top-[calc(var(--wp-admin--admin-bar--height,0px)+12px)] left-1/2 -translate-x-1/2 w-[calc(100%-20px)] max-h-[90vh] m-0 px-4 py-3 rounded-md z-modal bg-gray-100 shadow-md focus:outline-hidden data-[state=open]:animate-contentShow flex flex-col overflow-x-visible ${contentSizeClasses}`}
 				>
 					<div className="flex flex-row justify-between items-center shrink-0">
 						{customHeader ? (

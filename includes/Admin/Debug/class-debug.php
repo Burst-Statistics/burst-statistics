@@ -1,17 +1,23 @@
 <?php
 namespace Burst\Admin\Debug;
 
+use Burst\Admin\Capability\Capability;
+use Burst\Admin\DB_Upgrade\DB_Upgrade;
 use Burst\Admin\Search_Console\Diagnostic_Logs;
 use Burst\Admin\Search_Console\Sync;
+use Burst\Admin\Statistics\Query_Shapes\Session_Grain_Shape;
+use Burst\Admin\Statistics\Visitor_Bitmaps;
 use Burst\Frontend\Ip\Ip;
 use Burst\Frontend\Tracking\Tracking_GeoIp;
 use Burst\Traits\Admin_Helper;
+use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
 
 defined( 'ABSPATH' ) || die( 'you do not have access to this page!' );
 
 class Debug {
 	use Admin_Helper;
+	use Database_Helper;
 	use Helper;
 
 	/**
@@ -110,6 +116,10 @@ class Debug {
 				'label' => __( 'Burst Settings', 'burst-statistics' ),
 				'value' => $settings,
 			],
+			'current_user'        => [
+				'label' => __( 'Current user Burst access', 'burst-statistics' ),
+				'value' => $this->get_current_user_access_info(),
+			],
 			'burst_wp_options'    => [
 				'label' => __( 'Burst WordPress options', 'burst-statistics' ),
 				'value' => "available in 'Copy site info to clipboard'",
@@ -134,6 +144,7 @@ class Debug {
 			],
 		];
 
+		$fields = array_merge( $fields, $this->get_uid_pipeline_fields(), $this->get_visitor_bitmaps_fields() );
 		$fields = array_merge( $fields, $this->get_search_console_fields() );
 
 		$info['burst_debug'] = [
@@ -141,6 +152,148 @@ class Debug {
 			'fields' => apply_filters( 'burst_debug_fields', $fields ),
 		];
 
+		return $info;
+	}
+
+	/**
+	 * The uid dictionary migration state as one Site Health field. The pipeline
+	 * spans four task options plus watermarks and progress transients; support
+	 * needs to read a stuck pipeline from a pasted Site Health export instead
+	 * of querying options over wp-cli.
+	 *
+	 * @return array<string, array{label: string, value: array<string, string>}>
+	 */
+	private function get_uid_pipeline_fields(): array {
+		$tasks = [ 'seed_uid_dictionary', 'statistics_uid_id', 'sessions_first_time', 'finalize_uid_id', 'seed_page_urls', 'statistics_page_id', 'pro_sessions_source_category' ];
+
+		// Any other registered task that is still pending (e.g. a stuck
+		// drop_session_visited_urls) disables db_upgrades_complete() just the
+		// same — list it, or this field shows every task 'done' while the
+		// fast paths stay off, exactly the diagnosis gap it exists to close.
+		foreach ( ( new DB_Upgrade() )->get_all_upgrade_slugs() as $slug ) {
+			if ( ! in_array( $slug, $tasks, true ) && get_option( "burst_db_upgrade_{$slug}" ) ) {
+				$tasks[] = $slug;
+			}
+		}
+
+		$state = [
+			'db upgrades'      => $this->db_upgrades_complete() ? 'complete' : 'pending (version behind or tasks running)',
+			'integer uid mode' => $this->uid_id_active() ? 'active' : 'inactive (legacy uid strings)',
+			'session grain'    => Session_Grain_Shape::session_grain_ready() ? 'ready' : 'not ready (upgrades pending or columns missing)',
+			'page grain'       => $this->page_dictionary_ready() ? 'ready' : 'not ready (upgrades pending or index missing)',
+			// Page-grain grouping without its covering index is slower than
+			// the old page_url grouping — surface the mismatch loudly. Same
+			// probe the query switch itself uses (Database_Helper).
+			'page grain index' => $this->page_grain_index_exists() ? 'present' : 'MISSING (time, page_id, uid_id) — run the table init',
+		];
+
+		foreach ( $tasks as $task ) {
+			$status = 'done';
+			if ( get_option( "burst_db_upgrade_{$task}" ) ) {
+				$status    = 'pending';
+				$watermark = (int) get_option( "burst_db_upgrade_{$task}_last_id" );
+				if ( $watermark > 0 ) {
+					$status .= " (watermark {$watermark})";
+				}
+				$progress = get_transient( "burst_progress_{$task}" );
+				if ( false !== $progress ) {
+					$status .= ', ' . round( (float) $progress * 100 ) . '%';
+				}
+			}
+			$state[ "task {$task}" ] = $status;
+		}
+
+		return [
+			'burst_uid_pipeline' => [
+				'label' => __( 'UID dictionary migration', 'burst-statistics' ),
+				'value' => $state,
+			],
+		];
+	}
+
+	/**
+	 * The visitor bitmap store state plus a live probe as one Site Health
+	 * field. The probe runs get_visitors() for the last seven days and reports
+	 * whether it serves or falls back and why — the bitmap path bypasses the
+	 * query-stats logging, so this is the one place that answers "is the fast
+	 * path actually on for this site".
+	 *
+	 * @return array<string, array{label: string, value: array<string, string>}>
+	 */
+	private function get_visitor_bitmaps_fields(): array {
+		global $wpdb;
+
+		if ( ! $this->table_exists( 'burst_visitor_bitmaps' ) ) {
+			return [
+				'burst_visitor_bitmaps' => [
+					'label' => __( 'Visitor bitmaps', 'burst-statistics' ),
+					'value' => [ 'store' => 'table missing' ],
+				],
+			];
+		}
+
+		$state = [
+			'built until'    => (string) get_option( 'burst_visitor_bitmaps_built_until' ) ?: 'never',
+			'scopes version' => (string) get_option( 'burst_visitor_bitmaps_scopes_version' ) ?: '-',
+			'rebuild from'   => (string) get_option( 'burst_visitor_bitmaps_rebuild_from' ) ?: '-',
+		];
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table name, debug context.
+		$scope_counts = $wpdb->get_results( "SELECT scope, COUNT(*) AS days FROM {$wpdb->prefix}burst_visitor_bitmaps GROUP BY scope", ARRAY_A );
+		foreach ( (array) $scope_counts as $row ) {
+			$state[ 'rows: ' . $row['scope'] ] = (string) $row['days'];
+		}
+
+		$last_error = get_option( 'burst_visitor_bitmaps_last_error' );
+		if ( is_array( $last_error ) && ! empty( $last_error['day'] ) ) {
+			$state['last builder error'] = $last_error['day'] . ' at ' . gmdate( 'Y-m-d H:i:s', (int) ( $last_error['time'] ?? 0 ) ) . ' UTC';
+		}
+
+		$last_serve = get_option( 'burst_visitor_bitmaps_last_serve' );
+		if ( is_array( $last_serve ) && ! empty( $last_serve['path'] ) ) {
+			$serve = $last_serve['path'];
+			if ( '' !== (string) ( $last_serve['reason'] ?? '' ) ) {
+				$serve .= ' (' . $last_serve['reason'] . ')';
+			}
+			$serve                   .= ', ' . (int) ( $last_serve['ms'] ?? 0 ) . 'ms, since ' . gmdate( 'Y-m-d H:i:s', (int) ( $last_serve['time'] ?? 0 ) ) . ' UTC';
+			$state['last serve path'] = $serve;
+		}
+
+		// Live probe: last 7 days including today, the most common picker range.
+		$timezone = wp_timezone();
+		$start    = ( new \DateTimeImmutable( 'today -6 days', $timezone ) )->getTimestamp();
+		$end      = ( new \DateTimeImmutable( 'today 23:59:59', $timezone ) )->getTimestamp();
+		$bitmaps  = new Visitor_Bitmaps();
+		$probe_t  = microtime( true );
+		$visitors = $bitmaps->get_visitors( $start, $end );
+		$probe_ms = (int) round( ( microtime( true ) - $probe_t ) * 1000 );
+
+		$state['probe (last 7 days)'] = null === $visitors
+			? 'fallback to SQL path (' . $bitmaps->get_last_miss_reason() . ')'
+			: "bitmap: {$visitors} visitors in {$probe_ms}ms";
+
+		return [
+			'burst_visitor_bitmaps' => [
+				'label' => __( 'Visitor bitmaps', 'burst-statistics' ),
+				'value' => $state,
+			],
+		];
+	}
+
+	/**
+	 * Roles and Burst capabilities of the user viewing Site Health, so support can
+	 * tell a missing capability (e.g. a custom role) apart from a plugin problem.
+	 *
+	 * @return array<string, string> Roles plus one row per Burst capability.
+	 */
+	private function get_current_user_access_info(): array {
+		$user = wp_get_current_user();
+		$info = [
+			'roles' => implode( ', ', array_map( 'sanitize_key', (array) $user->roles ) ) ?: 'none',
+		];
+		foreach ( Capability::get_capability_names() as $capability ) {
+			$info[ $capability ] = user_can( $user, $capability ) ? 'true' : 'false';
+		}
 		return $info;
 	}
 

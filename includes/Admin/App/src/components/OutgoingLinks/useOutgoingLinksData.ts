@@ -5,6 +5,7 @@ import { useCompareStore, COMPARE_MODES } from '@/store/useCompareStore';
 import { getDatatableData } from '@/utils/api';
 import useLicenseData from '@/hooks/useLicenseData';
 import useFilters from '@/hooks/useFilters';
+import type { FilterSearchParams } from '@/config/filterConfig';
 
 /**
  * A single outgoing link data row.
@@ -34,6 +35,15 @@ type ApiRow = {
 	previous_clicks_yoy: number;
 };
 
+type UseOutgoingLinksDataOptions = {
+
+	/** When false, the query is not executed. */
+	enabled?: boolean;
+
+	/** Override filters (e.g. page-scoped page_url). Falls back to active URL filters. */
+	customFilters?: FilterSearchParams;
+};
+
 type UseOutgoingLinksDataReturn = {
 
 	/** All available rows, ordered by clicks descending. */
@@ -60,14 +70,21 @@ type UseOutgoingLinksDataReturn = {
  * in a single request. The `previousClicks` field is resolved client-side based
  * on the active comparison mode so the columns layer doesn't need to re-fetch.
  *
+ * @param {UseOutgoingLinksDataOptions|boolean} options - Query options, or a boolean for enabled (legacy).
  * @return {UseOutgoingLinksDataReturn} The outgoing links dataset and request state.
  */
-export function useOutgoingLinksData( enabled = true ): UseOutgoingLinksDataReturn {
+export function useOutgoingLinksData(
+	options: UseOutgoingLinksDataOptions | boolean = true
+): UseOutgoingLinksDataReturn {
+	const resolvedOptions: UseOutgoingLinksDataOptions =
+		'boolean' === typeof options ? { enabled: options } : options;
+	const { enabled = true, customFilters } = resolvedOptions;
+
 	const { startDate, endDate, range } = useDate( ( state ) => state );
 	const compareMode = useCompareStore( ( state ) => state.compareMode );
 	const { isLicenseValid } = useLicenseData();
 	const { getActiveFilters } = useFilters();
-	const filters = getActiveFilters();
+	const filters = customFilters ?? getActiveFilters();
 
 	const { data: apiData, isLoading, error } = useQuery({
 		queryKey: [ 'outgoing-links', startDate, endDate, range, filters ],

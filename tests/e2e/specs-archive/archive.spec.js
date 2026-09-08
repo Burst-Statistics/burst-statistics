@@ -67,10 +67,21 @@ const executeBurstDailyCron = async () => {
  *  - In CI: expect a local file at tests/e2e/specs-archive/burst-backup.sql (resolved from __dirname)
  *  - Locally: ask WP for WP_PLUGIN_DIR and build a container path to the SQL file
  *
+ * The dump recreates the burst tables with the schema it was made with, so after
+ * the import dbDelta is run (burst_install_tables) to add columns introduced
+ * since — the same schema sync a real site relies on after restoring a backup.
+ *
+ * @param {import('@playwright/test').Page} page - The Playwright page object.
  * Throws on missing file or import failure.
  */
-const backUpTheDataToArchive = async () => {
+const backUpTheDataToArchive = async ( page ) => {
 	console.log( '\n===== 🔄 [Backup] Starting SQL data restore =====' );
+
+	// Park the browser on a blank page: the Burst dashboard polls REST endpoints
+	// every few seconds, and mid-import the statistics table temporarily has the
+	// dump's outdated schema, which would log database errors and fail the
+	// debugHasError() assertions.
+	await page.goto( 'about:blank' );
 	console.log( `[Backup] Environment: ${ process.env.CI ? 'CI' : 'Local wp-env' }` );
 
 	let backUpPath;
@@ -119,6 +130,10 @@ const backUpTheDataToArchive = async () => {
 		throw err;
 	}
 
+	console.log( '[Backup] Syncing table schema via dbDelta...' );
+	await wpCli( `eval "do_action('burst_install_tables');"` );
+	console.log( '✅ [Backup] Schema sync complete' );
+
 	console.log( '===== 🎉 [Backup] Completed =====\n' );
 };
 
@@ -128,7 +143,7 @@ test.describe( 'Data archive functionality', () => {
 		console.log( '\n===== 🧪 [Test] Delete Archive Settings =====' );
 
 		await login( page );
-		await backUpTheDataToArchive();
+		await backUpTheDataToArchive( page );
 
 		await page.screenshot( { path: `screenshots/logged-in-${ Date.now() }.png`, fullPage: true } );
 		await setPermalinkStructure( 'pretty', page );
@@ -225,6 +240,13 @@ test.describe( 'Data archive functionality', () => {
 
 		expect( dataAfterDelete.length ).toBe( 0 );
 		console.log( '[Delete] ✓ Data successfully deleted' );
+
+		// Deleting a month also removes the sessions that have no hits left.
+		const orphanedSessions = await getTableData( 'wp_burst_sessions', {
+			where: 'ID NOT IN (SELECT DISTINCT COALESCE(session_id, 0) FROM wp_burst_statistics)',
+		} );
+		console.log( `[Delete] Orphaned sessions after delete: ${ orphanedSessions.length }` );
+		expect( orphanedSessions.length ).toBe( 0 );
 
 		const hasErrors = await debugHasError();
 		expect(hasErrors).toBe(false);

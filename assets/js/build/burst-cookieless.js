@@ -37,6 +37,7 @@
 // Ensure tracking object exists
 burst.tracking = burst.tracking || {
   isInitialHit: true,
+  initialized: false,
   lastUpdateTimestamp: 0,
   ajaxUrl: '',
 };
@@ -100,15 +101,24 @@ const burst_get_cookie = name => {
   return Promise.reject(false);
 };
 /**
+ * Get tracking consent state via WP Consent API or consent managers.
+ * @returns {'yes' | 'no' | 'undecided'}
+ */
+const burst_consent_state = () => {
+  if (typeof wp_has_consent !== 'function') {
+    return burst.options.consent_api_active ? 'undecided' : 'yes';
+  }
+  if (window.waitfor_consent_hook && typeof window.wp_consent_type === 'undefined') {
+    return 'undecided';
+  }
+  return wp_has_consent('statistics') ? 'yes' : 'no';
+};
+
+/**
  * Check if tracking consent is granted via WP Consent API or consent managers.
  * @returns {boolean}
  */
-const burst_has_tracking_consent = () => {
-  if (typeof wp_has_consent === 'function') {
-    return wp_has_consent('statistics');
-  }
-  return true;
-};
+const burst_has_tracking_consent = () => burst_consent_state() === 'yes';
 
 /**
  * Set a cookie
@@ -116,7 +126,7 @@ const burst_has_tracking_consent = () => {
  * @param value
  */
 const burst_set_cookie = (name, value) => {
-  if (!burst_has_tracking_consent()) return;
+  if (!burst_has_tracking_consent() || !value) return;
   const path = '/';
   let domain = '';
   let secure = location.protocol === 'https:' ? ';secure' : '';
@@ -145,6 +155,7 @@ const burst_use_cookies = () => {
  */
 function burst_enable_cookies() {
   burst.options.cookieless = false;
+  burst.cache.useCookies = null;
   if (burst_use_cookies()) {
     burst_uid().then(uid => burst_set_cookie('burst_uid', uid));
   }
@@ -399,6 +410,84 @@ const burst_api_request = obj => {
     }
   });
 };
+
+/**
+ * Scroll depth and zone dwell time tracking
+ */
+let burstMaxScroll = 0;
+let burstLastScrollTimestamp = Date.now();
+let burstCurrentZone = '0_25';
+const burstDwellTimePerZone = {
+  '0_25': 0,
+  '25_50': 0,
+  '50_75': 0,
+  '75_100': 0,
+};
+
+function burst_update_scroll_metrics() {
+  const now = Date.now();
+  const elapsedMs = Math.max(0, now - burstLastScrollTimestamp);
+  burstLastScrollTimestamp = now;
+
+  if (document.visibilityState === 'visible' && elapsedMs > 0 && elapsedMs < 300000) {
+    if (burstDwellTimePerZone[burstCurrentZone] !== undefined) {
+      burstDwellTimePerZone[burstCurrentZone] += elapsedMs;
+    }
+  }
+
+  const docHeight = Math.max(
+    document.body?.scrollHeight || 0,
+    document.documentElement?.scrollHeight || 0,
+    document.body?.offsetHeight || 0,
+    document.documentElement?.offsetHeight || 0
+  );
+  const winHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
+  const scrollTop = window.scrollY || window.pageYOffset || document.documentElement?.scrollTop || 0;
+
+  let currentPercent = 0;
+  if (docHeight > winHeight) {
+    currentPercent = Math.min(100, Math.max(0, Math.round((scrollTop / (docHeight - winHeight)) * 100)));
+  } else {
+    currentPercent = 100;
+  }
+
+  if (currentPercent > burstMaxScroll) {
+    burstMaxScroll = currentPercent;
+  }
+
+  if (currentPercent < 25) {
+    burstCurrentZone = '0_25';
+  } else if (currentPercent < 50) {
+    burstCurrentZone = '25_50';
+  } else if (currentPercent < 75) {
+    burstCurrentZone = '50_75';
+  } else {
+    burstCurrentZone = '75_100';
+  }
+}
+
+let burstScrollTicking = false;
+function burst_handle_scroll() {
+  if (!burstScrollTicking) {
+    window.requestAnimationFrame(() => {
+      burst_update_scroll_metrics();
+      burstScrollTicking = false;
+    });
+    burstScrollTicking = true;
+  }
+}
+
+function burst_init_scroll_tracker() {
+  burstLastScrollTimestamp = Date.now();
+  burst_update_scroll_metrics();
+  window.addEventListener('scroll', burst_handle_scroll, { passive: true });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', burst_init_scroll_tracker, { once: true });
+} else {
+  burst_init_scroll_tracker();
+}
 /**
  * Update the tracked hit
  * Mostly used for updating time spent on a page
@@ -434,11 +523,15 @@ async function burst_update_hit(
 					: burst_fingerprint(),
 	]);
 
+	burst_update_scroll_metrics();
+
 	const data = {
 		fingerprint: update_uid ? id[1] : burst_use_cookies() ? false : id,
 		uid: update_uid ? id[0] : burst_use_cookies() ? id : false,
 		url: location.href,
 		time_on_page: time,
+		max_scroll: burstMaxScroll,
+		dwell_zones: JSON.stringify(burstDwellTimePerZone),
 		completed_goals: burst.goals.completed,
 		should_load_ecommerce: burst.should_load_ecommerce,
 		...extraData,
@@ -461,7 +554,10 @@ async function burst_track_hit(extraData = {}) {
     burst_update_hit(false, false, extraData);
     return;
   }
-  if (burst_is_user_agent() || burst_is_do_not_track() || !burst_has_tracking_consent()) return;
+  if (burst_is_user_agent() || burst_is_do_not_track() || !burst_has_tracking_consent()) {
+    burst.tracking.isInitialHit = true;
+    return;
+  }
 
   if (Date.now() - burst.tracking.lastUpdateTimestamp < 300) return;
 
@@ -485,6 +581,8 @@ async function burst_track_hit(extraData = {}) {
     console.warn('Burst: missing page_id attribute, not able to resolve body element.');
   }
 
+  burst_update_scroll_metrics();
+
   const burstSearchParams = new URLSearchParams(location.search);
   const data = {
     uid: burst_use_cookies() ? id : false,
@@ -494,6 +592,8 @@ async function burst_track_hit(extraData = {}) {
     user_agent: navigator.userAgent || 'unknown',
     device_resolution: `${window.screen.width * window.devicePixelRatio}x${window.screen.height * window.devicePixelRatio}`,
     time_on_page: time,
+    max_scroll: burstMaxScroll,
+    dwell_zones: JSON.stringify(burstDwellTimePerZone),
     completed_goals: burst.goals.completed,
     page_id: document.body?.dataset?.burst_id ?? document.body?.dataset?.b_id ?? 0,
     page_type: document.body?.dataset?.burst_type ?? document.body?.dataset?.b_type ?? '',
@@ -632,19 +732,26 @@ function burst_init_events() {
   window.addEventListener('popstate', handleUrlChange);
 }
 
+const burst_maybe_init = () => {
+  if (burst_consent_state() !== 'yes') return;
+  if (burst.tracking.initialized) {
+    burst_track_hit();
+    return;
+  }
+  // no double listeners
+  burst.tracking.initialized = true;
+  burst_init_events();
+};
+
+document.addEventListener('wp_consent_type_defined', burst_maybe_init);
 document.addEventListener('wp_listen_for_consent_change', e => {
-  const changed = e.detail;
-  if (changed.statistics === 'allow') {
+  if (e.detail?.statistics === 'allow') {
     burst.cache.useCookies = null;
-    burst_init_events();
+    burst_maybe_init();
   }
 });
 
-if (typeof wp_has_consent !== 'function') {
-  burst_init_events();
-} else if (wp_has_consent('statistics')) {
-  burst_init_events();
-}
+burst_maybe_init();
 
 window.burst_uid = burst_uid;
 window.burst_use_cookies = burst_use_cookies;

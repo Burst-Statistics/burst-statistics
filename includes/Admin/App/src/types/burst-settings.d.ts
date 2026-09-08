@@ -83,6 +83,7 @@ export interface BurstSettings {
 	installed_by?: string;
 	rest_url: string;
 	site_url: string;
+	home_url: string;
 	admin_ajax_url: string;
 	dashboard_url: string;
 	network_link?: string;

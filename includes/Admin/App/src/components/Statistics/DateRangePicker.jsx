@@ -76,7 +76,7 @@ const DateRangePicker = ({
 	};
 
 	return (
-		<div className={`burst-date-range-picker ${className}`.trim()}>
+		<div className={`burst-date-range-picker w-max max-w-full ${className}`.trim()}>
 			<div className="flex flex-col lg:flex-row">
 				<div className="flex flex-col border-b lg:border-b-0 lg:border-r border-gray-200 min-w-3xs pb-2 lg:pb-0">
 					<button

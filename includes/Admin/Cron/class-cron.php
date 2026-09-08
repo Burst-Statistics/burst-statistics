@@ -28,21 +28,26 @@ class Cron {
 	 * Else start the functions.
 	 */
 	public function schedule_cron(): void {
+		// First run 5 seconds in the future, not at time(): scheduling happens
+		// on the (re)activation request, and a first run in the same instant
+		// races the table install — the hooks would fire against tables that
+		// are still being (re)created.
+		$first_run = time() + 5;
 		if ( ! wp_next_scheduled( 'burst_every_ten_minutes' ) ) {
-			wp_schedule_event( time(), 'burst_every_ten_minutes', 'burst_every_ten_minutes' );
+			wp_schedule_event( $first_run, 'burst_every_ten_minutes', 'burst_every_ten_minutes' );
 		}
 
 		if ( ! wp_next_scheduled( 'burst_every_hour' ) ) {
-			wp_schedule_event( time(), 'burst_every_hour', 'burst_every_hour' );
+			wp_schedule_event( $first_run, 'burst_every_hour', 'burst_every_hour' );
 		}
 		if ( ! wp_next_scheduled( 'burst_daily' ) ) {
-			wp_schedule_event( time(), 'burst_daily', 'burst_daily' );
+			wp_schedule_event( $first_run, 'burst_daily', 'burst_daily' );
 		}
 		if ( ! wp_next_scheduled( 'burst_weekly' ) ) {
-			wp_schedule_event( time(), 'burst_weekly', 'burst_weekly' );
+			wp_schedule_event( $first_run, 'burst_weekly', 'burst_weekly' );
 		}
 		if ( ! wp_next_scheduled( 'burst_monthly' ) ) {
-			wp_schedule_event( time(), 'burst_monthly', 'burst_monthly' );
+			wp_schedule_event( $first_run, 'burst_monthly', 'burst_monthly' );
 		}
 	}
 

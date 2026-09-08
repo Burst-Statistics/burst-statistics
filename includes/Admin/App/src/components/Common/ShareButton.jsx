@@ -1,4 +1,5 @@
 import {useState, useCallback, useEffect, useMemo, createInterpolateElement} from '@wordpress/element';
+import { createPortal } from 'react-dom';
 import {__, _n, sprintf} from '@wordpress/i18n';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLocation } from '@tanstack/react-router';
@@ -923,15 +924,15 @@ export const ShareButton = () => {
 		return null;
 	}
 
-	const portalContainer =
-		document.getElementById( 'modal-root' ) ||
-		document.querySelector( '.burst' ) ||
-		document.body;
-
 	return (
 		<>
-			{isModalOpen && (
-				<div className="fixed inset-0 bg-black/30 z-[55]" />
+			{'undefined' !== typeof document && isModalOpen && createPortal(
+				<div
+					className="fixed inset-0 bg-black/30 z-overlay"
+					style={{ zIndex: 'var(--z-overlay)' }}
+					onClick={handleClose}
+				/>,
+				document.body
 			)}
 
 			<ReactPopover.Root
@@ -955,13 +956,15 @@ export const ShareButton = () => {
 					</div>
 				</ReactPopover.Anchor>
 
-				<ReactPopover.Portal container={portalContainer}>
+				<ReactPopover.Portal>
 					<ReactPopover.Content
-						className="z-[10001] w-[520px] max-w-[calc(100vw-40px)] max-h-[80vh] rounded-lg border border-gray-200 bg-white shadow-xl flex flex-col"
+						className="burst z-modal"
 						align="end"
 						sideOffset={10}
 						arrowPadding={10}
+						style={{ zIndex: 'var(--z-modal)' }}
 					>
+						<div className="w-[520px] max-w-[calc(100vw-40px)] max-h-[80vh] rounded-lg border border-gray-200 bg-white shadow-xl flex flex-col">
 						<div className="border-b border-gray-100 px-4 py-3 flex items-center justify-between shrink-0">
 							<h5 className="m-0 text-base font-semibold text-text-black">
 								{__( 'Share dashboard', 'burst-statistics' )}
@@ -1041,7 +1044,8 @@ export const ShareButton = () => {
 								/>
 							</div>
 						</div>
-					</ReactPopover.Content>
+					</div>
+				</ReactPopover.Content>
 				</ReactPopover.Portal>
 			</ReactPopover.Root>
 		</>

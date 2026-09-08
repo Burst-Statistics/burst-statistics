@@ -5,6 +5,7 @@ import useFiltersData from '@/hooks/useFiltersData';
 import { __, sprintf } from '@wordpress/i18n';
 import { formatDuration } from '@/utils/formatting';
 import { getFilterOperator, isExcluding, splitFilterValues } from '@/config/filterConfig';
+import { isPerPageRoute } from '@/utils/routeUtils';
 
 const getCodeLabels = ( value, map ) => {
 	if ( ! value ) {
@@ -46,8 +47,9 @@ export const useFilterDisplay = ( reportBlockIndex ) => {
 	}, [ filters ]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const getActiveFiltersWithDisplay = useCallback( async() => {
+		const isPerPageContext = isPerPageRoute();
 		const active = Object.entries( filters ).filter(
-			([ _, value ]) => '' !== value // eslint-disable-line @typescript-eslint/no-unused-vars
+			([ key, value ]) => '' !== value && ( ! isPerPageContext || 'page_url' !== key ) // eslint-disable-line @typescript-eslint/no-unused-vars
 		);
 		return await Promise.all(
 

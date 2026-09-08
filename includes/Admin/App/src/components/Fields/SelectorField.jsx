@@ -10,7 +10,6 @@ import TextInput from '@/components/Inputs/TextInput';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { addQueryArgs } from '@wordpress/url';
-import useWordPressData from '@/hooks/useWordPressData';
 import Icon from '@/utils/Icon';
 import HelpTooltip from '@/components/Common/HelpTooltip';
 
@@ -33,11 +32,10 @@ const SelectorField = forwardRef(
 	) => {
 		const inputId = props.id || field.name;
 
-		const { siteInfo } = useWordPressData();
 		const [ previewDisplayLoggedOut, setPreviewDisplayLoggedOut ] =
 			useState( true );
 
-		const siteUrl = siteInfo?.url;
+		const siteUrl = burst_settings.home_url;
 
 		const baseUrl =
 			'page' === goal.page_or_website ?

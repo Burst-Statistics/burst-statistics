@@ -15,8 +15,6 @@ class Diagnostic_Logs {
 
 	private const MAX_ENTRIES = 1000;
 
-	private const CONTENT_VERSION_OPTION = 'burst_gsc_diagnostic_logs_content_version';
-
 	private const CONTENT_VERSION = 'summary_v1';
 
 	private static ?bool $table_ready = null;
@@ -290,7 +288,8 @@ class Diagnostic_Logs {
 	 * The migration is per-site, runs once, and retains diagnostics metadata.
 	 */
 	private function summarize_existing_contexts(): void {
-		if ( self::CONTENT_VERSION === get_option( self::CONTENT_VERSION_OPTION ) ) {
+		$state = new State_Store();
+		if ( self::CONTENT_VERSION === $state->diagnostic_logs_content_version() ) {
 			return;
 		}
 
@@ -317,7 +316,7 @@ class Diagnostic_Logs {
 			}
 		}
 
-		update_option( self::CONTENT_VERSION_OPTION, self::CONTENT_VERSION, false );
+		$state->set_diagnostic_logs_content_version( self::CONTENT_VERSION );
 	}
 
 	/**

@@ -99,7 +99,7 @@ class Frontend {
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_time_tracking_script' ], 0 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_tracking_script' ], 0 );
 		add_filter( 'script_loader_tag', [ $this, 'defer_burst_tracking_script' ], 10, 3 );
-		add_action( 'init', [ $this, 'use_logged_out_state_for_tests' ] );
+		add_action( 'init', [ $this, 'use_logged_out_state_for_tests' ], 0 );
 		add_action( 'wp_ajax_burst_tracking_error', [ $this, 'log_tracking_error' ] );
 		add_action( 'wp_ajax_nopriv_burst_tracking_error', [ $this, 'log_tracking_error' ] );
 		// Priority 20: both callbacks discard collected errors (re-arm wipes them,
@@ -580,23 +580,31 @@ class Frontend {
 	}
 
 	/**
-	 * When a tracking test is running, we don't want to show the logged in state, as caching plugins often show uncached content to logged in users.
-	 * Also handles the force logged out functionality for previewing click goals.
+	 * When a tracking test or iframe preview is running, we don't want to show the logged in state.
+	 * Forces logged out user state and hides the admin bar for previewing click goals and per-page modal previews.
 	 */
 	public function use_logged_out_state_for_tests(): void {
-		// Verify nonce while user is still authenticated.
-		// This is the nonce verification, unslash done in verify_nonce().
-        // phpcs:ignore
-        if ( ! isset( $_GET['nonce'] ) || ! $this->verify_nonce( $_GET['nonce'], 'burst_nonce' ) ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$is_preview = isset( $_GET['burst_preview'] ) && '1' === (string) sanitize_text_field( wp_unslash( $_GET['burst_preview'] ) );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$is_force_logged_out = isset( $_GET['burst_force_logged_out'] ) && '1' === (string) sanitize_text_field( wp_unslash( $_GET['burst_force_logged_out'] ) );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$is_test_hit = isset( $_GET['burst_test_hit'] );
+
+		if ( ! $is_preview && ! $is_force_logged_out && ! $is_test_hit ) {
 			return;
 		}
 
-		// Nonce is verified above.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( isset( $_GET['burst_test_hit'] ) || ( isset( $_GET['burst_force_logged_out'] ) && $_GET['burst_force_logged_out'] === '1' ) ) {
-			add_filter( 'determine_current_user', '__return_null', 100 );
-			wp_set_current_user( 0 );
+		$nonce = isset( $_GET['nonce'] ) ? sanitize_text_field( wp_unslash( $_GET['nonce'] ) ) : '';
+		if ( '' === $nonce || false === wp_verify_nonce( $nonce, 'burst_nonce' ) ) {
+			return;
 		}
+
+		add_filter( 'determine_current_user', '__return_null', 999999 );
+		add_filter( 'show_admin_bar', '__return_false', 999999 );
+		wp_set_current_user( 0 );
+		show_admin_bar( false );
 	}
 
 	/**

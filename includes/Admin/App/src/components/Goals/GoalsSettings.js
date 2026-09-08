@@ -72,8 +72,14 @@ const GoalsSettings = () => {
 
 	const popoverContainer =
 		'undefined' !== typeof document ?
-			( document.querySelector( '#burst-statistics' ) || document.querySelector( '.burst' ) ) :
-			null;
+			(
+				document.getElementById( 'modal-root' ) ||
+				document.getElementById( 'burst-statistics' ) ||
+				document.getElementById( 'burst-mainwp' ) ||
+				document.querySelector( '.burst' ) ||
+				undefined
+			) :
+			undefined;
 
 	const handleAddPredefinedGoal = async( goal ) => {
 		await addPredefinedGoal( goal.id );
@@ -172,9 +178,10 @@ const GoalsSettings = () => {
 
 								<Popover.Portal container={popoverContainer}>
 									<Popover.Content
+										id="burst-statistics"
 										sideOffset={5}
 										align={'end'}
-										className="burst-predefined-goals-container z-50 flex w-80 sm:w-[420px] max-h-[460px] flex-col gap-2.5 rounded-xl border border-gray-400 bg-white p-3.5 shadow-xl"
+										className="burst burst-predefined-goals-container z-50 flex w-80 sm:w-[420px] max-h-[460px] flex-col gap-2.5 rounded-xl border border-gray-400 bg-white p-3.5 shadow-xl"
 									>
 										<div className="relative flex items-center">
 											<div className="pointer-events-none absolute left-3 flex items-center justify-center text-text-gray">

@@ -11,6 +11,7 @@ use Burst\Traits\Database_Helper;
 use Burst\Traits\Save;
 use Burst\Frontend\Goals\Goals;
 use Burst\Admin\Share\Share;
+use Burst\Admin\Search_Console\State_Store;
 
 
 class Upgrade {
@@ -36,14 +37,21 @@ class Upgrade {
 		$prev_version = get_option( 'burst-current-version', false );
 		$new_version  = BURST_VERSION;
 
-		// strip off everything after '#'.
-		if ( strpos( $new_version, '#' ) !== false ) {
-			$new_version = substr( $new_version, 0, strpos( $new_version, '#' ) );
-		}
-
 		if ( $prev_version === $new_version ) {
 			return;
 		}
+
+		// Once per version change: drop burst_db_upgrade_* options whose task
+		// slug no longer exists in the dispatcher registry, so leftovers from
+		// removed upgrade routines cannot linger in wp_options forever.
+		( new \Burst\Admin\DB_Upgrade\DB_Upgrade() )->delete_orphaned_upgrade_options();
+
+		// Every version change re-arms the autoloaded pending flag, whether or
+		// not this version arms a task: a task left pending from an earlier
+		// version (armed before the flag existed, or stalled) must keep the
+		// read paths on the slow-but-correct fallback until the dispatcher
+		// confirms everything is done and clears the flag itself.
+		update_option( 'burst_has_db_upgrade', true );
 
 		// install the tables, so we can access new columns below if necessary.
 		do_action( 'burst_upgrade_before', $prev_version );
@@ -62,19 +70,19 @@ class Upgrade {
 		// - Upgrade to remove `event` and `action` columns from `burst_statistics` table.
 		if ( $prev_version
 			&& version_compare( $prev_version, '1.4.2.1', '<' ) ) {
-			update_option( 'burst_db_upgrade_bounces', true );
-			update_option( 'burst_db_upgrade_goals_remove_columns', true );
+			$this->arm_db_upgrade( 'bounces' );
+			$this->arm_db_upgrade( 'goals_remove_columns' );
 		}
 		if ( $prev_version
 			&& version_compare( $prev_version, '1.5.2', '<' ) ) {
-			update_option( 'burst_db_upgrade_goals_set_conversion_metric', true );
+			$this->arm_db_upgrade( 'goals_set_conversion_metric' );
 		}
 
 		if ( $prev_version
 			&& version_compare( $prev_version, '1.5.3', '<' ) ) {
-			update_option( 'burst_db_upgrade_strip_domain_names_from_entire_page_url', true );
-			update_option( 'burst_db_upgrade_empty_referrer_when_current_domain', true );
-			update_option( 'burst_db_upgrade_drop_user_agent', true );
+			$this->arm_db_upgrade( 'strip_domain_names_from_entire_page_url' );
+			$this->arm_db_upgrade( 'empty_referrer_when_current_domain' );
+			$this->arm_db_upgrade( 'drop_user_agent' );
 
 			// remove the endpoint file from the old location.
 			if ( file_exists( ABSPATH . '/burst-statistics-endpoint.php' ) ) {
@@ -103,23 +111,23 @@ class Upgrade {
 		if ( $lookup_table_incomplete || $is_version_upgrade ) {
 			update_option( 'burst_last_cron_hit', time(), false );
 			// this option is used in the tracking, so should autoload until completed.
-			update_option( 'burst_db_upgrade_create_lookup_tables', true, true );
-			update_option( 'burst_db_upgrade_init_lookup_ids', true, false );
-			update_option( 'burst_db_upgrade_upgrade_lookup_tables', true, false );
-			update_option( 'burst_db_upgrade_upgrade_lookup_tables_drop_columns', true, false );
+			$this->arm_db_upgrade( 'create_lookup_tables' );
+			$this->arm_db_upgrade( 'init_lookup_ids' );
+			$this->arm_db_upgrade( 'upgrade_lookup_tables' );
+			$this->arm_db_upgrade( 'upgrade_lookup_tables_drop_columns' );
 
 			// for each table separately, for fine grained control.
-			update_option( 'burst_db_upgrade_create_lookup_tables_browser', true, false );
-			update_option( 'burst_db_upgrade_create_lookup_tables_browser_version', true, false );
-			update_option( 'burst_db_upgrade_create_lookup_tables_platform', true, false );
-			update_option( 'burst_db_upgrade_create_lookup_tables_device', true, false );
-			update_option( 'burst_db_upgrade_upgrade_lookup_tables_browser', true, false );
-			update_option( 'burst_db_upgrade_upgrade_lookup_tables_browser_version', true, false );
-			update_option( 'burst_db_upgrade_upgrade_lookup_tables_platform', true, false );
-			update_option( 'burst_db_upgrade_upgrade_lookup_tables_device', true, false );
+			$this->arm_db_upgrade( 'create_lookup_tables_browser' );
+			$this->arm_db_upgrade( 'create_lookup_tables_browser_version' );
+			$this->arm_db_upgrade( 'create_lookup_tables_platform' );
+			$this->arm_db_upgrade( 'create_lookup_tables_device' );
+			$this->arm_db_upgrade( 'upgrade_lookup_tables_browser' );
+			$this->arm_db_upgrade( 'upgrade_lookup_tables_browser_version' );
+			$this->arm_db_upgrade( 'upgrade_lookup_tables_platform' );
+			$this->arm_db_upgrade( 'upgrade_lookup_tables_device' );
 
 			// drop post_meta feature.
-			update_option( 'burst_db_upgrade_drop_page_id_column', true, false );
+			$this->arm_db_upgrade( 'drop_page_id_column' );
 
 			wp_schedule_single_event( time() + 300, 'burst_upgrade_iteration' );
 
@@ -132,8 +140,8 @@ class Upgrade {
 		if ( $prev_version
 			&& version_compare( $prev_version, '1.7.3', '<' ) ) {
 			wp_clear_scheduled_hook( 'burst_every_5_minutes' );
-			update_option( 'burst_db_upgrade_rename_entire_page_url_column', true, false );
-			update_option( 'burst_db_upgrade_drop_path_from_parameters_column', true, false );
+			$this->arm_db_upgrade( 'rename_entire_page_url_column' );
+			$this->arm_db_upgrade( 'drop_path_from_parameters_column' );
 
 			wp_schedule_single_event( time() + 300, 'burst_upgrade_iteration' );
 		}
@@ -146,8 +154,8 @@ class Upgrade {
 		// in the stats table, find the oldest session_id = 1 that is preceded with a higher sesssion_id.
 		if ( $prev_version && version_compare( $prev_version, '2.0.4', '<' ) && ! defined( 'BURST_FREE' ) ) {
 			update_option( 'burst_fix_incorrect_bounces', true, false );
-			update_option( 'burst_db_upgrade_fix_missing_session_ids', true, false );
-			update_option( 'burst_db_upgrade_clean_orphaned_session_ids', true, false );
+			$this->arm_db_upgrade( 'fix_missing_session_ids' );
+			$this->arm_db_upgrade( 'clean_orphaned_session_ids' );
 		}
 
 		// ensure the onboarding doesn't start again if users already had the plugin activated.
@@ -179,7 +187,7 @@ class Upgrade {
 		}
 
 		if ( $prev_version && version_compare( $prev_version, '2.2.6', '<' ) ) {
-			update_option( 'burst_db_upgrade_add_page_ids', true, false );
+			$this->arm_db_upgrade( 'add_page_ids' );
 			delete_post_meta_by_key( 'burst_total_pageviews_count' );
 		}
 
@@ -205,18 +213,10 @@ class Upgrade {
             global $wpdb;
             $sql = "DROP TABLE IF EXISTS {$wpdb->prefix}burst_summary";
             $wpdb->query( $sql );
-
-            $stats_table = "{$wpdb->prefix}burst_statistics";
-            $known_table = "{$wpdb->prefix}burst_known_uids";
-
-            // One-time fill from existing data
-            $wpdb->query("
-                INSERT INTO $known_table (uid, first_seen, last_seen)
-                SELECT uid, MIN(time) as first_seen, MAX(time) as last_seen
-                FROM $stats_table
-                WHERE time >= UNIX_TIMESTAMP(NOW() - INTERVAL 1 MONTH)
-                GROUP BY uid
-            ");
+            // The historical known_uids one-time fill was removed: the table no
+            // longer exists on current versions (first_time_visit is set at
+            // session creation via the uid dictionary), and a site jumping from
+            // <3.1.0 straight to current runs the uid migration anyway.
         }
 
         //phpcs:enable
@@ -240,7 +240,7 @@ class Upgrade {
 
 		if ( $prev_version && version_compare( $prev_version, '3.1.4', '<' ) ) {
 			\Burst\burst_loader()->admin->tasks->add_task( 'filters_in_url' );
-			update_option( 'burst_db_upgrade_move_referrers_to_sessions', true, false );
+			$this->arm_db_upgrade( 'move_referrers_to_sessions' );
 			delete_option( 'burst_pageviews_to_update' );
 			// clear old referrers table.
 			\Burst\burst_loader()->admin->app->weekly_clear_referrers_table();
@@ -252,7 +252,7 @@ class Upgrade {
 			if ( ! empty( $installed_by ) ) {
 				update_site_option( 'teamupdraft_installation_source_burst-statistics', $installed_by );
 			}
-			update_option( 'burst_db_upgrade_move_reports_to_new_tables', true, false );
+			$this->arm_db_upgrade( 'move_reports_to_new_tables' );
 			\Burst\burst_loader()->admin->tasks->add_task( 'join-discord' );
 		}
 
@@ -268,7 +268,7 @@ class Upgrade {
 		}
 
 		if ( $prev_version && version_compare( $prev_version, '3.3.0-beta1', '<' ) ) {
-			update_option( 'burst_db_upgrade_move_columns_to_sessions', true, false );
+			$this->arm_db_upgrade( 'move_columns_to_sessions' );
 		}
 
 		if ( $prev_version && version_compare( $prev_version, '3.4.0', '<' ) ) {
@@ -330,13 +330,13 @@ class Upgrade {
 
 		if ( $prev_version && version_compare( $prev_version, '3.5.1', '<' ) ) {
 			// Convert oversized/string report columns to fitted/native types.
-			update_option( 'burst_db_upgrade_report_table_types', true, false );
+			$this->arm_db_upgrade( 'report_table_types' );
 		}
 
 		if ( $prev_version && version_compare( $prev_version, '3.6.0', '<' ) ) {
 			// Remove historic spam/invalid browsers left over from before the
 			// user agent allowlist was tightened.
-			update_option( 'burst_db_upgrade_clean_spam_browsers', true, false );
+			$this->arm_db_upgrade( 'clean_spam_browsers' );
 
 			// Country GeoIP tracking ships in free as of 3.6. Download the database
 			// (the burst_locations country lookup is seeded by install_locations_table
@@ -381,10 +381,61 @@ class Upgrade {
 			wp_schedule_single_event( time() + 10 * MINUTE_IN_SECONDS, 'burst_calculate_low_traffic_time' );
 		}
 
-		if ( '' !== $prev_version && version_compare( $prev_version, '3.6.3', '<' ) ) {
+		if ( $prev_version && version_compare( $prev_version, '3.6.3', '<' ) ) {
 			$this->mark_noop_upgrade( '3.6.3', $prev_version );
 		}
 
+		if ( $prev_version && version_compare( $prev_version, '3.6.3.1', '<' ) ) {
+			$this->mark_noop_upgrade( '3.6.3.1', $prev_version );
+		}
+
+		if ( $prev_version && version_compare( $prev_version, '3.7.0', '<' ) ) {
+			if ( ! State_Store::migrate_legacy_options() ) {
+				return;
+			}
+
+			// uid dictionary migration pipeline. The DB_Upgrade dispatcher runs
+			// one task at a time in registry order: seed the dictionary, backfill
+			// statistics.uid_id, backfill sessions (start_time + uid_id), then
+			// finalize (build the uid_id indexes online — the legacy varchar uid
+			// column is left untouched until 3.7.1 drops it — and convert the
+			// other visitor-keyed tables to uid_id). From the table init below on,
+			// the tracker writes uid_id only (see tracking_schema_current());
+			// the read paths switch to uid_id as well, so historic rows count
+			// as visitors only once the statistics backfill has reached them.
+			$this->arm_db_upgrade( 'seed_uid_dictionary' );
+			$this->arm_db_upgrade( 'statistics_uid_id' );
+			$this->arm_db_upgrade( 'sessions_first_time' );
+			$this->arm_db_upgrade( 'finalize_uid_id' );
+			// The malicious-data scan stored a pre-migration uid string; it cannot survive the migration to dictionary ids.
+			delete_option( 'burst_cleanup_uid' );
+			// Marks the start of the migration window: sessions created while
+			// the pipeline runs get no first_time_visit flag from tracking yet
+			// ("created in the dictionary" does not mean "new" while the seed
+			// is still inserting historic uids); finalize backstops the window
+			// with one bounded sweep from this timestamp.
+			update_option( 'burst_uid_migration_started', time(), false );
+
+			// page dictionary pipeline: seed burst_page_urls (url → WP post id,
+			// initial canonical flag), then backfill the historic page_id = 0
+			// rows with negative dictionary ids. Page queries keep grouping on
+			// the page_url string until both tasks complete (see
+			// page_dictionary_ready()).
+			$this->arm_db_upgrade( 'seed_page_urls' );
+			$this->arm_db_upgrade( 'statistics_page_id' );
+
+			// first/last_visited_url on sessions were write-only (entry/exit
+			// pages come from burst_statistics); tracking no longer writes
+			// them. Dropping the columns is deliberately deferred: the
+			// previous version writes them on every session create/update, so
+			// keeping them lets a rollback to that version run without
+			// database errors.
+			// @todo 3.7.1: arm burst_db_upgrade_drop_session_visited_urls here
+			// (in the 3.7.1 upgrade block) and re-register the task under the
+			// 3.7.1 group in DB_Upgrade::get_db_upgrades().
+		}
+
+		// bump-version.sh inserts new release versions above this line — do not remove.
 		$admin = new Admin();
 		$admin->run_table_init_hook();
 		$admin->create_js_file();

@@ -21,6 +21,18 @@ class Client {
 	private const BASE = 'https://www.googleapis.com/webmasters/v3';
 
 	/**
+	 * Supported Search Console API endpoints.
+	 */
+	private const ENDPOINT_SITES = 'sites';
+	private const ENDPOINT_QUERY = 'query';
+
+	/**
+	 * Search Analytics response and per-day data limits documented by Google.
+	 */
+	private const ROW_LIMIT        = 25000;
+	private const MAX_ROWS_PER_DAY = 50000;
+
+	/**
 	 * Token store providing the access token (refreshed transparently).
 	 */
 	private Token_Store $token_store;
@@ -51,7 +63,12 @@ class Client {
 			return null;
 		}
 
-		$endpoint = self::BASE . '/sites';
+		try {
+			$endpoint = $this->get_endpoint_url( self::ENDPOINT_SITES );
+		} catch ( \InvalidArgumentException $exception ) {
+			self::error_log( 'GSC API endpoint error: ' . $exception->getMessage() );
+			return null;
+		}
 		$args     = [
 			'timeout'   => 20,
 			'sslverify' => true,
@@ -79,20 +96,25 @@ class Client {
 			return null;
 		}
 
-		return isset( $data['siteEntry'] ) && is_array( $data['siteEntry'] ) ? $data['siteEntry'] : [];
+		if ( isset( $data['siteEntry'] ) && ! is_array( $data['siteEntry'] ) ) {
+			self::error_log( 'GSC API returned an invalid siteEntry payload.' );
+			return null;
+		}
+
+		return $data['siteEntry'] ?? [];
 	}
 
 	/**
 	 * Query the search-term rows for a single day, grouped by query only (the
 	 * quota is shared per project, so we avoid grouping by page as well).
 	 *
-	 * @param string $site_url    The property (siteUrl) to query.
+	 * @param string $property    The property (siteUrl) to query.
 	 * @param string $date        The day in Y-m-d (startDate = endDate).
 	 * @param string $page_filter Optional RE2 page filter for a broader property.
 	 * @return array|null rows[] (keys, clicks, impressions, ctr, position), [] when
 	 *                    the day has no data, or null on failure.
 	 */
-	public function query_terms( string $site_url, string $date, string $page_filter = '' ): ?array {
+	public function query_terms( string $property, string $date, string $page_filter = '' ): ?array {
 		$this->access_denied = false;
 		$token               = $this->token_store->get_access_token();
 		if ( null === $token ) {
@@ -100,12 +122,17 @@ class Client {
 			return null;
 		}
 
-		$endpoint = self::BASE . '/sites/' . rawurlencode( $site_url ) . '/searchAnalytics/query';
-		$body     = [
+		try {
+			$endpoint = $this->get_endpoint_url( self::ENDPOINT_QUERY, $property );
+		} catch ( \InvalidArgumentException $exception ) {
+			self::error_log( 'GSC API endpoint error: ' . $exception->getMessage() );
+			return null;
+		}
+		$body = [
 			'startDate'  => $date,
 			'endDate'    => $date,
 			'dimensions' => [ 'query' ],
-			'rowLimit'   => 1000,
+			'rowLimit'   => 5000,
 		];
 		if ( '' !== $page_filter ) {
 			$body['dimensionFilterGroups'] = [
@@ -139,7 +166,7 @@ class Client {
 			$response,
 			'api.queries',
 			[
-				'property'    => $site_url,
+				'property'    => $property,
 				'date'        => $date,
 				'request'     => [
 					'method'      => 'POST',
@@ -156,7 +183,146 @@ class Client {
 			return null;
 		}
 
-		return isset( $data['rows'] ) && is_array( $data['rows'] ) ? $data['rows'] : [];
+		return $this->validated_rows( $data, 1 );
+	}
+
+	/**
+	 * Query daily search terms for one exact page and date range. Google caps each
+	 * response, so continue with startRow until the final partial page is returned.
+	 *
+	 * @param string $property   The property (siteUrl) to query.
+	 * @param string $start_date First day in Y-m-d.
+	 * @param string $end_date   Last day in Y-m-d.
+	 * @param string $page_url   Exact page URL to query.
+	 * @return array|null rows[] (keys[0] = date, keys[1] = query), [] when the
+	 *                    range has no data, or null when any request fails.
+	 */
+	public function query_page_terms( string $property, string $start_date, string $end_date, string $page_url ): ?array {
+		$this->access_denied = false;
+		$token               = $this->token_store->get_access_token();
+		if ( null === $token ) {
+			$this->log( 'api.queries', 'error', 'Could not request Search Console page query data because no usable access token is available.' );
+			return null;
+		}
+
+		$page_url = esc_url_raw( $page_url );
+		if ( '' === $page_url ) {
+			return null;
+		}
+		try {
+			$endpoint = $this->get_endpoint_url( self::ENDPOINT_QUERY, $property );
+		} catch ( \InvalidArgumentException $exception ) {
+			self::error_log( 'GSC API endpoint error: ' . $exception->getMessage() );
+			return null;
+		}
+
+		$start = strtotime( $start_date . ' UTC' );
+		$end   = strtotime( $end_date . ' UTC' );
+		if ( false === $start || false === $end || $start > $end ) {
+			return null;
+		}
+
+		$row_limit = self::ROW_LIMIT;
+		$max_rows  = ( (int) floor( ( $end - $start ) / DAY_IN_SECONDS ) + 1 ) * self::MAX_ROWS_PER_DAY;
+		$start_row = 0;
+		$rows      = [];
+
+		do {
+			$body     = [
+				'startDate'             => $start_date,
+				'endDate'               => $end_date,
+				'dimensions'            => [ 'date', 'query' ],
+				'dimensionFilterGroups' => [
+					[
+						'groupType' => 'and',
+						'filters'   => [
+							[
+								'dimension'  => 'page',
+								'operator'   => 'equals',
+								'expression' => $page_url,
+							],
+						],
+					],
+				],
+				'rowLimit'              => $row_limit,
+				'startRow'              => $start_row,
+			];
+			$args     = [
+				'timeout'   => 30,
+				'sslverify' => true,
+				'headers'   => [
+					'Authorization' => 'Bearer ' . $token,
+					'Content-Type'  => 'application/json',
+				],
+				'body'      => wp_json_encode( $body ),
+			];
+			$started  = microtime( true );
+			$response = wp_remote_post( $endpoint, $args );
+			$data     = $this->decode(
+				$response,
+				'api.queries',
+				[
+					'property'    => $property,
+					'date_start'  => $start_date,
+					'date_end'    => $end_date,
+					'request'     => [
+						'method'      => 'POST',
+						'url'         => $endpoint,
+						'timeout'     => $args['timeout'],
+						'dimensions'  => $body['dimensions'],
+						'row_limit'   => $body['rowLimit'],
+						'start_row'   => $body['startRow'],
+						'page_filter' => true,
+					],
+					'duration_ms' => (int) round( ( microtime( true ) - $started ) * 1000 ),
+				]
+			);
+			if ( null === $data ) {
+				return null;
+			}
+
+			$page_rows = $this->validated_rows( $data, 2 );
+			if ( null === $page_rows || count( $page_rows ) > $row_limit ) {
+				self::error_log( 'GSC API returned an invalid page-query row payload.' );
+				return null;
+			}
+			foreach ( $page_rows as $row ) {
+				$date = (string) $row['keys'][0];
+				if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) || $date < $start_date || $date > $end_date || '' === (string) $row['keys'][1] ) {
+					self::error_log( 'GSC API returned a page-query row outside the requested range.' );
+					return null;
+				}
+				$rows[] = $row;
+			}
+			$page_count = count( $page_rows );
+			$start_row += $row_limit;
+			$total_rows = count( $rows );
+		} while ( $page_count === $row_limit && $total_rows < $max_rows );
+
+		return $rows;
+	}
+
+	/**
+	 * Build a supported Search Console API endpoint URL.
+	 *
+	 * @throws \InvalidArgumentException When the endpoint type is unsupported or
+	 *                                   a query endpoint has no property.
+	 */
+	private function get_endpoint_url( string $endpoint, string $property = '' ): string {
+		if ( self::ENDPOINT_SITES === $endpoint ) {
+			return self::BASE . '/sites';
+		}
+
+		if ( self::ENDPOINT_QUERY === $endpoint ) {
+			$property = trim( $property );
+			if ( '' === $property ) {
+				throw new \InvalidArgumentException( 'A Search Console property is required for the query endpoint.' );
+			}
+
+			return self::BASE . '/sites/' . rawurlencode( $property ) . '/searchAnalytics/query';
+		}
+
+		throw new \InvalidArgumentException( 'Unsupported Search Console endpoint type.' );
 	}
 
 	/**
@@ -208,8 +374,13 @@ class Client {
 			]
 		);
 		if ( 200 === $code ) {
+			if ( ! is_array( $decoded ) ) {
+				self::error_log( 'GSC API returned an invalid JSON response.' );
+				$this->log( $event, 'error', 'Google API returned an invalid JSON response.', $context );
+				return null;
+			}
 			$this->log( $event, 'success', 'Google API request completed.', $context );
-			return is_array( $decoded ) ? $decoded : [];
+			return $decoded;
 		}
 
 		if ( 401 === $code ) {
@@ -230,6 +401,34 @@ class Client {
 		self::error_log( 'GSC API returned HTTP ' . $code );
 		$this->log( $event, 'error', 'Google API returned an unexpected response.', $context );
 		return null;
+	}
+
+	/**
+	 * Validate the common Search Analytics row structure before a caller replaces data.
+	 */
+	private function validated_rows( array $data, int $required_keys ): ?array {
+		if ( ! array_key_exists( 'rows', $data ) ) {
+			return [];
+		}
+		if ( ! is_array( $data['rows'] ) ) {
+			self::error_log( 'GSC API returned an invalid rows payload.' );
+			return null;
+		}
+
+		foreach ( $data['rows'] as $row ) {
+			if ( ! is_array( $row ) || ! isset( $row['keys'] ) || ! is_array( $row['keys'] ) || count( $row['keys'] ) < $required_keys ) {
+				self::error_log( 'GSC API returned a row without the expected dimensions.' );
+				return null;
+			}
+			foreach ( [ 'clicks', 'impressions', 'ctr', 'position' ] as $metric ) {
+				if ( ! array_key_exists( $metric, $row ) || ! is_numeric( $row[ $metric ] ) || ! is_finite( (float) $row[ $metric ] ) || (float) $row[ $metric ] < 0 ) {
+					self::error_log( 'GSC API returned an invalid row metric.' );
+					return null;
+				}
+			}
+		}
+
+		return $data['rows'];
 	}
 
 	/**

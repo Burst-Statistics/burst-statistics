@@ -30,16 +30,16 @@ export function useForecastData({
 	chartMode,
 	enabled
 }: UseForecastDataArgs ) {
-	const { startDate, range } = useDate( ( state ) => state );
+	const { range } = useDate( ( state ) => state );
 	const { filters } = useFilters();
 
-	// The forecast view is anchored to now: the selection ends at the last
-	// complete period (month, or year for selections beyond two years) — also
-	// when the picked range ends earlier — so the forecast always starts at
-	// the current period and never projects periods that are already
-	// measured. Matches the chart blocks' end-date anchor; the bucket size is
-	// passed along explicitly so the backend uses the same interval.
-	const { endDate, groupBy } = getForecastRange( startDate );
+	// The forecast view is anchored to now, not to the picker: the request
+	// always covers the last 12 complete months, so the forecast is exactly
+	// the next 12 — starting at the current month, which is never a period
+	// that is already fully measured. Matches the chart blocks' fixed
+	// window; the bucket size is passed along explicitly so the backend
+	// uses the same interval.
+	const { startDate, endDate, groupBy } = getForecastRange();
 	const placeholderData = useMemo<ForecastData>(
 		() => ({
 			interval: 'day',
@@ -56,12 +56,15 @@ export function useForecastData({
 	);
 
 	return useQuery<ForecastData>({
+
+		// The fixed window fully determines the payload, so the picker's range
+		// slug stays out of the key: switching ranges reuses the cached
+		// forecast instead of refetching identical data.
 		queryKey: [
 			'forecast',
 			source,
 			startDate,
 			endDate,
-			range,
 			chartMode,
 			groupBy,
 			'sales' === source ? filters : null

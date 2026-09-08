@@ -14,7 +14,7 @@ import BurstLogo from './BurstLogo';
 import MenuItemLink from './HeaderMenuItemLink';
 import HeaderThemeMenu from './HeaderThemeMenu';
 import TransparencyModal from './TransparencyModal';
-import ChatAssistantModal from './ChatAssistantModal';
+import ChatAssistantButton from './ChatAssistantButton';
 import MobileMenuDrawer from './MobileMenuDrawer';
 
 const SHARE_LINK_BRANDING_URL = burst_get_website_url( '', {
@@ -145,7 +145,7 @@ const Header = () => {
 
 				{! isShareableLinkViewer && (
 					<div className="flex items-center gap-4 @lg:gap-5 @max-lg:gap-2">
-						{burst_settings.manage_burst_statistics && <ChatAssistantModal />}
+						{burst_settings.manage_burst_statistics && <ChatAssistantButton />}
 
 						{/* Desktop-only: upgrade button, support link, separator, Settings tab. */}
 						{upgradeUrl && (

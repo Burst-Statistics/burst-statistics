@@ -82,8 +82,10 @@ import {
 	Sun,
 	Tablet,
 	Tag,
+	Target,
 	Trash,
 	TrendingDown,
+	TrendingUp,
 	Trophy,
 	User,
 	UserCircle,
@@ -226,9 +228,10 @@ const iconComponents = {
 	upload: Upload,
 	plug: Plug,
 
-	// Filter icons from useFiltersStore.
+	// Filter icons from useFiltersStore
 	bounce: LogOut,
 	user: User,
+	conversion: Target,
 	parameters: Settings,
 	campaign: Megaphone,
 	source: Milestone,
@@ -243,6 +246,7 @@ const iconComponents = {
 	// Filter category icons
 	traffic: Car,
 	behavior: Brain,
+	reading_engagement_score: Brain,
 	technology: Cpu,
 
 	// Star icons
@@ -297,6 +301,7 @@ const iconComponents = {
 	'mouse-pointer-click': MousePointerClick,
 	receipt: Receipt,
 	'trending-down': TrendingDown,
+	'trending-up': TrendingUp,
 	datatable: Table2
 };
 

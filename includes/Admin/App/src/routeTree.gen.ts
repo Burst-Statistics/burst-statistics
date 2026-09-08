@@ -23,6 +23,7 @@ import { Route as IndexImport } from './routes/index'
 import { Route as TableVariantImport } from './routes/table.$variant'
 import { Route as SettingsSettingsIdImport } from './routes/settings.$settingsId'
 import { Route as ReportingReportingIdImport } from './routes/reporting.$reportingId'
+import { Route as PageIdImport } from './routes/page.$id'
 
 // Create/Update Routes
 
@@ -84,6 +85,11 @@ const SettingsSettingsIdRoute = SettingsSettingsIdImport.update({
 const ReportingReportingIdRoute = ReportingReportingIdImport.update({
   path: '/$reportingId',
   getParentRoute: () => ReportingRoute,
+} as any)
+
+const PageIdRoute = PageIdImport.update({
+  path: '/page/$id',
+  getParentRoute: () => rootRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -153,6 +159,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SubscriptionsImport
       parentRoute: typeof rootRoute
     }
+    '/page/$id': {
+      id: '/page/$id'
+      path: '/page/$id'
+      fullPath: '/page/$id'
+      preLoaderRoute: typeof PageIdImport
+      parentRoute: typeof rootRoute
+    }
     '/reporting/$reportingId': {
       id: '/reporting/$reportingId'
       path: '/$reportingId'
@@ -213,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/statistics': typeof StatisticsRoute
   '/story': typeof StoryRoute
   '/subscriptions': typeof SubscriptionsRoute
+  '/page/$id': typeof PageIdRoute
   '/reporting/$reportingId': typeof ReportingReportingIdRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
   '/table/$variant': typeof TableVariantRoute
@@ -228,6 +242,7 @@ export interface FileRoutesByTo {
   '/statistics': typeof StatisticsRoute
   '/story': typeof StoryRoute
   '/subscriptions': typeof SubscriptionsRoute
+  '/page/$id': typeof PageIdRoute
   '/reporting/$reportingId': typeof ReportingReportingIdRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
   '/table/$variant': typeof TableVariantRoute
@@ -244,6 +259,7 @@ export interface FileRoutesById {
   '/statistics': typeof StatisticsRoute
   '/story': typeof StoryRoute
   '/subscriptions': typeof SubscriptionsRoute
+  '/page/$id': typeof PageIdRoute
   '/reporting/$reportingId': typeof ReportingReportingIdRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
   '/table/$variant': typeof TableVariantRoute
@@ -261,6 +277,7 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/story'
     | '/subscriptions'
+    | '/page/$id'
     | '/reporting/$reportingId'
     | '/settings/$settingsId'
     | '/table/$variant'
@@ -275,6 +292,7 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/story'
     | '/subscriptions'
+    | '/page/$id'
     | '/reporting/$reportingId'
     | '/settings/$settingsId'
     | '/table/$variant'
@@ -289,6 +307,7 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/story'
     | '/subscriptions'
+    | '/page/$id'
     | '/reporting/$reportingId'
     | '/settings/$settingsId'
     | '/table/$variant'
@@ -305,6 +324,7 @@ export interface RootRouteChildren {
   StatisticsRoute: typeof StatisticsRoute
   StoryRoute: typeof StoryRoute
   SubscriptionsRoute: typeof SubscriptionsRoute
+  PageIdRoute: typeof PageIdRoute
   TableVariantRoute: typeof TableVariantRoute
 }
 
@@ -318,6 +338,7 @@ const rootRouteChildren: RootRouteChildren = {
   StatisticsRoute: StatisticsRoute,
   StoryRoute: StoryRoute,
   SubscriptionsRoute: SubscriptionsRoute,
+  PageIdRoute: PageIdRoute,
   TableVariantRoute: TableVariantRoute,
 }
 
@@ -342,6 +363,7 @@ export const routeTree = rootRoute
         "/statistics",
         "/story",
         "/subscriptions",
+        "/page/$id",
         "/table/$variant"
       ]
     },
@@ -377,6 +399,9 @@ export const routeTree = rootRoute
     },
     "/subscriptions": {
       "filePath": "subscriptions.jsx"
+    },
+    "/page/$id": {
+      "filePath": "page.$id.jsx"
     },
     "/reporting/$reportingId": {
       "filePath": "reporting.$reportingId.jsx",

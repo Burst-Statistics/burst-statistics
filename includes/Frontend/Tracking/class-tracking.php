@@ -109,6 +109,15 @@ class Tracking {
 			return 'referrer is spam';
 		}
 
+		// A hit needs an identity: a uid (cookie / private mode) or a
+		// fingerprint (cookieless). The shipped tracker always sends one, so a
+		// hit without either is a bot, a replay or a crafted request; storing
+		// it would create a session per hit under dictionary id 0.
+		if ( '' === $sanitized_data['uid'] && '' === $sanitized_data['fingerprint'] ) {
+			self::error_log( 'Hit without uid or fingerprint rejected.' );
+			return 'missing identity';
+		}
+
 		$should_load_ecommerce = $sanitized_data['should_load_ecommerce'];
 		unset( $sanitized_data['should_load_ecommerce'] );
 
@@ -128,8 +137,12 @@ class Tracking {
 		$filtered_previous_hit = $previous_hit ?? [];
 		$sanitized_data        = apply_filters( 'burst_before_track_hit', $sanitized_data, $hit_type, $filtered_previous_hit );
 
+		// Full path (page_url + parameters) of this hit; compared against the
+		// previous hit in session_needs_update() to detect intra-session
+		// navigation.
+		$current_path = $this->create_path( $sanitized_data );
+
 		$session = [
-			'last_visited_url'   => $this->create_path( $sanitized_data ),
 			'city_code'          => $sanitized_data['city_code'] ?? '',
 			'referrer'           => $sanitized_data['referrer'],
 			'bounce'             => $sanitized_data['bounce'] ?? 1,
@@ -181,13 +194,39 @@ class Tracking {
 		// Handle session: reuse existing or create new.
 		if ( isset( $previous_hit ) && $previous_hit['session_id'] > 0 ) {
 			$statistic['session_id'] = $previous_hit['session_id'];
-			if ( $this->session_needs_update( $previous_hit, $session ) ) {
+			if ( $this->session_needs_update( $previous_hit, $session, $current_path ) ) {
 				$this->update_session( (int) $statistic['session_id'], $session );
 			}
 		} elseif ( $previous_hit === null ) {
-			// New session — include first_visited_url and all session-level fields.
-			$session['first_visited_url'] = $this->create_path( $statistic );
-			$statistic['session_id']      = $this->create_session( $session );
+			// New session — include all session-level fields.
+			// start_time records the session start and uid_id the visitor's
+			// dictionary id, so session-grain queries (sessions, visitors, bounce
+			// rate per dimension) can filter on a date range without joining the
+			// statistics table. The fingerprint-as-uid substitution below runs
+			// after this branch, so apply it here as well to resolve the same
+			// identity the hits will get.
+			//
+			// Gated on the 3.7.0 table init having run (an autoloaded option
+			// read, no schema probe): in the window between the plugin files
+			// landing and the admin/cron request that runs the init, the
+			// columns do not exist yet and naming them would fail the whole
+			// session insert.
+			if ( $this->tracking_schema_current() ) {
+				$session['start_time'] = time();
+				$identity              = (string) ( $statistic['fingerprint'] ?: $statistic['uid'] );
+				$session['uid_id']     = $this->resolve_uid_id( $identity );
+				// The dictionary insert above IS the "first time ever seen"
+				// event: a visitor whose row was created in this request starts
+				// their first session. Set synchronously — no known-uids
+				// bookkeeping or recalculation cron needed. While the seed task
+				// is still inserting historic uids, "created" does not mean
+				// "new" yet; the finalize step backstops that window with one
+				// bounded sweep.
+				if ( $this->uid_dictionary_seeded() ) {
+					$session['first_time_visit'] = $this->uid_created_this_request( $identity ) ? 1 : 0;
+				}
+			}
+			$statistic['session_id'] = $this->create_session( $session );
 		}
 
 		// If there is a fingerprint, use that instead of uid.
@@ -196,6 +235,26 @@ class Tracking {
 			$statistic['uid'] = $statistic['fingerprint'];
 		}
 		unset( $statistic['fingerprint'] );
+
+		// uid dictionary: once the 3.7.0 table init has run, the identity goes
+		// into the permanent uid_id column and nothing else — the legacy uid
+		// string is not written (a fresh 3.7.0 install has no uid column at
+		// all; on an upgraded site the still-NOT NULL column takes MySQL's
+		// implicit '' under WordPress' non-strict sql_mode until the finalize
+		// step retires it). The backfill only touches historic rows with
+		// uid_id 0, so rows written from here on are already converged. A
+		// rollback to a pre-3.7.0 build therefore sees the hits of the 3.7.0
+		// period without a visitor identity — accepted. Before the init (the
+		// window between the plugin files landing and the first admin/cron
+		// request) the tracker writes the pre-3.7.0 column set only, so no
+		// insert names a column that does not exist yet. The gate is an
+		// autoloaded option read, not a schema probe.
+		if ( $this->tracking_schema_current() ) {
+			$statistic['uid_id'] = $this->resolve_uid_id( (string) $statistic['uid'] );
+			unset( $statistic['uid'] );
+		} else {
+			unset( $statistic['max_scroll'], $statistic['dwell_zones'] );
+		}
 
 		// Determine if URL changed (for update hit).
 		$previous_page_url = $previous_hit['page_url'] ?? '';
@@ -213,6 +272,25 @@ class Tracking {
 			$statistic['ID']            = $previous_hit['ID'];
 			$this->update_statistic( $statistic );
 		} elseif ( $hit_type === 'create' ) {
+			// URLs that resolve to no post (homepage-as-archive, blog page,
+			// category/search pages) arrive with page_id 0; give them the post
+			// id the dictionary already knows for this url, or else a stable
+			// negative dictionary id, so page queries can group on the integer
+			// page_id column without a 0-bucket and one url never splits over
+			// two ids. The key space is hard split: positive = WP post id,
+			// negative = burst_page_urls.ID. 404s are skipped — they are
+			// excluded from every page query anyway.
+			// Create hits ONLY: an update payload can legitimately carry
+			// page_id 0 (sent while the tracked document is gone), and the row's
+			// page identity was already established at create — substituting
+			// there would overwrite a real post id with a negative dictionary
+			// id. A 0 on update is stripped by remove_empty_values(), leaving
+			// the stored page_id untouched.
+			if ( (int) ( $statistic['page_id'] ?? 0 ) === 0
+				&& ( $statistic['page_type'] ?? '' ) !== '404'
+				&& '' !== (string) ( $statistic['page_url'] ?? '' ) ) {
+				$statistic['page_id'] = $this->resolve_page_id( (string) $statistic['page_url'] );
+			}
 			do_action( 'burst_before_create_statistic', $statistic );
 			$statistic['time'] = time();
 			$insert_id         = $this->create_statistic( $statistic );
@@ -345,7 +423,7 @@ class Tracking {
 
 		// API expects JSON string, not pre-parsed array.
 		if ( ! is_string( $raw_data ) ) {
-			return new \WP_REST_Response(
+			return $this->rest_tracking_response(
 				[ 'error' => 'Invalid request format' ],
 				400
 			);
@@ -353,7 +431,7 @@ class Tracking {
 
 		$data = json_decode( $raw_data, true );
 		if ( isset( $data['request'] ) && $data['request'] === 'test' ) {
-			return new \WP_REST_Response( [ 'success' => 'test' ], 200 );
+			return $this->rest_tracking_response( [ 'success' => 'test' ], 200 );
 		}
 
 		if ( is_array( $data ) ) {
@@ -362,7 +440,24 @@ class Tracking {
 			self::error_log( 'The posted data has to be an array. Please check if your Javascript code is cached, using the old version.' );
 		}
 
-		return new \WP_REST_Response( [ 'success' => 'hit_tracked' ], 200 );
+		return $this->rest_tracking_response( [ 'success' => 'hit_tracked' ], 200 );
+	}
+
+	/**
+	 * Create a non-cacheable response for the public REST tracking route.
+	 *
+	 * @param array<string, string> $data   Response data.
+	 * @param int                   $status HTTP status code.
+	 */
+	private function rest_tracking_response( array $data, int $status ): \WP_REST_Response {
+		$response = new \WP_REST_Response( $data, $status );
+		$headers  = apply_filters( 'burst_tracking_response_headers', wp_get_nocache_headers() );
+		unset( $headers['Last-Modified'] );
+		foreach ( $headers as $header => $value ) {
+			$response->header( $header, $value );
+		}
+
+		return $response;
 	}
 
 	/**
@@ -455,7 +550,7 @@ class Tracking {
 		// update array.
 		$sanitized_data                    = [];
 		$destructured_url                  = $this->sanitize_url( $data['url'] );
-		$completed_goals                   = is_array( $data['completed_goals'] ) ? $data['completed_goals'] : '';
+		$completed_goals                   = is_array( $data['completed_goals'] ?? null ) ? $data['completed_goals'] : [];
 		$sanitized_data['completed_goals'] = $this->sanitize_completed_goal_ids( $completed_goals );
 		// required.
 		$sanitized_data['parameters'] = $destructured_url['parameters'];
@@ -475,6 +570,8 @@ class Tracking {
 		$sanitized_data['bounce']                = 1;
 		$sanitized_data['page_id']               = (int) $data['page_id'];
 		$sanitized_data['page_type']             = $this->sanitize_page_identifier( $data['page_type'] );
+		$sanitized_data['max_scroll']            = isset( $data['max_scroll'] ) ? min( 100, max( 0, (int) $data['max_scroll'] ) ) : 0;
+		$sanitized_data['dwell_zones']           = $this->sanitize_dwell_zones( $data['dwell_zones'] ?? '' );
 		$sanitized_data['should_load_ecommerce'] = filter_var( $data['should_load_ecommerce'], FILTER_VALIDATE_BOOLEAN );
 		$sanitized_data['search_term']           = isset( $data['search_term'] ) ? sanitize_text_field( wp_unslash( (string) $data['search_term'] ) ) : '';
 
@@ -616,11 +713,12 @@ class Tracking {
 	/**
 	 * Check if session needs updating by comparing previous hit data with new session data.
 	 *
-	 * @param array $previous_hit     Previous hit data from burst_statistics (may include host/city_code via JOIN).
-	 * @param array $new_session_data New session data to be written.
+	 * @param array  $previous_hit     Previous hit data from burst_statistics (may include host/city_code via JOIN).
+	 * @param array  $new_session_data New session data to be written.
+	 * @param string $current_path     Full path (page_url + parameters) of the current hit.
 	 * @return bool True if update is needed, false if data hasn't changed.
 	 */
-	private function session_needs_update( array $previous_hit, array $new_session_data ): bool {
+	private function session_needs_update( array $previous_hit, array $new_session_data, string $current_path ): bool {
 		// If we don't have previous hit data, update to be safe.
 		if ( empty( $previous_hit ) ) {
 			return true;
@@ -630,9 +728,7 @@ class Tracking {
 		$old_params   = $previous_hit['parameters'] ?? '';
 		$old_full_url = empty( $old_params ) ? $old_url : $old_url . '?' . $old_params;
 
-		$new_url = $new_session_data['last_visited_url'] ?? '';
-
-		if ( $old_full_url !== $new_url ) {
+		if ( $old_full_url !== $current_path ) {
 			return true;
 		}
 
@@ -798,6 +894,7 @@ class Tracking {
 			[
 				'tracking' => [
 					'isInitialHit'        => true,
+					'initialized'         => false,
 					'lastUpdateTimestamp' => 0,
 					'beacon_url'          => self::get_beacon_url(),
 					'ajaxUrl'             => admin_url( 'admin-ajax.php' ),
@@ -813,6 +910,7 @@ class Tracking {
 					'track_external_links'  => $this->get_option_int( 'track_external_links' ),
 					'cookie_retention_days' => apply_filters( 'burst_cookie_retention_days', 30 ),
 					'page_id'               => is_singular() ? (int) get_queried_object_id() : 0,
+					'consent_api_active'    => \Burst\Admin\Tasks::is_wp_consent_api_active() ? 1 : 0,
 					'debug'                 => defined( 'BURST_DEBUG' ) && \BURST_DEBUG ? 1 : 0,
 				],
 				'goals'    => [
@@ -1036,10 +1134,30 @@ class Tracking {
 
 		$where .= $wpdb->prepare( ' AND s.time > %d', strtotime( '-30 minutes' ) );
 
+		// Once the 3.7.0 table init has run, rows are matched on the permanent
+		// uid_id column — translate the browser-supplied uid string first.
+		// resolve_uid_id() caches per request, so this is free for the later
+		// resolves in the same hit. Hits written before the init carry uid_id
+		// 0 and are not matched: one session boundary per visitor active at
+		// the upgrade moment, accepted. Before the init rows are matched on
+		// the legacy varchar uid column.
+		$uid_column = 's.uid';
+		if ( $this->tracking_schema_current() ) {
+			$resolved = $this->resolve_uid_id( $uid );
+			// A failed resolve must not match rows stored under uid_id 0:
+			// different visitors would merge onto one row within the
+			// 30-minute window. Treat the hit as a new visitor instead.
+			if ( 0 === $resolved ) {
+				return [];
+			}
+			$uid        = (string) $resolved;
+			$uid_column = 's.uid_id';
+		}
+
 		$host_select = $need_session_data ? ', sess.host' : '';
 
 		$last_row = $wpdb->get_row(
-			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where and $host_select are from trusted prepared parts.
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where and $host_select are from trusted prepared parts, $uid_column is a fixed column name.
 			$wpdb->prepare(
 				"SELECT
                 s.ID,
@@ -1051,7 +1169,7 @@ class Tracking {
                 {$host_select}
             FROM {$wpdb->prefix}burst_statistics s
             LEFT JOIN {$wpdb->prefix}burst_sessions sess ON s.session_id = sess.ID
-            WHERE s.uid = %s {$where}
+            WHERE {$uid_column} = %s {$where}
             ORDER BY s.ID DESC
             LIMIT 1",
 				$uid
@@ -1312,11 +1430,14 @@ class Tracking {
 	}
 
 	/**
-	 * Check if required values are set
+	 * Check if required values are set. The identity is a resolved dictionary
+	 * id (uid_id), or the legacy uid string while the pre-3.7.0 write set is
+	 * still in use (see tracking_schema_current()); a uid_id of 0 is stripped
+	 * by remove_empty_values() and never counts as an identity.
 	 */
 	public function required_values_set( array $data ): bool {
 		return (
-			isset( $data['uid'] ) &&
+			( isset( $data['uid'] ) || ! empty( $data['uid_id'] ) ) &&
 			isset( $data['page_url'] ) &&
 			isset( $data['parameters'] )
 		);

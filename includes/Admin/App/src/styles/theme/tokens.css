@@ -15,10 +15,10 @@
 	--z-sticky: 100;
 	--z-dropdown: 1000;
 	--z-popover: 2000;
-	--z-overlay: 10000;
-	--z-drawer: 10010;
-	--z-modal: 11000;
-	--z-toast: 12000;
+	--z-overlay: 100000;
+	--z-drawer: 100010;
+	--z-modal: 100020;
+	--z-toast: 100050;
 	--z-max: 150000;
 
 	/* Font sizes. */

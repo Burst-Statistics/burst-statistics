@@ -54,9 +54,7 @@ class Admin {
 	public function init(): void {
 		$recalculate_cron_interval = apply_filters( 'burst_recalculate_cron_interval', 'burst_every_ten_minutes' );
 		add_action( $recalculate_cron_interval, [ $this, 'update_last_statistic_data' ] );
-		add_action( 'burst_recalculate_known_uids_cron', [ $this, 'update_known_uids_table' ] );
 		add_action( 'burst_recalculate_bounces_cron', [ $this, 'recalculate_bounces' ] );
-		add_action( 'burst_recalculate_first_time_visits_cron', [ $this, 'recalculate_first_time_visits' ] );
 
 		if ( ! BURST_TRACK_ONLY ) {
 			/**
@@ -222,102 +220,16 @@ class Admin {
 
 
 	/**
-	 * Cron to update the last 10 minutes of user data for bounces and first_time_visits.
+	 * Cron to update the last 10 minutes of user data for bounces.
+	 * first_time_visit needs no recalculation: it is set synchronously at
+	 * session creation (the uid dictionary insert is the "first time ever
+	 * seen" event); the finalize step of the uid migration backstops its
+	 * window and cleans up the legacy known-uids table and crons.
 	 */
 	public function update_last_statistic_data(): void {
-		if ( ! wp_next_scheduled( 'burst_recalculate_known_uids_cron' ) ) {
-			wp_schedule_single_event( time() + 10, 'burst_recalculate_known_uids_cron' );
-		}
-
 		if ( ! wp_next_scheduled( 'burst_recalculate_bounces_cron' ) ) {
 			wp_schedule_single_event( time() + 60, 'burst_recalculate_bounces_cron' );
 		}
-
-		if ( ! wp_next_scheduled( 'burst_recalculate_first_time_visits_cron' ) ) {
-			wp_schedule_single_event( time() + 120, 'burst_recalculate_first_time_visits_cron' );
-		}
-	}
-
-	/**
-	 * Recalculate first_time_visit flags
-	 *
-	 * Marks the earliest statistic for each UID as first_time_visit = 1
-	 * Runs daily to keep data accurate without impacting real-time performance
-	 *
-	 * @hooked burst_recalculate_first_time_visits_cron
-	 */
-	public function recalculate_first_time_visits(): void {
-		global $wpdb;
-
-		$last_update    = get_option( 'burst_last_first_time_visit_update', time() - 15 * MINUTE_IN_SECONDS );
-		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', 15 * MINUTE_IN_SECONDS );
-		$time_cutoff    = ( $last_update < $default_cutoff ) ? $last_update : $default_cutoff;
-
-		// Mark session as first_time_visit = 1 only if the session's earliest statistic
-		// matches the UID's first_seen in known_uids — meaning this is genuinely their first visit.
-		$wpdb->query(
-			$wpdb->prepare(
-				"UPDATE {$wpdb->prefix}burst_sessions sess
-				INNER JOIN (
-					SELECT session_id, MIN(time) AS first_time, uid
-					FROM {$wpdb->prefix}burst_statistics
-					WHERE time >= %d
-					GROUP BY session_id, uid
-				) st ON st.session_id = sess.ID
-				INNER JOIN {$wpdb->prefix}burst_known_uids known ON st.uid = known.uid
-				SET sess.first_time_visit = 1
-				WHERE sess.first_time_visit = 0
-				AND known.first_seen >= st.first_time - 1
-				AND known.first_seen <= st.first_time + 1",
-				$time_cutoff
-			)
-		);
-
-		update_option( 'burst_last_first_time_visit_update', time(), false );
-	}
-
-	/**
-	 * Update incrementail UIDs table.
-	 */
-	public function update_known_uids_table(): void {
-		global $wpdb;
-		// Get sync cutoff (default: last 10 minutes of new data to process).
-		$last_sync      = get_option( 'burst_last_known_uids_sync', time() - 15 * MINUTE_IN_SECONDS );
-		$default_cutoff = time() - apply_filters( 'burst_cron_update_range_seconds', 15 * MINUTE_IN_SECONDS );
-		$sync_cutoff    = ( $last_sync < $default_cutoff ) ? $last_sync : $default_cutoff;
-
-		// Cleanup threshold: remove UIDs not seen in 31+ days.
-		$cleanup_cutoff = time() - ( 31 * DAY_IN_SECONDS );
-
-		// Step 1: Add/update UIDs from recent statistics (last 10-15 minutes).
-		$wpdb->query(
-			$wpdb->prepare(
-				"
-        INSERT INTO {$wpdb->prefix}burst_known_uids (uid, first_seen, last_seen)
-        SELECT uid, MIN(time) as first_seen, MAX(time) as last_seen
-        FROM {$wpdb->prefix}burst_statistics
-        WHERE time >= %d
-        GROUP BY uid
-        ON DUPLICATE KEY UPDATE
-            first_seen = LEAST(first_seen, VALUES(first_seen)),
-            last_seen = GREATEST(last_seen, VALUES(last_seen))
-    ",
-				$sync_cutoff
-			)
-		);
-
-		// Step 2: Remove UIDs not seen in 31+ days (cleanup old visitors).
-		$wpdb->query(
-			$wpdb->prepare(
-				"
-        DELETE FROM {$wpdb->prefix}burst_known_uids
-        WHERE last_seen < %d
-    ",
-				$cleanup_cutoff
-			)
-		);
-
-		update_option( 'burst_last_known_uids_sync', time(), false );
 	}
 
 	/**
@@ -428,16 +340,22 @@ class Admin {
 		if ( ! $this->user_can_manage() ) {
 			return;
 		}
+
+		// Pre-migration sites still store varchar uid strings; skip until the uid
+		// dictionary migration completes (within days) — detection resumes then.
+		if ( ! $this->uid_id_active() ) {
+			return;
+		}
 		$interval_days = (int) apply_filters( 'burst_data_cleanup_interval_days', 1 );
 		$data_treshold = (int) apply_filters( 'burst_data_cleanup_treshold', 1000 );
 		global $wpdb;
 		$uids = $wpdb->get_results(
 			$wpdb->prepare(
 				"
-            SELECT uid, COUNT(*) as record_count
+            SELECT uid_id, COUNT(*) as record_count
             FROM {$wpdb->prefix}burst_statistics
             WHERE time > UNIX_TIMESTAMP(NOW() - INTERVAL %d DAY)
-            GROUP BY uid
+            GROUP BY uid_id
             HAVING COUNT(*) > %d LIMIT 1;
         ",
 				$interval_days,
@@ -446,16 +364,10 @@ class Admin {
 			ARRAY_A
 		);
 
-		if ( ! empty( $uids ) ) {
-
-			$uids = array_map(
-				function ( $item ) {
-					return $item['uid'];
-				},
-				$uids
-			);
-			// get first $uid.
-			$uid = reset( $uids );
+		// Post-migration statistics.uid_id holds integer dictionary ids, so the
+		// detected value is stored normalized as a positive int.
+		$uid = ! empty( $uids ) ? absint( reset( $uids )['uid_id'] ) : 0;
+		if ( $uid > 0 ) {
 			update_option( 'burst_cleanup_uid', $uid, false );
 			$total_hits   = array_sum( wp_list_pluck( $uids, 'record_count' ) );
 			$average_hits = round( $total_hits / count( $uids ) );
@@ -487,9 +399,9 @@ class Admin {
 	}
 
 	/**
-	 * On a daily basis, cleanup suspiciously high amounts of data.
+	 * Remove the detected anomalous visitor's data, triggered by the "fix" button on the task.
 	 *
-	 * @hooked burst_daily
+	 * @hooked burst_scheduled_task_fix_malicious_data_removal
 	 */
 	public function clean_malicious_data(): void {
 		if ( ! $this->user_can_manage() ) {
@@ -501,12 +413,14 @@ class Admin {
 			return;
 		}
 
-		$uid = get_option( 'burst_cleanup_uid' );
-		if ( strlen( $uid ) < 10 ) {
-			self::error_log( 'Suspicious UID format, cleanup aborted: ' . $uid );
+		// Pre-migration the identity is still the varchar uid string, so an integer comparison
+		// would match the wrong rows; skip until the uid dictionary migration
+		// completes (within days) — the armed cleanup resumes then.
+		if ( ! $this->uid_id_active() ) {
 			return;
 		}
 
+		$uid_raw           = get_option( 'burst_cleanup_uid' );
 		$detected_time     = (int) get_option( 'burst_cleanup_data_detected_time', time() );
 		$max_age_threshold = time() - ( 14 * DAY_IN_SECONDS );
 
@@ -515,11 +429,14 @@ class Admin {
 		delete_option( 'burst_cleanup_uid' );
 		delete_option( 'burst_cleanup_uid_visits' );
 
-		if ( $detected_time < $max_age_threshold ) {
+		// Detection stores an integer dictionary id; anything else is invalid.
+		if ( ! is_scalar( $uid_raw ) || ! ctype_digit( (string) $uid_raw ) || (int) $uid_raw <= 0 ) {
+			self::error_log( 'Invalid uid dictionary id, cleanup aborted.' );
 			return;
 		}
+		$uid = (int) $uid_raw;
 
-		if ( empty( $uid ) ) {
+		if ( $detected_time < $max_age_threshold ) {
 			return;
 		}
 
@@ -536,7 +453,7 @@ class Admin {
 					"
             SELECT ID
             FROM {$wpdb->prefix}burst_statistics
-            WHERE uid = %s
+            WHERE uid_id = %d
             AND time >= %d
         ",
 					$uid,
@@ -558,7 +475,7 @@ class Admin {
 					"
             SELECT DISTINCT session_id
             FROM {$wpdb->prefix}burst_statistics
-            WHERE uid = %s
+            WHERE uid_id = %d
             AND time >= %d
             AND session_id IS NOT NULL
         ",
@@ -576,11 +493,11 @@ class Admin {
 			}
 
 			// 5. Delete statistics.
-			$wpdb->query(
+			$deleted = (int) $wpdb->query(
 				$wpdb->prepare(
 					"
             DELETE FROM {$wpdb->prefix}burst_statistics
-            WHERE uid = %s
+            WHERE uid_id = %d
             AND time >= %d
         ",
 					$uid,
@@ -590,6 +507,16 @@ class Admin {
 
 			$wpdb->query( 'COMMIT' );
 
+			// Deleted hits change history: re-arm the visitor bitmap builder from
+			// the earliest affected day and bump the generation so cached day sets rebuild.
+			if ( $deleted > 0 ) {
+				$affected_from = wp_date( 'Y-m-d', $cleanup_threshold );
+				$rebuild_from  = (string) get_option( 'burst_visitor_bitmaps_rebuild_from' );
+				if ( '' === $rebuild_from || $affected_from < $rebuild_from ) {
+					update_option( 'burst_visitor_bitmaps_rebuild_from', $affected_from, false );
+				}
+				update_option( 'burst_visitor_bitmaps_generation', (string) time(), false );
+			}
 		} catch ( \Exception $e ) {
 			$wpdb->query( 'ROLLBACK' );
 			self::error_log( 'Rolled back data cleanup: ' . $e->getMessage() );
@@ -748,16 +675,14 @@ class Admin {
 					$wpdb->insert(
 						"{$wpdb->prefix}burst_sessions",
 						[
-							'referrer'          => $referrer,
-							'first_visited_url' => '/',
-							'last_visited_url'  => '/',
-							'browser_id'        => $browser_id,
-							'device_id'         => $device_id,
-							'platform_id'       => $platform_id,
-							'bounce'            => $bounce,
-							'first_time_visit'  => 1,
+							'referrer'         => $referrer,
+							'browser_id'       => $browser_id,
+							'device_id'        => $device_id,
+							'platform_id'      => $platform_id,
+							'bounce'           => $bounce,
+							'first_time_visit' => 1,
 						],
-						[ '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d' ]
+						[ '%s', '%d', '%d', '%d', '%d', '%d' ]
 					);
 
 					$session_id = $wpdb->insert_id;
@@ -777,7 +702,7 @@ class Admin {
 
 				$query = "
 					INSERT INTO {$wpdb->prefix}burst_statistics
-					(time, page_url, uid, time_on_page, session_id)
+					(time, page_url, uid_id, time_on_page, session_id)
 					VALUES " . implode( ', ', $placeholders );
                 // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- values are prepared.
 				$wpdb->query( $wpdb->prepare( $query, ...$values ) );
@@ -1415,15 +1340,60 @@ class Admin {
 		if ( ! $this->user_can_manage() ) {
 			return;
 		}
-		// delete everything.
-		$this->delete_all_burst_data();
+		// Truncate instead of drop: concurrent requests (dashboard polling,
+		// tracking hits) must never hit a missing table during a reset.
+		$this->truncate_all_burst_data();
+
+		// The bitmap cursor and the uid-pipeline watermarks describe data that
+		// no longer exists after the truncate: a stale bitmap cursor would
+		// permanently skip the wiped range (built_until only moves forward),
+		// and stale backfill watermarks would skip rows a re-run should visit.
+		delete_option( 'burst_visitor_bitmaps_built_until' );
+		delete_option( 'burst_visitor_bitmaps_rebuild_from' );
+		update_option( 'burst_visitor_bitmaps_generation', (string) time(), false );
+		delete_option( 'burst_db_upgrade_seed_uid_dictionary_last_id' );
+		delete_option( 'burst_db_upgrade_statistics_uid_id_last_id' );
+		delete_option( 'burst_db_upgrade_sessions_first_time_last_id' );
 
 		// immediately run setup defaults, so db tables get made.
 		$this->setup_defaults();
 
-		// ensure the tables are created.
+		// ensure any missing tables are created and lookups re-seeded.
 		$this->release_upgrade_lock();
 		$this->run_table_init_hook();
+
+		/**
+		 * Fires after all Burst data has been reset, so features can drop the
+		 * options that describe state derived from the (now empty) tables.
+		 */
+		do_action( 'burst_after_reset' );
+	}
+
+	/**
+	 * Empty all Burst tables without dropping them, so concurrent requests
+	 * never hit a missing table. TRUNCATE also resets the auto-increment.
+	 * The uninstall flow keeps using delete_all_burst_data(), which drops the
+	 * tables entirely.
+	 */
+	private function truncate_all_burst_data(): void {
+		if ( ! $this->user_can_manage() ) {
+			return;
+		}
+
+		global $wpdb;
+
+		foreach ( $this->get_table_list() as $table_name ) {
+			// guard against touching tables from other plugins, as these can be added using the tables filter.
+			if ( ! str_starts_with( $table_name, 'burst_' ) ) {
+				continue;
+			}
+			if ( ! $this->table_exists( $table_name ) ) {
+				continue;
+			}
+			$sql = "TRUNCATE TABLE {$wpdb->prefix}$table_name";
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name is from a predefined list.
+			$wpdb->query( $sql );
+		}
 	}
 
 	/**
@@ -1610,8 +1580,10 @@ class Admin {
 		$post_types_str = "'" . implode( "', '", $post_types_escaped ) . "'";
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$posts          = $wpdb->get_col( "SELECT post_content FROM {$wpdb->posts} WHERE post_status IN ($post_statuses_str) AND post_type IN ($post_types_str) AND post_content LIKE '%data-burst-goal=%'" );
-		$merged_content = is_array( $posts ) ? implode( ' ', $posts ) : '';
+		$posts = $wpdb->get_col( "SELECT post_content FROM {$wpdb->posts} WHERE post_status IN ($post_statuses_str) AND post_type IN ($post_types_str) AND post_content LIKE '%data-burst-goal=%'" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$elementor_meta = $wpdb->get_col( "SELECT pm.meta_value FROM {$wpdb->postmeta} pm INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID WHERE pm.meta_key = '_elementor_data' AND p.post_status IN ($post_statuses_str) AND p.post_type IN ($post_types_str) AND pm.meta_value LIKE '%burst_goal_uid%'" );
+		$merged_content = ( is_array( $posts ) ? implode( ' ', $posts ) : '' ) . ' ' . ( is_array( $elementor_meta ) ? implode( ' ', $elementor_meta ) : '' );
 
 		foreach ( $block_goals as $goal ) {
 			// Skip goals created within the last 3 hours to avoid race conditions while editing.
@@ -1629,19 +1601,7 @@ class Admin {
 			}
 
 			if ( strpos( $merged_content, $uid ) === false ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-				$has_data = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_goal_statistics WHERE goal_id = %d", $goal_id ) ) > 0;
-
-				if ( ! $has_data ) {
-					// Delete goal completely if it has no stats.
-					$goal_obj = new \Burst\Frontend\Goals\Goal( $goal_id );
-					$goal_obj->delete();
-				} elseif ( $goal['status'] !== 'inactive' ) {
-					// Otherwise deactivate it to preserve stats.
-					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-					$wpdb->update( $table_name, [ 'status' => 'inactive' ], [ 'ID' => $goal_id ], [ '%s' ], [ '%d' ] );
-					wp_cache_delete( 'burst_goal_' . $goal_id, 'burst' );
-				}
+				\Burst\Frontend\Goals\Goals::retire_goal_if_orphaned( $goal_id );
 			}
 		}
 

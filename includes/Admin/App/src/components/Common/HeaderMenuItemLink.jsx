@@ -2,14 +2,11 @@ import { Link, useSearch } from '@tanstack/react-router';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useMemo, useRef, useState } from '@wordpress/element';
 import ProBadge from '@/components/Common/ProBadge';
-import {
-	isFilterEnabledRoute,
-	FILTER_KEYS,
-	TRAILING_PARAM_KEY
-} from '@/hooks/useFilters';
+import { FILTER_KEYS, TRAILING_PARAM_KEY } from '@/config/filterConfig';
 import { useFiltersStore } from '@/store/useFiltersStore';
 import useShareableLinkStore from '@/store/useShareableLinkStore';
 import Icon from '@/utils/Icon';
+import { isFilterEnabledRoute } from '@/utils/routeUtils';
 
 /**
  * Generates the URL for a given menu item.

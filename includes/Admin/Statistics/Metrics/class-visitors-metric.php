@@ -28,9 +28,14 @@ class Visitors_Metric implements Metric_Handler_Interface {
 	 */
 	public function apply( Statistics_Query $qd ): void {
 		$non_bounce = 'COALESCE(sessions.bounce, 0) = 0';
-		$expr       = $qd->get_exclude_bounces()
-			? "COUNT(DISTINCT CASE WHEN {$non_bounce} THEN statistics.uid END) AS visitors"
-			: 'COUNT(DISTINCT statistics.uid) AS visitors';
+		// NULLIF: the uid-0 bucket (unresolved visitors) is many unknown
+		// visitors collapsed into one value — counting it as one fake visitor
+		// made the SQL paths disagree by one with the bitmap path, which
+		// excludes uid 0. The alias survives the session-grain FROM swap
+		// (uid = uid_id there), so both grains stay aligned with bitmaps.
+		$expr = $qd->get_exclude_bounces()
+			? "COUNT(DISTINCT CASE WHEN {$non_bounce} THEN NULLIF(statistics.uid_id, 0) END) AS visitors"
+			: 'COUNT(DISTINCT NULLIF(statistics.uid_id, 0)) AS visitors';
 		$qd->add_select( $expr );
 		$qd->with( 'sessions' );
 	}

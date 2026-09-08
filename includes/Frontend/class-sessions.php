@@ -25,12 +25,17 @@ class Sessions {
 		global $wpdb;
 		$charset_collate = $wpdb->get_charset_collate();
 
-		// Create table without indexes first.
+		// Create table without indexes first. start_time (session start) and
+		// uid_id (dictionary id of the visitor, see burst_uids) are denormalized
+		// so session-grain queries need no statistics join; historic rows are
+		// backfilled by the sessions_first_time DB upgrade, armed from
+		// Upgrade::check_upgrade() like every other upgrade.
 		$table_name = $wpdb->prefix . 'burst_sessions';
-		$sql        = "CREATE TABLE $table_name (
+
+		$sql = "CREATE TABLE $table_name (
             `ID` int NOT NULL AUTO_INCREMENT,
-            `first_visited_url` TEXT NOT NULL,
-            `last_visited_url` TEXT NOT NULL,
+            `start_time` int NOT NULL DEFAULT 0,
+            `uid_id` int unsigned NOT NULL DEFAULT 0,
             `host` varchar(255) NOT NULL DEFAULT '',
             `referrer` varchar(255) DEFAULT NULL,
             `goal_id` int,
@@ -53,7 +58,20 @@ class Sessions {
 			return;
 		}
 
+		// Pre-release development installs briefly carried a visitor_uid varchar
+		// column (superseded by uid_id) and the first_time-named index of the
+		// renamed column; clean both up. No-ops everywhere else.
+		$this->drop_index( 'burst_sessions', 'first_time_visitor_uid_index' );
+		$this->drop_index( 'burst_sessions', 'first_time_uid_id_index' );
+		if ( $this->column_exists( 'burst_sessions', 'visitor_uid' ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table/column names.
+			$wpdb->query( "ALTER TABLE {$table_name} DROP COLUMN `visitor_uid`" );
+		}
+
 		$indexes = [
+			// Covering for session-grain range queries: filter on start_time,
+			// count distinct uid_id without touching the row.
+			[ 'start_time', 'uid_id' ],
 			[ 'goal_id' ],
 			[ 'city_code' ],
 			[ 'browser_id' ],

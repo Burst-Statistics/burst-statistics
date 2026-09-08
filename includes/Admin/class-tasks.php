@@ -149,15 +149,27 @@ class Tasks {
 					$invert   = str_contains( $task['condition']['constant'], '!' );
 					$constant = $invert ? substr( $task['condition']['constant'], 1 ) : $task['condition']['constant'];
 					$is_valid = defined( $constant );
+					if ( $invert ) {
+						$is_valid = ! $is_valid;
+					}
 				} else {
-					$invert   = str_contains( $task['condition']['function'], '!' );
-					$function = $invert ? substr( $task['condition']['function'], 1 ) : $task['condition']['function'];
-					$is_valid = $this->validate_function( $function );
+					// one function or an array of functions; all must pass.
+					$functions = (array) $task['condition']['function'];
+					$is_valid  = true;
+					foreach ( $functions as $function ) {
+						$invert   = str_contains( $function, '!' );
+						$function = $invert ? substr( $function, 1 ) : $function;
+						$valid    = $this->validate_function( $function );
+						if ( $invert ) {
+							$valid = ! $valid;
+						}
+						if ( ! $valid ) {
+							$is_valid = false;
+							break;
+						}
+					}
 				}
 
-				if ( $invert ) {
-					$is_valid = ! $is_valid;
-				}
 				if ( $is_valid ) {
 					$this->add_task( $task['id'] );
 				} else {
@@ -382,7 +394,9 @@ class Tasks {
 			$func   = str_replace( '!', '', $func );
 			$invert = true;
 		}
-		if ( str_contains( $func, 'wp_option_' ) ) {
+		if ( str_contains( $func, 'burst_option_' ) ) {
+			$output = $this->get_option_bool( str_replace( 'burst_option_', '', $func ) );
+		} elseif ( str_contains( $func, 'wp_option_' ) ) {
 			$output = get_option( str_replace( 'wp_option_', '', $func ) ) !== false;
 		} else {
 			if ( preg_match( '/(.*)\(\)\-\>(.*)->(.*)/i', $func, $matches ) ) {
@@ -426,9 +440,9 @@ class Tasks {
 	}
 
 	/**
-	 * Whether we should show the MainWP integration reminder task.
+	 * Whether the MainWP Child plugin is active.
 	 */
-	public static function should_show_mainwp_integration_task(): bool {
+	public static function is_mainwp_child_active(): bool {
 		$mainwp_child_plugin = 'mainwp-child/mainwp-child.php';
 
 		if ( ! file_exists( WP_PLUGIN_DIR . '/' . $mainwp_child_plugin ) ) {
@@ -444,19 +458,65 @@ class Tasks {
 			$is_mainwp_child_active = $is_mainwp_child_active || is_plugin_active_for_network( $mainwp_child_plugin );
 		}
 
-		if ( ! $is_mainwp_child_active ) {
-			return false;
-		}
-
-		$options = get_option( 'burst_options_settings', [] );
-		// Return true if integration is available but not yet enabled (show setup task).
-		return empty( $options['enable_mainwp_integration'] );
+		return $is_mainwp_child_active;
 	}
 
 	/**
-	 * Check if WP Consent API or Complianz is active.
+	 * Check if WP Consent API is active.
 	 */
 	public static function is_wp_consent_api_active(): bool {
-		return class_exists( 'WP_Consent_API' ) || defined( 'CMPLZ_VERSION' ) || defined( 'cmplz_version' );
+		return function_exists( 'wp_has_consent' );
+	}
+
+	/**
+	 * Plugin directory slugs of the most common cookie banner plugins.
+	 *
+	 * @var string[]
+	 */
+	private const COOKIE_BANNER_SLUGS = [
+		'complianz-gdpr',
+		'complianz-gdpr-premium',
+		// CookieYes.
+		'cookie-law-info',
+		// Cookie Notice & Compliance.
+		'cookie-notice',
+		// Moove GDPR Cookie Compliance.
+		'gdpr-cookie-compliance',
+		'cookiebot',
+		'real-cookie-banner',
+		'real-cookie-banner-pro',
+		'borlabs-cookie',
+		'iubenda-cookie-law-solution',
+		// WP Cookie Consent (WPEka).
+		'gdpr-cookie-consent',
+		// Termly.
+		'uk-cookie-consent',
+		// WPConsent.
+		'wpconsent-cookies-banner-privacy-suite',
+	];
+
+	/**
+	 * Check if a consent banner is active: the WP Consent API, or one of the
+	 * most common cookie banner plugins. A banner without the Consent API can
+	 * still withhold tracking (script blockers), so both count.
+	 */
+	public static function consent_banner_active(): bool {
+		if ( self::is_wp_consent_api_active() ) {
+			return true;
+		}
+
+		$active = (array) get_option( 'active_plugins', [] );
+		if ( is_multisite() ) {
+			$active = array_merge( $active, array_keys( (array) get_site_option( 'active_sitewide_plugins', [] ) ) );
+		}
+
+		foreach ( $active as $basename ) {
+			$slug = strtok( (string) $basename, '/' );
+			if ( in_array( $slug, self::COOKIE_BANNER_SLUGS, true ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

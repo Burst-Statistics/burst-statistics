@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.1
-Stable tag: 3.6.3
+Stable tag: 3.7.0
 
 Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner needed.
  
@@ -282,6 +282,27 @@ We value your feedback. You can [submit a support request on the WordPress forum
  
 
 == Change log ==
+= 3.7.0 =
+* September 8th 2026
+* New: Site Health now shows the state of the visitor index and database migrations, including a live probe of the fast query path.
+* New: the tracking script records the maximum scroll depth and the time spent per quarter of the page, and the Reading Engagement score now weighs scroll depth alongside time on page.
+* New: goal tracking integration for Elementor: mark any widget, section, container or column as a Burst goal from its Advanced tab, with automatic detection of clickable widgets and a burst_elementor_clickable_widgets filter for custom widgets.
+* New: SiteGround Optimizer integration: the tracking endpoints are excluded from SiteGround caching, and tracking responses now carry no-cache headers.
+* Improvement: major dashboard performance overhaul: exact visitor counts are served from a new per-day visitor index, location blocks query at session level, and visitor ids are stored as integers — wide date ranges load many times faster.
+* Improvement: the Pages table now groups url variants of the same post (old slugs, comment pagination) under its current permalink, and aggregates on integer page ids for faster loading.
+* Improvement: Search Console syncing respects Google's 16-month data retention and retries failed days weekly instead of writing them off; empty Search Console ranges are cached while the sync is still backfilling.
+* Improvement: duplicate database indexes removed, reducing tracking write overhead.
+* Improvement: visitor identifiers that have not been seen for 12 months (filterable) are pruned automatically, keeping the database compact; a returning visitor past that window counts as new, matching the previous 31-day behavior.
+* Improvement: the tracking script waits for the WP Consent API to define the consent type before deciding whether to track, and initializes only once when consent is granted later; the consent setup task now also recognizes the most common cookie banner plugins.
+* Improvement: smaller and faster dashboard bundle: dropped the @wordpress/data and @wordpress/core-data dependencies, shared route chunks, and routes are preloaded while the browser is idle.
+* Improvement: anonymous data sharing now includes the database engine and version.
+* Fix: the New visitors filter only listed entry pages instead of every page visited by new visitors, and entry and exit page queries could show a phantom page from rows without a session.
+* Fix: a report scheduled in the report wizard was saved as disabled; it is now activated on save.
+* Fix: the shared dashboard view printed its stylesheets after the page content, causing unstyled rendering, and WP-Optimize minification moved the dashboard scripts, which broke chunk loading ("Loading chunk failed") on the shared dashboard page.
+* Fix: the "Connect Google Search Console" notice kept showing after the integration was enabled and can now be dismissed permanently; dashboard viewers without the manage capability now see a message instead of a button that led to a "Page not found" state.
+* Fix: dialogs, popovers and the mobile menu now render inside the Burst container, fixing styling and display issues in the MainWP dashboard.
+* Fix: the 3.6.3 unique-index migration on the browser, browser version, platform and device tables failed with a "Duplicate entry" error on sites that had accumulated duplicate names; duplicates are now merged before the index is added, and the migration completes on sites where it had failed.
+
 = 3.6.3 =
 * August 19th 2026
 * New: tracking health monitoring: a daily check verifies that tracking still works; when a drop is detected, Burst collects diagnostics (security plugins blocking the REST API, .htaccess rules, consent plugins, endpoint reachability and recent plugin or setting changes) and emails the site administrator at most once per week.

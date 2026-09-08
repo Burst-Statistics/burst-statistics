@@ -4,7 +4,9 @@ defined( 'ABSPATH' ) || die();
  * Tasks to show in the admin area.
  * Condition: [
  *          type: serverside, clientside, activation (if task should be added on activation)
- *          function returning a boolean
+ *          function: a function returning a boolean, or an array of them (all must pass).
+ *          Prefix with '!' to invert. 'burst_option_{name}' checks a burst option,
+ *          'wp_option_{name}' checks if a wp option exists.
  * ]
  * status: open, completed, premium
  */
@@ -70,12 +72,17 @@ return [
 		'plusone'     => false,
 	],
 	[
-		'id'          => 'search_console_integration',
-		'msg'         => __( 'New: connect Google Search Console to Burst and see which search queries bring visitors to your site, right in your dashboard.', 'burst-statistics' ),
-		'icon'        => 'new',
-		'url'         => '#/settings/integrations',
-		'dismissible' => true,
-		'plusone'     => true,
+		'id'                  => 'search_console_integration',
+		'condition'           => [
+			'type'     => 'serverside',
+			'function' => '!burst_option_enable_search_console',
+		],
+		'msg'                 => __( 'New: connect Google Search Console to Burst and see which search queries bring visitors to your site, right in your dashboard.', 'burst-statistics' ),
+		'icon'                => 'new',
+		'url'                 => '#/settings/integrations',
+		'dismissible'         => true,
+		'plusone'             => true,
+		'dismiss_permanently' => true,
 	],
 	[
 		// no condition on this task, as when this issue happens, cron is not working to add the task.
@@ -208,7 +215,10 @@ return [
 		'id'                  => 'mainwp_integration_disabled',
 		'condition'           => [
 			'type'     => 'serverside',
-			'function' => 'Burst\\Admin\\Tasks::should_show_mainwp_integration_task()',
+			'function' => [
+				'Burst\\Admin\\Tasks::is_mainwp_child_active()',
+				'!burst_option_enable_mainwp_integration',
+			],
 		],
 		'msg'                 => __( 'MainWP Child is active on this site, but Burst MainWP integration is disabled. Enable it in settings to allow MainWP Dashboard statistics.', 'burst-statistics' ),
 		'icon'                => 'warning',
@@ -234,7 +244,7 @@ return [
 		'id'                  => 'wp_consent_api_notice',
 		'condition'           => [
 			'type'     => 'serverside',
-			'function' => 'Burst\Admin\Tasks::is_wp_consent_api_active()',
+			'function' => 'Burst\Admin\Tasks::consent_banner_active()',
 		],
 		'msg'                 => __( 'If you have configured a cookiebanner to ask consent for statistics, this will cause Burst not to track any user who is not flagged by the cookie banner as having consent for statistics.', 'burst-statistics' ),
 		'icon'                => 'warning',

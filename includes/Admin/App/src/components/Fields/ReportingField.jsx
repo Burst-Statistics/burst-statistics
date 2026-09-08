@@ -2,7 +2,7 @@ import React, {  useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import ButtonInput from '@/components/Inputs/ButtonInput';
-import DataTable from 'react-data-table-component';
+import DataTable from '@/components/DataTable/DataTable';
 import Icon from '@/utils/Icon';
 import SwitchInput from '@/components/Inputs/SwitchInput';
 import Tooltip from '@/components/Common/Tooltip';

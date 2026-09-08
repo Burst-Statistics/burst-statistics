@@ -99,6 +99,12 @@ function getComparisonDates( startDate, endDate, compareMode ) {
 
 //eslint-disable-next-line
 const CompareBlock = ( props ) => {
+	const {
+		title = __( 'Compare', 'burst-statistics' ),
+		showCommunityComparison = true,
+		includePageMetrics = false,
+		enabled = true
+	} = props;
 	const { startDate, endDate, range, filters, isReport, index } = useBlockConfig( props );
 	const compareMode = useCompareStore( ( state ) => state.compareMode );
 
@@ -109,16 +115,24 @@ const CompareBlock = ( props ) => {
 	const args = {
 		filters,
 		compare_date_start: compareStart,
-		compare_date_end: compareEnd
+		compare_date_end: compareEnd,
+		include_page_metrics: includePageMetrics
 	};
 
 	const metrics = {
 		pageviews: __( 'Pageviews', 'burst-statistics' ),
 		sessions: __( 'Sessions', 'burst-statistics' ),
-		visitors: __( 'Visitors', 'burst-statistics' ),
-		bounce_rate: __( 'Bounce Rate', 'burst-statistics' ),
-		avg_time_on_page: __( 'Avg. time on page', 'burst-statistics' )
+		visitors: __( 'Visitors', 'burst-statistics' )
 	};
+	if ( includePageMetrics ) {
+		metrics.reading_engagement_score = __( 'Engagement score', 'burst-statistics' );
+	}
+	metrics.bounce_rate = __( 'Bounce Rate', 'burst-statistics' );
+	if ( includePageMetrics ) {
+		metrics.conversions = __( 'Conversions', 'burst-statistics' );
+	} else {
+		metrics.avg_time_on_page = __( 'Avg. time on page', 'burst-statistics' );
+	}
 	const emptyData = {};
 
 	// Loop through metrics and set default values.
@@ -135,9 +149,16 @@ const CompareBlock = ( props ) => {
 
 	const { getValue } = useSettingsData();
 	const query = useQuery({
-		queryKey: [ 'compare', startDate, endDate, compareMode, args ],
-		queryFn: () => getCompareData({ startDate, endDate, range, args }),
-		placeholderData: emptyData
+		queryKey: [ 'compare', startDate, endDate, compareMode, args, includePageMetrics ],
+		queryFn: () => getCompareData({
+			startDate,
+			endDate,
+			range,
+			args,
+			includePageMetrics
+		}),
+		placeholderData: emptyData,
+		enabled
 	});
 
 	const isLoading = query.isLoading || query.isFetching;
@@ -150,7 +171,7 @@ const CompareBlock = ( props ) => {
 
 	return (
 		<Block className="row-span-1 @lg:col-span-6 @xl:col-span-3">
-			<BlockHeading title={ __( 'Compare', 'burst-statistics' ) } isReport={ isReport } reportBlockIndex={ index } isLoading={ isLoading } />
+			<BlockHeading title={ title } isReport={ isReport } reportBlockIndex={ index } isLoading={ isLoading } />
 			<BlockContent>
 			{/* fallow-ignore-next-line complexity */}
 			{ Object.keys( data ).map( ( key, i ) => {
@@ -158,7 +179,7 @@ const CompareBlock = ( props ) => {
 				let communityTooltipText = null;
 				let communityTooltipLink = false;
 
-				if ( m.communityMetricKey ) {
+				if ( showCommunityComparison && m.communityMetricKey ) {
 					const anonymousUsageDataEnabled = getValue( 'anonymous_usage_data' );
 					const communityData = window.burst_settings?.community_data;
 					const metricConfig = communityMetricConfig[ m.communityMetricKey ];

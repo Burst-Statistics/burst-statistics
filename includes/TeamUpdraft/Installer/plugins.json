@@ -1,5 +1,23 @@
 [
   {
+    "file": "smartmatch-search/smartmatch-search.php",
+    "icon": "smartmatch-search.svg",
+    "search_url": "smartmatch%2520search%2520burst&tab=search&type=term",
+    "constant_free": "SMARTMATCH_SEARCH_VERSION",
+    "premium": {
+      "type": "constant",
+      "value": "SMARTMATCH_SEARCH_VERSION"
+    },
+    "wordpress_url": "https://wordpress.org/plugins/smartmatch-search/",
+    "php" : "8.0",
+    "wp" : "7.0",
+    "title": "SmartMatch Search",
+    "description": "AI search that understands what visitors mean, so they find the right page in their own words.",
+    "conditions": {
+      "plugin": "WPAI_VERSION"
+    }
+  },
+  {
     "file": "woocommerce-menu-bar-cart/wp-menu-cart.php",
     "icon": "menu-cart.png",
     "search_url": "wp%2520overnight%2520Menu%2520Cart%2520for%2520WooCommerce%2520&tab=search&type=term",

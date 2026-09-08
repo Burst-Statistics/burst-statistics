@@ -1,5 +1,5 @@
 import { dateI18n, getSettings } from '@wordpress/date';
-import countryContinentsMap from '../../../../../assets/maps/country-continents.json';
+import countryContinentsMap from './countryContinents';
 import {
 	addDays,
 	addMonths,
@@ -34,11 +34,15 @@ declare const burst_settings: {
 	[key: string]: unknown;
 };
 
-const getLocale = (): string | undefined => {
-	if ( 'undefined' !== typeof burst_settings && burst_settings.locale ) {
-		return burst_settings.locale;
+const getBurstSetting = <T>( key: string, defaultValue?: T ): T | undefined => {
+	if ( 'undefined' !== typeof burst_settings && burst_settings && burst_settings[key] !== undefined ) {
+		return burst_settings[key] as T;
 	}
-	return undefined;
+	return defaultValue;
+};
+
+const getLocale = (): string | undefined => {
+	return getBurstSetting<string>( 'locale' );
 };
 
 /** Units supported by `getRelativeTime`, in descending order of size. */
@@ -95,48 +99,24 @@ const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const parseDateForDisplay = (
 	dateInput: string | number | Date
 ): Date => {
-	if ( dateInput instanceof Date ) {
-		return dateInput;
-	}
-
-	if ( 'string' === typeof dateInput ) {
-		const match = DATE_ONLY_PATTERN.exec( dateInput );
-		if ( match ) {
-			return new Date(
-				Number( match[1]),
-				Number( match[2]) - 1,
-				Number( match[3])
-			);
-		}
-	}
-
-	return new Date( dateInput );
+	const parsed = parseAndValidateDate( dateInput );
+	return parsed || new Date( dateInput );
 };
 
 /**
  * Returns a formatted string that represents the relative time between two dates.
  *
- * @param relativeDate - The date to compare, or a UTC timestamp (seconds).
+ * @param relativeDate - The date to compare, UTC timestamp (seconds/ms), or date string.
  * @param date         - The reference date, defaults to the current date.
  * @return The relative time string.
  */
 // fallow-ignore-next-line complexity
 const getRelativeTime = (
-	relativeDate: Date | number,
+	relativeDate: string | number | Date | null | undefined,
 	date: Date = new Date()
 ): string => {
-	let target: Date;
-
-	// If `relativeDate` is a number we assume it is a UTC timestamp in seconds.
-	if ( 'number' === typeof relativeDate ) {
-		target = new Date( relativeDate * 1000 );
-	} else {
-		target = relativeDate;
-	}
-
-	if ( ! ( target instanceof Date ) ) {
-
-		// Invalid date, probably still loading.
+	const target = parseAndValidateDate( relativeDate );
+	if ( ! target ) {
 		return '-';
 	}
 
@@ -148,7 +128,7 @@ const getRelativeTime = (
 		minute: 60 * 1000,
 		second: 1000
 	};
-	const rtf = new Intl.RelativeTimeFormat( 'en', { numeric: 'auto' });
+	const rtf = new Intl.RelativeTimeFormat( getLocale() || 'en', { numeric: 'auto' });
 	const elapsed = target.getTime() - date.getTime();
 
 	// `Math.abs` accounts for both past and future scenarios.
@@ -300,7 +280,7 @@ function getBouncePercentage(
  */
 const formatUnixToDate = ( unixTimestamp: number ): string => {
 	return dateI18n(
-		burst_settings.date_format,
+		getBurstSetting<string>( 'date_format', 'Y-m-d' ) as string,
 		new Date( unixTimestamp * 1000 ),
 		undefined
 	);
@@ -336,35 +316,25 @@ const getLastCompleteMonthEndDate = (): string => {
 	return format( endOfMonth( addMonths( new Date(), -1 ) ), 'yyyy-MM-dd' );
 };
 
-const FORECAST_YEAR_INTERVAL_DAYS = 730;
-
 /**
- * Resolve the forecast view's bucket interval and anchored end date.
+ * Resolve the forecast view's fixed window: the last 12 complete months.
  *
- * Forecast charts bucket per calendar month; selections longer than two
- * years switch to calendar years so the axis stays readable. The end date is
- * anchored to the last complete bucket period (previous month or previous
- * year), so the forecast always starts at the current period and never
- * projects periods that are already measured. The backend applies the same
- * threshold to the same month-anchored range, keeping chart and forecast in
- * lockstep.
+ * With the forecast toggle on, charts always show the last 12 complete
+ * months, bucketed per calendar month, regardless of the picked range: a
+ * short selection would collapse to one or two month points and read as
+ * noise next to the projection. The backend mirrors the selection length,
+ * so this window makes the forecast exactly the next 12 months — starting
+ * at the current month, which blends what is already earned with its own
+ * pace — and the year-over-year comparison line the previous 12 months.
  *
- * @param startDate - Selected range start as a yyyy-MM-dd date string.
- * @return The bucket interval and the anchored end date.
+ * @return The bucket interval and the fixed start and end dates.
  */
-const getForecastRange = ( startDate: string ): { groupBy: 'month' | 'year'; endDate: string } => {
-	const monthEnd = getLastCompleteMonthEndDate();
-	const elapsedDays = ( new Date( `${ monthEnd }T00:00:00` ).getTime() -
-		new Date( `${ startDate }T00:00:00` ).getTime() ) / ( 24 * 60 * 60 * 1000 );
-
-	if ( elapsedDays > FORECAST_YEAR_INTERVAL_DAYS ) {
-		return {
-			groupBy: 'year',
-			endDate: format( endOfYear( addYears( new Date(), -1 ) ), 'yyyy-MM-dd' )
-		};
-	}
-
-	return { groupBy: 'month', endDate: monthEnd };
+const getForecastRange = (): { groupBy: 'month'; startDate: string; endDate: string } => {
+	return {
+		groupBy: 'month',
+		startDate: format( startOfMonth( addMonths( new Date(), -12 ) ), 'yyyy-MM-dd' ),
+		endDate: getLastCompleteMonthEndDate()
+	};
 };
 
 /**
@@ -414,8 +384,10 @@ function getChartXAxisTickValues<T>(
  * @return The formatted date and time string.
  */
 const formatUnixToDateTime = ( unixTimestamp: number ): string => {
+	const dateFormat = getBurstSetting<string>( 'date_format', 'Y-m-d' );
+	const timeFormat = getBurstSetting<string>( 'time_format', 'H:i:s' );
 	return dateI18n(
-		`${ burst_settings.date_format } \\a\\t ${ burst_settings.time_format }`,
+		`${ dateFormat } \\a\\t ${ timeFormat }`,
 		new Date( unixTimestamp * 1000 ),
 		undefined
 	);
@@ -557,8 +529,9 @@ function formatPercentage( value: number | string, decimals: number = 1 ): strin
  */
 function getCountryName( countryCode: string | undefined | null ): string {
 	if ( countryCode ) {
+		const countries = getBurstSetting<Record<string, string>>( 'countries', {});
 		return (
-			burst_settings.countries[countryCode.toUpperCase()] ||
+			countries?.[countryCode.toUpperCase()] ||
 			__( 'Not set', 'burst-statistics' )
 		);
 	}
@@ -588,8 +561,9 @@ function getContinentName(
 	}
 
 	if ( code ) {
+		const continents = getBurstSetting<Record<string, string>>( 'continents', {});
 		return (
-			burst_settings.continents[code] ||
+			continents?.[code] ||
 			__( 'Not set', 'burst-statistics' )
 		);
 	}
@@ -616,13 +590,16 @@ function getDateWithOffset( currentDate: Date = new Date() ): Date {
 
 	// Add `burst_settings.gmt_offset` hours and the client's timezone offset in
 	// seconds to `currentUnix`.
+	const gmtOffsetHours =
+		Number( getBurstSetting<number | string>( 'gmt_offset', 0 ) ) || 0;
 	const currentUnixWithOffsets =
 		currentUnix +
-		Number( burst_settings.gmt_offset ) * 3600 -
+		gmtOffsetHours * 3600 -
 		clientTimezoneOffsetSeconds;
 
 	return new Date( currentUnixWithOffsets * 1000 );
 }
+
 const DEFAULT_BURST_START_TIMESTAMP = 1640995200;
 
 /**
@@ -634,10 +611,13 @@ const DEFAULT_BURST_START_TIMESTAMP = 1640995200;
 // fallow-ignore-next-line complexity
 const getBurstStartDate = (): Date => {
 	let activationTimestamp: number = DEFAULT_BURST_START_TIMESTAMP;
-	if ( burst_settings.burst_date_picker_start_date ) {
-		activationTimestamp = Number( burst_settings.burst_date_picker_start_date );
-	} else if ( burst_settings.burst_activation_time ) {
-		activationTimestamp = Number( burst_settings.burst_activation_time );
+	const datePickerStart = getBurstSetting<number | string>( 'burst_date_picker_start_date' );
+	const activationTime = getBurstSetting<number | string>( 'burst_activation_time' );
+
+	if ( datePickerStart ) {
+		activationTimestamp = Number( datePickerStart );
+	} else if ( activationTime ) {
+		activationTimestamp = Number( activationTime );
 	}
 
 	if ( isNaN( activationTimestamp ) ) {
@@ -978,33 +958,63 @@ function formatCurrencyCompact(
 	}).format( value );
 }
 
+// fallow-ignore-next-line complexity
 const parseAndValidateDate = ( dateInput: string | number | Date | null | undefined ): Date | null => {
 	if ( ! dateInput ) {
 		return null;
 	}
-	const date = dateInput instanceof Date ? dateInput : new Date( dateInput );
-	if ( isNaN( date.getTime() ) ) {
-		return null;
+
+	if ( dateInput instanceof Date ) {
+		return isNaN( dateInput.getTime() ) ? null : dateInput;
 	}
-	return date;
+
+	if ( 'number' === typeof dateInput ) {
+		const ms = toUnixTimestampMillis( dateInput );
+		const date = new Date( ms );
+		return isNaN( date.getTime() ) ? null : date;
+	}
+
+	if ( 'string' === typeof dateInput ) {
+
+		// 1. Date-only string (YYYY-MM-DD): represent calendar day in local time to avoid timezone shifts.
+		const dateOnlyMatch = DATE_ONLY_PATTERN.exec( dateInput );
+		if ( dateOnlyMatch ) {
+			const date = new Date(
+				Number( dateOnlyMatch[1]),
+				Number( dateOnlyMatch[2]) - 1,
+				Number( dateOnlyMatch[3])
+			);
+			return isNaN( date.getTime() ) ? null : date;
+		}
+
+		// 2. MySQL datetime string (YYYY-MM-DD HH:MM:SS): backend emits GMT timestamps, so parse as UTC ('...Z').
+		if ( /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test( dateInput ) ) {
+			const date = new Date( dateInput.replace( ' ', 'T' ) + 'Z' );
+			return isNaN( date.getTime() ) ? null : date;
+		}
+
+		// 3. General date string (ISO 8601, RFC 2822, etc.).
+		const date = new Date( dateInput );
+		return isNaN( date.getTime() ) ? null : date;
+	}
+
+	return null;
 };
 
 /**
  * Formats a date for display (e.g. "September 1, 2025") using
  * `Intl.DateTimeFormat` for proper localization.
  *
- * @param dateInput - The date string (YYYY-MM-DD) or Date object.
+ * @param dateInput - The date string (YYYY-MM-DD, MySQL datetime), timestamp, or Date object.
  * @param removeYear - Whether to remove the year from the date.
  * @return The formatted date string, or an empty string if invalid.
  */
 function formatDate( dateInput: string | number | Date | null | undefined, removeYear: boolean = false ): string {
 	try {
-		const validateDate = parseAndValidateDate( dateInput );
-		if ( ! validateDate ) {
+		const date = parseAndValidateDate( dateInput );
+		if ( ! date ) {
 			return '';
 		}
-
-		const date = parseDateForDisplay( validateDate );
 
 		return new Intl.DateTimeFormat( getLocale(), {
 			month: 'long',
@@ -1017,8 +1027,7 @@ function formatDate( dateInput: string | number | Date | null | undefined, remov
 }
 
 function getValidDisplayDate( dateInput: string | number | Date | null | undefined ): Date | null {
-	const validateDate = parseAndValidateDate( dateInput );
-	return validateDate ? parseDateForDisplay( validateDate ) : null;
+	return parseAndValidateDate( dateInput );
 }
 
 /**
@@ -1384,6 +1393,9 @@ function truncateMiddle( str: string, maxLength: number = 30 ): string {
 }
 
 export {
+	getBurstSetting,
+	getBurstStartDate,
+	parseAndValidateDate,
 	getRelativeTime,
 	getPercentage,
 	getChangePercentage,

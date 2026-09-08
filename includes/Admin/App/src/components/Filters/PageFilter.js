@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import * as ReactPopover from '@radix-ui/react-popover';
 import { __ } from '@wordpress/i18n';
 import useFilterDisplay from '../../hooks/useFilterDisplay';
@@ -52,15 +53,15 @@ export const PageFilter = ( props ) => {
 		setEditingFilter( null );
 	};
 
-	const portalContainer =
-		document.getElementById( 'modal-root' ) ||
-		document.querySelector( '.burst' ) ||
-		document.body;
-
 	return (
 		<>
-			{isOpen && userCanFilter && ! isReport && (
-				<div className="fixed inset-0 bg-black/30 z-[55]" />
+			{'undefined' !== typeof document && isOpen && userCanFilter && ! isReport && createPortal(
+				<div
+					className="fixed inset-0 bg-black/30 z-overlay"
+					style={{ zIndex: 'var(--z-overlay)' }}
+					onClick={handleClose}
+				/>,
+				document.body
 			)}
 
 			<ReactPopover.Root
@@ -119,29 +120,22 @@ export const PageFilter = ( props ) => {
 				</ReactPopover.Anchor>
 
 				{userCanFilter && ! isReport && (
-					<ReactPopover.Portal container={portalContainer}>
+					<ReactPopover.Portal>
 						<ReactPopover.Content
-							className="z-[10001] w-[700px] max-w-[calc(100vw-40px)] max-h-[80vh] rounded-lg border border-gray-200 bg-white shadow-xl flex flex-col"
+							className="burst z-modal"
+							style={{ zIndex: 'var(--z-modal)' }}
 							align="start"
 							sideOffset={10}
 							arrowPadding={10}
-							onInteractOutside={( e ) => {
-								if ( e.target && e.target.closest && e.target.closest( '[data-radix-popper-content-wrapper], [role="listbox"], [role="option"]' ) ) {
-									e.preventDefault();
-								}
-							}}
-							onPointerDownOutside={( e ) => {
-								if ( e.target && e.target.closest && e.target.closest( '[data-radix-popper-content-wrapper], [role="listbox"], [role="option"]' ) ) {
-									e.preventDefault();
-								}
-							}}
 						>
-							<FilterPopoverContent
-								isOpen={isOpen}
-								onClose={handleClose}
-								initialFilter={editingFilter}
-								reportBlockIndex={reportBlockIndex}
-							/>
+							<div className="@container w-[700px] max-w-[calc(100vw-40px)] max-h-[80vh] rounded-lg border border-gray-200 bg-white shadow-xl flex flex-col">
+								<FilterPopoverContent
+									isOpen={isOpen}
+									onClose={handleClose}
+									initialFilter={editingFilter}
+									reportBlockIndex={reportBlockIndex}
+								/>
+							</div>
 						</ReactPopover.Content>
 					</ReactPopover.Portal>
 				)}

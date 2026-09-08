@@ -10,48 +10,16 @@ import {
 	RouterProvider,
 	createRouter,
 	createBrowserHistory,
-	createHashHistory
+	createHashHistory,
+	type AnyRoute
 } from '@tanstack/react-router';
 
-// StyleSheetManager is used to configure styled-components globally
-// We need this to filter out the 'right' prop that react-data-table-component
-// passes to styled components, which causes warnings in styled-components v6
-import { StyleSheetManager } from 'styled-components';
-import isPropValid from '@emotion/is-prop-valid';
 import { ThemeProvider } from './hooks/useTheme';
+import { shouldLoadRoute } from './utils/helper';
 import { startScrollLockWatchdog } from './utils/scrollLockWatchdog';
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
-const shouldForwardProp = ( prop: string ) => {
-
-	// List of react-data-table-component specific props that should not be forwarded to DOM
-	const dataTableProps = [
-		'right',
-		'grow',
-		'wrap',
-		'allowOverflow',
-		'button',
-		'center',
-		'compact',
-		'hide',
-		'ignoreRowClick',
-		'maxWidth',
-		'minWidth',
-		'omit',
-		'reorder',
-		'sortable',
-		'width'
-	];
-
-	// Filter out data table props first
-	if ( dataTableProps.includes( prop ) ) {
-		return false;
-	}
-
-	// Then use isPropValid for standard HTML validation
-	return isPropValid( prop );
-};
 
 export type {
 	BurstMenuPro,
@@ -139,11 +107,74 @@ const router = createRouter({
 	// Shared links are mounted under /burst-dashboard, but the route tree itself
 	// still uses app-relative paths such as /statistics and /story.
 	...( isSharedDashboardRoute ? { basepath: '/burst-dashboard' } : {}),
-	defaultPreload: 'viewport'
+
+	// Preload on hover/focus only. The remaining route chunks are fetched by
+	// preloadRemainingRoutes() once the current page has rendered, so the
+	// first paint does not compete with chunks for other pages.
+	defaultPreload: 'intent'
 
 	// Since we're using React Query, we don't want loader calls to ever be stale
 	// This will ensure that the loader is always called when the route is preloaded or visited
 	// defaultPreloadStaleTime: 0,
+});
+
+const ROUTE_COMPONENT_KEYS = [ 'component', 'errorComponent', 'pendingComponent', 'notFoundComponent' ] as const;
+
+// Routes without a menu entry, reached from within other pages.
+const NON_MENU_ROUTES = new Set([ 'page', 'table', 'story' ]);
+
+interface PreloadableComponent {
+	preload?: () => Promise<unknown>;
+}
+
+/**
+ * Fetches the code-split chunks of a route without running its loaders.
+ *
+ * @param route - The route whose component chunks should be fetched.
+ */
+const preloadRouteChunks = ( route: AnyRoute ): void => {
+	ROUTE_COMPONENT_KEYS.forEach( ( key ) => {
+		const component = route.options[key] as PreloadableComponent | undefined;
+		component?.preload?.().catch( () => {
+
+			// A failed preload is harmless: the chunk is fetched again on navigation.
+		});
+	});
+};
+
+/**
+ * Whether a route is reachable for the current user, so its chunk is worth
+ * fetching ahead of time. Menu routes are gated the same way their loaders are.
+ *
+ * @param route - The route to check.
+ * @return True if the route should be preloaded.
+ */
+const isRouteReachable = ( route: AnyRoute ): boolean => {
+	const segment = route.fullPath.split( '/' )[1] ?? '';
+	if ( NON_MENU_ROUTES.has( segment ) ) {
+		return true;
+	}
+	return shouldLoadRoute( '' === segment ? 'dashboard' : segment, normalizedMenus );
+};
+
+/**
+ * Fetches the chunks of every other reachable route once the current page has
+ * rendered, so navigation stays instant without slowing down the first paint.
+ */
+const preloadRemainingRoutes = (): void => {
+	const schedule = window.requestIdleCallback ?? ( ( callback: () => void ) => window.setTimeout( callback, 1000 ) );
+	schedule( () => {
+		Object.values( router.routesById ).forEach( ( route ) => {
+			if ( isRouteReachable( route ) ) {
+				preloadRouteChunks( route );
+			}
+		});
+	});
+};
+
+const unsubscribeFromFirstResolve = router.subscribe( 'onResolved', () => {
+	unsubscribeFromFirstResolve();
+	preloadRemainingRoutes();
 });
 
 const SkeletonBlock = ({ className }: { className: string }) => (
@@ -176,14 +207,12 @@ const PendingComponent = () => {
 
 const AppShell = () => {
 	return (
-		<StyleSheetManager shouldForwardProp={shouldForwardProp}>
-			<QueryClientProvider client={queryClient}>
-				<Suspense fallback={<PendingComponent />}>
-					<RouterProvider router={router} />
-				</Suspense>
-				<div id="modal-root" />
-			</QueryClientProvider>
-		</StyleSheetManager>
+		<QueryClientProvider client={queryClient}>
+			<Suspense fallback={<PendingComponent />}>
+				<RouterProvider router={router} />
+			</Suspense>
+			<div id="modal-root" />
+		</QueryClientProvider>
 	);
 };
 
@@ -198,12 +227,6 @@ const initApp = () => {
 	const app = (
 		<StrictMode>
 			<ThemeProvider>
-				{/*
-				StyleSheetManager prevents styled-components from forwarding the 'right' prop to DOM elements.
-				This is needed because react-data-table-component uses 'right' prop for column alignment,
-				which triggers warnings in styled-components v6 when passed to DOM elements.
-				See: getDataTableData.js line 267 where 'right' prop is set based on column alignment.
-			*/}
 				<AppShell />
 			</ThemeProvider>
 		</StrictMode>

@@ -12,6 +12,7 @@ use Burst\Admin\Statistics\Query_Shapes\From_Strategy_Registry;
 use Burst\Admin\Statistics\Query_Shapes\Parameter_Conversion_Shape;
 use Burst\Admin\Statistics\Query_Shapes\Referrer_Shape;
 use Burst\Admin\Statistics\Query_Shapes\Campaign_Conversion_Shape;
+use Burst\Admin\Statistics\Query_Shapes\Session_Grain_Shape;
 
 defined( 'ABSPATH' ) || die();
 
@@ -80,14 +81,39 @@ class Metric_Bootstrap {
 				'depends_on' => [],
 			]
 		);
-		Join_Registry::register(
+		// Goal completions are sparse relative to statistics, but a plain
+		// row-level join probes the goal table for every hit in range.
+		// Pre-filtering into a derived table (goal_statistics has no time
+		// column, so the date filter goes through the hit it belongs to) keeps
+		// that lookup structure small. Alias and column names are unchanged, so
+		// the goal_id baking in Statistics_Query::get_available_joins() and all
+		// metric expressions keep working as-is.
+		Join_Registry::register_dynamic(
 			'goals',
-			[
-				'table'      => 'burst_goal_statistics',
-				'on'         => 'statistics.ID = goals.statistic_id',
-				'type'       => 'LEFT',
-				'depends_on' => [],
-			]
+			function ( Statistics_Query $qd ): array {
+				global $wpdb;
+				$date_start = $qd->get_date_start();
+				$date_end   = $qd->get_date_end();
+
+				if ( $date_start <= 0 || $date_end <= 0 ) {
+					return [
+						'table'      => 'burst_goal_statistics',
+						'on'         => 'statistics.ID = goals.statistic_id',
+						'type'       => 'LEFT',
+						'depends_on' => [],
+					];
+				}
+
+				return [
+					'table'      => "(SELECT g.*
+			FROM {$wpdb->prefix}burst_goal_statistics g
+			JOIN {$wpdb->prefix}burst_statistics s_g ON g.statistic_id = s_g.ID
+			WHERE s_g.time BETWEEN {$date_start} AND {$date_end})",
+					'on'         => 'statistics.ID = goals.statistic_id',
+					'type'       => 'LEFT',
+					'depends_on' => [],
+				];
+			}
 		);
 	}
 
@@ -98,10 +124,11 @@ class Metric_Bootstrap {
 		$free_filters = [
 			'bounces'          => 'sessions.bounce',
 			'host'             => 'sessions.host',
-			'new_visitor'      => 'sessions.first_time_visit',
+			'new_visitor'      => 'new_visitor',
 			'page_url'         => 'statistics.page_url',
 			'referrer'         => 'sessions.referrer',
 			'browser'          => 'sessions.browser_id',
+			'first_time_visit' => 'sessions.first_time_visit',
 			'platform'         => 'sessions.platform_id',
 			'platform_id'      => 'sessions.platform_id',
 			'browser_id'       => 'sessions.browser_id',
@@ -124,6 +151,28 @@ class Metric_Bootstrap {
 	 */
 	private static function register_strategies(): void {
 		From_Strategy_Registry::register( [ 'datatable_statistics_referrers', 'datatable_sources_referrers' ], new Referrer_Shape() );
+		// Session-grain routing: these queries group on session/location dimensions
+		// and (in their default column sets) select only session-grain metrics, so
+		// they can skip the statistics scan entirely. The shape verifies per query
+		// that every metric, filter and group_by is session-grain and falls back
+		// otherwise — the map requests send a single visitors/sessions metric, and
+		// callers hitting the pageviews defaults fall back automatically.
+		// statistics_conversions is deliberately NOT registered: conversions is a
+		// sparse metric — the goals join drives from the tiny goal_statistics
+		// table, so the raw path is a cheap goal-driven join while session grain
+		// would scan every session in range (measured 3.6x slower on the
+		// performance dataset). Session grain only pays off for metrics that
+		// need the full session set anyway (visitors, sessions, bounce).
+		From_Strategy_Registry::register(
+			[
+				'datatable_sources_countries',
+				'statistics_bounces',
+				'statistics_get_session_data',
+				'statistics_map_data_world',
+				'statistics_map_data_country',
+			],
+			new Session_Grain_Shape()
+		);
 		From_Strategy_Registry::register( [ 'datatable_statistics_parameters' ], new Parameter_Conversion_Shape() );
 		From_Strategy_Registry::register( [ 'datatable_sources_campaigns' ], new Campaign_Conversion_Shape() );
 	}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { format, isSameDay, parseISO } from 'date-fns';
 import Icon from '@/utils/Icon';
 import { useDateRange } from '@/hooks/useDateRange';
@@ -58,6 +59,7 @@ const DateRangeTrigger = ({ range, display, isOpen, setIsOpen, disabled }) => (
 	</ReactPopover.Trigger>
 );
 
+// fallow-ignore-next-line complexity
 const DateRange = () => {
 	const userCanFilterDateRange = useShareableLinkStore( ( state ) => state.userCanFilterDateRange );
 
@@ -151,11 +153,13 @@ const DateRange = () => {
 
 	return (
 		<div className="ml-auto w-auto">
-			{isOpen && userCanFilterDateRange && (
+			{'undefined' !== typeof document && isOpen && userCanFilterDateRange && createPortal(
 				<div
-					className="fixed inset-0 bg-black/30"
-					style={{ zIndex: 100000 }}
-				/>
+					className="fixed inset-0 bg-black/30 z-overlay"
+					style={{ zIndex: 'var(--z-overlay)' }}
+					onClick={() => setIsOpen( false )}
+				/>,
+				document.body
 			)}
 			<div className="relative z-50">
 			<ReactPopover.Root
@@ -177,11 +181,11 @@ const DateRange = () => {
 						arrowPadding={10}
 						collisionPadding={16}
 						avoidCollisions={true}
-						id="burst-statistics"
-						style={{ zIndex: 100001 }}
+						className="burst z-modal"
+						style={{ zIndex: 'var(--z-modal)' }}
 					>
 						<div
-							className="rounded-lg border border-gray-200 bg-white shadow-md max-h-[75vh] lg:max-h-none overflow-y-auto w-full max-w-[calc(100vw-20px)] sm:max-w-none"
+							className="rounded-lg border border-gray-200 bg-white shadow-md max-h-[75vh] lg:max-h-none overflow-y-auto w-auto max-w-[calc(100vw-20px)] sm:max-w-none"
 							style={{ WebkitOverflowScrolling: 'touch' }}
 						>
 							<DateRangePicker

@@ -36,6 +36,7 @@ interface WizardStore {
 	setFormat: ( format: string ) => void;
 	setRecipients: ( recipients: string[]) => void;
 	setScheduled: ( schedule: boolean ) => void;
+	setEnabled: ( enabled: boolean ) => void;
 	setFrequency: ( frequency: FrequencyType ) => void;
 	setDayOfWeek: ( d?: DayOfWeekType ) => void;
 	setWeekOfMonth: ( n?: WeekOfMonthType ) => void;
@@ -98,6 +99,7 @@ const INITIAL_WIZARD_STATE: WizardState = {
 	content: DEFAULT_CLASSIC_BLOCKS,
 	recipients: [],
 	scheduled: true,
+	enabled: false,
 	frequency: 'weekly',
 	dayOfWeek: 'monday',
 	sendTime: '09:00',
@@ -423,6 +425,9 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 
 	setScheduled: ( scheduled: boolean ) =>
 		set( ( state ) => ({ wizard: { ...state.wizard, scheduled } }) ),
+
+	setEnabled: ( enabled: boolean ) =>
+		set( ( state ) => ({ wizard: { ...state.wizard, enabled } }) ),
 
 	setFrequency: ( frequency: FrequencyType ) =>
 		set( ( state ) => ({ wizard: { ...state.wizard, frequency } }) ),
