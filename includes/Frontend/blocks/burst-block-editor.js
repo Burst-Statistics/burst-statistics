@@ -240,7 +240,7 @@
 			const [ saving, setSaving ]         = useState( false );
 			const [ error, setError ]           = useState( '' );
 			const [ goalTitle, setGoalTitle ]   = useState( '' );
-			const [ goalType, setGoalType ]     = useState( attributes.burstGoalType || defaultType );
+			const [ goalType, setGoalType ]     = useState( isClickable ? ( attributes.burstGoalType || defaultType ) : 'views' );
 			const [ convMetric, setConvMetric ] = useState( 'visitors' );
 			const isTemplateOrPattern = ( function () {
 				try {
@@ -298,7 +298,7 @@
 
 			// Derive a default title from the block content and trigger type.
 			function defaultTitle( typeVal ) {
-				const currentType = typeVal || goalType || defaultType;
+				const currentType = isClickable ? ( typeVal || goalType || 'clicks' ) : 'views';
 				let text = '';
 				let typeLabel = '';
 				if ( name === 'core/button' ) {
@@ -406,7 +406,7 @@
 
 					// Seed state variables from the database record.
 					setGoalTitle( matchingGoal.title );
-					setGoalType( matchingGoal.type || defaultType );
+					setGoalType( isClickable ? ( matchingGoal.type || defaultType ) : 'views' );
 					setConvMetric( matchingGoal.conversion_metric || 'visitors' );
 					
 					let scope = 'website';
@@ -443,6 +443,9 @@
 			// ---- handlers ----
 
 			function handleToggle( enabled ) {
+				if ( saving ) {
+					return;
+				}
 				setError( '' );
 
 				if ( ! enabled ) {
@@ -467,7 +470,16 @@
 						} )
 						.catch( function ( err ) {
 							setSaving( false );
-							setError( err.message || __( 'An error occurred.', 'burst-statistics' ) );
+							if ( err && ( err.code === 'goal_not_found' || err.status === 404 || ( err.message && err.message.toLowerCase().includes( 'not found' ) ) ) ) {
+								deactivateBlockGoalUid( uid );
+								setAttributes( {
+									burstGoalActive: false,
+									burstGoalUid:    '',
+									burstGoalId:     0,
+								} );
+							} else {
+								setError( ( err && err.message ) || __( 'An error occurred.', 'burst-statistics' ) );
+							}
 						} );
 					return;
 				}
@@ -475,10 +487,13 @@
 				// Enable: reuse stored uid or generate a new one.
 				const targetUid = uid || generateUid();
 				const targetType = isClickable ? ( goalType || defaultType ) : 'views';
+				const targetTitle = ( isTitleCustomized && goalTitle ) ? goalTitle : defaultTitle( targetType );
+				setGoalTitle( targetTitle );
+				setGoalType( targetType );
 				setSaving( true );
 				upsertGoal( {
 					uid:               targetUid,
-					title:             goalTitle || defaultTitle( targetType ),
+					title:             targetTitle,
 					type:              targetType,
 					status:            'active',
 					conversion_metric: convMetric,
@@ -495,7 +510,10 @@
 							activateBlockGoalUid( targetUid );
 
 							// Append/replace in localized goals list.
-							if ( response.goal && settings.goals ) {
+							if ( response.goal ) {
+								if ( ! settings.goals ) {
+									settings.goals = [];
+								}
 								const idx = settings.goals.findIndex( function ( g ) { return g.uid === targetUid; } );
 								const formattedGoal = {
 									id:                newId,
@@ -538,7 +556,9 @@
 			}
 
 			function handleSaveFields() {
-				if ( ! isTracking ) return;
+				if ( ! isTracking || ! uid || saving ) {
+					return;
+				}
 				setError( '' );
 				setSaving( true );
 				const targetType = isClickable ? ( goalType || defaultType ) : 'views';
@@ -619,7 +639,7 @@
 								target: '_blank',
 							}
 						]
-					}, __( 'You have reached the limit of 3 goals in the Free version.', 'burst-statistics' ) )
+					}, __( 'You have reached the limit of 3 active goals in the Free version.', 'burst-statistics' ) )
 				);
 			}
 

@@ -1,6 +1,7 @@
 <?php
 namespace Burst\Admin\Statistics;
 
+use Burst\Admin\Statistics\Query_Shapes\Session_Grain_Shape;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
@@ -31,7 +32,10 @@ class Statistics_Data {
 		$qd = Statistics_Query::create( 'live_traffic_data' )
 			->date_range( $time_start_30m, $now + HOUR_IN_SECONDS )
 			->with( 'sessions' )
-			->select_raw( 'time+time_on_page / 1000 AS active_time, sessions.referrer AS utm_source, page_url, time, time_on_page, uid, page_id' )
+			// uid_id must be qualified: burst_sessions also carries a uid_id
+			// column, so a bare uid_id is ambiguous in any query that joins
+			// sessions. The uid alias is the REST/JS contract (LiveTraffic).
+			->select_raw( 'time+time_on_page / 1000 AS active_time, sessions.referrer AS utm_source, page_url, time, time_on_page, statistics.uid_id AS uid, page_id' )
 			->order_by( 'active_time DESC' )
 			->limit( 100 );
 
@@ -106,7 +110,7 @@ class Statistics_Data {
 		$qd         = Statistics_Query::create( 'live_visitors_data' )
 			->date_range( $time_start, $now + HOUR_IN_SECONDS )
 			->with( 'sessions' )
-			->select_raw( 'COUNT(DISTINCT(uid))' )
+			->select_raw( 'COUNT(DISTINCT(statistics.uid_id))' )
 			->where_raw( '( (time + time_on_page / 1000 + %d + %d) > %d)', [ $on_page_offset, $exit_margin, $now ] );
 		$live_value = $qd->fetch_var();
 
@@ -333,6 +337,26 @@ class Statistics_Data {
 		$date_modifiers = $qd->get_date_modifiers();
 		$datasets       = [];
 
+		// The default day-grain chart is the heaviest standard query, and its
+		// per-day distinct visitor counts already sit precomputed in the
+		// bitmap store (one integer per closed day, plus a live today count).
+		// Serve the visitors series from there when possible and drop the
+		// metric from the SQL select — the per-period COUNT(DISTINCT)
+		// aggregation is the dominant cost of the scan. Only the unfiltered
+		// day-grain view qualifies: per-day uniques cannot be summed into
+		// week/month buckets, and filtered variants stay on SQL.
+		$bitmap_series = null;
+		if ( 'day' === $date_modifiers['interval'] && empty( $args['filters'] ) && in_array( 'visitors', $metrics, true ) ) {
+			$bitmaps       = new Visitor_Bitmaps();
+			$bitmap_start  = microtime( true );
+			$bitmap_series = $bitmaps->get_visitors_by_day( (int) $args['date_start'], (int) $args['date_end'] );
+			// Only the null-ness is recorded (serve vs fallback + reason).
+			$this->record_bitmap_serve( $bitmaps, null === $bitmap_series ? null : count( $bitmap_series ), microtime( true ) - $bitmap_start );
+			if ( null !== $bitmap_series ) {
+				$qd->select( array_values( array_diff( $metrics, [ 'visitors' ] ) ) );
+			}
+		}
+
 		// Build one dataset entry per metric.
 		foreach ( $metrics as $metrics_key => $metric ) {
 			$datasets[ $metrics_key ] = [
@@ -366,13 +390,28 @@ class Statistics_Data {
 			$date = $this->advance_period_timestamp( $date, $date_modifiers['interval'] );
 		}
 
-		$hits = $qd->fetch( ARRAY_A );
+		// The select can be empty when the bitmap series covered the only
+		// requested metric — no SQL runs at all then.
+		$hits = [] === $qd->get_select() ? [] : $qd->fetch( ARRAY_A );
 
 		foreach ( $hits as $hit ) {
 			$period = $hit['period'];
 			foreach ( $metrics as $metric_key => $metric_name ) {
 				if ( isset( $datasets[ $metric_key ]['data'][ $period ] ) && isset( $hit[ $metric_name ] ) ) {
 					$datasets[ $metric_key ]['data'][ $period ] = $hit[ $metric_name ];
+				}
+			}
+		}
+
+		// Day-interval period keys are 'Y-m-d' (see the intervals table in
+		// get_insights_date_modifiers()), matching the series keys directly.
+		if ( null !== $bitmap_series ) {
+			$visitors_key = array_search( 'visitors', $metrics, true );
+			if ( false !== $visitors_key ) {
+				foreach ( $bitmap_series as $day => $day_visitors ) {
+					if ( isset( $datasets[ $visitors_key ]['data'][ $day ] ) ) {
+						$datasets[ $visitors_key ]['data'][ $day ] = $day_visitors;
+					}
 				}
 			}
 		}
@@ -479,6 +518,19 @@ class Statistics_Data {
 		$comp_metrics        = $qd_compare->get_select();
 		$comp_date_modifiers = $qd_compare->get_date_modifiers();
 
+		// Same bitmap route as the main series: an unfiltered day-grain
+		// visitors series for the shifted window reads precomputed per-day
+		// counts instead of a COUNT(DISTINCT) scan. A shifted window that is
+		// not day-aligned (e.g. a DST-offset year-over-year start) simply
+		// falls back to SQL inside the store.
+		$comp_bitmap_series = null;
+		if ( 'day' === $comp_date_modifiers['interval'] && empty( $filters ) && in_array( 'visitors', $comp_metrics, true ) ) {
+			$comp_bitmap_series = ( new Visitor_Bitmaps() )->get_visitors_by_day( $compare_start, $compare_end );
+			if ( null !== $comp_bitmap_series ) {
+				$qd_compare->select( array_values( array_diff( $comp_metrics, [ 'visitors' ] ) ) );
+			}
+		}
+
 		$timezone_offset = self::get_wp_timezone_offset();
 		$comp_date       = $comp_date_start + $timezone_offset;
 		$comp_timestamps = [];
@@ -505,13 +557,22 @@ class Statistics_Data {
 			$comp_date = $this->advance_period_timestamp( $comp_date, $comp_date_modifiers['interval'] );
 		}
 
-		$hits = $qd_compare->fetch( ARRAY_A );
+		$hits = [] === $qd_compare->get_select() ? [] : $qd_compare->fetch( ARRAY_A );
 
 		foreach ( $hits as $hit ) {
 			$period = $hit['period'];
 			foreach ( $comp_metrics as $metric ) {
 				if ( isset( $comp_data[ $metric ][ $period ] ) && isset( $hit[ $metric ] ) ) {
 					$comp_data[ $metric ][ $period ] = $hit[ $metric ];
+				}
+			}
+		}
+
+		// Day-interval period keys are 'Y-m-d', matching the series keys.
+		if ( null !== $comp_bitmap_series && isset( $comp_data['visitors'] ) ) {
+			foreach ( $comp_bitmap_series as $day => $day_visitors ) {
+				if ( isset( $comp_data['visitors'][ $day ] ) ) {
+					$comp_data['visitors'][ $day ] = $day_visitors;
 				}
 			}
 		}
@@ -617,6 +678,13 @@ class Statistics_Data {
 		$current  = $this->get_data( [ 'visitors', 'pageviews', 'sessions', 'first_time_visitors', 'avg_time_on_page', 'bounce_rate' ], $start, $end, $filters );
 		$previous = $this->get_data( [ 'pageviews', 'sessions', 'visitors', 'avg_time_on_page', 'bounce_rate' ], $prev['start'], $prev['end'], $filters );
 
+		$current_conversions  = 0;
+		$previous_conversions = 0;
+		if ( ! empty( $args['include_page_metrics'] ) && isset( $filters['page_url'] ) ) {
+			$current_conversions  = $this->get_conversions( $start, $end, $filters );
+			$previous_conversions = $this->get_conversions( $prev['start'], $prev['end'], $filters );
+		}
+
 		return [
 			'current'  => [
 				'pageviews'           => (int) $current['pageviews'],
@@ -626,6 +694,7 @@ class Statistics_Data {
 				'avg_time_on_page'    => (int) $current['avg_time_on_page'],
 				'bounced_sessions'    => $this->get_bounces( $start, $end, $filters ),
 				'bounce_rate'         => $current['bounce_rate'],
+				'conversions'         => $current_conversions,
 			],
 			'previous' => [
 				'pageviews'        => (int) $previous['pageviews'],
@@ -634,6 +703,7 @@ class Statistics_Data {
 				'avg_time_on_page' => (int) $previous['avg_time_on_page'],
 				'bounced_sessions' => $this->get_bounces( $prev['start'], $prev['end'], $filters ),
 				'bounce_rate'      => $previous['bounce_rate'],
+				'conversions'      => $previous_conversions,
 			],
 		];
 	}
@@ -723,13 +793,85 @@ class Statistics_Data {
 	 * @return array<string, int|string|null> Associative array of selected metrics with their values.
 	 */
 	public function get_data( array $select, int $start, int $end, array $filters ): array {
-		$qd     = Statistics_Query::create( 'statistics_get_data' )
-			->date_range( $start, $end )
-			->select( $select )
-			->filters( $filters );
-		$result = $qd->fetch( 'ARRAY_A' );
+		// Visitors over day-aligned ranges come from the exact visitor bitmaps
+		// when available (unfiltered, or a single device/browser/platform
+		// filter): OR-merged per-day visitor sets plus a live "today" tail,
+		// instead of a COUNT(DISTINCT) scan. This counts visitors active in the
+		// range (the GA convention); sessions/bounce metrics below use the
+		// session-start convention — cross-metric, both internally consistent.
+		$bitmap_visitors = null;
+		if ( in_array( 'visitors', $select, true ) ) {
+			$bitmaps         = new Visitor_Bitmaps();
+			$bitmap_start    = microtime( true );
+			$bitmap_visitors = $bitmaps->get_visitors( $start, $end, $filters );
+			$this->record_bitmap_serve( $bitmaps, $bitmap_visitors, microtime( true ) - $bitmap_start );
+			if ( null !== $bitmap_visitors ) {
+				$select = array_values( array_diff( $select, [ 'visitors' ] ) );
+				if ( empty( $select ) ) {
+					return [ 'visitors' => $bitmap_visitors ];
+				}
+			}
+		}
 
-		return $result[0] ?? array_fill_keys( $select, 0 );
+		// Session-level metrics (sessions, visitors, bounce_rate, ...) are served
+		// at session grain when eligible, so they share one counting convention
+		// with the bounces KPI in the same payload; hit-level metrics (pageviews,
+		// avg_time_on_page) stay on the statistics table. When the session query
+		// is not eligible (e.g. a page_url filter), everything runs as one raw
+		// query and both conventions collapse to hit-in-range anyway.
+		$session_select = array_values( array_intersect( $select, Session_Grain_Shape::SESSION_GRAIN_METRICS ) );
+		$hit_select     = array_values( array_diff( $select, $session_select ) );
+
+		$result = null;
+		if ( ! empty( $session_select ) ) {
+			$session_qd = Statistics_Query::create( 'statistics_get_session_data' )
+				->date_range( $start, $end )
+				->select( $session_select )
+				->filters( $filters );
+
+			if ( Session_Grain_Shape::query_is_session_grain( $session_qd ) ) {
+				$session_row = $session_qd->fetch( 'ARRAY_A' )[0] ?? array_fill_keys( $session_select, 0 );
+
+				if ( empty( $hit_select ) ) {
+					$result = $session_row;
+				} else {
+					$hit_qd  = Statistics_Query::create( 'statistics_get_data' )
+						->date_range( $start, $end )
+						->select( $hit_select )
+						->filters( $filters );
+					$hit_row = $hit_qd->fetch( 'ARRAY_A' )[0] ?? array_fill_keys( $hit_select, 0 );
+					$result  = array_merge( $hit_row, $session_row );
+				}
+			}
+		}
+
+		if ( null === $result ) {
+			$qd     = Statistics_Query::create( 'statistics_get_data' )
+				->date_range( $start, $end )
+				->select( $select )
+				->filters( $filters );
+			$rows   = $qd->fetch( 'ARRAY_A' );
+			$result = $rows[0] ?? array_fill_keys( $select, 0 );
+		}
+
+		if ( null !== $bitmap_visitors ) {
+			$result['visitors'] = $bitmap_visitors;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Record whether the visitors KPI was served from the bitmap store or fell
+	 * back to the SQL path. Thin wrapper around the store's own
+	 * Visitor_Bitmaps::record_serve(), which holds the write logic.
+	 *
+	 * @param Visitor_Bitmaps $bitmaps  The reader that just answered (or refused).
+	 * @param int|null        $visitors The bitmap answer, null on fallback.
+	 * @param float           $duration Seconds spent in get_visitors().
+	 */
+	private function record_bitmap_serve( Visitor_Bitmaps $bitmaps, ?int $visitors, float $duration ): void {
+		$bitmaps->record_serve( $visitors, $duration );
 	}
 
 	/**

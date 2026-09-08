@@ -1,5 +1,5 @@
-/* Dark mode variant: activated when #burst-statistics has the .dark class. */
-@custom-variant dark (&:is(#burst-statistics.dark *));
+/* Dark mode variant: activated when #burst-statistics, #burst-mainwp, or .burst has the .dark class. */
+@custom-variant dark (&:is(#burst-statistics.dark *, #burst-mainwp.dark *, .burst.dark *));
 
 @source "../**/*.{js,jsx,ts,tsx}";
 
@@ -27,21 +27,34 @@
 	--z-index-sticky: 100;
 	--z-index-dropdown: 1000;
 	--z-index-popover: 2000;
-	--z-index-overlay: 10000;
-	--z-index-drawer: 10010;
-	--z-index-modal: 11000;
-	--z-index-toast: 12000;
+	--z-index-overlay: 100000;
+	--z-index-drawer: 100010;
+	--z-index-modal: 100020;
+	--z-index-toast: 100050;
 	--z-index-max: 150000;
 }
 
-#burst-statistics {
+#burst-statistics,
+#burst-mainwp,
+.burst {
 	@import "tailwindcss";
 	@import "./base/index.css";
 }
-#burst-statistics.burst {
+#burst-statistics.burst:not([data-radix-popper-content-wrapper] *):not([role="dialog"]),
+#burst-mainwp.burst:not([data-radix-popper-content-wrapper] *):not([role="dialog"]) {
 	container-type: inline-size;
 }
-.mainwp-ui #burst-statistics {
+[data-radix-popper-content-wrapper] *,
+[role="dialog"],
+.burst[role="dialog"] {
+	container-type: normal !important;
+}
+.burst-date-range-picker {
+	width: max-content;
+	max-width: 100%;
+}
+.mainwp-ui #burst-statistics,
+.mainwp-ui #burst-mainwp {
 	margin-left: 0 !important;
 }
 @import "./utilities/index.css";

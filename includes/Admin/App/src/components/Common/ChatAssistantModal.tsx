@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import clsx from 'clsx';
 import { Close } from '@radix-ui/react-dialog';
 import * as Select from '@radix-ui/react-select';
@@ -9,26 +9,15 @@ import remarkGfm from 'remark-gfm';
 import Modal from '@/components/Common/Modal';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import Tooltip from '@/components/Common/Tooltip';
-import useSettingsData from '@/hooks/useSettingsData';
+import { useChatAvailability } from '@/hooks/useChatAvailability';
 import Icon from '@/utils/Icon';
 import {
-	getChatStatus,
 	getLocalStorage,
 	getAvailableModels,
 	postChatMessage,
 	setLocalStorage
 } from '@/utils/api';
 import { formatDateAndTime } from '@/utils/formatting';
-
-type ChatAvailability = {
-	enabled?: boolean;
-	abilities_enabled?: boolean;
-	ai_client_loaded?: boolean;
-	has_configured_provider?: boolean;
-
-	/** Pre-formatted connector approval names that still need to be granted. */
-	missing_approvals?: string[];
-};
 
 type AiModel = {
 	id: string;
@@ -65,57 +54,6 @@ const LOADING_STEPS = [
 
 const asString = ( value: unknown ): string => {
 	return 'string' === typeof value ? value : '';
-};
-
-// fallow-ignore-next-line complexity
-const boolFromSetting = ( value: unknown, fallback = true ): boolean => {
-	if ( 'boolean' === typeof value ) {
-		return value;
-	}
-	if ( 'number' === typeof value ) {
-		return 1 === value;
-	}
-	if ( 'string' === typeof value ) {
-		if ([ '1', 'true', 'yes', 'on' ].includes( value.toLowerCase() ) ) {
-			return true;
-		}
-		if ([ '0', 'false', 'no', 'off' ].includes( value.toLowerCase() ) ) {
-			return false;
-		}
-	}
-	return fallback;
-};
-
-// fallow-ignore-next-line complexity
-const parseExplicitBooleanSetting = ( value: unknown ): boolean | null => {
-	if ( 'boolean' === typeof value ) {
-		return value;
-	}
-
-	if ( 'number' === typeof value ) {
-		if ( 1 === value ) {
-			return true;
-		}
-
-		if ( 0 === value ) {
-			return false;
-		}
-
-		return null;
-	}
-
-	if ( 'string' === typeof value ) {
-		const normalized = value.toLowerCase();
-		if ([ '1', 'true', 'yes', 'on' ].includes( normalized ) ) {
-			return true;
-		}
-
-		if ([ '0', 'false', 'no', 'off' ].includes( normalized ) ) {
-			return false;
-		}
-	}
-
-	return null;
 };
 
 const getPartChannel = ( part: Record<string, unknown> ): string => {
@@ -233,38 +171,6 @@ const isSessionBlank = ( session: ChatSession ): boolean => {
 	return 0 === sanitizeHistoryForStorage( session.history ).length;
 };
 
-// fallow-ignore-next-line complexity
-const normalizeChatStatus = ( status: unknown ): ChatAvailability => {
-	if ( ! status || 'object' !== typeof status ) {
-		return {};
-	}
-
-	const typed = status as Record<string, unknown>;
-	const hasOwn = ( key: string ): boolean =>
-		Object.prototype.hasOwnProperty.call( typed, key );
-
-	const rawMissing = typed.missing_approvals;
-	const missingApprovals = Array.isArray( rawMissing ) ?
-		rawMissing.map( ( item ) => asString( item ) ).filter( ( item ) => '' !== item ) :
-		[];
-
-	return {
-		enabled: hasOwn( 'enabled' ) ?
-			boolFromSetting( typed.enabled, false ) :
-			undefined,
-		abilities_enabled: hasOwn( 'abilities_enabled' ) ?
-			boolFromSetting( typed.abilities_enabled, true ) :
-			undefined,
-		ai_client_loaded: hasOwn( 'ai_client_loaded' ) ?
-			boolFromSetting( typed.ai_client_loaded, false ) :
-			undefined,
-		has_configured_provider: hasOwn( 'has_configured_provider' ) ?
-			boolFromSetting( typed.has_configured_provider, false ) :
-			undefined,
-		missing_approvals: missingApprovals
-	};
-};
-
 const buildTimeline = (
 	history: Array<Record<string, unknown>>
 ): TimelineItem[] => {
@@ -293,10 +199,14 @@ const buildTimeline = (
 	return output;
 };
 
+type ChatAssistantModalProps = {
+	isOpen: boolean;
+	onClose: () => void;
+};
+
 // fallow-ignore-next-line complexity
-const ChatAssistantModal = () => {
-	const { getValue } = useSettingsData();
-	const [ isOpen, setIsOpen ] = useState( false );
+const ChatAssistantModal = ({ isOpen, onClose }: ChatAssistantModalProps ) => {
+	const { isDisabled } = useChatAvailability();
 	const [ sessions, setSessions ] = useState<ChatSession[]>([]);
 	const [ activeSessionId, setActiveSessionId ] = useState( '' );
 	const [ prompt, setPrompt ] = useState( '' );
@@ -338,8 +248,9 @@ const ChatAssistantModal = () => {
 	}, [ availableModels ]);
 
 	const [ selectedModel, setSelectedModel ] = useState<string>(
-		() => asString( getLocalStorage( MODEL_STORAGE_KEY, '' ) )
+		() => getLocalStorage( MODEL_STORAGE_KEY, '' ) || ''
 	);
+	const [ isModelSelectOpen, setIsModelSelectOpen ] = useState( false );
 
 	const suggestions = useMemo( () => [
 		{
@@ -360,27 +271,9 @@ const ChatAssistantModal = () => {
 		}
 	], []);
 
-	// Single source of truth for chat status: one cached REST call, deduped,
-	// refetched at most once per 60s. Replaces three useEffect-driven manual
-	// refresh calls plus a chatStatus → abilitiesEnabled feedback loop.
-	// The REST endpoint is the only source — PHP does not preload via localize_script.
-	const { data: chatStatus = {} as ChatAvailability } = useQuery<ChatAvailability>({
-		queryKey: [ 'chat-status' ],
-		queryFn: async() => normalizeChatStatus( await getChatStatus() ),
-		staleTime: 60_000,
-		refetchOnWindowFocus: false
-	});
-
 	const messagesContainerRef = useRef<HTMLDivElement | null>( null );
 	const scrollRef = useRef<HTMLDivElement | null>( null );
 	const textareaRef = useRef<HTMLTextAreaElement | null>( null );
-	const explicitAbilitiesSetting = parseExplicitBooleanSetting(
-		getValue( 'enable_abilities_api' )
-	);
-	const abilitiesEnabled =
-		null !== explicitAbilitiesSetting ?
-		explicitAbilitiesSetting :
-		( chatStatus.abilities_enabled ?? false );
 
 	const scrollToBottom = ( behavior: ScrollBehavior = 'smooth' ) => {
 		if ( messagesContainerRef.current ) {
@@ -499,55 +392,6 @@ const ChatAssistantModal = () => {
 			window.clearInterval( intervalId );
 		};
 	}, [ isSending ]);
-
-	// fallow-ignore-next-line complexity
-	const disabledReason = useMemo( () => {
-		if ( ! abilitiesEnabled ) {
-			return __(
-				'Chat is disabled because Abilities API is switched off in Burst settings.',
-				'burst-statistics'
-			);
-		}
-
-		if ( false === chatStatus.ai_client_loaded ) {
-			return __(
-				'To enable AI chat, please install and configure the WordPress AI plugin.',
-				'burst-statistics'
-			);
-		}
-
-		if ( false === chatStatus.has_configured_provider ) {
-			return __(
-				'No AI connector is configured. Install the WordPress AI plugin and connect a provider to use chat.',
-				'burst-statistics'
-			);
-		}
-
-		const missingApprovals = chatStatus.missing_approvals ?? [];
-		if ( 0 < missingApprovals.length ) {
-			return sprintf(
-
-				/* translators: %s is a comma-separated list of approval names (e.g. "Burst, WordPress AI, OpenAI Provider"). */
-				__(
-					'To enable AI chat, please go to Tools > Connector Approvals and approve the following: %s.',
-					'burst-statistics'
-				),
-				missingApprovals.join( ', ' )
-			);
-		}
-
-		if ( false === chatStatus.enabled ) {
-			return __( 'Chat is currently unavailable.', 'burst-statistics' );
-		}
-
-		return '';
-	}, [ abilitiesEnabled, chatStatus ]);
-
-	const isDisabled = Boolean( disabledReason );
-
-	if ( ! abilitiesEnabled ) {
-		return null;
-	}
 
 	const ensureActiveSession = (): ChatSession => {
 		if ( activeSession ) {
@@ -1188,7 +1032,10 @@ const ChatAssistantModal = () => {
 												const finalVal = '__default__' === val ? '' : val;
 												setSelectedModel( finalVal );
 												setLocalStorage( MODEL_STORAGE_KEY, finalVal );
+												setIsModelSelectOpen( false );
 											}}
+											open={isModelSelectOpen}
+											onOpenChange={setIsModelSelectOpen}
 										>
 											<Select.Trigger
 												id="burst-chat-model-select"
@@ -1213,12 +1060,17 @@ const ChatAssistantModal = () => {
 												</Select.Icon>
 											</Select.Trigger>
 
-											<Select.Portal container={document.getElementById( 'modal-root' )}>
-												<Select.Content
-													className="bg-white text-text-black border border-gray-200 rounded-lg shadow-lg z-99999 max-h-[300px] overflow-y-auto min-w-[200px]"
-													position="popper"
-													sideOffset={5}
-												>
+											<Select.Content
+												className="burst z-max"
+												style={{ zIndex: 'var(--z-max)' }}
+												position="popper"
+												sideOffset={5}
+												onPointerDownOutside={( e ) => {
+													e.preventDefault();
+													setIsModelSelectOpen( false );
+												}}
+											>
+												<div className="bg-white text-text-black border border-gray-200 rounded-lg shadow-lg max-h-[300px] overflow-y-auto min-w-[200px]">
 													<Select.Viewport className="p-1">
 														<Select.Item
 															value="__default__"
@@ -1258,8 +1110,8 @@ const ChatAssistantModal = () => {
 															</Select.Group>
 														) )}
 													</Select.Viewport>
-												</Select.Content>
-											</Select.Portal>
+												</div>
+											</Select.Content>
 										</Select.Root>
 									</div>
 								)}
@@ -1326,27 +1178,9 @@ const ChatAssistantModal = () => {
 
 	return (
 		<>
-			<Tooltip content={isDisabled ? disabledReason : ''}>
-				<button
-					type="button"
-					onClick={() => {
-						if ( ! isDisabled ) {
-							setIsOpen( true );
-						}
-					}}
-					disabled={isDisabled}
-					className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm text-text-gray transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
-				>
-					<Icon name="chat" size={16} color="gray" />
-					<span className="max-xxs:hidden">
-						{__( 'Chat', 'burst-statistics' )}
-					</span>
-				</button>
-			</Tooltip>
-
 			<Modal
 				isOpen={isOpen}
-				onClose={() => setIsOpen( false )}
+				onClose={onClose}
 				title={__( 'Burst AI chat', 'burst-statistics' )}
 				subtitle={__(
 					'Ask questions and revisit past chats.',

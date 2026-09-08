@@ -49,6 +49,22 @@ module.exports = {
   ],
   optimization: {
     ...defaultConfig.optimization,
-    minimize: true // Enable minification for production
+    minimize: true, // Enable minification for production
+    splitChunks: {
+      ...defaultConfig.optimization.splitChunks,
+      cacheGroups: {
+        ...defaultConfig.optimization.splitChunks.cacheGroups,
+
+        // wp-scripts disables the default group, so modules from src/ used by
+        // several route chunks were copied into each of them. Share them.
+        shared: {
+          chunks: 'async',
+          minChunks: 2,
+          minSize: 30000,
+          priority: -20,
+          reuseExistingChunk: true
+        }
+      }
+    }
   }
 };

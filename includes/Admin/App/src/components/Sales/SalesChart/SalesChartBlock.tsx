@@ -53,21 +53,21 @@ export function SalesChartBlock(): JSX.Element {
 	const showForecast = useSalesChartStore( ( state ) => state.showForecast );
 	const toggleForecast = useSalesChartStore( ( state ) => state.toggleForecast );
 
-	// While the forecast is shown, chart and forecast share one bucket
-	// granularity (months, or years for selections beyond two years) and the
-	// end date is anchored to the last complete period — also when the
-	// picked range ends earlier — so the forecast always starts at the
-	// current period and never projects periods that are already measured.
-	// Without the forecast the chart keeps its adaptive resolution and the
-	// picked range.
-	const forecastRange = getForecastRange( startDate );
+	// While the forecast is shown, the chart pins itself to the forecast
+	// view's fixed window — the last 12 complete months, bucketed per
+	// month — regardless of the picked range, so the projection is always
+	// exactly the next 12 months (starting at the current month) and the
+	// comparison line the previous 12. Without the forecast the chart keeps
+	// its adaptive resolution and the picked range.
+	const forecastRange = getForecastRange();
 	const groupBy = showForecast ? forecastRange.groupBy : 'auto';
+	const chartStartDate = showForecast ? forecastRange.startDate : startDate;
 	const chartEndDate = showForecast ? forecastRange.endDate : endDate;
 
 	const chartQuery = useQuery<SalesChartData>({
-		queryKey: [ 'salesChart', startDate, chartEndDate, range, filters, chartMode, groupBy, showComparison ? compareMode : '' ],
+		queryKey: [ 'salesChart', chartStartDate, chartEndDate, range, filters, chartMode, groupBy, showComparison ? compareMode : '' ],
 		queryFn: () => getSalesChartData({
-			startDate,
+			startDate: chartStartDate,
 			endDate: chartEndDate,
 			range,
 			filters,
@@ -130,7 +130,7 @@ export function SalesChartBlock(): JSX.Element {
 		0 < ( forecastData?.rows.length ?? 0 );
 
 	return (
-		<Block className="row-span-1 @lg:col-span-12 group/root">
+		<Block className="row-span-1 @lg:col-span-12 @xl:col-span-9 group/root">
 			<BlockHeading
 				title={
 					<MetricInfo metricKey="sales_forecast_chart" side="bottom">
@@ -154,7 +154,7 @@ export function SalesChartBlock(): JSX.Element {
 								{ hasChartData && (
 									<ForecastToggle
 										active={ showForecast }
-										label={ __( 'Forecast', 'burst-statistics' ) }
+										label={ __( 'Next 12 months', 'burst-statistics' ) }
 										onClick={ toggleForecast }
 									/>
 								) }

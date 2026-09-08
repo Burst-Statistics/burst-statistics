@@ -19,50 +19,9 @@ class Sync {
 	use Helper;
 
 	/**
-	 * Resolved Search Console property (siteUrl).
+	 * Version 2 rebuilds the full retained history with the 5,000-row request limit.
 	 */
-	private const PROPERTY_OPTION = 'burst_gsc_property';
-
-	/**
-	 * Whether the resolved property exactly matches the configured site URL.
-	 */
-	private const PROPERTY_EXACT_OPTION = 'burst_gsc_property_exact';
-
-	/**
-	 * Current property-selection state: matched, none, or paused.
-	 */
-	private const PROPERTY_STATUS_OPTION = 'burst_gsc_property_status';
-
-	/**
-	 * Flags that property resolution has completed at least one API attempt.
-	 */
-	private const PROPERTY_CHECKED_OPTION = 'burst_gsc_property_checked';
-
-	/**
-	 * Timestamp after which an unresolved property may be looked up again.
-	 */
-	private const PROPERTY_RETRY_OPTION = 'burst_gsc_property_retry_at';
-
-	/**
-	 * The site URL the stored data was last fetched for. When it changes (e.g.
-	 * BURST_GSC_SITE_URL is set or edited), the data is cleared and re-fetched.
-	 */
-	private const SITE_URL_OPTION = 'burst_gsc_site_url';
-
-	/**
-	 * Sync state: { newest, cursor, backfill_done, last_synced, last_run }.
-	 */
-	private const STATE_OPTION = 'burst_gsc_sync_state';
-
-	/**
-	 * Marks that this site has backfilled the full retained Search Console window.
-	 */
-	private const BACKFILL_SCOPE_OPTION = 'burst_gsc_backfill_scope';
-
-	/**
-	 * Increment when the historical backfill scope changes.
-	 */
-	private const BACKFILL_SCOPE = 'retained_history_v1';
+	private const DATA_VERSION = 2;
 
 	/**
 	 * Search Console data is delayed ~2 days, so this is the most recent day worth requesting.
@@ -101,6 +60,11 @@ class Sync {
 	private Search_Terms_Store $store;
 
 	/**
+	 * Search Console connection and synchronization state.
+	 */
+	private State_Store $state;
+
+	/**
 	 * Persistent, redacted diagnostic event store.
 	 */
 	private Diagnostic_Logs $logs;
@@ -113,6 +77,7 @@ class Sync {
 		$this->client      = new Client( $this->token_store );
 		$this->store       = new Search_Terms_Store();
 		$this->logs        = new Diagnostic_Logs();
+		$this->state       = new State_Store();
 	}
 
 	/**
@@ -144,7 +109,7 @@ class Sync {
 	 * @return array Diagnostic information for the current site, with no token or query text.
 	 */
 	public function diagnostics(): array {
-		$property = (string) get_option( self::PROPERTY_OPTION, '' );
+		$property = $this->state->property();
 		$payload  = [
 			'status'           => $this->token_store->status(),
 			'is_multisite'     => is_multisite(),
@@ -152,10 +117,10 @@ class Sync {
 			'site_url'         => $this->site_url(),
 			'site_url_source'  => defined( 'BURST_GSC_SITE_URL' ) && '' !== BURST_GSC_SITE_URL ? 'BURST_GSC_SITE_URL' : 'home_url',
 			'stored_property'  => $property,
-			'property_checked' => (bool) get_option( self::PROPERTY_CHECKED_OPTION, false ),
+			'property_checked' => $this->state->property_checked(),
 			'property_status'  => $this->property_status(),
 			'property_scope'   => '' === $property ? 'not_available' : ( $this->property_is_exact( $property ) ? 'exact' : 'broader' ),
-			'property_retry'   => (int) get_option( self::PROPERTY_RETRY_OPTION, 0 ),
+			'property_retry'   => $this->state->property_retry_at(),
 			'sync_state'       => $this->get_state(),
 			'next_sync'        => (int) wp_next_scheduled( 'burst_every_hour' ),
 		];
@@ -196,9 +161,7 @@ class Sync {
 		}
 
 		$this->store->maybe_install();
-		$this->ensure_retained_history_backfill();
-
-		$state = $this->get_state();
+		$state = $this->maybe_reset_site_terms_backfill( $this->get_state() );
 		if ( empty( $state['backfill_done'] ) ) {
 			$this->run_backfill( $property, $state, $page_filter );
 			return;
@@ -240,7 +203,7 @@ class Sync {
 			}
 			if ( ! $this->sync_date( $property, $cursor, $page_filter ) ) {
 				// Transient failure: stop and retry this cursor next hour.
-				if ( '' === (string) get_option( self::PROPERTY_OPTION, '' ) ) {
+				if ( '' === $this->state->property() ) {
 					return;
 				}
 				break;
@@ -358,20 +321,32 @@ class Sync {
 	}
 
 	/**
+	 * Reset the site-wide cursor once so historical 1,000-row days are rebuilt.
+	 */
+	private function maybe_reset_site_terms_backfill( array $state ): array {
+		if ( self::DATA_VERSION === $this->state->data_version() ) {
+			return $state;
+		}
+
+		$this->state->reset_sync_for_data_version( self::DATA_VERSION );
+		return [];
+	}
+
+	/**
 	 * Resolve and cache the most specific property containing this site.
 	 */
 	private function resolve_property(): string {
 		$this->maybe_reset_for_site_change();
 
-		if ( get_option( self::PROPERTY_CHECKED_OPTION ) ) {
-			$retry_at      = (int) get_option( self::PROPERTY_RETRY_OPTION, 0 );
-			$status_stored = null !== get_option( self::PROPERTY_STATUS_OPTION, null );
+		if ( $this->state->property_checked() ) {
+			$retry_at      = $this->state->property_retry_at();
+			$status_stored = $this->state->has_property_status();
 			if ( 0 < $retry_at ) {
 				if ( time() < $retry_at ) {
 					return '';
 				}
 			} elseif ( $status_stored && 'matched' === $this->property_status() ) {
-				return (string) get_option( self::PROPERTY_OPTION, '' );
+				return $this->state->property();
 			}
 			// A missing status option predates scoped property matching. Falling
 			// through resolves once so old same-host fallbacks are validated.
@@ -393,22 +368,19 @@ class Sync {
 		// for, the cursor + terms belong to the old property: drop them so a fresh
 		// backfill runs. A same-property reconnect keeps the data and resumes the
 		// daily increment. A no-match ('') leaves the data untouched.
-		$previous       = (string) get_option( self::PROPERTY_OPTION, '' );
+		$previous       = $this->state->property();
 		$previous_exact = '' === $previous ? true : $this->property_is_exact( $previous );
+		$clear_sync     = false;
 		if ( '' !== $property && '' !== $previous && ( $previous !== $property || $previous_exact !== $exact ) ) {
 			$this->store->clear();
-			delete_option( self::STATE_OPTION );
+			do_action( 'burst_gsc_data_cleared' );
+			$clear_sync = true;
 		}
 
-		update_option( self::PROPERTY_CHECKED_OPTION, true, false );
 		if ( '' === $property ) {
-			update_option( self::PROPERTY_STATUS_OPTION, 'none', false );
-			update_option( self::PROPERTY_RETRY_OPTION, time() + self::PROPERTY_RETRY_INTERVAL, false );
+			$this->state->set_property_unavailable( 'none', time() + self::PROPERTY_RETRY_INTERVAL );
 		} else {
-			update_option( self::PROPERTY_OPTION, $property, false );
-			update_option( self::PROPERTY_EXACT_OPTION, $exact, false );
-			update_option( self::PROPERTY_STATUS_OPTION, 'matched', false );
-			delete_option( self::PROPERTY_RETRY_OPTION );
+			$this->state->set_property( $property, $clear_sync, $exact );
 		}
 		$this->logs->add(
 			'property.resolve',
@@ -447,14 +419,15 @@ class Sync {
 	 */
 	private function maybe_reset_for_site_change(): void {
 		$current = $this->site_url();
-		$stored  = get_option( self::SITE_URL_OPTION, null );
+		$stored  = $this->state->site_url();
 		if ( $stored === $current ) {
 			return;
 		}
 
 		// Not the first run: the site actually changed, so clear the old data.
 		if ( null !== $stored ) {
-			$this->reset_property_resolution( true );
+			$this->store->clear();
+			do_action( 'burst_gsc_data_cleared' );
 			$this->logs->add(
 				'site.change',
 				'warning',
@@ -466,7 +439,7 @@ class Sync {
 			);
 		}
 
-		update_option( self::SITE_URL_OPTION, $current, false );
+		$this->state->set_site_url( $current, null !== $stored );
 	}
 
 	/**
@@ -602,9 +575,9 @@ class Sync {
 	 * deriving from the URLs preserves their current unfiltered requests.
 	 */
 	private function property_is_exact( string $property ): bool {
-		$stored = get_option( self::PROPERTY_EXACT_OPTION, null );
+		$stored = $this->state->property_exact();
 		if ( null !== $stored ) {
-			return (bool) $stored;
+			return $stored;
 		}
 
 		$property_url = $this->normalize_url_prefix( $property );
@@ -616,14 +589,7 @@ class Sync {
 	 * Current property state, with a migration-safe fallback for existing options.
 	 */
 	private function property_status(): string {
-		$status = (string) get_option( self::PROPERTY_STATUS_OPTION, '' );
-		if ( in_array( $status, [ 'matched', 'none', 'paused' ], true ) ) {
-			return $status;
-		}
-		if ( ! get_option( self::PROPERTY_CHECKED_OPTION, false ) ) {
-			return 'pending';
-		}
-		return '' === (string) get_option( self::PROPERTY_OPTION, '' ) ? 'none' : 'matched';
+		return $this->state->property_status();
 	}
 
 	/**
@@ -652,24 +618,7 @@ class Sync {
 	 * Stop using the cached property and schedule a daily resolution retry.
 	 */
 	private function mark_property_unresolved(): void {
-		update_option( self::PROPERTY_CHECKED_OPTION, true, false );
-		update_option( self::PROPERTY_STATUS_OPTION, 'paused', false );
-		update_option( self::PROPERTY_RETRY_OPTION, time() + self::PROPERTY_RETRY_INTERVAL, false );
-	}
-
-	/**
-	 * Reset property selection and, when required, its data and sync cursor.
-	 */
-	private function reset_property_resolution( bool $clear_data ): void {
-		if ( $clear_data ) {
-			$this->store->clear();
-			delete_option( self::STATE_OPTION );
-		}
-		delete_option( self::PROPERTY_OPTION );
-		delete_option( self::PROPERTY_EXACT_OPTION );
-		delete_option( self::PROPERTY_STATUS_OPTION );
-		delete_option( self::PROPERTY_CHECKED_OPTION );
-		delete_option( self::PROPERTY_RETRY_OPTION );
+		$this->state->set_property_unavailable( 'paused', time() + self::PROPERTY_RETRY_INTERVAL );
 	}
 
 	/**
@@ -689,19 +638,6 @@ class Sync {
 	}
 
 	/**
-	 * Re-open an already completed backfill once when upgrading from the
-	 * activation-date scope to the full retained Search Console history.
-	 */
-	private function ensure_retained_history_backfill(): void {
-		if ( self::BACKFILL_SCOPE === get_option( self::BACKFILL_SCOPE_OPTION ) ) {
-			return;
-		}
-
-		delete_option( self::STATE_OPTION );
-		update_option( self::BACKFILL_SCOPE_OPTION, self::BACKFILL_SCOPE, false );
-	}
-
-	/**
 	 * Shift a Y-m-d date by a number of days (negative = earlier), anchored to UTC.
 	 *
 	 * @param string $date The day in Y-m-d.
@@ -715,8 +651,7 @@ class Sync {
 	 * Load sync state.
 	 */
 	private function get_state(): array {
-		$state = get_option( self::STATE_OPTION, [] );
-		return is_array( $state ) ? $state : [];
+		return $this->state->sync();
 	}
 
 	/**
@@ -725,7 +660,7 @@ class Sync {
 	 * @param array $state State to store.
 	 */
 	private function save_state( array $state ): void {
-		update_option( self::STATE_OPTION, $state, false );
+		$this->state->set_sync( $state );
 	}
 
 	/**
@@ -764,7 +699,7 @@ class Sync {
 			return $data;
 		}
 
-		$property = (string) get_option( self::PROPERTY_OPTION, '' );
+		$property = $this->state->property();
 		if ( '' === $property || ! in_array( $this->property_status(), [ 'matched', 'paused' ], true ) ) {
 			return [];
 		}

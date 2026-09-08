@@ -106,10 +106,34 @@ const UrlFilter = memo( ({ value, row }) => (
 
 UrlFilter.displayName = 'UrlFilter';
 
+// Location text fields where an unresolved value renders as "Unknown".
+const LOCATION_TEXT_FIELDS = [ 'state', 'city' ];
+
+/**
+ * Whether a location text value is unresolved and renders as "Unknown".
+ *
+ * @param {*} value The city/state value.
+ * @return {boolean} True when the value is empty or the literal 'Unknown'.
+ */
+const isEmptyLocationValue = ( value ) => ! value || 'Unknown' === value;
+
+/**
+ * Whether a row represents an unresolved location: any city/state field it
+ * carries is empty, so it renders as "Unknown". One such row aggregates many
+ * different unresolved locations.
+ *
+ * @param {Object} row Datatable row.
+ * @return {boolean} True when the row has an unresolved city/state field.
+ */
+export const isUnknownLocationRow = ( row ) =>
+	LOCATION_TEXT_FIELDS.some(
+		( field ) => field in row && isEmptyLocationValue( row[field])
+	);
+
 // fallow-ignore-next-line complexity
 const TextFilter = memo( ({ filter, value }) => {
-	const isLocationField = 'state' === filter || 'city' === filter;
-	const isEmptyLocation = isLocationField && ( ! value || '' === value || 'Unknown' === value );
+	const isEmptyLocation =
+		LOCATION_TEXT_FIELDS.includes( filter ) && isEmptyLocationValue( value );
 
 	if ( isEmptyLocation ) {
 		return (

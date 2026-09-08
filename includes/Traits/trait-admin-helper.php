@@ -362,6 +362,7 @@ trait Admin_Helper {
 				// URLs and endpoints.
 				'rest_url'                             => get_rest_url(),
 				'site_url'                             => defined( 'BURST_HEADLESS_DOMAIN' ) ? esc_url_raw( BURST_HEADLESS_DOMAIN ) : get_site_url(),
+				'home_url'                             => home_url(),
 				'admin_ajax_url'                       => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
 				'dashboard_url'                        => $this->admin_url( 'burst' ),
 				'network_link'                         => network_site_url( 'plugins.php' ),

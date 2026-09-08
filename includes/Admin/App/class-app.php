@@ -65,6 +65,9 @@ class App {
 		add_action( 'burst_weekly_clear_referrers_cron', [ $this, 'weekly_clear_referrers_table' ] );
 		add_action( 'burst_weekly_clear_spam_browsers_cron', [ $this, 'weekly_clear_spam_browsers' ] );
 		add_action( 'burst_daily', [ $this, 'maybe_update_plugin_slug' ] );
+		add_action( 'admin_enqueue_scripts', [ $this, 'dequeue_conflicting_styles' ], 99999 );
+		add_action( 'admin_print_styles', [ $this, 'dequeue_conflicting_styles' ], 99999 );
+		add_action( 'admin_head', [ $this, 'dequeue_conflicting_styles' ], 99999 );
 
 		$this->menu             = new Menu();
 		$this->fields           = new Fields();
@@ -87,6 +90,59 @@ class App {
 		$stored_slug = get_option( 'burst_plugin_slug', '' );
 		if ( $stored_slug !== $current_slug ) {
 			update_option( 'burst_plugin_slug', $current_slug, true );
+		}
+	}
+
+	/**
+	 * Dequeue conflicting third-party styles and scripts on the Burst admin page.
+	 */
+	public function dequeue_conflicting_styles(): void {
+		if ( ! $this->is_burst_page() ) {
+			return;
+		}
+
+		global $wp_styles, $wp_scripts;
+
+		if ( $wp_styles instanceof \WP_Styles && ! empty( $wp_styles->queue ) ) {
+			foreach ( $wp_styles->queue as $handle ) {
+				if ( ! isset( $wp_styles->registered[ $handle ] ) ) {
+					continue;
+				}
+				$src          = $wp_styles->registered[ $handle ]->src;
+				$handle_lower = strtolower( (string) $handle );
+				$src_lower    = is_string( $src ) ? strtolower( $src ) : '';
+
+				if (
+					strpos( $handle_lower, 'mpcs' ) !== false ||
+					strpos( $handle_lower, 'memberpress' ) !== false ||
+					strpos( $handle_lower, 'mepr' ) !== false ||
+					strpos( $src_lower, 'memberpress-courses' ) !== false ||
+					strpos( $src_lower, 'memberpress' ) !== false
+				) {
+					wp_dequeue_style( $handle );
+				}
+			}
+		}
+
+		if ( $wp_scripts instanceof \WP_Scripts && ! empty( $wp_scripts->queue ) ) {
+			foreach ( $wp_scripts->queue as $handle ) {
+				if ( ! isset( $wp_scripts->registered[ $handle ] ) ) {
+					continue;
+				}
+				$src          = $wp_scripts->registered[ $handle ]->src;
+				$handle_lower = strtolower( (string) $handle );
+				$src_lower    = is_string( $src ) ? strtolower( $src ) : '';
+
+				if (
+					strpos( $handle_lower, 'mpcs' ) !== false ||
+					strpos( $handle_lower, 'memberpress' ) !== false ||
+					strpos( $handle_lower, 'mepr' ) !== false ||
+					strpos( $src_lower, 'memberpress-courses' ) !== false ||
+					strpos( $src_lower, 'memberpress' ) !== false
+				) {
+					wp_dequeue_script( $handle );
+				}
+			}
 		}
 	}
 
@@ -212,6 +268,12 @@ class App {
 		// Add "Upgrade to Pro" menu item if not Pro version.
 		$this->add_upgrade_menu_item();
 
+		add_action(
+			"load-{$page_hook_suffix}",
+			function (): void {
+				add_filter( 'screen_options_show_screen', '__return_false' );
+			}
+		);
 		add_action( "admin_print_scripts-{$page_hook_suffix}", [ $this, 'plugin_admin_scripts' ], 1 );
 	}
 
@@ -236,7 +298,7 @@ class App {
 			$menu_title = $menu_item['title'] ?? '';
 			$menu_slug  = $menu_item['menu_slug'] ?? 'burst';
 
-			add_submenu_page(
+			$sub_hook = add_submenu_page(
 				'burst',
 				$page_title,
 				$menu_title,
@@ -244,6 +306,15 @@ class App {
 				$menu_slug,
 				[ $this, 'dashboard' ]
 			);
+
+			if ( $sub_hook ) {
+				add_action(
+					"load-{$sub_hook}",
+					function (): void {
+						add_filter( 'screen_options_show_screen', '__return_false' );
+					}
+				);
+			}
 		}
 	}
 
@@ -678,6 +749,16 @@ class App {
 				display: none;
 			}
 
+			/* Reset container-type and layout interference on WordPress admin parent wrappers */
+			body.toplevel_page_burst #wpwrap,
+			body.toplevel_page_burst #wpcontent,
+			body.toplevel_page_burst #wpbody,
+			body.toplevel_page_burst #wpbody-content,
+			body.toplevel_page_burst .wrap {
+				container-type: normal !important;
+				container-name: none !important;
+			}
+
 			/* Skeleton color tokens. Dark values are single-sourced on :root so both
 				the .dark class path and the media-query path reuse the same literals. */
 			:root {
@@ -975,6 +1056,7 @@ class App {
 					</div>
 				</div>
 			</div>
+		</div>
 		<div id="burst-adblocker-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:var(--z-max,150000);align-items:center;justify-content:center;pointer-events:auto;">
 			<div style="background:#fff;border-radius:12px;padding:32px;max-width:520px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;pointer-events:auto;">
 				<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
@@ -1458,7 +1540,12 @@ class App {
 			'platforms'         => "SELECT MIN(ID) as ID, name FROM {$wpdb->prefix}burst_platforms GROUP BY name ORDER BY name ASC",
 			'states'            => "SELECT DISTINCT state AS name FROM {$wpdb->prefix}burst_locations ORDER BY name ASC",
 			'cities'            => "SELECT DISTINCT city AS name FROM {$wpdb->prefix}burst_locations ORDER BY name ASC",
-			'pages'             => "SELECT page_url as name FROM {$wpdb->prefix}burst_statistics $where GROUP BY page_url HAVING COUNT(*) > 1 ORDER BY COUNT(*) DESC limit 1000",
+			// The page dictionary holds every non-404 url with traffic — a
+			// LIKE over its ~thousands of rows replaces a full GROUP BY scan
+			// over the statistics table. Fallback until the seed completed.
+			'pages'             => $this->page_dictionary_ready()
+				? "SELECT page_url as name FROM {$wpdb->prefix}burst_page_urls $where ORDER BY name ASC limit 1000"
+				: "SELECT page_url as name FROM {$wpdb->prefix}burst_statistics $where GROUP BY page_url HAVING COUNT(*) > 1 ORDER BY COUNT(*) DESC limit 1000",
 			'campaigns'         => "SELECT DISTINCT campaign AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
 			'sources'           => "SELECT DISTINCT source AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
 			'mediums'           => "SELECT DISTINCT medium AS name FROM {$wpdb->prefix}burst_campaigns ORDER BY name ASC",
@@ -1911,21 +1998,24 @@ class App {
 		}
 
 		$config = [
+			// Sales metrics (sales, revenue, ...) are a Pro feature: Pro appends them
+			// to these allow-lists via the burst_datatable_config filter. Free has no
+			// ecommerce data, so it registers these tables without sales metrics.
 			'statistics_pages'      => [
-				'metrics'    => [ 'page_url', 'pageviews', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'entrances', 'exit_rate', 'conversions', 'conversion_rate', 'sales', 'revenue', 'sales_conversion_rate', 'page_value' ],
+				'metrics'    => [ 'page_url', 'pageviews', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'entrances', 'exit_rate', 'conversions', 'conversion_rate' ],
 				'capability' => 'view_burst_statistics',
 			],
 			'statistics_parameters' => [
-				'metrics'    => [ 'parameter', 'parameters', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'conversions', 'sales', 'revenue', 'page_value' ],
+				'metrics'    => [ 'parameter', 'parameters', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'conversions' ],
 				'capability' => 'view_burst_statistics',
 			],
 			// In free sources_referrers becomes statistics_referrers.
 			'statistics_referrers'  => [
-				'metrics'    => [ 'referrer', 'source_category', 'source', 'visitors', 'sessions', 'bounce_rate', 'conversions', 'sales', 'revenue', 'page_value' ],
+				'metrics'    => [ 'referrer', 'source_category', 'source', 'visitors', 'sessions', 'bounce_rate', 'conversions' ],
 				'capability' => 'view_burst_statistics',
 			],
 			'dummy_data'            => [
-				'metrics'    => [ 'page_url', 'pageviews', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'entrances', 'exit_rate', 'conversions', 'conversion_rate', 'sales', 'revenue', 'sales_conversion_rate', 'page_value' ],
+				'metrics'    => [ 'page_url', 'pageviews', 'visitors', 'sessions', 'bounce_rate', 'avg_time_on_page', 'entrances', 'exit_rate', 'conversions', 'conversion_rate' ],
 				'capability' => 'view_burst_statistics',
 			],
 			'outgoing-links'        => [
@@ -2070,6 +2160,11 @@ class App {
 					$args['metrics'] = $allow_list[ $type ];
 				}
 
+				// Pro appends sales metrics to the allow-lists of non-ecommerce
+				// datatables and strips them here for users who may not view sales.
+				// Free registers no sales metrics, so this is a no-op there.
+				$args['metrics'] = apply_filters( 'burst_datatable_metrics', $args['metrics'], $request );
+
 				$args['id'] = $type;
 
 				$data = burst_loader()->admin->statistics->get_datatables_data( $args );
@@ -2118,6 +2213,7 @@ class App {
 				} else {
 					$data = burst_loader()->admin->statistics->get_compare_data( $args );
 				}
+				$data = apply_filters( 'burst_compare_data', $data, $args );
 				break;
 			case 'devicestitleandvalue':
 				$data = burst_loader()->admin->statistics->get_devices_title_and_value_data( $args );
@@ -2235,8 +2331,11 @@ class App {
 				$options = [];
 			}
 
-			// Track which fields were actually updated.
+			// Track which fields were actually updated, and their value before
+			// this save: $options is overwritten in the loop below, so the
+			// after-save hook cannot read the previous value from it.
 			$updated_fields = [];
+			$prev_values    = [];
 			foreach ( $data['fields'] as $field_id => $value ) {
 				// Validate field exists in config.
 				if ( ! isset( $config_fields[ $field_id ] ) ) {
@@ -2262,9 +2361,9 @@ class App {
 					$type
 				);
 
-				// error log the sanitized value.
 				$options[ $field_id ]        = $sanitized_value;
 				$updated_fields[ $field_id ] = $sanitized_value;
+				$prev_values[ $field_id ]    = $prev_value;
 			}
 
 			// Only save if we have updates.
@@ -2275,7 +2374,7 @@ class App {
 				foreach ( $updated_fields as $field_id => $value ) {
 
 					$type       = $config_fields[ $field_id ]['type'];
-					$prev_value = $options[ $field_id ] ?? false;
+					$prev_value = $prev_values[ $field_id ] ?? false;
 					do_action( 'burst_after_save_field', $field_id, $value, $prev_value, $type );
 				}
 				do_action( 'burst_after_saved_fields', $updated_fields );
@@ -2729,6 +2828,17 @@ class App {
 			}
 		}
 
+		// A valid block/element goal must have a UID unless deleting with an existing ID.
+		if ( $goal === null && empty( $uid ) ) {
+			return new \WP_REST_Response(
+				[
+					'success' => false,
+					'message' => __( 'Goal UID is required.', 'burst-statistics' ),
+				],
+				400
+			);
+		}
+
 		// If the goal doesn't exist, we only allow creating it if it is an explicit activation (status: active) with a title.
 		// If it's a partial update without status or title, we 404.
 		if ( $goal === null || ! ( $goal->id > 0 ) ) {
@@ -2738,6 +2848,7 @@ class App {
 				return new \WP_REST_Response(
 					[
 						'success' => false,
+						'code'    => 'goal_not_found',
 						'message' => __( 'Goal not found.', 'burst-statistics' ),
 					],
 					404

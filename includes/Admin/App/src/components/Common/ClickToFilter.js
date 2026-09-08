@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
+import { useNavigate, useLocation } from '@tanstack/react-router';
 import { useFilters } from '@/hooks/useFilters';
 import useGoalsData from '@/hooks/useGoalsData';
 import { useInsightsStore } from '@/store/useInsightsStore';
@@ -78,6 +79,28 @@ const ClickToFilter = ({
 			return false;
 		}
 	}, [ filter, filterValue ]);
+
+	const navigate = useNavigate();
+	const location = useLocation();
+
+	const handleVisitorFlowClick = useCallback(
+
+		// fallow-ignore-next-line complexity
+		( e ) => {
+			e.stopPropagation();
+			const targetId = row?.page_id || row?.id || ( 'url_' + Math.abs( ( filterValue || '' ).split( '' ).reduce( ( a, b ) => ( ( a << 5 ) - a ) + b.charCodeAt( 0 ), 0 ) ) );
+			navigate({
+				to: '/page/$id',
+				params: { id: String( targetId ) },
+				search: {
+					from: location.pathname,
+					pageUrl: filterValue,
+					...location.search
+				}
+			});
+		},
+		[ navigate, location, row, filterValue ]
+	);
 
 	// Handle external link clicks
 	const handleExternalLinkClick = useCallback(
@@ -301,6 +324,18 @@ const ClickToFilter = ({
 								className="flex items-center justify-center w-6 h-6 bg-gray-100 hover:bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
 							>
 								<Icon name="filter" size={14} color="black" />
+							</div>
+						</HelpTooltip>
+					)}
+
+					{/* Visitor Flow icon - only show for page_url. */}
+					{'page_url' === filter && (
+						<HelpTooltip content={__( 'View per page analytics', 'burst-statistics' )}>
+							<div
+								onClick={handleVisitorFlowClick}
+								className="flex items-center justify-center w-6 h-6 bg-gray-100 hover:bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
+							>
+								<Icon name="page" size={14} color="black" />
 							</div>
 						</HelpTooltip>
 					)}

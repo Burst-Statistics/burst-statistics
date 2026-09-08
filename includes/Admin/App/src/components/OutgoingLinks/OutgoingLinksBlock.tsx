@@ -14,10 +14,15 @@ import OverlayBlock from '@/components/Upsell/OverlayBlock';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
 import MetricInfo from '@/components/Common/MetricInfo';
 import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
+import type { FilterSearchParams } from '@/config/filterConfig';
+
 type OutgoingLinksBlockProps = {
 
 	/** Additional CSS class names passed to the wrapping Block. */
 	className?: string;
+
+	/** Override filters (e.g. page-scoped page_url). */
+	customFilters?: FilterSearchParams;
 };
 
 /** Maximum rows shown in the compact block view. */
@@ -31,16 +36,20 @@ const TOP_N = 5;
  * period or year-over-year). An expand button opens the full table in the
  * DataTableOverlay.
  *
- * @param {Object} props           - Component props.
- * @param {string} props.className - Additional CSS classes for the Block wrapper.
+ * @param {Object} props               - Component props.
+ * @param {string} props.className     - Additional CSS classes for the Block wrapper.
+ * @param {Object} props.customFilters - Optional filter overrides for the data query.
  * @return {JSX.Element} The outgoing links block.
  */
 // fallow-ignore-next-line complexity
-const OutgoingLinksBlock = memo( ({ className = '' }: OutgoingLinksBlockProps ) => {
+const OutgoingLinksBlock = memo( ({ className = '', customFilters }: OutgoingLinksBlockProps ) => {
 	const { getValue } = useSettingsData();
 	const { isLicenseValid } = useLicenseData();
 	const isEnabled = !! getValue( 'track_external_links' );
-	const { data, isLoading, scrapingProgress } = useOutgoingLinksData( isEnabled );
+	const { data, isLoading, scrapingProgress } = useOutgoingLinksData({
+		enabled: isEnabled,
+		customFilters
+	});
 
 	const firstCycleCompleted = !! window.burst_settings?.external_links_first_cycle_completed || 100 === scrapingProgress;
 
@@ -62,7 +71,8 @@ const OutgoingLinksBlock = memo( ({ className = '' }: OutgoingLinksBlockProps ) 
 				from: location.pathname,
 				allowed: 'outgoing_links',
 				dataTableId: 'outgoing-links',
-				...location.search
+				...location.search,
+				...( customFilters ?? {})
 			}
 		});
 	};

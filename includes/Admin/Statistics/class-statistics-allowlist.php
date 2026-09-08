@@ -213,6 +213,7 @@ class Statistics_Allowlist {
 				'exit_rate'             => __( 'Exit rate', 'burst-statistics' ),
 				'avg_order_value'       => __( 'Avg. order value', 'burst-statistics' ),
 				'adds_to_cart'          => __( 'Added to cart', 'burst-statistics' ),
+				'avg_max_scroll'        => __( 'Avg. max scroll', 'burst-statistics' ),
 			]
 		);
 

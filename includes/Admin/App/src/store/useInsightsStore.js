@@ -56,20 +56,12 @@ export const useInsightsStore = create(
 		( set, get ) => ({
 			metrics: [ 'visitors', 'pageviews' ],
 			groupBy: 'auto',
-			loaded: false,
-			getMetrics: () => {
-				if ( get().loaded ) {
-					return get().metrics;
-				}
 
-				let metrics = get().metrics || [ 'visitors', 'pageviews' ];
-
-				//temporarily remove conversions from localstorage until the query has been fixed
-				metrics = metrics.filter( ( metric ) => 'conversions' !== metric );
-
-				set({ metrics, loaded: true });
-				return metrics;
-			},
+			// Pure read: getMetrics is called from selectors during render, so
+			// it must never set() (React: no state updates while rendering
+			// another component). Sanitizing persisted metrics (the
+			// conversions filter) happens once in onRehydrateStorage below.
+			getMetrics: () => get().metrics,
 			setMetrics: ( metrics ) => {
 				set({ metrics });
 			},

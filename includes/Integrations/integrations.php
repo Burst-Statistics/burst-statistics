@@ -34,6 +34,7 @@ return [
 		],
 	],
 	'duplicate-post'              => [
+		'landing_page'         => false,
 		'constant_or_function' => 'DUPLICATE_POST_CURRENT_VERSION',
 		'label'                => 'Yoast Duplicate Post',
 		'category'             => 'other',
@@ -53,8 +54,8 @@ return [
 		'wporg_slug'           => 'elementor',
 		'wporg_icon'           => 'icon-128x128.gif',
 		'php_scripts'          => [
-			'admin_scripts'    => [],
-			'frontend_scripts' => [],
+			'admin_scripts'    => [ 'class-elementor.php' ],
+			'frontend_scripts' => [ 'class-elementor.php' ],
 		],
 		'goals'                =>
 			[
@@ -451,11 +452,33 @@ return [
 			],
 	],
 	// Caching plugins.
+	'wp-optimize'                 => [
+		'constant_or_function' => 'WPO_VERSION',
+		'label'                => 'WP-Optimize',
+		'category'             => 'performance',
+		'status'               => 'enhances_caching_compatibility',
+		'wporg_slug'           => 'wp-optimize',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [ 'frontend.php' ],
+		],
+	],
 	'wp-rocket'                   => [
 		'constant_or_function' => 'WP_ROCKET_VERSION',
 		'label'                => 'WP Rocket',
 		'category'             => 'performance',
 		'status'               => 'enhances_caching_compatibility',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [ 'frontend.php' ],
+		],
+	],
+	'sg-cachepress'               => [
+		'constant_or_function' => 'SiteGround_Optimizer\VERSION',
+		'label'                => 'Speed Optimizer',
+		'category'             => 'performance',
+		'status'               => 'enhances_caching_compatibility',
+		'wporg_slug'           => 'sg-cachepress',
 		'php_scripts'          => [
 			'admin_scripts'    => [],
 			'frontend_scripts' => [ 'frontend.php' ],

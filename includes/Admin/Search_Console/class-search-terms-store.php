@@ -1,6 +1,8 @@
 <?php
 namespace Burst\Admin\Search_Console;
 
+use Burst\Admin\Database\Query;
+use Burst\Admin\Database\Query_Executor;
 use Burst\Traits\Helper;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
@@ -8,12 +10,7 @@ use Burst\Traits\Database_Helper;
 defined( 'ABSPATH' ) || die();
 
 /**
- * Stores Google Search Console search-term rows in burst_search_terms.
- *
- * Idempotency is per (date, property): a re-sync of a day deletes that day's
- * rows for the property and re-inserts the full result set, so repeated runs
- * never duplicate. The dashboard reads only from this table; the API is never
- * called on dashboard load.
+ * Stores site-wide Google Search Console search-term rows.
  */
 class Search_Terms_Store {
 	use Helper;
@@ -24,6 +21,11 @@ class Search_Terms_Store {
 	 * Table name without the WordPress prefix.
 	 */
 	private const TABLE = 'burst_search_terms';
+
+	/**
+	 * Maximum search-term rows per INSERT statement.
+	 */
+	private const INSERT_BATCH_SIZE = 250;
 
 	/**
 	 * Create the burst_search_terms table. Hooked to burst_install_tables.
@@ -39,6 +41,7 @@ class Search_Terms_Store {
 				`date` date NOT NULL,
 				`query` varchar(191) NOT NULL,
 				`property` varchar(191) NOT NULL,
+				`page` varchar(191) NOT NULL DEFAULT '',
 				`clicks` int NOT NULL DEFAULT 0,
 				`impressions` int NOT NULL DEFAULT 0,
 				`ctr` float NOT NULL DEFAULT 0,
@@ -53,6 +56,18 @@ class Search_Terms_Store {
 
 		$this->add_index( self::TABLE, [ 'date' ] );
 		$this->add_index( self::TABLE, [ 'property', 'date' ] );
+		// query_top() and the Pro page-terms reads filter property + page (site
+		// rows have page = '') before the date range, then aggregate
+		// query/clicks/impressions/position. Including those columns makes the
+		// index covering, so multi-year ranges are served from an index range
+		// scan instead of a clustered-PK lookup per matching row.
+		$this->add_index( self::TABLE, [ 'property', 'page', 'date', 'query', 'clicks', 'impressions', 'position' ] );
+		// The old filter index is a prefix of the covering index and only
+		// redundant once that exists — creating it can fail on installs with a
+		// small key-length limit, so drop only after verifying.
+		if ( $this->index_exists( self::TABLE, 'property_page_date_query_clicks_impressions_position_index' ) ) {
+			$this->drop_index( self::TABLE, 'property_page_date_index' );
+		}
 	}
 
 	/**
@@ -60,7 +75,7 @@ class Search_Terms_Store {
 	 * the next plugin upgrade has run the install hook.
 	 */
 	public function maybe_install(): void {
-		if ( ! $this->table_exists( self::TABLE ) ) {
+		if ( ! $this->table_exists( self::TABLE ) || ! $this->column_exists( self::TABLE, 'page' ) ) {
 			$this->install_table();
 		}
 	}
@@ -76,6 +91,7 @@ class Search_Terms_Store {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is interpolated from $wpdb->prefix; no user data in the query.
 		$wpdb->query( "TRUNCATE TABLE `{$wpdb->prefix}burst_search_terms`" );
+		update_option( 'burst_search_terms_version', (string) time(), false );
 	}
 
 	/**
@@ -115,7 +131,8 @@ class Search_Terms_Store {
 	/**
 	 * Replace a single day's rows for a property (delete-then-insert) so a
 	 * re-sync is idempotent. Returns false when the table is missing, so the
-	 * caller does not treat the day as synced.
+	 * caller does not treat the day as synced. Database errors also return false,
+	 * leaving the sync cursor on this day so the next run replaces it again.
 	 *
 	 * @param string $date     The day in Y-m-d.
 	 * @param string $property The Search Console property (siteUrl).
@@ -123,51 +140,60 @@ class Search_Terms_Store {
 	 *                         clicks, impressions, ctr, position.
 	 */
 	public function replace_day( string $date, string $property, array $rows ): bool {
-		if ( ! $this->table_exists( self::TABLE ) ) {
+		if ( ! $this->table_exists( self::TABLE ) || ! $this->column_exists( self::TABLE, 'page' ) ) {
 			return false;
 		}
 
 		global $wpdb;
 		$property = $this->trim_191( $property );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is interpolated from $wpdb->prefix; values are prepared.
-		$deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM `{$wpdb->prefix}burst_search_terms` WHERE `date` = %s AND `property` = %s", $date, $property ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is internal and values are prepared.
+		$deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM `{$wpdb->prefix}burst_search_terms` WHERE `date` = %s AND `property` = %s AND `page` = ''", $date, $property ) );
 		if ( false === $deleted ) {
-			// DELETE errored; skip the INSERT (it would duplicate) and signal a retry.
 			return false;
 		}
 
-		$placeholders = [];
-		$values       = [];
-		foreach ( $rows as $row ) {
-			$query = isset( $row['keys'][0] ) ? $this->trim_191( (string) $row['keys'][0] ) : '';
-			if ( '' === $query ) {
+		$row_count = count( $rows );
+		for ( $offset = 0; $offset < $row_count; $offset += self::INSERT_BATCH_SIZE ) {
+			$placeholders = [];
+			$values       = [];
+			$row_batch    = array_slice( $rows, $offset, self::INSERT_BATCH_SIZE );
+			foreach ( $row_batch as $row ) {
+				$query = isset( $row['keys'][0] ) ? $this->trim_191( (string) $row['keys'][0] ) : '';
+				if ( '' === $query ) {
+					continue;
+				}
+				$placeholders[] = '(%s,%s,%s,%d,%d,%f,%f)';
+				array_push(
+					$values,
+					$date,
+					$query,
+					$property,
+					(int) ( $row['clicks'] ?? 0 ),
+					(int) ( $row['impressions'] ?? 0 ),
+					(float) ( $row['ctr'] ?? 0 ),
+					(float) ( $row['position'] ?? 0 )
+				);
+			}
+
+			if ( empty( $placeholders ) ) {
 				continue;
 			}
-			$placeholders[] = '(%s,%s,%s,%d,%d,%f,%f)';
-			array_push(
-				$values,
-				$date,
-				$query,
-				$property,
-				(int) ( $row['clicks'] ?? 0 ),
-				(int) ( $row['impressions'] ?? 0 ),
-				(float) ( $row['ctr'] ?? 0 ),
-				(float) ( $row['position'] ?? 0 )
-			);
+
+			$sql = "INSERT INTO `{$wpdb->prefix}burst_search_terms` (`date`,`query`,`property`,`clicks`,`impressions`,`ctr`,`position`) VALUES " . implode( ',', $placeholders );
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is interpolated from $wpdb->prefix; row values are prepared.
+			$inserted = $wpdb->query( $wpdb->prepare( $sql, $values ) );
+			if ( false === $inserted ) {
+				return false;
+			}
 		}
 
-		if ( empty( $placeholders ) ) {
-			// A day with no search terms is still a successfully synced day.
-			return true;
-		}
+		// Bump the cache salt query_top() mixes into its cache key, so the
+		// hour-long (empty results included) cache never pins a pre-sync
+		// answer after new data lands — worst during the initial backfill.
+		update_option( 'burst_search_terms_version', (string) time(), false );
 
-		$sql = "INSERT INTO `{$wpdb->prefix}burst_search_terms` (`date`,`query`,`property`,`clicks`,`impressions`,`ctr`,`position`) VALUES " . implode( ',', $placeholders );
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is interpolated from $wpdb->prefix; row values are prepared.
-		$inserted = $wpdb->query( $wpdb->prepare( $sql, $values ) );
-		// On an INSERT error the day's rows were already deleted; signal a retry so
-		// the cursor does not advance and the day is re-fetched next run.
-		return false !== $inserted;
+		return true;
 	}
 
 	/**
@@ -185,32 +211,40 @@ class Search_Terms_Store {
 	 * @return array<int, array{query:string,clicks:int,impressions:int,click_through_rate:float,position:float}>
 	 */
 	public function query_top( string $property, string $start_date, string $end_date, int $limit = 100 ): array {
-		if ( ! $this->table_exists( self::TABLE ) ) {
+		if ( ! $this->table_exists( self::TABLE ) || ! $this->column_exists( self::TABLE, 'page' ) ) {
 			return [];
 		}
+		$property = $this->trim_191( $property );
 
-		global $wpdb;
+		$query = Query::create()
+			->select(
+				[
+					'query',
+					'SUM(clicks) AS clicks',
+					'SUM(impressions) AS impressions',
+					'SUM(clicks) / NULLIF(SUM(impressions), 0) * 100 AS click_through_rate',
+					'SUM(position * impressions) / NULLIF(SUM(impressions), 0) AS position',
+				]
+			)
+			->from( self::TABLE )
+			->where( 'property', $property )
+			->where( 'page', '' )
+			->where_between( 'date', $start_date, $end_date )
+			->group_by( 'query' )
+			->order_by_raw( 'SUM(clicks) DESC' )
+			->limit( $limit );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is interpolated from $wpdb->prefix; values are prepared.
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT `query`,
-					SUM( `clicks` ) AS clicks,
-					SUM( `impressions` ) AS impressions,
-					SUM( `clicks` ) / NULLIF( SUM( `impressions` ), 0 ) * 100 AS click_through_rate,
-					SUM( `position` * `impressions` ) / NULLIF( SUM( `impressions` ), 0 ) AS position
-				FROM `{$wpdb->prefix}burst_search_terms`
-				WHERE `property` = %s AND `date` BETWEEN %s AND %s
-				GROUP BY `query`
-				ORDER BY clicks DESC
-				LIMIT %d",
-				$property,
-				$start_date,
-				$end_date,
-				$limit
-			),
-			ARRAY_A
-		);
+		$rows = Query_Executor::create()
+			->fingerprint( 'gsc_site_queries' )
+			// Search Console data lags ~2 days and only changes when the sync
+			// writes, so an hour of caching is safe (consistent with the
+			// closed-range TTL in Statistics_Query) — including empty ranges,
+			// which would otherwise re-run the full scan on every load while
+			// the sync is still backfilling.
+			->cache_ttl( HOUR_IN_SECONDS )
+			->cache_empty_results( true )
+			->cache_salt( (string) get_option( 'burst_search_terms_version' ) )
+			->run( $query->prepare_sql(), 'get', ARRAY_A );
 
 		if ( ! is_array( $rows ) ) {
 			return [];

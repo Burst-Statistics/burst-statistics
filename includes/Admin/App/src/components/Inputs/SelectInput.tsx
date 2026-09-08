@@ -51,25 +51,26 @@ const isOptionDisabled = ( disabled: boolean | string[], value: string ): boolea
  */
 const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
 	({ disabled = false, value, onChange, options = [] }, ref ) => {
+		const [ open, setOpen ] = React.useState( false );
 		const normalizedOptions = normalizeOptions( options );
 
 		// Disable the entire root only when disabled is a boolean true, not when it's an array.
 		const rootDisabled = true === disabled;
 
-		const portalContainer = 'undefined' !== typeof document ?
-			( document.getElementById( 'modal-root' ) || document.querySelector( '.burst' ) || undefined ) :
-			undefined;
-
 		return (
 			<Select.Root
 				disabled={rootDisabled}
 				value={value}
-				onValueChange={( value ) => onChange( value )}
+				onValueChange={( value ) => {
+					onChange( value );
+					setOpen( false );
+				}}
+				open={open}
+				onOpenChange={setOpen}
 			>
 				<Select.Trigger
 					ref={ref}
 					disabled={rootDisabled}
-					onPointerDown={( e ) => e.stopPropagation()}
 					className={clsx(
 						'inline-flex items-center justify-center gap-1 rounded bg-white text-base leading-none outline-solid outline-gray-400 px-2 py-2 focus:shadow-[0_0_0_2px]',
 						rootDisabled ?
@@ -89,40 +90,48 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
 					</Select.Icon>
 				</Select.Trigger>
 
-				<Select.Portal container={portalContainer}>
+				<Select.Portal>
 					<Select.Content
-						className="bg-gray-100 text-text-black border border-gray-400 rounded-md shadow-lg ring-1 ring-black/5 z-dropdown shadow-gray-400/50"
-						position="item-aligned"
+						className="burst z-max max-h-[var(--radix-select-content-available-height)]"
+						style={{ zIndex: 'var(--z-max)' }}
+						position="popper"
+						sideOffset={5}
+						onPointerDownOutside={( e ) => {
+							e.preventDefault();
+							setOpen( false );
+						}}
 					>
-						<Select.ScrollUpButton className="">
-							<Icon
-								name="chevron-up"
-								color="black"
-								size={16}
-								tooltip=""
-								className=""
-							/>
-						</Select.ScrollUpButton>
-						<Select.Viewport className="">
-							{normalizedOptions.map( ( option ) => (
-								<SelectItem
-									key={option.value}
-									value={option.value}
-									disabled={isOptionDisabled( disabled, option.value )}
-								>
-									{option.label}
-								</SelectItem>
-							) )}
-						</Select.Viewport>
-						<Select.ScrollDownButton className="text-base">
-							<Icon
-								name="chevron-down"
-								color="white"
-								size={16}
-								tooltip=""
-								className=""
-							/>
-						</Select.ScrollDownButton>
+						<div className="bg-gray-100 text-text-black border border-gray-400 rounded-md shadow-lg ring-1 ring-black/5 shadow-gray-400/50 min-w-[var(--radix-select-trigger-width)] max-h-[var(--radix-select-content-available-height)] flex flex-col overflow-hidden">
+							<Select.ScrollUpButton className="flex items-center justify-center p-1">
+								<Icon
+									name="chevron-up"
+									color="black"
+									size={16}
+									tooltip=""
+									className=""
+								/>
+							</Select.ScrollUpButton>
+							<Select.Viewport className="p-1 max-h-[260px] overflow-y-auto">
+								{normalizedOptions.map( ( option ) => (
+									<SelectItem
+										key={option.value}
+										value={option.value}
+										disabled={isOptionDisabled( disabled, option.value )}
+									>
+										{option.label}
+									</SelectItem>
+								) )}
+							</Select.Viewport>
+							<Select.ScrollDownButton className="flex items-center justify-center p-1 text-base">
+								<Icon
+									name="chevron-down"
+									color="black"
+									size={16}
+									tooltip=""
+									className=""
+								/>
+							</Select.ScrollDownButton>
+						</div>
 					</Select.Content>
 				</Select.Portal>
 			</Select.Root>

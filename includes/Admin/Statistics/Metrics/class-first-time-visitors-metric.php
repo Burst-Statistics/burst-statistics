@@ -29,8 +29,8 @@ class First_Time_Visitors_Metric implements Metric_Handler_Interface {
 	public function apply( Statistics_Query $qd ): void {
 		$non_bounce = 'COALESCE(sessions.bounce, 0) = 0';
 		$expr       = $qd->get_exclude_bounces()
-			? "COALESCE( COUNT(DISTINCT CASE WHEN {$non_bounce} AND sessions.first_time_visit = 1 THEN statistics.uid END), 0) AS first_time_visitors"
-			: 'COUNT(DISTINCT CASE WHEN sessions.first_time_visit = 1 THEN statistics.uid END) AS first_time_visitors';
+			? "COALESCE( COUNT(DISTINCT CASE WHEN {$non_bounce} AND sessions.first_time_visit = 1 THEN statistics.uid_id END), 0) AS first_time_visitors"
+			: 'COUNT(DISTINCT CASE WHEN sessions.first_time_visit = 1 THEN statistics.uid_id END) AS first_time_visitors';
 		$qd->add_select( $expr );
 		$qd->with( 'sessions' );
 	}

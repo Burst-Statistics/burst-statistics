@@ -45,9 +45,23 @@ class Environment_Data extends Data_Collector {
 	}
 
 	/**
+	 * Determine the database engine from the server info string.
+	 */
+	private function get_database_engine( string $server_info ): string {
+		if ( stripos( $server_info, 'mariadb' ) !== false ) {
+			return 'mariadb';
+		}
+		if ( stripos( $server_info, 'sqlite' ) !== false ) {
+			return 'sqlite';
+		}
+		return 'mysql';
+	}
+
+	/**
 	 * Collect data from the settings
 	 */
 	public function collect_data(): array {
+		global $wpdb;
 		return [
 			'wordpress' => [
 				'version'   => wp_get_wp_version(),
@@ -56,6 +70,10 @@ class Environment_Data extends Data_Collector {
 			],
 			'php'       => [
 				'version' => phpversion(),
+			],
+			'database'  => [
+				'version' => (string) $wpdb->db_version(),
+				'engine'  => $this->get_database_engine( (string) $wpdb->db_server_info() ),
 			],
 			'plugins'   => [
 				'active_plugins' => $this->get_active_plugins_with_versions(),

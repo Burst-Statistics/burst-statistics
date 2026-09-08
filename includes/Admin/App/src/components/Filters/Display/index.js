@@ -8,5 +8,4 @@
 export { default as FilterChipList } from './FilterChipList';
 export { default as AddFilterButton } from './AddFilterButton';
 
-// fallow-ignore-next-line unused-export
 export { default as FilterChip } from './FilterChip';

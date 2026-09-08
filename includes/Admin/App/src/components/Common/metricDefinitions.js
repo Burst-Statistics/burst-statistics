@@ -69,14 +69,40 @@ export const METRIC_DEFINITIONS = {
 	// Ecommerce charts.
 	sales_forecast_chart: {
 		label: __( 'Revenue over time', 'burst-statistics' ),
-		definition: __( 'Your store\'s total revenue per period: tracked orders plus subscription renewals. With the forecast enabled, the dashed line projects upcoming periods from the same period last year, scaled by your store\'s year-over-year growth; the current period blends what is already earned with the modeled remainder.', 'burst-statistics' ),
+		definition: __( 'Your store\'s total revenue per period: tracked orders plus subscription renewals. With "Next 12 months" enabled, the chart shows the last 12 complete months and the dashed line projects the next 12: each month starts from the same month last year, scaled by your store\'s year-over-year growth, and the current month blends what is already earned with its own pace.', 'burst-statistics' ),
 		whyItMatters: __( 'Seeing measured revenue and its projection in one line helps you spot seasonality and plan ahead.', 'burst-statistics' ),
 		url: 'https://burst-statistics.com/guides/how-sales-forecasts-are-calculated/'
 	},
 	subscription_forecast_chart: {
 		label: __( 'Subscription renewals over time', 'burst-statistics' ),
-		definition: __( 'Subscription renewal payments per period. The dashed forecast projects upcoming renewals from the same period last year, scaled by the net year-over-year renewal growth — which already accounts for churn and new subscribers.', 'burst-statistics' ),
+		definition: __( 'Subscription renewal payments per period. With "Next 12 months" enabled, the chart shows the last 12 complete months and the dashed forecast projects the next 12 from the same month last year, scaled by the net year-over-year renewal growth — which already accounts for churn and new subscribers.', 'burst-statistics' ),
 		whyItMatters: __( 'Renewals are your recurring baseline: projecting them shows the revenue you can count on before any new sales.', 'burst-statistics' ),
+		url: 'https://burst-statistics.com/guides/how-sales-forecasts-are-calculated/'
+	},
+
+	// Growth block.
+	growth_forecast_this_year: {
+		label: __( 'Forecasted revenue this year', 'burst-statistics' ),
+		definition: __( 'Projected total revenue for the current calendar year: the completed months as measured, plus the forecast for the remaining months — the current month extrapolated from its own pace. The change compares it with last year\'s total.', 'burst-statistics' ),
+		whyItMatters: __( 'The projected year total against last year is the quickest honest read on whether your store is actually growing.', 'burst-statistics' ),
+		url: 'https://burst-statistics.com/guides/how-sales-forecasts-are-calculated/'
+	},
+	growth_forecast_this_month: {
+		label: __( 'Forecasted revenue this month', 'burst-statistics' ),
+		definition: __( 'Projected total revenue for the current month: what is already earned — read from your store\'s own order records, including subscription renewals, where available — extrapolated over the full month at its own pace. The change compares it with the same month last year, so seasonality does not read as growth or decline.', 'burst-statistics' ),
+		whyItMatters: __( 'Comparing this month to the same month last year shows whether you are ahead of your own seasonal pattern.', 'burst-statistics' ),
+		url: 'https://burst-statistics.com/guides/how-sales-forecasts-are-calculated/'
+	},
+	growth_forecast_next_year: {
+		label: __( 'Forecasted revenue next year', 'burst-statistics' ),
+		definition: __( 'Projected revenue for the next calendar year, using the same model as the revenue chart\'s forecast. The change compares it with this year\'s projected total.', 'burst-statistics' ),
+		whyItMatters: __( 'A yearly projection helps you budget and set targets before the year starts.', 'burst-statistics' ),
+		url: 'https://burst-statistics.com/guides/how-sales-forecasts-are-calculated/'
+	},
+	growth_forecast_next_month: {
+		label: __( 'Forecasted revenue next month', 'burst-statistics' ),
+		definition: __( 'Projected revenue for next month, using the same model as the revenue chart\'s forecast. The change compares it with the same month last year, so it shows growth on top of your seasonal pattern.', 'burst-statistics' ),
+		whyItMatters: __( 'Knowing what next month is likely to bring helps you plan stock, campaigns and cash flow.', 'burst-statistics' ),
 		url: 'https://burst-statistics.com/guides/how-sales-forecasts-are-calculated/'
 	},
 

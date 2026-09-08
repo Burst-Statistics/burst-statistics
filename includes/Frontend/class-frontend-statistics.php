@@ -342,8 +342,8 @@ class Frontend_Statistics {
 					break;
 				case 'visitors':
 					$select_parts[] = $exclude_bounces
-						? 'COUNT(DISTINCT CASE WHEN sessions.bounce = 0 THEN statistics.uid END) as visitors'
-						: 'COUNT(DISTINCT statistics.uid) as visitors';
+						? 'COUNT(DISTINCT CASE WHEN sessions.bounce = 0 THEN statistics.uid_id END) as visitors'
+						: 'COUNT(DISTINCT statistics.uid_id) as visitors';
 					break;
 				case 'sessions':
 					$select_parts[] = $exclude_bounces

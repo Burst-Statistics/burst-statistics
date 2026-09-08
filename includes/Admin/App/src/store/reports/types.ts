@@ -36,6 +36,7 @@ export type ContentBlockId =
 	| 'locations'
 	| 'campaigns'
 	| 'sales'
+	| 'growth'
 	| 'funnel'
 	| 'top_performers'
 	| 'referrers'
@@ -158,4 +159,5 @@ export interface WizardState
 	id: number | null;
 	currentStep: number;
 	reportDateRange?: string;
+	enabled?: boolean;
 }

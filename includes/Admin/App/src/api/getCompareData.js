@@ -24,6 +24,11 @@ const goalMetrics = {
 	avg_time_on_page: __( 'Avg. time on page', 'burst-statistics' )
 };
 
+const pageMetrics = {
+	conversions: __( 'Conversions', 'burst-statistics' ),
+	reading_engagement_score: __( 'Engagement score', 'burst-statistics' )
+};
+
 const divide = ( value, total ) => 0 < total ? value / total : 0;
 
 const getPageviewsPerSession = ( data ) =>
@@ -91,6 +96,21 @@ const templates = {
 			exactValue: null,
 			communityMetricKey: 'average_time_on_page',
 			communityMetricValue: curr.avg_time_on_page
+		}),
+		conversions: ( curr ) => ({
+			title: __( 'Conversions', 'burst-statistics' ),
+			subtitle: __( '%s of pageviews converted', 'burst-statistics' ).replace(
+				'%s',
+				getPercentage( curr.conversions, curr.pageviews )
+			),
+			value: formatNumber( curr.conversions ),
+			exactValue: curr.conversions
+		}),
+		reading_engagement_score: ( curr ) => ({
+			title: __( 'Engagement score', 'burst-statistics' ),
+			subtitle: __( 'Score out of 100', 'burst-statistics' ),
+			value: formatNumber( curr.reading_engagement_score ),
+			exactValue: curr.reading_engagement_score
 		})
 	},
 	goalSelected: {
@@ -135,7 +155,7 @@ const templates = {
 	}
 };
 
-const transformCompareData = ( response ) => {
+const transformCompareData = ( response, includePageMetrics = false ) => {
 	const data = {};
 	const curr = response.current;
 	const prev = response.previous;
@@ -146,6 +166,22 @@ const transformCompareData = ( response ) => {
 	if ( 'goals' === response.view ) {
 		templateType = 'goalSelected';
 		selectedMetrics = goalMetrics;
+	}
+	if ( includePageMetrics ) {
+		const combinedMetrics = { ...selectedMetrics, ...pageMetrics };
+		const pageMetricOrder = [
+			'pageviews',
+			'sessions',
+			'visitors',
+			'reading_engagement_score',
+			'bounce_rate',
+			'conversions'
+		];
+		selectedMetrics = Object.fromEntries(
+			pageMetricOrder
+				.filter( ( key ) => key in combinedMetrics )
+				.map( ( key ) => [ key, combinedMetrics[key] ])
+		);
 	}
 	const selectedTemplate = templates[templateType];
 
@@ -182,9 +218,15 @@ const transformCompareData = ( response ) => {
  * @param          args.args
  * @return {Promise<*>}
  */
-const getCompareData = async({ startDate, endDate, range, args }) => {
+const getCompareData = async({
+	startDate,
+	endDate,
+	range,
+	args,
+	includePageMetrics = false
+}) => {
 	const { data } = await getData( 'compare', startDate, endDate, range, args );
-	return transformCompareData( data );
+	return transformCompareData( data, includePageMetrics );
 };
 
 export default getCompareData;

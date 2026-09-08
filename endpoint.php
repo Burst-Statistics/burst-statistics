@@ -18,6 +18,8 @@ if ( ! file_exists( BASE_PATH . 'wp-load.php' ) ) {
 }
 require_once BASE_PATH . 'wp-load.php';
 
+nocache_headers();
+
 if ( defined( 'BURST_ALLOWED_ORIGINS' ) || defined( 'BURST_HEADLESS_DOMAIN' ) ) {
 	$burst_allowed_origins = defined( 'BURST_ALLOWED_ORIGINS' ) ? explode( ',', BURST_ALLOWED_ORIGINS ) : [];
 

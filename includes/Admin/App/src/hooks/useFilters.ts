@@ -16,6 +16,7 @@ import {
 
 } from '@/config/filterConfig';
 import { useWizardStore } from '@/store/reports/useWizardStore';
+import { isFilterEnabledRoute, isPerPageRoute } from '@/utils/routeUtils';
 
 interface BurstGlobalSettings {
 	pinned_filters?: Record<string, string>;
@@ -38,12 +39,6 @@ const getPinnedFilters = (): Record<string, string> => {
 		}
 	});
 	return result;
-};
-
-const FILTER_ENABLED_ROUTES = [ '/statistics', '/engagement', '/sources', '/sales', '/table' ];
-
-export const isFilterEnabledRoute = ( pathname: string ): boolean => {
-	return FILTER_ENABLED_ROUTES.some( ( route ) => pathname.startsWith( route ) );
 };
 
 const buildSearchParams = (
@@ -116,9 +111,13 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 		}
 
 		// URL mode: get from URL params (only on filter routes)
+		const perPage = isPerPageRoute( location.pathname );
 		const result: FilterSearchParams = { ...INITIAL_FILTERS };
 		if ( isFilterRoute ) {
 			FILTER_KEYS.forEach( ( key ) => {
+				if ( perPage && 'page_url' === key ) {
+					return;
+				}
 				if ( searchParams[key]) {
 					result[key] = searchParams[key];
 				}
@@ -126,7 +125,7 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 		}
 		return result;
 		// eslint-disable-next-line
-	}, [ searchParams, isFilterRoute, isBlockMode, reportBlockIndex, getReportFilters, wizardContent ]);
+	}, [ searchParams, isFilterRoute, isBlockMode, reportBlockIndex, getReportFilters, wizardContent, location.pathname ] );
 
 	const [ pinnedFilters, setPinnedFiltersState ] = useState<Record<string, string>>( getPinnedFilters );
 
@@ -434,8 +433,4 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 
 export default useFilters;
 
-export {
-	FILTER_KEYS,
-	TRAILING_PARAM_KEY,
-	type FilterSearchParams
-} from '@/config/filterConfig';
+export { type FilterSearchParams } from '@/config/filterConfig';

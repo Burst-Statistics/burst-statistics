@@ -5,6 +5,7 @@ use Burst\Admin\Database\Query;
 use Burst\Admin\Database\Query_Executor;
 use Burst\Admin\Statistics\Metrics\Metric_Registry;
 use Burst\Admin\Statistics\Query_Shapes\From_Strategy_Registry;
+use Burst\Admin\Statistics\Query_Shapes\Session_Grain_Shape;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Sanitize;
@@ -170,6 +171,14 @@ class Statistics_Query {
 	private ?object $from_subquery_obj = null;
 
 	/**
+	 * Caller request to serve this query from the session-grain FROM subquery.
+	 * Deliberately NOT reset in build_query_internal(): the swap itself happens
+	 * inside the build via the registered From strategy, so the request must
+	 * survive into it. Callers own the eligibility decision.
+	 */
+	private bool $session_grain_from_requested = false;
+
+	/**
 	 * Table alias for the FROM clause (subquery alias or 'statistics').
 	 */
 	private string $from_alias = 'statistics';
@@ -187,6 +196,13 @@ class Statistics_Query {
 	 * @var array<string, string>
 	 */
 	private array $group_by_aliases = [];
+
+	/**
+	 * Whether fetch() must swap integer page ids under the page_url alias for
+	 * display urls (page-grain queries, see Page_Url_Metric). Set during
+	 * build, reset per build.
+	 */
+	private bool $hydrate_page_urls = false;
 
 	/**
 	 * Cached TZ offset in seconds.
@@ -350,16 +366,63 @@ class Statistics_Query {
 	 * the source columns existed) fall back to classifying the raw referrer
 	 * and campaign parameters on the fly. The CASE expression is provided via
 	 * the burst_source_category_case_sql filter (registered by Pro); without a
-	 * registrant the stored column is used as-is. Queries using the fallback
-	 * form must join both the sessions and campaigns tables.
+	 * registrant the stored column is used as-is.
+	 *
+	 * Once the column is materialized the fallback is skipped entirely: the
+	 * Pro CASE is ~31K characters of LIKE patterns, and a datatable that
+	 * selects and groups on it ships it twice — enough to get the query
+	 * killed on large hosts. Pair with with_source_category_joins() so the
+	 * campaigns join is only added while the CASE still references it.
 	 */
 	public static function source_category_sql(): string {
+		if ( self::source_category_is_materialized() ) {
+			return self::source_category_materialized_sql();
+		}
+
 		$case_expr = (string) apply_filters( 'burst_source_category_case_sql', '' );
 		if ( $case_expr === '' ) {
 			return 'sessions.source_category';
 		}
 
 		return "COALESCE(NULLIF(sessions.source_category, ''), ({$case_expr}))";
+	}
+
+	/**
+	 * Join the tables source_category_sql() references: sessions always,
+	 * campaigns only while the classifier fallback (which reads
+	 * campaigns.medium / campaigns.source) is still in play.
+	 */
+	public function with_source_category_joins(): self {
+		if ( self::source_category_is_materialized() ) {
+			$this->with( 'sessions' );
+		} else {
+			$this->with( 'sessions', 'campaigns' );
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Whether sessions.source_category is fully materialized: every historic
+	 * session carries a stored category and new sessions get one synchronously
+	 * on write. Neutral gate — the registrant (Pro, once its backfill task has
+	 * completed) owns the knowledge; without a registrant (free) the column is
+	 * never written, so this stays false and behavior is unchanged.
+	 */
+	public static function source_category_is_materialized(): bool {
+		return (bool) apply_filters( 'burst_source_category_materialized', false );
+	}
+
+	/**
+	 * SQL expression yielding a session's source category from the materialized
+	 * column alone — no classifier CASE, no campaigns join. Only valid when
+	 * source_category_is_materialized(); '' can then only occur for a session
+	 * in a mid-write race, which maps to 'direct' by convention (matching the
+	 * session-grain sources blocks). Single source of truth: the Pro sources
+	 * queries reuse this exact expression.
+	 */
+	public static function source_category_materialized_sql(): string {
+		return "COALESCE(NULLIF(sessions.source_category, ''), 'direct')";
 	}
 
 	/**
@@ -1082,7 +1145,28 @@ class Statistics_Query {
 	}
 
 	/**
-	 * Set a subquery as the FROM clause.
+	 * Request the session-grain FROM subquery for this query. The swap happens
+	 * during the build via the registered From strategy; the caller owns the
+	 * eligibility decision (metrics, filters, readiness).
+	 *
+	 * @return $this
+	 */
+	public function request_session_grain_from(): self {
+		$this->session_grain_from_requested = true;
+		return $this;
+	}
+
+	/**
+	 * Whether a caller requested the session-grain FROM subquery.
+	 */
+	public function is_session_grain_from_requested(): bool {
+		return $this->session_grain_from_requested;
+	}
+
+	/**
+	 * Set a subquery as the FROM clause. Only effective when called from a From
+	 * strategy during the build: build_query_internal() resets this at the
+	 * start of every build.
 	 *
 	 * @param \Burst\Admin\Database\Query $inner The inner Query object.
 	 * @param string                      $alias The alias for the subquery.
@@ -1147,31 +1231,43 @@ class Statistics_Query {
 		if ( $this->avail_joins_cache !== null ) {
 			return $this->avail_joins_cache;
 		}
-		global $wpdb;
 		$available_joins = Join_Registry::resolve( $this );
 		$filters         = $this->get_filters();
 		$goal_id_filter  = $filters['goal_id'] ?? 0;
-		if ( $goal_id_filter === 'all' ) {
-			if ( isset( $available_joins['goals'] ) ) {
-				$active_goal_ids = $wpdb->get_col( "SELECT ID FROM {$wpdb->prefix}burst_goals WHERE status = 'active'" );
-				if ( ! empty( $active_goal_ids ) ) {
-					$active_goals_in = implode( ',', array_map( 'intval', $active_goal_ids ) );
-					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$available_joins['goals']['on'] .= " AND goals.goal_id IN ($active_goals_in)";
-				} else {
-					$available_joins['goals']['on'] .= ' AND 1 = 0';
-				}
-			}
-		} elseif ( (int) $goal_id_filter > 0 && isset( $available_joins['goals'] ) ) {
-			$goal_id       = (int) $goal_id_filter;
-			$is_exclude    = ( $this->get_filter_exclusions()['goal_id'] ?? 'include' ) === 'exclude';
-			$goal_operator = $is_exclude ? '!=' : '=';
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$goal_sql                        = $wpdb->prepare( "AND goals.goal_id $goal_operator %d", $goal_id );
-			$available_joins['goals']['on'] .= ' ' . $goal_sql;
+		if ( isset( $available_joins['goals'] ) ) {
+			$is_exclude                      = ( $this->get_filter_exclusions()['goal_id'] ?? 'include' ) === 'exclude';
+			$available_joins['goals']['on'] .= self::goal_condition_sql( $goal_id_filter, $is_exclude, 'goals.goal_id' );
 		}
 		$this->avail_joins_cache = $available_joins;
 		return $available_joins;
+	}
+
+	/**
+	 * SQL fragment (" AND <column> ...", or '' when no goal filter is active)
+	 * enforcing the goal_id filter on a goals join. Single source of truth for
+	 * every goals-join builder — the hit-keyed ON baking above and the
+	 * session-keyed derived table in Session_Grain_Shape — so both paths always
+	 * count the same completions.
+	 *
+	 * @param mixed  $goal_id_filter The goal_id filter value: 'all', a goal id, or 0/absent.
+	 *                               Mixed because filter values arrive as strings or ints from the REST layer.
+	 * @param bool   $is_exclude     Whether the goal_id filter is an exclusion.
+	 * @param string $column         Qualified goal id column (e.g. 'goals.goal_id').
+	 */
+	public static function goal_condition_sql( mixed $goal_id_filter, bool $is_exclude, string $column ): string {
+		global $wpdb;
+		if ( 'all' === $goal_id_filter ) {
+			$active_goal_ids = $wpdb->get_col( "SELECT ID FROM {$wpdb->prefix}burst_goals WHERE status = 'active'" );
+			return empty( $active_goal_ids )
+				? ' AND 1 = 0'
+				: " AND {$column} IN (" . implode( ',', array_map( 'intval', $active_goal_ids ) ) . ')';
+		}
+		if ( (int) $goal_id_filter > 0 ) {
+			$goal_operator = $is_exclude ? '!=' : '=';
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- operator and column are fixed tokens, value is prepared.
+			return (string) $wpdb->prepare( " AND {$column} {$goal_operator} %d", (int) $goal_id_filter );
+		}
+		return '';
 	}
 
 	/**
@@ -1291,6 +1387,7 @@ class Statistics_Query {
 		$this->from_subquery_obj   = null;
 		$this->from_alias          = 'statistics';
 		$this->group_by_aliases    = [];
+		$this->hydrate_page_urls   = false;
 		// NOTE: additional_wheres is intentionally NOT reset here. It holds caller-supplied
 		// conditions from ->where()/->where_group()/->where_raw()/->where_not_null(), which
 		// must survive into the build. to_query() snapshots and restores it (like joins) so
@@ -1363,7 +1460,9 @@ class Statistics_Query {
 		$filter_map = Filter_Registry::all();
 		foreach ( $this->get_filters() as $filter_key => $_value ) {
 			if ( $filter_key === 'source_category' ) {
-				$this->with( 'sessions', 'campaigns' );
+				// The materialized column needs no classifier fallback, so the
+				// campaigns join (keyed on the hit id) can be skipped entirely.
+				$this->with_source_category_joins();
 				continue;
 			}
 			$col = $filter_map[ $filter_key ] ?? '';
@@ -1409,7 +1508,9 @@ class Statistics_Query {
 			$q->where( 'statistics.page_type', '404', '!=' );
 		}
 
-		$q->where_between( 'statistics.time', $this->get_date_start(), $this->get_date_end(), '%d' );
+		if ( $this->get_date_start() > 0 && $this->get_date_end() > 0 ) {
+			$q->where_between( 'statistics.time', $this->get_date_start(), $this->get_date_end(), '%d' );
+		}
 
 		// Correlated EXISTS support: tie this subquery to an outer statistic id. Emitted here
 		// (not via where_raw) so it survives strict mode. The column is validated by the caller.
@@ -1536,11 +1637,30 @@ class Statistics_Query {
 		if ( $this->is_expensive_aggregation_window() ) {
 			$default_ttl = 300;
 		}
+		// Ranges that end before today (site timezone) aggregate closed days
+		// only — that data no longer changes, so an hour of caching is safe
+		// without invalidation machinery. Ranges touching today (including the
+		// live/today blocks) keep the short TTL so current numbers stay fresh.
+		if ( $this->range_ends_before_today() ) {
+			$default_ttl = HOUR_IN_SECONDS;
+		}
 		$option_ttl = (int) get_option( 'burst_query_results_cache_ttl', -1 );
 		if ( $option_ttl >= 0 ) {
 			$default_ttl = $option_ttl;
 		}
 		return max( 0, (int) apply_filters( 'burst_query_results_cache_ttl', $default_ttl, $this ) );
+	}
+
+	/**
+	 * Whether the query's date range ends before today's start in the site
+	 * timezone — i.e. it aggregates closed days only.
+	 */
+	private function range_ends_before_today(): bool {
+		$end = $this->get_date_end();
+		if ( $end <= 0 ) {
+			return false;
+		}
+		return $end < ( new \DateTimeImmutable( 'today', wp_timezone() ) )->getTimestamp();
 	}
 
 	/**
@@ -1678,6 +1798,15 @@ class Statistics_Query {
 		$eq_operator  = $is_exclude ? '!=' : '=';
 		$like_keyword = $is_exclude ? 'NOT LIKE' : 'LIKE';
 
+		if ( $filter === 'goal_id' && $value === 'all' ) {
+			// 'all' means "any active goal": the goals JOIN ON already restricts
+			// the join to the active set (see goal_condition_sql()), so the
+			// WHERE only needs to demand a matching completion row. The generic
+			// path below would cast 'all' to 0 and match nothing.
+			$query->where_raw( 'goals.ID IS ' . ( $is_exclude ? 'NULL' : 'NOT NULL' ) );
+			return;
+		}
+
 		if ( $filter === 'status' ) {
 			// Virtual filter: there is no status column, 404 hits are stored with page_type '404'.
 			// '404' selects those rows, '200' selects everything else; exclusion inverts the match.
@@ -1686,25 +1815,83 @@ class Statistics_Query {
 			return;
 		}
 
+		if ( $filter === 'new_visitor' && $value !== '' ) {
+			// By this point the value has been normalised to 'include' or 'exclude' by
+			// Statistics_Sanitizer::sanitize_include_exclude(). $is_exclude tracks the
+			// '!' prefix exclusion logic handled upstream, so XOR here gives the correct
+			// IN / NOT IN operator for every combination.
+			$is_new   = ( $value === 'include' );
+			$operator = ( $is_new !== $is_exclude ) ? 'IN' : 'NOT IN';
+			// Once the denormalized session columns are backfilled, the set of
+			// first-time visitor ids is answerable from the sessions table
+			// alone: an indexed scan over the session rows in range instead of
+			// scanning every hit and probing sessions per hit. Range
+			// membership then follows the session start — the convention every
+			// session-grain surface uses. Until the backfill completes the
+			// hit-driven subquery remains: its first_time_visit reads are
+			// equally unbackfilled, so the two stay consistent per window.
+			// $operator is derived from a boolean comparison and can only be 'IN' or 'NOT IN'.
+			if ( Session_Grain_Shape::session_grain_ready() ) {
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				$sql = $wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"statistics.uid_id {$operator} ( SELECT sess_new.uid_id FROM {$wpdb->prefix}burst_sessions sess_new WHERE sess_new.first_time_visit = 1 AND sess_new.uid_id > 0 AND sess_new.start_time BETWEEN %d AND %d )",
+					$this->date_start,
+					$this->date_end
+				);
+			} else {
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				$sql = $wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"statistics.uid_id {$operator} ( SELECT st_new.uid_id FROM {$wpdb->prefix}burst_statistics st_new INNER JOIN {$wpdb->prefix}burst_sessions sess_new ON st_new.session_id = sess_new.ID WHERE sess_new.first_time_visit = 1 AND st_new.time BETWEEN %d AND %d )",
+					$this->date_start,
+					$this->date_end
+				);
+			}
+			$query->where_raw( $sql );
+			return;
+		}
+
 		if ( $filter === 'entry_exit_pages' && $value !== '' ) {
-			// entry_exit_pages is not in Filter_Registry, so the auto-join loop
-			// won't pull in sessions; force the join here.
-			$this->with( 'sessions' );
 			if ( $value === 'entry' ) {
-				$query->where( 'sessions.first_time_visit', 1, '=', '%d' );
+				// Bound the subquery to the active date range. Orphaned rows with a
+				// NULL session_id would otherwise collapse into one NULL group and
+				// surface a phantom entry page.
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+				$query->where_raw(
+					$wpdb->prepare(
+						"statistics.ID IN ( SELECT MIN(ID) FROM {$wpdb->prefix}burst_statistics WHERE time BETWEEN %d AND %d AND session_id IS NOT NULL GROUP BY session_id )",
+						$this->date_start,
+						$this->date_end
+					)
+				);
 			} else {
 				// Bound the subquery to the active date range; an unscoped
 				// SELECT MAX(ID) ... GROUP BY session_id scans the whole table.
-				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				// Exclude NULL session_id rows to avoid a phantom exit page.
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 				$query->where_raw(
 					$wpdb->prepare(
-						"statistics.ID IN ( SELECT MAX(ID) FROM {$wpdb->prefix}burst_statistics WHERE time BETWEEN %d AND %d GROUP BY session_id)",
+						"statistics.ID IN ( SELECT MAX(ID) FROM {$wpdb->prefix}burst_statistics WHERE time BETWEEN %d AND %d AND session_id IS NOT NULL GROUP BY session_id )",
 						$this->date_start,
 						$this->date_end
 					)
 				);
 			}
+			return;
 		} elseif ( $filter === 'source_category' && $value !== '' ) {
+			// Materialized column: filter on the stored value directly — no
+			// classifier CASE, no campaigns join. ''→'direct' matches the
+			// session-grain sources convention for a mid-write race row.
+			if ( self::source_category_is_materialized() ) {
+				$this->with( 'sessions' );
+				$cat_expr = self::source_category_materialized_sql();
+				$operator = $is_exclude ? '!=' : '=';
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+				$query->where_raw( "({$cat_expr}) {$operator} %s", [ $value ] );
+				return;
+			}
+
 			// source_category is stored on sessions (with dynamic fallback for historic sessions).
 			$case_expr = (string) apply_filters( 'burst_source_category_case_sql', '' );
 			if ( $case_expr === '' ) {
@@ -1854,7 +2041,110 @@ class Statistics_Query {
 		$timeout_ms = $this->get_query_timeout_ms();
 		$sql        = $this->add_query_timeout_hint( $q->prepare_sql(), $timeout_ms );
 		$result     = $this->build_executor( $timeout_ms )->run( $sql, 'get', $output_type );
-		return is_array( $result ) ? $result : [];
+		if ( ! is_array( $result ) ) {
+			return [];
+		}
+		if ( $this->hydrate_page_urls ) {
+			$result = $this->hydrate_page_url_rows( $result );
+		}
+		return $result;
+	}
+
+	/**
+	 * Page-grain queries select the integer page_id under the page_url alias
+	 * (see Page_Url_Metric); this marks the built query for hydration so
+	 * fetch() swaps the ids for display urls afterwards. Set during build,
+	 * reset per build.
+	 */
+	public function request_page_url_hydration(): void {
+		$this->hydrate_page_urls = true;
+	}
+
+	/**
+	 * Replace integer page ids under the page_url alias with display urls, in
+	 * bulk over the grouped result rows: negative ids are burst_page_urls rows
+	 * (the url IS the identity), positive ids resolve to the post's canonical
+	 * row, falling back to the most recently seen url for that post id (a
+	 * deleted post that never got a canonical assigned). Two or three chunked
+	 * IN() lookups against the small dictionary — never per statistics row.
+	 *
+	 * @param array<int, array<string, mixed>|object> $rows Fetched result rows.
+	 * @return array<int, array<string, mixed>|object>
+	 */
+	private function hydrate_page_url_rows( array $rows ): array {
+		global $wpdb;
+
+		$negative_ids = [];
+		$positive_ids = [];
+		foreach ( $rows as $row ) {
+			$page_id = (int) ( is_object( $row ) ? ( $row->page_url ?? 0 ) : ( $row['page_url'] ?? 0 ) );
+			if ( $page_id < 0 ) {
+				$negative_ids[ -$page_id ] = true;
+			} elseif ( $page_id > 0 ) {
+				$positive_ids[ $page_id ] = true;
+			}
+		}
+
+		$url_map = [];
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table name, integer id lists.
+		foreach ( array_chunk( array_keys( $negative_ids ), 5000 ) as $chunk ) {
+			$id_list = implode( ',', array_map( 'intval', $chunk ) );
+			foreach ( $wpdb->get_results( "SELECT ID, page_url FROM {$wpdb->prefix}burst_page_urls WHERE ID IN ({$id_list})", ARRAY_A ) as $dict_row ) {
+				$url_map[ - (int) $dict_row['ID'] ] = (string) $dict_row['page_url'];
+			}
+		}
+		foreach ( array_chunk( array_keys( $positive_ids ), 5000 ) as $chunk ) {
+			$id_list = implode( ',', array_map( 'intval', $chunk ) );
+			foreach ( $wpdb->get_results( "SELECT page_id, page_url FROM {$wpdb->prefix}burst_page_urls WHERE is_canonical = 1 AND page_id IN ({$id_list})", ARRAY_A ) as $dict_row ) {
+				$url_map[ (int) $dict_row['page_id'] ] = (string) $dict_row['page_url'];
+			}
+		}
+		$missing = array_diff( array_keys( $positive_ids ), array_keys( $url_map ) );
+		foreach ( array_chunk( $missing, 5000 ) as $chunk ) {
+			$id_list = implode( ',', array_map( 'intval', $chunk ) );
+			$latest  = $wpdb->get_results(
+				"SELECT d.page_id, d.page_url FROM {$wpdb->prefix}burst_page_urls d
+				JOIN ( SELECT page_id, MAX(ID) AS mid FROM {$wpdb->prefix}burst_page_urls WHERE page_id IN ({$id_list}) GROUP BY page_id ) m ON d.ID = m.mid",
+				ARRAY_A
+			);
+			foreach ( $latest as $dict_row ) {
+				$url_map[ (int) $dict_row['page_id'] ] = (string) $dict_row['page_url'];
+			}
+		}
+        // phpcs:enable
+
+		// Posts the dictionary has never seen under their id: on a fresh
+		// install nothing seeds canonical rows (the tracker only resolves
+		// page_id 0 urls, save_post only fires on edits), and on upgraded
+		// sites a post with no hits before the seed ran has none either.
+		// Resolve them from the permalink and write the canonical row, so the
+		// next query finds them in the dictionary. Non-viewable posts and
+		// query-string permalinks yield '' and stay unresolved (see
+		// canonical_page_path()).
+		$unresolved = array_diff( array_keys( $positive_ids ), array_keys( $url_map ) );
+		if ( ! empty( $unresolved ) ) {
+			_prime_post_caches( $unresolved, false, false );
+			foreach ( $unresolved as $page_id ) {
+				$path = $this->canonical_page_path( (int) $page_id );
+				if ( '' === $path ) {
+					continue;
+				}
+				$url_map[ (int) $page_id ] = $path;
+				$this->set_canonical_page_url( (int) $page_id, $path );
+			}
+		}
+
+		foreach ( $rows as $index => $row ) {
+			if ( is_object( $row ) ) {
+				$page_id       = (int) ( $row->page_url ?? 0 );
+				$row->page_url = $url_map[ $page_id ] ?? '';
+			} else {
+				$page_id                    = (int) ( $row['page_url'] ?? 0 );
+				$rows[ $index ]['page_url'] = $url_map[ $page_id ] ?? '';
+			}
+		}
+
+		return $rows;
 	}
 
 	/**
@@ -1871,7 +2161,11 @@ class Statistics_Query {
 		$q          = $this->to_query();
 		$timeout_ms = $this->get_query_timeout_ms();
 		$sql        = $this->add_query_timeout_hint( $q->prepare_sql(), $timeout_ms );
-		return $this->build_executor( $timeout_ms )->run( $sql, 'get_row', $output_type ) ?: null;
+		$result     = $this->build_executor( $timeout_ms )->run( $sql, 'get_row', $output_type ) ?: null;
+		if ( null !== $result && $this->hydrate_page_urls ) {
+			$result = $this->hydrate_page_url_rows( [ $result ] )[0];
+		}
+		return $result;
 	}
 
 	/**

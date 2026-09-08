@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+set -e
+
+# ==============================================================================
+# Burst Pro Pre-Push Git Hook
+# ==============================================================================
+# Runs linting, architectural validation, static analysis, and fast unit tests
+# before pushing code to remote branches.
+#
+# Bypass options:
+#   git push --no-verify
+#   BURST_SKIP_HOOKS=1 git push
+#   SKIP_HOOKS=1 git push
+# ==============================================================================
+
+if [ "${BURST_SKIP_HOOKS}" = "1" ] || [ "${SKIP_HOOKS}" = "1" ] || [ "${NO_VERIFY}" = "1" ]; then
+    echo "⏩ Pre-push hooks bypassed via environment variable."
+    exit 0
+fi
+
+# Terminal colors
+if [ -t 1 ]; then
+    BOLD="\033[1m"
+    GREEN="\033[0;32m"
+    YELLOW="\033[0;33m"
+    RED="\033[0;31m"
+    CYAN="\033[0;36m"
+    RESET="\033[0m"
+else
+    BOLD=""
+    GREEN=""
+    YELLOW=""
+    RED=""
+    CYAN=""
+    RESET=""
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+APP_DIR="${REPO_ROOT}/includes/Admin/App"
+
+echo -e "\n${BOLD}${CYAN}🚀 Running Burst Pro Pre-Push Verifications...${RESET}"
+echo -e "${YELLOW}Tip: Use 'git push --no-verify' or 'BURST_SKIP_HOOKS=1 git push' to bypass.${RESET}\n"
+
+# Step 1: Frontend Lint & Auto-Fix
+echo -e "${BOLD}[1/5] 🎨 Linting React Admin App (npm run lint:fix && npm run lint)...${RESET}"
+if (cd "${APP_DIR}" && npm run lint:fix && npm run lint); then
+    echo -e "${GREEN}✓ Admin App ESLint passed.${RESET}\n"
+else
+    echo -e "\n${RED}✗ Admin App ESLint failed. Please fix the linting errors above before pushing.${RESET}"
+    exit 1
+fi
+
+# Step 2: Fallow Architectural Validation (new issues only, same gate as CI)
+FALLOW_BASE="${FALLOW_BASE:-origin/development}"
+echo -e "${BOLD}[2/5] 🏗️  Validating React Architecture (fallow audit --base ${FALLOW_BASE} --gate new-only)...${RESET}"
+if (cd "${APP_DIR}" && npx fallow audit --base "${FALLOW_BASE}" --production --gate new-only --fail-on-issues); then
+    echo -e "${GREEN}✓ Fallow architectural validation passed.${RESET}\n"
+else
+    echo -e "\n${RED}✗ Fallow architectural validation failed. Please address complexity/circular rules before pushing.${RESET}"
+    exit 1
+fi
+
+# Step 3: Frontend Fast Unit Tests
+echo -e "${BOLD}[3/5] ⚡ Running Admin App Unit Tests (npm run test)...${RESET}"
+if (cd "${APP_DIR}" && npm run test); then
+    echo -e "${GREEN}✓ Admin App unit tests passed.${RESET}\n"
+else
+    echo -e "\n${RED}✗ Admin App unit tests failed. Please fix test failures before pushing.${RESET}"
+    exit 1
+fi
+
+# Step 4: PHP Code Standards (WPCS / PHPCS)
+echo -e "${BOLD}[4/5] 🐘 Checking PHP Code Standards (composer run-script lint)...${RESET}"
+if (cd "${REPO_ROOT}" && composer run-script lint); then
+    echo -e "${GREEN}✓ PHPCS / WPCS passed.${RESET}\n"
+else
+    echo -e "\n${RED}✗ PHPCS / WPCS check failed. Run 'composer run-script lint' to see details.${RESET}"
+    exit 1
+fi
+
+# Step 5: PHP Static Analysis (PHPStan)
+echo -e "${BOLD}[5/5] 🔍 Running PHPStan Static Analysis (composer run-script phpstan)...${RESET}"
+if (cd "${REPO_ROOT}" && composer run-script phpstan); then
+    echo -e "${GREEN}✓ PHPStan passed.${RESET}\n"
+else
+    echo -e "\n${RED}✗ PHPStan analysis failed. Run 'composer run-script phpstan' to review errors.${RESET}"
+    exit 1
+fi
+
+# Check if lint:fix created uncommitted modifications
+MODIFIED_IN_APP=$(git status --porcelain "${APP_DIR}" 2>/dev/null || true)
+if [ -n "${MODIFIED_IN_APP}" ]; then
+    echo -e "${YELLOW}⚠️  'npm run lint:fix' automatically corrected some files in includes/Admin/App.${RESET}"
+    echo -e "${YELLOW}   Please stage and commit these fixes before pushing:${RESET}"
+    echo -e "   git add includes/Admin/App && git commit -m \"style: auto-fix linting issues\"\n"
+    exit 1
+fi
+
+echo -e "${BOLD}${GREEN}🎉 All pre-push checks passed successfully! Proceeding with push.${RESET}\n"
+exit 0

@@ -54,6 +54,7 @@ class Reading_Engagement {
 		add_filter( 'burst_datatable_pre_data', [ $this, 'get_reading_engagement_datatable_data' ], 10, 2 );
 		add_filter( 'burst_get_data_available_args', [ $this, 'add_reading_engagement_available_args' ], 10, 2 );
 		add_filter( 'burst_sanitize_arg', [ $this, 'sanitize_reading_engagement_arg' ], 10, 3 );
+		add_filter( 'burst_compare_data', [ $this, 'add_page_engagement_to_compare_data' ], 10, 2 );
 	}
 
 	/**
@@ -92,6 +93,9 @@ class Reading_Engagement {
 		if ( $type === 'reading_engagement' || $type === 'datatable-reading-engagement' ) {
 			$args[] = 'least_engagement';
 		}
+		if ( $type === 'compare' ) {
+			$args[] = 'include_page_metrics';
+		}
 		return $args;
 	}
 
@@ -106,7 +110,7 @@ class Reading_Engagement {
 	 * mixed: 'burst_sanitize_arg' filter callback — $sanitized_value/$value and the return are generic across all args (bool|int|string|array|null), so the signature must stay open.
 	 */
 	public function sanitize_reading_engagement_arg( mixed $sanitized_value, string $arg, mixed $value ): mixed {
-		if ( $arg === 'least_engagement' ) {
+		if ( $arg === 'least_engagement' || $arg === 'include_page_metrics' ) {
 			return filter_var( $value, FILTER_VALIDATE_BOOLEAN );
 		}
 		return $sanitized_value;
@@ -144,7 +148,62 @@ class Reading_Engagement {
 	}
 
 	/**
-	 * Query the reading engagement metrics within a date range and compute engagement score.
+	 * Add reading engagement scores to page-filtered comparison data.
+	 *
+	 * @param array $data Compare response containing current and previous metrics.
+	 * @param array $args Normalized compare request arguments.
+	 * @return array Compare response with reading engagement scores.
+	 */
+	public function add_page_engagement_to_compare_data( array $data, array $args ): array {
+		$filters = (array) ( $args['filters'] ?? [] );
+		if ( empty( $args['include_page_metrics'] ) || empty( $filters['page_url'] ) ) {
+			return $data;
+		}
+
+		unset( $filters['goal_id'] );
+
+		$current_args            = $args;
+		$current_args['filters'] = $filters;
+		$current_rows            = $this->query_reading_engagement( $current_args, 1 );
+
+		$start = (int) ( $args['date_start'] ?? 0 );
+		$end   = (int) ( $args['date_end'] ?? time() );
+
+		$previous_args               = $current_args;
+		$previous_args['date_start'] = isset( $args['compare_date_start'] )
+			? (int) $args['compare_date_start']
+			: $start - ( $end - $start );
+		$previous_args['date_end']   = isset( $args['compare_date_end'] )
+			? (int) $args['compare_date_end']
+			: $end - ( $end - $start );
+		$previous_rows               = $this->query_reading_engagement( $previous_args, 1 );
+
+		$data['current']['reading_engagement_score']  = (int) ( $current_rows[0]['reading_engagement_score'] ?? 0 );
+		$data['previous']['reading_engagement_score'] = (int) ( $previous_rows[0]['reading_engagement_score'] ?? 0 );
+
+		return $data;
+	}
+
+	/**
+	 * Helper to check if max_scroll column exists in burst_statistics table.
+	 *
+	 * @return bool True if max_scroll column exists.
+	 */
+	private function has_max_scroll_column(): bool {
+		static $has_col = null;
+		if ( null !== $has_col ) {
+			return $has_col;
+		}
+		global $wpdb;
+		$stats_table = $wpdb->prefix . 'burst_statistics';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$cols    = $wpdb->get_col( $wpdb->prepare( 'SHOW COLUMNS FROM `' . esc_sql( $stats_table ) . '` LIKE %s', 'max_scroll' ) );
+		$has_col = ! empty( $cols );
+		return $has_col;
+	}
+
+	/**
+	 * Query reading engagement data and calculate scores for pages.
 	 *
 	 * @param array $args  Normalized request args with date_start/date_end.
 	 * @param int   $limit Max rows to return; 0 returns all scored candidates
@@ -156,6 +215,11 @@ class Reading_Engagement {
 		$end   = isset( $args['date_end'] ) ? (int) $args['date_end'] : time();
 		$least = isset( $args['least_engagement'] ) && (bool) $args['least_engagement'];
 
+		$select_fields = [ 'page_url', 'avg_time_on_page' ];
+		if ( $this->has_max_scroll_column() ) {
+			$select_fields[] = 'avg_max_scroll';
+		}
+
 		// Built natively on Statistics_Query: base table is burst_statistics.
 		// The candidate set is capped in SQL: scoring needs a word count per
 		// page, so an uncapped query would cost a post lookup for every
@@ -166,7 +230,7 @@ class Reading_Engagement {
 		$qd = Statistics_Query::create( 'reading_engagement' )
 			->date_range( $start, $end )
 			->filters( (array) ( $args['filters'] ?? [] ) )
-			->select( [ 'page_url', 'avg_time_on_page' ] )
+			->select( $select_fields )
 			->where( 'statistics.time_on_page', 0, '>', '%d' )
 			->where( 'statistics.page_url', '', '!=' )
 			->group_by( 'page_url' )
@@ -223,9 +287,18 @@ class Reading_Engagement {
 			$expected_time_sec = max( 15.0, ( $words / (float) self::WORDS_PER_MINUTE ) * 60.0 );
 			$avg_time_ms       = (float) $row['avg_time_on_page'];
 			$avg_time_sec      = $avg_time_ms / 1000.0;
+			$time_ratio        = min( 1.0, $avg_time_sec / $expected_time_sec );
+			$avg_max_scroll    = isset( $row['avg_max_scroll'] ) ? (float) $row['avg_max_scroll'] : 0.0;
 
-			// Score from 0 to 100.
-			$score = (int) min( 100, max( 0, (int) round( ( $avg_time_sec / $expected_time_sec ) * 100 ) ) );
+			// If scroll metrics are recorded, combine time ratio (60%) and scroll depth ratio (40%).
+			// Fallback gracefully to time-only ratio for legacy data where max_scroll is 0.
+			if ( $avg_max_scroll > 0 ) {
+				$scroll_ratio   = min( 1.0, max( 0.0, $avg_max_scroll / 100.0 ) );
+				$combined_ratio = ( $time_ratio * 0.6 ) + ( $scroll_ratio * 0.4 );
+				$score          = (int) min( 100, max( 0, (int) round( $combined_ratio * 100 ) ) );
+			} else {
+				$score = (int) min( 100, max( 0, (int) round( $time_ratio * 100 ) ) );
+			}
 
 			$processed[] = [
 				'page_url'                 => $page_url,
