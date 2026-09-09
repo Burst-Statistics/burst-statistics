@@ -12,7 +12,7 @@
     "tailwind": "postcss src/styles/tailwind.css -o src/tailwind.generated.css",
     "build:css": "postcss src/styles/tailwind.css -o src/tailwind.generated.css",
     "build:css:watch": "postcss src/styles/tailwind.css -o src/tailwind.generated.css --watch",
-    "test": "tsx --test src/buildSize.test.ts src/components/Forecast/forecastSeries.test.ts src/components/Subscriptions/ForecastChart/subscriptionForecastData.test.ts src/components/Pages/PageRevisions/pageRevisions.test.ts src/utils/formatting.test.ts src/store/reports/reportsScheduling.test.ts",
+    "test": "tsx --test src/buildSize.test.ts src/config/filterConfig.test.ts src/components/Forecast/forecastSeries.test.ts src/components/Subscriptions/ForecastChart/subscriptionForecastData.test.ts src/components/Pages/PageRevisions/pageRevisions.test.ts src/utils/formatting.test.ts src/store/reports/reportsScheduling.test.ts",
     "lint": "eslint 'src/**/*.{js,jsx,ts,tsx}'",
     "lint:fix": "eslint --fix 'src/**/*.{js,jsx,ts,tsx}'",
     "knip": "knip",

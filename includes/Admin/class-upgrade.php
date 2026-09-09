@@ -435,6 +435,13 @@ class Upgrade {
 			// 3.7.1 group in DB_Upgrade::get_db_upgrades().
 		}
 
+		if ( '' !== $prev_version && version_compare( $prev_version, '3.7.0.1', '<' ) ) {
+			// The page_id repair of this release is Pro-only (see
+			// Pro::upgrade_premium()): free never shipped 3.7.0, and the 3.7.0
+			// pipeline above now seeds and backfills the clean key space.
+			$this->mark_noop_upgrade( '3.7.0.1', $prev_version );
+		}
+
 		// bump-version.sh inserts new release versions above this line — do not remove.
 		$admin = new Admin();
 		$admin->run_table_init_hook();

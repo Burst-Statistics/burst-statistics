@@ -10,6 +10,7 @@ import {
 	FILTER_KEYS,
 	INITIAL_FILTERS,
 	TRAILING_PARAM_KEY,
+	normalizeFilterValue,
 	type FilterKey,
 	type FilterSearchParams,
 	type FilterConfig as FilterConfigType
@@ -42,13 +43,16 @@ const getPinnedFilters = (): Record<string, string> => {
 };
 
 const buildSearchParams = (
-	params: Record<string, string | undefined>
+	params: Record<string, string | number | undefined>
 ): Record<string, string> => {
 	const result: Record<string, string> = {};
 
+	// Every value is written as a string: a number would be parsed back as a
+	// number by the router and break the string-based filter consumers (see
+	// normalizeFilterValue).
 	Object.keys( params ).forEach( ( key ) => {
 		if ( key !== TRAILING_PARAM_KEY && params[key] !== undefined ) {
-			result[key] = params[key] as string;
+			result[key] = normalizeFilterValue( params[key]);
 		}
 	});
 
@@ -221,17 +225,21 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 	const setFilters = useCallback(
 
 		// fallow-ignore-next-line complexity
-		( filter: string, value: string ) => {
+		( filter: string, rawValue: string | number | null | undefined ) => {
 			if ( ! filter.length ) {
 				return;
 			}
+
+			// Callers pass ids straight from API responses (a numeric device_id
+			// from the devices block); the filter contract is string-only.
+			const value = normalizeFilterValue( rawValue );
 
 			// Block mode: update wizard store
 			if ( isBlockMode ) {
 				const currentFilters = getReportFilters( reportBlockIndex ) || {};
 				const newFilters = { ...currentFilters };
 
-				if ( '' === value || null === value || value === undefined ) {
+				if ( '' === value ) {
 					delete newFilters[filter];
 				} else {
 					newFilters[filter] = value;
@@ -251,7 +259,7 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 				const newParams = { ...prev };
 				delete newParams[TRAILING_PARAM_KEY];
 
-				if ( '' === value || null === value || value === undefined ) {
+				if ( '' === value ) {
 					delete newParams[filter];
 				} else {
 					newParams[filter] = value;

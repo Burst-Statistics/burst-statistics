@@ -59,7 +59,10 @@ class Statistics extends Statistics_Data {
 	 * changes (which move every post at once) and imports/migrations that
 	 * bypass the editor. Time-budgeted with a rotating cursor, so huge
 	 * dictionaries reconcile over consecutive weeks. Deleted posts are left
-	 * alone: their last known url stays the display url.
+	 * alone: their last known url stays the display url. Every visited row
+	 * also converges hits still stored under its negative dictionary id (a
+	 * merge capped in a request finishes here, see
+	 * merge_negative_page_id_hits()).
 	 */
 	public function sweep_canonical_page_urls(): void {
 		if ( ! $this->has_admin_access() || ! $this->column_exists( 'burst_page_urls', 'is_canonical' ) ) {
@@ -90,6 +93,7 @@ class Statistics extends Statistics_Data {
 			_prime_post_caches( array_map( 'intval', array_column( $rows, 'page_id' ) ), false, false );
 			foreach ( $rows as $row ) {
 				$cursor = (int) $row['ID'];
+				$this->merge_negative_page_id_hits( (int) $row['ID'], (int) $row['page_id'] );
 				// '' for deleted, unpublished/trashed or non-viewable posts:
 				// their last known url stays the display url (a ?p=N permalink
 				// would otherwise move them onto the "/" row).
