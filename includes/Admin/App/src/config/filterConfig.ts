@@ -402,6 +402,28 @@ export const splitFilterValues = ( value: string | undefined ): string[] => {
 };
 
 /**
+ * Normalizes a filter value to the string form every filter consumer expects.
+ *
+ * Filter values travel through the URL search params and the saved-filter
+ * store as strings, and the display and setup components call string methods
+ * on them (split, startsWith, trim). Callers that pass a numeric id straight
+ * from an API response (the devices block sets device_id from the lookup id)
+ * would otherwise store a number: TanStack Router round-trips it as a number,
+ * so the chip builder and the device setup view throw on it and the filter
+ * never shows as active.
+ *
+ * @param value - The raw filter value, e.g. a string, a numeric id, or empty.
+ *
+ * @return The string value, or '' for null/undefined.
+ */
+export const normalizeFilterValue = ( value: unknown ): string => {
+	if ( null === value || value === undefined ) {
+		return '';
+	}
+	return String( value );
+};
+
+/**
  * The four explicit operators a filter chip can render.
  */
 export type FilterOperator = 'is' | 'is-not' | 'is-any-of' | 'is-not-any-of';

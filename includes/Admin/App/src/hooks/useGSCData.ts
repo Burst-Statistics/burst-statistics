@@ -32,7 +32,7 @@ interface UseGSCDataReturn {
 }
 
 const POLL_INTERVAL = 1500;
-const POLL_TIMEOUT = 5 * 60 * 1000;
+const POLL_TIMEOUT = 15 * 60 * 1000;
 
 /**
  * Drives the Google Search Console connect flow from the React app:

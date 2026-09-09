@@ -1331,23 +1331,41 @@ class DB_Upgrade {
 		}
 
 		global $wpdb;
+		$front_id               = (int) get_option( 'page_on_front' );
+		$protected              = $this->protected_front_page_paths( $front_id );
+		$types                  = $this->archive_page_types();
+		$type_placeholders      = implode( ', ', array_fill( 0, count( $types ), '%s' ) );
+		$protected_placeholders = implode( ', ', array_fill( 0, count( $protected ), '%s' ) );
 		$this->run_watermarked_batch(
 			'seed_page_urls',
 			'burst_statistics',
 			'burst_page_urls_batch_size',
 			100000,
-			function ( int $last_id, int $end_id ) use ( $wpdb ) {
-				return $wpdb->query(
+			function ( int $last_id, int $end_id ) use ( $wpdb, $front_id, $protected, $types, $type_placeholders, $protected_placeholders ) {
+				// The post id per url comes from the hits that carry a real
+				// one. Two kinds of stored ids are not: archive hits (their
+				// queried object id is a term or user, see
+				// archive_page_types()) and the static front page id on any
+				// other url (a legacy resolver fallback for unresolved urls).
+				// Both count as 0 here, so such a url keeps page_id 0 and its
+				// hits get the negative dictionary id in the backfill.
+                // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholder lists built from fixed-length arrays, every value prepared.
+				$result = $wpdb->query(
 					$wpdb->prepare(
 						"INSERT INTO {$wpdb->prefix}burst_page_urls (page_url, page_id)
-						SELECT page_url, MAX(GREATEST(page_id, 0)) FROM {$wpdb->prefix}burst_statistics
+						SELECT page_url, MAX(GREATEST(IF(
+							page_type IN ({$type_placeholders})
+							OR ( %d > 0 AND page_id = %d AND page_url NOT IN ({$protected_placeholders}) ),
+							0, page_id
+						), 0)) FROM {$wpdb->prefix}burst_statistics
 						WHERE ID > %d AND ID <= %d AND page_url != '' AND page_type != '404'
 						GROUP BY page_url
 						ON DUPLICATE KEY UPDATE page_id = GREATEST(page_id, VALUES(page_id))",
-						$last_id,
-						$end_id
+						array_merge( $types, [ $front_id, $front_id ], $protected, [ $last_id, $end_id ] )
 					)
 				);
+                // phpcs:enable
+				return $result;
 			},
 			function (): void {
 				$this->assign_initial_canonical_page_urls();
@@ -1378,11 +1396,13 @@ class DB_Upgrade {
 	}
 
 	/**
-	 * Replace the historic page_id = 0 rows in statistics with the negative
-	 * dictionary id of their url, so page queries can group on the integer
-	 * page_id column without a 0-bucket. Runs after the dictionary seed;
-	 * iterates by statistics-ID watermark, idempotent via the page_id = 0
-	 * condition. 404 rows keep 0 — they are excluded from every page query.
+	 * Rewrite the historic statistics rows that do not fit the page_id key
+	 * space (see rewrite_statistics_page_ids_batch()): page_id = 0 rows get
+	 * the negative dictionary id of their url so page queries can group on
+	 * the integer column without a 0-bucket, archive hits drop their
+	 * term/user id, and hits on other urls drop the front page id. Runs
+	 * after the dictionary seed; iterates by statistics-ID watermark,
+	 * idempotent. 404 rows keep 0 — they are excluded from every page query.
 	 */
 	private function upgrade_statistics_page_id(): void {
 		if ( ! $this->has_admin_access() ) {
@@ -1397,25 +1417,140 @@ class DB_Upgrade {
 			return;
 		}
 
-		global $wpdb;
 		$this->run_watermarked_batch(
 			'statistics_page_id',
 			'burst_statistics',
 			'burst_statistics_page_id_batch_size',
 			25000,
-			function ( int $last_id, int $end_id ) use ( $wpdb ) {
-				return $wpdb->query(
-					$wpdb->prepare(
-						"UPDATE {$wpdb->prefix}burst_statistics s
-						JOIN {$wpdb->prefix}burst_page_urls d ON s.page_url = d.page_url
-						SET s.page_id = IF(d.page_id > 0, d.page_id, -d.ID)
-						WHERE s.ID > %d AND s.ID <= %d AND s.page_id = 0 AND s.page_type != '404'",
-						$last_id,
-						$end_id
-					)
-				);
-			}
+			fn( int $last_id, int $end_id ) => $this->rewrite_statistics_page_ids_batch( $last_id, $end_id )
 		);
+	}
+
+	/**
+	 * One watermark batch of the page_id rewrite, shared by the 3.7.0
+	 * backfill and the Pro 3.7.0.1 repair: every row gets the post id the
+	 * dictionary knows for its url, else the negative dictionary id — the
+	 * IF(d.page_id > 0, d.page_id, -d.ID) rule the tracker applies to new
+	 * hits (Database_Helper::resolve_page_id()). Rows that need it:
+	 *
+	 * - page_id <= 0: the historic 0-bucket, and hits that got the negative
+	 *   dictionary id while their url's row had no post id yet (during the
+	 *   seed, or on a fresh install before the first canonical claim) — the
+	 *   row carries the post id now, so they merge into it;
+	 * - archive hits with a positive id: their queried object id is a term
+	 *   or user, colliding with the post id key space;
+	 * - hits on other urls carrying the static front page id: a legacy
+	 *   resolver fallback that merges those urls into the homepage.
+	 *
+	 * 404 rows keep 0 — they are excluded from every page query.
+	 *
+	 * @param int $last_id Exclusive lower bound of the statistics ID window.
+	 * @param int $end_id  Inclusive upper bound.
+	 * @return int|false Rows affected, false on a database error.
+	 */
+	protected function rewrite_statistics_page_ids_batch( int $last_id, int $end_id ): int|false {
+		global $wpdb;
+		$front_id               = (int) get_option( 'page_on_front' );
+		$protected              = $this->protected_front_page_paths( $front_id );
+		$types                  = $this->archive_page_types();
+		$type_placeholders      = implode( ', ', array_fill( 0, count( $types ), '%s' ) );
+		$protected_placeholders = implode( ', ', array_fill( 0, count( $protected ), '%s' ) );
+
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholder lists built from fixed-length arrays, every value prepared.
+		$result = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}burst_statistics s
+				JOIN {$wpdb->prefix}burst_page_urls d ON s.page_url = d.page_url
+				SET s.page_id = IF(d.page_id > 0, d.page_id, -d.ID)
+				WHERE s.ID > %d AND s.ID <= %d AND s.page_type != '404'
+				AND (
+					s.page_id <= 0
+					OR s.page_type IN ({$type_placeholders})
+					OR ( %d > 0 AND s.page_id = %d AND s.page_url NOT IN ({$protected_placeholders}) )
+				)",
+				array_merge( [ $last_id, $end_id ], $types, [ $front_id, $front_id ], $protected )
+			)
+		);
+        // phpcs:enable
+		return false === $result ? false : (int) $result;
+	}
+
+	/**
+	 * The url paths that identify the static front page in the dictionary:
+	 * "/" and, when it differs (subdirectory installs), the front page's
+	 * permalink path. These rows keep their post id whatever hits they
+	 * carry: the homepage is also rendered as an archive or search result,
+	 * and stray archive-typed hits on "/" must not strip it of its id.
+	 *
+	 * @param int $front_id The page_on_front post id, 0 when posts show on front.
+	 * @return string[]
+	 */
+	protected function protected_front_page_paths( int $front_id ): array {
+		$protected = [ '/' ];
+		if ( $front_id > 0 ) {
+			$front_path = $this->canonical_page_path( $front_id );
+			if ( '' !== $front_path ) {
+				$protected[] = $front_path;
+			}
+		}
+		return array_values( array_unique( $protected ) );
+	}
+
+	/**
+	 * Drop the post ids the original 3.7.0 seed copied onto dictionary rows
+	 * that represent no post (the corrected seed in upgrade_seed_page_urls()
+	 * no longer writes them), so rewrite_statistics_page_ids_batch() keys
+	 * their hits by url (negative dictionary id) instead of merging them
+	 * into a post:
+	 *
+	 * - Archive url rows (a url with archive-typed hits) whose id is a
+	 *   term/user id from those hits (the id equals the archive hits' id) or
+	 *   that are not the post's canonical url anyway. A canonical row whose
+	 *   id came from real post hits (a page that doubles as a post type
+	 *   archive) is kept.
+	 * - Non-canonical rows carrying the static front page's id: the front
+	 *   page has exactly one url, every other row with its id is the legacy
+	 *   fallback for an unresolved url.
+	 *
+	 * The front page's own rows are never touched. Bounded by the archive
+	 * hits (page_type index) and the small dictionary, never by a probe per
+	 * dictionary row into the hits of popular post urls.
+	 */
+	protected function reset_polluted_page_dictionary_ids(): void {
+		global $wpdb;
+		$front_id               = (int) get_option( 'page_on_front' );
+		$protected              = $this->protected_front_page_paths( $front_id );
+		$types                  = $this->archive_page_types();
+		$type_placeholders      = implode( ', ', array_fill( 0, count( $types ), '%s' ) );
+		$protected_placeholders = implode( ', ', array_fill( 0, count( $protected ), '%s' ) );
+
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- placeholder lists built from fixed-length arrays, every value prepared.
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}burst_page_urls d
+				JOIN (
+					SELECT page_url, MAX(page_id) AS archive_page_id FROM {$wpdb->prefix}burst_statistics
+					WHERE page_type IN ({$type_placeholders})
+					GROUP BY page_url
+				) a ON a.page_url = d.page_url
+				SET d.page_id = 0, d.is_canonical = 0
+				WHERE d.page_id > 0 AND d.page_url NOT IN ({$protected_placeholders})
+				AND ( d.is_canonical = 0 OR d.page_id = a.archive_page_id )",
+				array_merge( $types, $protected )
+			)
+		);
+
+		if ( $front_id > 0 ) {
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}burst_page_urls
+					SET page_id = 0, is_canonical = 0
+					WHERE page_id = %d AND is_canonical = 0 AND page_url NOT IN ({$protected_placeholders})",
+					array_merge( [ $front_id ], $protected )
+				)
+			);
+		}
+        // phpcs:enable
 	}
 
 	/**

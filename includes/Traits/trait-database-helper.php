@@ -441,12 +441,25 @@ trait Database_Helper {
 	 * a real permalink path (viewable post, no query-string permalink) — a
 	 * "/" from a ?p=N permalink would re-assign the homepage row.
 	 *
+	 * Claiming a row that had no post id yet also re-keys the hits stored
+	 * under its negative dictionary id to the post id: the tracker assigns
+	 * -ID to hits that arrive with page_id 0 while the row has no post id
+	 * (see resolve_page_id()), and hits carrying the post id from the page's
+	 * body attribute land under +post_id at the same time. Both hydrate to
+	 * the same url, so without the merge the page shows up twice in every
+	 * page table. The merge is bounded per call; the weekly sweep finishes
+	 * any remainder (see merge_negative_page_id_hits()).
+	 *
 	 * @param int    $page_id WP post id.
 	 * @param string $path    Current permalink path.
 	 */
 	protected function set_canonical_page_url( int $page_id, string $path ): void {
 		global $wpdb;
         // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$existing = $wpdb->get_row(
+			$wpdb->prepare( "SELECT ID, page_id FROM {$wpdb->prefix}burst_page_urls WHERE page_url = %s", $path ),
+			ARRAY_A
+		);
 		$wpdb->query(
 			$wpdb->prepare(
 				"INSERT INTO {$wpdb->prefix}burst_page_urls (page_url, page_id, is_canonical)
@@ -467,6 +480,62 @@ trait Database_Helper {
 			);
 		}
         // phpcs:enable
+
+		// A row that existed without a post id may hold hits under -ID.
+		if ( $row_id > 0 && is_array( $existing ) && (int) $existing['page_id'] <= 0 ) {
+			$this->merge_negative_page_id_hits( $row_id, $page_id );
+		}
+	}
+
+	/**
+	 * Re-key the hits stored under a dictionary row's negative id to the post
+	 * id the row now carries, so one url no longer splits over two page_id
+	 * buckets. Chunked (small transactions on a busy table) and capped per
+	 * call, so a claim from a dashboard request (the hydration self-heal)
+	 * stays bounded; the weekly canonical sweep calls this for every
+	 * canonical row and converges any remainder. Indexed by
+	 * (page_id, page_type); a no-op costs one indexed lookup.
+	 *
+	 * @param int $dictionary_id burst_page_urls.ID of the claimed row.
+	 * @param int $page_id       WP post id the hits move to.
+	 * @return bool True when no hits remain under the negative id.
+	 */
+	protected function merge_negative_page_id_hits( int $dictionary_id, int $page_id ): bool {
+		global $wpdb;
+		if ( $dictionary_id <= 0 || $page_id <= 0 ) {
+			return true;
+		}
+		$chunk      = 5000;
+		$max_chunks = (int) apply_filters( 'burst_merge_page_id_max_chunks', 40 );
+		for ( $i = 0; $i < $max_chunks; $i++ ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$affected = $wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}burst_statistics SET page_id = %d WHERE page_id = %d LIMIT %d",
+					$page_id,
+					-$dictionary_id,
+					$chunk
+				)
+			);
+			if ( false === $affected || (int) $affected < $chunk ) {
+				return false !== $affected;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Page types of archive pages: their queried object is a term, a
+	 * user or a post type, never a post, so hits on them must carry a
+	 * negative dictionary id — a positive one would be a term/user id
+	 * colliding with the post id key space. The frontend identifier reports
+	 * 0 for these (Frontend::get_current_page_identifier()); the 3.7.1 repair
+	 * task rewrites the historic rows that stored the queried object id.
+	 *
+	 * @return string[]
+	 */
+	protected function archive_page_types(): array {
+		return [ 'category', 'tag', 'tax', 'author', 'archive' ];
 	}
 
 	/**
