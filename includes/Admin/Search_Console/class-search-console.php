@@ -34,8 +34,8 @@ class Search_Console {
 	/**
 	 * Transient holding the in-flight connect attempt: the CSRF nonce and the
 	 * PKCE verifier, bound to the user who started it. Existence acts as a
-	 * single-flight lock. TTL is 5 minutes (see start_connect()), matching the
-	 * relay's 5-minute state expiry.
+	 * single-flight lock. TTL is 15 minutes (see start_connect()), matching the
+	 * relay's 15-minute state expiry, so a slow Google login with 2FA still lands.
 	 */
 	private const TRANSIENT = 'burst_gsc_connect';
 
@@ -198,7 +198,7 @@ class Search_Console {
 				'nonce'         => $nonce,
 				'code_verifier' => $verifier,
 			],
-			5 * MINUTE_IN_SECONDS
+			15 * MINUTE_IN_SECONDS
 		);
 		// add_query_arg does not encode the values it appends (only the base
 		// URL's pre-existing query string), so encode them here. The relay
@@ -337,7 +337,7 @@ class Search_Console {
 	/**
 	 * Record that the current user's in-flight connect attempt ended without
 	 * success, so the status poll can stop the "connecting" spinner immediately
-	 * instead of waiting for the 5-minute timeout. Bound to the user who started
+	 * instead of waiting for the 15-minute timeout. Bound to the user who started
 	 * the attempt; consumed by status_payload().
 	 */
 	private function flag_connect_failed(): void {

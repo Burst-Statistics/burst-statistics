@@ -214,7 +214,16 @@ class Frontend {
 	}
 
 	/**
-	 * Get an identifier for the current page
+	 * Get an identifier for the current page.
+	 *
+	 * The ID is a WP post id or 0 — never a term or user id. The tracker
+	 * stores it as statistics.page_id, whose key space is hard split:
+	 * positive = WP post id, negative = burst_page_urls.ID (assigned by the
+	 * tracker for urls that resolve to no post, see Tracking::track_hit()).
+	 * Archives (category, tag, taxonomy, author, post type) therefore report
+	 * 0: their queried object id is a term, user or post type — a value that
+	 * collides with post ids under page-grain grouping, so the archive's hits
+	 * would merge into an unrelated post or hydrate to an empty url.
 	 *
 	 * @return array<string, int|string>
 	 */
@@ -247,7 +256,7 @@ class Frontend {
 		// Category archives.
 		if ( is_category() ) {
 			return [
-				'ID'   => get_queried_object_id(),
+				'ID'   => 0,
 				'type' => 'category',
 			];
 		}
@@ -255,7 +264,7 @@ class Frontend {
 		// Tag archives.
 		if ( is_tag() ) {
 			return [
-				'ID'   => get_queried_object_id(),
+				'ID'   => 0,
 				'type' => 'tag',
 			];
 		}
@@ -263,7 +272,7 @@ class Frontend {
 		// Custom taxonomy archives.
 		if ( is_tax() ) {
 			return [
-				'ID'   => get_queried_object_id(),
+				'ID'   => 0,
 				'type' => 'tax',
 			];
 		}
@@ -271,7 +280,7 @@ class Frontend {
 		// Author archives.
 		if ( is_author() ) {
 			return [
-				'ID'   => get_queried_object_id(),
+				'ID'   => 0,
 				'type' => 'author',
 			];
 		}
@@ -300,7 +309,7 @@ class Frontend {
 
 		if ( is_post_type_archive() ) {
 			return [
-				'ID'   => get_queried_object_id(),
+				'ID'   => 0,
 				'type' => 'archive',
 			];
 		}
