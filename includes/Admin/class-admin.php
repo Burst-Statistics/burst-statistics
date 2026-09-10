@@ -153,8 +153,10 @@ class Admin {
 			$posts = new Posts();
 			$posts->init();
 
+			// On init after Upgrade::check_upgrade() (priority 10): the review
+			// notice queries the statistics table, which must be upgraded first.
 			$review = new Review();
-			$review->init();
+			add_action( 'init', [ $review, 'init' ], 20 );
 
 			// Smart update timing (Features > Smart update timing). Hooks
 			// register unconditionally and gate themselves on the settings
