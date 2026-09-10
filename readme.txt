@@ -202,6 +202,16 @@ That's it. No external accounts. No tracking codes to paste. Burst starts collec
  
 Prefer installing manually or via Composer? See [installing Burst Statistics with Composer](https://burst-statistics.com/installing-burst-statistics-with-composer/?utm_source=wordpress.org&utm_medium=readme&utm_campaign=burst-readme&utm_content=install-composer).
 
+= External services =
+
+Burst works entirely on your own server and does not send your data anywhere. The two optional features below are the only ones that contact an external service, and neither is required to use Burst. Please see our [privacy statement](https://burst-statistics.com/legal/privacy-statement/) for our privacy policy; each feature below links to its own, more specific policy.
+
+**Google Search Console integration (optional)**
+When you connect your Google account on the Integrations settings page, Burst retrieves your search performance data (queries, clicks, impressions and positions) from the Google Search Console API (googleapis.com) and shows it in your dashboard. This is a one-way flow: your site fetches data from Google, and no visitor or statistics data is sent to Google or to us. Only the OAuth handshake and token refresh run through our relay at search-console.burst-statistics.com; the retrieved search data goes directly from Google to your own site. Nothing happens until you connect an account, and you can disconnect at any time, which revokes the token at Google. Read our [Search Console integration privacy policy](https://burst-statistics.com/legal/search-console-integration-privacy-policy/), and see [Google's privacy policy](https://policies.google.com/privacy) and [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy).
+
+**Anonymous data sharing (optional)**
+This is the only case in which Burst sends data to us, and it is strictly opt-in. When you choose to enable it, Burst periodically sends anonymized, aggregated usage and performance statistics (no visitor data, no personal data) to api.burst-statistics.com. In return you get community performance benchmarks in your dashboard, comparing your site against anonymized community averages, and it helps us improve the plugin. Read [how we handle anonymous usage data](https://burst-statistics.com/how-we-handle-anonymous-usage-data/).
+
 = Credits =
 
 Country-level geographic data is provided by the MaxMind GeoLite2 database. This product includes GeoLite2 Data created by MaxMind, available from https://www.maxmind.com/.
@@ -238,7 +248,7 @@ Matomo tries to be a full Google Analytics replacement. Burst tries to be the cl
  
 = Do I need an account? =
  
-No, you don't need an account, no data is sent to another website.
+No, you don't need an account, and no data is sent to another website. If you connect Google Search Console, Burst only retrieves your search data from Google; nothing about your visitors is sent out. The one exception is anonymous data sharing, an opt-in option that shares anonymized statistics with us and gives you community performance benchmarks in return.
  
 = Is there a limit to the number of visitors I can track? =
  
