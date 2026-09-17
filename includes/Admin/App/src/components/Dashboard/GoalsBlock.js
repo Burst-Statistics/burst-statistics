@@ -209,7 +209,7 @@ const GoalsBlock = () => {
 	);
 
 	return (
-		<Block className="row-span-2 @lg:col-span-6 @xl:col-span-3">
+		<Block className="row-span-2 @lg:col-span-6 @xl:col-span-3" data-tour="goals-block">
 		<BlockHeading
 			title={__( 'Goals', 'burst-statistics' )}
 			controls={

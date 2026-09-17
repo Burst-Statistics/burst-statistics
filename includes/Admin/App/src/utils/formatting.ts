@@ -1382,6 +1382,10 @@ function formatTooltipLabel(
  * @return {string} The original string, or a middle-truncated version ending with the last `tailLength` characters.
  */
 function truncateMiddle( str: string, maxLength: number = 30 ): string {
+	if ( ! str || 'string' !== typeof str ) {
+		return '';
+	}
+
 	if ( str.length <= maxLength ) {
 		return str;
 	}
@@ -1391,6 +1395,22 @@ function truncateMiddle( str: string, maxLength: number = 30 ): string {
 
 	return str.slice( 0, headLength ) + '…' + str.slice( str.length - tailLength );
 }
+
+/**
+ * Format bytes into human readable file size string.
+ *
+ * @param bytes Number of bytes.
+ * @return Formatted size string (e.g. "4.2 MB").
+ */
+const formatFileSize = ( bytes: number ): string => {
+	if ( 0 === bytes || ! bytes ) {
+		return '0 B';
+	}
+	const k = 1024;
+	const sizes = [ 'B', 'KB', 'MB', 'GB' ];
+	const i = Math.floor( Math.log( bytes ) / Math.log( k ) );
+	return `${ parseFloat( ( bytes / Math.pow( k, i ) ).toFixed( 2 ) ) } ${ sizes[ i ] }`;
+};
 
 export {
 	getBurstSetting,
@@ -1430,5 +1450,6 @@ export {
 	getChartXAxisTickValues,
 	getForecastRange,
 	getLastCompleteMonthEndDate,
-	truncateMiddle
+	truncateMiddle,
+	formatFileSize
 };

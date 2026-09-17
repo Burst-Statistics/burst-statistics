@@ -164,7 +164,7 @@ class Debug {
 	 * @return array<string, array{label: string, value: array<string, string>}>
 	 */
 	private function get_uid_pipeline_fields(): array {
-		$tasks = [ 'seed_uid_dictionary', 'statistics_uid_id', 'sessions_first_time', 'finalize_uid_id', 'seed_page_urls', 'statistics_page_id', 'pro_sessions_source_category' ];
+		$tasks = [ 'seed_uid_dictionary', 'statistics_uid_id', 'sessions_first_time', 'finalize_uid_id', 'seed_page_urls', 'statistics_page_id', 'sessions_has_pageview', 'pro_sessions_source_category' ];
 
 		// Any other registered task that is still pending (e.g. a stuck
 		// drop_session_visited_urls) disables db_upgrades_complete() just the

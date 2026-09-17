@@ -29,7 +29,10 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 		 */
 		public function get_live_goals_count( array $args = [] ): int {
 			$goal_id = $args['goal_id'] ?? 0;
-			$today   = strtotime( 'today midnight' );
+			// Midnight in the site's timezone: WordPress pins PHP to UTC, so a
+			// plain strtotime( 'today' ) would start the day at UTC midnight and
+			// drop the early-morning conversions of sites east of Greenwich.
+			$today = ( new \DateTimeImmutable( 'today', wp_timezone() ) )->getTimestamp();
 
 			if ( $goal_id === 'all' ) {
 				global $wpdb;
@@ -532,7 +535,7 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT {$count_expr} AS value, device_id FROM {$wpdb->prefix}burst_sessions
-					WHERE start_time > %d AND start_time <= %d AND device_id > 0
+					WHERE start_time > %d AND start_time <= %d AND has_pageview = 1 AND device_id > 0
 					GROUP BY device_id ORDER BY value DESC LIMIT 4",
 					$date_start,
 					$date_end

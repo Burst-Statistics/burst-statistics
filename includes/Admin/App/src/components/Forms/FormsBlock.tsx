@@ -12,6 +12,7 @@ import useLicenseData from '@/hooks/useLicenseData';
 import OverlayBlock from '@/components/Upsell/OverlayBlock';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
 import MetricInfo from '@/components/Common/MetricInfo';
+import { isTourActive } from '@/store/useTourStore';
 
 type FormsBlockProps = {
 
@@ -36,12 +37,13 @@ const TOP_N = 5;
 const FormsBlock = memo( ({ className = '' }: FormsBlockProps ) => {
 	const { isLicenseValid } = useLicenseData();
 	const { data, isLoading } = useFormsData();
+	const tourActive = isTourActive();
 
 	const navigate = useNavigate();
 	const location = useRouterState({ select: ( s ) => s.location });
 
 	const columns = useMemo( () => getFormsColumns(), []);
-	const topData = useMemo( () => data.slice( 0, TOP_N ), [ data ]);
+	const topData = useMemo( () => ( Array.isArray( data ) ? data : []).slice( 0, TOP_N ), [ data ]);
 
 	const hasData = 0 < topData.length;
 
@@ -61,7 +63,7 @@ const FormsBlock = memo( ({ className = '' }: FormsBlockProps ) => {
 		});
 	};
 
-	if ( ! isLicenseValid ) {
+	if ( ! tourActive && ! isLicenseValid ) {
 		return (
 			<OverlayBlock
 				className={ className }
@@ -74,7 +76,7 @@ const FormsBlock = memo( ({ className = '' }: FormsBlockProps ) => {
 	}
 
 	return (
-		<Block className={ className }>
+		<Block className={ className } data-tour="forms-block">
 			<BlockHeading
 				className="border-b border-gray-200"
 				isLoading={ isLoading }

@@ -389,8 +389,10 @@ trait Admin_Helper {
 				// Configuration and options.
 				'date_ranges'                          => $this->get_date_ranges(),
 				'time_format'                          => get_option( 'time_format' ),
-				// Date picker's starting date.
-				'burst_date_picker_start_date'         => (int) get_option( 'burst_activation_time', 1640995200 ),
+				// Date picker's starting date: uses burst_data_start (earliest available analytics
+				// data, including imported history) with fallback to burst_activation_time
+				// (native plugin install date). Both options use autoload = false.
+				'burst_date_picker_start_date'         => (int) ( get_option( 'burst_data_start' ) ?: get_option( 'burst_activation_time', 1640995200 ) ),
 				'external_links_first_cycle_completed' => (int) get_option( 'burst_external_links_last_completed', 0 ) > 0,
 			]
 		);
@@ -433,7 +435,7 @@ trait Admin_Helper {
 	 *
 	 * @return boolean true or false
 	 */
-	protected function user_can_manage(): bool {
+	public function user_can_manage(): bool {
 		// Check if we already have a cached result.
 		if ( isset( burst_loader()->user_can_manage ) ) {
 			return burst_loader()->user_can_manage;

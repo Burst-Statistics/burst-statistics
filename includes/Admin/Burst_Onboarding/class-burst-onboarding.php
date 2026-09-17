@@ -37,6 +37,7 @@ class Burst_Onboarding {
 	 * title: string,
 	 * subtitle?: string,
 	 * button?: array{id: string, label: string},
+	 * tour_button?: array{id: string, label: string, url: string},
 	 * fields?: array<int, array<string, mixed>>,
 	 * solutions?: array<int, string>,
 	 * bullets?: array<int, string>,

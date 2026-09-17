@@ -40,12 +40,13 @@ export const Route = createFileRoute( '/sources' )({
  * @param {string} props.className - Grid placement classes for the Block wrapper.
  * @return {JSX.Element} The upsell block.
  */
-function SourcesUpsellBlock({ title, blurLabel, className }) {
+function SourcesUpsellBlock({ title, blurLabel, className, dataTour }) {
 	return (
 		<OverlayBlock
 			title={ title }
 			blurLabel={ blurLabel }
 			className={ className }
+			dataTour={ dataTour }
 		>
 			<UpsellCopy type="sources" compact={ true } />
 		</OverlayBlock>
@@ -91,6 +92,7 @@ function Sources() {
 							title={ __( 'Traffic sources', 'burst-statistics' ) }
 							blurLabel={ __( 'Source tracking is a Pro feature.', 'burst-statistics' ) }
 							className="row-span-2 @lg:col-span-6 @xl:col-span-3"
+							dataTour="sources-block"
 						/>
 					) }
 				</ErrorBoundary>
@@ -105,15 +107,17 @@ function Sources() {
 			</ErrorBoundary>
 
 			<ErrorBoundary>
-				{ sourcesUnlocked ? (
-					<DataTableBlock allowedConfigs={[ 'campaigns' ]} id="sources_campaigns" />
-				) : (
-					<SourcesUpsellBlock
-						title={ __( 'Campaigns', 'burst-statistics' ) }
-						blurLabel={ __( 'Campaign tracking is a Pro feature.', 'burst-statistics' ) }
-						className="row-span-2 @xl:col-span-6"
-					/>
-				) }
+				<div data-tour="campaigns-block" className="row-span-2 @xl:col-span-6 flex flex-col">
+					{ sourcesUnlocked ? (
+						<DataTableBlock allowedConfigs={[ 'campaigns' ]} id="sources_campaigns" />
+					) : (
+						<SourcesUpsellBlock
+							title={ __( 'Campaigns', 'burst-statistics' ) }
+							blurLabel={ __( 'Campaign tracking is a Pro feature.', 'burst-statistics' ) }
+							className="flex-1 min-h-0"
+						/>
+					) }
+				</div>
 			</ErrorBoundary>
 
 			<ErrorBoundary>

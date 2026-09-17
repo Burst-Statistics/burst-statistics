@@ -28,7 +28,12 @@ class DB_Upgrade {
 	 * before it is marked stalled and backed off to one attempt per day.
 	 */
 	private const FINALIZE_MAX_ATTEMPTS = 3;
-	private int $batch                  = 100000;
+	/**
+	 * Option (autoload off) holding the number of tasks in the running
+	 * upgrade batch, the denominator of the progress notice.
+	 */
+	private const BATCH_TOTAL_OPTION = 'burst_upgrade_batch_total';
+	private int $batch               = 100000;
 
 	/**
 	 * Lookup item => id column on burst_sessions (and on burst_statistics for
@@ -294,15 +299,19 @@ class DB_Upgrade {
 
 	/**
 	 * Get progress of the upgrade process
+	 *
+	 * The denominator is the number of tasks in the current batch (see
+	 * batch_total()), not the size of the task registry: the registry lists
+	 * every upgrade ever shipped, so a version change that arms a handful of
+	 * tasks would otherwise start in the nineties and barely move.
 	 */
 	public function get_progress( string $type, string $version ): float {
-		$total_upgrades     = $this->get_db_upgrades( $type, $version );
-		$remaining_upgrades = $total_upgrades;
+		$total_upgrades = $this->get_db_upgrades( $type, $version );
 		// check if all upgrades are done.
 		$count_remaining_upgrades = 0;
 		$intermediate_percentage  = 0;
 		$intermediates            = [];
-		foreach ( $remaining_upgrades as $upgrade ) {
+		foreach ( $total_upgrades as $upgrade ) {
 			// if any upgrade is not done.
 			if ( get_option( "burst_db_upgrade_$upgrade" ) ) {
 				++$count_remaining_upgrades;
@@ -314,13 +323,15 @@ class DB_Upgrade {
 			}
 		}
 		$intermediate         = reset( $intermediates );
-		$count_total_upgrades = count( $total_upgrades );
+		$count_total_upgrades = 'all' === $type && 'all' === $version
+			? $this->batch_total( $count_remaining_upgrades )
+			: count( $total_upgrades );
+		$count_total_upgrades = 0 === $count_total_upgrades ? 1 : $count_total_upgrades;
 		// upgrade percentage for one upgrade is 100 / total upgrades.
-		$upgrade_percentage_one_upgrade = $count_total_upgrades === 0 ? 100 : 100 / $count_total_upgrades;
+		$upgrade_percentage_one_upgrade = 100 / $count_total_upgrades;
 		if ( $intermediate ) {
 			$intermediate_percentage = $intermediate * $upgrade_percentage_one_upgrade;
 		}
-		$count_total_upgrades = 0 === $count_total_upgrades ? 1 : $count_total_upgrades;
 
 		$percentage = 100 - ( $count_remaining_upgrades / $count_total_upgrades ) * 100;
 		$percentage = $percentage + $intermediate_percentage;
@@ -329,6 +340,34 @@ class DB_Upgrade {
 		}
 
 		return $percentage;
+	}
+
+	/**
+	 * Size of the running upgrade batch, for the progress notice.
+	 *
+	 * Tasks are armed from several places (the version blocks in
+	 * Upgrade::check_upgrade(), Pro::upgrade_premium() on burst_upgrade_after)
+	 * and only ever complete afterwards, so the highest pending count seen
+	 * since the batch started is its size. Persisted so the denominator
+	 * survives tasks completing; cleared by upgrade() once free and pro are
+	 * both done (see delete_batch_total()).
+	 */
+	private function batch_total( int $pending ): int {
+		$stored = (int) get_option( self::BATCH_TOTAL_OPTION, 0 );
+		if ( $pending > $stored ) {
+			update_option( self::BATCH_TOTAL_OPTION, $pending, false );
+			return $pending;
+		}
+
+		return $stored;
+	}
+
+	/**
+	 * Forget the batch size once every task has completed, so the next
+	 * version change starts a fresh count.
+	 */
+	private function delete_batch_total(): void {
+		delete_option( self::BATCH_TOTAL_OPTION );
 	}
 
 	/**
@@ -486,8 +525,16 @@ class DB_Upgrade {
 			$this->upgrade_statistics_page_id();
 		}
 
+		if ( 'backfill_page_urls' === $do_upgrade ) {
+			$this->upgrade_backfill_page_urls();
+		}
+
 		if ( 'drop_session_visited_urls' === $do_upgrade ) {
 			$this->upgrade_drop_session_visited_urls();
+		}
+
+		if ( 'sessions_has_pageview' === $do_upgrade ) {
+			$this->upgrade_sessions_has_pageview();
 		}
 
 		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
@@ -509,6 +556,7 @@ class DB_Upgrade {
 			// (db_upgrades_complete()). Re-armed by the next arm_db_upgrade().
 			if ( $this->get_progress( 'pro', 'all' ) >= 100 ) {
 				update_option( 'burst_has_db_upgrade', false );
+				$this->delete_batch_total();
 			}
 		}
 
@@ -666,11 +714,25 @@ class DB_Upgrade {
 					// but dropping the columns is deferred one release so a
 					// rollback to the previous version — which writes them on
 					// every session create/update — hits no database errors.
-					// @todo 3.7.1: add a '3.7.1' group here with
-					// 'drop_session_visited_urls' (and the deferred legacy uid
-					// column/table drops, see upgrade_finalize_uid_id() and
-					// convert_uid_table_to_dictionary_ids()), and arm the task
-					// from the 3.7.1 block in class-upgrade.php.
+					// @todo 3.7.1: add 'drop_session_visited_urls' (and the
+					// deferred legacy uid column/table drops, see
+					// upgrade_finalize_uid_id() and
+					// convert_uid_table_to_dictionary_ids()) to the '3.7.1'
+					// group below and arm the task from the 3.7.1 block in
+					// class-upgrade.php.
+				],
+				'3.7.1'   => [
+					// Dictionary rows for the urls of posts first seen after
+					// the 3.7.0 seed (or on a fresh 3.7.0 install): until
+					// 3.7.1 the tracker registered no row for hits carrying a
+					// post id, and the read-path permalink fallback could not
+					// resolve plugin post types (see resolve_page_id()).
+					'backfill_page_urls',
+					// sessions.has_pageview backfill: flag every historic
+					// session with at least one non-404 hit, so session grain
+					// can apply the hit-grain 404 rule (see
+					// Session_Grain_Shape::sessions_from_subquery()).
+					'sessions_has_pageview',
 				],
 			]
 		);
@@ -1078,6 +1140,54 @@ class DB_Upgrade {
 	}
 
 	/**
+	 * Backfill sessions.has_pageview (3.7.1): flag every session that has at
+	 * least one non-404 hit. The session-grain FROM filters on the flag so a
+	 * session made of 404 hits only (a bot scan) is excluded there exactly
+	 * like the hit-grain queries exclude its hits. Iterates by session-ID
+	 * watermark; the has_pageview = 0 condition keeps re-runs idempotent and
+	 * the EXISTS probe uses the session_id index on statistics. Sessions the
+	 * 3.7.1 tracker writes carry the flag from creation; session grain stays
+	 * off until this task completes (db_upgrades_complete()).
+	 */
+	private function upgrade_sessions_has_pageview(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+		if ( ! get_option( 'burst_db_upgrade_sessions_has_pageview' ) ) {
+			return;
+		}
+
+		// The column is created by the 3.7.1 table init; a deploy without a
+		// version bump never re-runs it — retry next iteration.
+		if ( ! $this->column_exists( 'burst_sessions', 'has_pageview' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$this->run_watermarked_batch(
+			'sessions_has_pageview',
+			'burst_sessions',
+			'burst_sessions_has_pageview_batch_size',
+			25000,
+			function ( int $last_id, int $end_id ) use ( $wpdb ) {
+				return $wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$wpdb->prefix}burst_sessions s
+						SET s.has_pageview = 1
+						WHERE s.ID > %d AND s.ID <= %d AND s.has_pageview = 0
+						AND EXISTS (
+							SELECT 1 FROM {$wpdb->prefix}burst_statistics st
+							WHERE st.session_id = s.ID AND st.page_type != '404'
+						)",
+						$last_id,
+						$end_id
+					)
+				);
+			}
+		);
+	}
+
+	/**
 	 * Finalize the uid dictionary migration: convert the straggler rows, build
 	 * the uid_id indexes (online index operations — the legacy varchar uid
 	 * column is left untouched, see uid_id_active(); 3.7.1 drops it), convert
@@ -1090,19 +1200,19 @@ class DB_Upgrade {
 	 * request); a run that keeps failing is capped by its retry budget and
 	 * backed off to daily, with the error surfaced as a task notice.
 	 */
-	private function upgrade_finalize_uid_id(): void {
-		if ( ! $this->has_admin_access() ) {
+	public function upgrade_finalize_uid_id( bool $force = false ): void {
+		if ( ! $force && ! $this->has_admin_access() ) {
 			return;
 		}
 		$option_name = 'burst_db_upgrade_finalize_uid_id';
-		if ( ! get_option( $option_name ) ) {
+		if ( ! $force && ! get_option( $option_name ) ) {
 			return;
 		}
 
 		// All previous pipeline steps must be complete.
-		if ( (bool) get_option( 'burst_db_upgrade_seed_uid_dictionary' )
+		if ( ! $force && ( (bool) get_option( 'burst_db_upgrade_seed_uid_dictionary' )
 			|| (bool) get_option( 'burst_db_upgrade_statistics_uid_id' )
-			|| (bool) get_option( 'burst_db_upgrade_sessions_first_time' ) ) {
+			|| (bool) get_option( 'burst_db_upgrade_sessions_first_time' ) ) ) {
 			return;
 		}
 
@@ -1330,68 +1440,97 @@ class DB_Upgrade {
 			return;
 		}
 
+		$this->run_watermarked_batch(
+			'seed_page_urls',
+			'burst_statistics',
+			'burst_page_urls_batch_size',
+			100000,
+			fn( int $last_id, int $end_id ) => $this->seed_page_urls_batch( $last_id, $end_id ),
+			function (): void {
+				$this->promote_latest_page_urls_to_canonical();
+			}
+		);
+	}
+
+	/**
+	 * Register the urls of posts the dictionary never saw. Until 3.7.1 the
+	 * tracker registered a row only for hits with page_id 0; a post first
+	 * seen after the seed (every post on a fresh 3.7.0 install, a new
+	 * product) had no row, and the read path could not derive one from the
+	 * permalink for plugin post types, so the page tables showed an empty
+	 * url. Same batch as the seed, so it is idempotent on rows the seed
+	 * already wrote (INSERT ... ON DUPLICATE KEY keeps the highest post id);
+	 * on completion the posts that got their first row are promoted to a
+	 * canonical row, which the weekly sweep refines with the permalink. The
+	 * page tables group on the url string while this task is pending (see
+	 * page_dictionary_ready()), so they display correctly meanwhile.
+	 */
+	private function upgrade_backfill_page_urls(): void {
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+		if ( ! get_option( 'burst_db_upgrade_backfill_page_urls' ) ) {
+			return;
+		}
+
+		// The 3.7.0 pipeline must have completed first: the backfill relies
+		// on the dictionary columns, and running it into a seed still in
+		// progress would only duplicate that work.
+		if ( ! $this->column_exists( 'burst_page_urls', 'is_canonical' )
+			|| (bool) get_option( 'burst_db_upgrade_seed_page_urls' )
+			|| (bool) get_option( 'burst_db_upgrade_statistics_page_id' ) ) {
+			return;
+		}
+
+		$this->run_watermarked_batch(
+			'backfill_page_urls',
+			'burst_statistics',
+			'burst_page_urls_batch_size',
+			100000,
+			fn( int $last_id, int $end_id ) => $this->seed_page_urls_batch( $last_id, $end_id ),
+			function (): void {
+				$this->promote_latest_page_urls_to_canonical();
+			}
+		);
+	}
+
+	/**
+	 * One window of the page dictionary seed: one row per distinct page_url
+	 * in the statistics ID range, carrying the WP post id the url belonged
+	 * to. The post id per url comes from the hits that carry a real one. Two
+	 * kinds of stored ids are not: archive hits (their queried object id is
+	 * a term or user, see archive_page_types()) and the static front page id
+	 * on any other url (a legacy resolver fallback for unresolved urls). Both
+	 * count as 0 here, so such a url keeps page_id 0 and its hits get the
+	 * negative dictionary id in the page_id backfill. Shared by the 3.7.0
+	 * seed and the 3.7.1 backfill.
+	 *
+	 * @param int $last_id Exclusive lower bound of the statistics ID window.
+	 * @param int $end_id  Inclusive upper bound of the statistics ID window.
+	 * @return int|bool Rows affected, or false on a query error.
+	 */
+	private function seed_page_urls_batch( int $last_id, int $end_id ): int|bool {
 		global $wpdb;
 		$front_id               = (int) get_option( 'page_on_front' );
 		$protected              = $this->protected_front_page_paths( $front_id );
 		$types                  = $this->archive_page_types();
 		$type_placeholders      = implode( ', ', array_fill( 0, count( $types ), '%s' ) );
 		$protected_placeholders = implode( ', ', array_fill( 0, count( $protected ), '%s' ) );
-		$this->run_watermarked_batch(
-			'seed_page_urls',
-			'burst_statistics',
-			'burst_page_urls_batch_size',
-			100000,
-			function ( int $last_id, int $end_id ) use ( $wpdb, $front_id, $protected, $types, $type_placeholders, $protected_placeholders ) {
-				// The post id per url comes from the hits that carry a real
-				// one. Two kinds of stored ids are not: archive hits (their
-				// queried object id is a term or user, see
-				// archive_page_types()) and the static front page id on any
-				// other url (a legacy resolver fallback for unresolved urls).
-				// Both count as 0 here, so such a url keeps page_id 0 and its
-				// hits get the negative dictionary id in the backfill.
-                // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholder lists built from fixed-length arrays, every value prepared.
-				$result = $wpdb->query(
-					$wpdb->prepare(
-						"INSERT INTO {$wpdb->prefix}burst_page_urls (page_url, page_id)
-						SELECT page_url, MAX(GREATEST(IF(
-							page_type IN ({$type_placeholders})
-							OR ( %d > 0 AND page_id = %d AND page_url NOT IN ({$protected_placeholders}) ),
-							0, page_id
-						), 0)) FROM {$wpdb->prefix}burst_statistics
-						WHERE ID > %d AND ID <= %d AND page_url != '' AND page_type != '404'
-						GROUP BY page_url
-						ON DUPLICATE KEY UPDATE page_id = GREATEST(page_id, VALUES(page_id))",
-						array_merge( $types, [ $front_id, $front_id ], $protected, [ $last_id, $end_id ] )
-					)
-				);
-                // phpcs:enable
-				return $result;
-			},
-			function (): void {
-				$this->assign_initial_canonical_page_urls();
-			}
-		);
-	}
-
-	/**
-	 * Give every post id in the dictionary that has no canonical row yet one:
-	 * its most recently inserted url. save_post and the weekly permalink sweep
-	 * refine these with the real permalink afterwards.
-	 */
-	private function assign_initial_canonical_page_urls(): void {
-		global $wpdb;
-        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table names, integer id lists.
-		$row_ids = $wpdb->get_col(
-			"SELECT MAX(d.ID) FROM {$wpdb->prefix}burst_page_urls d
-			WHERE d.page_id > 0 AND d.page_id NOT IN (
-				SELECT page_id FROM ( SELECT page_id FROM {$wpdb->prefix}burst_page_urls WHERE is_canonical = 1 ) has_canonical
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholder lists built from fixed-length arrays, every value prepared.
+		return $wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO {$wpdb->prefix}burst_page_urls (page_url, page_id)
+				SELECT page_url, MAX(GREATEST(IF(
+					page_type IN ({$type_placeholders})
+					OR ( %d > 0 AND page_id = %d AND page_url NOT IN ({$protected_placeholders}) ),
+					0, page_id
+				), 0)) FROM {$wpdb->prefix}burst_statistics
+				WHERE ID > %d AND ID <= %d AND page_url != '' AND page_type != '404'
+				GROUP BY page_url
+				ON DUPLICATE KEY UPDATE page_id = GREATEST(page_id, VALUES(page_id))",
+				array_merge( $types, [ $front_id, $front_id ], $protected, [ $last_id, $end_id ] )
 			)
-			GROUP BY d.page_id"
 		);
-		foreach ( array_chunk( array_map( 'intval', $row_ids ), 1000 ) as $chunk ) {
-			$id_list = implode( ',', $chunk );
-			$wpdb->query( "UPDATE {$wpdb->prefix}burst_page_urls SET is_canonical = 1 WHERE ID IN ({$id_list})" );
-		}
         // phpcs:enable
 	}
 
@@ -1504,52 +1643,75 @@ class DB_Upgrade {
 	 * into a post:
 	 *
 	 * - Archive url rows (a url with archive-typed hits) whose id is a
-	 *   term/user id from those hits (the id equals the archive hits' id) or
+	 *   term/user id from those hits (the id equals an archive hit's id) or
 	 *   that are not the post's canonical url anyway. A canonical row whose
 	 *   id came from real post hits (a page that doubles as a post type
 	 *   archive) is kept.
-	 * - Non-canonical rows carrying the static front page's id: the front
-	 *   page has exactly one url, every other row with its id is the legacy
-	 *   fallback for an unresolved url.
 	 *
-	 * The front page's own rows are never touched. Bounded by the archive
-	 * hits (page_type index) and the small dictionary, never by a probe per
-	 * dictionary row into the hits of popular post urls.
+	 * One bounded, idempotent batch over the statistics ID window
+	 * ($last_id, $end_id]: the archive hits in the window decide which rows
+	 * to reset, and the union over all windows equals the decision over the
+	 * whole table, so the caller walks the table with run_watermarked_batch()
+	 * instead of grouping every archive hit in one statement. The front page
+	 * rows are handled by reset_front_page_dictionary_ids() once the walk
+	 * completes; the front page's own url is never touched.
+	 *
+	 * @param int $last_id Watermark: last statistics ID already processed.
+	 * @param int $end_id  End of this window (inclusive).
+	 * @return int|false Rows reset, or false on a query error.
 	 */
-	protected function reset_polluted_page_dictionary_ids(): void {
+	protected function reset_polluted_page_dictionary_ids_batch( int $last_id, int $end_id ): int|false {
 		global $wpdb;
-		$front_id               = (int) get_option( 'page_on_front' );
-		$protected              = $this->protected_front_page_paths( $front_id );
+		$protected              = $this->protected_front_page_paths( (int) get_option( 'page_on_front' ) );
 		$types                  = $this->archive_page_types();
 		$type_placeholders      = implode( ', ', array_fill( 0, count( $types ), '%s' ) );
 		$protected_placeholders = implode( ', ', array_fill( 0, count( $protected ), '%s' ) );
 
         // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- placeholder lists built from fixed-length arrays, every value prepared.
-		$wpdb->query(
+		$result = $wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$wpdb->prefix}burst_page_urls d
 				JOIN (
-					SELECT page_url, MAX(page_id) AS archive_page_id FROM {$wpdb->prefix}burst_statistics
-					WHERE page_type IN ({$type_placeholders})
-					GROUP BY page_url
+					SELECT DISTINCT page_url, page_id AS archive_page_id FROM {$wpdb->prefix}burst_statistics
+					WHERE ID > %d AND ID <= %d AND page_type IN ({$type_placeholders})
 				) a ON a.page_url = d.page_url
 				SET d.page_id = 0, d.is_canonical = 0
 				WHERE d.page_id > 0 AND d.page_url NOT IN ({$protected_placeholders})
 				AND ( d.is_canonical = 0 OR d.page_id = a.archive_page_id )",
-				array_merge( $types, $protected )
+				array_merge( [ $last_id, $end_id ], $types, $protected )
 			)
 		);
+        // phpcs:enable
 
-		if ( $front_id > 0 ) {
-			$wpdb->query(
-				$wpdb->prepare(
-					"UPDATE {$wpdb->prefix}burst_page_urls
-					SET page_id = 0, is_canonical = 0
-					WHERE page_id = %d AND is_canonical = 0 AND page_url NOT IN ({$protected_placeholders})",
-					array_merge( [ $front_id ], $protected )
-				)
-			);
+		return false === $result ? false : (int) $result;
+	}
+
+	/**
+	 * Drop the static front page's id from every dictionary row that is not
+	 * its canonical url: the front page has exactly one url, every other row
+	 * with its id is the legacy fallback for an unresolved url. Dictionary
+	 * only, so one small statement; the front page's own rows are never
+	 * touched. The completion step of the walk in
+	 * reset_polluted_page_dictionary_ids_batch().
+	 */
+	protected function reset_front_page_dictionary_ids(): void {
+		global $wpdb;
+		$front_id = (int) get_option( 'page_on_front' );
+		if ( $front_id <= 0 ) {
+			return;
 		}
+		$protected              = $this->protected_front_page_paths( $front_id );
+		$protected_placeholders = implode( ', ', array_fill( 0, count( $protected ), '%s' ) );
+
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- placeholder list built from a fixed-length array, every value prepared.
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}burst_page_urls
+				SET page_id = 0, is_canonical = 0
+				WHERE page_id = %d AND is_canonical = 0 AND page_url NOT IN ({$protected_placeholders})",
+				array_merge( [ $front_id ], $protected )
+			)
+		);
         // phpcs:enable
 	}
 

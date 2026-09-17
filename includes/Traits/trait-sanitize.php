@@ -331,7 +331,8 @@ trait Sanitize {
 	 *     scheme: string,
 	 *     host: string,
 	 *     path: string,
-	 *     parameters: string
+	 *     parameters: string,
+	 *     fragment: string
 	 * }
 	 */
 	public function sanitize_url( ?string $url ): array {
@@ -340,6 +341,7 @@ trait Sanitize {
 			'host'       => '',
 			'path'       => '',
 			'parameters' => '',
+			'fragment'   => '',
 		];
 
 		if ( empty( $url ) ) {
@@ -361,12 +363,16 @@ trait Sanitize {
 		}
 		$url = wp_parse_url( esc_url_raw( $sanitized_url ) );
 		if ( isset( $url['host'] ) ) {
-			$path                            = $url['path'] ?? '';
-			$url_destructured['host']        = $url['host'];
-			$url_destructured['scheme']      = $url['scheme'];
-			$url_destructured['path']        = trailingslashit( $path );
-			$url_destructured['parameters']  = $url['query'] ?? '';
-			$url_destructured['parameters'] .= $url['fragment'] ?? '';
+			$path                           = $url['path'] ?? '';
+			$url_destructured['host']       = $url['host'];
+			$url_destructured['scheme']     = $url['scheme'];
+			$url_destructured['path']       = trailingslashit( $path );
+			$url_destructured['parameters'] = $url['query'] ?? '';
+			// The fragment is kept apart from the query: gluing it onto the
+			// parameters string corrupts the last query value
+			// ('currency=USD' + 'pricing' became 'currency=USDpricing') and
+			// breaks the campaign parameter parsing that splits on '&'.
+			$url_destructured['fragment'] = $url['fragment'] ?? '';
 		}
 		return $url_destructured;
 	}

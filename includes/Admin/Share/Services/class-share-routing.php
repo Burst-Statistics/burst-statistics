@@ -200,21 +200,29 @@ class Share_Routing {
 			}
 		}
 
-		// Standard REST API: always parse REQUEST_URI first.
-		if ( ! isset( $_SERVER['REQUEST_URI'] ) ) {
-			$path = '';
-		} else {
-			$request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) );
-			$path        = wp_parse_url( $request_uri, PHP_URL_PATH );
-			if ( ! is_string( $path ) ) {
+		// Standard REST API: resolve from REQUEST_URI (pretty-permalink REST path).
+		// Skip this entirely during admin-ajax: there the endpoint is dispatched
+		// from Burst's own rest_action / POST 'path' fields, and the script name can
+		// be padded with attacker-controlled trailing PATH_INFO
+		// (/wp-admin/admin-ajax.php/burst/v1/data/<granted>). The unanchored match
+		// below would otherwise accept that injected segment as the endpoint, letting
+		// a share viewer pass the tab check for one endpoint while another dispatches.
+		if ( ! wp_doing_ajax() ) {
+			if ( ! isset( $_SERVER['REQUEST_URI'] ) ) {
 				$path = '';
+			} else {
+				$request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) );
+				$path        = wp_parse_url( $request_uri, PHP_URL_PATH );
+				if ( ! is_string( $path ) ) {
+					$path = '';
+				}
 			}
-		}
 
-		// Regex: `#burst/v1/(.+?)$#` extracts the path after `burst/v1/` to end-of-string (no query string here).
-		// Example: `/wp-json/burst/v1/data/insights` -> `data/insights`.
-		if ( preg_match( '#burst/v1/(.+?)$#', $path, $matches ) ) {
-			return trim( $matches[1], '/' );
+			// Regex: `#burst/v1/(.+?)$#` extracts the path after `burst/v1/` to end-of-string (no query string here).
+			// Example: `/wp-json/burst/v1/data/insights` -> `data/insights`.
+			if ( preg_match( '#burst/v1/(.+?)$#', $path, $matches ) ) {
+				return trim( $matches[1], '/' );
+			}
 		}
 
 		// Try AJAX fallback first: rest_action query param.

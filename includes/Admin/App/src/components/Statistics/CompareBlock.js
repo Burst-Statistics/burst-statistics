@@ -12,6 +12,7 @@ import { useCompareStore, COMPARE_MODES } from '@/store/useCompareStore';
 import { parseISO, subYears, differenceInDays, format } from 'date-fns';
 import useSettingsData from '@/hooks/useSettingsData';
 import { formatNumber } from '@/utils/formatting';
+import { isTourActive } from '@/store/useTourStore';
 
 /**
  * Linearly interpolates a metric value to get the performs-better-than percentile.
@@ -180,7 +181,8 @@ const CompareBlock = ( props ) => {
 				let communityTooltipLink = false;
 
 				if ( showCommunityComparison && m.communityMetricKey ) {
-					const anonymousUsageDataEnabled = getValue( 'anonymous_usage_data' );
+					const tourActive = isTourActive();
+					const anonymousUsageDataEnabled = getValue( 'anonymous_usage_data' ) || tourActive;
 					const communityData = window.burst_settings?.community_data;
 					const metricConfig = communityMetricConfig[ m.communityMetricKey ];
 

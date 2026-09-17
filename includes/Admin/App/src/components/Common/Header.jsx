@@ -15,6 +15,7 @@ import MenuItemLink from './HeaderMenuItemLink';
 import HeaderThemeMenu from './HeaderThemeMenu';
 import TransparencyModal from './TransparencyModal';
 import ChatAssistantButton from './ChatAssistantButton';
+import { useTourStore } from '@/store/useTourStore';
 import MobileMenuDrawer from './MobileMenuDrawer';
 
 const SHARE_LINK_BRANDING_URL = burst_get_website_url( '', {
@@ -37,6 +38,7 @@ const Header = () => {
 	const location = useLocation();
 	const isStory = '/story' === location.pathname;
 	const isShareableLinkViewer = useShareableLinkStore( ( state ) => state.isShareableLinkViewer );
+	const tourActive = useTourStore( ( state ) => state.tourActive );
 	const { isLicenseValidFor, isPro, isTrial } = useLicenseData();
 	const shareLinkPro = isLicenseValidFor( 'share-link-advanced' );
 
@@ -145,7 +147,7 @@ const Header = () => {
 
 				{! isShareableLinkViewer && (
 					<div className="flex items-center gap-4 @lg:gap-5 @max-lg:gap-2">
-						{burst_settings.manage_burst_statistics && <ChatAssistantButton />}
+						{( burst_settings.manage_burst_statistics || tourActive ) && <ChatAssistantButton />}
 
 						{/* Desktop-only: upgrade button, support link, separator, Settings tab. */}
 						{upgradeUrl && (

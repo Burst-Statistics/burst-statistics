@@ -96,20 +96,22 @@ const InsightsHeader = ({ selectedMetrics, filters }) => {
 	);
 
 	return (
-		<PopoverFilter
-			selectedOptions={selectedMetrics}
-			options={insightsOptions}
-			onApply={onApply}
-			extraSection={renderIntervalSelector}
-			extraSectionValue={groupBy}
-			onExtraSectionChange={setGroupBy}
-			description={
-				__(
-					'When a single metric is selected, a dashed comparison line is shown on the chart. The comparison period is set in the date range picker.',
-					'burst-statistics'
-				)
-			}
-		/>
+		<div data-tour="insights-metric-selector">
+			<PopoverFilter
+				selectedOptions={selectedMetrics}
+				options={insightsOptions}
+				onApply={onApply}
+				extraSection={renderIntervalSelector}
+				extraSectionValue={groupBy}
+				onExtraSectionChange={setGroupBy}
+				description={
+					__(
+						'When a single metric is selected, a dashed comparison line is shown on the chart. The comparison period is set in the date range picker.',
+						'burst-statistics'
+					)
+				}
+			/>
+		</div>
 	);
 };
 

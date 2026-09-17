@@ -52,9 +52,11 @@ const GoalSetup = ({
 		}
 	};
 
+	const isTourGoal = 9999 === goal.id;
+
 	return (
-		<div className="w-full bg-gray-100 rounded-m">
-			<details className="rounded-md border border-gray-200">
+		<div className="w-full bg-gray-100 rounded-m" data-tour="goal-item">
+			<details className="rounded-md border border-gray-200" data-tour="goal-details" open={isTourGoal ? true : undefined}>
 				<summary className="burst-no-marker py-1.5 px-2.5 grid gap-1.5 items-center list-none grid-cols-[26px_1fr_auto_auto_auto] @md:gap-3">
 					<Icon
 						name={
@@ -67,7 +69,7 @@ const GoalSetup = ({
 						}
 						size={20}
 					/>
-					<span>
+					<span data-tour="goal-field-title">
 						<EditableTextField
 							value={
 								goal.title && 0 < goal.title.length ?
@@ -109,7 +111,7 @@ const GoalSetup = ({
 								__( 'Click to activate', 'burst-statistics' )
 						}
 					>
-						<span className="relative burst-click-to-filter burst-goal-toggle">
+						<span data-tour="goal-field-toggle" className="relative burst-click-to-filter burst-goal-toggle">
 							{isToggling && (
 								<span
 									className="absolute inset-0 flex items-center justify-center z-10"

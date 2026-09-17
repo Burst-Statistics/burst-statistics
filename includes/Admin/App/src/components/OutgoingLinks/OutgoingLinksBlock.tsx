@@ -14,6 +14,7 @@ import OverlayBlock from '@/components/Upsell/OverlayBlock';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
 import MetricInfo from '@/components/Common/MetricInfo';
 import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
+import { isTourActive } from '@/store/useTourStore';
 import type { FilterSearchParams } from '@/config/filterConfig';
 
 type OutgoingLinksBlockProps = {
@@ -45,20 +46,21 @@ const TOP_N = 5;
 const OutgoingLinksBlock = memo( ({ className = '', customFilters }: OutgoingLinksBlockProps ) => {
 	const { getValue } = useSettingsData();
 	const { isLicenseValid } = useLicenseData();
-	const isEnabled = !! getValue( 'track_external_links' );
+	const tourActive = isTourActive();
+	const isEnabled = tourActive || !! getValue( 'track_external_links' );
 	const { data, isLoading, scrapingProgress } = useOutgoingLinksData({
 		enabled: isEnabled,
 		customFilters
 	});
 
-	const firstCycleCompleted = !! window.burst_settings?.external_links_first_cycle_completed || 100 === scrapingProgress;
+	const firstCycleCompleted = tourActive || !! window.burst_settings?.external_links_first_cycle_completed || 100 === scrapingProgress;
 
 	const navigate = useNavigate();
 	const location = useRouterState({ select: ( s ) => s.location });
 
 	const columns = useMemo( () => getOutgoingLinksColumns(), []);
 
-	const topData = useMemo( () => data.slice( 0, TOP_N ), [ data ]);
+	const topData = useMemo( () => ( Array.isArray( data ) ? data : []).slice( 0, TOP_N ), [ data ]);
 
 	/**
 	 * Navigate to the fullscreen overlay with the outgoing_links variant active.
@@ -79,20 +81,20 @@ const OutgoingLinksBlock = memo( ({ className = '', customFilters }: OutgoingLin
 
 	const hasData = 0 < topData.length;
 
-	if ( ! isLicenseValid ) {
+	if ( ! tourActive && ! isLicenseValid ) {
 		return (
 			<OverlayBlock
 				className={ className }
 				title={ __( 'Outgoing links', 'burst-statistics' ) }
 				blurLabel={ __( 'Outgoing links tracking is a Pro feature.', 'burst-statistics' ) }
 			>
-				<UpsellCopy type="external_links" compact={true} />
+				<UpsellCopy type="external_links" compact={ true } />
 			</OverlayBlock>
 		);
 	}
 
 	return (
-		<Block className={ className }>
+		<Block className={ className } data-tour="outgoing-links-block">
 			<BlockHeading
 				className="border-b border-gray-200"
 				isLoading={ isLoading }
@@ -100,7 +102,7 @@ const OutgoingLinksBlock = memo( ({ className = '', customFilters }: OutgoingLin
 					<MetricInfo metricKey="outgoing_links" side="bottom">
 						{ __( 'Outgoing links', 'burst-statistics' ) }
 					</MetricInfo>
-					{ isLicenseValid && isEnabled && hasData && (
+					{ ( tourActive || isLicenseValid ) && isEnabled && hasData && (
 						<button
 							type="button"
 							className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
@@ -142,7 +144,7 @@ const OutgoingLinksBlock = memo( ({ className = '', customFilters }: OutgoingLin
 						</span>
 					</div>
 				) }
-				{ ! isLicenseValid && (
+				{ ! tourActive && ! isLicenseValid && (
 					<UpsellOverlay
 						className="flex items-center justify-center pt-0 mt-0 m-0 border-0 bg-transparent"
 						containerClassName="pt-1 m-1 mt-4"

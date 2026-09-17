@@ -940,7 +940,7 @@ export const ShareButton = () => {
 				onOpenChange={( open ) => ! open && handleClose()}
 			>
 				<ReactPopover.Anchor asChild>
-					<div className={`${isModalOpen ? 'relative z-[60]' : ''}`}>
+					<div className={`${isModalOpen ? 'relative z-[60]' : ''}`} data-tour="share-link-button">
 						<Tooltip content={__( 'Share this view with anyone by creating a share link.', 'burst-statistics' )}>
 							<AddFilterButton
 								label=""
@@ -1022,6 +1022,7 @@ export const ShareButton = () => {
 										onClick={handleGenerate}
 										disabled={isGenerating}
 										btnVariant="primary"
+										data-tour="generate-share-link-button"
 
 										//class burst-generate-share-link-button used for automated test.
 										className="burst-generate-share-link-button w-full justify-center"

@@ -115,6 +115,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 							/>
 							<label
 								htmlFor={optionId}
+								data-tour={`wizard-format-${option.type}`}
 								className={clsx(
 									'flex gap-2.5 m-px items-start p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer',
 									'focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 items-center',

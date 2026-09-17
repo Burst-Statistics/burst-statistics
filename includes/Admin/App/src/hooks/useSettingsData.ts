@@ -80,8 +80,10 @@ const useSettingsData = (): UseSettingsDataResult => {
 		);
 	};
 
-	const getValue = ( id: string ) =>
-		query.data?.find( ( field ) => field.id === id )?.value;
+	const getValue = ( id: string ) => {
+		const field = query.data?.find( ( f ) => f.id === id );
+		return field?.value;
+	};
 
 	const setValue = ( id: string, value: any ) => { // eslint-disable-line @typescript-eslint/no-explicit-any
 		queryClient.setQueryData<SettingField[]>(
@@ -151,10 +153,11 @@ const useSettingsData = (): UseSettingsDataResult => {
 
 		// Parse the fields list. Any blocked pro features get unblocked here.
 		return settingsData.map( ( field ) => {
+			let updatedField = field;
 			if ( field.pro && isLicenseValid ) {
-				return { ...field, ...field.pro };
+				updatedField = { ...field, ...field.pro };
 			}
-			return field;
+			return updatedField;
 		});
 	}, [ query.data, isLicenseValid ]);
 

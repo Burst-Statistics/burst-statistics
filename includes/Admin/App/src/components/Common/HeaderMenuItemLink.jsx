@@ -137,6 +137,7 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial, varia
 
 	return (
 		<Link
+			data-tour={`nav-tab-${menuItem.id}`}
 			from="/"
 			ref={linkRef}
 			onClick={( event ) => {

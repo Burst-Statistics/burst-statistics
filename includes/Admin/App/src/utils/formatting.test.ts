@@ -7,7 +7,8 @@ import {
 	getBurstStartDate,
 	getForecastRange,
 	getRelativeTime,
-	parseAndValidateDate
+	parseAndValidateDate,
+	formatFileSize
 } from './formatting';
 
 test( 'getBurstSetting returns fallback when burst_settings is undefined', () => {
@@ -154,4 +155,11 @@ test( 'getForecastRange returns the fixed last-12-complete-months window', () =>
 	// End is the final day of its month (calendar-aware, DST-proof).
 	const dayAfterEnd = new Date( end.getFullYear(), end.getMonth(), end.getDate() + 1 );
 	assert.strictEqual( dayAfterEnd.getDate(), 1 );
+});
+
+test( 'formatFileSize formats byte amounts correctly', () => {
+	assert.strictEqual( formatFileSize( 0 ), '0 B' );
+	assert.strictEqual( formatFileSize( 1024 ), '1 KB' );
+	assert.strictEqual( formatFileSize( 4194304 ), '4 MB' );
+	assert.strictEqual( formatFileSize( 10485760 ), '10 MB' );
 });

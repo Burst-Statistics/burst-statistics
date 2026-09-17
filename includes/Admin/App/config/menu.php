@@ -157,6 +157,22 @@ return [
 						],
 					],
 					[
+						'id'    => 'import_data',
+						'title' => __( 'Import data', 'burst-statistics' ),
+						'pro'   => [
+							'url'  => 'pricing/',
+							'text' => __( 'With Pro, you can import historical analytics data from Google Analytics, WP Statistics, Matomo, Plausible, Fathom, and more.', 'burst-statistics' ),
+						],
+					],
+					[
+						'id'    => 'export_data',
+						'title' => __( 'Export data', 'burst-statistics' ),
+						'pro'   => [
+							'url'  => 'pricing/',
+							'text' => __( 'With Pro, you can export a full, performant, chunked backup of all your Burst Statistics tables and options.', 'burst-statistics' ),
+						],
+					],
+					[
 						'id'    => 'import_export_settings',
 						'title' => __( 'Manage settings', 'burst-statistics' ),
 					],

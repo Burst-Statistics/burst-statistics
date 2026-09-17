@@ -7,5 +7,4 @@
 
 export { default as FilterChipList } from './FilterChipList';
 export { default as AddFilterButton } from './AddFilterButton';
-
 export { default as FilterChip } from './FilterChip';

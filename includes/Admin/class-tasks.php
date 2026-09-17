@@ -116,6 +116,19 @@ class Tasks {
 	}
 
 	/**
+	 * Dismiss a task for good, whether or not it is active right now. For
+	 * tasks that are added by the cron validation later (a serverside
+	 * condition), dismiss_task() at upgrade time is a no-op: the task is not
+	 * in the active list yet, so nothing gets written and the next validation
+	 * adds it anyway. Only tasks flagged dismiss_permanently can be dismissed
+	 * this way; add_task() refuses them from then on.
+	 */
+	public function dismiss_task_permanently( string $task_id ): void {
+		$this->dismiss_task( $task_id );
+		$this->maybe_dismiss_permanently( $task_id );
+	}
+
+	/**
 	 * Store task as dismissed permanently
 	 */
 	private function maybe_dismiss_permanently( string $task_id ): void {
@@ -205,6 +218,10 @@ class Tasks {
 				}
 				// if url starts with https://, it's not a link to burst-statistics, but to an external website.
 				if ( strpos( $task['url'], 'https://' ) === 0 ) {
+					continue;
+				}
+				// internal wp-admin links (e.g. the tour launcher) must be left untouched.
+				if ( strpos( $task['url'], admin_url() ) === 0 ) {
 					continue;
 				}
 				$this->tasks[ $key ]['url'] = $this->get_website_url(

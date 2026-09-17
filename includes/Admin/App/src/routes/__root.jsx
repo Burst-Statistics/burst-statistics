@@ -1,12 +1,17 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import Header from '@/components/Common/Header.jsx';
-import { Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { validateFilterSearch } from '@/config/filterConfig';
 import NotFoundModal from '@/components/Common/NotFoundModal';
 import { BurstToastContainer } from '@/components/Common/Toast/ToastContainer';
 import useShareableLinkStore from '@/store/useShareableLinkStore';
+import { useTourStore } from '@/store/useTourStore';
+
+// Lazy-loaded so the tour component tree stays out of the main chunk; it only
+// loads when a tour is active or the resume modal is shown.
+const TourGuide = React.lazy( () => import( '@/components/Tour/TourGuide' ) );
 
 /**
  * Root layout. Story route handles its own width constraint + padding so the
@@ -14,6 +19,8 @@ import useShareableLinkStore from '@/store/useShareableLinkStore';
  */
 const RootComponent = () => {
 	const isStory = useShareableLinkStore( ( state ) => state.isStoryView );
+	const tourActive = useTourStore( ( state ) => state.tourActive );
+	const isResumeModalOpen = useTourStore( ( state ) => state.isResumeModalOpen );
 
 	return (
 		<ErrorBoundary>
@@ -30,6 +37,12 @@ const RootComponent = () => {
 					</div>
 				) }
 			</Suspense>
+
+			{( tourActive || isResumeModalOpen ) && (
+				<Suspense fallback={null}>
+					<TourGuide />
+				</Suspense>
+			)}
 
 			{'development' === process.env.NODE_ENV && (
 				<Suspense>

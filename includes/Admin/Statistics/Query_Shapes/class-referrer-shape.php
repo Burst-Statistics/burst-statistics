@@ -22,8 +22,16 @@ class Referrer_Shape implements From_Strategy_Interface {
 	 * @param Statistics_Query $qd The query data accumulator.
 	 */
 	public function apply( Statistics_Query $qd ): void {
+		// The derived table replaces the statistics alias, so it must expose
+		// every column the metric handlers reference — including the legacy
+		// uid string while Statistics_Query::visitor_count_sql() still counts
+		// unconverted rows by it (the column is gone on finished installs).
+		$columns = 'statistics.ID, statistics.time, statistics.page_url, statistics.page_id, statistics.page_type, statistics.uid_id, statistics.time_on_page, statistics.session_id';
+		if ( $qd->legacy_uid_fallback_active() ) {
+			$columns .= ', statistics.uid';
+		}
 		$inner = Query::create()
-			->select_raw( 'statistics.ID, statistics.time, statistics.page_url, statistics.page_id, statistics.page_type, statistics.uid_id, statistics.time_on_page, statistics.session_id' )
+			->select_raw( $columns )
 			->from( 'burst_statistics', 'statistics' )
 			->inner_join( 'burst_sessions', 'statistics.session_id = sessions.ID', 'sessions' )
 			->where_between( 'statistics.time', $qd->get_date_start(), $qd->get_date_end(), '%d' )

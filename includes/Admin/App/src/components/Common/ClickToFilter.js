@@ -10,6 +10,7 @@ import { __ } from '@wordpress/i18n';
 import { toast } from '@/utils/toast';
 import { isValidDate } from '@/utils/formatting';
 import useSettingsData from '@/hooks/useSettingsData';
+import { useTourStore } from '@/store/useTourStore';
 
 /**
  * ClickToFilter component - makes any child element clickable to apply filters.
@@ -49,6 +50,10 @@ const ClickToFilter = ({
 
 	const { getValue } = useSettingsData();
 	const filterByDomain = getValue( 'filtering_by_domain' );
+
+	// During an interactive tour, always show the filter/link icons so the
+	// spotlight hint can point to them without requiring a row hover first.
+	const tourActive = useTourStore( ( state ) => state.tourActive );
 
 	// Check if the filter is allowed
 	const isValidFilter = useMemo( () => {
@@ -109,6 +114,10 @@ const ClickToFilter = ({
 		( e ) => {
 			e.stopPropagation();
 
+			if ( ! filterValue || 'string' !== typeof filterValue ) {
+				return;
+			}
+
 			let url = filterValue;
 
 			// For page_url filters, construct the full URL if it's a relative path
@@ -123,10 +132,10 @@ const ClickToFilter = ({
 					const protocol =
 						-1 !== siteUrl.indexOf( 'https:' ) ? 'https://' : 'http://';
 
-					if ( Object.prototype.hasOwnProperty.call( row, 'host' ) ) {
+					if ( Object.prototype.hasOwnProperty.call( row || {}, 'host' ) ) {
 						siteUrl = `${protocol}${row.host}`;
 					} else if (
-						Object.prototype.hasOwnProperty.call( activeFilters, 'host' )
+						Object.prototype.hasOwnProperty.call( activeFilters || {}, 'host' )
 					) {
 						const hostValue =
 							activeFilters.host?.replace?.( /^!/, '' ) ?? activeFilters.host;
@@ -144,7 +153,7 @@ const ClickToFilter = ({
 
 			window.open( url, '_blank', 'noopener,noreferrer' );
 		},
-		[ filter, filterValue ] // eslint-disable-line react-hooks/exhaustive-deps
+		[ filter, filterValue, filterByDomain, row, getActiveFilters ]
 	);
 
 	// Memoize tooltip content for filter icon
@@ -289,7 +298,7 @@ const ClickToFilter = ({
 	}
 
 	return (
-		<div className="group relative @md:min-w-36 min-w-0 w-full">
+		<div className="group relative @md:min-w-36 min-w-0 w-full" data-tour="data-table-row">
 			{/* Main content. */}
 			{useContainerForFilter ? (
 				<HelpTooltip content={filterTooltip} asChild>
@@ -309,7 +318,7 @@ const ClickToFilter = ({
 
 			{( afterChildren || ( ! useContainerForFilter || isExternalLinkable ) ) && (
 				<div
-					className="pointer-events-none absolute right-1 top-1/2 z-interactive flex -translate-y-1/2 p-1 items-center gap-1 pl-5 pr-1 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100"
+					className={ `pointer-events-none absolute right-1 top-1/2 z-interactive flex -translate-y-1/2 p-1 items-center gap-1 pl-5 pr-1 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100 ${tourActive ? 'opacity-100 pointer-events-auto' : 'opacity-0'}` }
 					style={{
 						background: 'linear-gradient(to right, transparent, var(--color-gray-50) 20px)'
 					}}
@@ -322,6 +331,7 @@ const ClickToFilter = ({
 							<div
 								onClick={handleFilterClick}
 								className="flex items-center justify-center w-6 h-6 bg-gray-100 hover:bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
+								data-tour="data-table-click-filter"
 							>
 								<Icon name="filter" size={14} color="black" />
 							</div>
@@ -334,6 +344,7 @@ const ClickToFilter = ({
 							<div
 								onClick={handleVisitorFlowClick}
 								className="flex items-center justify-center w-6 h-6 bg-gray-100 hover:bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer"
+								data-tour="data-table-page-analytics"
 							>
 								<Icon name="page" size={14} color="black" />
 							</div>

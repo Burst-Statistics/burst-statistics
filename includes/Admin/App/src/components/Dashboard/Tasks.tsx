@@ -77,6 +77,7 @@ const Tasks = (): React.ReactElement | Array<React.ReactElement> => {
 	const tasks = useTasks( ( state ) => state.tasks );
 	const loading = useTasks( ( state ) => state.loading );
 	const getTasks = useTasks( ( state ) => state.getTasks );
+	const dismissTask = useTasks( ( state ) => state.dismissTask );
 
 	useEffect(
 
@@ -101,27 +102,32 @@ const Tasks = (): React.ReactElement | Array<React.ReactElement> => {
 		return 'clientside' !== task.condition.type;
 	});
 
+	// Render the motion.div items directly as AnimatePresence children. With
+	// mode="popLayout" framer-motion injects a ref into each direct child to
+	// measure it, so the children must be ref-able motion elements — a wrapper
+	// function component (which also returns an array) cannot receive that ref.
 	return (
 		<AnimatePresence mode="popLayout">
-			<ClientTasks key='client-tasks' tasks={clientTasks} />
-			<ServerTasks key='server-tasks' tasks={serverTasks} />
+			{ renderClientTasks( clientTasks ) }
+			{ renderServerTasks( serverTasks, dismissTask ) }
 		</AnimatePresence>
 	);
 };
 
 /**
- * ServerTasks component to display server-side tasks or no tasks message
+ * Render server-side task items, or the "no tasks" message when empty.
  *
- * @param { Object } props       - Component props
- * @param { Array }  props.tasks - List of server-side tasks
+ * @param { Array }    tasks       List of server-side tasks.
+ * @param { Function } dismissTask Handler to dismiss a task by id.
  *
- * @return { React.ReactElement | Array< React.ReactElement > } NoTasksComponent or list of TaskElement components
+ * @return { Array< React.ReactElement > } List of motion-wrapped task elements.
  */
-const ServerTasks = ({ tasks }: { tasks: TaskProp[] }) => {
-    const dismissTask = useTasks( ( state ) => state.dismissTask );
-
+const renderServerTasks = (
+	tasks: TaskProp[],
+	dismissTask: ( id: string ) => void
+): React.ReactElement[] => {
 	if ( 0 === tasks.length ) {
-		return (
+		return [
 			<motion.div
 				key="no-tasks"
 				variants={listSlideAnimation( 1 ) as Variants}
@@ -131,7 +137,7 @@ const ServerTasks = ({ tasks }: { tasks: TaskProp[] }) => {
 			>
 				<NoTasksComponent />
 			</motion.div>
-		);
+		];
 	}
 
 	return tasks.map( ( task: TaskProp, index: number ) => {
@@ -145,7 +151,6 @@ const ServerTasks = ({ tasks }: { tasks: TaskProp[] }) => {
 				exit="exit"
 			>
 				<TaskElement
-					key={task.id}
 					task={task}
 					onCloseTaskHandler={() => dismissTask( task.id )}
 				/>
@@ -155,14 +160,13 @@ const ServerTasks = ({ tasks }: { tasks: TaskProp[] }) => {
 };
 
 /**
- * ClientTasks component to display client-side tasks
+ * Render client-side task items.
  *
- * @param { Object } props       - Component props
- * @param { Array }  props.tasks - List of client-side tasks
+ * @param { Array } tasks List of client-side tasks.
  *
- * @return { Array< React.ReactElement > } List of TaskElement components
+ * @return { Array< React.ReactElement > } List of motion-wrapped task elements.
  */
-const ClientTasks = ({ tasks }: { tasks: TaskProp[] }) => {
+const renderClientTasks = ( tasks: TaskProp[]): React.ReactElement[] => {
 	return tasks.map( ( task: TaskProp, index: number ) => {
 		if ( 'live_visitors' === task.id ) {
 			return (

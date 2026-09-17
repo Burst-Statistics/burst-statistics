@@ -28,7 +28,10 @@ defined( 'ABSPATH' ) || die();
  *
  *   - ID AS session_id      → COUNT(DISTINCT statistics.session_id) counts sessions
  *   - start_time AS time   → the builder's statistics.time date filter keeps working
- *   - uid_id                → COUNT(DISTINCT statistics.uid_id) counts visitors (dictionary ids)
+ *   - uid_id                → Statistics_Query::visitor_count_sql() counts visitors (dictionary ids)
+ *   - '' AS uid              → the legacy-uid term of that count compiles here; it is a
+ *                              no-op by construction, since session grain only runs once
+ *                              the uid migration is complete (session_columns_ready())
  *   - 'session' AS page_type → the builder's 404-exclusion becomes a no-op
  *
  * statistics.ID is deliberately NOT exposed: anything that would join on the
@@ -159,10 +162,18 @@ class Session_Grain_Shape implements From_Strategy_Interface {
 	 * @param int $date_end   Range end (unix timestamp).
 	 */
 	public static function sessions_from_subquery( int $date_start, int $date_end ): Query {
+		// has_pageview = 1 is the session-grain form of the hit-grain
+		// page_type != '404' rule (which the literal page_type below turns
+		// into a no-op): a session whose hits are all 404s — a bot scan —
+		// contributes no pageview to any hit-grain block and must not be a
+		// session, visitor or bounce here either. Without it the Compare
+		// block (session grain) counted those sessions while the Today block
+		// (hit grain) did not, and the two disagreed on the same range.
 		return Query::create()
-			->select_raw( "session_starts.ID AS session_id, session_starts.start_time AS time, session_starts.uid_id, 'session' AS page_type" )
+			->select_raw( "session_starts.ID AS session_id, session_starts.start_time AS time, session_starts.uid_id, '' AS uid, 'session' AS page_type" )
 			->from( 'burst_sessions', 'session_starts' )
-			->where_between( 'session_starts.start_time', $date_start, $date_end, '%d' );
+			->where_between( 'session_starts.start_time', $date_start, $date_end, '%d' )
+			->where( 'session_starts.has_pageview', 1, '=', '%d' );
 	}
 
 	/**
@@ -243,9 +254,9 @@ class Session_Grain_Shape implements From_Strategy_Interface {
 	}
 
 	/**
-	 * Whether start_time/uid_id exist on burst_sessions and the historic backfill
-	 * has completed. Until then, session-grain results would undercount, so
-	 * every query stays on the statistics-based path.
+	 * Whether start_time/uid_id/has_pageview exist on burst_sessions and the
+	 * historic backfills have completed. Until then, session-grain results
+	 * would undercount, so every query stays on the statistics-based path.
 	 */
 	private static function session_columns_ready(): bool {
 		// Central migration-state check plus one structural probe: a deploy
@@ -260,7 +271,9 @@ class Session_Grain_Shape implements From_Strategy_Interface {
 			global $wpdb;
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$columns                             = $wpdb->get_col( "DESC {$wpdb->prefix}burst_sessions" );
-			self::$columns_available[ $blog_id ] = in_array( 'start_time', $columns, true ) && in_array( 'uid_id', $columns, true );
+			self::$columns_available[ $blog_id ] = in_array( 'start_time', $columns, true )
+				&& in_array( 'uid_id', $columns, true )
+				&& in_array( 'has_pageview', $columns, true );
 		}
 
 		return self::$columns_available[ $blog_id ];

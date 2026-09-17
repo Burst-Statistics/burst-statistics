@@ -64,11 +64,12 @@ const ExplanationAndStatsItem = ({
 								to="/settings/$settingsId"
 								params={{ settingsId: 'general' }}
 								className="text-text-gray hover:text-primary transition-colors flex items-center"
+								data-tour="community-comparison"
 							>
 								<Icon name="compare-arrows" size={16} />
 							</Link>
 						) : (
-							<span className="text-text-gray flex items-center">
+							<span className="text-text-gray flex items-center" data-tour="community-comparison">
 								<Icon name="compare-arrows" size={16} />
 							</span>
 						)}

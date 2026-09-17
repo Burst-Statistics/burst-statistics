@@ -22,11 +22,6 @@ class Frontend {
 	public Tracking $tracking;
 
 	/**
-	 * Frontend statistics instance
-	 */
-	public Frontend_Statistics $statistics;
-
-	/**
 	 * Option holding the auto debug window state: remaining budget, collected
 	 * browser errors and the arm timestamp. A window collects for
 	 * DEBUG_WINDOW_COLLECT_SECONDS after arming; its errors are retained for
@@ -552,7 +547,7 @@ class Frontend {
 			return $this->uses_obfuscated_combined_file;
 		}
 
-		$file                                = $this->upload_dir( 'js', true ) . $this->get_frontend_js_filename( true );
+		$file                                = $this->upload_dir( 'js', true, true ) . $this->get_frontend_js_filename( true );
 		$this->uses_obfuscated_combined_file = file_exists( $file );
 		return $this->uses_obfuscated_combined_file;
 	}
@@ -569,7 +564,7 @@ class Frontend {
 		$prefix = 'burst';
 		if ( $this->uses_obfuscated_combined_file() ) {
 			$prefix      = 'b';
-			$upload_path = $this->upload_dir( 'js', true );
+			$upload_path = $this->upload_dir( 'js', true, true );
 			// Fall back to the bundled file if the uploads copy is missing, so the src
 			// stays loadable while the handle keeps matching the tracking script.
 			if ( file_exists( $upload_path . 'timeme.min.js' ) ) {
@@ -642,7 +637,7 @@ class Frontend {
 				$ghost_mode_enabled = $this->uses_obfuscated_combined_file();
 				$filename           = $this->get_frontend_js_filename( $ghost_mode_enabled );
 				$upload_url         = $this->upload_url( 'js', $ghost_mode_enabled );
-				$upload_path        = $this->upload_dir( 'js', $ghost_mode_enabled );
+				$upload_path        = $this->upload_dir( 'js', $ghost_mode_enabled, true );
 
 				// Only use the written file if it exists. For ghost mode the existence check
 				// is part of uses_obfuscated_combined_file(), so the prefix always matches

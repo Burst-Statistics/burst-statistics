@@ -35,9 +35,16 @@ class Query_Executor {
 	use Helper;
 	use Database_Helper;
 
+	/**
+	 * Object cache group the statistics query results live in. Anything that
+	 * rewrites the statistics tables outside the tracker (an import) flushes
+	 * this group rather than the whole object cache.
+	 */
+	public const RESULT_CACHE_GROUP = 'burst_stats_query_results';
+
 	private string $fingerprint         = '';
 	private int $cache_ttl              = 30;
-	private string $cache_group         = 'burst_stats_query_results';
+	private string $cache_group         = self::RESULT_CACHE_GROUP;
 	private bool $single_flight         = false;
 	private int $single_flight_wait_ms  = 1200;
 	private int $single_flight_lock_ttl = 0;

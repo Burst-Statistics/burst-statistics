@@ -35,7 +35,13 @@ function burst_add_woocommerce_products_page_id( int $page_id ): int {
 add_filter( 'burst_products_page_id', 'burst_add_woocommerce_products_page_id' );
 
 /**
- * Handle actions when a WooCommerce order is created.
+ * Handle a newly created WooCommerce order.
+ *
+ * The order exists before it is paid. The visitor attribution is captured
+ * now, while the visitor's own request (and Burst cookie) is available, and
+ * stored on the order; the order itself is recorded once it reaches a paid
+ * status, see burst_woocommerce_order_status_changed(). Pending and failed
+ * orders therefore never enter the sales statistics.
  *
  * @param \WC_Order|\WC_Order_Refund $order The WooCommerce order object.
  */
@@ -44,6 +50,128 @@ function burst_woocommerce_order_created( WC_Order|WC_Order_Refund $order ): voi
 		return;
 	}
 
+	burst_woocommerce_store_visitor_attribution( $order );
+
+	/**
+	 * Filter whether orders are recorded as soon as they are created, before
+	 * payment. Defaults to false: an order is recorded when it reaches a paid
+	 * status (see wc_get_is_paid_statuses()).
+	 *
+	 * @param bool $record_unpaid Record unpaid orders. Default false.
+	 * @since 3.7.1
+	 */
+	if ( (bool) apply_filters( 'burst_woocommerce_record_unpaid_orders', false ) || $order->is_paid() ) {
+		burst_woocommerce_record_order( $order );
+	}
+}
+add_action( 'woocommerce_checkout_order_created', 'burst_woocommerce_order_created' );
+add_action( 'woocommerce_store_api_checkout_order_processed', 'burst_woocommerce_order_created' );
+
+/**
+ * Store the Burst visitor attribution on the order.
+ *
+ * Payment confirmation (gateway return, webhook, manual status change) runs
+ * outside the visitor's request, so the uid and the statistic row of the
+ * current hit are captured at creation time and kept in order meta.
+ *
+ * @param \WC_Order $order The WooCommerce order.
+ */
+function burst_woocommerce_store_visitor_attribution( WC_Order $order ): void {
+	$tracking = \Burst\burst_loader()->frontend->tracking;
+	$uid      = $tracking->get_burst_uid();
+
+	if ( '' === $uid ) {
+		return;
+	}
+
+	$statistic    = $tracking->get_last_user_statistic( $uid );
+	$statistic_id = (int) ( $statistic['ID'] ?? 0 );
+
+	if ( 0 === $statistic_id ) {
+		return;
+	}
+
+	$order->update_meta_data( '_burst_uid', $uid );
+	$order->update_meta_data( '_burst_statistic_id', (string) $statistic_id );
+	$order->save_meta_data();
+}
+
+/**
+ * Record the order once it reaches a paid status.
+ *
+ * Orders without a stored Burst attribution (created in the admin, imported,
+ * or placed by a visitor Burst did not track) are skipped: they cannot be
+ * attributed to a visit.
+ *
+ * @param int       $order_id The order ID.
+ * @param string    $from     Previous status, without the wc- prefix.
+ * @param string    $to       New status, without the wc- prefix.
+ * @param \WC_Order $order    The WooCommerce order.
+ */
+function burst_woocommerce_order_status_changed( int $order_id, string $from, string $to, WC_Order $order ): void {
+	if ( ! in_array( $to, wc_get_is_paid_statuses(), true ) ) {
+		return;
+	}
+
+	if ( 0 === (int) $order->get_meta( '_burst_statistic_id' ) ) {
+		return;
+	}
+
+	burst_woocommerce_record_order( $order );
+}
+add_action( 'woocommerce_order_status_changed', 'burst_woocommerce_order_status_changed', 10, 4 );
+
+/**
+ * Record the order in the Burst sales statistics, once.
+ *
+ * @param \WC_Order $order The WooCommerce order.
+ */
+function burst_woocommerce_record_order( WC_Order $order ): void {
+	if ( 1 === (int) $order->get_meta( '_burst_order_recorded' ) ) {
+		return;
+	}
+
+	$data = burst_woocommerce_get_order_data( $order );
+
+	/**
+	 * Action hook fired when an order should be recorded.
+	 * burst_order_created
+	 *
+	 * @param array $data     An array of order data including:
+	 *                        - 'currency' (string): The currency code of the order.
+	 *                        - 'total' (float): The total amount of the order before tax.
+	 *                        - 'tax' (float): The total tax applied to the order.
+	 *                        - 'platform' (string): The platform identifier, e.g., 'WC' for WooCommerce.
+	 *                        - 'uid' (string): The Burst visitor uid the order is attributed to, '' if unknown.
+	 *                        - 'statistic_id' (int): The statistic row of the hit that placed the order, 0 if unknown.
+	 *                        - 'products' (array): An array of products in the order, each containing:
+	 *                          - 'product_id' (int): The ID of the product.
+	 *                          - 'amount' (int): The quantity of the product.
+	 *                          - 'price' (float): The price of the product.
+	 * @since 3.0.0
+	 */
+	do_action( 'burst_order_created', $data );
+
+	/**
+	 * Action hook fired when a WooCommerce order should be recorded.
+	 * burst_woocommerce_order_created
+	 *
+	 * @param array $data     The same order data as burst_order_created.
+	 * @since 3.0.0
+	 */
+	do_action( 'burst_woocommerce_order_created', $data );
+
+	$order->update_meta_data( '_burst_order_recorded', '1' );
+	$order->save_meta_data();
+}
+
+/**
+ * Build the Burst order payload for a WooCommerce order.
+ *
+ * @param \WC_Order $order The WooCommerce order.
+ * @return array The order data, filtered through burst_woocommerce_order_data.
+ */
+function burst_woocommerce_get_order_data( WC_Order $order ): array {
 	$products = [];
 	foreach ( $order->get_items() as $item ) {
 		if ( $item instanceof WC_Order_Item_Product ) {
@@ -61,54 +189,20 @@ function burst_woocommerce_order_created( WC_Order|WC_Order_Refund $order ): voi
 		}
 	}
 
-	$data = apply_filters(
+	return apply_filters(
 		'burst_woocommerce_order_data',
 		[
-			'currency' => $order->get_currency(),
-			'total'    => $order->get_subtotal(),
-			'tax'      => $order->get_total_tax(),
-			'platform' => 'WC',
-			'products' => $products,
+			'currency'     => $order->get_currency(),
+			'total'        => $order->get_subtotal(),
+			'tax'          => $order->get_total_tax(),
+			'platform'     => 'WC',
+			'uid'          => (string) $order->get_meta( '_burst_uid' ),
+			'statistic_id' => (int) $order->get_meta( '_burst_statistic_id' ),
+			'products'     => $products,
 		],
 		$order
 	);
-
-	/**
-	 * Action hook fired when order is created.
-	 * burst_order_created
-	 *
-	 * @param array $data     An array of order data including:
-	 *                        - 'currency' (string): The currency code of the order.
-	 *                        - 'total' (float): The total amount of the order before tax.
-	 *                        - 'tax' (float): The total tax applied to the order.
-	 *                        - 'products' (array): An array of products in the order, each containing:
-	 *                          - 'product_id' (int): The ID of the product.
-	 *                          - 'platform' (string): The platform identifier, e.g., 'WC' for WooCommerce.
-	 *                          - 'amount' (int): The quantity of the product.
-	 *                          - 'price' (float): The price of the product.
-	 * @since 3.0.0
-	 */
-	do_action( 'burst_order_created', $data );
-
-	/**
-	 * Action hook fired when a WooCommerce order is created.
-	 * burst_order_created
-	 *
-	 * @param array $data     An array of order data including:
-	 *                        - 'currency' (string): The currency code of the order.
-	 *                        - 'total' (float): The total amount of the order before tax.
-	 *                        - 'tax' (float): The total tax applied to the order.
-	 *                        - 'products' (array): An array of products in the order, each containing:
-	 *                           - 'product_id' (int): The ID of the product.
-	 *                           - 'platform' (string): The platform identifier, e.g., 'WC' for WooCommerce.
-	 *                           - 'amount' (int): The quantity of the product.
-	 *                           - 'price' (float): The price of the product.
-	 * @since 3.0.0
-	 */
-	do_action( 'burst_woocommerce_order_created', $data );
 }
-add_action( 'woocommerce_checkout_order_created', 'burst_woocommerce_order_created' );
-add_action( 'woocommerce_store_api_checkout_order_processed', 'burst_woocommerce_order_created' );
 
 /**
  * Capture WooCommerce cart updates and pass to custom burst hook.
