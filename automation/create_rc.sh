@@ -111,6 +111,8 @@ create_rc_zip() {
     "--exclude=.gitignore"
     "--exclude=.github/"
     "--exclude=.gitlab/"
+    "--exclude=.githooks/"
+    "--exclude=.gitmodules"
     "--exclude=.million/"
     "--exclude=webpack.config.js"
     "--exclude=phpstan.wp-env.neon"
