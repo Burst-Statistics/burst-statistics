@@ -8,7 +8,6 @@ use Burst\Admin\Burst_Onboarding\Burst_Onboarding;
 use Burst\Admin\Reports\Reports;
 use Burst\Admin\Statistics\Filter_Registry;
 use Burst\Admin\Statistics\Goal_Statistics;
-use Burst\Admin\Tasks;
 use Burst\Admin\Tracking_Health;
 use Burst\Frontend\Endpoint;
 use Burst\Frontend\Goals\Goal;
@@ -40,7 +39,6 @@ class App {
 
 	public Menu $menu;
 	public Fields $fields;
-	public Tasks $tasks;
 	private ?array $cached_datatable_configs = null;
 
 	/**
@@ -522,6 +520,53 @@ class App {
 	}
 
 	/**
+	 * Derive the dispatch data type from the final, authorized REST action.
+	 *
+	 * Single source of truth for the AJAX fallback: the type that selects which
+	 * query runs MUST come from the same $action string the permission checks
+	 * authorized. Deriving it from a separately-parsed rest_action while
+	 * authorizing the POST body 'path' is what allowed the auth/dispatch desync,
+	 * where a share viewer named a granted endpoint in 'path' while rest_action
+	 * pointed at a non-granted one.
+	 *
+	 * @param string $action The final, authoritative REST action path.
+	 * @return array{type: string, is_ecommerce: bool} Empty type when $action is not a /data/ endpoint.
+	 */
+	private function resolve_fallback_data_type( string $action ): array {
+		$action = (string) strtok( $action, '?' );
+
+		if ( str_contains( $action, 'burst/v1/data/ecommerce/datatable/' ) ) {
+			return [
+				'type'         => 'datatable-' . str_replace( 'burst/v1/data/ecommerce/datatable/', '', $action ),
+				'is_ecommerce' => true,
+			];
+		}
+		if ( str_contains( $action, 'burst/v1/data/datatable/' ) ) {
+			return [
+				'type'         => 'datatable-' . str_replace( 'burst/v1/data/datatable/', '', $action ),
+				'is_ecommerce' => false,
+			];
+		}
+		if ( str_contains( $action, 'burst/v1/data/ecommerce/' ) ) {
+			return [
+				'type'         => strtolower( str_replace( 'burst/v1/data/ecommerce/', '', $action ) ),
+				'is_ecommerce' => true,
+			];
+		}
+		if ( str_contains( $action, 'burst/v1/data/' ) ) {
+			return [
+				'type'         => strtolower( str_replace( 'burst/v1/data/', '', $action ) ),
+				'is_ecommerce' => false,
+			];
+		}
+
+		return [
+			'type'         => '',
+			'is_ecommerce' => false,
+		];
+	}
+
+	/**
 	 * If the rest api is blocked, the code will try an admin ajax call as fall back.
 	 */
 	public function rest_api_fallback( string $context = '' ): void {
@@ -530,36 +575,21 @@ class App {
 		$action    = false;
 		$do_action = false;
 		$data      = [];
-		$data_type = false;
 
 		if ( ! $this->user_can_view() ) {
 			$error = true;
 		}
 
 		// --- Parse GET ---
+		// Only the action path is read here. The dispatch 'type' is derived later
+		// from the final, authorized $action (see resolve_fallback_data_type) — never
+		// from rest_action independently, because a POST body 'path' can override
+		// $action after this point. Deriving the type from a different field than the
+		// one that is authorized is what allowed the auth/dispatch desync.
 		// phpcs:ignore
 		if ( isset( $_GET['rest_action'] ) ) {
 			// phpcs:ignore
 			$action = sanitize_text_field( $_GET['rest_action'] );
-
-			// Handle granular datatable endpoints in fallback.
-			if ( str_contains( $action, 'burst/v1/data/ecommerce/datatable/' ) ) {
-				if ( ! $this->user_can_view_sales() ) {
-					$error = true;
-				}
-				$data_type = 'datatable-' . str_replace( 'burst/v1/data/ecommerce/datatable/', '', $action );
-				// Manually set is_ecommerce for the fallback request.
-				$_GET['is_ecommerce'] = true;
-			} elseif ( str_contains( $action, 'burst/v1/data/datatable/' ) ) {
-				$data_type = 'datatable-' . str_replace( 'burst/v1/data/datatable/', '', $action );
-			} elseif ( str_contains( $action, 'burst/v1/data/ecommerce/' ) ) {
-				if ( ! $this->user_can_view_sales() ) {
-					$error = true;
-				}
-				$data_type = strtolower( str_replace( 'burst/v1/data/ecommerce/', '', $action ) );
-			} elseif ( str_contains( $action, 'burst/v1/data/' ) ) {
-				$data_type = strtolower( str_replace( 'burst/v1/data/', '', $action ) );
-			}
 		}
 
 		// --- Collect GET params ---
@@ -572,25 +602,10 @@ class App {
 		if ( is_array( $request_data ) ) {
 			$req_path = isset( $request_data['path'] ) ? sanitize_text_field( $request_data['path'] ) : false;
 			if ( $req_path ) {
-				// override if provided by POST.
+				// Override if provided by POST. The dispatch 'type' is derived from
+				// this final $action further down, so it can never point at a
+				// different (non-granted) endpoint than the one authorized below.
 				$action = $req_path;
-				if ( ! $data_type && strpos( $action, 'burst/v1/data/' ) !== false ) {
-					// Extract data type for /data/* when using POST.
-					if ( str_contains( $action, 'burst/v1/data/ecommerce/datatable/' ) ) {
-						if ( ! $this->user_can_view_sales() ) {
-							$error = true;
-						}
-						$data_type                            = 'ecommerce-datatable-' . str_replace( 'burst/v1/data/ecommerce/datatable/', '', $action );
-						$request_data['data']['is_ecommerce'] = true;
-					} elseif ( str_contains( $action, 'burst/v1/data/datatable/' ) ) {
-						$data_type = 'datatable-' . str_replace( 'burst/v1/data/datatable/', '', $action );
-					} else {
-						if ( str_contains( $action, 'burst/v1/data/ecommerce/' ) && ! $this->user_can_view_sales() ) {
-							$error = true;
-						}
-						$data_type = strtolower( str_replace( 'burst/v1/data/', '', $action ) );
-					}
-				}
 			}
 			$data = isset( $request_data['data'] ) && is_array( $request_data['data'] ) ? $request_data['data'] : [];
 
@@ -670,9 +685,17 @@ class App {
 			}
 		}
 
-		// If we detected /data/, make sure 'type' is set from the path.
-		if ( $data_type ) {
-			$request->set_param( 'type', $data_type );
+		// Set the dispatch 'type' from the SAME authoritative $action that the
+		// permission checks above validated — the single source of truth for the
+		// fallback. Deriving it from a separately-parsed rest_action is what let a
+		// share viewer authorize a granted endpoint (in the POST body 'path') while a
+		// non-granted endpoint (in rest_action) actually dispatched.
+		$dispatch = $this->resolve_fallback_data_type( (string) $action );
+		if ( '' !== $dispatch['type'] ) {
+			$request->set_param( 'type', $dispatch['type'] );
+			if ( $dispatch['is_ecommerce'] ) {
+				$request->set_param( 'is_ecommerce', true );
+			}
 		}
 
 		// Authoritative authorization (post-override). The POST body 'path' can
@@ -693,7 +716,23 @@ class App {
 			}
 		}
 
+		// Mirror rest_pre_dispatch for the fallback: filters that short-circuit
+		// Burst REST mutations (the tour's mock mode, Tour::intercept_tour_mutations())
+		// never see admin-ajax requests, so without this a blocked REST API
+		// turns mocked writes into real ones. Same signature as rest_pre_dispatch;
+		// the method reflects the write/read split the handlers enforce above.
+		$pre_dispatch = null;
 		if ( ! $error ) {
+			$pre_dispatch_request = new \WP_REST_Request(
+				$this->is_do_action_fallback_request( (string) $action ) ? 'POST' : 'GET',
+				$authorization_request->get_route()
+			);
+			$pre_dispatch         = apply_filters( 'burst_ajax_fallback_pre_dispatch', null, rest_get_server(), $pre_dispatch_request );
+		}
+
+		if ( $pre_dispatch instanceof \WP_REST_Response ) {
+			$response = $pre_dispatch;
+		} elseif ( ! $error ) {
 			if ( str_contains( $action, '/fields/get' ) ) {
 				$response = $this->rest_api_fields_get( $request );
 			} elseif ( str_contains( $action, '/fields/set' ) ) {
@@ -1361,6 +1400,11 @@ class App {
 		if ( empty( $ajax_data ) ) {
 			$this->remove_fallback_notice();
 		}
+
+		// Capture any stray output (PHP notices/warnings) emitted while handling
+		// the action so it can never corrupt the JSON response body.
+		ob_start();
+
 		switch ( $action ) {
 			case 'plugin_actions':
 				$data = $this->plugin_actions( $request, $data );
@@ -1416,8 +1460,9 @@ class App {
 				$data = apply_filters( 'burst_do_action', [], $action, $data );
 		}
 
-		if ( ob_get_length() ) {
-			ob_clean();
+		// Discard any captured stray output; only the JSON response is returned.
+		if ( ob_get_level() > 0 ) {
+			ob_end_clean();
 		}
 
 		return $this->create_rest_response( $data );
@@ -1457,6 +1502,10 @@ class App {
 			$this->remove_fallback_notice();
 		}
 
+		// Capture any stray output (PHP notices/warnings) emitted while handling
+		// the action so it can never corrupt the JSON response body.
+		ob_start();
+
 		switch ( $action ) {
 			case 'tasks':
 				$data = burst_loader()->admin->tasks->get();
@@ -1487,8 +1536,9 @@ class App {
 				$data = apply_filters( 'burst_get_action', [], $action, $data );
 		}
 
-		if ( ob_get_length() ) {
-			ob_clean();
+		// Discard any captured stray output; only the JSON response is returned.
+		if ( ob_get_level() > 0 ) {
+			ob_end_clean();
 		}
 
 		return $this->create_rest_response( $data );

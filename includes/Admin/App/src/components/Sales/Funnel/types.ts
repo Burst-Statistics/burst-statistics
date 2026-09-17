@@ -4,6 +4,7 @@
 export interface FunnelStage {
 	id: string;
 	stage: string;
+	label?: string;
 	value: number;
 }
 

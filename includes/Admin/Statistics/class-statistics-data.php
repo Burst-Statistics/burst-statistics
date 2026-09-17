@@ -44,7 +44,7 @@ class Statistics_Data {
 		if ( ! is_array( $traffic ) ) {
 			$traffic = [];
 		}
-		$checkout_id = $this->burst_checkout_page_id();
+		$checkout_ids = $this->burst_checkout_page_ids();
 
 		$traffic_before_10m = [];
 		foreach ( $traffic as $row ) {
@@ -59,6 +59,7 @@ class Statistics_Data {
 				return (float) $row->time >= (float) $time_start_10m && ( (float) $row->active_time + (float) $exit_margin + (float) $on_page_offset ) >= (float) $now;
 			}
 		);
+		$traffic_in_last_10m = $this->collapse_repeated_hits( $traffic_in_last_10m );
 
 		$entry_marked = [];
 		$exit_marked  = [];
@@ -67,7 +68,7 @@ class Statistics_Data {
 			$row->entry    = false;
 			$row->checkout = false;
 
-			if ( ! empty( $row->page_id ) && $row->page_id !== -1 && (int) $row->page_id === $checkout_id ) {
+			if ( ! empty( $row->page_id ) && in_array( (int) $row->page_id, $checkout_ids, true ) ) {
 				$row->checkout = true;
 			}
 
@@ -96,6 +97,33 @@ class Statistics_Data {
 		}
 
 		return $traffic_in_last_10m;
+	}
+
+	/**
+	 * Collapse consecutive hits of one visitor on the same page into a single row.
+	 *
+	 * A reload or a re-opened tab closes the previous hit at the moment the new
+	 * one is created, so the live list would show the same URL twice with the
+	 * same "x seconds ago". Only adjacent rows (ordered by active_time DESC) are
+	 * merged: a visitor going A → B → A still shows three rows. The newest row
+	 * of a run is kept, which is the one still receiving updates.
+	 *
+	 * @param object[] $rows Live traffic rows ordered by active_time DESC, each with uid and page_url.
+	 * @return object[] Rows with repeated visitor/page runs reduced to their newest hit.
+	 */
+	private function collapse_repeated_hits( array $rows ): array {
+		$collapsed = [];
+		$previous  = null;
+		foreach ( $rows as $row ) {
+			$is_repeat = $previous !== null
+				&& (string) $previous->uid === (string) $row->uid
+				&& (string) $previous->page_url === (string) $row->page_url;
+			if ( ! $is_repeat ) {
+				$collapsed[] = $row;
+			}
+			$previous = $row;
+		}
+		return $collapsed;
 	}
 
 	/**

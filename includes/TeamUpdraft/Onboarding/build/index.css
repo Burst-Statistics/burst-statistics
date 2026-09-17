@@ -56,7 +56,7 @@
   --color-orange: var(--color-orange-500);
   --color-text-black: oklch(0.2 0.0017 var(--gray-hue) / 0.90);
   --color-text-gray: oklch(0.45 0.0072 var(--gray-hue) / 0.95);
-  --color-text-gray-light: oklch(0.7 0.0072 var(--gray-hue) / 0.95);
+  --color-text-gray-light: oklch(0.55 0.0072 var(--gray-hue) / 0.95);
   --color-white: #ffffff;
   --color-black: #151615;
   --color-gray-50: oklch(0.9773 0.003 var(--gray-hue));
@@ -599,6 +599,9 @@
   .max-w-\[70ch\] {
     max-width: 70ch;
   }
+  .max-w-\[540px\] {
+    max-width: 540px;
+  }
   .max-w-\[700px\] {
     max-width: 700px;
   }
@@ -675,6 +678,9 @@
   }
   .items-start {
     align-items: flex-start;
+  }
+  .items-stretch {
+    align-items: stretch;
   }
   .justify-between {
     justify-content: space-between;

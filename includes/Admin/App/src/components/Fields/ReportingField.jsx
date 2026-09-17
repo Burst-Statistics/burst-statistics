@@ -208,8 +208,8 @@ const ReportingField = ({ field, fieldState, help, context, ...props }) => {
 					</p>
 				</div>
 
-				<div className="w-full flex flex-col gap-4 mt-4">
-					<ButtonInput onClick={() => handleAddReport()} className="mt-2 w-fit self-end mr-6" type="button">
+				<div className="w-full flex flex-col gap-4 mt-4" data-tour="reports-list-table">
+					<ButtonInput onClick={() => handleAddReport()} className="mt-2 w-fit self-end mr-6" type="button" data-tour="new-report-button">
 						{__( 'New report', 'burst-statistics' )}
 					</ButtonInput>
 

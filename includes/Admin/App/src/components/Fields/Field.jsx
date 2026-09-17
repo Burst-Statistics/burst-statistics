@@ -29,6 +29,8 @@ import { ReportLogsField } from '@/components/Fields/ReportLogsField';
 import GoogleSearchConsoleField from './GoogleSearchConsoleField';
 import IntegrationRowField from './IntegrationRowField';
 import IntegrationsIntroField from './IntegrationsIntroField';
+import ImportDataField from './ImportDataField';
+import ExportDataField from './ExportDataField';
 
 const fieldComponents = {
 	text: TextField,
@@ -46,6 +48,8 @@ const fieldComponents = {
 	select: SelectField,
 	image_picker: ImagePickerField,
 	restore_archives: RestoreArchivesField,
+	import_data: ImportDataField,
+	export_data: ExportDataField,
 	radio: RadioField,
 	upload: UploadField,
 	export_settings: ExportSettingsField,

@@ -114,6 +114,7 @@ const ImagePickerControl =
 					<div
 						className={`inline-flex items-center justify-center bg-gray-100 transition-colors duration-200 rounded-md p-4 border-dashed border-2 border-gray-500 cursor-pointer min-w-16 min-h-12 ${props.disabled ? 'opacity-50 disabled pointer-events-none' : ''}`}
 						onClick={runUploader}
+						data-tour={`image-picker-${props.setting?.id || field.name}`}
 					>
 						{attachmentUrl && ! isLoading ? (
 							colorOverlayCfg ? (

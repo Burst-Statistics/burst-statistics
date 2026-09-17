@@ -12,8 +12,9 @@ defined( 'ABSPATH' ) || die();
  * Resolves whitelisted metrics, filter keys, group_by tokens, and order_by tokens for a
  * Statistics_Query based on strict mode.
  *
- * Strict mode = consumer is NOT a trusted admin/REST caller (frontend shortcodes, share-link
- * viewers, unauthenticated contexts). Strict mode restricts the metric catalog and disables
+ * Strict mode = consumer is NOT a trusted Burst caller (frontend shortcodes and
+ * unauthenticated contexts only; logged-in callers, including share-link viewers, are
+ * non-strict). Strict mode restricts the metric catalog and disables
  * the filter keys / group_by / order_by tokens that could leak data beyond the share link's
  * intended scope.
  *
@@ -198,6 +199,8 @@ class Statistics_Allowlist {
 				'continent'             => __( 'Continent', 'burst-statistics' ),
 				'continent_code'        => __( 'Continent', 'burst-statistics' ),
 				'source'                => __( 'Source', 'burst-statistics' ),
+				// Campaigns table key for the UTM source column; same display name as 'source'.
+				'utm_source'            => __( 'Source', 'burst-statistics' ),
 				'medium'                => __( 'Medium', 'burst-statistics' ),
 				'campaign'              => __( 'Campaign', 'burst-statistics' ),
 				'term'                  => __( 'Term', 'burst-statistics' ),
@@ -239,8 +242,9 @@ class Statistics_Allowlist {
 	/**
 	 * Resolve allowed filter keys. Strict mode exposes only safe dimensions (page/referrer/
 	 * device family); non-strict additionally permits goal_id, bounce/new-visitor toggles,
-	 * lookup-ID variants, and time_per_session — these can leak detailed visitor info and
-	 * are restricted to authenticated admin contexts.
+	 * lookup-ID variants, and time_per_session. These are available to any logged-in Burst
+	 * caller (admins and share-link viewers alike); strict mode only ever applies to
+	 * shortcodes and unauthenticated contexts.
 	 */
 	private function init_allowed_filter_keys(): void {
 		$keys = [

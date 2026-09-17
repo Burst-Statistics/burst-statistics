@@ -27,14 +27,18 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 	// Use index-based IDs for consistent animation between data states.
 	// Nivo tracks elements by ID to animate transitions. Using position-based
 	// IDs ensures smooth animations when switching between placeholder and real data.
+	const safeData = useMemo( () => {
+		return Array.isArray( data ) ? data : [];
+	}, [ data ]);
+
 	const formattedData = useMemo( () => {
 
 		// Filter out invalid entries and ensure we have valid data
-		const validData = data.filter( item =>
+		const validData = safeData.filter( item =>
 			item &&
 			! isNaN( item.value ) &&
 			0 <= item.value &&
-			item.stage
+			( item.stage || item.label )
 		);
 
 		// If no valid data, return a minimal placeholder
@@ -49,28 +53,28 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 		return validData.map( ( item, index ) => ({
 			id: `step-${index}`,
 			value: Math.max( 0, item.value ), // Ensure non-negative
-			label: item.stage
+			label: String( item.stage || item.label || '' )
 		}) );
-	}, [ data ]);
+	}, [ safeData ]);
 
 	// Check if all values are 0 to change the funnel visually.
 	const hasData = useMemo( () => {
-		return data.some( ( item ) => 0 < item.value );
-	}, [ data ]);
+		return safeData.some( ( item ) => 0 < item.value );
+	}, [ safeData ]);
 
 	// Calculate statistics for each step.
 	const statistics = useMemo( () => {
-		const totalValue = data[0]?.value || 1;
+		const totalValue = safeData[0]?.value || 1;
 
 		// fallow-ignore-next-line complexity
-		const stats: StepStatistics[] = data.map( ( item, index ) => {
-			const currentValue = item.value;
-			const nextValue = data[index + 1]?.value ?? 0;
+		const stats: StepStatistics[] = safeData.map( ( item, index ) => {
+			const currentValue = Number( item?.value ?? 0 );
+			const nextValue = Number( safeData[index + 1]?.value ?? 0 );
 			const percentage = ( currentValue / totalValue ) * 100;
 			const dropOff =
-				index < data.length - 1 ? currentValue - nextValue : null;
+				index < safeData.length - 1 ? currentValue - nextValue : null;
 			const dropOffPercentage =
-				index < data.length - 1 ?
+				index < safeData.length - 1 ?
 					0 === currentValue ?
 						0 :
 						( ( dropOff ?? 0 ) / currentValue ) * 100 :
@@ -78,7 +82,7 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 
 
 			return {
-				label: item.stage,
+				label: item?.stage || item?.label || '',
 				value: currentValue,
 				percentage,
 				dropOff,
@@ -110,7 +114,7 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 		});
 
 		return stats;
-	}, [ data ]);
+	}, [ safeData ]);
 
 	// catch fatal errors when no valid data is provided.
 	if ( ! data || 0 === data.length || ! formattedData || 0 === formattedData.length ) {
@@ -220,7 +224,7 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 
 							// Extract index from the position-based ID (e.g., 'step-0' -> 0).
 							const currentIndex = parseInt(
-								part.data.id.replace( 'step-', '' ),
+								String( part.data.id ).replace( 'step-', '' ),
 								10
 							);
 							const totalValue = data[0]?.value || 1;
@@ -293,7 +297,7 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({
 									) :
 									'';
 							const tooltipData = {
-								stepTitle: part.data.label,
+								stepTitle: String( part.data.label || '' ),
 								sessionCount: currentValue,
 								sessionPercentage:
 									( currentValue / totalValue ) * 100,

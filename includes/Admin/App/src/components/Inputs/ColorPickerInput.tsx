@@ -11,7 +11,7 @@ interface ColorPickerInputProps extends InputHTMLAttributes<HTMLInputElement> {
 const ColorPickerInput = forwardRef<HTMLInputElement, ColorPickerInputProps>(
 	({ value, ...props }, ref ) => {
 		return (
-			<div className="flex items-center gap-3">
+			<div className="flex items-center gap-3" data-tour="color-picker-control">
 				<div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-gray-400 focus-within:border-primary-700 focus-within:ring-3 focus-within:ring-primary-700/20">
 					<input
 						ref={ref}

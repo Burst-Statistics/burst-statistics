@@ -56,8 +56,16 @@ const ButtonControlInput: React.FC<ButtonControlInputProps> = ({
 
 		setIsExecuting( true );
 		try {
-			const response = await burstApi.doAction( action, {});
+			const response = ( await burstApi.doAction( action, {}) ) as {
+				success?: boolean;
+				message?: string;
+				redirect?: string;
+			};
 			if ( response.success ) {
+				if ( response.redirect ) {
+					window.location.href = response.redirect;
+					return;
+				}
 				toast.success(
 					response.message ||
 						__( 'Action completed successfully', 'burst-statistics' )

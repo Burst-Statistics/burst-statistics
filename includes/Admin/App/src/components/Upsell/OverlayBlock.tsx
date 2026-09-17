@@ -17,6 +17,9 @@ interface OverlayBlockProps {
 
 	/** Extra classes forwarded to the wrapping Block (e.g. grid placement). */
 	className?: string;
+
+	/** Optional tour anchor identifier for guided onboarding tours. */
+	dataTour?: string;
 }
 
 /**
@@ -31,10 +34,11 @@ const OverlayBlock: React.FC<OverlayBlockProps> = ({
 	title,
 	blurLabel,
 	children,
-	className = ''
+	className = '',
+	dataTour
 }) => {
 	return (
-		<Block className={ `${ className } relative min-h-[320px] overflow-hidden` }>
+		<Block className={ `${ className } relative min-h-[320px] overflow-hidden` } data-tour={ dataTour }>
 			<BlockHeading title={ title } />
 			<BlockContent className="px-0 py-0 overflow-y-auto">
 				<div className="flex h-48 flex-col items-center justify-center p-4 text-center text-sm text-gray-400 select-none blur-[1px]">

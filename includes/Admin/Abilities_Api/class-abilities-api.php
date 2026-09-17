@@ -2582,6 +2582,18 @@ class Abilities_Api {
 	}
 
 	/**
+	 * Whether a provider class is already in memory.
+	 *
+	 * Never triggers the autoloader: the provider plugins are optional and
+	 * their files must not be loaded from here. The class name arrives as a
+	 * plain string on purpose, so static analysis does not resolve the
+	 * (absent) class and flag the check as always false.
+	 */
+	private function is_provider_class_loaded( string $provider_class ): bool {
+		return class_exists( $provider_class, false );
+	}
+
+	/**
 	 * Register known provider classes if they are installed but not yet registered.
 	 *
 	 * @param object $registry AI provider registry instance.
@@ -2592,14 +2604,13 @@ class Abilities_Api {
 		}
 
 		$providers = [
-			'\\WordPress\\AnthropicAiProvider\\Provider\\AnthropicProvider',
-			'\\WordPress\\OpenAiProvider\\Provider\\OpenAiProvider',
-			'\\WordPress\\GoogleAiProvider\\Provider\\GoogleProvider',
+			'WordPress\\AnthropicAiProvider\\Provider\\AnthropicProvider',
+			'WordPress\\OpenAiProvider\\Provider\\OpenAiProvider',
+			'WordPress\\GoogleAiProvider\\Provider\\GoogleProvider',
 		];
 
 		foreach ( $providers as $provider_class ) {
-			// Only register if the class is already in memory — never load files here.
-			if ( ! class_exists( $provider_class, false ) ) {
+			if ( ! $this->is_provider_class_loaded( $provider_class ) ) {
 				continue;
 			}
 

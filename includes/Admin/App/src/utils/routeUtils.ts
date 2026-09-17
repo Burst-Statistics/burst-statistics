@@ -9,15 +9,16 @@
  * @param {string} [pathname] Optional location pathname.
  * @return {boolean} True if in per-page context.
  */
+// fallow-ignore-next-line complexity
 export const isPerPageRoute = ( pathname?: string ): boolean => {
-	if ( pathname ) {
+	if ( pathname && 'string' === typeof pathname ) {
 		return '/page' === pathname || pathname.startsWith( '/page/' );
 	}
 	if ( 'undefined' === typeof window ) {
 		return false;
 	}
 	const hash = window.location.hash;
-	return hash ? hash.startsWith( '#/page' ) : window.location.pathname.startsWith( '/page' );
+	return Boolean( ( hash && 'string' === typeof hash && hash.startsWith( '#/page' ) ) || ( window.location.pathname && 'string' === typeof window.location.pathname && window.location.pathname.startsWith( '/page' ) ) );
 };
 
 const FILTER_ENABLED_ROUTES = [ '/statistics', '/engagement', '/sources', '/sales', '/table', '/page' ];

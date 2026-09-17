@@ -29,13 +29,19 @@ class Sessions {
 		// uid_id (dictionary id of the visitor, see burst_uids) are denormalized
 		// so session-grain queries need no statistics join; historic rows are
 		// backfilled by the sessions_first_time DB upgrade, armed from
-		// Upgrade::check_upgrade() like every other upgrade.
+		// Upgrade::check_upgrade() like every other upgrade. has_pageview (3.7.1)
+		// marks sessions with at least one non-404 hit: the hit-grain queries
+		// exclude 404 hits, so a session consisting of 404 hits only (a bot
+		// scan) must not count at session grain either — the flag is what lets
+		// the session-grain FROM apply that rule without touching the hits.
+		// Historic rows are backfilled by the sessions_has_pageview DB upgrade.
 		$table_name = $wpdb->prefix . 'burst_sessions';
 
 		$sql = "CREATE TABLE $table_name (
             `ID` int NOT NULL AUTO_INCREMENT,
             `start_time` int NOT NULL DEFAULT 0,
             `uid_id` int unsigned NOT NULL DEFAULT 0,
+            `has_pageview` tinyint NOT NULL DEFAULT 0,
             `host` varchar(255) NOT NULL DEFAULT '',
             `referrer` varchar(255) DEFAULT NULL,
             `goal_id` int,
@@ -68,10 +74,19 @@ class Sessions {
 			$wpdb->query( "ALTER TABLE {$table_name} DROP COLUMN `visitor_uid`" );
 		}
 
+		// 3.7.1 widened the session-grain covering index with has_pageview; the
+		// narrower 3.7.0 index is fully redundant next to it, so drop it once
+		// the wider one exists — keeping both would double the index
+		// maintenance on every session insert. The drop runs after the add
+		// below on a first init, so a range query is never left without a
+		// usable index in between.
+		$legacy_index = $this->index_name_for_columns( [ 'start_time', 'uid_id' ] );
+
 		$indexes = [
 			// Covering for session-grain range queries: filter on start_time,
-			// count distinct uid_id without touching the row.
-			[ 'start_time', 'uid_id' ],
+			// apply the has_pageview rule and count distinct uid_id without
+			// touching the row.
+			[ 'start_time', 'uid_id', 'has_pageview' ],
 			[ 'goal_id' ],
 			[ 'city_code' ],
 			[ 'browser_id' ],
@@ -84,6 +99,10 @@ class Sessions {
 		// Try to create indexes with full length.
 		foreach ( $indexes as $index ) {
 			$this->add_index( 'burst_sessions', $index );
+		}
+
+		if ( $this->index_exists( 'burst_sessions', $this->index_name_for_columns( $indexes[0] ) ) ) {
+			$this->drop_index( 'burst_sessions', $legacy_index );
 		}
 	}
 }

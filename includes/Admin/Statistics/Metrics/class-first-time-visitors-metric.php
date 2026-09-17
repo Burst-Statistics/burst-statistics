@@ -27,11 +27,12 @@ class First_Time_Visitors_Metric implements Metric_Handler_Interface {
 	 * @param Statistics_Query $qd The query data accumulator.
 	 */
 	public function apply( Statistics_Query $qd ): void {
-		$non_bounce = 'COALESCE(sessions.bounce, 0) = 0';
-		$expr       = $qd->get_exclude_bounces()
-			? "COALESCE( COUNT(DISTINCT CASE WHEN {$non_bounce} AND sessions.first_time_visit = 1 THEN statistics.uid_id END), 0) AS first_time_visitors"
-			: 'COUNT(DISTINCT CASE WHEN sessions.first_time_visit = 1 THEN statistics.uid_id END) AS first_time_visitors';
-		$qd->add_select( $expr );
+		// Visitor identity (uid-0 bucket, legacy uid fallback during the
+		// migration) lives in Statistics_Query::visitor_count_sql().
+		$condition = $qd->get_exclude_bounces()
+			? 'COALESCE(sessions.bounce, 0) = 0 AND sessions.first_time_visit = 1'
+			: 'sessions.first_time_visit = 1';
+		$qd->add_select( $qd->visitor_count_sql( $condition ) . ' AS first_time_visitors' );
 		$qd->with( 'sessions' );
 	}
 }

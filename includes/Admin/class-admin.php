@@ -22,10 +22,13 @@ use Burst\Admin\Reports\Report_Logs;
 use Burst\Admin\Reports\Reports;
 use Burst\Admin\Search\Search;
 use Burst\Admin\Errors\Errors;
+use Burst\Admin\Export\Export_Manager;
+use Burst\Admin\Import\Import_Manager;
 use Burst\Admin\Integrations\Integrations_Settings;
 use Burst\Admin\Search_Console\Search_Console;
 use Burst\Admin\Engagement\Reading_Engagement;
 use Burst\Admin\Share\Share;
+use Burst\Admin\Tour\Tour;
 use Burst\Admin\Geo_Ip\Geo_Ip;
 use Burst\Admin\Statistics\Geo_Statistics;
 use Burst\Admin\Statistics\Goal_Statistics;
@@ -153,10 +156,18 @@ class Admin {
 			$posts = new Posts();
 			$posts->init();
 
+			$import_manager = new Import_Manager();
+			$import_manager->init();
+			$export_manager = new Export_Manager();
+			$export_manager->init();
+
 			// On init after Upgrade::check_upgrade() (priority 10): the review
 			// notice queries the statistics table, which must be upgraded first.
 			$review = new Review();
 			add_action( 'init', [ $review, 'init' ], 20 );
+
+			$tour = new Tour();
+			$tour->init();
 
 			// Smart update timing (Features > Smart update timing). Hooks
 			// register unconditionally and gate themselves on the settings
@@ -745,7 +756,7 @@ class Admin {
 		$js                .= file_get_contents( BURST_PATH . "assets/js/build/burst$cookieless_text.min.js" );
 		$ghost_mode_enabled = apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
 		$filename           = $this->get_frontend_js_filename( $ghost_mode_enabled );
-		$upload_dir         = $this->upload_dir( 'js', $ghost_mode_enabled );
+		$upload_dir         = $this->upload_dir( 'js', $ghost_mode_enabled, true );
 		$file               = $upload_dir . $filename;
 
 		// copy timeme script to uploads dir if ghost mode is enabled.
@@ -804,11 +815,11 @@ class Admin {
 
 		$files = [];
 		if ( $keep_ghost_mode !== true ) {
-			$files[] = $this->upload_dir( 'js', true ) . $this->get_frontend_js_filename( true );
-			$files[] = $this->upload_dir( 'js', true ) . 'timeme.min.js';
+			$files[] = $this->upload_dir( 'js', true, true ) . $this->get_frontend_js_filename( true );
+			$files[] = $this->upload_dir( 'js', true, true ) . 'timeme.min.js';
 		}
 		if ( $keep_ghost_mode !== false ) {
-			$files[] = $this->upload_dir( 'js' ) . $this->get_frontend_js_filename( false );
+			$files[] = $this->upload_dir( 'js', false, true ) . $this->get_frontend_js_filename( false );
 		}
 		foreach ( $files as $file ) {
 			if ( file_exists( $file ) ) {
@@ -932,6 +943,9 @@ class Admin {
 			$this->create_js_file();
 
 			$this->tasks->add_initial_tasks();
+			// Serverside task conditions (the import task's tool detection among
+			// them) run on cron only; validate once, 30 seconds after activation.
+			$this->tasks->schedule_task_validation();
 			flush_rewrite_rules();
 			if ( ! $this->table_exists( 'burst_goals' ) ) {
 				return;
@@ -1356,6 +1370,7 @@ class Admin {
 		delete_option( 'burst_db_upgrade_seed_uid_dictionary_last_id' );
 		delete_option( 'burst_db_upgrade_statistics_uid_id_last_id' );
 		delete_option( 'burst_db_upgrade_sessions_first_time_last_id' );
+		delete_option( 'burst_db_upgrade_sessions_has_pageview_last_id' );
 
 		// immediately run setup defaults, so db tables get made.
 		$this->setup_defaults();
@@ -1384,18 +1399,42 @@ class Admin {
 
 		global $wpdb;
 
-		foreach ( $this->get_table_list() as $table_name ) {
-			// guard against touching tables from other plugins, as these can be added using the tables filter.
-			if ( ! str_starts_with( $table_name, 'burst_' ) ) {
-				continue;
-			}
-			if ( ! $this->table_exists( $table_name ) ) {
-				continue;
-			}
-			$sql = "TRUNCATE TABLE {$wpdb->prefix}$table_name";
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name is from a predefined list.
-			$wpdb->query( $sql );
+		foreach ( $this->get_existing_burst_tables( $wpdb->prefix ) as $table ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange -- table name comes from SHOW TABLES on the burst prefix.
+			$wpdb->query( "TRUNCATE TABLE `{$table}`" );
 		}
+	}
+
+	/**
+	 * Every Burst table that actually exists for a blog prefix, as full table
+	 * names. Enumerated from the database rather than from the allowlist:
+	 * feature tables that register on burst_all_tables only while their
+	 * feature is enabled (Search Console) would otherwise be skipped by the
+	 * cleanup paths and left behind after uninstall or site deletion.
+	 * Underscores are escaped, so `wp_` never matches a subsite's `wp_2_`.
+	 * Legacy tables of old Burst versions (burst_summary, burst_known_uids,
+	 * burst_page_weights, ...) are included, which the allowlist never was.
+	 *
+	 * Another plugin that happens to use the same prefix can keep its tables
+	 * out of the cleanup via the burst_cleanup_tables filter (full names).
+	 *
+	 * @param string $prefix The blog table prefix (e.g. wp_ or wp_2_).
+	 * @return string[] Full table names.
+	 */
+	private function get_existing_burst_tables( string $prefix ): array {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$tables = $wpdb->get_col( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $prefix . 'burst_' ) . '%' ) );
+		$tables = array_map( 'strval', $tables );
+
+		/**
+		 * Filter the Burst tables the truncate / drop cleanup paths act on.
+		 *
+		 * @param string[] $tables Full table names found under {$prefix}burst_.
+		 * @param string   $prefix The blog table prefix.
+		 */
+		$tables = apply_filters( 'burst_cleanup_tables', $tables, $prefix );
+		return array_values( array_filter( $tables, static fn( $table ) => is_string( $table ) && str_starts_with( $table, $prefix . 'burst_' ) ) );
 	}
 
 	/**
@@ -1408,18 +1447,9 @@ class Admin {
 
 		global $wpdb;
 
-		// tables to delete.
-		$table_names = $this->get_table_list();
-
-		// delete tables.
-		foreach ( $table_names as $table_name ) {
-			// guard against deleting tables from other plugins, as these can be added using the tables filter.
-			if ( ! str_starts_with( $table_name, 'burst_' ) ) {
-				continue;
-			}
-			$sql = "DROP TABLE IF EXISTS {$wpdb->prefix}$table_name";
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name is from a predefined list.
-			$wpdb->query( $sql );
+		foreach ( $this->get_existing_burst_tables( $wpdb->prefix ) as $table ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange -- table name comes from SHOW TABLES on the burst prefix.
+			$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" );
 		}
 	}
 
@@ -1488,15 +1518,7 @@ class Admin {
 	): array {
 		global $wpdb;
 
-		$table_names = $this->get_table_list();
-		foreach ( $table_names as $table_name ) {
-			if ( ! str_starts_with( $table_name, 'burst_' ) ) {
-				continue;
-			}
-			$tables[] = $wpdb->get_blog_prefix( $blog_id ) . $table_name;
-		}
-
-		return $tables;
+		return array_merge( $tables, $this->get_existing_burst_tables( $wpdb->get_blog_prefix( $blog_id ) ) );
 	}
 
 	/**

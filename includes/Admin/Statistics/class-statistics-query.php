@@ -388,6 +388,67 @@ class Statistics_Query {
 	}
 
 	/**
+	 * Whether visitor counts must still fall back to the legacy uid string.
+	 * On a migrating install the statistics backfill has not reached every
+	 * historic row yet (those rows keep uid_id 0 and their uid string), and
+	 * the uid_id indexes — the signal uid_id_active() probes — are only built
+	 * by the finalize step. Counting uid_id alone would show ~0 visitors for
+	 * historic ranges for the whole migration window.
+	 *
+	 * Memoized per blog for the request: uid_id_active() itself answers from
+	 * the object cache, which the bitmap path already warms in the same
+	 * request, so a finished install pays no schema probe here. Public so
+	 * FROM strategies that replace the statistics table with a derived table
+	 * (Referrer_Shape) can expose the legacy column while it is needed.
+	 */
+	public function legacy_uid_fallback_active(): bool {
+		static $active = [];
+		$blog_id       = get_current_blog_id();
+		if ( ! isset( $active[ $blog_id ] ) ) {
+			$active[ $blog_id ] = ! $this->uid_id_active();
+		}
+		return $active[ $blog_id ];
+	}
+
+	/**
+	 * COUNT(DISTINCT) of visitors over the current FROM, limited to the rows
+	 * matching $condition (a SQL boolean over the joined aliases, e.g. the
+	 * non-bounce test) when given. Single source of truth for the visitor
+	 * identity, shared by the visitors and first_time_visitors metrics.
+	 *
+	 * NULLIF drops the uid-0 bucket: unresolved visitors collapsed into one
+	 * value would otherwise count as one fake visitor and make the SQL paths
+	 * disagree by one with the bitmap path, which excludes uid 0.
+	 *
+	 * While legacy_uid_fallback_active(), a second term counts the rows the
+	 * backfill has not converted yet by their legacy uid string. Two terms
+	 * rather than one int/varchar CASE: a mixed CASE types as varchar and
+	 * widens the DISTINCT key for every visitor, whereas the integer term
+	 * stays narrow and the string term shrinks as the backfill converts rows.
+	 * Hex uids never collide with integers. A visitor with rows on both sides
+	 * of the backfill cursor is counted once per side until their historic
+	 * rows are converted — transient, and it ends with the migration.
+	 *
+	 * A derived-table FROM must expose a uid column while the fallback is
+	 * active: Referrer_Shape selects statistics.uid, the session-grain
+	 * subquery exposes '' (session grain only runs once the migration is
+	 * complete, so the legacy term is a no-op there by construction).
+	 *
+	 * @param string $condition SQL boolean limiting the counted rows, '' for all rows.
+	 */
+	public function visitor_count_sql( string $condition = '' ): string {
+		$count = $condition === ''
+			? 'COUNT(DISTINCT NULLIF(statistics.uid_id, 0))'
+			: "COUNT(DISTINCT CASE WHEN {$condition} THEN NULLIF(statistics.uid_id, 0) END)";
+		if ( ! $this->legacy_uid_fallback_active() ) {
+			return $count;
+		}
+
+		$legacy_condition = $condition === '' ? 'statistics.uid_id = 0' : "{$condition} AND statistics.uid_id = 0";
+		return "({$count} + COUNT(DISTINCT CASE WHEN {$legacy_condition} THEN NULLIF(statistics.uid, '') END))";
+	}
+
+	/**
 	 * Join the tables source_category_sql() references: sessions always,
 	 * campaigns only while the classifier fallback (which reads
 	 * campaigns.medium / campaigns.source) is still in play.
@@ -1085,10 +1146,13 @@ class Statistics_Query {
 	/**
 	 * Decide whether this query instance runs in strict mode.
 	 *
-	 * Strict mode = consumer is NOT a trusted admin/REST caller. Returns true only for
-	 * frontend shortcode use, share-link viewers, or unauthenticated contexts. Logged-in
-	 * admin REST callers (with view_burst_statistics) are non-strict and may use the
-	 * full SELECT/WHERE surface.
+	 * Strict mode = consumer is NOT a trusted Burst caller. It returns true only for
+	 * contexts with no logged-in Burst capability: frontend shortcodes and
+	 * unauthenticated requests. Logged-in Burst REST callers with view_burst_statistics
+	 * — which by design includes share-link viewers — are non-strict and may use the
+	 * full SELECT/WHERE surface. Share-link scope is enforced separately (tab map,
+	 * per-datatable metric allow-list, date/filter restrictions), not by strict mode,
+	 * so do not add is_shareable_link_viewer() here.
 	 */
 	private function compute_strict_mode(): bool {
 		return ! $this->has_admin_access();
@@ -1773,7 +1837,7 @@ class Statistics_Query {
 	 */
 	private function should_suppress_goal_id_filter(): bool {
 		$select          = $this->get_select();
-		$campaign_params = [ 'source', 'medium', 'campaign', 'term', 'content' ];
+		$campaign_params = [ 'source', 'utm_source', 'medium', 'campaign', 'term', 'content' ];
 		$goal_or_conv    = in_array( 'conversion_rate', $select, true )
 			|| in_array( 'conversions', $select, true )
 			|| isset( $this->get_filters()['goal_id'] );
@@ -1835,7 +1899,7 @@ class Statistics_Query {
 				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				$sql = $wpdb->prepare(
 					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					"statistics.uid_id {$operator} ( SELECT sess_new.uid_id FROM {$wpdb->prefix}burst_sessions sess_new WHERE sess_new.first_time_visit = 1 AND sess_new.uid_id > 0 AND sess_new.start_time BETWEEN %d AND %d )",
+					"statistics.uid_id {$operator} ( SELECT sess_new.uid_id FROM {$wpdb->prefix}burst_sessions sess_new WHERE sess_new.first_time_visit = 1 AND sess_new.has_pageview = 1 AND sess_new.uid_id > 0 AND sess_new.start_time BETWEEN %d AND %d )",
 					$this->date_start,
 					$this->date_end
 				);
@@ -2065,8 +2129,15 @@ class Statistics_Query {
 	 * bulk over the grouped result rows: negative ids are burst_page_urls rows
 	 * (the url IS the identity), positive ids resolve to the post's canonical
 	 * row, falling back to the most recently seen url for that post id (a
-	 * deleted post that never got a canonical assigned). Two or three chunked
-	 * IN() lookups against the small dictionary — never per statistics row.
+	 * post the weekly sweep has not promoted yet, or a deleted post that
+	 * never got a canonical assigned). Two or three chunked IN() lookups
+	 * against the small dictionary — never per statistics row, and never a
+	 * permalink lookup: the dictionary is the only source of display urls.
+	 * A post id with hits always has a row, registered by the tracker
+	 * (resolve_page_id()) or the seed/backfill; deriving a url from
+	 * get_permalink() here is not possible, as the REST optimizer leaves
+	 * plugin post types unregistered on this request (a WooCommerce product
+	 * would get a wrong, post-style permalink).
 	 *
 	 * @param array<int, array<string, mixed>|object> $rows Fetched result rows.
 	 * @return array<int, array<string, mixed>|object>
@@ -2112,27 +2183,6 @@ class Statistics_Query {
 			}
 		}
         // phpcs:enable
-
-		// Posts the dictionary has never seen under their id: on a fresh
-		// install nothing seeds canonical rows (the tracker only resolves
-		// page_id 0 urls, save_post only fires on edits), and on upgraded
-		// sites a post with no hits before the seed ran has none either.
-		// Resolve them from the permalink and write the canonical row, so the
-		// next query finds them in the dictionary. Non-viewable posts and
-		// query-string permalinks yield '' and stay unresolved (see
-		// canonical_page_path()).
-		$unresolved = array_diff( array_keys( $positive_ids ), array_keys( $url_map ) );
-		if ( ! empty( $unresolved ) ) {
-			_prime_post_caches( $unresolved, false, false );
-			foreach ( $unresolved as $page_id ) {
-				$path = $this->canonical_page_path( (int) $page_id );
-				if ( '' === $path ) {
-					continue;
-				}
-				$url_map[ (int) $page_id ] = $path;
-				$this->set_canonical_page_url( (int) $page_id, $path );
-			}
-		}
 
 		foreach ( $rows as $index => $row ) {
 			if ( is_object( $row ) ) {

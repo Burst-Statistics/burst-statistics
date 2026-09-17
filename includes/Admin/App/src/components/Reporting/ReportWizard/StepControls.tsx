@@ -125,7 +125,7 @@ export const StepControls = () => {
 				</div>
 				<div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
 					<ButtonInput btnVariant="tertiary" onClick={handleSave}>{__( 'Save', 'burst-statistics' )}</ButtonInput>
-					<ButtonInput onClick={isLastStep ? handleFinalSubmit : handleNext}>
+					<ButtonInput data-tour="wizard-primary-btn" onClick={isLastStep ? handleFinalSubmit : handleNext}>
 						{getActionButtonText()}
 					</ButtonInput>
 				</div>

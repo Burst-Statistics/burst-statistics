@@ -159,7 +159,7 @@ const InsightsBlock = ( props ) => {
 	const loading = query.isLoading || query.isFetching;
 
 	return (
-		<Block className="row-span-1 @lg:col-span-12 @xl:col-span-6 min-h-96 group/root">
+		<Block data-tour="insights-graph" className="row-span-1 @lg:col-span-12 @xl:col-span-6 min-h-96 group/root">
 			<BlockHeading
 				title={__( 'Insights', 'burst-statistics' )}
 				className="border-b border-gray-200"

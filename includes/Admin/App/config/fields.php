@@ -496,6 +496,22 @@ return [
 		],
 	],
 	[
+		'id'       => 'import_data',
+		'menu_id'  => 'data',
+		'group_id' => 'import_data',
+		'type'     => 'import_data',
+		'disabled' => false,
+		'default'  => false,
+	],
+	[
+		'id'       => 'export_data',
+		'menu_id'  => 'data',
+		'group_id' => 'export_data',
+		'type'     => 'export_data',
+		'disabled' => false,
+		'default'  => false,
+	],
+	[
 		'id'       => 'anonymous_usage_data',
 		'menu_id'  => 'general',
 		'group_id' => 'anonymous_usage_data',

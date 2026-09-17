@@ -396,40 +396,152 @@ trait Database_Helper {
 	}
 
 	/**
-	 * The page_id to store for a hit that arrived with page_id 0: the WP post
+	 * Object-cache key of the resolved page_id for a url path. Hashed: cache
+	 * keys have a length limit and paths do not. Not the crc32 of
+	 * Tracking::lookup_cache_key(): the url space is large enough for a 32-bit
+	 * collision to store a hit under another page's id. sha256 rather than
+	 * md5 only because the SAST scan flags md5 wherever it appears; on a path
+	 * string the difference in cost is nil.
+	 */
+	protected function page_id_cache_key( string $page_url ): string {
+		return 'burst_page_id_lookup_' . hash( 'sha256', $page_url );
+	}
+
+	/**
+	 * Drop the cached page_id of a url path. Called when a row's post id
+	 * changes outside the tracker (set_canonical_page_url()), so the tracker
+	 * stores hits under the new id at once instead of after the cache TTL.
+	 */
+	protected function flush_page_id_cache( string $page_url ): void {
+		unset( self::$page_dictionary_cache[ get_current_blog_id() ][ $page_url ] );
+		wp_cache_delete( $this->page_id_cache_key( $page_url ), 'burst' );
+	}
+
+	/**
+	 * Per-request memo for resolve_page_id(), per blog: the page_id the
+	 * dictionary carries for a url path. A class property rather than a
+	 * function static so flush_page_id_cache() can drop an entry.
+	 *
+	 * @var array<int, array<string, int>>
+	 */
+	protected static array $page_dictionary_cache = [];
+
+	/**
+	 * The page_id to store for a create hit — the page counterpart of
+	 * Tracking::get_lookup_table_id(): one dictionary row per url, resolved
+	 * through a per-request memo and a per-value object cache, created on first
+	 * sight.
+	 *
+	 * A hit that arrived with page_id 0 (a url that resolves to no post:
+	 * homepage-as-archive, blog page, category/search pages) gets the WP post
 	 * id the dictionary already knows for this url (so the hit joins that
 	 * post's bucket — the same url must never split across a positive and a
 	 * negative id), or else the negative dictionary id. Mirrors the
 	 * IF(d.page_id > 0, d.page_id, -d.ID) rule of the page_id backfill.
-	 * Returns 0 when the url is empty or the dictionary is not available yet.
+	 *
+	 * A hit that carries a WP post id keeps it, and makes sure the dictionary
+	 * knows the url under that id: page queries display the url from the
+	 * dictionary only, so a post first seen after the seed ran (a new product)
+	 * must have a row there — the read path cannot derive it from the
+	 * permalink, as the REST optimizer leaves plugin post types unregistered
+	 * (see Statistics_Query::hydrate_page_url_rows()). The row is not flagged
+	 * canonical: a hit url can be a variant (an old slug, comment pagination);
+	 * the weekly sweep promotes and refines the canonical row with the real
+	 * permalink. A row that already carries a post id keeps it — one url never
+	 * flips between posts from the tracker; a slug reassignment goes through
+	 * save_post.
+	 *
+	 * Cost on the beacon (one hit per process, so the memo alone never warms):
+	 * a warm object cache resolves a known url without touching the DB; a cold
+	 * one pays a single unique-key SELECT. The write runs only on first sight
+	 * of a url or when a hit brings a post id the row lacks. Errors are
+	 * suppressed: before the 3.7.0 table init the dictionary does not exist
+	 * yet and the hit must still be stored.
+	 *
+	 * @param string $page_url Url path of the hit.
+	 * @param int    $page_id  WP post id the hit carries, 0 when it has none.
+	 * @return int The page_id to store: positive = WP post id, negative =
+	 *             -burst_page_urls.ID, 0 when the url is empty or the
+	 *             dictionary is not available yet.
 	 */
-	protected function resolve_page_id( string $page_url ): int {
-		static $cache = [];
+	protected function resolve_page_id( string $page_url, int $page_id = 0 ): int {
 		if ( '' === $page_url ) {
 			return 0;
 		}
 		$blog_id = get_current_blog_id();
-		if ( isset( $cache[ $blog_id ][ $page_url ] ) ) {
-			return $cache[ $blog_id ][ $page_url ];
+
+		// The dictionary's view of this url: the post id its row carries, or
+		// -ID when it has none. Memo first, then the object cache.
+		$known = self::$page_dictionary_cache[ $blog_id ][ $page_url ] ?? null;
+		if ( null === $known ) {
+			$cached = wp_cache_get( $this->page_id_cache_key( $page_url ), 'burst' );
+			if ( false !== $cached ) {
+				$known = (int) $cached;
+				self::$page_dictionary_cache[ $blog_id ][ $page_url ] = $known;
+			}
 		}
 
+		// Query only for an unknown url, or to give a row without a post id
+		// the one this hit carries; a row that has a post id needs nothing.
+		if ( null === $known || ( $page_id > 0 && $known < 0 ) ) {
+			$known = $this->resolve_page_dictionary_row( $page_url, $page_id );
+			if ( 0 !== $known ) {
+				self::$page_dictionary_cache[ $blog_id ][ $page_url ] = $known;
+				// Literal TTL (seconds): time constants aren't guaranteed on the
+				// SHORTINIT beacon path, matching Tracking::get_lookup_table_id().
+				wp_cache_set( $this->page_id_cache_key( $page_url ), $known, 'burst', 300 );
+			}
+		}
+
+		return $page_id > 0 ? $page_id : $known;
+	}
+
+	/**
+	 * Look up — and on first sight create — the dictionary row of a url path,
+	 * returning the page_id the dictionary carries for it: the WP post id when
+	 * the row has one, else -ID. A positive $page_id is written to a row that
+	 * has none yet, never over an existing post id. SELECT first so the hot
+	 * path stays read-only for known urls; the IODKU converges concurrent
+	 * first sights on one row (see resolve_dictionary_id() for the pattern).
+	 * Returns 0 when the dictionary is not available yet.
+	 *
+	 * @param string $page_url Url path.
+	 * @param int    $page_id  WP post id to record for the url, 0 for none.
+	 */
+	private function resolve_page_dictionary_row( string $page_url, int $page_id ): int {
 		global $wpdb;
 		$suppress = $wpdb->suppress_errors();
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT ID, page_id FROM {$wpdb->prefix}burst_page_urls WHERE page_url = %s", $page_url ), ARRAY_A );
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$row           = $wpdb->get_row( $wpdb->prepare( "SELECT ID, page_id FROM {$wpdb->prefix}burst_page_urls WHERE page_url = %s", $page_url ), ARRAY_A );
+		$row_id        = is_array( $row ) ? (int) $row['ID'] : 0;
+		$known_page_id = is_array( $row ) ? (int) $row['page_id'] : 0;
+
+		if ( 0 === $row_id || ( $page_id > 0 && $known_page_id <= 0 ) ) {
+			$wpdb->query(
+				$wpdb->prepare(
+					"INSERT INTO {$wpdb->prefix}burst_page_urls (page_url, page_id)
+					VALUES (%s, %d)
+					ON DUPLICATE KEY UPDATE page_id = IF(page_id > 0, page_id, VALUES(page_id)), ID = LAST_INSERT_ID(ID)",
+					$page_url,
+					$page_id
+				)
+			);
+			$row_id        = (int) $wpdb->insert_id;
+			$known_page_id = $page_id;
+			// Anything but a fresh insert met an existing row (created or
+			// claimed by a concurrent request, or the row found above): its
+			// post id may differ from the one written, so read it back.
+			if ( $row_id > 0 && 1 !== $wpdb->rows_affected ) {
+				$known_page_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT page_id FROM {$wpdb->prefix}burst_page_urls WHERE ID = %d", $row_id ) );
+			}
+		}
+        // phpcs:enable
 		$wpdb->suppress_errors( $suppress );
 
-		if ( is_array( $row ) ) {
-			$page_id = (int) $row['page_id'] > 0 ? (int) $row['page_id'] : - (int) $row['ID'];
-		} else {
-			$dictionary_id = $this->resolve_page_url_id( $page_url );
-			$page_id       = $dictionary_id > 0 ? -$dictionary_id : 0;
+		if ( 0 === $row_id ) {
+			return 0;
 		}
-
-		if ( 0 !== $page_id ) {
-			$cache[ $blog_id ][ $page_url ] = $page_id;
-		}
-		return $page_id;
+		return $known_page_id > 0 ? $known_page_id : -$row_id;
 	}
 
 	/**
@@ -450,10 +562,11 @@ trait Database_Helper {
 	 * page table. The merge is bounded per call; the weekly sweep finishes
 	 * any remainder (see merge_negative_page_id_hits()).
 	 *
-	 * @param int    $page_id WP post id.
-	 * @param string $path    Current permalink path.
+	 * @param int      $page_id          WP post id.
+	 * @param string   $path             Current permalink path.
+	 * @param int|null $merge_max_chunks Cap on the hit merge for this caller (see merge_negative_page_id_hits()); null = the default.
 	 */
-	protected function set_canonical_page_url( int $page_id, string $path ): void {
+	protected function set_canonical_page_url( int $page_id, string $path, ?int $merge_max_chunks = null ): void {
 		global $wpdb;
         // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$existing = $wpdb->get_row(
@@ -481,9 +594,12 @@ trait Database_Helper {
 		}
         // phpcs:enable
 
+		// The tracker caches the page_id per url; the claim changes it.
+		$this->flush_page_id_cache( $path );
+
 		// A row that existed without a post id may hold hits under -ID.
 		if ( $row_id > 0 && is_array( $existing ) && (int) $existing['page_id'] <= 0 ) {
-			$this->merge_negative_page_id_hits( $row_id, $page_id );
+			$this->merge_negative_page_id_hits( $row_id, $page_id, $merge_max_chunks );
 		}
 	}
 
@@ -496,17 +612,18 @@ trait Database_Helper {
 	 * canonical row and converges any remainder. Indexed by
 	 * (page_id, page_type); a no-op costs one indexed lookup.
 	 *
-	 * @param int $dictionary_id burst_page_urls.ID of the claimed row.
-	 * @param int $page_id       WP post id the hits move to.
+	 * @param int      $dictionary_id burst_page_urls.ID of the claimed row.
+	 * @param int      $page_id       WP post id the hits move to.
+	 * @param int|null $max_chunks    Cap on the 5000-row chunks for this call; null = 40 (200k rows), the sweep's budget. save_post passes a lower cap: an editor save must stay quick, the weekly sweep finishes the rest.
 	 * @return bool True when no hits remain under the negative id.
 	 */
-	protected function merge_negative_page_id_hits( int $dictionary_id, int $page_id ): bool {
+	protected function merge_negative_page_id_hits( int $dictionary_id, int $page_id, ?int $max_chunks = null ): bool {
 		global $wpdb;
 		if ( $dictionary_id <= 0 || $page_id <= 0 ) {
 			return true;
 		}
 		$chunk      = 5000;
-		$max_chunks = (int) apply_filters( 'burst_merge_page_id_max_chunks', 40 );
+		$max_chunks = (int) apply_filters( 'burst_merge_page_id_max_chunks', $max_chunks ?? 40 );
 		for ( $i = 0; $i < $max_chunks; $i++ ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$affected = $wpdb->query(
@@ -548,11 +665,22 @@ trait Database_Helper {
 	 * same way. Deleted posts return '' as well, so their last known url
 	 * stays the display url.
 	 *
+	 * Only callable where the post's type is registered — save_post and the
+	 * weekly sweep. On a Burst REST request the mu-plugin optimizer skips
+	 * every other plugin, so a plugin's post type (a WooCommerce product) is
+	 * unknown there and get_permalink() would fall through to the posts
+	 * permalink structure and yield a wrong url; such a type returns '' so
+	 * nothing is guessed. Page queries never call this: they display the
+	 * dictionary row the tracker registered (see resolve_page_id()).
+	 *
 	 * @param int $post_id WP post id.
 	 */
 	protected function canonical_page_path( int $post_id ): string {
 		$post = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post ) {
+			return '';
+		}
+		if ( null === get_post_type_object( $post->post_type ) ) {
 			return '';
 		}
 		if ( ! is_post_type_viewable( $post->post_type ) || ! is_post_status_viewable( $post->post_status ) ) {
@@ -563,6 +691,31 @@ trait Database_Helper {
 			return '';
 		}
 		return (string) wp_parse_url( $permalink, PHP_URL_PATH );
+	}
+
+	/**
+	 * Give every post id in the dictionary that has no canonical row yet one:
+	 * its most recently inserted url. Rows without a canonical row come from
+	 * the tracker (resolve_page_id()) and the seed/backfill; save_post and
+	 * the weekly permalink sweep refine these with the real permalink
+	 * afterwards. Shared by the seed and backfill completion steps and the
+	 * start of every sweep pass.
+	 */
+	protected function promote_latest_page_urls_to_canonical(): void {
+		global $wpdb;
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table names, integer id lists.
+		$row_ids = $wpdb->get_col(
+			"SELECT MAX(d.ID) FROM {$wpdb->prefix}burst_page_urls d
+			WHERE d.page_id > 0 AND d.page_id NOT IN (
+				SELECT page_id FROM ( SELECT page_id FROM {$wpdb->prefix}burst_page_urls WHERE is_canonical = 1 ) has_canonical
+			)
+			GROUP BY d.page_id"
+		);
+		foreach ( array_chunk( array_map( 'intval', $row_ids ), 1000 ) as $chunk ) {
+			$id_list = implode( ',', $chunk );
+			$wpdb->query( "UPDATE {$wpdb->prefix}burst_page_urls SET is_canonical = 1 WHERE ID IN ({$id_list})" );
+		}
+        // phpcs:enable
 	}
 
 	/**
@@ -614,13 +767,29 @@ trait Database_Helper {
 	 * current write set applies — the legacy uid column never existed there.
 	 */
 	protected function tracking_schema_current(): bool {
-		static $current = [];
-		$blog_id        = get_current_blog_id();
-		if ( ! isset( $current[ $blog_id ] ) ) {
-			$stored              = (string) get_option( 'burst-current-version', '' );
-			$current[ $blog_id ] = '' === $stored || version_compare( $stored, $this->tracking_schema_version(), '>=' );
+		return $this->tracking_schema_at_least( $this->tracking_schema_version() );
+	}
+
+	/**
+	 * Whether the table init of at least $version has run on this blog — the
+	 * per-column variant of tracking_schema_current() for columns a later
+	 * release added on top of the 3.7.0 write set (sessions.has_pageview in
+	 * 3.7.1). Keeping these on their own gate means a pending 3.7.1 init only
+	 * withholds the 3.7.1 columns; bumping tracking_schema_version() instead
+	 * would drop the tracker back to the pre-3.7.0 write set — which names a
+	 * uid column that fresh 3.7.0 installs never had. Same cost model: one
+	 * autoloaded option read, memoized per blog and version.
+	 *
+	 * @param string $version The plugin version whose table init must have run.
+	 */
+	protected function tracking_schema_at_least( string $version ): bool {
+		static $at_least = [];
+		$blog_id         = get_current_blog_id();
+		if ( ! isset( $at_least[ $blog_id ][ $version ] ) ) {
+			$stored                           = (string) get_option( 'burst-current-version', '' );
+			$at_least[ $blog_id ][ $version ] = '' === $stored || version_compare( $stored, $version, '>=' );
 		}
-		return $current[ $blog_id ];
+		return $at_least[ $blog_id ][ $version ];
 	}
 
 	/**
@@ -720,6 +889,15 @@ trait Database_Helper {
 		// with one, a completed migration reaches all requests within a minute.
 		wp_cache_set( $cache_key, $complete ? 1 : 0, 'burst', MINUTE_IN_SECONDS );
 		return $complete;
+	}
+
+	/**
+	 * Drop the db_upgrades_complete() probe for the current blog, so a step
+	 * that just installed tables or queued an upgrade (the import finalize)
+	 * is seen immediately instead of after the one-minute TTL.
+	 */
+	protected function flush_db_upgrades_complete_cache(): void {
+		wp_cache_delete( 'burst_db_upgrades_complete_' . get_current_blog_id(), 'burst' );
 	}
 
 	/**
@@ -917,7 +1095,6 @@ trait Database_Helper {
 				'burst_query_stats',
 				'burst_searches',
 				'burst_statistics_searches',
-				'burst_search_terms',
 			],
 		);
 	}

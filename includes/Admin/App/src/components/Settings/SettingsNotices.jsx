@@ -4,6 +4,13 @@ import { CollapsableBlock } from '@/components/Blocks/CollapsableBlock';
 import { __ } from '@wordpress/i18n';
 import useSettingsData from '@/hooks/useSettingsData';
 
+/**
+ * A notice flagged 'critical' (or 'alert') is styled as a warning and starts
+ * expanded so it is not hidden behind a collapsed block.
+ */
+const isCriticalNotice = ( setting ) =>
+	'critical' === setting?.notice?.label || 'alert' === setting?.notice?.label;
+
 const SettingsNotices = ({ settingsGroup }) => {
 	const { settings } = useSettingsData();
 
@@ -12,7 +19,7 @@ const SettingsNotices = ({ settingsGroup }) => {
 	);
 
 	const [ openStates, setOpenStates ] = useState(
-		settingsWithNotices.map( () => false )
+		settingsWithNotices.map( ( setting ) => isCriticalNotice( setting ) )
 	);
 	if ( ! settingsWithNotices.length ) {
 		return null;
@@ -53,30 +60,42 @@ const SettingsNotices = ({ settingsGroup }) => {
 			</div>
 
 			{0 < settingsWithNotices.length &&
-				settingsWithNotices.map( ( setting, index ) => (
-					<CollapsableBlock
-						key={index}
-						title={setting.notice.title}
-						className="mb-4 w-full flex-1 bg-blue-50!"
-						isOpen={openStates[index]}
-						onToggle={( isOpen ) => handleToggle( index, isOpen )}
-					>
-						<div className="flex flex-col justify-start">
-							<p className="text-base font-normal break-all">
-								{setting.notice.description}
-							</p>
-							{setting.notice.url && '' !== setting.notice.url && (
-								<Link
-									className="mt-2 text-base text-text-gray underline"
-									to={setting.notice.url}
-									from={'/'}
+				settingsWithNotices.map( ( setting, index ) => {
+					const critical = isCriticalNotice( setting );
+					const blockClassName = critical ?
+						'mb-4 w-full flex-1 border border-amber-300 bg-amber-50! text-amber-900 dark:border-amber-700 dark:bg-amber-900/20! dark:text-amber-100' :
+						'mb-4 w-full flex-1 bg-blue-50!';
+					return (
+						<CollapsableBlock
+							key={index}
+							title={setting.notice.title}
+							className={blockClassName}
+							isOpen={openStates[index]}
+							onToggle={( isOpen ) => handleToggle( index, isOpen )}
+						>
+							<div className="flex flex-col justify-start">
+								<p
+									className={
+										critical ?
+											'text-base font-normal break-words' :
+											'text-base font-normal break-all'
+									}
 								>
-									{__( 'Learn more', 'burst-statistics' )}
-								</Link>
-							)}
-						</div>
-					</CollapsableBlock>
-				) )}
+									{setting.notice.description}
+								</p>
+								{setting.notice.url && '' !== setting.notice.url && (
+									<Link
+										className="mt-2 text-base text-text-gray underline"
+										to={setting.notice.url}
+										from={'/'}
+									>
+										{__( 'Learn more', 'burst-statistics' )}
+									</Link>
+								)}
+							</div>
+						</CollapsableBlock>
+					);
+				})}
 		</>
 	);
 };

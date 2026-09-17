@@ -191,13 +191,31 @@ class Tracking {
 			$session['host'] = $host;
 		}
 
+		// sessions.has_pageview: the session-grain form of the hit-grain
+		// "404 hits never count" rule (see Session_Grain_Shape). Set on the
+		// first non-404 hit of a session and never cleared; a session that only
+		// ever requests missing pages (a bot scan) keeps 0 and is invisible to
+		// every grain alike. Gated on the 3.7.1 table init like every added
+		// column: before it the column does not exist and naming it would fail
+		// the session write.
+		$flag_pageview = ( $statistic['page_type'] ?? '' ) !== '404' && $this->tracking_schema_at_least( '3.7.1' );
+
 		// Handle session: reuse existing or create new.
 		if ( isset( $previous_hit ) && $previous_hit['session_id'] > 0 ) {
 			$statistic['session_id'] = $previous_hit['session_id'];
+			// Only the 0 → 1 transition is written (a session that started on a
+			// 404 and now reaches a real page); the flag is already set for
+			// every other session, so this costs nothing on the common path.
+			if ( $flag_pageview && 0 === (int) ( $previous_hit['has_pageview'] ?? 1 ) ) {
+				$session['has_pageview'] = 1;
+			}
 			if ( $this->session_needs_update( $previous_hit, $session, $current_path ) ) {
 				$this->update_session( (int) $statistic['session_id'], $session );
 			}
 		} elseif ( $previous_hit === null ) {
+			if ( $flag_pageview ) {
+				$session['has_pageview'] = 1;
+			}
 			// New session — include all session-level fields.
 			// start_time records the session start and uid_id the visitor's
 			// dictionary id, so session-grain queries (sessions, visitors, bounce
@@ -261,8 +279,10 @@ class Tracking {
 		$new_page_url      = $statistic['page_url'];
 
 		if ( $this->get_option_bool( 'track_url_change' ) ) {
-			$previous_page_url .= $previous_hit['parameters'] ?? '';
-			$new_page_url      .= $statistic['parameters'];
+			// Query and fragment both count as a URL change; a hash-only
+			// navigation is a separate pageview for single-page sites.
+			$previous_page_url .= ( $previous_hit['parameters'] ?? '' ) . '#' . ( $previous_hit['fragment'] ?? '' );
+			$new_page_url      .= $statistic['parameters'] . '#' . $statistic['fragment'];
 		}
 		$is_same_url = $previous_page_url === $new_page_url;
 
@@ -286,10 +306,17 @@ class Tracking {
 			// there would overwrite a real post id with a negative dictionary
 			// id. A 0 on update is stripped by remove_empty_values(), leaving
 			// the stored page_id untouched.
-			if ( (int) ( $statistic['page_id'] ?? 0 ) === 0
+			// Hits carrying a post id keep it and register their url in the
+			// dictionary: page queries display the url from the dictionary
+			// only, so a post first seen after the seed ran (a new product)
+			// must have a row there — the read path cannot derive it from the
+			// permalink, as the REST optimizer leaves plugin post types
+			// unregistered. Both cases are one lookup in resolve_page_id().
+			$page_id = (int) ( $statistic['page_id'] ?? 0 );
+			if ( $page_id >= 0
 				&& ( $statistic['page_type'] ?? '' ) !== '404'
 				&& '' !== (string) ( $statistic['page_url'] ?? '' ) ) {
-				$statistic['page_id'] = $this->resolve_page_id( (string) $statistic['page_url'] );
+				$statistic['page_id'] = $this->resolve_page_id( (string) $statistic['page_url'], $page_id );
 			}
 			do_action( 'burst_before_create_statistic', $statistic );
 			$statistic['time'] = time();
@@ -554,6 +581,8 @@ class Tracking {
 		$sanitized_data['completed_goals'] = $this->sanitize_completed_goal_ids( $completed_goals );
 		// required.
 		$sanitized_data['parameters'] = $destructured_url['parameters'];
+		// The fragment column is varchar(255); cap it so a strict sql_mode never rejects the whole hit.
+		$sanitized_data['fragment'] = substr( $destructured_url['fragment'], 0, 255 );
 		// required.
 		$sanitized_data['page_url'] = $destructured_url['path'];
 		$sanitized_data['host']     = $destructured_url['scheme'] . '://' . $destructured_url['host'];
@@ -686,8 +715,9 @@ class Tracking {
 
 		// Attempt to get the last user statistic based on the presence or absence of certain conditions.
 		$page_url = $is_update_hit ? $data['host'] . $this->create_path( $data ) : '';
+		$fragment = $is_update_hit ? (string) ( $data['fragment'] ?? '' ) : '';
 		$uid      = $data['fingerprint'] ?: $data['uid'];
-		$last_row = $this->get_last_user_statistic( $uid, $page_url );
+		$last_row = $this->get_last_user_statistic( $uid, $page_url, $fragment );
 
 		// Determine the appropriate action based on the result.
 		if ( ! empty( $last_row ) ) {
@@ -721,6 +751,12 @@ class Tracking {
 	private function session_needs_update( array $previous_hit, array $new_session_data, string $current_path ): bool {
 		// If we don't have previous hit data, update to be safe.
 		if ( empty( $previous_hit ) ) {
+			return true;
+		}
+
+		// The has_pageview flag is only present when it flips 0 → 1 (see
+		// track_hit()); that transition must reach the row regardless of url.
+		if ( isset( $new_session_data['has_pageview'] ) ) {
 			return true;
 		}
 
@@ -1109,16 +1145,19 @@ class Tracking {
 	 *
 	 * @param string $uid         The user identifier or fingerprint.
 	 * @param string $page_url    Optional. Specific page URL to narrow down the result.
+	 * @param string $fragment    Optional. URL fragment of the hit; when given the row must carry the same fragment.
 	 * @return array{
 	 *     ID?: int,
 	 *     session_id?: int,
 	 *     parameters?: string,
+	 *     fragment?: string,
 	 *     time_on_page?: int,
 	 *     bounce?: int,
+	 *     has_pageview?: int,
 	 *     page_url?: string
 	 * } Associative array of the last user statistic, or empty array if none found.
 	 */
-	public function get_last_user_statistic( string $uid, string $page_url = '' ): array {
+	public function get_last_user_statistic( string $uid, string $page_url = '', string $fragment = '' ): array {
 		if ( strlen( $uid ) === 0 ) {
 			return [];
 		}
@@ -1130,6 +1169,9 @@ class Tracking {
 			$destructured_url = $this->sanitize_url( $page_url );
 			$parameters       = $destructured_url['parameters'];
 			$where            = ! empty( $parameters ) ? $wpdb->prepare( ' AND s.parameters = %s', $parameters ) : '';
+			if ( $fragment !== '' ) {
+				$where .= $wpdb->prepare( ' AND s.fragment = %s', $fragment );
+			}
 		}
 
 		$where .= $wpdb->prepare( ' AND s.time > %d', strtotime( '-30 minutes' ) );
@@ -1155,18 +1197,23 @@ class Tracking {
 		}
 
 		$host_select = $need_session_data ? ', sess.host' : '';
+		// sessions.has_pageview exists from the 3.7.1 table init on; read it
+		// so track_hit() can flag the 0 → 1 transition without a second query.
+		$pageview_select = $this->tracking_schema_at_least( '3.7.1' ) ? ', sess.has_pageview' : '';
 
 		$last_row = $wpdb->get_row(
-			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where and $host_select are from trusted prepared parts, $uid_column is a fixed column name.
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where, $host_select and $pageview_select are from trusted prepared parts, $uid_column is a fixed column name.
 			$wpdb->prepare(
 				"SELECT
                 s.ID,
                 s.session_id,
                 s.parameters,
+                s.fragment,
                 s.time_on_page,
                 sess.bounce,
                 s.page_url
                 {$host_select}
+                {$pageview_select}
             FROM {$wpdb->prefix}burst_statistics s
             LEFT JOIN {$wpdb->prefix}burst_sessions sess ON s.session_id = sess.ID
             WHERE {$uid_column} = %s {$where}

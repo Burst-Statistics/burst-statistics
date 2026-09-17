@@ -41,7 +41,7 @@ const ReadingEngagementBlock = memo( ({ className = '' }: ReadingEngagementBlock
 	const columns = useColumnsBySiteUrl( getReadingEngagementColumns );
 
 	const slicedData = useMemo( () => {
-		return data.slice( 0, TOP_N );
+		return ( Array.isArray( data ) ? data : []).slice( 0, TOP_N );
 	}, [ data ]);
 
 	/**
@@ -61,7 +61,7 @@ const ReadingEngagementBlock = memo( ({ className = '' }: ReadingEngagementBlock
 	};
 
 	return (
-		<Block className={className}>
+		<Block className={className} data-tour="engagement-block">
 			<BlockHeading
 				className="border-b border-gray-200"
 				isLoading={isLoading}

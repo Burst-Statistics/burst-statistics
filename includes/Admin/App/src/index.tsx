@@ -72,6 +72,9 @@ let config: QueryConfig = {
 config = { ...config, ...{ queryCache } };
 
 const queryClient = new QueryClient( config );
+if ( 'undefined' !== typeof window ) {
+	( window as unknown as { __burst_query_client?: QueryClient }).__burst_query_client = queryClient;
+}
 const isPro = window.burst_settings?.is_pro;
 const canViewSales = window.burst_settings?.view_sales_burst_statistics;
 const menus = window.burst_settings?.menu;

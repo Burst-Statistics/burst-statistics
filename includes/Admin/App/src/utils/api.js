@@ -37,6 +37,16 @@ if ( burst_settings.is_mainwp && burst_settings.root ) {
 	burst_settings.rest_url = burst_settings.root;
 }
 
+const isTourActive = () => {
+	if ( 'undefined' === typeof window ) {
+		return false;
+	}
+	if ( 'function' === typeof window.__burst_is_tour_active ) {
+		return window.__burst_is_tour_active();
+	}
+	return new URLSearchParams( window.location.search ).has( 'tour' );
+};
+
 const usesPlainPermalinks = () => {
 	return -1 !== burst_settings.rest_url.indexOf( '?' );
 };
@@ -224,6 +234,7 @@ const withRequestHeaders = ( headers = {}, auth = getRequestAuth() ) => {
 	};
 };
 
+// fallow-ignore-next-line complexity
 const makeRequest = (
     path,
     method = 'GET',
@@ -245,6 +256,13 @@ const makeRequest = (
 
 	args.headers = withRequestHeaders( args.headers, auth );
 
+	if ( isTourActive() ) {
+		args.headers = {
+			...( args.headers || {}),
+			'x-burst-tour-mock': '1'
+		};
+	}
+
 	if ( 'POST' === method ) {
 		data.nonce = burst_settings.burst_nonce;
 		args.data = data;
@@ -253,6 +271,18 @@ const makeRequest = (
 	// fallow-ignore-next-line complexity
 	const promise = ( async() => {
 		try {
+
+			// Instant frontend mock response during tour mode (lazy loaded on demand)
+			if ( isTourActive() ) {
+				const { getFrontendTourMockData } = await import(
+					'../components/Tour/tourMockData'
+				);
+				const instantMock = getFrontendTourMockData( path );
+				if ( null !== instantMock ) {
+					return instantMock;
+				}
+			}
+
 			const response = await apiFetch( args );
 			if ( requireRequestSuccess && ! response.request_success ) {
 				if ( Object.prototype.hasOwnProperty.call( response, 'message' ) ) {
@@ -287,14 +317,14 @@ const makeRequest = (
 			}
 		} finally {
 			requestContext.finalize();
-			if ( 'GET' === method ) {
-				activeRequests.delete( requestKey );
-			}
 		}
 	})();
 
 	if ( 'GET' === method ) {
 		activeRequests.set( requestKey, promise );
+		promise.finally( () => {
+			activeRequests.delete( requestKey );
+		});
 	}
 
 	return promise;
@@ -707,55 +737,8 @@ export const getChatStatus = () => doAction( 'chat_status' );
 
 export const getAvailableModels = () => doAction( 'chat_models' );
 
-/**
- * Retrieves a value from local storage with a 'burst_' prefix and parses it as
- * JSON. If the key is not found, returns the provided default value.
- *
- * @param {string} key          - The key to retrieve from local storage, without the
- *                              'burst_' prefix.
- * @param {*}      defaultValue - The value to return if the key is not found in
- *                              local storage.
- * @return {*} - The parsed JSON value from local storage or the default
- *     value.
- */
-export const getLocalStorage = ( key, defaultValue ) => {
-	if ( 'undefined' !== typeof Storage ) {
-		const storedValue = localStorage.getItem( 'burst_' + key );
-		if ( storedValue && 0 < storedValue.length ) {
-			return JSON.parse( storedValue );
-		}
-	}
-	return defaultValue;
-};
+export { getLocalStorage, setLocalStorage, removeLocalStorage } from './storage';
 
-/**
- * Stringifies a value as JSON and stores it in local storage with a 'burst_'
- * prefix.
- *
- * @param {string} key   - The key to store in local storage, without the
- *                       'burst_' prefix.
- * @param {*}      value - The value to stringify as JSON and store in local
- *                       storage.
- */
-export const setLocalStorage = ( key, value ) => {
-	if ( 'undefined' !== typeof Storage ) {
-		localStorage.setItem( 'burst_' + key, JSON.stringify( value ) );
-	}
-};
-
-/**
- * Removes a value from local storage using a 'burst_' prefix.
- *
- * @param {string} key - The key to remove from local storage, without the
- *                     'burst_' prefix.
- *
- * @return {void}
- */
-export const removeLocalStorage = ( key ) => {
-	if ( 'undefined' !== typeof Storage ) {
-		localStorage.removeItem( 'burst_' + key );
-	}
-};
 
 export const getJsonData = async( path ) => {
 	try {

@@ -116,6 +116,14 @@ const Onboarding: FC = () => {
 		await handleContinue( e );
 	};
 
+	const handleStartTour = async () => {
+		await updateAction( {}, 'user_completed_wizard' );
+		const tourUrl =
+			currentStep?.tour_button?.url ||
+			'admin.php?page=burst&tour=dashboard#/';
+		window.location.href = tourUrl;
+	};
+
 	const changeFieldValue = async (
 		fieldId: string,
 		value: string | boolean
@@ -229,7 +237,12 @@ const Onboarding: FC = () => {
 							) }
 						</div>
 
-						<div className="flex flex-col gap-4 justify-center items-center mb-6 min-w-[32ch] mx-auto">
+						<div className={
+							'flex flex-col gap-4 justify-center items-center mb-6 mx-auto ' +
+							( isLastStep() && currentStep.tour_button
+								? 'w-full max-w-[540px]'
+								: 'min-w-[32ch]' )
+						}>
 							{ !! isLastStep() && ! onboardingData.is_pro && (
 								<ButtonInput
 									className="w-full"
@@ -245,33 +258,71 @@ const Onboarding: FC = () => {
 								</ButtonInput>
 							) }
 
-							<ButtonInput
-								className={
-									'w-full burst-continue flex justify-center items-center ' +
-									( isUpdating || isInstalling
-										? 'burst-updating'
-										: '' )
-								}
-								btnVariant={
-									isLastStep() ? 'tertiary' : 'secondary'
-								}
-								size={ isLastStep() ? 'md' : 'lg' }
-								disabled={ isContinueDisabled() }
-								onClick={ ( e ) => validateAndContinue( e ) }
-								key={ currentStep.id + 'continue' }
-							>
-								{ ( isUpdating || isInstalling ) && (
-									<Icon
-										name="loading-circle"
-										size={ 18 }
-										color={
-											isLastStep() ? 'black' : 'white'
+							{ isLastStep() && currentStep.tour_button ? (
+								<div className="flex flex-row gap-3 w-full justify-center items-stretch">
+									<ButtonInput
+										className="flex-1 burst-tour flex justify-center items-center whitespace-nowrap text-center"
+										btnVariant="secondary"
+										size="md"
+										onClick={ handleStartTour }
+										key={ currentStep.id + 'tour' }
+									>
+										{ currentStep.tour_button.label }
+									</ButtonInput>
+
+									<ButtonInput
+										className={
+											'flex-1 burst-continue flex justify-center items-center whitespace-nowrap text-center ' +
+											( isUpdating || isInstalling
+												? 'burst-updating'
+												: '' )
 										}
-										className="mr-[10px]"
-									/>
-								) }
-								{ currentStep.button.label }
-							</ButtonInput>
+										btnVariant="tertiary"
+										size="md"
+										disabled={ isContinueDisabled() }
+										onClick={ ( e ) => validateAndContinue( e ) }
+										key={ currentStep.id + 'continue' }
+									>
+										{ ( isUpdating || isInstalling ) && (
+											<Icon
+												name="loading-circle"
+												size={ 18 }
+												color="black"
+												className="mr-[10px]"
+											/>
+										) }
+										{ currentStep.button.label }
+									</ButtonInput>
+								</div>
+							) : (
+								<ButtonInput
+									className={
+										'w-full burst-continue flex justify-center items-center ' +
+										( isUpdating || isInstalling
+											? 'burst-updating'
+											: '' )
+									}
+									btnVariant={
+										isLastStep() ? 'tertiary' : 'secondary'
+									}
+									size={ isLastStep() ? 'md' : 'lg' }
+									disabled={ isContinueDisabled() }
+									onClick={ ( e ) => validateAndContinue( e ) }
+									key={ currentStep.id + 'continue' }
+								>
+									{ ( isUpdating || isInstalling ) && (
+										<Icon
+											name="loading-circle"
+											size={ 18 }
+											color={
+												isLastStep() ? 'black' : 'white'
+											}
+											className="mr-[10px]"
+										/>
+									) }
+									{ currentStep.button.label }
+								</ButtonInput>
+							) }
 
 							{ currentStepIndex > 0 && ! isLastStep() && (
 								<>

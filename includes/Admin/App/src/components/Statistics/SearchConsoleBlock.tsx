@@ -7,6 +7,7 @@ import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import OverlayBlock from '@/components/Upsell/OverlayBlock';
 import ActivationCopy from '@/components/Upsell/ActivationCopy';
+import { isTourActive } from '@/store/useTourStore';
 
 interface ConnectedSearchConsoleBlockProps {
 	propertyStatus: GSCPropertyStatus | null;
@@ -49,22 +50,37 @@ const ConnectedSearchConsoleBlock = ({ propertyStatus }: ConnectedSearchConsoleB
 const SearchConsoleBlock = (): JSX.Element => {
 	const { status, propertyStatus } = useGSCData();
 	const { getValue } = useSettingsData();
-	const enabled = !! getValue( 'enable_search_console' );
+	const enabled = ! ! getValue( 'enable_search_console' );
+	const tourActive = isTourActive();
+
+	if ( tourActive ) {
+		return (
+			<div data-tour="search-console-block" className="row-span-2 @xl:col-span-6 flex flex-col">
+				<DataTableBlock allowedConfigs={[ 'search_console' ]} id="search_console" isInOverlay={ true } />
+			</div>
+		);
+	}
 
 	if ( 'connected' === status ) {
-		return <ConnectedSearchConsoleBlock propertyStatus={ propertyStatus } />;
+		return (
+			<div data-tour="search-console-block" className="row-span-2 @xl:col-span-6 flex flex-col">
+				<ConnectedSearchConsoleBlock propertyStatus={ propertyStatus } />
+			</div>
+		);
 	}
 
 	// Not connected: the toggle is off, or it is on but not yet connected /
 	// needs reconnecting. Show an activation overlay that routes to settings.
 	return (
-		<OverlayBlock
-			title={ __( 'Google searches', 'burst-statistics' ) }
-			blurLabel={ __( 'Google searches', 'burst-statistics' ) }
-			className='row-span-2 overflow-hidden @xl:col-span-6'
-		>
-			<ActivationCopy type="search_console" enabled={ enabled } />
-		</OverlayBlock>
+		<div data-tour="search-console-block" className="row-span-2 @xl:col-span-6 flex flex-col">
+			<OverlayBlock
+				title={ __( 'Google searches', 'burst-statistics' ) }
+				blurLabel={ __( 'Google searches', 'burst-statistics' ) }
+				className="flex-1 min-h-0"
+			>
+				<ActivationCopy type="search_console" enabled={ enabled } />
+			</OverlayBlock>
+		</div>
 	);
 };
 

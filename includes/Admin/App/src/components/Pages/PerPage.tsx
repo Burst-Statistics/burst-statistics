@@ -43,7 +43,7 @@ export const PerPage: React.FC = () => {
 	});
 
 	return (
-		<div className="grid w-full grid-cols-12 gap-6 pb-8">
+		<div className="grid w-full grid-cols-12 gap-6 pb-8" data-tour="per-page-content">
 			<PageSummaryBlock
 				pageId={id || ''}
 				pageUrl={pageUrl || ''}

@@ -10,7 +10,6 @@ use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Save;
 use Burst\Frontend\Goals\Goals;
-use Burst\Admin\Share\Share;
 use Burst\Admin\Search_Console\State_Store;
 
 
@@ -50,8 +49,12 @@ class Upgrade {
 		// not this version arms a task: a task left pending from an earlier
 		// version (armed before the flag existed, or stalled) must keep the
 		// read paths on the slow-but-correct fallback until the dispatcher
-		// confirms everything is done and clears the flag itself.
-		update_option( 'burst_has_db_upgrade', true );
+		// confirms everything is done and clears the flag itself. A fresh
+		// install has no earlier version and nothing pending; arm_db_upgrade()
+		// sets the flag itself should activation arm a task.
+		if ( $prev_version ) {
+			update_option( 'burst_has_db_upgrade', true );
+		}
 
 		// install the tables, so we can access new columns below if necessary.
 		do_action( 'burst_upgrade_before', $prev_version );
@@ -359,7 +362,7 @@ class Upgrade {
 
 			// Backfill the descriptive bio and website link on the existing viewer
 			// user so admins understand why the account exists.
-			( new Share() )->auth->backfill_viewer_profile();
+			\Burst\burst_loader()->admin->share->auth->backfill_viewer_profile();
 
 			// Migrate privacy_level based on current enable_cookieless_tracking value.
 			$cookieless = $this->get_option_bool( 'enable_cookieless_tracking' );
@@ -435,10 +438,50 @@ class Upgrade {
 			// 3.7.1 group in DB_Upgrade::get_db_upgrades().
 		}
 
+		if ( '' !== $prev_version && version_compare( $prev_version, '3.7.0.1', '<' ) ) {
+			// The page_id repair of this release is Pro-only (see
+			// Pro::upgrade_premium()): free never shipped 3.7.0, and the 3.7.0
+			// pipeline above now seeds and backfills the clean key space.
+			$this->mark_noop_upgrade( '3.7.0.1', $prev_version );
+		}
+
+		if ( '' !== $prev_version && version_compare( $prev_version, '3.7.1', '<' ) ) {
+			// Posts first seen after the 3.7.0 seed had no dictionary row
+			// (the tracker registered rows for page_id 0 urls only) and
+			// displayed as an empty url in the page tables when the read path
+			// could not resolve their permalink (plugin post types such as
+			// WooCommerce products are unregistered on Burst REST requests).
+			// The tracker now registers every hit url; this backfills the
+			// rows of the hits already stored.
+			$this->arm_db_upgrade( 'backfill_page_urls' );
+
+			// sessions.has_pageview (created by the table init below) marks
+			// sessions with at least one non-404 hit; flag the historic rows
+			// so session grain applies the hit-grain 404 rule. Session grain
+			// stays off until the task completes (db_upgrades_complete()).
+			$this->arm_db_upgrade( 'sessions_has_pageview' );
+
+			// Reinstall the REST API optimizer (1.1.0): the request body is now
+			// inspected once per request and capped at 64 KB, and active_plugins
+			// writes during an optimized request keep the full plugin list.
+			burst_reinstall_rest_api_optimizer();
+
+			// The "import your statistics" task is for new installs, where the
+			// previous tool's data is still worth bringing over; a site that has
+			// been on Burst for a while gets no upgrade notice for it. The task
+			// is added by the cron validation, so it is dismissed for good here,
+			// before that validation runs (see Tasks::dismiss_task_permanently()).
+			\Burst\burst_loader()->admin->tasks->dismiss_task_permanently( 'import_statistics_data' );
+		}
+
 		// bump-version.sh inserts new release versions above this line — do not remove.
 		$admin = new Admin();
 		$admin->run_table_init_hook();
 		$admin->create_js_file();
+		// Re-evaluate the serverside task conditions after every upgrade; they
+		// run on cron only, so a task a new release adds appears without
+		// waiting for the daily validation.
+		\Burst\burst_loader()->admin->tasks->schedule_task_validation();
 		wp_schedule_single_event( time() + 60, 'burst_upgrade_iteration' );
 		do_action( 'burst_upgrade_after', $prev_version );
 		update_option( 'burst-current-version', $new_version );

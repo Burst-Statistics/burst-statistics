@@ -2,6 +2,7 @@
 import { useLocation, useNavigate, useSearch } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFiltersStore } from '@/store/useFiltersStore';
+import { useTourStore } from '@/store/useTourStore';
 import { doAction } from '@/utils/api';
 
 import {
@@ -133,10 +134,17 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 
 	const [ pinnedFilters, setPinnedFiltersState ] = useState<Record<string, string>>( getPinnedFilters );
 
+	const tourActive = useTourStore( ( state ) => state.tourActive );
+
 	// Initialize URL filters (only in URL mode)
 	// fallow-ignore-next-line complexity
 	useEffect( () => {
 		if ( isBlockMode || ! isFilterRoute || hasInitialized.current ) {
+			return;
+		}
+
+		// In tour mode, keep filters clean and default (empty)
+		if ( tourActive ) {
 			return;
 		}
 
@@ -160,7 +168,7 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 				replace: true
 			});
 		}
-	}, [ isFilterRoute, isBlockMode ]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [ isFilterRoute, isBlockMode, tourActive ]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const isPinned = useMemo( () => {
 		const pinnedKeys = Object.keys( pinnedFilters );

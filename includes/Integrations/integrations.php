@@ -112,6 +112,20 @@ return [
 				],
 			],
 	],
+	'cartflows'                   => [
+		'constant_or_function' => 'CARTFLOWS_VER',
+		'label'                => 'CartFlows',
+		'category'             => 'ecommerce',
+		'status'               => 'tracks_checkout_steps',
+		'wporg_slug'           => 'cartflows',
+		'required_plugins'     => [
+			'woocommerce',
+		],
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [ 'frontend.php' ],
+		],
+	],
 	'woocommerce-payments'        => [
 		'constant_or_function' => 'WCPAY_PLUGIN_FILE',
 		'label'                => 'WooCommerce Payments',

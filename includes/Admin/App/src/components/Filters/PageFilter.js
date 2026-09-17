@@ -69,7 +69,7 @@ export const PageFilter = ( props ) => {
 				onOpenChange={( open ) => ! open && handleClose()}
 			>
 				<ReactPopover.Anchor asChild>
-					<div className={`flex flex-wrap items-center gap-2${isOpen ? ' relative z-[60]' : ''}`}>
+					<div data-tour="page-filter" className={`flex flex-wrap items-center gap-2${isOpen ? ' relative z-[60]' : ''}`}>
 						<FilterChipList
 							isHighlighted={isOpen}
 							isReport={isReport}

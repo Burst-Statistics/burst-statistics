@@ -71,6 +71,19 @@ export interface BurstCommunityData {
 	};
 }
 
+export interface BurstTourStep {
+	id: string;
+	feature_id: string;
+	title: string;
+	text: string;
+	pro?: boolean;
+	anchor: string;
+	placement?: 'top' | 'bottom' | 'left' | 'right' | 'center' | 'auto';
+	action?: string;
+	route?: string;
+	delay?: number;
+}
+
 /**
  * Script localization object on `window.burst_settings`.
  */
@@ -110,6 +123,15 @@ export interface BurstSettings {
 	countries?: Record<string, string>;
 	continents?: Record<string, string>;
 	community_data?: BurstCommunityData | null;
+	tour?: {
+		active?: boolean;
+		tour_id?: string;
+		steps?: BurstTourStep[];
+		completed_features?: string[];
+		mock_data_enabled?: boolean;
+		last_section?: string;
+		completed?: boolean;
+	};
 	is_mainwp?: boolean;
 	root?: string;
 	child_token?: string;

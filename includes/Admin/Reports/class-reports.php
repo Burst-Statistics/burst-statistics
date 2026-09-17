@@ -10,7 +10,6 @@ use Burst\Admin\Reports\DomainTypes\Report_Format;
 use Burst\Admin\Reports\DomainTypes\Report_Frequency;
 use Burst\Admin\Reports\DomainTypes\Report_Log_Status;
 use Burst\Admin\Reports\DomainTypes\Report_Week_Of_Month;
-use Burst\Admin\Share\Share;
 use Burst\Admin\Statistics\Statistics_Query;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
@@ -461,7 +460,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				return [];
 			}
 
-			$share       = new Share();
+			$share       = burst_loader()->admin->share;
 			$token       = $data['token'];
 			$report      = null;
 			$share_links = $share->tokens->get_share_links( 'report', $token );
@@ -1081,9 +1080,9 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 */
 		private function build_report( Mailer $mailer, string $frequency, array $content, string $format ): void {
 			$date_range = new Date_Range( $frequency );
-			$report_id  = $mailer->report_id ?? null;
-			$report     = new Report( $report_id );
-			$scheduled  = $report->scheduled;
+			// report_id is 0 when unset; Report::__construct() treats 0 as "no id".
+			$report    = new Report( $mailer->report_id );
+			$scheduled = $report->scheduled;
 			// not scheduled reports should have a fixed end date already.
 			if ( $scheduled ) {
 				$report->set_fixed_end_date_to_yesterday();
@@ -1216,7 +1215,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 * @return string The story url.
 		 */
 		public function get_story_url( int $report_id ): string {
-			$share       = new Share();
+			$share       = burst_loader()->admin->share;
 			$share_links = $share->tokens->get_share_links( 'report', '', $report_id );
 
 			if ( ! empty( $share_links ) ) {
