@@ -67,17 +67,49 @@ trait Helper {
 	}
 
 	/**
-	 * Get the upload dir
+	 * Get the upload dir, creating it when it does not exist yet.
+	 *
+	 * Newly created directories are hardened against direct HTTP access with
+	 * an index.php and a "Deny from all" .htaccess, unless $public is true:
+	 * the generated tracking scripts must stay reachable by the browser, so a
+	 * Deny in those directories would break tracking on Apache.
+	 *
+	 * @param string $path   Sub path below the uploads dir.
+	 * @param bool   $root   Use the uploads root instead of uploads/burst/.
+	 * @param bool   $is_public Skip the hardening files for a directory that is served to visitors.
 	 */
-	protected function upload_dir( string $path = '', bool $root = false ): string {
+	protected function upload_dir( string $path = '', bool $root = false, bool $is_public = false ): string {
 		$uploads    = wp_upload_dir();
 		$dir        = $root ? '' : 'burst/';
 		$upload_dir = trailingslashit( apply_filters( 'burst_upload_dir', $uploads['basedir'] ) ) . $dir . $path;
 		if ( ! is_dir( $upload_dir ) ) {
 			wp_mkdir_p( $upload_dir );
 		}
+		if ( ! $is_public ) {
+			// Harden the directory against direct HTTP access.
+			if ( ! file_exists( $upload_dir . '/index.php' ) ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+				file_put_contents( $upload_dir . '/index.php', "<?php\n// Silence is golden.\n" );
+			}
+			if ( ! file_exists( $upload_dir . '/.htaccess' ) ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+				file_put_contents( $upload_dir . '/.htaccess', "Deny from all\n" );
+			}
+		}
 
 		return trailingslashit( $upload_dir );
+	}
+
+	/**
+	 * Generate a 32-character cryptographically secure random hex token.
+	 *
+	 * Suitable for sandboxed upload IDs, export directory hashes, and
+	 * any other context that requires an unguessable identifier.
+	 *
+	 * @return string 32-character lowercase hexadecimal string.
+	 */
+	protected function random_token(): string {
+		return bin2hex( random_bytes( 16 ) );
 	}
 
 	/**
@@ -296,6 +328,42 @@ trait Helper {
 	}
 
 	/**
+	 * Get every page ID that counts as a checkout page, with caching.
+	 *
+	 * The primary checkout page comes from burst_checkout_page_id(); funnel
+	 * builders (CartFlows) add their checkout steps through the
+	 * burst_checkout_page_ids filter. Only positive IDs are kept.
+	 *
+	 * @return int[] The checkout page IDs, empty when no checkout page is known.
+	 */
+	protected function burst_checkout_page_ids(): array {
+		$cache_key = 'burst_checkout_page_ids';
+		$page_ids  = get_transient( $cache_key );
+
+		if ( ! is_array( $page_ids ) ) {
+			$primary  = $this->burst_checkout_page_id();
+			$page_ids = $primary > 0 ? [ $primary ] : [];
+			$page_ids = apply_filters( 'burst_checkout_page_ids', $page_ids );
+			$page_ids = is_array( $page_ids ) ? array_map( 'intval', $page_ids ) : [];
+			$page_ids = array_values(
+				array_unique(
+					array_filter(
+						$page_ids,
+						static function ( int $page_id ): bool {
+							return $page_id > 0;
+						}
+					)
+				)
+			);
+
+			// Cache for 24 hours, like the single-page transient.
+			set_transient( $cache_key, $page_ids, DAY_IN_SECONDS );
+		}
+
+		return $page_ids;
+	}
+
+	/**
 	 * Get the products page ID, with caching
 	 *
 	 * @return int The checkout page ID.
@@ -320,7 +388,7 @@ trait Helper {
 	 *
 	 * @return string The burst uid.
 	 */
-	protected function get_burst_uid(): string {
+	public function get_burst_uid(): string {
 		$burst_uid = isset( $_COOKIE['burst_uid'] ) ? \Burst\burst_loader()->frontend->tracking->sanitize_uid( $_COOKIE['burst_uid'] ) : false;
 		if ( ! $burst_uid ) {
 			// try fingerprint from session.

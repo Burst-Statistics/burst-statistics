@@ -24,6 +24,11 @@ export interface Step {
 		id: string;
 		label: string;
 	};
+	tour_button?: {
+		id: string;
+		label: string;
+		url?: string;
+	};
 	visible?: boolean;
 }
 

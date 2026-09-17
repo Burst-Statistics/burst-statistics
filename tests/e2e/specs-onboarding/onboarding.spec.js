@@ -112,9 +112,9 @@ test('after activation, onboarding starts', async ({ page }) => {
 
     await page.screenshot({path: 'screenshots/100-finish-page.png'});
 
-    const finishText = page.locator('.burst-continue', { hasText: 'Go to the dashboard and explore Burst' });
+    const finishText = page.locator('.burst-continue', { hasText: 'View dashboard' });
     await expect(finishText).toBeVisible();
-    //wait until the button with text 'Go to the dashboard and explore Burst' is enabled, and click.
+    //wait until the button with text 'View dashboard' is enabled, and click.
     //loop every 500 ms to check if it is enabled.
     while (await finishText.isDisabled()) {
         console.log("waiting for the finish button to be enabled...");

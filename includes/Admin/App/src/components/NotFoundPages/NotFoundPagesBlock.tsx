@@ -73,7 +73,7 @@ const NotFoundPagesBlock = memo( ({ className = '' }: NotFoundPagesBlockProps ) 
 	);
 
 	const filteredData = useMemo( () => {
-		return data.slice( 0, TOP_N );
+		return ( Array.isArray( data ) ? data : []).slice( 0, TOP_N );
 	}, [ data ]);
 
 	const handleExpand = () => {

@@ -85,6 +85,47 @@ const TimeAgo = memo( ({ timestamp }) => {
 TimeAgo.displayName = 'TimeAgo';
 
 /**
+ * Tailwind text color classes used to tint live visitor icons.
+ *
+ * Twelve visually distinct hues on a white background. Listed as full
+ * class names so the Tailwind content scan picks them up.
+ */
+const VISITOR_COLOR_CLASSES = [
+	'text-red',
+	'text-blue',
+	'text-orange',
+	'text-green',
+	'text-purple-600',
+	'text-pink-600',
+	'text-teal-600',
+	'text-indigo-500',
+	'text-amber-600',
+	'text-cyan-600',
+	'text-lime-600',
+	'text-fuchsia-600'
+];
+
+/**
+ * Hash a string with 32-bit FNV-1a.
+ *
+ * Every character shifts and mixes the full state, so uids that only differ
+ * in digit order (e.g. 1234 vs 1243) no longer collide the way a plain
+ * character sum does.
+ *
+ * @param { string } value - The string to hash.
+ *
+ * @return { number } - Unsigned 32-bit hash.
+ */
+const fnv1aHash = ( value ) => {
+	let hash = 0x811c9dc5;
+	for ( let i = 0; i < value.length; i++ ) {
+		hash ^= value.charCodeAt( i );
+		hash = Math.imul( hash, 0x01000193 );
+	}
+	return hash >>> 0;
+};
+
+/**
  * Generate a consistent Tailwind color class based on a unique identifier.
  *
  * @param { string } uid - The unique identifier to hash.
@@ -92,19 +133,8 @@ TimeAgo.displayName = 'TimeAgo';
  * @return { string } - A Tailwind color class.
  */
 const getColorClass = ( uid ) => {
-	const colors = [
-		'text-red',
-		'text-blue',
-		'text-orange',
-		'text-yellow',
-		'text-green'
-	];
-
-	const hash = Array.from( String( uid ) ).reduce(
-		( acc, char ) => acc + char.charCodeAt( 0 ),
-		0
-	);
-	return colors[hash % colors.length];
+	const hash = fnv1aHash( String( uid ) );
+	return VISITOR_COLOR_CLASSES[hash % VISITOR_COLOR_CLASSES.length];
 };
 
 /**

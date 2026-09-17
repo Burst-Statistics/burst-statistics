@@ -137,7 +137,7 @@ const FieldWrapper = memo(
 		);
 
 		return (
-			<div className={wrapperClasses + ' burst_field_' + inputId}>
+			<div className={wrapperClasses + ' burst_field_' + inputId} data-tour={`field-${inputId}`}>
 				<div className={containerClasses}>
 					<div className={clsx( labelOrderClass )}>{labelBlock}</div>
 					<div className={clsx( fieldOrderClass )}>{fieldBlock}</div>

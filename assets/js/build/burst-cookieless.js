@@ -197,7 +197,13 @@ const burst_generate_uid = () => {
 const burst_fingerprint = () => {
   if (burst.cache.fingerprint !== null) return Promise.resolve(burst.cache.fingerprint);
   const tm = new ThumbmarkJS.Thumbmark({
-    exclude: [],
+    // The webgl component renders a shader pattern and hashes the pixels. It
+    // costs ~190ms on desktop (4x on mobile) inside the first-interaction long
+    // task, while the GPU vendor/renderer strings already live in the cheap
+    // `hardware` component and canvas covers rasterization differences. Brave
+    // and Firefox also randomize WebGL pixel output per session, so dropping it
+    // makes the fingerprint more stable for those visitors.
+    exclude: ['webgl'],
 
     permissions_to_check: [
       'geolocation',
@@ -341,35 +347,35 @@ const burst_log_tracking_error = ({ status = 0, error = '', data = {} }) => {
 
 const burst_beacon_request = (payload) => {
   const blob = new Blob([payload], { type: 'application/json' });
-  if ( burst_debug_enabled() ) {
-    fetch( burst.tracking.beacon_url, {
+  if (typeof fetch === 'function') {
+    fetch(burst.tracking.beacon_url, {
       method: 'POST',
       body: blob,
       keepalive: true,
       headers: {
         'Content-Type': 'application/json'
       }
-    })
-        .then(response => {
-          if (!response.ok) {
-              burst_log_tracking_error({
-                status: 0,
-                error: 'sendBeacon failed',
-                data: payload
-              });
-          }
-        })
-        .catch(error => {
-          burst_log_tracking_error({
-            status: 0,
-            error: error?.message || 'sendBeacon failed',
-            data: payload
-          });
+    }).then(response => {
+      if (!response.ok && burst_debug_enabled()) {
+        burst_log_tracking_error({
+          status: 0,
+          error: 'sendBeacon failed',
+          data: payload
         });
-  } else {
+      }
+    }).catch(error => {
+      if (burst_debug_enabled()) {
+        burst_log_tracking_error({
+          status: 0,
+          error: error?.message || 'sendBeacon failed',
+          data: payload
+        });
+      }
+    });
+  } else if (navigator.sendBeacon) {
     navigator.sendBeacon(burst.tracking.beacon_url, blob);
   }
-}
+};
 
 /**
  * Make a XMLHttpRequest and return a promise
@@ -745,7 +751,10 @@ const burst_maybe_init = () => {
 
 document.addEventListener('wp_consent_type_defined', burst_maybe_init);
 document.addEventListener('wp_listen_for_consent_change', e => {
-  if (e.detail?.statistics === 'allow') {
+  const detail = e.detail;
+  const isAllowed = (detail && (detail.statistics === 'allow' || detail['statistics'] === 'allow'))
+    || (typeof wp_has_consent === 'function' && wp_has_consent('statistics'));
+  if (isAllowed) {
     burst.cache.useCookies = null;
     burst_maybe_init();
   }

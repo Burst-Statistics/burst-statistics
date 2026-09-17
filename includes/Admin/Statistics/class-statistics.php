@@ -50,7 +50,9 @@ class Statistics extends Statistics_Data {
 		if ( '' === $path ) {
 			return;
 		}
-		$this->set_canonical_page_url( $post_id, $path );
+		// Cap the hit merge at 4 chunks (20k rows): this runs inside the
+		// editor's save request; the weekly sweep converges any remainder.
+		$this->set_canonical_page_url( $post_id, $path, 4 );
 	}
 
 	/**
@@ -63,6 +65,14 @@ class Statistics extends Statistics_Data {
 	 * also converges hits still stored under its negative dictionary id (a
 	 * merge capped in a request finishes here, see
 	 * merge_negative_page_id_hits()).
+	 *
+	 * Each pass starts by promoting the rows the tracker registered for posts
+	 * that have no canonical row yet (resolve_page_id() stores the hit url
+	 * without the flag); the cursor loop then replaces that url with the real
+	 * permalink. This is the only place, besides save_post, where permalinks
+	 * are resolved: cron loads every plugin, so a plugin's post type (a
+	 * WooCommerce product) is registered here, unlike on the REST request
+	 * that serves the page tables.
 	 */
 	public function sweep_canonical_page_urls(): void {
 		if ( ! $this->has_admin_access() || ! $this->column_exists( 'burst_page_urls', 'is_canonical' ) ) {
@@ -73,6 +83,10 @@ class Statistics extends Statistics_Data {
 		$cursor      = (int) get_option( 'burst_page_urls_sweep_cursor', 0 );
 		$budget      = (float) apply_filters( 'burst_page_urls_sweep_time_budget', 10.0 );
 		$sweep_start = microtime( true );
+
+		if ( 0 === $cursor ) {
+			$this->promote_latest_page_urls_to_canonical();
+		}
 
 		do {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching

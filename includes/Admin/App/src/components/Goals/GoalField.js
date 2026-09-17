@@ -63,7 +63,7 @@ const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
 
 	if ( 'text' === field.type || 'url' === field.type ) {
 		return (
-			<div className={className}>
+			<div className={className} data-tour={`goal-field-${field.id}`}>
 				{field.parent_label && (
 					<div>
 						<label>{field.parent_label}</label>
@@ -85,7 +85,7 @@ const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
 
 	if ( 'radio-buttons' === field.type ) {
 		return (
-			<div className={className}>
+			<div className={className} data-tour={`goal-field-${field.id}`}>
 				<RadioButtonsField
 					disabled={disabled}
 					field={field}
@@ -104,7 +104,7 @@ const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
 
 	if ( 'hook' === field.type ) {
 		return (
-			<div className="flex flex-wrap align-content-stretch gap-8 [&>*]: w-full [&>input[type='text']]:w-full [&>input[type='text']]:box-border">
+			<div className="flex flex-wrap align-content-stretch gap-8 [&>*]: w-full [&>input[type='text']]:w-full [&>input[type='text']]:box-border" data-tour={`goal-field-${field.id}`}>
 				<TextField
 					disabled={disabled}
 					field={field}
@@ -120,7 +120,7 @@ const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
 
 	if ( 'select-page' === field.type ) {
 		return (
-			<div className={className}>
+			<div className={className} data-tour={`goal-field-${field.id}`}>
 				<SelectPageField
 					disabled={disabled}
 					field={field}
@@ -139,7 +139,7 @@ const GoalField = ({ field = {}, goal, value, setGoalValue }) => {
 
 	if ( 'selector' === field.type ) {
 		return (
-			<div className={className}>
+			<div className={className} data-tour={`goal-field-${field.id}`}>
 				<SelectorField
 					disabled={disabled}
 					field={field}

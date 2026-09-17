@@ -106,6 +106,7 @@ const Modal: React.FC<ModalProps> = ({
 								<div className="flex-1">{customHeader}</div>
 								<Dialog.Close asChild>
 									<button
+										data-tour="chat-modal-close"
 										aria-label="Close"
 										onClick={onClose}
 										className="bg-gray-200 rounded-full p-2 w-8 h-8 cursor-pointer hover:bg-gray-300 transition-colors duration-150 ml-4"
@@ -132,6 +133,7 @@ const Modal: React.FC<ModalProps> = ({
 								</div>
 								<Dialog.Close asChild>
 									<button
+										data-tour="chat-modal-close"
 										aria-label="Close"
 										onClick={onClose}
 										className="bg-gray-200 rounded-full p-2 w-8 h-8 cursor-pointer hover:bg-gray-300 transition-colors duration-150"

@@ -140,6 +140,7 @@ export const SheetOverlay: React.FC<SheetOverlayProps> = ({
 					<motion.div
 						{...SHEET_OVERLAY_PROPS}
 						id={ overlayId }
+						data-burst-sheet-overlay="true"
 						onClick={ handleBackdropClick }
 					>
 						<motion.div
@@ -166,6 +167,7 @@ export const SheetOverlay: React.FC<SheetOverlayProps> = ({
 
 									<button
 										type="button"
+										data-tour="sheet-overlay-close"
 										className="shrink-0 bg-gray-100 border border-gray-400 focus:ring-blue-500 rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2"
 										onClick={ handleClose }
 										aria-label={ __( 'Close', 'burst-statistics' ) }
@@ -174,7 +176,7 @@ export const SheetOverlay: React.FC<SheetOverlayProps> = ({
 									</button>
 								</div>
 
-								<div className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 gap-4">
+								<div className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 gap-4" data-tour="sheet-overlay-content">
 									{ children }
 								</div>
 							</div>

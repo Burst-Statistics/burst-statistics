@@ -43,17 +43,21 @@ function colTrack( col: { align?: string; width?: string; minWidth?: number }): 
 // fallow-ignore-next-line complexity
 function BarDataTableInner<T extends Record<string, unknown>>({
 	columns,
-	data,
+	data: rawData,
 	rowKey,
 	barColumnKey,
 	isLoading = false,
 	emptyState,
 	className
 }: BarDataTableProps<T> ) {
-	const gridTemplate = useMemo(
-		() => columns.map( colTrack ).join( ' ' ),
-		[ columns ]
-	);
+	const data = useMemo( () => (
+		Array.isArray( rawData ) ? rawData : []
+	), [ rawData ]);
+
+	const gridTemplate = useMemo( () => {
+		const cols = Array.isArray( columns ) ? columns : [];
+		return cols.map( colTrack ).join( ' ' );
+	}, [ columns ]);
 
 	const barMax = useMemo( () => {
 		if ( ! barColumnKey || 0 === data.length ) {
@@ -62,7 +66,7 @@ function BarDataTableInner<T extends Record<string, unknown>>({
 
 		return Math.max(
 			...data.map( ( row ) => {
-				const v = row[ barColumnKey ];
+				const v = row ? row[ barColumnKey ] : 0;
 				return 'number' === typeof v ? v : 0;
 			})
 		);

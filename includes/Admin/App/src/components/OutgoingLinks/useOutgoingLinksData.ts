@@ -5,6 +5,7 @@ import { useCompareStore, COMPARE_MODES } from '@/store/useCompareStore';
 import { getDatatableData } from '@/utils/api';
 import useLicenseData from '@/hooks/useLicenseData';
 import useFilters from '@/hooks/useFilters';
+import { isTourActive } from '@/store/useTourStore';
 import type { FilterSearchParams } from '@/config/filterConfig';
 
 /**
@@ -85,10 +86,11 @@ export function useOutgoingLinksData(
 	const { isLicenseValid } = useLicenseData();
 	const { getActiveFilters } = useFilters();
 	const filters = customFilters ?? getActiveFilters();
+	const tourActive = isTourActive();
 
 	const { data: apiData, isLoading, error } = useQuery({
 		queryKey: [ 'outgoing-links', startDate, endDate, range, filters ],
-		enabled: enabled && isLicenseValid,
+		enabled: tourActive || ( enabled && isLicenseValid ),
 		queryFn: async() => {
 			const response = await getDatatableData(
 				'outgoing-links',

@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.1
-Stable tag: 3.7.0
+Stable tag: 3.7.1
 
 Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner needed.
  
@@ -292,6 +292,23 @@ We value your feedback. You can [submit a support request on the WordPress forum
  
 
 == Change log ==
+= 3.7.1 =
+* September 17th 2026
+* New: CartFlows integration, checkout steps count as checkout visits in the Live traffic block.
+* New: interactive tour: a guided walkthrough of the dashboard, insights, data tables, traffic sources, AI assistant, reading engagement, reports, goals and settings, using sample data so every block is populated; the tour can be paused and resumed where you left off.
+* Improvement: the cookieless fingerprint no longer renders a WebGL test image, which removed most of the tracking script's CPU time on first interaction (up to ~190ms on desktop, more on mobile) with no meaningful loss of uniqueness; cookieless visitors are counted as new visitors once after the update.
+* Improvement: visitor icons in the Live traffic block use twelve distinct colors and a better hash, so different visitors are easier to tell apart.
+* Improvement: activating or deactivating a plugin during an optimized Burst REST request can no longer persist the reduced plugin list the REST API optimizer uses for that request, props Will Lassalle / JLSTech.
+* Fix: the Compare block counted sessions, visitors and bounces for visits that only requested non-existing pages (404 hits, typically bot scans), while the Today block and the other blocks left those out; all blocks now apply the same rule, and existing sessions are updated by a background migration.
+* Fix: pages of post types registered by plugins, such as WooCommerce products, showed an empty url in the Pages table; existing data is completed by a background migration.
+* Fix: the "Today" count in the Goals block started the day at UTC midnight instead of midnight in the WordPress timezone.
+* Fix: visitor counts for historic date ranges showed near zero while the 3.7.0 visitor-index migration was still running; rows the migration has not converted yet are now counted by their legacy visitor id until the migration completes.
+* Fix: the database upgrade progress notice started in the nineties and barely moved, because it counted every upgrade ever shipped instead of the tasks in the running batch.
+* Fix: the Source column of the Campaigns table had no header label, and campaign queries on that column were not recognized as campaign queries by the goal filter.
+* Fix: a missing-table notice was shown for a search-terms table that is no longer in use.
+* Fix: the tracking script did not start when the consent-change event of a cookie banner did not include the statistics category; it now also checks the WP Consent API directly, and the beacon request uses fetch with keepalive where available.
+* Fix: the REST API optimizer read and decoded the request body once per active plugin instead of once per request, and now inspects at most 64 KB of it, props Will Lassalle / JLSTech.
+
 = 3.7.0 =
 * September 8th 2026
 * New: Site Health now shows the state of the visitor index and database migrations, including a live probe of the fast query path.

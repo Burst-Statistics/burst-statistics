@@ -38,6 +38,12 @@ spl_autoload_register(
 			return;
 		}
 
+		$interface_file = $plugin_path . "includes/{$dir}interface-" . str_replace( '_', '-', strtolower( $class_name ) ) . '.php';
+		if ( file_exists( $interface_file ) ) {
+			require_once $interface_file;
+			return;
+		}
+
 		$trait_file = $plugin_path . "includes/{$dir}trait-" . str_replace( '_', '-', strtolower( $class_name ) ) . '.php';
 		if ( file_exists( $trait_file ) ) {
 			require_once $trait_file;

@@ -18,6 +18,78 @@ import {
 	setLocalStorage
 } from '@/utils/api';
 import { formatDateAndTime } from '@/utils/formatting';
+import { useTourStore } from '@/store/useTourStore';
+
+const getTourMockResponse = ( query: string ): string => {
+	const lower = query.toLowerCase();
+
+	if ( lower.includes( 'pageview' ) || lower.includes( 'today' ) ) {
+		return `### 📊 Today's Traffic Summary
+
+Here is a live breakdown of your website activity for **today**:
+
+* **Total Pageviews:** \`1,428\` *(+18.4% compared to yesterday)*
+* **Unique Visitors:** \`982\`
+* **Average Time on Page:** \`2m 14s\`
+* **Bounce Rate:** \`34.2%\` *(Top 15% peer benchmark)*
+
+#### 🏆 Top 3 Most Visited Pages Today:
+1. **\`/pricing/\`** — \`512\` views *(35.8% of total)*
+2. **\`/features/\`** — \`328\` views *(23.0% of total)*
+3. **\`/blog/analytics-guide/\`** — \`194\` views *(13.6% of total)*
+
+💡 *Tip: Traffic peaked between **2:00 PM – 4:00 PM**. Consider scheduling email broadcasts around 1:30 PM for maximum click-through rates.*`;
+	}
+
+	if ( lower.includes( 'source' ) || lower.includes( 'traffic' ) ) {
+		return `### 🌐 Top Traffic Sources Breakdown
+
+Here are your leading acquisition channels over the selected period:
+
+| Source Channel | Sessions | % of Total | Avg. Bounce Rate |
+| :--- | :--- | :--- | :--- |
+| **Organic Search (Google)** | \`3,420\` | **48.5%** | \`31.2%\` |
+| **Direct Traffic** | \`1,700\` | **24.1%** | \`28.6%\` |
+| **Social Media (LinkedIn & X)** | \`1,140\` | **16.2%** | \`42.0%\` |
+| **Referral Domains** | \`790\` | **11.2%** | \`36.5%\` |
+
+#### 🔍 Key Takeaway:
+**Organic Search** drives your most engaged visitors with the lowest bounce rate (\`31.2%\`). Top search queries include *"privacy friendly analytics"* and *"wordpress cookieless tracking"*.`;
+	}
+
+	if ( lower.includes( 'active' ) || lower.includes( 'visitor' ) || lower.includes( 'right now' ) ) {
+		return `### ⚡ Real-Time Active Visitors
+
+Right now, there are **14 active visitors** browsing your website:
+
+* 🟢 **5 visitors** on [\`/\`](https://burst-test.local/) *(Homepage)*
+* 🟢 **4 visitors** on [\`/documentation/\`](https://burst-test.local/documentation/)
+* 🟢 **3 visitors** on [\`/checkout/\`](https://burst-test.local/checkout/)
+* 🟢 **2 visitors** on [\`/blog/announcement/\`](https://burst-test.local/blog/announcement/)
+
+*Top visitor locations: 🇺🇸 United States (6), 🇩🇪 Germany (4), 🇬🇧 United Kingdom (3), 🇳🇱 Netherlands (1).*`;
+	}
+
+	if ( lower.includes( 'popular' ) || lower.includes( 'page' ) || lower.includes( 'month' ) ) {
+		return `### 📈 Top Performing Pages This Month
+
+Here are your highest-trafficked pages over the past 30 days:
+
+1. **Homepage (\`/\`)** — \`14,820\` views | \`8,940\` visitors | \`1m 45s\` avg time
+2. **Product Tour (\`/tour/\`)** — \`7,210\` views | \`5,120\` visitors | \`3m 10s\` avg time *(Highest engagement)*
+3. **Pricing Plans (\`/pricing/\`)** — \`5,840\` views | \`4,300\` visitors | \`2m 05s\` avg time *(14.2% goal conversion)*
+4. **Documentation (\`/docs/\`)** — \`3,910\` views | \`2,480\` visitors | \`4m 20s\` avg time
+5. **Case Studies (\`/stories/\`)** — \`2,150\` views | \`1,620\` visitors | \`2m 50s\` avg time`;
+	}
+
+	return `### 🤖 Analytics Insight
+
+Based on your Burst analytics database:
+
+* Your website recorded **28,450 pageviews** across **18,200 unique sessions** with an average reading engagement score of **78/100**.
+* Overall conversion goal rate is **4.8%**, led by primary CTA button clicks on \`/pricing/\`.
+* All queries are processed locally within WordPress without sending visitor data off-site.`;
+};
 
 type AiModel = {
 	id: string;
@@ -206,7 +278,14 @@ type ChatAssistantModalProps = {
 
 // fallow-ignore-next-line complexity
 const ChatAssistantModal = ({ isOpen, onClose }: ChatAssistantModalProps ) => {
-	const { isDisabled } = useChatAvailability();
+	const { isDisabled: availabilityDisabled } = useChatAvailability();
+	const tourActive = useTourStore( ( s ) => s.tourActive );
+	const setInteractionComplete = useTourStore( ( s ) => s.setInteractionComplete );
+	const nextStep = useTourStore( ( s ) => s.nextStep );
+	const currentStepId = useTourStore( ( s ) => s.steps[ s.stepIndex ]?.id );
+
+	// During the tour the chat runs on mock data, so it is never disabled.
+	const isDisabled = tourActive ? false : availabilityDisabled;
 	const [ sessions, setSessions ] = useState<ChatSession[]>([]);
 	const [ activeSessionId, setActiveSessionId ] = useState( '' );
 	const [ prompt, setPrompt ] = useState( '' );
@@ -309,12 +388,33 @@ const ChatAssistantModal = ({ isOpen, onClose }: ChatAssistantModalProps ) => {
 		}
 	}, []);
 
+	const isTourMockSessionsRef = useRef( Boolean( tourActive ) );
+	const prevTourActiveRef = useRef( tourActive );
+
 	useEffect( () => {
-		if ( ! sessions.length ) {
+		if ( ! sessions.length || tourActive || isTourMockSessionsRef.current ) {
 			return;
 		}
 		setLocalStorage( STORAGE_KEY, applySessionStorageLimits( sessions ) );
-	}, [ sessions ]);
+	}, [ sessions, tourActive ]);
+
+	// When tour ends or is dismissed, restore the user's real chat history from localStorage
+	useEffect( () => {
+		if ( prevTourActiveRef.current && ! tourActive ) {
+			isTourMockSessionsRef.current = false;
+			const saved = getLocalStorage( STORAGE_KEY, []);
+			if ( Array.isArray( saved ) && 0 < saved.length ) {
+				const sanitizedSessions = applySessionStorageLimits(
+					saved as ChatSession[]
+				);
+				if ( 0 < sanitizedSessions.length ) {
+					setSessions( sanitizedSessions );
+					setActiveSessionId( asString( sanitizedSessions[0].id ) );
+				}
+			}
+		}
+		prevTourActiveRef.current = tourActive;
+	}, [ tourActive ]);
 
 	// Mark chat-status as potentially stale when the modal opens. React Query
 	// will only actually refetch when the staleTime (60s) has elapsed, so
@@ -324,6 +424,19 @@ const ChatAssistantModal = ({ isOpen, onClose }: ChatAssistantModalProps ) => {
 			void queryClient.invalidateQueries({ queryKey: [ 'chat-status' ] });
 		}
 	}, [ isOpen, queryClient ]);
+
+	// Close modal automatically if tour leaves chat steps
+	useEffect( () => {
+		if ( ! tourActive ) {
+			return;
+		}
+		const currentStep = useTourStore.getState().steps[ useTourStore.getState().stepIndex ];
+		if ( isOpen && currentStep && 'chat' !== currentStep.keep_open ) {
+			onClose();
+			document.body.style.pointerEvents = '';
+			document.body.removeAttribute( 'data-scroll-locked' );
+		}
+	}, [ tourActive, isOpen, currentStepId, onClose ]);
 
 	useEffect( () => {
 		if ( ! sessions.length ) {
@@ -404,6 +517,58 @@ const ChatAssistantModal = ({ isOpen, onClose }: ChatAssistantModalProps ) => {
 		return fallback;
 	};
 
+	// Ensure active mock session has a response if user enters response_review step,
+	// and ensure clean blank session when opening the modal on tour so suggestions are visible!
+	const hasInitializedTourSessionRef = useRef( false );
+	useEffect( () => {
+		if ( ! tourActive ) {
+			hasInitializedTourSessionRef.current = false;
+			return;
+		}
+
+		if ( 'chat_assistant_tour' === currentStepId ) {
+			hasInitializedTourSessionRef.current = false;
+		}
+
+		if ( isOpen && 'chat_assistant_prompt_select' === currentStepId && ! hasInitializedTourSessionRef.current ) {
+			hasInitializedTourSessionRef.current = true;
+			isTourMockSessionsRef.current = true;
+			const blank = createSession();
+			setSessions([ blank ]);
+			setActiveSessionId( blank.id );
+		} else if ( 'chat_assistant_response_review' === currentStepId ) {
+			setSessions( ( prev ) => {
+				const current = prev.find( ( s ) => s.id === activeSessionId ) || prev[0];
+				if ( current && 0 < current.history.length ) {
+					return prev;
+				}
+				const userQuestion = __( 'How many pageviews did we get today?', 'burst-statistics' );
+				const mockText = getTourMockResponse( userQuestion );
+				const nextHistory = [
+					{ role: 'user', content: userQuestion },
+					{ role: 'assistant', content: mockText }
+				];
+				const title = shortText( userQuestion );
+				const updatedAt = Date.now();
+				const targetId = current?.id || createSession().id;
+
+				return applySessionStorageLimits(
+					prev.map( ( item ) => {
+						if ( item.id !== targetId ) {
+							return item;
+						}
+						return {
+							...item,
+							title,
+							history: nextHistory as Array<Record<string, unknown>>,
+							updatedAt
+						};
+					})
+				);
+			});
+		}
+	}, [ tourActive, isOpen, currentStepId, activeSessionId ]);
+
 	const createNewChat = () => {
 		const reusableSession = sessions.find( isSessionBlank );
 
@@ -466,10 +631,9 @@ const ChatAssistantModal = ({ isOpen, onClose }: ChatAssistantModalProps ) => {
 		);
 	};
 
-
 	// fallow-ignore-next-line complexity
 	const sendMessageDirect = async( messageText: string ) => {
-		if ( isSending || isDisabled ) {
+		if ( isSending || ( isDisabled && ! tourActive ) ) {
 			return;
 		}
 
@@ -487,6 +651,46 @@ const ChatAssistantModal = ({ isOpen, onClose }: ChatAssistantModalProps ) => {
 			textareaRef.current.style.height = 'auto';
 		}
 		setIsSending( true );
+
+		if ( tourActive ) {
+			try {
+				await new Promise( ( resolve ) => setTimeout( resolve, 900 ) );
+				const mockText = getTourMockResponse( userMessage );
+				const assistantMessage = { role: 'assistant', content: mockText };
+				const nextHistory = [ ...baseHistory, { role: 'user', content: userMessage }, assistantMessage ];
+				const title = DEFAULT_TITLE === session.title ? shortText( userMessage ) : session.title;
+				const updatedAt = Date.now();
+
+				setSessions( ( prev ) => {
+					const next = prev.map( ( item ) => {
+						if ( item.id !== session.id ) {
+							return item;
+						}
+
+						return {
+							...item,
+							title,
+							history: nextHistory as Array<Record<string, unknown>>,
+							updatedAt
+						};
+					});
+
+					return applySessionStorageLimits( next );
+				});
+
+				setPendingMessage( '' );
+				setIsSending( false );
+
+				if ( 'chat_assistant_prompt_select' === currentStepId ) {
+					setInteractionComplete( true );
+					setTimeout( () => nextStep(), 500 );
+				}
+			} catch {
+				setIsSending( false );
+				setPendingMessage( '' );
+			}
+			return;
+		}
 
 		try {
 			const response = await postChatMessage( userMessage, baseHistory, selectedModel );
@@ -705,6 +909,7 @@ const ChatAssistantModal = ({ isOpen, onClose }: ChatAssistantModalProps ) => {
 							return (
 								<div
 									key={item.id}
+									data-tour={! isUser ? 'chat-response-message' : undefined}
 									className={clsx(
 										'flex',
 										isUser ? 'justify-end' : 'justify-start'
@@ -959,10 +1164,14 @@ const ChatAssistantModal = ({ isOpen, onClose }: ChatAssistantModalProps ) => {
 								</p>
 							</div>
 
-							<div className="grid grid-cols-2 gap-3 mt-4 @max-sm:grid-cols-1">
+							<div
+								data-tour="chat-prompt-suggestions"
+								className="grid grid-cols-2 gap-3 mt-4 @max-sm:grid-cols-1"
+							>
 								{suggestions.map( ( suggestion, index ) => (
 									<button
 										key={index}
+										data-tour={`chat-prompt-item-${index}`}
 										type="button"
 										onClick={() => void sendMessageDirect( suggestion.text )}
 										className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-3 text-left text-xs font-semibold text-text-black shadow-sm transition-all duration-150 ease-in-out hover:border-primary/45 hover:bg-gray-50 hover:shadow-md cursor-pointer group"

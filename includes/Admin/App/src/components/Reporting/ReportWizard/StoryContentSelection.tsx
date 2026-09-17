@@ -62,7 +62,7 @@ const StoryContentSelection = () => {
 	};
 	return (
 		<FieldWrapper error={errors.content?.message as string} label="" inputId="content_selection" fullWidthContent={ true } className="!pt-0 !px-0">
-			<div ref={containerRef} className="relative grid grid-cols-2 gap-3 py-4">
+			<div ref={containerRef} data-tour="wizard-story-blocks" className="relative grid grid-cols-2 gap-3 py-4">
 				{
 					getSelectableContentBlocks( availableContent, shouldLoadEcommerce, true )
 						.filter( ( block ) => ! block.pro || isAgency )
@@ -73,6 +73,8 @@ const StoryContentSelection = () => {
 								<button
 									key={index}
 									type="button"
+									data-tour="wizard-add-block-btn"
+									data-tour-block={block.id}
 									onClick={( e ) => {
 										if ( ! isBlockProDisabled ) {
 											handleClick( block.id, e );

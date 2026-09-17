@@ -432,26 +432,38 @@ const addABTestIcon = ( content, row ) => {
 	let name;
 	let color;
 	let tooltip;
+	let styleClass = '';
+
 	if ( 'no_winner' === row.significant ) {
 		tooltip = __( 'The test resulted in a tie. More hits might still result in a winner, but the difference will probably be very small.', 'burst-statistics' );
 		color = 'gold';
 		name = 'scale';
+		styleClass = 'text-yellow-500 font-medium';
 	} else if ( 'still_running' === row.significant ) {
 		tooltip = __( 'Not enough data yet to declare a winner or tie.', 'burst-statistics' );
-		color = 'grey';
+		color = 'gray';
 		name = 'hourglass';
+		styleClass = 'text-text-gray';
+	} else if ( row.winner ) {
+		tooltip = __( 'Winner of the A/B test with a probability of >95%.', 'burst-statistics' );
+		color = 'gold';
+		name = 'trophy';
+		styleClass = 'text-primary font-semibold';
 	} else {
-		tooltip = row.winner ? __( 'Winner of the A/B test with a probability of >95%.', 'burst-statistics' ) :
-			__( 'Least performant version of the A/B test with a probability of >95%.', 'burst-statistics' );
-		color = row.winner ? 'gold' : 'black';
-		name = row.winner ? 'trophy' : 'frown';
+		tooltip = __( 'Least performant version of the A/B test with a probability of >95%.', 'burst-statistics' );
+		color = 'gray';
+		name = 'frown';
+		styleClass = 'text-text-gray';
 	}
 
 	return (
-		<span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <Icon name={name} color={color} tooltip={tooltip} />
-			{content}
-    </span>
+		<span
+			data-tour="ab-testing-badge"
+			className={`inline-flex items-center gap-1.5 ${styleClass}`}
+		>
+			<Icon name={name} color={color} tooltip={tooltip} size={15} />
+			<span>{content}</span>
+		</span>
 	);
 };
 
@@ -481,6 +493,7 @@ const createCellFormatter = ( format, columnId ) => {
 			// Add a-b test icon when conversion_rate or conversions column are present, but not both.
 			if (
 				( 'conversion_rate' === columnId ) ||
+				( 'sales_conversion_rate' === columnId ) ||
 				( 'conversions' === columnId && ! ( 'conversion_rate' in row ) )
 			) {
 				return addABTestIcon( formatted, row );

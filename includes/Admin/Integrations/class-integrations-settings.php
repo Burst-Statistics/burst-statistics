@@ -294,6 +294,7 @@ class Integrations_Settings {
 			'tracks_form_and_popup_submissions'          => __( 'Tracks form and popup submissions', 'burst-statistics' ),
 			'tracks_sales_and_revenue'                   => __( 'Tracking sales and revenue', 'burst-statistics' ),
 			'tracks_woocommerce_payments_transactions'   => __( 'Tracks WooCommerce Payments transactions', 'burst-statistics' ),
+			'tracks_checkout_steps'                      => __( 'Tracks checkout steps as checkout visits', 'burst-statistics' ),
 			'tracks_multi_currency_transactions'         => __( 'Tracks multi-currency transactions', 'burst-statistics' ),
 			'tracks_donations'                           => __( 'Tracking donations', 'burst-statistics' ),
 			'tracks_form_submissions'                    => __( 'Tracks form submissions', 'burst-statistics' ),

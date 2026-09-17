@@ -2,7 +2,6 @@
 
 namespace Burst\Admin\Share\Services;
 
-use Burst\Admin\App\App;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Save;
 use Burst\Traits\Sanitize;
@@ -280,7 +279,7 @@ class Share_UI {
 		$wp_query->is_404 = false;
 		status_header( 200 );
 
-		$app = new App();
+		$app = burst_loader()->admin->app;
 		$app->init();
 		$app->plugin_admin_scripts();
 		$user_lang = get_user_locale();

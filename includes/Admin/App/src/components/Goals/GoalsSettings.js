@@ -156,7 +156,7 @@ const GoalsSettings = () => {
 
 				{( isLicenseValid || activeGoalsCount < goalLimit || 0 > goalLimit ) && (
 					<div className="flex items-center gap-2">
-						<ButtonInput btnVariant={'tertiary'} onClick={addGoal}>
+						<ButtonInput data-tour="add-goal-button" btnVariant={'tertiary'} onClick={addGoal}>
 							{__( 'Add goal', 'burst-statistics' )}
 						</ButtonInput>
 

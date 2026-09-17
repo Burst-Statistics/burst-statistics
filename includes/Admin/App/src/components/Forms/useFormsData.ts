@@ -4,6 +4,7 @@ import { useDate } from '@/store/useDateStore';
 import { getDatatableData } from '@/utils/api';
 import useLicenseData from '@/hooks/useLicenseData';
 import useFilters from '@/hooks/useFilters';
+import { isTourActive } from '@/store/useTourStore';
 
 /**
  * A single form data row as returned by the Forms block.
@@ -87,10 +88,11 @@ export function useFormsData(): UseFormsDataReturn {
 	const { isLicenseValid } = useLicenseData();
 	const { getActiveFilters } = useFilters();
 	const filters = getActiveFilters();
+	const tourActive = isTourActive();
 
 	const { data: apiData, isLoading, error } = useQuery({
 		queryKey: [ 'forms', startDate, endDate, range, filters ],
-		enabled: isLicenseValid,
+		enabled: tourActive || isLicenseValid,
 		queryFn: async() => {
 			const response = await getDatatableData(
 				'forms',

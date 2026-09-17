@@ -35,6 +35,7 @@ const CLICKS_TO_CLOSE = 2;
  */
 const DateRangeTrigger = ({ range, display, isOpen, setIsOpen, disabled }) => (
 	<ReactPopover.Trigger
+		data-tour="date-range"
 		className={`burst-date-button flex min-w-[200px] items-center gap-2 rounded-md border px-3 py-1 shadow-sm transition-all duration-200 ${disabled ?
 				'cursor-not-allowed border-gray-200 bg-gray-100 text-text-gray opacity-60' :
 				isOpen ?
@@ -89,6 +90,26 @@ const DateRange = () => {
 			document.body.style.overflow = originalOverflow;
 		};
 	}, [ isMobile, isOpen, userCanFilterDateRange ]);
+
+	// Tag date range preset buttons with data-tour attributes for locale-independent tour targeting
+	useEffect( () => {
+		if ( ! isOpen ) {
+			return;
+		}
+
+		const keys = Object.values( selectedRanges || {}).filter( Boolean );
+		const timer = setTimeout( () => {
+			const buttons = document.querySelectorAll( '.rdrStaticRange' );
+			buttons.forEach( ( btn, idx ) => {
+				const rangeKey = keys[idx];
+				if ( rangeKey ) {
+					btn.setAttribute( 'data-tour', `date-range-preset-${rangeKey}` );
+				}
+			});
+		}, 30 );
+
+		return () => clearTimeout( timer );
+	}, [ isOpen, selectedRanges ]);
 
 	// Memoize computed values.
 	const dateRanges = useMemo(

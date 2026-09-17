@@ -108,6 +108,7 @@ const ReportWizard: React.FC = () => {
 								<div className="flex items-center justify-end gap-2 shrink-0 lg:hidden">
 									{! currentReport || null !== currentReport.id && <ReportActionMenu row={currentReport} />}
 									<button
+										data-tour="wizard-close"
 										type="button"
 										className="bg-gray-100 border border-gray-400 focus:ring-blue-500 rounded-full p-2 sm:p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2 cursor-pointer"
 										onClick={() => closeWizard()}
@@ -127,6 +128,7 @@ const ReportWizard: React.FC = () => {
 							<div className="hidden lg:flex items-center justify-end gap-2 shrink-0 z-10">
 								{! currentReport || null !== currentReport.id && <ReportActionMenu row={currentReport} />}
 								<button
+									data-tour="wizard-close"
 									type="button"
 									className="bg-gray-100 border border-gray-400 focus:ring-blue-500 rounded-full p-2.5 transition-all duration-200 hover:bg-gray-400 hover:shadow-md focus:outline-hidden focus:ring-2 focus:ring-offset-2 cursor-pointer"
 									onClick={() => closeWizard()}

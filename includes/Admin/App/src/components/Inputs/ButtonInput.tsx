@@ -36,6 +36,7 @@ interface ButtonInputProps
  * @param {ButtonInputProps} props - Props for configuring the button.
  * @return {JSX.Element} The rendered button or link component.
  */
+// fallow-ignore-next-line complexity
 const ButtonInput: React.FC<ButtonInputProps> = ({
 	children,
 	onClick,
@@ -114,6 +115,22 @@ const ButtonInput: React.FC<ButtonInputProps> = ({
 				>
 					{children}
 				</span>
+			);
+		}
+
+		const isExternal = 'string' === typeof link.to && ( link.to.startsWith( 'http://' ) || link.to.startsWith( 'https://' ) || link.to.startsWith( 'admin.php' ) || link.to.startsWith( '/wp-admin/' ) );
+
+		if ( isExternal ) {
+			return (
+				<a
+					href={link.to}
+					className={classes}
+					{...ariaAttributes}
+					role="button"
+					tabIndex={0}
+				>
+					{children}
+				</a>
 			);
 		}
 

@@ -9,6 +9,10 @@ defined( 'ABSPATH' ) || die();
  *
  * @package Burst
  */
+$burst_tour_duration = class_exists( '\Burst\Admin\Tour\Tour' )
+	? \Burst\Admin\Tour\Tour::get_estimated_duration_minutes( 'dashboard' )
+	: 2;
+
 return [
 	[
 		'id'               => 'intro',
@@ -194,18 +198,27 @@ return [
 		],
 	],
 	[
-		'id'      => 'completed',
-		'type'    => 'completed',
-		'title'   => __( 'All done, Awesome!', 'burst-statistics' ),
-		'bullets' => [
+		'id'          => 'completed',
+		'type'        => 'completed',
+		'title'       => __( 'All done, Awesome!', 'burst-statistics' ),
+		'bullets'     => [
 			[ __( 'See in which country your visitors are', 'burst-statistics' ) ],
 			[ __( 'Measure marketing campaigns with UTM tracking', 'burst-statistics' ) ],
 			[ __( 'Track multiple goals to measure conversions', 'burst-statistics' ) ],
 			[ __( 'Premium support', 'burst-statistics' ) ],
 		],
-		'button'  => [
+		'button'      => [
 			'id'    => 'finish',
-			'label' => __( 'Go to the dashboard and explore Burst!', 'burst-statistics' ),
+			'label' => __( 'View dashboard', 'burst-statistics' ),
+		],
+		'tour_button' => [
+			'id'    => 'start_tour',
+			'label' => sprintf(
+				// translators: %d is the estimated tour duration in minutes.
+				__( 'Take a %d minute tour', 'burst-statistics' ),
+				$burst_tour_duration
+			),
+			'url'   => admin_url( 'admin.php?page=burst&tour=dashboard#/' ),
 		],
 	],
 ];

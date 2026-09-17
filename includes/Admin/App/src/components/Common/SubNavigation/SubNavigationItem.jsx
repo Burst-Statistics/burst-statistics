@@ -31,6 +31,7 @@ const SettingsNavigationItem = memo( ({ item, from, to, params }) => {
             to={ to }
             from={ from }
             params={ params }
+            data-tour={`subnav-${params?.settingsId || params?.reportingId || item.id}`}
             className={ clsx( menuItemClassName, 'flex items-center gap-2.5' ) }
         >
 			{item.icon && '' !== item.icon && (

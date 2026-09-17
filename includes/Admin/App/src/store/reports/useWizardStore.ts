@@ -546,9 +546,10 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 	 * StartDate is always based on the endDate, and range subtracted.
 	 * @param index
 	 */
+	// fallow-ignore-next-line complexity
 	getStartDate: ( index:number ) => {
 		const fixedEndDate = get().getFixedEndDate( index );
-		const dateRange = get().getDateRange( index );
+		const dateRange = get().getDateRange( index ) || 'last-7-days';
 
 		// Validate fixedEndDate first
 		if ( ! fixedEndDate || '' === fixedEndDate ) {
@@ -561,7 +562,7 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 
 		// If it's a custom range, extract the startDate directly
 		// Use getDateRangeDate for custom ranges (returns the extracted startDate)
-		if ( dateRange.startsWith( 'custom:' ) ) {
+		if ( 'string' === typeof dateRange && dateRange.startsWith( 'custom:' ) ) {
 			return get().getDateRangeDate( index, 'start' );
 		}
 
@@ -577,13 +578,15 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 		// Fallback: return fixedEndDate
 		return fixedEndDate;
 	},
+
+	// fallow-ignore-next-line complexity
 	getParsedDateRangeValue: ( dateRange:string ) => {
 
 		// Parse reportDateRange for DateRangePicker value.
-		const currentRange = dateRange || 'last-7-days';
+		const currentRange = ( 'string' === typeof dateRange && dateRange ) ? dateRange : 'last-7-days';
 
 		// Check if it's a custom range encoded as 'custom:startDate:endDate'.
-		if ( currentRange.startsWith( 'custom:' ) ) {
+		if ( 'string' === typeof currentRange && currentRange.startsWith( 'custom:' ) ) {
 			const parts = currentRange.split( ':' );
 			if ( 3 === parts.length ) {
 				return {
@@ -641,17 +644,18 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 
 	// fallow-ignore-next-line complexity
 	parseDateRange: ( dateRange: string, type: 'start' | 'end' ) => {
+		const safeDateRange = ( 'string' === typeof dateRange && dateRange ) ? dateRange : 'last-7-days';
 
 		// Use availableRanges if the range exists
-		if ( dateRange in availableRanges ) {
-			const { startDate, endDate } = availableRanges[dateRange as keyof typeof availableRanges].range();
+		if ( safeDateRange in availableRanges ) {
+			const { startDate, endDate } = availableRanges[safeDateRange as keyof typeof availableRanges].range();
 			const selectedDate = 'start' === type ? startDate : endDate;
 			return format( selectedDate, 'yyyy-MM-dd' );
 		}
 
 		// Check for custom range 'custom:startDate:endDate'
-		if ( dateRange.startsWith( 'custom:' ) ) {
-			const parts = dateRange.split( ':' );
+		if ( 'string' === typeof safeDateRange && safeDateRange.startsWith( 'custom:' ) ) {
+			const parts = safeDateRange.split( ':' );
 			if ( 3 === parts.length ) {
 				return 'start' === type ? parts[1] : parts[2];
 			}

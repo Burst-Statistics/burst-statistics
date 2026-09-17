@@ -253,4 +253,27 @@ return [
 		'plusone'             => true,
 		'dismiss_permanently' => true,
 	],
+	[
+		'id'                  => 'import_statistics_data',
+		// Shown while a known statistics tool is in use and no import has
+		// completed; evaluated on cron only, the tool name below is a stored
+		// result. Permanent: a completed import, a tool that is gone or a user
+		// dismiss all end it for good.
+		'condition'           => [
+			'type'     => 'serverside',
+			'function' => 'Burst\Admin\Import\Import_Manager::should_show_import_task()',
+		],
+		'msg'                 => sprintf(
+			// translators: %s is the detected statistics tool name (e.g. Google Analytics).
+			__( 'Import your statistics data from %s', 'burst-statistics' ),
+			class_exists( '\Burst\Admin\Import\Import_Manager' )
+				? \Burst\Admin\Import\Import_Manager::get_detected_statistics_tool_name()
+				: __( 'other analytics tools', 'burst-statistics' )
+		),
+		'icon'                => 'new',
+		'url'                 => '#/settings/data',
+		'dismissible'         => true,
+		'plusone'             => true,
+		'dismiss_permanently' => true,
+	],
 ];

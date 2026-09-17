@@ -322,7 +322,7 @@ const SourcesBlock = ( props ) => {
 
 	return (
 		<>
-			<Block className="row-span-2 @lg:col-span-6 @xl:col-span-3">
+			<Block className="row-span-2 @lg:col-span-6 @xl:col-span-3" data-tour="sources-block">
 				<BlockHeading
 					title={__( 'Traffic sources', 'burst-statistics' )}
 					isReport={isReport}

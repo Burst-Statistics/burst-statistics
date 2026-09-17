@@ -416,7 +416,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			defaultColumns: [
 				'campaign',
 				'visitors',
-				...( shouldLoadEcommerce ? [ 'sales', 'revenue' ] : [ 'conversions' ])
+				...( shouldLoadEcommerce ? [ 'sales', 'revenue', 'conversion_rate' ] : [ 'conversions', 'conversion_rate' ])
 			],
 			columnsOptions: {
 				campaign: {
@@ -1410,7 +1410,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 	const fileName = `${safeDomain}-${selectedConfig}-${startDate}-${endDate}`;
 
 	return (
-		<Block id={id} className={ isInOverlay ? 'flex-1 min-h-0 group/root' : 'row-span-2 overflow-hidden @xl:col-span-6 group/root' }>
+		<Block data-tour="data-table" id={id} className={ isInOverlay ? 'flex-1 min-h-0 group/root' : 'row-span-2 overflow-hidden @xl:col-span-6 group/root' }>
 			<BlockHeading
 				className="border-b border-gray-200"
 				isReport={isReport}
@@ -1435,33 +1435,39 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 									onClick={ handleExpand }
 									aria-label={ __( 'Expand table', 'burst-statistics' ) }
 									title={ __( 'Expand table', 'burst-statistics' ) }
+									data-tour="data-table-expand"
 								>
 									<Icon name="expand" size={ 14 } />
 								</button>
 							) }
 
 							{configDetails?.searchable && (
-								<SearchButton
-									value={filterText}
-									onChange={setFilterText}
-									className="ml-auto"
-								/>
+								<div data-tour="data-table-search" className="ml-auto flex items-center">
+									<SearchButton
+										value={filterText}
+										onChange={setFilterText}
+									/>
+								</div>
 							)}
 
-							<DownloadCsvButton
-								data={enrichedFilteredData}
-								filename={fileName}
-							/>
+							<div data-tour="data-table-export" className="flex items-center">
+								<DownloadCsvButton
+									data={enrichedFilteredData}
+									filename={fileName}
+								/>
+							</div>
 
-							<PopoverFilter
-								selectedOptions={columns}
-								options={columnsOptions}
-								defaultOptions={defaultColumns}
-								onApply={setColumns}
-								extraSection={renderVariationsToggle}
-								extraSectionValue={paramVariationsToggle}
-								onExtraSectionChange={handleParamVariationsToggle}
-							/>
+							<div data-tour="data-table-columns" className="flex items-center">
+								<PopoverFilter
+									selectedOptions={columns}
+									options={columnsOptions}
+									defaultOptions={defaultColumns}
+									onApply={setColumns}
+									extraSection={renderVariationsToggle}
+									extraSectionValue={paramVariationsToggle}
+									onExtraSectionChange={handleParamVariationsToggle}
+								/>
+							</div>
 						</>
 					) : undefined
 				}

@@ -41,7 +41,8 @@ const SearchTermsBlock = memo( ({ className = '' }: SearchTermsBlockProps ) => {
 	const columns = useColumnsBySiteUrl( getSearchTermsColumns );
 
 	const filteredData = useMemo( () => {
-		const base = noResultsOnly ? data.filter( ( r ) => 0 === r.results ) : data;
+		const safeData = Array.isArray( data ) ? data : [];
+		const base = noResultsOnly ? safeData.filter( ( r ) => 0 === r.results ) : safeData;
 		return base.slice( 0, TOP_N );
 	}, [ data, noResultsOnly ]);
 
