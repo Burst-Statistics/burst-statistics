@@ -17,7 +17,7 @@ workflow:
   variables:
     BASE_URL: "http://localhost"
   image:
-    name: source.updraftplus.com:5050/ci/playwright-e2e:auto-php-8.5-wp-7.1.0
+    name: source.updraftplus.com:5050/ci/playwright-e2e:auto-php-8.5-wp-7.1.1-RC
     entrypoint: [""]
   cache:
     - key:
