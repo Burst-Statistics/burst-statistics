@@ -8,22 +8,26 @@
  * "Metric 'avg_max_scroll' is not allowed" on every engagement request and
  * silently scored on time only.
  *
+ * The free suite boots a real WordPress install (see bootstrap.php) without
+ * wp-phpunit, so this extends the plain PHPUnit TestCase.
+ *
  * @package Burst
  */
 
+use PHPUnit\Framework\TestCase;
 use Burst\Admin\Statistics\Statistics_Allowlist;
 use Burst\Admin\Statistics\Statistics_Query;
 
-class AvgMaxScrollMetricTest extends WP_UnitTestCase {
+class AvgMaxScrollMetricTest extends TestCase {
 
 	/**
-	 * Boot the shared admin (registers the core metric handlers), no Pro.
+	 * Boot the shared admin (registers the core metric handlers).
 	 */
-	public function set_up(): void {
-		parent::set_up();
+	protected function setUp(): void {
+		parent::setUp();
 
-		$user_id = self::factory()->user->create( [ 'role' => 'administrator' ] );
-		wp_set_current_user( $user_id );
+		// User 1 is the administrator created by `wp core install`.
+		wp_set_current_user( 1 );
 
 		$loader                   = \Burst\burst_loader();
 		$loader->has_admin_access = true;
@@ -36,7 +40,7 @@ class AvgMaxScrollMetricTest extends WP_UnitTestCase {
 	/**
 	 * The non-strict allowlist accepts the metric without any Pro filter.
 	 */
-	public function test_metric_is_allowed_without_pro_filters() {
+	public function test_metric_is_allowed_without_pro_filters(): void {
 		remove_all_filters( 'burst_allowed_metrics' );
 		$allowlist = new Statistics_Allowlist( false );
 		$this->assertContains( 'avg_max_scroll', $allowlist->metrics() );
@@ -46,7 +50,7 @@ class AvgMaxScrollMetricTest extends WP_UnitTestCase {
 	 * The core handler emits the AVG expression, so the sanitizer no longer
 	 * replaces the metric with 'pageviews'.
 	 */
-	public function test_select_sql_averages_max_scroll() {
+	public function test_select_sql_averages_max_scroll(): void {
 		$end = time();
 		$sql = Statistics_Query::create( 'reading_engagement' )
 			->date_range( $end - DAY_IN_SECONDS, $end )
