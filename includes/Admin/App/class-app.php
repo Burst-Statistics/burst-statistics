@@ -359,7 +359,7 @@ class App {
 		$version = $js_data['version'];
 		wp_enqueue_style(
 			'burst-tailwind',
-			plugins_url( '/src/tailwind.generated.css', __FILE__ ),
+			plugins_url( '/build/tailwind.generated.css', __FILE__ ),
 			[],
 			$version
 		);
