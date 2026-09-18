@@ -89,6 +89,7 @@ class Statistics_Allowlist {
 			'sessions'             => 'Sessions',
 			'visitors'             => 'Visitors',
 			'avg_time_on_page'     => 'Avg. time on page',
+			'avg_max_scroll'       => 'Avg. max scroll',
 			'avg_session_duration' => 'Avg. session duration',
 			'conversion_rate'      => 'Goal conv. rate',
 			'first_time_visitors'  => 'New visitors',

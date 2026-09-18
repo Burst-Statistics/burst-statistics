@@ -45,6 +45,7 @@ class Metric_Bootstrap {
 			new Metrics\Bounce_Rate_Metric(),
 			new Metrics\Sessions_Metric(),
 			new Metrics\Avg_Time_On_Page_Metric(),
+			new Metrics\Avg_Max_Scroll_Metric(),
 			new Metrics\Avg_Session_Duration_Metric(),
 			new Metrics\First_Time_Visitors_Metric(),
 			new Metrics\Visitors_Metric(),

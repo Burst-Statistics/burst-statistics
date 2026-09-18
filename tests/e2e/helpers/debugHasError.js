@@ -3,7 +3,11 @@ const {getDebugLog} = require("./getDebugLog");
 async function debugHasError() {
     const log = await getDebugLog();
 
-    const errorPattern = /(PHP\s+(Fatal|Parse|Warning|Notice|Error|Recoverable\s+fatal|Deprecated)|WordPress\s+database\s+error|QueryData\s+error)/i;
+    // PHP / WordPress errors, plus Burst's own error_log() lines that signal a
+    // bug rather than an informational message: a missing class (the autoloader
+    // could not resolve a reference), a table outside the allowlist, a metric
+    // the sanitizer rejected, or a Statistics_Query build error.
+    const errorPattern = /(PHP\s+(Fatal|Parse|Warning|Notice|Error|Recoverable\s+fatal|Deprecated)|WordPress\s+database\s+error|QueryData\s+error|Statistics_Query\s+error|Burst: Class .* not found|does not exist in predefined list|is not allowed\. Returning default)/i;
     const lines = log.split('\n');
 
     // Filter out excluded errors first.
