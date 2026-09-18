@@ -7,13 +7,18 @@ const { debugHasError } = require('../helpers/debugHasError');
 // query, which selects avg_max_scroll: the metric must be allowed and resolve
 // to SQL in free as well as in Pro, and the request must not leave errors in
 // debug.log.
+//
+// The CI site runs on plain permalinks, so the REST request is sent as
+// index.php?rest_route=%2Fburst%2Fv1%2Fdata%2Freading_engagement&...: apiFetch
+// percent-encodes the rest_route value. Match on the decoded URL so the check
+// works for pretty and plain permalinks alike.
+const isReadingEngagementResponse = (response) =>
+    decodeURIComponent(response.url()).includes('burst/v1/data/reading_engagement');
+
 test('admin can open the Engagement tab and the reading engagement block loads', async ({ page }) => {
     await login(page);
 
-    const engagementRequest = page.waitForResponse(
-        response => /data\/reading_engagement/.test(response.url()),
-        { timeout: 30000 }
-    );
+    const engagementRequest = page.waitForResponse(isReadingEngagementResponse, { timeout: 30000 });
     await page.goto('/wp-admin/admin.php?page=burst#/engagement', { waitUntil: 'domcontentloaded' });
     await dismissOnboarding(page);
 
