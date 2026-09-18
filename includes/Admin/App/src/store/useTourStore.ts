@@ -137,8 +137,11 @@ export const invalidateAllBurstQueries = () => {
 	}
 };
 
-const isUrlTourActive = 'undefined' !== typeof window ? new URLSearchParams( window.location.search ).has( 'tour' ) : false;
-const isInitialTourActive = Boolean( initialData.active || isUrlTourActive );
+// The tour cannot run inside the MainWP dashboard: its entry points are not
+// offered there and a stray ?tour parameter on the dashboard URL is ignored.
+const isTourSupported = true !== ( window as unknown as { burst_settings?: { is_mainwp?: boolean } })?.burst_settings?.is_mainwp;
+const isUrlTourActive = isTourSupported && 'undefined' !== typeof window && new URLSearchParams( window.location.search ).has( 'tour' );
+const isInitialTourActive = isTourSupported && Boolean( initialData.active || isUrlTourActive );
 
 const resolveLastSection = ( candidateA?: string | null, candidateB?: string | null ): string => {
 	if ( candidateA && 'overview' !== candidateA ) {
@@ -220,6 +223,9 @@ export const useTourStore = create<TourState>( ( set, get ) => ({
 	isResumeModalOpen: shouldShowResumeInitially,
 
 	startTour: async( tourId = 'dashboard', customSteps ) => {
+		if ( ! isTourSupported ) {
+			return;
+		}
 		const rawStoreSection = get().lastSectionId;
 		const rawLocalSection = getLocalStorage<string | null>( 'tour_last_section', null );
 		const effectiveLastSection = resolveLastSection(

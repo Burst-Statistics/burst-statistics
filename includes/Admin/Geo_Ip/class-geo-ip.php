@@ -446,6 +446,7 @@ class Geo_Ip {
 
 		$notices[] = [
 			'id'          => 'burst_geo_ip_import_error',
+			'mainwp'      => true,
 			'condition'   => [
 				'type'     => 'serverside',
 				'function' => 'wp_option_burst_geo_ip_import_error',

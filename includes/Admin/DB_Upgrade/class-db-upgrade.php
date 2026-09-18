@@ -257,6 +257,7 @@ class DB_Upgrade {
 			$progress   = round( $progress, 2 );
 			$warnings[] = [
 				'id'          => 'upgrade_progress',
+				'mainwp'      => true,
 				'condition'   => [
 					'type'     => 'serverside',
 					'function' => '!(new \Burst\Admin\DB_Upgrade\DB_Upgrade() )->progress_complete()',
@@ -277,6 +278,7 @@ class DB_Upgrade {
 		if ( ! empty( $stalled['slug'] ) ) {
 			$warnings[] = [
 				'id'          => 'upgrade_stalled',
+				'mainwp'      => true,
 				'condition'   => [
 					'type'     => 'serverside',
 					'function' => '!empty( (new \Burst\Admin\DB_Upgrade\DB_Upgrade() )->stalled_task() )',

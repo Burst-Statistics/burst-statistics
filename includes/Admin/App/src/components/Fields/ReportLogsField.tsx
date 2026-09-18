@@ -197,7 +197,7 @@ const ExpandedComponent = ({ data }: { data: ReportLogEntry }) => {
 									#{batch.batch_id}
 								</span>
 
-								<span className = "flex-1">
+								<span className = "flex-1 min-w-0 break-words">
 									{batch.message}
 								</span>
 

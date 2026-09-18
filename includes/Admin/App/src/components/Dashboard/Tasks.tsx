@@ -66,6 +66,7 @@ export type TaskProp = {
 	status?: string;
 	url?: string;
 	fix?: string;
+	mainwp: boolean;
 };
 
 /**

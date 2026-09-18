@@ -1266,7 +1266,7 @@ class Tour {
 			$this->get_settings_steps()
 		);
 
-		$is_pro         = defined( 'BURST_PRO_FILE' ) || defined( 'BURST_PRO_PATH' ) || class_exists( 'Burst\Pro\Burst_Pro' );
+		$is_pro         = $this->is_pro();
 		$filtered_steps = [];
 
 		foreach ( $steps as $step ) {
@@ -1564,6 +1564,7 @@ class Tour {
 	public function add_tour_task( array $tasks ): array {
 		$tasks[] = [
 			'id'                  => 'interactive_tour',
+			'mainwp'              => false,
 			'condition'           => [
 				'type'     => 'serverside',
 				'function' => 'Burst\Admin\Tour\Tour::should_show_tour_task()',
@@ -1616,6 +1617,11 @@ class Tour {
 	 * @return array<int, array<string, mixed>>
 	 */
 	public function add_settings_field( array $fields ): array {
+		// See add_tour_task(): no tour entry point inside the MainWP dashboard.
+		if ( $this->is_mainwp_request() ) {
+			return $fields;
+		}
+
 		$duration = self::get_estimated_duration_minutes( 'dashboard' );
 
 		$fields[] = [

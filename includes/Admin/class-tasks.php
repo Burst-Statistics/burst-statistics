@@ -198,6 +198,7 @@ class Tasks {
 	 *
 	 * @return array<int, array{
 	 *     id: string,
+	 *     mainwp: bool,
 	 *     url?: string,
 	 *     icon?: string,
 	 *     condition?: mixed
@@ -206,7 +207,7 @@ class Tasks {
 	public function get_raw_tasks(): array {
 		if ( empty( $this->tasks ) ) {
 			$tasks       = require BURST_PATH . 'includes/Admin/App/config/tasks.php';
-			$this->tasks = apply_filters( 'burst_tasks', $tasks );
+			$this->tasks = $this->require_mainwp_flag( apply_filters( 'burst_tasks', $tasks ) );
 		}
 
 		// convert URL to website URL.
@@ -235,6 +236,30 @@ class Tasks {
 		}
 
 		return $this->tasks;
+	}
+
+	/**
+	 * Every task must state whether it is relevant inside the MainWP dashboard
+	 * (`mainwp` => true|false): the MainWP app runs against this site and only
+	 * receives tasks flagged true. A task without the flag is a bug in its
+	 * definition; it is reported and hidden from MainWP.
+	 *
+	 * @param array<int, array<string, mixed>> $tasks Raw task definitions.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function require_mainwp_flag( array $tasks ): array {
+		foreach ( $tasks as $index => $task ) {
+			if ( isset( $task['mainwp'] ) && is_bool( $task['mainwp'] ) ) {
+				continue;
+			}
+			_doing_it_wrong(
+				__METHOD__,
+				sprintf( 'Task "%s" must declare mainwp => true|false.', esc_html( (string) ( $task['id'] ?? '' ) ) ),
+				'3.7.2'
+			);
+			$tasks[ $index ]['mainwp'] = false;
+		}
+		return $tasks;
 	}
 
 	/**
@@ -268,8 +293,15 @@ class Tasks {
 		}
 		// Filter out tasks that do not apply, or are dismissed.
 		$dismiss_non_error_tasks = $this->get_option_bool( 'dismiss_non_error_notices' );
+		$is_mainwp_request       = $this->is_mainwp_request();
 
 		foreach ( $tasks as $index => $task ) {
+			// the MainWP dashboard only receives tasks that make sense there.
+			if ( $is_mainwp_request && ! $task['mainwp'] ) {
+				unset( $tasks[ $index ] );
+				continue;
+			}
+
 			// set task status based on current icon.
 			$tasks[ $index ]['status'] = $task['icon'] !== 'success' ? 'open' : 'completed';
 

@@ -413,30 +413,6 @@ class App {
 	}
 
 	/**
-	 * Get available date ranges for the dashboard.
-	 *
-	 * @return string[] List of date range slugs.
-	 */
-	public function get_date_ranges(): array {
-		return apply_filters(
-			'burst_date_ranges',
-			[
-				'today',
-				'yesterday',
-				'last-7-days',
-				'last-30-days',
-				'last-90-days',
-				'last-month',
-				'last-year',
-				'week-to-date',
-				'month-to-date',
-				'year-to-date',
-				'all-time',
-			]
-		);
-	}
-
-	/**
 	 * Extend the localized settings for the dashboard.
 	 *
 	 * @param array<string, mixed> $data

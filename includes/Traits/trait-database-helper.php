@@ -1025,6 +1025,9 @@ trait Database_Helper {
 	protected function table_exists( string $table ): bool {
 		global $wpdb;
 		$table = $this->validate_table_name( $table );
+		if ( '' === $table ) {
+			return false;
+		}
 
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated against known whitelist above.
 		return (bool) $wpdb->query( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . $table ) );

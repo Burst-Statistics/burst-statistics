@@ -9,10 +9,16 @@ defined( 'ABSPATH' ) || die();
  *          'wp_option_{name}' checks if a wp option exists.
  * ]
  * status: open, completed, premium
+ * mainwp: required. true when the task is relevant inside the MainWP dashboard
+ *         (site health, settings the manager can change from there, statistics
+ *         insights), false when it assumes the site's own wp-admin (community,
+ *         feature announcements, pages the MainWP dashboard leaves out). Tasks
+ *         with false are not served to MainWP requests.
  */
 return [
 	[
 		'id'                  => 'bf_notice',
+		'mainwp'              => true,
 		'condition'           => [
 			'type'     => 'serverside',
 			'function' => 'Burst\Admin\Admin::is_bf()',
@@ -27,6 +33,7 @@ return [
 	],
 	[
 		'id'                  => 'cm_notice',
+		'mainwp'              => true,
 		'condition'           => [
 			'type'     => 'serverside',
 			'function' => 'Burst\Admin\Admin::is_cm()',
@@ -40,6 +47,7 @@ return [
 	],
 	[
 		'id'          => 'leave-feedback',
+		'mainwp'      => false,
 		'condition'   => [
 			'type' => 'activation',
 		],
@@ -55,6 +63,7 @@ return [
 	],
 	[
 		'id'          => 'join-discord',
+		'mainwp'      => false,
 		'condition'   => [
 			'type' => 'activation',
 		],
@@ -65,6 +74,7 @@ return [
 	],
 	[
 		'id'          => 'ecommerce_integration',
+		'mainwp'      => true,
 		'msg'         => __( 'New in Burst Pro: dedicated sales dashboard for WooCommerce and Easy Digital Downloads.', 'burst-statistics' ),
 		'icon'        => 'new',
 		'url'         => 'new-feature-woocommerce-insights/',
@@ -73,6 +83,7 @@ return [
 	],
 	[
 		'id'                  => 'search_console_integration',
+		'mainwp'              => false,
 		'condition'           => [
 			'type'     => 'serverside',
 			'function' => '!burst_option_enable_search_console',
@@ -87,6 +98,7 @@ return [
 	[
 		// no condition on this task, as when this issue happens, cron is not working to add the task.
 		'id'          => 'cron',
+		'mainwp'      => true,
 		'msg'         => __( 'Your WordPress cron hasn’t been triggered for over 24 hours. As a result, Burst can’t update first visit and bounce data until it runs again.', 'burst-statistics' ),
 		'icon'        => 'warning',
 		'url'         => 'instructions/cron-error/',
@@ -94,6 +106,7 @@ return [
 	],
 	[
 		'id'          => 'malicious_data_removal',
+		'mainwp'      => true,
 		'condition'   => [
 			'type'     => 'serverside',
 			'function' => 'wp_option_burst_cleanup_uid_visits',
@@ -107,6 +120,7 @@ return [
 	],
 	[
 		'id'          => 'php_error_detected',
+		'mainwp'      => true,
 		'condition'   => [
 			'type'     => 'serverside',
 			'function' => 'wp_option_burst_php_error_detected',
@@ -119,6 +133,7 @@ return [
 	],
 	[
 		'id'          => 'missing_tables',
+		'mainwp'      => true,
 		'condition'   => [
 			'type'     => 'serverside',
 			'function' => 'wp_option_burst_missing_tables',
@@ -130,6 +145,7 @@ return [
 	],
 	[
 		'id'          => 'pageviews_milestone',
+		'mainwp'      => true,
 		'condition'   => [
 			'type'     => 'serverside',
 			'function' => 'Burst\Admin\Milestones::pageviews_milestone_reached()',
@@ -145,6 +161,7 @@ return [
 	],
 	[
 		'id'          => 'live_visitors',
+		'mainwp'      => true,
 		'condition'   => [
 			'type' => 'clientside',
 		],
@@ -154,6 +171,7 @@ return [
 	],
 	[
 		'id'                  => 'multi_domain_setup_detected',
+		'mainwp'              => true,
 		'condition'           => [
 			'type'     => 'serverside',
 			'function' => 'wp_option_burst_is_multi_domain',
@@ -167,6 +185,7 @@ return [
 	],
 	[
 		'id'          => 'filters_in_url',
+		'mainwp'      => false,
 		'msg'         => __( 'New: save or share your filtered view by simply copying the URL or bookmarking it.', 'burst-statistics' ),
 		'icon'        => 'new',
 		'dismissible' => true,
@@ -174,6 +193,7 @@ return [
 	],
 	[
 		'id'          => 'external_links_tracking',
+		'mainwp'      => false,
 		'msg'         => __( 'New: external link click tracking is now enabled. You can manage this in Settings > Features.', 'burst-statistics' ),
 		'icon'        => 'new',
 		'dismissible' => true,
@@ -181,6 +201,7 @@ return [
 	],
 	[
 		'id'                  => 'enable_ai_chat',
+		'mainwp'              => true,
 		'condition'           => [
 			'type'     => 'serverside',
 			'function' => 'Burst\Admin\Abilities_Api\Abilities_Api::should_show_enable_notice()',
@@ -196,6 +217,7 @@ return [
 	],
 	[
 		'id'          => 'opt-in-sharing',
+		'mainwp'      => false,
 		'msg'         => __( 'Help us build better features, prioritize integrations, and improve recommendations by sharing anonymous usage data. We never collect personal information, your site URL, or IP addresses. Everything stays completely anonymous.', 'burst-statistics' ),
 		'icon'        => 'new',
 		'fix'         => 'burst_option_anonymous_usage_data',
@@ -204,6 +226,7 @@ return [
 	],
 	[
 		'id'          => 'turbo_mode_recommended',
+		'mainwp'      => true,
 		'msg'         => __( 'You have cookieless tracking enabled, but Turbo mode is not enabled on your site. For best performance results, we recommend to enable Turbo mode.', 'burst-statistics' ),
 		'icon'        => 'warning',
 		'dismissible' => true,
@@ -213,6 +236,7 @@ return [
 	],
 	[
 		'id'                  => 'mainwp_integration_disabled',
+		'mainwp'              => false,
 		'condition'           => [
 			'type'     => 'serverside',
 			'function' => [
@@ -230,6 +254,7 @@ return [
 	],
 	[
 		'id'                  => 'persistent_object_cache_recommended',
+		'mainwp'              => true,
 		'condition'           => [
 			'type'     => 'serverside',
 			'function' => 'Burst\Admin\Statistics\Statistics::should_recommend_object_cache()',
@@ -242,6 +267,7 @@ return [
 	],
 	[
 		'id'                  => 'wp_consent_api_notice',
+		'mainwp'              => true,
 		'condition'           => [
 			'type'     => 'serverside',
 			'function' => 'Burst\Admin\Tasks::consent_banner_active()',
@@ -255,6 +281,7 @@ return [
 	],
 	[
 		'id'                  => 'import_statistics_data',
+		'mainwp'              => false,
 		// Shown while a known statistics tool is in use and no import has
 		// completed; evaluated on cron only, the tool name below is a stored
 		// result. Permanent: a completed import, a tool that is gone or a user
