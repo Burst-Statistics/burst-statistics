@@ -76,10 +76,10 @@ spl_autoload_register(
 			}
 		}
 
-		// temporary fallback during upgrade.
-		$file = $plugin_path . "src/{$dir}class-" . str_replace( '_', '-', strtolower( $class_name ) ) . '.php';
-		if ( file_exists( $file ) ) {
-			require_once $file;
+		// Shared code may probe Pro classes with class_exists(); on the free
+		// plugin the Pro/ directory does not exist, so that miss is expected
+		// and must not be logged.
+		if ( ! defined( 'BURST_PRO' ) && strpos( $burst_class, 'Burst\\Pro\\' ) === 0 ) {
 			return;
 		}
 

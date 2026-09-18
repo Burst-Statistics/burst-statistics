@@ -1266,7 +1266,7 @@ class Tour {
 			$this->get_settings_steps()
 		);
 
-		$is_pro         = defined( 'BURST_PRO_FILE' ) || defined( 'BURST_PRO_PATH' ) || class_exists( 'Burst\Pro\Burst_Pro' );
+		$is_pro         = $this->is_pro();
 		$filtered_steps = [];
 
 		foreach ( $steps as $step ) {

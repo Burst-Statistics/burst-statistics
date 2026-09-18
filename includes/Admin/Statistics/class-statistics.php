@@ -262,12 +262,9 @@ class Statistics extends Statistics_Data {
 				)
 			);
 		}
-
-		if ( $this->table_exists( 'burst_parameters' ) ) {
-			$wpdb->query(
-				"DELETE FROM {$wpdb->prefix}burst_parameters WHERE parameter LIKE '%burst_test_hit%' OR parameter LIKE '%burst_nextpage%'"
-			);
-		}
+		// The Pro-only burst_parameters rows of the test hit are removed by
+		// Pro\Admin\Statistics\Statistics::clear_test_visit_parameters(),
+		// hooked on the same burst_clear_test_visit action.
 	}
 
 	/**

@@ -13,7 +13,8 @@ module.exports = {
   output: {
     ...defaultConfig.output,
     filename: '[name].[contenthash].js',
-    chunkFilename: '[name].[contenthash].js'
+    chunkFilename: '[name].[contenthash].js',
+    clean: { keep: /^(fonts|images)\/|^tailwind\.generated\.css(\.map)?$/ }, // keep wp-scripts' fonts/images rule, plus the postcss output that lives next to the JS bundle
   },
   resolve: {
     ...defaultConfig.resolve,
