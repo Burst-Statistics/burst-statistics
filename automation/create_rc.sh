@@ -34,23 +34,23 @@ echo "remove obsolete directories from pre 2.0 versions"
 cd "$PLUGIN_DIR" || { echo "Failed to change directory"; exit 1; }
 rm -rf "settings"
 rm -rf "dashboard-widget"
-echo "Remove existing build directory"
-cd "$PLUGIN_DIR/includes/Admin/App" || { echo "Failed to change directory"; exit 1; }
-rm -rf "build"
-echo "Run react build for App"
-npm install --force
-npm run build
-npm run build:css
-chown -R $(whoami):staff build/
-chmod -R u+rwX,go+rX build/
-
-cd "$PLUGIN_DIR/includes/Admin/Dashboard_Widget" || { echo "Failed to change directory"; exit 1; }
-rm -rf "build";
-echo "Run react build for the dashboard widget"
-npm install --force
-npm run build
-chown -R $(whoami):staff build/
-chmod -R u+rwX,go+rX build/
+# The React builds are not compiled here. burst-pro/automation/sync_to_burst_statistics.sh
+# copies the finished includes/Admin/App/build (JS bundle + tailwind.generated.css) and
+# includes/Admin/Dashboard_Widget/build from Burst Pro; the free build is byte-identical.
+# Only verify that the synced builds are present so we never zip a plugin without them.
+echo "Verify synced React builds are present"
+for build_file in \
+  "$PLUGIN_DIR/includes/Admin/App/build/tailwind.generated.css" \
+  "$PLUGIN_DIR/includes/Admin/Dashboard_Widget/build/index.asset.php"; do
+  if [ ! -f "$build_file" ]; then
+    echo "❌ Missing $build_file. Run burst-pro/automation/sync_to_burst_statistics.sh first."
+    exit 1
+  fi
+done
+if ! ls "$PLUGIN_DIR/includes/Admin/App/build"/index.*.js >/dev/null 2>&1; then
+  echo "❌ Missing includes/Admin/App/build/index.*.js. Run burst-pro/automation/sync_to_burst_statistics.sh first."
+  exit 1
+fi
 
 
 # Define function to create RC
@@ -133,7 +133,7 @@ create_rc_zip() {
     "--exclude=/includes/Admin/App/node_modules/"
     "--exclude=/includes/Admin/App/.tanstack"
     "--exclude=/includes/Admin/App/.prettierrc.js"
-    "--exclude=/includes/Admin/App/src/.babelrc.js"
+    "--exclude=/includes/Admin/App/src/" # React/TS sources stay on GitHub (linked in readme.txt); the zip ships build/ only.
     "--exclude=/includes/Admin/Dashboard_Widget/node_modules/"
     "--exclude=/includes/TeamUpdraft/SharedComponents/node_modules/"
     "--exclude=/includes/TeamUpdraft/Onboarding/node_modules/"

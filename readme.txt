@@ -216,6 +216,10 @@ This is the only case in which Burst sends data to us, and it is strictly opt-in
 
 Country-level geographic data is provided by the MaxMind GeoLite2 database. This product includes GeoLite2 Data created by MaxMind, available from https://www.maxmind.com/.
 
+= Source code =
+
+The plugin ships the compiled analytics dashboard in `includes/Admin/App/build/`. The human-readable React/TypeScript source (`includes/Admin/App/src/`) and the build tooling are published on [GitHub](https://github.com/Burst-Statistics/burst-statistics). Issues and pull requests are welcome there.
+
 == Frequently Asked Questions ==
  
 = Is Burst Statistics really free? =
