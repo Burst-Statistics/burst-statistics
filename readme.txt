@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.1
-Stable tag: 3.7.1
+Stable tag: 3.7.2
 
 Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner needed.
  
@@ -296,6 +296,19 @@ We value your feedback. You can [submit a support request on the WordPress forum
  
 
 == Change log ==
+= 3.7.2 =
+* September 29th 2026
+* New: an AI summary block for email reports, which sums up the report period in a few sentences. The block is available when the AI assistant is enabled.
+* New: the 404 pages block shows which pages link to a missing page, split into internal and external referrers, with a link to edit the internal page that holds the broken link.
+* Improvement: informative dashboard tasks are shown one at a time, and after you dismiss one the next appears three days later. Warnings and errors are always shown.
+* Improvement: the interactive tour fills the dashboard with sample data while it runs, instead of installing demo data in the database.
+* Improvement: the page picker for goals loads faster on sites with a lot of statistics, and lists pages of every post type.
+* Improvement: every dashboard task declares whether it applies inside the MainWP dashboard; tasks that assume the site's own wp-admin are no longer served to MainWP.
+* Fix: the MainWP dashboard offered every date range preset except "All time"; the presets are now localized from one list for the WP admin and the MainWP dashboard.
+* Fix: the interactive tour is no longer offered inside the MainWP dashboard (task and settings button), where it cannot run.
+* Fix: long messages in the report log batch details wrapped outside their row.
+* Hardening: a user with share link access could extend access to the statistics after the share link expired by changing the password, props Chloe Chamberland / Wordfence.
+
 = 3.7.1 =
 * September 17th 2026
 * New: CartFlows integration, checkout steps count as checkout visits in the Live traffic block.
