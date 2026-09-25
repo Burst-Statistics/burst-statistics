@@ -5,7 +5,8 @@ import {
 	WizardState,
 	DayOfWeekType,
 	FrequencyType,
-	WeekOfMonthType, ContentBlock, ContentBlockId
+	WeekOfMonthType, ContentBlock, ContentBlockId,
+	DeliveryChannelType
 } from './types';
 import type { FilterSearchParams } from '@/config/filterConfig';
 import { availableRanges } from '@/utils/formatting';
@@ -35,6 +36,7 @@ interface WizardStore {
 	setReportName: ( name: string ) => void;
 	setFormat: ( format: string ) => void;
 	setRecipients: ( recipients: string[]) => void;
+	setChannels: ( channels: DeliveryChannelType ) => void;
 	setScheduled: ( schedule: boolean ) => void;
 	setEnabled: ( enabled: boolean ) => void;
 	setFrequency: ( frequency: FrequencyType ) => void;
@@ -87,6 +89,22 @@ const createDefaultBlocks = ( ids: ContentBlockId[]): ContentBlock[] => {
 const DEFAULT_CLASSIC_BLOCKS = createDefaultBlocks( DEFAULT_CLASSIC_IDS );
 const DEFAULT_STORY_BLOCKS = createDefaultBlocks( DEFAULT_STORY_IDS );
 
+// fallow-ignore-next-line complexity
+const getDefaultReportChannels = (): DeliveryChannelType => {
+	if ( 'undefined' !== typeof window ) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const burstSettings = ( window as any ).burst_settings;
+		const field = burstSettings?.fields?.find(
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			( f: any ) => 'default_report_channels' === f.id
+		);
+		if ( 'both' === field?.value || 'email' === field?.value ) {
+			return field.value;
+		}
+	}
+	return 'email';
+};
+
 /**
  * Initial wizard state.
  * Use a shallow clone of defaultContent so we don't share references.
@@ -98,13 +116,15 @@ const INITIAL_WIZARD_STATE: WizardState = {
 	format: 'classic',
 	content: DEFAULT_CLASSIC_BLOCKS,
 	recipients: [],
+	channels: getDefaultReportChannels(),
 	scheduled: true,
 	enabled: false,
 	frequency: 'weekly',
 	dayOfWeek: 'monday',
 	sendTime: '09:00',
 	fixedEndDate: '',
-	reportDateRange: 'last-7-days'
+	reportDateRange: 'last-7-days',
+	ai_summary: ''
 };
 
 
@@ -404,14 +424,24 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 	setReportName: ( name: string ) =>
 		set( ( state ) => ({ wizard: { ...state.wizard, name: name } }) ),
 	setFormat: ( format: string ) =>
+
+		// fallow-ignore-next-line complexity
 		set( ( state ) => {
 			const newFormat = format as WizardState['format'];
 
 			if ( state.wizard.format !== newFormat ) {
+				const nextChannels =
+					'story' === newFormat && 'email' === state.wizard.channels && 'both' === getDefaultReportChannels() ?
+						'both' :
+						'story' !== newFormat && 'email' !== state.wizard.channels ?
+							'email' :
+							state.wizard.channels;
+
 				return {
 					wizard: {
 						...state.wizard,
 						format: newFormat,
+						channels: nextChannels,
 						content: [ ...DEFAULT_CONTENT[ newFormat ] ] as ContentBlock[]
 					}
 				};
@@ -422,6 +452,9 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 
 	setRecipients: ( recipients: string[]) =>
 		set( ( state ) => ({ wizard: { ...state.wizard, recipients } }) ),
+
+	setChannels: ( channels: DeliveryChannelType ) =>
+		set( ( state ) => ({ wizard: { ...state.wizard, channels } }) ),
 
 	setScheduled: ( scheduled: boolean ) =>
 		set( ( state ) => ({ wizard: { ...state.wizard, scheduled } }) ),
@@ -760,7 +793,8 @@ export const useWizardStore = create<WizardStore>( ( set, get ) => ({
 	resetWizard: () =>
 		set({
 			wizard: {
-				...INITIAL_WIZARD_STATE
+				...INITIAL_WIZARD_STATE,
+				channels: getDefaultReportChannels()
 			},
 			selectedBlockIndex: null
 		})

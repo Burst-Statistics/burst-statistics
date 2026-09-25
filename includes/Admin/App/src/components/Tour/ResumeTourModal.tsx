@@ -29,7 +29,7 @@ const ResumeTourModal: React.FC<ResumeTourModalProps> = ({
 			</div>
 			<div>
 				<h3 className="text-lg font-bold leading-snug text-slate-900 dark:text-slate-100">
-					{ __( 'Welcome back to the tour! 👋', 'burst-statistics' ) }
+					{ __( 'Welcome back to the tour!', 'burst-statistics' ) }
 				</h3>
 				<span className="text-xs font-semibold text-primary">
 					{ sprintf(
@@ -87,7 +87,7 @@ const ResumeTourModal: React.FC<ResumeTourModalProps> = ({
 				onClick={ onSelectRestart }
 				className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 px-4 text-sm font-semibold transition-all cursor-pointer border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
 			>
-				<span>{ __( 'Start over from beginning 🔄', 'burst-statistics' ) }</span>
+				<span>{ __( 'Start over from beginning', 'burst-statistics' ) }</span>
 			</button>
 		</div>
 	);

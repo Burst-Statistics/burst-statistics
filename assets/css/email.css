@@ -112,6 +112,19 @@ h3 {
 		background-color: #505050 !important;
 	}
 
+	.email-ai-summary {
+		background-color: #2d2d2d !important;
+		border-color: #404040 !important;
+	}
+
+	.email-ai-summary-label {
+		color: #a0a0a0 !important;
+	}
+
+	.email-ai-summary-content {
+		color: #e0e0e0 !important;
+	}
+
 	.email-logo-light {
 		display: none !important;
 	}
@@ -164,6 +177,19 @@ body.burst-dark-mode .email-link {
 
 body.burst-dark-mode .email-divider {
 	background-color: #505050 !important;
+}
+
+body.burst-dark-mode .email-ai-summary {
+	background-color: #2d2d2d !important;
+	border-color: #404040 !important;
+}
+
+body.burst-dark-mode .email-ai-summary-label {
+	color: #a0a0a0 !important;
+}
+
+body.burst-dark-mode .email-ai-summary-content {
+	color: #e0e0e0 !important;
 }
 
 body.burst-dark-mode .email-logo-light {

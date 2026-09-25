@@ -29,10 +29,11 @@ import { ReportLogsField } from '@/components/Fields/ReportLogsField';
 import GoogleSearchConsoleField from './GoogleSearchConsoleField';
 import IntegrationRowField from './IntegrationRowField';
 import IntegrationsIntroField from './IntegrationsIntroField';
+import SlackWebhookField from './SlackWebhookField';
 import ImportDataField from './ImportDataField';
 import ExportDataField from './ExportDataField';
 
-const fieldComponents = {
+export const fieldComponents = {
 	text: TextField,
 	number: NumberField,
 	api: HiddenField,
@@ -61,7 +62,8 @@ const fieldComponents = {
 	css: CssField,
 	gsc_connect: GoogleSearchConsoleField,
 	integration_row: IntegrationRowField,
-	integrations_intro: IntegrationsIntroField
+	integrations_intro: IntegrationsIntroField,
+	slack_webhook: SlackWebhookField
 };
 
 // fallow-ignore-next-line complexity
@@ -80,11 +82,9 @@ const Field = memo( ({ setting, control, ...props }) => {
 	const FieldComponent = fieldComponents[setting.type];
 
 	if ( ! FieldComponent ) {
-		return (
-			<div className="w-full">
-				Unknown field type: {setting.type} {setting.id}
-			</div>
-		);
+		// eslint-disable-next-line no-console
+		console.log( `[Burst] Unknown field type "${ setting.type }" for field "${ setting.id }". The field will not be rendered.` );
+		return null;
 	}
 
 	// Custom validation for IP blocklist field

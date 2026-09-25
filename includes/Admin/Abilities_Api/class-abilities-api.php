@@ -2208,14 +2208,12 @@ class Abilities_Api {
 	 * @throws \RuntimeException When the AI client prompt builder is unavailable.
 	 */
 	private function build_chat_prompt_builder( array $messages, string $system_prompt, bool $with_abilities = true, string $preferred_model = '' ): object {
-		if ( function_exists( 'WordPress\\AI\\get_ai_service' ) ) {
+		if ( function_exists( 'wp_ai_client_prompt' ) ) {
+			$builder = wp_ai_client_prompt();
+		} elseif ( function_exists( 'WordPress\\AI\\get_ai_service' ) ) {
 			$builder = \WordPress\AI\get_ai_service()->create_textgen_prompt();
 		} else {
-			if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
-				throw new \RuntimeException( 'wp_ai_client_prompt is unavailable.' );
-			}
-
-			$builder = wp_ai_client_prompt();
+			throw new \RuntimeException( 'wp_ai_client_prompt is unavailable.' );
 		}
 
 		$builder = $builder
@@ -2511,8 +2509,8 @@ class Abilities_Api {
 		$abilities_enabled = self::is_enabled();
 		$ai_plugin_active  = $this->is_wp_ai_plugin_active();
 		$ai_client_loaded  = $ai_plugin_active && (
-			function_exists( 'WordPress\\AI\\get_ai_service' )
-			|| function_exists( 'wp_ai_client_prompt' )
+			function_exists( 'wp_ai_client_prompt' )
+			|| function_exists( 'WordPress\\AI\\get_ai_service' )
 			|| class_exists( '\\WordPress\\AiClient\\AiClient' )
 		);
 

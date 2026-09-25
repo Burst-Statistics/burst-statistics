@@ -1,6 +1,7 @@
 <?php
 namespace Burst\Admin\Burst_Onboarding;
 
+use Burst\Admin\Tour\Tour;
 use Burst\Frontend\Ip\Ip;
 use Burst\Pro\Admin\Licensing\Licensing;
 use Burst\TeamUpdraft\Onboarding\Onboarding;
@@ -61,6 +62,11 @@ class Burst_Onboarding {
 	public function setup_onboarding(): void {
 		// only run this if the page is burst, or a Burst rest request.
 		if ( ! $this->is_burst_page() ) {
+			return;
+		}
+
+		// Bypass onboarding when the tour is requested, so the wizard never overlays the tour.
+		if ( Tour::is_tour_requested() ) {
 			return;
 		}
 

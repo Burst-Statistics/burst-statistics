@@ -1,6 +1,8 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import Icon from '../../utils/Icon';
-import React from 'react';
+import getPortalContainer from '@/utils/getPortalContainer';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { ThemeContext } from '@/hooks/useTheme';
 
 interface ModalProps {
 	title?: string;
@@ -32,7 +34,21 @@ const Modal: React.FC<ModalProps> = ({
 	onPointerDownOutside,
 	onInteractOutside
 }) => {
-	const isDismissingPopperRef = React.useRef( false );
+	const isDismissingPopperRef = useRef( false );
+	const themeContext = useContext( ThemeContext );
+	const [ domIsDark, setDomIsDark ] = useState( false );
+
+	useEffect( () => {
+		if ( ! isOpen || 'undefined' === typeof document ) {
+			return;
+		}
+		const mainApp = document.querySelector( '#burst-statistics.dark, #burst-mainwp.dark, .burst.dark' ) ||
+			document.body.classList.contains( 'dashboard-default-dark-theme' ) ||
+			document.body.classList.contains( 'mainwp-default-dark-theme' );
+		setDomIsDark( Boolean( mainApp ) );
+	}, [ isOpen ]);
+
+	const isDark = themeContext ? themeContext.isDarkTheme : domIsDark;
 
 	React.useEffect( () => {
 		if ( ! isOpen ) {
@@ -72,13 +88,7 @@ const Modal: React.FC<ModalProps> = ({
 				</Dialog.Trigger>
 			)}
 			<Dialog.Portal
-				container={
-					document.getElementById( 'modal-root' ) ||
-					document.getElementById( 'burst-statistics' ) ||
-					document.getElementById( 'burst-mainwp' ) ||
-					document.querySelector( '.burst' ) ||
-					undefined
-				}
+				container={getPortalContainer()}
 			>
 				<Dialog.Overlay className="bg-black/50 fixed inset-0 z-modal" />
 				<Dialog.Content
@@ -97,7 +107,7 @@ const Modal: React.FC<ModalProps> = ({
 						}
 						onInteractOutside?.( e );
 					}}
-					className={`burst fixed top-[calc(var(--wp-admin--admin-bar--height,0px)+12px)] left-1/2 -translate-x-1/2 w-[calc(100%-20px)] max-h-[90vh] m-0 px-4 py-3 rounded-md z-modal bg-gray-100 shadow-md focus:outline-hidden data-[state=open]:animate-contentShow flex flex-col overflow-x-visible ${contentSizeClasses}`}
+					className={`burst ${isDark ? 'dark' : ''} fixed top-[calc(var(--wp-admin--admin-bar--height,0px)+12px)] left-1/2 -translate-x-1/2 w-[calc(100%-20px)] max-h-[90vh] m-0 px-4 py-3 rounded-md z-modal bg-gray-100 shadow-md focus:outline-hidden data-[state=open]:animate-contentShow flex flex-col overflow-x-visible ${contentSizeClasses}`}
 				>
 					<div className="flex flex-row justify-between items-center shrink-0">
 						{customHeader ? (
@@ -109,7 +119,7 @@ const Modal: React.FC<ModalProps> = ({
 										data-tour="chat-modal-close"
 										aria-label="Close"
 										onClick={onClose}
-										className="bg-gray-200 rounded-full p-2 w-8 h-8 cursor-pointer hover:bg-gray-300 transition-colors duration-150 ml-4"
+										className="bg-gray-200 rounded-full p-2 w-8 h-8 cursor-pointer hover:bg-gray-300 transition-colors duration-150 ml-4 flex items-center justify-center"
 									>
 										<Icon
 											name={'times'}
@@ -136,7 +146,7 @@ const Modal: React.FC<ModalProps> = ({
 										data-tour="chat-modal-close"
 										aria-label="Close"
 										onClick={onClose}
-										className="bg-gray-200 rounded-full p-2 w-8 h-8 cursor-pointer hover:bg-gray-300 transition-colors duration-150"
+										className="bg-gray-200 rounded-full p-2 w-8 h-8 cursor-pointer hover:bg-gray-300 transition-colors duration-150 flex items-center justify-center"
 									>
 										<Icon
 											name={'times'}

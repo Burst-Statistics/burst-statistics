@@ -106,6 +106,10 @@ const TaskStatusIcon = ( props ) => {
 			icon: 'error-octagon',
 			color: 'red'
 		},
+		important: {
+			icon: 'alert',
+			color: 'red'
+		},
 		sale: {
 			icon: 'percent',
 			color: 'green'

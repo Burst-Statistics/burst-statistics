@@ -96,7 +96,7 @@ const LimitedDataBadge = ({ count, minReliable }: { count: number; minReliable: 
 			{ sprintf(
 
 				/* translators: 1: current count, 2: min reliable threshold */
-				__( 'Limited data — %1$d sessions tracked (need %2$d+ for reliable insights)', 'burst-statistics' ),
+				__( 'Limited data: %1$d sessions tracked (need %2$d+ for reliable insights)', 'burst-statistics' ),
 				count,
 				minReliable
 			) }

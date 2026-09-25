@@ -181,6 +181,10 @@ export const useReportsStore = create<ReportsStore>( ( set, get ) => ({
 				changes.recipients = [ ...w.recipients ];
 			}
 
+			if ( oldData.channels !== w.channels ) {
+				changes.channels = w.channels;
+			}
+
 			const targetEnabled = undefined !== options?.enabled ? options.enabled : w.enabled;
 			if ( undefined !== targetEnabled && oldData.enabled !== targetEnabled ) {
 				changes.enabled = targetEnabled;
@@ -201,6 +205,7 @@ export const useReportsStore = create<ReportsStore>( ( set, get ) => ({
 			enabled: options?.enabled ?? w.enabled ?? false,
 			content: [ ...w.content ],
 			recipients: [ ...w.recipients ],
+			channels: w.channels || 'email',
 			scheduled: w.scheduled,
 			frequency: w.frequency,
 			dayOfWeek: w.dayOfWeek,
@@ -226,13 +231,15 @@ export const useReportsStore = create<ReportsStore>( ( set, get ) => ({
 				format: report.format,
 				content: report.content,
 				recipients: [ ...report.recipients ],
+				channels: report.channels || 'email',
 				scheduled: report.scheduled,
 				enabled: report.enabled,
 				frequency: report.frequency,
 				dayOfWeek: report.dayOfWeek,
 				weekOfMonth: report.weekOfMonth,
 				sendTime: report.sendTime,
-				fixedEndDate: report.fixedEndDate || ''
+				fixedEndDate: report.fixedEndDate || '',
+				ai_summary: report.ai_summary || ''
 			},
 			isOpen: openWizard
 		});

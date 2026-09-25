@@ -55,14 +55,25 @@ export const useContentSelectionFormSync = ( content: ContentBlock[]) => {
 type SelectableContentBlock = {
 	ecommerce?: boolean;
 	component?: unknown;
+	formats?: ( 'classic' | 'story' )[];
 };
 
 export const getSelectableContentBlocks = <T extends SelectableContentBlock>(
 	availableContent: T[],
 	shouldLoadEcommerce: boolean,
-	matchComponent: boolean
+	formatOrMatchComponent: 'classic' | 'story' | boolean
 ) => {
+	const format: 'classic' | 'story' =
+		'boolean' === typeof formatOrMatchComponent ?
+			( formatOrMatchComponent ? 'story' : 'classic' ) :
+			formatOrMatchComponent;
+
 	return availableContent
 		.filter( ( block ) => ! block.ecommerce || shouldLoadEcommerce )
-		.filter( ( block ) => !! block.component === matchComponent );
+		.filter( ( block ) => {
+			if ( block.formats ) {
+				return block.formats.includes( format );
+			}
+			return 'story' === format ? !! block.component : ! block.component;
+		});
 };

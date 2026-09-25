@@ -56,6 +56,7 @@ class Debug {
 		}
 		$settings = $this->format_array_as_string( $settings );
 		unset( $settings['license'] );
+		unset( $settings['slack_webhook_url'] );
 
 		// WordPress burst options. Get all options that start with 'burst_'.
 		$wp_options = $wpdb->get_results( $wpdb->prepare( "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'burst_' ) . '%' ), ARRAY_A );
@@ -64,6 +65,7 @@ class Debug {
 		// Share-link tokens are stored in plaintext and grant statistics access
 		// to anyone holding them; a pasted Site Health export must not leak them.
 		unset( $wp_options['burst_share_tokens'] );
+		unset( $wp_options['burst_slack_webhook_url'] );
 		$wp_options = $this->format_array_as_string( $wp_options );
 		unset( $wp_options['burst_options_settings'] );
 
@@ -387,13 +389,18 @@ class Debug {
 			return [ __( 'Status', 'burst-statistics' ) => __( 'Disabled with the burst_geo_ip_enabled filter', 'burst-statistics' ) ];
 		}
 
-		$file = (string) get_option( 'burst_geo_ip_file' );
+		$file   = (string) get_option( 'burst_geo_ip_file' );
+		$folder = (string) get_option( 'burst_maxmind_dir', '' );
+
 		if ( '' === $file ) {
 			$info = [ __( 'File', 'burst-statistics' ) => __( 'No Geo IP file set', 'burst-statistics' ) ];
 		} else {
-			$exists = file_exists( $file );
-			$info   = [
-				__( 'File', 'burst-statistics' )        => $file,
+			$exists      = file_exists( $file );
+			$masked_file = '' !== $folder
+				? str_replace( [ '/' . $folder . '/', '\\' . $folder . '\\' ], [ '/****/', '\\****\\' ], $file )
+				: (string) preg_replace( '#[\\\\/]burst[\\\\/][a-f0-9]{32}[\\\\/]#', '/burst/****/', $file );
+			$info        = [
+				__( 'File', 'burst-statistics' )        => $masked_file,
 				__( 'File exists', 'burst-statistics' ) => $exists ? 'true' : 'false',
 				__( 'File size', 'burst-statistics' )   => $exists ? size_format( (int) filesize( $file ) ) : '-',
 			];
@@ -401,6 +408,9 @@ class Debug {
 
 		$last_update  = (int) get_option( 'burst_last_update_geo_ip' );
 		$import_error = (string) get_option( 'burst_geo_ip_import_error' );
+		if ( '' !== $import_error && '' !== $folder ) {
+			$import_error = str_replace( [ '/' . $folder . '/', '\\' . $folder . '\\', $folder ], [ '/****/', '\\****\\', '****' ], $import_error );
+		}
 
 		$info[ __( 'Last update', 'burst-statistics' ) ]      = $last_update > 0 ? wp_date( DATE_ATOM, $last_update ) : __( 'Never', 'burst-statistics' );
 		$info[ __( 'Import error', 'burst-statistics' ) ]     = '' !== $import_error ? $import_error : __( 'None', 'burst-statistics' );

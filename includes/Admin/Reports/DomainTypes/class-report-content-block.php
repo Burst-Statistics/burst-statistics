@@ -108,6 +108,11 @@ final class Report_Content_Block {
 	public const FOOTER = 'footer';
 
 	/**
+	 * AI Summary content block.
+	 */
+	public const AI_SUMMARY = 'ai_summary';
+
+	/**
 	 * Default Report Content blocks.
 	 */
 	public const DEFAULT = [ self::COMPARE, self::MOST_VISITED_PAGES, self::TOP_REFERRERS ];
@@ -118,6 +123,7 @@ final class Report_Content_Block {
 	private const ALL = [
 		self::LOGO,
 		self::HERO,
+		self::AI_SUMMARY,
 		self::COMPARE,
 		self::MOST_VISITED_PAGES,
 		self::TOP_REFERRERS,

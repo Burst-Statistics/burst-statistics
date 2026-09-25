@@ -54,26 +54,6 @@ class Share {
 	}
 
 	/**
-	 * Disable Application Passwords for the burst_viewer role.
-	 *
-	 * Share-link recipients are temporarily authenticated as the burst_statistics_viewer
-	 * user. Without this filter, a recipient could call the WP core endpoint
-	 * POST /wp-json/wp/v2/users/me/application-passwords using the cookie + nonce from
-	 * the shared dashboard page and create a credential that survives share-token
-	 * revocation or expiry, providing persistent Basic-Auth access to the same data
-	 * the share originally exposed.
-	 *
-	 * @param bool     $available Whether Application Passwords are available for the user.
-	 * @param \WP_User $user      The user being checked.
-	 */
-	public function disable_app_passwords_for_viewer( bool $available, \WP_User $user ): bool {
-		if ( in_array( 'burst_viewer', $user->roles, true ) ) {
-			return false;
-		}
-		return $available;
-	}
-
-	/**
 	 * Sanitize a single tab value against the whitelist of allowed shareable tabs.
 	 * Returns an empty string when the tab is not allowed.
 	 *

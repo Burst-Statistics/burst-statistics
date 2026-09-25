@@ -19,9 +19,9 @@ import { getSourceCategoryMeta } from '@/api/getDataTableData';
 const SOURCE_KEYS = [ 'search', 'social', 'referral', 'aiReferral', 'paid', 'email', 'direct' ];
 
 const SOURCE_DESCRIPTIONS = {
-	search: __( 'Visitors who found you through a search engine like Google, Bing or DuckDuckGo. No ad spend involved, just organic results.', 'burst-statistics' ),
+	search: __( 'Visitors who found you through a search engine like Google, Bing or DuckDuckGo. No ad spend involved, only organic results.', 'burst-statistics' ),
 	social: __( 'Traffic from social networks like Facebook, Instagram, LinkedIn or Reddit, either from posts, profiles or link shorteners like t.co.', 'burst-statistics' ),
-	referral: __( 'Someone clicked a link to your site from another website. Not a search engine, not social, just a regular link somewhere on the web.', 'burst-statistics' ),
+	referral: __( 'Someone clicked a link to your site from another website. Not a search engine, not social, only a regular link somewhere on the web.', 'burst-statistics' ),
 	aiReferral: __( 'Visitors who clicked a link in an AI tool like ChatGPT, Perplexity or Claude. A new channel worth watching as AI-generated answers increasingly link to sources.', 'burst-statistics' ),
 	paid: __( 'Traffic from ads. Detected via click IDs like gclid (Google Ads) or msclkid (Bing Ads), or a UTM medium tagged as cpc, ppc or paid.', 'burst-statistics' ),
 	email: __( 'Visitors from an email campaign or newsletter. Relies mostly on UTM parameters since most email clients strip the referrer before the visit reaches your site.', 'burst-statistics' ),

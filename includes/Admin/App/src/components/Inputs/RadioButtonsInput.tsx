@@ -11,7 +11,7 @@ export interface RadioOption {
 	icon?: string;
 	description?: string;
 	disabled?: boolean;
-	pro?: boolean;
+	pro?: boolean | { url?: string; disabled?: boolean; [key: string]: unknown };
 }
 
 interface RadioButtonsInputProps {
@@ -61,7 +61,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 		},
 		ref
 	) => {
-		const { isTrial } = useLicenseData();
+		const { isTrial, isLicenseValid } = useLicenseData();
 
 		// Construct the radio group name using goalId if provided.
 		const name = goalId ? `${goalId}-${inputId}` : inputId;
@@ -96,9 +96,10 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 					const option = options[key];
 					const optionId = `${name}-${option.type}`;
 					const isSelected = option.type === value;
+					const isOptionDisabled = Boolean( disabled || option.disabled || ( option.pro && ! isLicenseValid ) );
 					return (
 						<div
-							className="w-full bg-gray-200 rounded-lg"
+							className="w-full h-full flex"
 							key={optionId}
 						>
 							<input
@@ -107,7 +108,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 								name={name}
 								id={optionId}
 								value={option.type}
-								disabled={disabled || option.disabled}
+								disabled={isOptionDisabled}
 								onChange={( e ) => {
 									onChange( e.target.value );
 								}}
@@ -117,73 +118,71 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 								htmlFor={optionId}
 								data-tour={`wizard-format-${option.type}`}
 								className={clsx(
-									'flex gap-2.5 m-px items-start p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer',
-									'focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 items-center',
-									{
-										'border-primary bg-primary-100':
-											isSelected,
-										'border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50':
-											! isSelected,
-										'opacity-50 cursor-not-allowed':
-											disabled || option.disabled
-									}
+									'w-full h-full flex gap-3 items-center p-3.5 rounded-xl border-2 transition-all duration-200 select-none',
+									'focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2',
+									isSelected ?
+										'border-primary bg-primary-50' :
+										'border-gray-200 bg-white hover:border-gray-300',
+									isOptionDisabled ?
+										'opacity-50 cursor-not-allowed' :
+										'cursor-pointer'
 								)}
 							>
 								{/* Custom styled radio button */}
-								<div className="shrink-0">
+								<div className="shrink-0 flex items-center justify-center">
 									<div
 										className={clsx(
 											'w-4 h-4 rounded-full border-2 transition-all duration-200 flex items-center justify-center',
-											{
-												'border-primary bg-primary':
-													isSelected,
-												'border-gray-300 bg-white':
-													! isSelected
-											}
+											isSelected ?
+												'border-primary bg-primary' :
+												'border-gray-400 bg-transparent'
 										)}
 									>
 										{isSelected && (
-											<div className="w-2 h-2 rounded-full bg-white"></div>
+											<div className="w-1.5 h-1.5 rounded-full bg-text-white" />
 										)}
 									</div>
 								</div>
 
 								{/* Content area */}
-								<div className="flex items-center flex-row min-w-0 gap-1">
-									<div className="flex items-center gap-1">
+								<div className="flex items-center flex-row min-w-0 gap-2 flex-1">
+									<div className="flex items-center gap-2">
 										{
 											option.icon && (
 												<Icon
 													name={option.icon}
 													size={18}
-													className="shrink-0"
+													className={clsx(
+														'shrink-0 transition-colors',
+														isSelected ? 'text-primary' : 'text-text-gray'
+													)}
 												/>
 											)
 										}
 										<h5
 											className={clsx(
-												'text-base font-medium transition-colors text-text-gray'
+												'text-base font-medium transition-colors text-text-black',
+												isSelected && 'font-semibold'
 											)}
 										>
 											{option.label}
 										</h5>
-										{option.pro && <>
-											Pro
+										{option.pro && (
 											<ProBadge
-											label={__( 'Pro', 'burst-statistics' )}
-											id={'reporting'}
-											type={isTrial ? 'icon' : 'badge'}
-										/></>}
+												label={__( 'Pro', 'burst-statistics' )}
+												id={'reporting'}
+												url={'object' === typeof option.pro && option.pro?.url ? option.pro.url : undefined}
+												type={isTrial ? 'icon' : 'badge'}
+											/>
+										)}
 									</div>
 
 									{option.description &&
 										1 < option.description.length && (
 											<>
-												<div className="w-px bg-gray-400 mx-3 h-5"></div>
+												<div className="w-px bg-gray-300 mx-2 h-4 shrink-0" />
 												<p
-													className={clsx(
-														'text-sm transition-colors truncate text-text-gray-light'
-													)}
+													className="text-sm transition-colors truncate text-text-gray"
 												>
 													{option.description}
 												</p>

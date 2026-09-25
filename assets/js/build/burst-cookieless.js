@@ -203,7 +203,12 @@ const burst_fingerprint = () => {
     // `hardware` component and canvas covers rasterization differences. Brave
     // and Firefox also randomize WebGL pixel output per session, so dropping it
     // makes the fingerprint more stable for those visitors.
-    exclude: ['webgl'],
+    // system.applePayVersion reads window.ApplePaySession, which payment
+    // scripts define on the checkout page only (the PayPal SDK loads Apple's
+    // apple-pay-sdk.js, which installs it in every browser). Including it gives
+    // a buyer a new fingerprint on checkout, so the order is attributed to a
+    // different visitor than the cart and the cart is never marked converted.
+    exclude: ['webgl', 'system.applePayVersion'],
 
     permissions_to_check: [
       'geolocation',

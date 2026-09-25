@@ -15,16 +15,27 @@ export const Overview = () => {
 	const weekOfMonth = useWizardStore( ( state ) => state.wizard.weekOfMonth );
 	const sendTime = useWizardStore( ( state ) => state.wizard.sendTime );
 	const emails = useWizardStore( ( state ) => state.wizard.recipients );
+	const channels = useWizardStore( ( state ) => state.wizard.channels || 'email' );
 	const content = useWizardStore( ( state ) => state.wizard.content );
 	const getScheduleLabel = useReportConfigStore( ( state ) => state.getScheduleLabel );
 	const availableContent = useReportConfigStore( ( state ) => state.availableContent );
 
 	const getDeliveryText = () => {
 		if ( scheduled ) {
+			if ( 'both' === channels ) {
+				return __( 'Scheduled email and Slack message, sent automatically', 'burst-statistics' );
+			}
 			return __( 'Scheduled email, sent automatically', 'burst-statistics' );
 		}
 
 		return __( 'Manual download', 'burst-statistics' );
+	};
+
+	const getChannelsLabel = () => {
+		if ( 'both' === channels ) {
+			return __( 'Email and Slack', 'burst-statistics' );
+		}
+		return __( 'Email', 'burst-statistics' );
 	};
 
 	const getLabel = ( blockId: ContentBlockId ) => {
@@ -52,6 +63,14 @@ export const Overview = () => {
 					</>
 				)
 			}
+
+			<div className="text-text-gray-light font-medium">
+				{__( 'Delivery channel:', 'burst-statistics' )}
+			</div>
+
+			<div className="text-text-black font-medium">
+				{getChannelsLabel()}
+			</div>
 
 			<div className="text-text-gray-light font-medium">
 				{__( 'Recipients:', 'burst-statistics' )}

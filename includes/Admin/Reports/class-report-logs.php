@@ -521,9 +521,12 @@ class Report_Logs {
 					FROM {$wpdb->prefix}burst_report_logs
 					WHERE report_id = %d
 					AND queue_id = %s
-					AND batch_id IS NOT NULL",
+					AND batch_id IS NOT NULL
+					AND status NOT IN (%s, %s)",
 				$report_id,
-				$queue_id
+				$queue_id,
+				Report_Log_Status::SLACK_SUCCESSFUL,
+				Report_Log_Status::SLACK_FAILED
 			),
 			ARRAY_A
 		);

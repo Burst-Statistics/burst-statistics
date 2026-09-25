@@ -1,6 +1,7 @@
 import { clsx } from 'clsx';
 import RadioFieldOptionDetails from '@/components/Fields/RadioFieldOptionDetails';
 import RadioFieldPrivacyMeter from '@/components/Fields/RadioFieldPrivacyMeter';
+import useLicenseData from '@/hooks/useLicenseData';
 
 /**
  * Normalizes a RadioField option into a consistent shape.
@@ -9,15 +10,15 @@ import RadioFieldPrivacyMeter from '@/components/Fields/RadioFieldPrivacyMeter';
  * optional icon/returning/description/meter/level metadata.
  *
  * @param {string|Object} option - Raw option value from the field config.
- * @return {{label: string, icon: ?string, returning: ?string, description: ?string, meter: number, level: ?string}}
+ * @return {{label: string, icon: ?string, returning: ?string, description: ?string, meter: number, level: ?string, pro: ?(boolean|Object), disabled: boolean}}
  */
 const normalizeOption = ( option ) => {
 	if ( 'string' === typeof option ) {
-		return { label: option, icon: null, returning: null, description: null, meter: 0, level: null };
+		return { label: option, icon: null, returning: null, description: null, meter: 0, level: null, pro: false, disabled: false };
 	}
 
-	const { label, icon = null, returning = null, description = null, meter = 0, level = null } = option;
-	return { label, icon, returning, description, meter, level };
+	const { label, icon = null, returning = null, description = null, meter = 0, level = null, pro = false, disabled = false } = option;
+	return { label, icon, returning, description, meter, level, pro, disabled };
 };
 
 /**
@@ -34,19 +35,25 @@ const normalizeOption = ( option ) => {
  * @param {boolean}       props.disabled - Whether the option is disabled.
  * @return {JSX.Element}
  */
+// fallow-ignore-next-line complexity
 const RadioFieldOption = ({ inputId, value, field, option, disabled }) => {
-	const { label, icon, returning, description, meter, level } = normalizeOption( option );
+	const { isLicenseValid } = useLicenseData();
+	const { label, icon, returning, description, meter, level, pro, disabled: optionDisabled } = normalizeOption( option );
 	const isChecked = field.value === value;
 	const optionId = `${inputId}-${value}`;
+	const isOptionDisabled = Boolean( disabled || optionDisabled || ( pro && ! isLicenseValid ) );
 
 	return (
 		<label
 			htmlFor={optionId}
 			className={clsx(
-				'flex items-start gap-4 rounded-xl border-2 p-4 transition-all duration-200 cursor-pointer',
+				'flex items-start gap-4 rounded-xl border-2 p-4 transition-all duration-200',
 				isChecked ?
 					'border-primary bg-primary-50' :
-					'border-gray-200 bg-white hover:border-gray-300'
+					'border-gray-200 bg-white hover:border-gray-300',
+				isOptionDisabled ?
+					'opacity-50 cursor-not-allowed' :
+					'cursor-pointer'
 			)}
 		>
 			<input
@@ -55,9 +62,12 @@ const RadioFieldOption = ({ inputId, value, field, option, disabled }) => {
 				name={field.name}
 				value={value}
 				checked={isChecked}
-				disabled={disabled}
+				disabled={isOptionDisabled}
 				onChange={() => field.onChange( value )}
-				className="h-5 w-5 shrink-0 rounded-full border border-gray-400 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer mt-0.5"
+				className={clsx(
+					'h-5 w-5 shrink-0 rounded-full border border-gray-400 text-primary focus:ring-primary focus:ring-offset-0 mt-0.5',
+					isOptionDisabled ? 'cursor-not-allowed' : 'cursor-pointer'
+				)}
 			/>
 			<div className="flex flex-1 items-start justify-between gap-4">
 				<RadioFieldOptionDetails
@@ -65,6 +75,8 @@ const RadioFieldOption = ({ inputId, value, field, option, disabled }) => {
 					icon={icon}
 					returning={returning}
 					description={description}
+					pro={pro}
+					inputId={inputId}
 				/>
 				{level && (
 					<RadioFieldPrivacyMeter inputId={optionId} meter={meter} level={level} />

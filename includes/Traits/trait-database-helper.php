@@ -545,6 +545,75 @@ trait Database_Helper {
 	}
 
 	/**
+	 * Resolve tracked post IDs for a batch of page URLs.
+	 *
+	 * Reads the burst_page_urls dictionary first. While the page_urls backfill
+	 * migration is still pending (burst_db_upgrade_backfill_page_urls option is set),
+	 * falls back to burst_statistics through Query_Executor for any unresolved URLs.
+	 *
+	 * @param string[] $page_urls Page URLs from candidate rows.
+	 * @return array<string, int> Map of page_url to post ID (0 when unknown).
+	 */
+	public function get_page_ids_for_urls( array $page_urls ): array {
+		$page_urls = array_values( array_unique( array_filter( array_map( 'strval', $page_urls ), static fn( string $url ): bool => '' !== $url ) ) );
+		if ( empty( $page_urls ) ) {
+			return [];
+		}
+
+		global $wpdb;
+		$page_id_map = [];
+
+		// 1. Check burst_page_urls dictionary first.
+		$placeholders = implode( ', ', array_fill( 0, count( $page_urls ), '%s' ) );
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- placeholders dynamically built and values bound.
+		$dict_rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT page_url, MAX(page_id) AS page_id FROM {$wpdb->prefix}burst_page_urls WHERE page_url IN ( {$placeholders} ) AND page_id > 0 GROUP BY page_url",
+				$page_urls
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+		foreach ( (array) $dict_rows as $dr ) {
+			$page_id_map[ (string) $dr['page_url'] ] = (int) $dr['page_id'];
+		}
+
+		// 2. Only run fallback to burst_statistics while burst_db_upgrade_backfill_page_urls is still set.
+		$missing_paths = array_values( array_diff( $page_urls, array_keys( $page_id_map ) ) );
+		if ( ! empty( $missing_paths ) && (bool) get_option( 'burst_db_upgrade_backfill_page_urls', false ) ) {
+			$m_placeholders = implode( ', ', array_fill( 0, count( $missing_paths ), '%s' ) );
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- placeholders dynamically built and values bound.
+			$stat_sql = $wpdb->prepare(
+				"SELECT page_url, MAX(page_id) AS page_id FROM {$wpdb->prefix}burst_statistics WHERE page_url IN ( {$m_placeholders} ) AND page_id > 0 GROUP BY page_url",
+				$missing_paths
+			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+			$timeout_ms = $this->resolve_query_timeout_ms( 'burst_query_timeout_ms', 'burst_query_timeout_ms_background' );
+			$stat_sql   = $this->add_query_timeout_hint( $stat_sql, $timeout_ms );
+
+			if ( class_exists( '\Burst\Admin\Database\Query_Executor' ) ) {
+				$stat_rows = \Burst\Admin\Database\Query_Executor::create()
+					->fingerprint( 'get_page_ids_for_urls_fallback' )
+					->cache_ttl( 300 )
+					->cache_group( 'burst_stats_query_results' )
+					->run( $stat_sql, 'get', ARRAY_A );
+			} else {
+				// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+				$stat_rows = $wpdb->get_results( $stat_sql, ARRAY_A );
+				// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
+			}
+
+			foreach ( (array) $stat_rows as $sr ) {
+				$page_id_map[ (string) $sr['page_url'] ] = (int) $sr['page_id'];
+			}
+		}
+
+		return $page_id_map;
+	}
+
+	/**
 	 * Point the canonical dictionary row for a post id at the given url path:
 	 * the row for that url is created or claimed and flagged canonical, any
 	 * previous canonical row of the same post id is demoted. Shared by the

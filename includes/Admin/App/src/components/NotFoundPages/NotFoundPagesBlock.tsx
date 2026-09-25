@@ -7,8 +7,8 @@ import { BlockContent } from '@/components/Blocks/BlockContent';
 import Icon from '@/utils/Icon';
 import { BarDataTable } from '@/components/DataTable/BarDataTable';
 import { useNotFoundPagesData } from './useNotFoundPagesData';
+import NotFoundHitsCell from './NotFoundHitsCell';
 import MetricInfo from '@/components/Common/MetricInfo';
-import { formatNumber } from '@/utils/formatting';
 import type { BarColumn } from '@/components/DataTable/BarDataTable';
 import type { NotFoundPageRow } from './useNotFoundPagesData';
 
@@ -48,11 +48,11 @@ const NotFoundPagesBlock = memo( ({ className = '' }: NotFoundPagesBlockProps ) 
 							href={ pageUrl }
 							target="_blank"
 							rel="noopener noreferrer"
-							className="inline-flex items-center gap-1 truncate max-w-xs text-text-black hover:text-blue-600 transition-colors"
+							className="inline-flex items-center gap-1 truncate max-w-xs text-text-black hover:text-blue transition-colors"
 							title={ row.page_url }
 						>
 							{ row.page_url }
-							<Icon name="external-link" size={ 11 } color="gray" />
+							<Icon name="external-link" size={ 11 } color="gray" className="shrink-0" />
 						</a>
 					);
 				}
@@ -61,11 +61,12 @@ const NotFoundPagesBlock = memo( ({ className = '' }: NotFoundPagesBlockProps ) 
 				key: 'hits',
 				label: __( 'Hits', 'burst-statistics' ),
 				align: 'right',
-				minWidth: 80,
+				minWidth: 100,
 				cell: ( row ) => (
-					<span className="font-medium text-text-black">
-						{ formatNumber( row.hits ) }
-					</span>
+					<NotFoundHitsCell
+						pageUrl={ row.page_url }
+						hits={ row.hits }
+					/>
 				)
 			}
 		],

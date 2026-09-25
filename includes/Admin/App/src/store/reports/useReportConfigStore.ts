@@ -21,6 +21,7 @@ import Logo from '@/components/Reporting/ReportWizard/Blocks/Logo';
 import TextBlock from '@/components/Reporting/ReportWizard/Blocks/TextBlock';
 import HeroBlock from '@/components/Reporting/ReportWizard/Blocks/HeroBlock';
 import FooterBlock from '@/components/Reporting/ReportWizard/Blocks/FooterBlock';
+import AiSummaryBlock from '@/components/Reporting/ReportWizard/Blocks/AiSummaryBlock';
 import {ComponentType} from 'react';
 
 /**
@@ -57,6 +58,14 @@ const AVAILABLE_CONTENT = once( (): ContentItems => [
 		icon: 'image',
 		pro: true,
 		component: HeroBlock
+	},
+	{
+		id: 'ai_summary',
+		label: __( 'AI Summary', 'burst-statistics' ),
+		icon: 'sparkles',
+		pro: true,
+		component: AiSummaryBlock,
+		formats: [ 'classic', 'story' ]
 	},
 	{
 		id: 'text_block',

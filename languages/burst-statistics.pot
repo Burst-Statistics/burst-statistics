@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Burst Pro plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: Burst Pro 3.7.1\n"
+"Project-Id-Version: Burst Pro 3.7.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/burst-pro\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-16T14:30:35+00:00\n"
+"POT-Creation-Date: 2026-09-22T15:03:24+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: burst-statistics\n"
@@ -676,7 +676,7 @@ msgstr ""
 
 #: includes/Admin/App/config/goal-fields.php:55
 #: includes/Admin/Mailer/config/blocks.php:14
-#: includes/Admin/Statistics/class-statistics-allowlist.php:178
+#: includes/Admin/Statistics/class-statistics-allowlist.php:179
 #: includes/Pro/Admin/Statistics/class-page-summary.php:85
 #: includes/Admin/App/build/1999.7a33f8b061b399a39652.js:1
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
@@ -739,10 +739,10 @@ msgstr ""
 #: includes/Admin/App/config/goal-fields.php:110
 #: includes/Admin/Reports/class-reports.php:957
 #: includes/Admin/Statistics/class-goal-statistics.php:213
-#: includes/Admin/Statistics/class-statistics-allowlist.php:182
+#: includes/Admin/Statistics/class-statistics-allowlist.php:183
 #: includes/Integrations/plugins/elementor/class-elementor.php:182
-#: includes/Pro/Admin/Statistics/class-statistics.php:922
-#: includes/Pro/Admin/Statistics/class-statistics.php:1284
+#: includes/Pro/Admin/Statistics/class-statistics.php:920
+#: includes/Pro/Admin/Statistics/class-statistics.php:1296
 #: includes/Admin/App/build/59.b55e72cf41c41c7c1d8f.js:1
 #: includes/Admin/App/build/1999.7a33f8b061b399a39652.js:1
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
@@ -780,7 +780,7 @@ msgstr ""
 #: includes/Admin/App/config/goal-fields.php:115
 #: includes/Admin/Reports/class-reports.php:954
 #: includes/Admin/Statistics/class-goal-statistics.php:280
-#: includes/Admin/Statistics/class-statistics-allowlist.php:181
+#: includes/Admin/Statistics/class-statistics-allowlist.php:182
 #: includes/Integrations/plugins/elementor/class-elementor.php:183
 #: includes/Admin/App/build/59.b55e72cf41c41c7c1d8f.js:1
 #: includes/Admin/App/build/1999.7a33f8b061b399a39652.js:1
@@ -816,10 +816,10 @@ msgstr ""
 #: includes/Admin/Posts/class-posts.php:260
 #: includes/Admin/Reports/class-reports.php:951
 #: includes/Admin/Statistics/class-goal-statistics.php:272
-#: includes/Admin/Statistics/class-statistics-allowlist.php:180
+#: includes/Admin/Statistics/class-statistics-allowlist.php:181
 #: includes/Integrations/plugins/elementor/class-elementor.php:184
-#: includes/Pro/Admin/Statistics/class-statistics.php:916
-#: includes/Pro/Admin/Statistics/class-statistics.php:1278
+#: includes/Pro/Admin/Statistics/class-statistics.php:914
+#: includes/Pro/Admin/Statistics/class-statistics.php:1290
 #: includes/Admin/App/build/59.b55e72cf41c41c7c1d8f.js:1
 #: includes/Admin/App/build/1999.7a33f8b061b399a39652.js:1
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
@@ -1618,7 +1618,7 @@ msgid "Successfully cleared data."
 msgstr ""
 
 #: includes/Admin/class-admin.php:1542
-#: includes/Admin/Statistics/class-statistics-allowlist.php:211
+#: includes/Admin/Statistics/class-statistics-allowlist.php:212
 #: includes/Pro/Admin/Ecommerce/class-sales-chart.php:113
 #: includes/Admin/App/build/1006.9215f35c971fe8e28be2.js:14
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
@@ -1796,7 +1796,7 @@ msgid "Contains data"
 msgstr ""
 
 #: includes/Admin/Debug/class-debug.php:387
-#: includes/Admin/Debug/class-debug.php:423
+#: includes/Admin/Debug/class-debug.php:431
 #: includes/Admin/Diagnostics/class-tracking-health-email.php:157
 #: includes/Admin/App/build/6687.cecf306bcc3b26b74e8f.js:10
 #: includes/Admin/App/build/6687.cecf306bcc3b26b74e8f.js:14
@@ -1806,61 +1806,61 @@ msgid "Status"
 msgstr ""
 
 #: includes/Admin/Debug/class-debug.php:387
-#: includes/Admin/Debug/class-debug.php:423
+#: includes/Admin/Debug/class-debug.php:431
 msgid "Disabled with the burst_geo_ip_enabled filter"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:392
-#: includes/Admin/Debug/class-debug.php:396
+#: includes/Admin/Debug/class-debug.php:394
+#: includes/Admin/Debug/class-debug.php:401
 msgid "File"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:392
+#: includes/Admin/Debug/class-debug.php:394
 msgid "No Geo IP file set"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:397
+#: includes/Admin/Debug/class-debug.php:402
 msgid "File exists"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:398
+#: includes/Admin/Debug/class-debug.php:403
 msgid "File size"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:405
+#: includes/Admin/Debug/class-debug.php:413
 msgid "Last update"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:405
+#: includes/Admin/Debug/class-debug.php:413
 #: includes/Admin/App/build/6687.cecf306bcc3b26b74e8f.js:10
 #: includes/Admin/App/build/8895.e6b57378fee23de7b8f2.js:1
 #: includes/Admin/App/src/components/Common/ShareButton.jsx:33
 msgid "Never"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:406
+#: includes/Admin/Debug/class-debug.php:414
 msgid "Import error"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:406
+#: includes/Admin/Debug/class-debug.php:414
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:1
 #: includes/Admin/App/build/4211.bcbc04a74aae9e0db74a.js:1
 #: includes/Admin/App/src/api/getDataTableData.js:214
 msgid "None"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:407
+#: includes/Admin/Debug/class-debug.php:415
 msgid "Import scheduled"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:471
-#: includes/Admin/Debug/class-debug.php:495
+#: includes/Admin/Debug/class-debug.php:479
+#: includes/Admin/Debug/class-debug.php:503
 #: includes/Admin/Search_Console/class-search-console.php:454
 #: includes/Admin/App/build/6687.cecf306bcc3b26b74e8f.js:24
 msgid "Google Search Console"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:472
+#: includes/Admin/Debug/class-debug.php:480
 #: includes/Admin/App/build/1006.9215f35c971fe8e28be2.js:1
 #: includes/Admin/App/build/6687.cecf306bcc3b26b74e8f.js:14
 #: includes/Admin/App/src/components/Common/DisabledBadge.jsx:17
@@ -1870,82 +1870,82 @@ msgstr ""
 msgid "Disabled"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:480
+#: includes/Admin/Debug/class-debug.php:488
 msgid "Connection"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:481
+#: includes/Admin/Debug/class-debug.php:489
 msgid "Site"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:482
+#: includes/Admin/Debug/class-debug.php:490
 msgid "Site URL source"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:483
+#: includes/Admin/Debug/class-debug.php:491
 msgid "Property selection"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:484
+#: includes/Admin/Debug/class-debug.php:492
 msgid "Stored property"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:485
+#: includes/Admin/Debug/class-debug.php:493
 msgid "Property scope"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:486
+#: includes/Admin/Debug/class-debug.php:494
 msgid "Property retry"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:486
-#: includes/Admin/Debug/class-debug.php:490
+#: includes/Admin/Debug/class-debug.php:494
+#: includes/Admin/Debug/class-debug.php:498
 msgid "Not scheduled"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:487
+#: includes/Admin/Debug/class-debug.php:495
 msgid "Stored rows"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:487
+#: includes/Admin/Debug/class-debug.php:495
 msgid "Not available"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:488
+#: includes/Admin/Debug/class-debug.php:496
 msgid "Stored date range"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:488
+#: includes/Admin/Debug/class-debug.php:496
 msgid "No stored rows"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:489
+#: includes/Admin/Debug/class-debug.php:497
 msgid "Sync state"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:490
+#: includes/Admin/Debug/class-debug.php:498
 msgid "Next hourly sync"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:499
+#: includes/Admin/Debug/class-debug.php:507
 msgid "Google Search Console Activity"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:514
+#: includes/Admin/Debug/class-debug.php:522
 #: includes/Admin/App/build/9853.487c8b940ded4bb969ac.js:3
 #: includes/Admin/App/src/components/Dashboard/OverviewBlock.js:39
 msgid "Activity"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:514
+#: includes/Admin/Debug/class-debug.php:522
 msgid "No Search Console activity has been recorded for this site yet."
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:519
+#: includes/Admin/Debug/class-debug.php:527
 msgid "Unknown time"
 msgstr ""
 
-#: includes/Admin/Debug/class-debug.php:548
+#: includes/Admin/Debug/class-debug.php:556
 msgid "No details"
 msgstr ""
 
@@ -2140,8 +2140,8 @@ msgstr ""
 
 #: includes/Admin/Export/class-export-manager.php:151
 #: includes/Admin/Export/class-export-manager.php:185
-#: includes/Admin/Export/class-export-manager.php:690
-#: includes/Admin/Export/class-export-manager.php:1329
+#: includes/Admin/Export/class-export-manager.php:673
+#: includes/Admin/Export/class-export-manager.php:1312
 msgid "Invalid export ID."
 msgstr ""
 
@@ -2165,62 +2165,67 @@ msgstr ""
 msgid "Export deleted successfully."
 msgstr ""
 
-#: includes/Admin/Export/class-export-manager.php:574
+#: includes/Admin/Export/class-export-manager.php:557
 msgid "Unable to create export file in uploads folder."
 msgstr ""
 
-#: includes/Admin/Export/class-export-manager.php:698
+#: includes/Admin/Export/class-export-manager.php:681
 msgid "Export session expired or not found."
 msgstr ""
 
-#: includes/Admin/Export/class-export-manager.php:733
+#: includes/Admin/Export/class-export-manager.php:716
 msgid "Export chunk is currently locked by another worker."
 msgstr ""
 
-#: includes/Admin/Export/class-export-manager.php:775
+#: includes/Admin/Export/class-export-manager.php:758
 msgid "Could not open export file for appending."
 msgstr ""
 
-#: includes/Admin/Export/class-export-manager.php:1304
+#: includes/Admin/Export/class-export-manager.php:1287
 msgid "Unauthorized access."
 msgstr ""
 
-#: includes/Admin/Export/class-export-manager.php:1311
+#: includes/Admin/Export/class-export-manager.php:1294
 msgid "Security check failed or link expired. Please refresh the page and try again."
 msgstr ""
 
-#: includes/Admin/Export/class-export-manager.php:1347
+#: includes/Admin/Export/class-export-manager.php:1330
 #: includes/Admin/Import/Adapters/File/class-csv-file-adapter.php:180
 #: includes/Admin/Import/Adapters/File/class-csv-file-adapter.php:194
 msgid "Export file not found."
 msgstr ""
 
-#: includes/Admin/Geo_Ip/class-geo-ip.php:280
+#: includes/Admin/Geo_Ip/class-geo-ip.php:282
 msgid "Required directory does not exist:"
 msgstr ""
 
-#: includes/Admin/Geo_Ip/class-geo-ip.php:290
+#. translators: %s is the directory path where the database should be uploaded.
+#: includes/Admin/Geo_Ip/class-geo-ip.php:285
+msgid "Open Base dir restriction detected. Please upload manually to: %s"
+msgstr ""
+
+#: includes/Admin/Geo_Ip/class-geo-ip.php:293
 msgid "The downloaded GeoIP database failed SHA-256 verification. The existing database has been kept."
 msgstr ""
 
-#: includes/Admin/Geo_Ip/class-geo-ip.php:315
+#: includes/Admin/Geo_Ip/class-geo-ip.php:318
 msgid "The GeoIP database archive could not be copied for extraction."
 msgstr ""
 
-#: includes/Admin/Geo_Ip/class-geo-ip.php:337
+#: includes/Admin/Geo_Ip/class-geo-ip.php:340
 msgid "The PHP Phar extension is not available on this server. Please enable the Phar extension or contact your hosting provider."
 msgstr ""
 
-#: includes/Admin/Geo_Ip/class-geo-ip.php:444
+#: includes/Admin/Geo_Ip/class-geo-ip.php:447
 msgid "The GEO IP database could not be updated. The previously downloaded database is still being used."
 msgstr ""
 
-#: includes/Admin/Geo_Ip/class-geo-ip.php:445
+#: includes/Admin/Geo_Ip/class-geo-ip.php:448
 msgid "The GEO IP database hasn't been downloaded yet. It is necessary for tracking country information."
 msgstr ""
 
 #. translators: %s is the actual error message returned from the failed GEO IP import.
-#: includes/Admin/Geo_Ip/class-geo-ip.php:455
+#: includes/Admin/Geo_Ip/class-geo-ip.php:458
 msgid "The following error was reported: %s"
 msgstr ""
 
@@ -2352,46 +2357,46 @@ msgstr ""
 msgid "Invalid or empty CSV header in export file."
 msgstr ""
 
-#: includes/Admin/Import/class-chunked-uploader.php:170
-#: includes/Admin/Import/class-chunked-uploader.php:288
+#: includes/Admin/Import/class-chunked-uploader.php:159
+#: includes/Admin/Import/class-chunked-uploader.php:277
 #: includes/Admin/Import/class-import-manager.php:287
 msgid "File format not supported for analytics import."
 msgstr ""
 
-#: includes/Admin/Import/class-chunked-uploader.php:215
-#: includes/Admin/Import/class-chunked-uploader.php:273
+#: includes/Admin/Import/class-chunked-uploader.php:204
+#: includes/Admin/Import/class-chunked-uploader.php:262
 msgid "Invalid upload ID."
 msgstr ""
 
-#: includes/Admin/Import/class-chunked-uploader.php:223
-#: includes/Admin/Import/class-chunked-uploader.php:280
+#: includes/Admin/Import/class-chunked-uploader.php:212
+#: includes/Admin/Import/class-chunked-uploader.php:269
 msgid "Upload session expired or invalid."
 msgstr ""
 
-#: includes/Admin/Import/class-chunked-uploader.php:229
+#: includes/Admin/Import/class-chunked-uploader.php:218
 msgid "Missing chunk file data."
 msgstr ""
 
-#: includes/Admin/Import/class-chunked-uploader.php:251
+#: includes/Admin/Import/class-chunked-uploader.php:240
 msgid "Failed to save chunk to disk."
 msgstr ""
 
-#: includes/Admin/Import/class-chunked-uploader.php:296
+#: includes/Admin/Import/class-chunked-uploader.php:285
 msgid "Failed to create target file on server."
 msgstr ""
 
 #. translators: %d: chunk index
-#: includes/Admin/Import/class-chunked-uploader.php:307
+#: includes/Admin/Import/class-chunked-uploader.php:296
 msgid "Missing chunk #%d."
 msgstr ""
 
 #. translators: %d: chunk index
-#: includes/Admin/Import/class-chunked-uploader.php:315
+#: includes/Admin/Import/class-chunked-uploader.php:304
 msgid "Failed to read chunk #%d."
 msgstr ""
 
 #. translators: 1: Import ID, 2: Import date
-#: includes/Admin/Import/class-chunked-uploader.php:348
+#: includes/Admin/Import/class-chunked-uploader.php:337
 #: includes/Admin/Import/class-import-manager.php:325
 msgid "This file has already been imported (Import #%1$d on %2$s). Duplicate file imports are not allowed to prevent duplicate data."
 msgstr ""
@@ -2642,7 +2647,7 @@ msgid "Countries"
 msgstr ""
 
 #: includes/Admin/Mailer/config/blocks.php:36
-#: includes/Admin/Statistics/class-statistics-allowlist.php:196
+#: includes/Admin/Statistics/class-statistics-allowlist.php:197
 #: includes/Admin/App/build/1999.7a33f8b061b399a39652.js:1
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/build/index.7e666d0ebd9709f9e0ae.js:1
@@ -2821,7 +2826,7 @@ msgid "Sending of report scheduled."
 msgstr ""
 
 #: includes/Admin/Reports/class-reports.php:960
-#: includes/Admin/Statistics/class-statistics-allowlist.php:189
+#: includes/Admin/Statistics/class-statistics-allowlist.php:190
 #: includes/Admin/App/build/1999.7a33f8b061b399a39652.js:1
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:162
@@ -4068,15 +4073,15 @@ msgstr ""
 msgid "Not enough data"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:177
+#: includes/Admin/Statistics/class-statistics-allowlist.php:178
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/build/index.7e666d0ebd9709f9e0ae.js:1
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:267
 msgid "Domain"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:179
-#: includes/Pro/Admin/Statistics/class-statistics.php:1272
+#: includes/Admin/Statistics/class-statistics-allowlist.php:180
+#: includes/Pro/Admin/Statistics/class-statistics.php:1284
 #: includes/Admin/App/build/1999.7a33f8b061b399a39652.js:1
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/build/8524.14f58287f316a3d767e5.js:1
@@ -4087,7 +4092,7 @@ msgstr ""
 msgid "Referrer"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:183
+#: includes/Admin/Statistics/class-statistics-allowlist.php:184
 #: includes/Admin/App/build/1999.7a33f8b061b399a39652.js:1
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/build/4211.bcbc04a74aae9e0db74a.js:1
@@ -4105,11 +4110,11 @@ msgstr ""
 msgid "Avg. time on page"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:184
+#: includes/Admin/Statistics/class-statistics-allowlist.php:185
 msgid "Avg. session duration"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:185
+#: includes/Admin/Statistics/class-statistics-allowlist.php:186
 #: includes/Admin/App/build/1999.7a33f8b061b399a39652.js:1
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:202
@@ -4118,61 +4123,61 @@ msgstr ""
 msgid "Goal conv. rate"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:186
+#: includes/Admin/Statistics/class-statistics-allowlist.php:187
 msgid "New visitors"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:187
+#: includes/Admin/Statistics/class-statistics-allowlist.php:188
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:168
 msgid "Goal completions"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:188
+#: includes/Admin/Statistics/class-statistics-allowlist.php:189
 msgid "Bounced visitors"
-msgstr ""
-
-#: includes/Admin/Statistics/class-statistics-allowlist.php:190
-#: includes/Admin/Statistics/class-statistics-allowlist.php:193
-#: includes/Admin/App/build/index.7e666d0ebd9709f9e0ae.js:1
-msgid "Device"
 msgstr ""
 
 #: includes/Admin/Statistics/class-statistics-allowlist.php:191
 #: includes/Admin/Statistics/class-statistics-allowlist.php:194
 #: includes/Admin/App/build/index.7e666d0ebd9709f9e0ae.js:1
-msgid "Browser"
+msgid "Device"
 msgstr ""
 
 #: includes/Admin/Statistics/class-statistics-allowlist.php:192
 #: includes/Admin/Statistics/class-statistics-allowlist.php:195
+#: includes/Admin/App/build/index.7e666d0ebd9709f9e0ae.js:1
+msgid "Browser"
+msgstr ""
+
+#: includes/Admin/Statistics/class-statistics-allowlist.php:193
+#: includes/Admin/Statistics/class-statistics-allowlist.php:196
 msgid "Platform"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:197
+#: includes/Admin/Statistics/class-statistics-allowlist.php:198
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/build/index.7e666d0ebd9709f9e0ae.js:1
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:381
 msgid "City"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:198
+#: includes/Admin/Statistics/class-statistics-allowlist.php:199
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/build/index.7e666d0ebd9709f9e0ae.js:1
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:374
 msgid "State"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:199
 #: includes/Admin/Statistics/class-statistics-allowlist.php:200
+#: includes/Admin/Statistics/class-statistics-allowlist.php:201
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/build/index.7e666d0ebd9709f9e0ae.js:1
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:388
 msgid "Continent"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:201
-#: includes/Admin/Statistics/class-statistics-allowlist.php:203
+#: includes/Admin/Statistics/class-statistics-allowlist.php:202
+#: includes/Admin/Statistics/class-statistics-allowlist.php:204
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/build/9634.cab391c0e848f7f4c7e9.js:1
 #: includes/Admin/App/build/index.7e666d0ebd9709f9e0ae.js:1
@@ -4182,14 +4187,14 @@ msgstr ""
 msgid "Source"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:204
+#: includes/Admin/Statistics/class-statistics-allowlist.php:205
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/build/index.7e666d0ebd9709f9e0ae.js:1
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:436
 msgid "Medium"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:205
+#: includes/Admin/Statistics/class-statistics-allowlist.php:206
 #: includes/Pro/class-pro.php:427
 #: includes/Admin/App/build/1999.7a33f8b061b399a39652.js:1
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
@@ -4200,20 +4205,20 @@ msgstr ""
 msgid "Campaign"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:206
+#: includes/Admin/Statistics/class-statistics-allowlist.php:207
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:442
 msgid "Term"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:207
+#: includes/Admin/Statistics/class-statistics-allowlist.php:208
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:448
 msgid "Content"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:208
-#: includes/Pro/Admin/Statistics/class-statistics.php:910
+#: includes/Admin/Statistics/class-statistics-allowlist.php:209
+#: includes/Pro/Admin/Statistics/class-statistics.php:908
 #: includes/Admin/App/build/1999.7a33f8b061b399a39652.js:1
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:465
@@ -4222,7 +4227,7 @@ msgstr ""
 msgid "Parameter"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:209
+#: includes/Admin/Statistics/class-statistics-allowlist.php:210
 #: includes/Admin/App/build/2309.223df2af54a6b66f2453.js:1
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:459
@@ -4230,13 +4235,13 @@ msgstr ""
 msgid "Parameters"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:210
+#: includes/Admin/Statistics/class-statistics-allowlist.php:211
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:515
 msgid "Product"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:212
+#: includes/Admin/Statistics/class-statistics-allowlist.php:213
 #: includes/Pro/Admin/Ecommerce/class-sales-chart.php:113
 #: includes/Pro/Admin/Ecommerce/class-sales.php:492
 #: includes/Admin/App/build/1006.9215f35c971fe8e28be2.js:14
@@ -4251,42 +4256,42 @@ msgstr ""
 msgid "Revenue"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:213
+#: includes/Admin/Statistics/class-statistics-allowlist.php:214
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:195
 msgid "Page value"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:214
+#: includes/Admin/Statistics/class-statistics-allowlist.php:215
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:188
 msgid "Sales conv. rate"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:215
+#: includes/Admin/Statistics/class-statistics-allowlist.php:216
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:297
 msgid "Entrances"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:216
+#: includes/Admin/Statistics/class-statistics-allowlist.php:217
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:303
 msgid "Exit rate"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:217
+#: includes/Admin/Statistics/class-statistics-allowlist.php:218
 #: includes/Admin/App/build/3705.b74d759246ebee3b7ed8.js:7
 #: includes/Admin/App/src/components/Statistics/DataTableBlock.jsx:403
 msgid "Avg. order value"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:218
+#: includes/Admin/Statistics/class-statistics-allowlist.php:219
 #: includes/Pro/Admin/Ecommerce/class-funnel.php:42
 msgid "Added to cart"
 msgstr ""
 
-#: includes/Admin/Statistics/class-statistics-allowlist.php:219
+#: includes/Admin/Statistics/class-statistics-allowlist.php:220
 msgid "Avg. max scroll"
 msgstr ""
 
@@ -5068,51 +5073,51 @@ msgstr ""
 msgid "Nice! Traffic was above average on %1$s. You had around %2$s visitors, higher than your typical %3$s average of %4$s. Keep up the good work!"
 msgstr ""
 
-#: includes/Pro/Admin/Archive/class-archive-pro.php:867
+#: includes/Pro/Admin/Archive/class-archive-pro.php:862
 msgid "January"
 msgstr ""
 
-#: includes/Pro/Admin/Archive/class-archive-pro.php:868
+#: includes/Pro/Admin/Archive/class-archive-pro.php:863
 msgid "February"
 msgstr ""
 
-#: includes/Pro/Admin/Archive/class-archive-pro.php:869
+#: includes/Pro/Admin/Archive/class-archive-pro.php:864
 msgid "March"
 msgstr ""
 
-#: includes/Pro/Admin/Archive/class-archive-pro.php:870
+#: includes/Pro/Admin/Archive/class-archive-pro.php:865
 msgid "April"
 msgstr ""
 
-#: includes/Pro/Admin/Archive/class-archive-pro.php:871
+#: includes/Pro/Admin/Archive/class-archive-pro.php:866
 msgid "May"
 msgstr ""
 
-#: includes/Pro/Admin/Archive/class-archive-pro.php:872
+#: includes/Pro/Admin/Archive/class-archive-pro.php:867
 msgid "June"
 msgstr ""
 
-#: includes/Pro/Admin/Archive/class-archive-pro.php:873
+#: includes/Pro/Admin/Archive/class-archive-pro.php:868
 msgid "July"
 msgstr ""
 
-#: includes/Pro/Admin/Archive/class-archive-pro.php:874
+#: includes/Pro/Admin/Archive/class-archive-pro.php:869
 msgid "August"
 msgstr ""
 
-#: includes/Pro/Admin/Archive/class-archive-pro.php:875
+#: includes/Pro/Admin/Archive/class-archive-pro.php:870
 msgid "September"
 msgstr ""
 
-#: includes/Pro/Admin/Archive/class-archive-pro.php:876
+#: includes/Pro/Admin/Archive/class-archive-pro.php:871
 msgid "October"
 msgstr ""
 
-#: includes/Pro/Admin/Archive/class-archive-pro.php:877
+#: includes/Pro/Admin/Archive/class-archive-pro.php:872
 msgid "November"
 msgstr ""
 
-#: includes/Pro/Admin/Archive/class-archive-pro.php:878
+#: includes/Pro/Admin/Archive/class-archive-pro.php:873
 msgid "December"
 msgstr ""
 
@@ -5764,7 +5769,7 @@ msgstr ""
 msgid "Paid"
 msgstr ""
 
-#: includes/Pro/Admin/Statistics/class-statistics.php:1290
+#: includes/Pro/Admin/Statistics/class-statistics.php:1302
 msgid "Mapped"
 msgstr ""
 

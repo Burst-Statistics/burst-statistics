@@ -153,6 +153,8 @@ const ReportingField = ({ field, fieldState, help, context, ...props }) => {
 			right: true,
 			grow: 0,
 			width: '52px',
+
+			// fallow-ignore-next-line complexity
 			cell: ( row ) => {
 
 				// Only show toggle if report has scheduling and recipients.

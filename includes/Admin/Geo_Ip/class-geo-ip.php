@@ -66,6 +66,12 @@ class Geo_Ip {
 			return;
 		}
 
+		$this->maybe_migrate_database_directory();
+
+		if ( self::is_test() ) {
+			return;
+		}
+
 		$last_update = (int) get_option( 'burst_last_update_geo_ip', 0 );
 		$time_passed = time() - $last_update;
 		$file_name   = (string) get_option( 'burst_geo_ip_file', '' );
@@ -151,7 +157,7 @@ class Geo_Ip {
 			return;
 		}
 
-		if ( $this->has_admin_access() && get_option( 'burst_import_geo_ip_on_activation' ) ) {
+		if ( ! self::is_test() && $this->has_admin_access() && get_option( 'burst_import_geo_ip_on_activation' ) ) {
 			if ( $this->get_geo_ip_database_file( true ) ) {
 				update_option( 'burst_import_geo_ip_on_activation', false, false );
 			}
@@ -164,7 +170,7 @@ class Geo_Ip {
 
 		// Pro forces a re-download when the on-disk database is the wrong variant
 		// (e.g. only the Country database is present but City is required).
-		if ( $this->should_force_redownload( (string) $file_name ) ) {
+		if ( ! self::is_test() && $this->should_force_redownload( (string) $file_name ) ) {
 			$this->get_geo_ip_database_file( true );
 		}
 
@@ -259,7 +265,7 @@ class Geo_Ip {
 				WP_Filesystem();
 			}
 
-			$upload_dir = $this->upload_dir( 'maxmind' );
+			$upload_dir = $this->maxmind_upload_dir();
 			$name       = $this->db_name;
 
 			$zip_file_name = apply_filters( 'burst_zip_file_path', $upload_dir . $name );
@@ -268,18 +274,20 @@ class Geo_Ip {
 			$result_file_name = str_replace( '.tar.gz', '.mmdb', $name );
 			$unzipped         = $upload_dir . $result_file_name;
 
-			// download file from maxmind.
-			$tmpfile = download_url( $this->db_url, 25 );
 			if ( ! $wp_filesystem->is_dir( $upload_dir ) ) {
 				// try to create the directory.
 				wp_mkdir_p( $upload_dir );
 			}
+			// Only download when the archive can actually be stored: without this
+			// check every admin request would fetch the full database and discard it.
+			$tmpfile = $wp_filesystem->is_dir( $upload_dir ) ? download_url( $this->db_url, 25 ) : null;
 			// check for errors.
 			if ( ! $wp_filesystem->is_dir( $upload_dir ) ) {
 				// store the error for use in the callback notice for geo ip.
 				update_option( 'burst_geo_ip_import_error', __( 'Required directory does not exist:', 'burst-statistics' ) . ' ' . $upload_dir, false );
 			} elseif ( $this->has_open_basedir_restriction( $zip_file_name ) ) {
-				update_option( 'burst_geo_ip_import_error', 'Open Base dir restriction detected. Please upload manually.', false );
+				// translators: %s is the directory path where the database should be uploaded.
+				update_option( 'burst_geo_ip_import_error', sprintf( __( 'Open Base dir restriction detected. Please upload manually to: %s', 'burst-statistics' ), $upload_dir ), false );
 			} elseif ( is_wp_error( $tmpfile ) ) {
 				// store the error for use in the callback notice for geo ip.
 				update_option( 'burst_geo_ip_import_error', $tmpfile->get_error_message(), false );
@@ -446,6 +454,7 @@ class Geo_Ip {
 
 		$notices[] = [
 			'id'          => 'burst_geo_ip_import_error',
+			'mainwp'      => true,
 			'condition'   => [
 				'type'     => 'serverside',
 				'function' => 'wp_option_burst_geo_ip_import_error',
@@ -460,5 +469,169 @@ class Geo_Ip {
 		];
 
 		return $notices;
+	}
+
+	/**
+	 * Get the upload directory for the MaxMind database.
+	 *
+	 * Uses a randomly generated directory token stored in wp_options so the
+	 * database file cannot be downloaded directly via predictable paths.
+	 */
+	public function maxmind_upload_dir(): string {
+		return $this->random_upload_dir( 'burst_maxmind_dir' );
+	}
+
+	/**
+	 * Safely move a file from source to target.
+	 *
+	 * Attempts rename first, falling back to copy with verification that the target
+	 * exists and is non-empty before deleting the source. Never destroys source if copy fails.
+	 *
+	 * @param string $source Source file path.
+	 * @param string $target Target file path.
+	 * @return bool True on success, false on failure.
+	 */
+	private function move_file( string $source, string $target ): bool {
+		if ( ! file_exists( $source ) ) {
+			return false;
+		}
+
+		if ( $source === $target ) {
+			return true;
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename, WordPress.PHP.NoSilencedErrors.Discouraged
+		if ( @rename( $source, $target ) ) {
+			return true;
+		}
+
+		// Fallback to copy with verification before deleting source.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy
+		if ( copy( $source, $target ) ) {
+			if ( file_exists( $target ) && filesize( $target ) > 0 ) {
+				wp_delete_file( $source );
+				return true;
+			}
+			if ( file_exists( $target ) ) {
+				wp_delete_file( $target );
+			}
+		} elseif ( file_exists( $target ) ) {
+			wp_delete_file( $target );
+		}
+
+		return false;
+	}
+
+	/**
+	 * Migrate the MaxMind database from the legacy predictable directory to a random directory.
+	 *
+	 * Moves any existing .mmdb file from wp-content/uploads/burst/maxmind/ to the random
+	 * directory, updates the burst_geo_ip_file option, removes old archive files, and cleans
+	 * up the legacy directory.
+	 */
+	public function maybe_migrate_database_directory(): void {
+		if ( ! apply_filters( 'burst_geo_ip_enabled', true ) ) {
+			return;
+		}
+
+		if ( defined( 'BURST_DO_NOT_UPDATE_GEO_IP' ) && BURST_DO_NOT_UPDATE_GEO_IP ) {
+			return;
+		}
+
+		if ( ! wp_doing_cron() && ! $this->user_can_manage() ) {
+			return;
+		}
+
+		$current_file = (string) get_option( 'burst_geo_ip_file', '' );
+		$uploads      = wp_upload_dir();
+		$old_dir      = trailingslashit( apply_filters( 'burst_upload_dir', $uploads['basedir'] ) ) . 'burst/maxmind/';
+
+		$has_old_dir  = is_dir( $old_dir );
+		$has_old_file = '' !== $current_file && str_contains( str_replace( '\\', '/', $current_file ), '/burst/maxmind/' );
+
+		if ( ! $has_old_dir && ! $has_old_file ) {
+			return;
+		}
+
+		set_transient( 'burst_importing', true, 5 * MINUTE_IN_SECONDS );
+		try {
+			$target_dir = $this->maxmind_upload_dir();
+
+			// Clean up leftover archives and temporary files in the legacy directory FIRST.
+			if ( $has_old_dir ) {
+				$patterns = [ '*.gz', '*.tar', '*.tmp', '*-new.mmdb', '*-new-renamed.mmdb' ];
+				foreach ( $patterns as $pattern ) {
+					$leftover_files = glob( $old_dir . $pattern );
+					if ( is_array( $leftover_files ) ) {
+						foreach ( $leftover_files as $leftover ) {
+							if ( is_file( $leftover ) ) {
+								wp_delete_file( $leftover );
+							}
+						}
+					}
+				}
+			}
+
+			// Migrate the active file recorded in wp_options if it resides in the legacy directory.
+			if ( '' !== $current_file && file_exists( $current_file ) && str_contains( str_replace( '\\', '/', $current_file ), '/burst/maxmind/' ) ) {
+				$target_file = $target_dir . basename( $current_file );
+				if ( ! file_exists( $target_file ) || (int) filemtime( $current_file ) > (int) filemtime( $target_file ) ) {
+					if ( $this->move_file( $current_file, $target_file ) ) {
+						update_option( 'burst_geo_ip_file', $target_file );
+					}
+				} else {
+					wp_delete_file( $current_file );
+					update_option( 'burst_geo_ip_file', $target_file );
+				}
+			}
+
+			// Look for any other .mmdb files in the legacy directory.
+			if ( $has_old_dir ) {
+				$mmdb_files = glob( $old_dir . '*.mmdb' );
+				if ( is_array( $mmdb_files ) ) {
+					foreach ( $mmdb_files as $mmdb_file ) {
+						if ( ! is_file( $mmdb_file ) ) {
+							continue;
+						}
+
+						// Explicitly skip temporary partial extraction files.
+						if ( str_ends_with( $mmdb_file, '-new.mmdb' ) || str_ends_with( $mmdb_file, '-new-renamed.mmdb' ) ) {
+							wp_delete_file( $mmdb_file );
+							continue;
+						}
+
+						$target_file = $target_dir . basename( $mmdb_file );
+						if ( ! file_exists( $target_file ) ) {
+							if ( $this->move_file( $mmdb_file, $target_file ) ) {
+								$active_file = (string) get_option( 'burst_geo_ip_file', '' );
+								if ( '' === $active_file || ! file_exists( $active_file ) ) {
+									update_option( 'burst_geo_ip_file', $target_file );
+								}
+							}
+						} elseif ( (int) filemtime( $mmdb_file ) > (int) filemtime( $target_file ) ) {
+							if ( $this->move_file( $mmdb_file, $target_file ) ) {
+								update_option( 'burst_geo_ip_file', $target_file );
+							}
+						} else {
+							wp_delete_file( $mmdb_file );
+						}
+					}
+				}
+
+				// Deep clean legacy directory (including dotfiles and leftover subdirectories) and remove it.
+				$this->delete_directory( $old_dir );
+			}
+
+			// Update burst_geo_ip_file option if it still points to the old directory path.
+			$active_file = (string) get_option( 'burst_geo_ip_file', '' );
+			if ( '' !== $active_file && str_contains( str_replace( '\\', '/', $active_file ), '/burst/maxmind/' ) ) {
+				$expected_file = $target_dir . basename( $active_file );
+				if ( file_exists( $expected_file ) ) {
+					update_option( 'burst_geo_ip_file', $expected_file );
+				}
+			}
+		} finally {
+			delete_transient( 'burst_importing' );
+		}
 	}
 }

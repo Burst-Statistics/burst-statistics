@@ -56,7 +56,7 @@ class Tracking_GeoIp {
 	 * Reset the geo ip database on a detected error, unless it's currently downloading.
 	 */
 	public static function reset_geo_ip(): void {
-		if ( ! get_transient( 'burst_importing' ) ) {
+		if ( ! get_transient( 'burst_importing' ) && ! self::is_test() ) {
 			update_option( 'burst_import_geo_ip_on_activation', true );
 			delete_option( 'burst_geo_ip_file' );
 			delete_option( 'burst_last_update_geo_ip' );
@@ -99,6 +99,15 @@ class Tracking_GeoIp {
 
 		$reader = static::get_reader();
 		if ( $reader === null ) {
+			if ( ! empty( $ip ) && ( str_contains( $ip, '::1' ) || '127.0.0.1' === $ip ) ) {
+				$data = static::handle_lookup_exception(
+					new \Exception( "The address $ip is not in the database." ),
+					$defaults
+				);
+				if ( '' !== $data['country_code'] ) {
+					return $data;
+				}
+			}
 			return $defaults;
 		}
 
@@ -250,7 +259,7 @@ class Tracking_GeoIp {
 		$error_msg = $e->getMessage();
 		if ( strpos( $error_msg, ' is not in the databas' ) !== false ) {
 			self::error_log( 'Localhost detected. No real ip possible, so responding with filler data.' );
-			if ( strpos( $error_msg, '::1' ) ) {
+			if ( false !== strpos( $error_msg, '::1' ) || false !== strpos( $error_msg, '127.0.0.1' ) ) {
 				$defaults = apply_filters(
 					'burst_localhost_location_data',
 					[

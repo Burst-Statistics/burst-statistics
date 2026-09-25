@@ -9,7 +9,7 @@ interface NotFoundModalProps {
 }
 
 const NotFoundModal: React.FC<NotFoundModalProps> = ({
-	header = __( 'Page Not Found', 'burst-statistics' ),
+	header = __( 'Page not found', 'burst-statistics' ),
 	message = __(
 		'The page you are trying to access does not exist or is not available.',
 			'burst-statistics'

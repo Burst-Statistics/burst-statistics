@@ -25,6 +25,28 @@ interface UseSettingsDataResult {
 	isSavingSettings: boolean;
 }
 
+const syncGlobalBurstSettingsField = ( id: string, value: unknown ) => {
+	if ( 'undefined' !== typeof window && ( window as any ).burst_settings?.fields ) { // eslint-disable-line @typescript-eslint/no-explicit-any
+		( window as any ).burst_settings.fields = ( window as any ).burst_settings.fields.map( ( field: any ) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+			if ( field.id === id ) {
+				return { ...field, value };
+			}
+			return field;
+		});
+	}
+};
+
+const syncGlobalBurstSettingsFields = ( variables?: Record<string, unknown> ) => {
+	if ( 'undefined' !== typeof window && ( window as any ).burst_settings?.fields && variables ) { // eslint-disable-line @typescript-eslint/no-explicit-any
+		( window as any ).burst_settings.fields = ( window as any ).burst_settings.fields.map( ( field: any ) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+			if ( Object.prototype.hasOwnProperty.call( variables, field.id ) ) {
+				return { ...field, value: variables[field.id] };
+			}
+			return field;
+		});
+	}
+};
+
 /**
  * Custom hook for managing settings data using Tanstack Query.
  * This hook provides functions to fetch and update settings.
@@ -86,6 +108,8 @@ const useSettingsData = (): UseSettingsDataResult => {
 	};
 
 	const setValue = ( id: string, value: any ) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+		syncGlobalBurstSettingsField( id, value );
+
 		queryClient.setQueryData<SettingField[]>(
 			[ 'settings_fields' ],
 			( oldData ) => {
@@ -114,6 +138,8 @@ const useSettingsData = (): UseSettingsDataResult => {
 			},
 			onSuccess: async( _data, variables ) => {
 				toast.success( __( 'Settings saved', 'burst-statistics' ) );
+
+				syncGlobalBurstSettingsFields( variables );
 
 				// Merge saved values into the cache first so integration rows and other
 				// fields stay visible while a background refetch runs.

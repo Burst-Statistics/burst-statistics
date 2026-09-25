@@ -169,8 +169,13 @@ export const getFrontendTourMockData = ( path ) => {
 		return null;
 	}
 
-	const cleanPath = path.split( '?' )[0].replace( /^(\/)?(burst\/v1\/)?/, '' ).replace( /\/$/, '' );
-	const query = new URLSearchParams( path.includes( '?' ) ? path.split( '?' )[1] : '' );
+	// With plain permalinks the query string is glued on with '&' instead of '?'.
+	const queryStart = path.search( /[?&]/ );
+	const cleanPath = ( -1 === queryStart ? path : path.slice( 0, queryStart ) ).replace( /^(\/)?(burst\/v1\/)?/, '' ).replace( /\/$/, '' );
+	const query = new URLSearchParams( -1 === queryStart ? '' : path.slice( queryStart + 1 ) );
+
+	// getData() prefixes every path with data/, the ecommerce mocks below are keyed without it.
+	const dataPath = cleanPath.replace( /^data\//, '' );
 	const range = query.get( 'date_range' ) || query.get( 'range' ) || 'last-7-days';
 	const filter = query.get( 'filter' ) || '';
 	const now = Math.floor( Date.now() / 1000 );
@@ -464,7 +469,7 @@ export const getFrontendTourMockData = ( path ) => {
 				mostViewed: { title: '/features', value: '46' },
 				referrer: { title: 'google.com', value: '39' },
 				pageviews: { title: __( 'Total pageviews', 'burst-statistics' ), value: '385' },
-				timeOnPage: { title: __( 'Average time on page', 'burst-statistics' ), value: '154' }
+				timeOnPage: { title: __( 'Average time on page', 'burst-statistics' ), value: '154000' }
 			}
 		};
 	}
@@ -504,8 +509,10 @@ export const getFrontendTourMockData = ( path ) => {
 				today: { value: 6, tooltip: 'Goals completed today: ', title: 'Today' },
 				total: { value: 28, title: 'Total', icon: 'goals' },
 				topPerformer: { title: 'Newsletter Signup', value: '18' },
-				conversionMetric: { title: 'Total conversions', value: '28', icon: 'goals' },
-				conversionPercentage: { title: 'Conversion rate', value: '4.8%' },
+				conversionMetric: { title: __( 'Visitors', 'burst-statistics' ), value: '583', icon: 'visitors' },
+				conversionPercentage: { title: __( 'Conversion rate', 'burst-statistics' ), value: '4.8%' },
+				bestDevice: { title: __( 'Desktop', 'burst-statistics' ), value: 5.6, icon: 'desktop' },
+				status: 'active',
 				goalId: 1
 			}
 		};
@@ -515,12 +522,12 @@ export const getFrontendTourMockData = ( path ) => {
 	if ( 'live-goals' === cleanPath || 'data/live-goals' === cleanPath ) {
 		return {
 			request_success: true,
-			data: { count: 2 }
+			data: { count: 6, goals_count: 6 }
 		};
 	}
 
 	// 7. Devices
-	if ( 'data/devices' === cleanPath || 'devices' === cleanPath ) {
+	if ([ 'data/devices', 'devices', 'data/devicesTitleAndValue', 'data/devicesSubtitle' ].includes( cleanPath ) ) {
 		return {
 			request_success: true,
 			data: {
@@ -741,27 +748,76 @@ export const getFrontendTourMockData = ( path ) => {
 		};
 	}
 
-	// 15. Ecommerce Sales
+	// 15. Ecommerce Sales (same shape as Sales::get_data()).
 	if ( 'data/ecommerce/sales' === cleanPath || 'data/sales' === cleanPath ) {
 		return {
 			request_success: true,
 			data: {
-				current: { conversion_rate: 3.6, abandoned_rate: 22.4, average_order_value: 78.5, total_revenue: 14250, total_orders: 182 },
-				previous: { conversion_rate: 3.1, abandoned_rate: 25.0, average_order_value: 72.0, total_revenue: 11800, total_orders: 164 }
+				'conversion-rate': {
+					label: __( 'Conversion Rate', 'burst-statistics' ),
+					current: { conversion_rate: 3.6, visitors: 5050, total_converted: 182 },
+					previous: { conversion_rate: 3.1, visitors: 5290, total_converted: 164 },
+					rate_change: 16.1
+				},
+				'abandonment-rate': {
+					label: __( 'Abandoned Carts', 'burst-statistics' ),
+					current: { abandoned_rate: 22.4, total_abandoned: 53 },
+					previous: { abandoned_rate: 25.0, total_abandoned: 55 },
+					rate_change: -10.4
+				},
+				'average-order': {
+					label: __( 'Average Order Value', 'burst-statistics' ),
+					current: { average_order_value: 78.5, currency: 'USD' },
+					previous: { average_order_value: 72.0, currency: 'USD' },
+					rate_change: 9.0
+				},
+				revenue: {
+					label: __( 'Revenue', 'burst-statistics' ),
+					current: { total_revenue: 14250, total_orders: 182, currency: 'USD' },
+					previous: { total_revenue: 11800, total_orders: 164, currency: 'USD' },
+					rate_change: 20.8
+				}
 			}
 		};
 	}
 
-	// 16. Ecommerce Subscriptions
+	// 16. Ecommerce Subscriptions (same shape as Subscriptions::get_data()).
 	if ( 'data/ecommerce/subscriptions' === cleanPath || 'data/subscriptions' === cleanPath ) {
 		return {
 			request_success: true,
 			data: {
-				monthly_recurring_revenue: { value: 4850, change: 12.4, change_status: 'positive' },
-				active_subscriptions: { value: 148, change: 8.1, change_status: 'positive' },
-				average_lifetime_value: { value: 340, change: 5.2, change_status: 'positive' },
-				revenue_churn: { value: 1.8, change: -0.4, change_status: 'positive' },
-				canceled_subscriptions: { value: 3, change: -1, change_status: 'positive' }
+				monthly_recurring_revenue: {
+					label: __( 'Monthly Recurring Revenue', 'burst-statistics' ),
+					currency: 'USD',
+					current: { mrr: 4850, count: 148 },
+					previous: { mrr: 4315, count: 137 },
+					rate_change: 12.4
+				},
+				active_subscriptions: {
+					label: __( 'Active Subscriptions', 'burst-statistics' ),
+					current: 148,
+					previous: { count: 137 },
+					rate_change: 8.0
+				},
+				canceled_subscriptions: {
+					label: __( 'Canceled Subscriptions', 'burst-statistics' ),
+					current: 3,
+					previous: { count: 4 },
+					rate_change: -25.0
+				},
+				revenue_churn: {
+					label: __( 'Revenue Churn', 'burst-statistics' ),
+					current: { churned_percentage: 1.8, previously_active_count: 140 },
+					previous: { churned_percentage: 2.2, previously_active_count: 131 },
+					rate_change: -18.2
+				},
+				average_lifetime_value: {
+					label: __( 'Average Lifetime Value', 'burst-statistics' ),
+					currency: 'USD',
+					current: { value: 340, active_subscription_count: 148 },
+					previous: { value: 323, active_subscription_count: 137 },
+					rate_change: 5.3
+				}
 			}
 		};
 	}
@@ -1091,7 +1147,8 @@ export const getFrontendTourMockData = ( path ) => {
 					sessions: 4120,
 					visitors: 3890,
 					bounce_rate: 32.4,
-					avg_time_on_page: 154,
+					avg_time_on_page: 154000,
+					bounced_sessions: 1335,
 					first_time_visitors: 2450
 				},
 				previous: {
@@ -1099,7 +1156,8 @@ export const getFrontendTourMockData = ( path ) => {
 					sessions: 3580,
 					visitors: 3340,
 					bounce_rate: 36.8,
-					avg_time_on_page: 142,
+					avg_time_on_page: 142000,
+					bounced_sessions: 1318,
 					first_time_visitors: 2100
 				},
 				view: 'default'
@@ -1124,7 +1182,30 @@ export const getFrontendTourMockData = ( path ) => {
 	}
 
 	// 20. Ecommerce Sales Chart & Subscriptions Revenue Chart
-	if ( 'ecommerce/sales-chart' === cleanPath || 'ecommerce/subscriptions-revenue-chart' === cleanPath ) {
+	if ( 'ecommerce/subscriptions-revenue-chart' === dataPath ) {
+		const rows = [];
+		for ( let i = 6; 0 <= i; i-- ) {
+			const timestamp = now - i * 86400;
+			rows.push({
+				timestamp,
+				label: new Date( timestamp * 1000 ).toLocaleDateString( undefined, { month: 'short', day: 'numeric' }),
+				newValue: 320 + ( ( 6 - i ) * 45 ) % 160,
+				renewalValue: 980 + ( 6 - i ) * 55
+			});
+		}
+		return {
+			request_success: true,
+			data: {
+				interval: 'day',
+				spans_multiple_years: false,
+				mode: 'revenue',
+				currency: 'USD',
+				rows
+			}
+		};
+	}
+
+	if ( 'ecommerce/sales-chart' === dataPath ) {
 		const timestamps = [];
 		const salesData = [];
 		const revenueData = [];
@@ -1140,7 +1221,7 @@ export const getFrontendTourMockData = ( path ) => {
 				interval: 'day',
 				spans_multiple_years: false,
 				mode: 'revenue',
-				currency: '$',
+				currency: 'USD',
 				datasets: [
 					{
 						data: revenueData,
@@ -1161,7 +1242,7 @@ export const getFrontendTourMockData = ( path ) => {
 	}
 
 	// 21. Forecasts (Sales & Subscriptions)
-	if ( 'ecommerce/sales-forecast' === cleanPath || 'ecommerce/subscriptions-forecast' === cleanPath ) {
+	if ( 'ecommerce/sales-forecast' === dataPath || 'ecommerce/subscriptions-forecast' === dataPath ) {
 		const rows = [];
 		for ( let i = 0; 7 > i; i++ ) {
 			rows.push({
@@ -1175,7 +1256,7 @@ export const getFrontendTourMockData = ( path ) => {
 				interval: 'day',
 				spans_multiple_years: false,
 				mode: 'revenue',
-				currency: '$',
+				currency: 'USD',
 				rows,
 				metadata: {
 					growth_rate: 8.4,
@@ -1187,7 +1268,7 @@ export const getFrontendTourMockData = ( path ) => {
 	}
 
 	// 22. Ecommerce Top Performers
-	if ( 'ecommerce/top-performers' === cleanPath ) {
+	if ( 'ecommerce/top-performers' === dataPath ) {
 		return {
 			request_success: true,
 			data: {
@@ -1199,19 +1280,19 @@ export const getFrontendTourMockData = ( path ) => {
 				},
 				'top-device': {
 					label: __( 'Top device', 'burst-statistics' ),
-					current: { total_revenue: 9800, total_quantity_sold: 120 },
+					current: { device_name: __( 'Desktop', 'burst-statistics' ), total_revenue: 9800, total_quantity_sold: 120 },
 					previous: { total_revenue: 8100, total_quantity_sold: 104 },
 					revenue_change: 21.0
 				},
 				'top-country': {
 					label: __( 'Top country', 'burst-statistics' ),
-					current: { total_revenue: 7200, total_quantity_sold: 84 },
+					current: { country_code: 'US', total_revenue: 7200, total_quantity_sold: 84 },
 					previous: { total_revenue: 6100, total_quantity_sold: 72 },
 					revenue_change: 18.0
 				},
 				'top-campaign': {
 					label: __( 'Top campaign', 'burst-statistics' ),
-					current: { total_revenue: 3800, total_quantity_sold: 42 },
+					current: { campaign_name: 'Summer Sale', total_revenue: 3800, total_quantity_sold: 42 },
 					previous: { total_revenue: 2900, total_quantity_sold: 31 },
 					revenue_change: 31.0
 				}
@@ -1220,28 +1301,53 @@ export const getFrontendTourMockData = ( path ) => {
 	}
 
 	// 23. Ecommerce Quick Wins
-	if ( 'ecommerce/quick-wins' === cleanPath ) {
+	if ( 'ecommerce/quick-wins' === dataPath ) {
 		return {
 			request_success: true,
-			data: [
-				{
-					id: 'abandoned-cart-recovery',
-					title: __( 'Recover Abandoned Carts', 'burst-statistics' ),
-					impact: 'high',
-					description: __( '22% of carts were abandoned this week. Setting up a recovery email could recover ~$1,800/mo.', 'burst-statistics' )
+			data: {
+				quickWins: [
+					{
+						type: 'critical',
+						key: 'abandoned-cart-recovery',
+						title: __( 'Recover abandoned carts', 'burst-statistics' ),
+						message: __( '22% of carts were abandoned this week.', 'burst-statistics' ),
+						recommendation: __( 'A recovery email could win back part of that revenue.', 'burst-statistics' ),
+						url: null
+					},
+					{
+						type: 'opportunity',
+						key: 'mobile-checkout',
+						title: __( 'Optimize mobile checkout', 'burst-statistics' ),
+						message: __( 'Mobile converts at 1.8% against 4.2% on desktop.', 'burst-statistics' ),
+						recommendation: __( 'Fewer checkout fields on mobile can close that gap.', 'burst-statistics' ),
+						url: null
+					}
+				],
+				dateRange: { date_start: now - 7 * 86400, date_end: now }
+			}
+		};
+	}
+
+	// 23b. Ecommerce Growth (forecast rows keyed as in GrowthBlock.tsx)
+	if ( 'ecommerce/growth' === dataPath ) {
+		const year = new Date( now * 1000 ).getFullYear();
+		const month = new Date( now * 1000 ).toLocaleDateString( undefined, { month: 'long' });
+		return {
+			request_success: true,
+			data: {
+				currency: 'USD',
+				rows: {
+					'forecast-this-year': { label: __( 'Forecasted revenue this year', 'burst-statistics' ), subtitle: String( year ), value: 168400, rate_change: 18.2, is_forecast: true },
+					'forecast-this-month': { label: __( 'Forecasted revenue this month', 'burst-statistics' ), subtitle: month, value: 15200, rate_change: 9.4, is_forecast: true },
+					'forecast-next-year': { label: __( 'Forecasted revenue next year', 'burst-statistics' ), subtitle: String( year + 1 ), value: 199100, rate_change: 18.2, is_forecast: true }
 				},
-				{
-					id: 'mobile-checkout-speed',
-					title: __( 'Optimize Mobile Checkout', 'burst-statistics' ),
-					impact: 'medium',
-					description: __( 'Mobile conversion rate is 1.8% vs 4.2% on desktop. Streamlining checkout fields can boost sales.', 'burst-statistics' )
-				}
-			]
+				metadata: { growth_rate: 8.4, limited_data: false }
+			}
 		};
 	}
 
 	// 24. Ecommerce Sales Funnel
-	if ( 'ecommerce/sales-funnel' === cleanPath ) {
+	if ( 'ecommerce/sales-funnel' === dataPath ) {
 		return {
 			request_success: true,
 			data: [
@@ -1254,7 +1360,7 @@ export const getFrontendTourMockData = ( path ) => {
 	}
 
 	// 25. Subscriptions Distribution (Gateways, Currencies, Countries)
-	if ( 'ecommerce/subscriptions-distribution' === cleanPath ) {
+	if ( 'ecommerce/subscriptions-distribution' === dataPath ) {
 		return {
 			request_success: true,
 			data: [
@@ -1266,7 +1372,7 @@ export const getFrontendTourMockData = ( path ) => {
 	}
 
 	// 26. Subscriptions Retention / Cohorts
-	if ( 'ecommerce/subscriptions-retention' === cleanPath ) {
+	if ( 'ecommerce/subscriptions-retention' === dataPath ) {
 		return {
 			request_success: true,
 			data: {

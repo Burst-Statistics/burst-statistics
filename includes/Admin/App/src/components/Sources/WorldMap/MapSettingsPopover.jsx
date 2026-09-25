@@ -10,6 +10,7 @@ import SwitchInput from '@/components/Inputs/SwitchInput';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import { __ } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
+import getPortalContainer from '@/utils/getPortalContainer';
 
 // fallow-ignore-next-line complexity
 const UnifiedMapPopover = () => {
@@ -139,13 +140,7 @@ const UnifiedMapPopover = () => {
 			</ReactPopover.Trigger>
 
 			<ReactPopover.Portal
-				container={
-					document.getElementById( 'modal-root' ) ||
-					document.getElementById( 'burst-statistics' ) ||
-					document.getElementById( 'burst-mainwp' ) ||
-					document.querySelector( '.burst' ) ||
-					undefined
-				}
+				container={getPortalContainer()}
 			>
 				<ReactPopover.Content
 					className="burst z-50"

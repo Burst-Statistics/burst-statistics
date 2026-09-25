@@ -1,4 +1,6 @@
 import Icon from '@/utils/Icon';
+import ProBadge from '@/components/Common/ProBadge';
+import useLicenseData from '@/hooks/useLicenseData';
 
 /**
  * RadioFieldOptionDetails component.
@@ -11,9 +13,14 @@ import Icon from '@/utils/Icon';
  * @param {?string}     props.icon        - Optional icon name shown before the label.
  * @param {?string}     props.returning   - Optional "returning" descriptor text.
  * @param {?string}     props.description - Optional description text.
+ * @param {?Object|boolean} props.pro     - Optional pro config.
+ * @param {?string}     props.inputId     - Optional input ID.
  * @return {JSX.Element}
  */
-const RadioFieldOptionDetails = ({ label, icon, returning, description }) => {
+// fallow-ignore-next-line complexity
+const RadioFieldOptionDetails = ({ label, icon, returning, description, pro, inputId }) => {
+	const { isTrial } = useLicenseData();
+
 	return (
 		<div className="flex flex-col gap-1">
 			<div className="flex items-center gap-2">
@@ -23,6 +30,13 @@ const RadioFieldOptionDetails = ({ label, icon, returning, description }) => {
 				<span className="font-semibold text-text-black text-md">
 					{label}
 				</span>
+				{pro && (
+					<ProBadge
+						id={inputId || 'reporting'}
+						url={'object' === typeof pro && pro?.url ? pro.url : undefined}
+						type={isTrial ? 'icon' : 'badge'}
+					/>
+				)}
 			</div>
 			{returning && (
 				<div className="flex items-center gap-1.5 mt-1">

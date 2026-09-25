@@ -1425,6 +1425,48 @@ class Statistics_Query {
 	}
 
 	/**
+	 * Attach joins for identifying the referring page (internal previous hit or external session referrer).
+	 *
+	 * Joins burst_sessions as `sess` and the immediately preceding distinct hit as `prev`.
+	 *
+	 * @param Query  $query         The query builder instance.
+	 * @param string $current_alias The alias for the current burst_statistics row (default 's').
+	 * @return Query The query instance with left joins attached.
+	 */
+	public static function join_referring_page( Query $query, string $current_alias = 's' ): Query {
+		global $wpdb;
+		$stats_table = $wpdb->prefix . 'burst_statistics';
+		$alias       = preg_replace( '/[^a-zA-Z0-9_]/', '', $current_alias );
+
+		return $query
+			->left_join( 'burst_sessions', "{$alias}.session_id = sess.ID", 'sess' )
+			->left_join(
+				'burst_statistics',
+				"prev.ID = ( SELECT MAX(p.ID) FROM {$stats_table} p WHERE p.session_id = {$alias}.session_id AND p.ID < {$alias}.ID AND p.page_url != {$alias}.page_url )",
+				'prev'
+			);
+	}
+
+	/**
+	 * Get SQL CASE expression that evaluates the referring page or fallback.
+	 *
+	 * Preference order:
+	 * 1. Preceding page URL from the same session (prev.page_url)
+	 * 2. Session referrer (sess.referrer)
+	 * 3. Default fallback expression
+	 *
+	 * @param string $default_sql Fallback SQL expression (e.g. "''" or "'Direct / unknown'").
+	 * @return string CASE expression SQL snippet.
+	 */
+	public static function get_referring_page_case_sql( string $default_sql = "''" ): string {
+		return "CASE
+			WHEN prev.page_url IS NOT NULL AND prev.page_url != '' THEN prev.page_url
+			WHEN sess.referrer IS NOT NULL AND sess.referrer != '' THEN sess.referrer
+			ELSE {$default_sql}
+		END";
+	}
+
+	/**
 	 * Compile the current builder state into an executable Query object.
 	 *
 	 * @return Query The compiled query ready for prepare_sql() or execution.

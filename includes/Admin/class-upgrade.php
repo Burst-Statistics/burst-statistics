@@ -474,6 +474,20 @@ class Upgrade {
 			\Burst\burst_loader()->admin->tasks->dismiss_task_permanently( 'import_statistics_data' );
 		}
 
+		if ( '' !== $prev_version && version_compare( $prev_version, '3.7.2', '<' ) ) {
+			// The MaxMind database moved from the predictable
+			// uploads/burst/maxmind/ directory to a random-token directory so
+			// it cannot be downloaded from a guessable url. Move an existing
+			// database and re-point burst_geo_ip_file; the daily cron keeps
+			// catching files that are still placed in the legacy directory.
+			( new \Burst\Admin\Geo_Ip\Geo_Ip() )->maybe_migrate_database_directory();
+
+			// Share-link recipients could edit the viewer account's own profile
+			// (password, email) through the core users/me endpoint, now blocked
+			// by Viewer_Lockdown. Reset the account as a precaution.
+			( new \Burst\Admin\Share\Share() )->auth->reset_viewer_account();
+		}
+
 		// bump-version.sh inserts new release versions above this line — do not remove.
 		$admin = new Admin();
 		$admin->run_table_init_hook();

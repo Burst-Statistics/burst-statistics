@@ -341,7 +341,7 @@ class Burst_Adapter implements Import_Adapter {
 		$current_table = (string) ( $state['current_table'] ?? '' );
 
 		while ( ! feof( $handle ) ) {
-			if ( 0 === ( $statements_run % 10 ) && get_transient( 'burst_import_cancelled_' . $import_id ) ) {
+			if ( 0 === ( $statements_run % 10 ) && false !== get_transient( 'burst_import_cancelled_' . $import_id ) ) {
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 				fclose( $handle );
 				if ( $working_file !== $file_path && file_exists( $working_file ) ) {
@@ -2017,7 +2017,8 @@ class Burst_Adapter implements Import_Adapter {
 			$zip = new ZipArchive();
 			if ( true === $zip->open( $file_path ) ) {
 				$preview_content = '';
-				for ( $i = 0; $i < $zip->numFiles; $i++ ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				for ( $i = 0; $i < $zip->numFiles; $i++ ) {
 					$stat = $zip->statIndex( $i );
 					if ( $stat && preg_match( '/\.sql(\.gz)?$/i', (string) $stat['name'] ) ) {
 						$stream = $zip->getStream( $stat['name'] );
@@ -2028,7 +2029,8 @@ class Burst_Adapter implements Import_Adapter {
 							fclose( $stream );
 							$raw_string = false !== $raw ? $raw : '';
 							if ( str_ends_with( strtolower( (string) $stat['name'] ), '.gz' ) && function_exists( 'gzdecode' ) ) {
-								$decoded         = @gzdecode( $raw_string ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+								// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+								$decoded         = @gzdecode( $raw_string );
 								$preview_content = false !== $decoded ? $decoded : $raw_string;
 							} else {
 								$preview_content = $raw_string;

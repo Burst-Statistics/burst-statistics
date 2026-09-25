@@ -6,6 +6,7 @@ use Burst\Frontend\Goals\Goals_Tracker;
 use Burst\Frontend\Ip\Ip;
 use Burst\Frontend\Search\Search;
 use Burst\Frontend\Share\Share_Expired;
+use Burst\Frontend\Share\Viewer_Lockdown;
 use Burst\Frontend\Tracking\Tracking;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
@@ -128,6 +129,9 @@ class Frontend {
 
 		$share = new Share_Expired();
 		$share->init();
+
+		$viewer_lockdown = new Viewer_Lockdown();
+		$viewer_lockdown->init();
 
 		// Check if MainWP integration option is enabled.
 		if ( $this->get_option_bool( 'enable_mainwp_integration' ) ) {

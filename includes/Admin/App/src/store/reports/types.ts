@@ -3,6 +3,7 @@ import {FilterSearchParams} from '@/config/filterConfig';
 
 export type ReportFormatKey = 'classic' | 'story';
 export type FrequencyType = 'daily' | 'weekly' | 'monthly';
+export type DeliveryChannelType = 'email' | 'both';
 
 export type WeekOfMonthType =
 	| 1
@@ -22,6 +23,7 @@ export type DayOfWeekType =
 export type ContentBlockId =
 	| 'logo'
 	| 'hero'
+	| 'ai_summary'
 	| 'insights'
 	| 'compare'
 	| 'compare_story'
@@ -99,6 +101,7 @@ export type ContentItem = {
 	blockProps?: Partial<BlockComponentProps>;
 	ecommerce?: boolean;
 	isReport?: boolean;
+	formats?: ( 'classic' | 'story' )[];
 };
 
 export type ContentItems = ContentItem[];
@@ -140,6 +143,7 @@ export interface Report {
 	lastEdit: number;
 	content: ContentBlock[];
 	recipients: string[];
+	channels?: DeliveryChannelType;
 	scheduled: boolean;
 	frequency: FrequencyType;
 	dayOfWeek?: DayOfWeekType;
@@ -149,6 +153,7 @@ export interface Report {
 	lastSendMessage: string;
 	fixedEndDate?: string;
 	reportDateRange?: string;
+	ai_summary?: string;
 }
 
 export interface WizardState

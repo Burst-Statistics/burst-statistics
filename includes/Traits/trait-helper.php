@@ -56,7 +56,12 @@ trait Helper {
 	 * Get an option from the burst settings and cast it to a boolean
 	 */
 	protected function get_option_bool( string $option, ?bool $default_value = null ): bool {
-		return (bool) $this->get_option( $option, $default_value );
+		$val = $this->get_option( $option, $default_value );
+		if ( function_exists( 'rest_sanitize_boolean' ) ) {
+			return rest_sanitize_boolean( $val );
+		}
+
+		return filter_var( $val, FILTER_VALIDATE_BOOLEAN );
 	}
 
 	/**
@@ -85,7 +90,10 @@ trait Helper {
 		if ( ! is_dir( $upload_dir ) ) {
 			wp_mkdir_p( $upload_dir );
 		}
-		if ( ! $is_public ) {
+		// wp_mkdir_p() fails silently when the parent is not writable (e.g. a
+		// root-owned uploads/burst/ created by WP-CLI); writing into a missing
+		// directory would only add PHP warnings, so callers check is_dir() instead.
+		if ( ! $is_public && is_dir( $upload_dir ) ) {
 			// Harden the directory against direct HTTP access.
 			if ( ! file_exists( $upload_dir . '/index.php' ) ) {
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
@@ -97,7 +105,74 @@ trait Helper {
 			}
 		}
 
+		// Ensure parent uploads/burst/ has an index.php to prevent directory listing.
+		if ( ! $root ) {
+			$burst_root = trailingslashit( apply_filters( 'burst_upload_dir', $uploads['basedir'] ) ) . 'burst/';
+			if ( is_dir( $burst_root ) && ! file_exists( $burst_root . 'index.php' ) ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents, WordPress.PHP.NoSilencedErrors.Discouraged
+				@file_put_contents( $burst_root . 'index.php', "<?php\n// Silence is golden.\n" );
+			}
+		}
+
 		return trailingslashit( $upload_dir );
+	}
+
+	/**
+	 * Get an upload directory identified by an option containing a 32-character random token.
+	 *
+	 * Narrows the race condition when minting the token via add_option semantics,
+	 * creating and hardening the directory with index.php and .htaccess.
+	 *
+	 * @param string $option The wp_options key storing the directory token.
+	 * @param string $prefix Optional sub-path inside uploads/burst/ before the random token (e.g. 'exports').
+	 * @return string Absolute directory path with trailing slash.
+	 */
+	public function random_upload_dir( string $option, string $prefix = '' ): string {
+		$folder = (string) get_option( $option, '' );
+		if ( '' === $folder ) {
+			$folder = $this->random_token();
+			if ( ! add_option( $option, $folder, '', false ) ) {
+				$folder = (string) get_option( $option, '' );
+			}
+		} elseif ( 1 !== preg_match( '/^[a-f0-9]{32}$/', $folder ) ) {
+			$folder = $this->random_token();
+			update_option( $option, $folder, false );
+		}
+
+		$relative_path = '' !== $prefix ? trailingslashit( $prefix ) . $folder : $folder;
+		return $this->upload_dir( $relative_path );
+	}
+
+	/**
+	 * Recursively delete a directory and all of its contents including dotfiles and subdirectories.
+	 *
+	 * @param string $dir Absolute directory path.
+	 */
+	public function delete_directory( string $dir ): void {
+		if ( ! is_dir( $dir ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		$entries = @scandir( $dir );
+		if ( ! is_array( $entries ) ) {
+			return;
+		}
+
+		foreach ( $entries as $entry ) {
+			if ( '.' === $entry || '..' === $entry ) {
+				continue;
+			}
+			$path = $dir . DIRECTORY_SEPARATOR . $entry;
+			if ( is_dir( $path ) && ! is_link( $path ) ) {
+				$this->delete_directory( $path );
+			} else {
+				wp_delete_file( $path );
+			}
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir, WordPress.PHP.NoSilencedErrors.Discouraged
+		@rmdir( $dir );
 	}
 
 	/**
@@ -229,7 +304,11 @@ trait Helper {
 	 * Check if we are running in a test environment
 	 */
 	protected static function is_test(): bool {
-		return getenv( 'BURST_CI_ACTIVE' ) !== false || ( defined( 'BURST_CI_ACTIVE' ) );
+		return ( defined( 'BURST_CI_ACTIVE' ) && BURST_CI_ACTIVE )
+			|| ( defined( 'CI' ) && CI )
+			|| ( defined( 'BURST_DO_NOT_UPDATE_GEO_IP' ) && BURST_DO_NOT_UPDATE_GEO_IP )
+			|| getenv( 'BURST_CI_ACTIVE' ) !== false
+			|| getenv( 'CI' ) !== false;
 	}
 
 	// phpcs:disable

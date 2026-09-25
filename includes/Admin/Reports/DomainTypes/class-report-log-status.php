@@ -35,6 +35,16 @@ final class Report_Log_Status {
 	public const PARTLY_SENT = 'partly_sent';
 
 	/**
+	 * Slack successful status.
+	 */
+	public const SLACK_SUCCESSFUL = 'slack_successful';
+
+	/**
+	 * Slack failed status.
+	 */
+	public const SLACK_FAILED = 'slack_failed';
+
+	/**
 	 * Processing status.
 	 */
 	public const PROCESSING = 'processing';
@@ -55,6 +65,8 @@ final class Report_Log_Status {
 		self::EMAIL_ADDRESS_ERROR,
 		self::CRON_MISS,
 		self::PARTLY_SENT,
+		self::SLACK_SUCCESSFUL,
+		self::SLACK_FAILED,
 	];
 
 	/**
@@ -84,7 +96,9 @@ final class Report_Log_Status {
 			self::SENDING_FAILED      => __( 'Sending failed', 'burst-statistics' ),
 			self::CRON_MISS           => __( 'Sending missed', 'burst-statistics' ),
 			self::PROCESSING          => __( 'In progress', 'burst-statistics' ),
-			default                                => $status,
+			self::SLACK_SUCCESSFUL    => __( 'Slack notification delivered successfully.', 'burst-statistics' ),
+			self::SLACK_FAILED        => __( 'Slack delivery failed.', 'burst-statistics' ),
+			default                   => $status,
 		};
 	}
 

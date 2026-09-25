@@ -35,7 +35,7 @@ class Statistics_Data {
 			// uid_id must be qualified: burst_sessions also carries a uid_id
 			// column, so a bare uid_id is ambiguous in any query that joins
 			// sessions. The uid alias is the REST/JS contract (LiveTraffic).
-			->select_raw( 'time+time_on_page / 1000 AS active_time, sessions.referrer AS utm_source, page_url, time, time_on_page, statistics.uid_id AS uid, page_id' )
+			->select_raw( 'time+COALESCE(time_on_page, 0) / 1000 AS active_time, sessions.referrer AS utm_source, page_url, time, time_on_page, statistics.uid_id AS uid, page_id' )
 			->order_by( 'active_time DESC' )
 			->limit( 100 );
 
@@ -139,7 +139,7 @@ class Statistics_Data {
 			->date_range( $time_start, $now + HOUR_IN_SECONDS )
 			->with( 'sessions' )
 			->select_raw( 'COUNT(DISTINCT(statistics.uid_id))' )
-			->where_raw( '( (time + time_on_page / 1000 + %d + %d) > %d)', [ $on_page_offset, $exit_margin, $now ] );
+			->where_raw( '( (time + COALESCE(time_on_page, 0) / 1000 + %d + %d) > %d)', [ $on_page_offset, $exit_margin, $now ] );
 		$live_value = $qd->fetch_var();
 
 		return max( (int) $live_value, 0 );
@@ -1153,79 +1153,6 @@ class Statistics_Data {
 		];
 
 		return apply_filters( 'burst_datatable_response', $response, $args );
-	}
-
-	/**
-	 * Generate dummy data for datatable display.
-	 *
-	 * @return array Array of dummy data rows.
-	 */
-	public function get_dummy_datatable_data(): array {
-		$page_urls = [
-			'/',
-			'/about-us',
-			'/contact',
-			'/blog',
-			'/pricing',
-			'/products',
-			'/features',
-			'/services',
-			'/shop',
-			'/checkout',
-			'/cart',
-			'/faq',
-			'/documentation',
-			'/case-studies',
-			'/testimonials',
-			'/careers',
-			'/privacy-policy',
-			'/terms-and-conditions',
-			'/integrations',
-			'/landing-page',
-		];
-
-		$dummy_rows = [];
-
-		for ( $i = 0; $i < 15; $i++ ) {
-			$pageviews             = wp_rand( 800, 5000 );
-			$visitors              = wp_rand( (int) ( $pageviews * 0.6 ), (int) ( $pageviews * 0.9 ) );
-			$sessions              = wp_rand( $visitors, (int) ( $visitors * 1.2 ) );
-			$bounce_rate           = round( wp_rand( 20, 65 ) + ( wp_rand( 0, 9 ) / 10 ), 1 );
-			$avg_time_on_page      = wp_rand( 90, 480 );
-			$entrances             = wp_rand( 300, 1800 );
-			$exit_rate             = round( wp_rand( 15, 70 ) + ( wp_rand( 0, 9 ) / 10 ), 1 );
-			$conversions           = wp_rand( 20, 350 );
-			$conversion_rate       = round( ( $conversions / $pageviews ) * 100, 1 );
-			$sales                 = wp_rand( 5, 120 );
-			$revenue               = wp_rand( 500, 10000 );
-			$sales_conversion_rate = round( ( $sales / $pageviews ) * 100, 1 );
-			$page_value            = round( $revenue / $pageviews, 2 );
-
-			$dummy_rows[] = [
-				'page_url'              => $page_urls[ array_rand( $page_urls ) ],
-				'pageviews'             => $pageviews,
-				'visitors'              => $visitors,
-				'sessions'              => $sessions,
-				'bounce_rate'           => $bounce_rate,
-				'avg_time_on_page'      => $avg_time_on_page,
-				'entrances'             => $entrances,
-				'exit_rate'             => $exit_rate,
-				'conversions'           => $conversions,
-				'conversion_rate'       => $conversion_rate,
-				'sales'                 => $sales,
-				'revenue'               => [
-					'currency' => 'USD',
-					'value'    => $revenue,
-				],
-				'sales_conversion_rate' => $sales_conversion_rate,
-				'page_value'            => [
-					'currency' => 'USD',
-					'value'    => $page_value,
-				],
-			];
-		}
-
-		return $dummy_rows;
 	}
 
 	/**

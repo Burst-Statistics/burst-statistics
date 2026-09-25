@@ -24,6 +24,21 @@ class Reporting_Fields {
 	 */
 	public function init(): void {
 		add_filter( 'burst_fields', [ $this, 'add_reporting_fields' ] );
+		add_filter( 'burst_field_value_slack_webhook_url', [ $this, 'get_masked_slack_webhook_url' ], 10, 1 );
+		add_action( 'burst_before_save_field', [ $this, 'save_slack_webhook_url' ], 10, 2 );
+		add_filter( 'burst_fieldvalue', [ $this, 'filter_saved_field_value' ], 10, 2 );
+		add_filter( 'burst_allowed_field_types', [ $this, 'add_allowed_field_types' ] );
+	}
+
+	/**
+	 * Add 'slack_webhook' to the list of allowed field types.
+	 *
+	 * @param array<int, string> $field_types Existing field types.
+	 * @return array<int, string> Modified field types.
+	 */
+	public function add_allowed_field_types( array $field_types ): array {
+		$field_types[] = 'slack_webhook';
+		return $field_types;
 	}
 
 	/**
@@ -87,5 +102,75 @@ class Reporting_Fields {
 		$fields = apply_filters( 'burst_reporting_fields_values', $fields );
 
 		return array_values( $fields );
+	}
+
+	/**
+	 * Return the Slack webhook URL masked for display.
+	 *
+	 * @param mixed $value Field value.
+	 * @return string Masked webhook URL or empty string.
+	 */
+	public function get_masked_slack_webhook_url( mixed $value = '' ): string {
+		$raw_url = (string) get_option( 'burst_slack_webhook_url', '' );
+		if ( empty( $raw_url ) ) {
+			return is_string( $value ) ? $value : '';
+		}
+
+		$prefix = 'https://hooks.slack.com/services/';
+		if ( str_starts_with( $raw_url, $prefix ) ) {
+			return $prefix . '••••••••/••••••••/••••••••••••••••••••••••';
+		}
+
+		return '••••••••••••••••••••••••';
+	}
+
+	/**
+	 * Handle saving the Slack webhook URL separately with autoload false.
+	 *
+	 * @param string $field_id Field identifier.
+	 * @param mixed  $value    New value.
+	 * @throws \InvalidArgumentException When webhook URL does not match valid Slack webhook format.
+	 */
+	public function save_slack_webhook_url( string $field_id, mixed $value ): void {
+		if ( 'slack_webhook_url' !== $field_id ) {
+			return;
+		}
+
+		if ( ! $this->is_pro() ) {
+			return;
+		}
+
+		$url = is_string( $value ) ? trim( $value ) : '';
+
+		// If the value contains mask bullets, the user left the masked value unchanged.
+		if ( str_contains( $url, '•' ) ) {
+			return;
+		}
+
+		if ( empty( $url ) ) {
+			delete_option( 'burst_slack_webhook_url' );
+			return;
+		}
+
+		if ( ! str_starts_with( $url, 'https://hooks.slack.com/services/' ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
+			throw new \InvalidArgumentException( esc_html__( 'Invalid Slack webhook URL. The URL must start with https://hooks.slack.com/services/', 'burst-statistics' ) );
+		}
+
+		update_option( 'burst_slack_webhook_url', esc_url_raw( $url ), false );
+	}
+
+	/**
+	 * Prevent the Slack webhook URL from being stored in burst_options_settings.
+	 *
+	 * @param mixed  $value    Sanitized field value.
+	 * @param string $field_id Field ID.
+	 * @return mixed Filtered value.
+	 */
+	public function filter_saved_field_value( mixed $value, string $field_id ): mixed {
+		if ( 'slack_webhook_url' === $field_id ) {
+			return '';
+		}
+		return $value;
 	}
 }

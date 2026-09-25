@@ -89,8 +89,8 @@ export const LivePreviewBlocks = ({ className }: { className?: string }) => {
 								/>
 							);
 
-							// Hero and text blocks are edge-to-edge in the preview pane; cancel the px-6 of the inner wrapper.
-							if ( 'hero' === block.id || 'text_block' === block.id || 'footer' === block.id ) {
+							// Full-width blocks are edge-to-edge in the preview pane; cancel the px-6 of the inner wrapper.
+							if ( 'hero' === block.id || 'text_block' === block.id || 'footer' === block.id || 'ai_summary' === block.id ) {
 								return (
 									<div key={`${block.id}-${reportBlockIndex}-wrap`} className="-mx-6">
                                         {memoizedBlock}
