@@ -11,7 +11,7 @@ import { PageFilter } from '@/components/Filters/PageFilter';
 import clsx from 'clsx';
 
 // Blocks that have no per-block data settings (date range / filters / comment).
-const BLOCKS_WITHOUT_SETTINGS = [ 'logo', 'text_block', 'hero' ];
+const BLOCKS_WITHOUT_SETTINGS = [ 'logo', 'text_block', 'hero', 'ai_summary' ];
 
 const hasBlockSettings = ( blockId: string ): boolean =>
 	! BLOCKS_WITHOUT_SETTINGS.includes( blockId );

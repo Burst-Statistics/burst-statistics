@@ -13,6 +13,22 @@ class Tasks {
 	public array $tasks = [];
 
 	/**
+	 * Default drip interval: 3 days in seconds (3 * 86400).
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_DRIP_INTERVAL = 259200;
+
+	/**
+	 * Icons that are shown even when "Dismiss all notices except critical
+	 * ones" is enabled. 'important' marks notices the user must see but that
+	 * are not an error, such as a running database upgrade.
+	 *
+	 * @var string[]
+	 */
+	public const CRITICAL_ICONS = [ 'error', 'important' ];
+
+	/**
 	 * Get all structured app data.
 	 *
 	 * @return array{
@@ -41,6 +57,8 @@ class Tasks {
 				$this->add_task( $task['id'] );
 			}
 		}
+
+		$this->maybe_advance_drip_task();
 	}
 
 	/**
@@ -65,6 +83,7 @@ class Tasks {
 			$current_tasks[] = sanitize_title( $task_id );
 			update_option( 'burst_tasks', $current_tasks, false );
 			delete_transient( 'burst_plusone_count' );
+			$this->maybe_advance_drip_task();
 		}
 	}
 
@@ -88,20 +107,24 @@ class Tasks {
 	public function undismiss_task( string $task_id ): bool {
 		$permanently_dismissed = get_option( 'burst_tasks_permanently_dismissed', [] );
 		$key                   = array_search( $task_id, $permanently_dismissed, true );
+		$un_dismissed          = false;
 		if ( $key !== false ) {
 			unset( $permanently_dismissed[ $key ] );
 			$permanently_dismissed = array_values( $permanently_dismissed );
 			update_option( 'burst_tasks_permanently_dismissed', $permanently_dismissed, false );
-			return true;
+			$un_dismissed = true;
 		}
 
-		return false;
+		return $un_dismissed;
 	}
 
 	/**
-	 * Dismiss a task
+	 * Dismiss a task.
+	 *
+	 * @param string $task_id Task ID.
+	 * @param bool   $user_action Whether this dismissal was triggered by a user action.
 	 */
-	public function dismiss_task( string $task_id ): void {
+	public function dismiss_task( string $task_id, bool $user_action = true ): void {
 		$current_tasks = get_option( 'burst_tasks', [] );
 		if ( in_array( sanitize_title( $task_id ), $current_tasks, true ) ) {
 			do_action( 'burst_dismiss_task', $task_id );
@@ -110,6 +133,15 @@ class Tasks {
 
 			// only dismiss permanently if the task exists in the tasks array.
 			$this->maybe_dismiss_permanently( $task_id );
+		}
+
+		$active_drip_task = (string) get_option( 'burst_active_drip_task', '' );
+		if ( $user_action && $task_id === $active_drip_task ) {
+			update_option( 'burst_drip_last_dismissed_time', time(), false );
+			delete_option( 'burst_active_drip_task' );
+		} elseif ( $task_id === $active_drip_task ) {
+			delete_option( 'burst_active_drip_task' );
+			$this->maybe_advance_drip_task();
 		}
 
 		delete_transient( 'burst_plusone_count' );
@@ -186,10 +218,11 @@ class Tasks {
 				if ( $is_valid ) {
 					$this->add_task( $task['id'] );
 				} else {
-					$this->dismiss_task( $task['id'] );
+					$this->dismiss_task( $task['id'], false );
 				}
 			}
 		}
+		$this->maybe_advance_drip_task();
 		delete_transient( 'burst_plusone_count' );
 	}
 
@@ -198,15 +231,17 @@ class Tasks {
 	 *
 	 * @return array<int, array{
 	 *     id: string,
+	 *     mainwp: bool,
 	 *     url?: string,
 	 *     icon?: string,
-	 *     condition?: mixed
+	 *     condition?: mixed,
+	 *     drip_order?: int
 	 * }>
 	 */
 	public function get_raw_tasks(): array {
 		if ( empty( $this->tasks ) ) {
 			$tasks       = require BURST_PATH . 'includes/Admin/App/config/tasks.php';
-			$this->tasks = apply_filters( 'burst_tasks', $tasks );
+			$this->tasks = $this->require_mainwp_flag( apply_filters( 'burst_tasks', $tasks ) );
 		}
 
 		// convert URL to website URL.
@@ -235,6 +270,30 @@ class Tasks {
 		}
 
 		return $this->tasks;
+	}
+
+	/**
+	 * Every task must state whether it is relevant inside the MainWP dashboard
+	 * (`mainwp` => true|false): the MainWP app runs against this site and only
+	 * receives tasks flagged true. A task without the flag is a bug in its
+	 * definition; it is reported and hidden from MainWP.
+	 *
+	 * @param array<int, array<string, mixed>> $tasks Raw task definitions.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function require_mainwp_flag( array $tasks ): array {
+		foreach ( $tasks as $index => $task ) {
+			if ( isset( $task['mainwp'] ) && is_bool( $task['mainwp'] ) ) {
+				continue;
+			}
+			_doing_it_wrong(
+				__METHOD__,
+				sprintf( 'Task "%s" must declare mainwp => true|false.', esc_html( (string) ( $task['id'] ?? '' ) ) ),
+				'3.7.2'
+			);
+			$tasks[ $index ]['mainwp'] = false;
+		}
+		return $tasks;
 	}
 
 	/**
@@ -268,8 +327,15 @@ class Tasks {
 		}
 		// Filter out tasks that do not apply, or are dismissed.
 		$dismiss_non_error_tasks = $this->get_option_bool( 'dismiss_non_error_notices' );
+		$is_mainwp_request       = $this->is_mainwp_request();
 
 		foreach ( $tasks as $index => $task ) {
+			// the MainWP dashboard only receives tasks that make sense there.
+			if ( $is_mainwp_request && ! $task['mainwp'] ) {
+				unset( $tasks[ $index ] );
+				continue;
+			}
+
 			// set task status based on current icon.
 			$tasks[ $index ]['status'] = $task['icon'] !== 'success' ? 'open' : 'completed';
 
@@ -285,20 +351,25 @@ class Tasks {
 				unset( $tasks[ $index ] );
 			}
 
-			// dismiss all non error tasks if this option is enabled.
-			if ( $dismiss_non_error_tasks && $task['icon'] !== 'error' ) {
+			// dismiss all non critical tasks if this option is enabled.
+			if ( $dismiss_non_error_tasks && ! $this->is_critical_task( $task ) ) {
 				unset( $tasks[ $index ] );
 			}
 		}
 
 		$tasks = $this->filter_unique_ids( $tasks );
 
-		// sort so warnings are on top.
-		$warnings = [];
-		$open     = [];
-		$other    = [];
+		$tasks = $this->filter_drip_tasks( $tasks );
+
+		// sort so important notices and warnings are on top.
+		$important = [];
+		$warnings  = [];
+		$open      = [];
+		$other     = [];
 		foreach ( $tasks as $index => $task ) {
-			if ( $task['icon'] === 'warning' ) {
+			if ( $task['icon'] === 'important' ) {
+				$important[ $index ] = $task;
+			} elseif ( $task['icon'] === 'warning' ) {
 				$warnings[ $index ] = $task;
 			} elseif ( $task['icon'] === 'open' ) {
 				$open[ $index ] = $task;
@@ -306,7 +377,154 @@ class Tasks {
 				$other[ $index ] = $task;
 			}
 		}
-		return $warnings + $open + $other;
+		return $important + $warnings + $open + $other;
+	}
+
+	/**
+	 * Whether a task stays visible when "Dismiss all notices except critical
+	 * ones" is enabled.
+	 *
+	 * @param array<string, mixed> $task Task definition.
+	 */
+	public function is_critical_task( array $task ): bool {
+		return in_array( $task['icon'] ?? 'open', self::CRITICAL_ICONS, true );
+	}
+
+	/**
+	 * Filter tasks so only one eligible informative/new task is surfaced at a time,
+	 * adhering to the 3-day interval after dismissals.
+	 * Critical errors, warnings, clientside tasks, and sales notices are never filtered.
+	 *
+	 * @param array<int, array<string, mixed>> $tasks Active tasks list.
+	 * @return array<int, array<string, mixed>> Filtered tasks list.
+	 */
+	public function filter_drip_tasks( array $tasks ): array {
+		$non_drip_tasks  = [];
+		$drip_candidates = [];
+
+		foreach ( $tasks as $index => $task ) {
+			if ( ! $this->is_drip_task( $task ) ) {
+				$non_drip_tasks[ $index ] = $task;
+			} else {
+				$drip_candidates[ $index ] = $task;
+			}
+		}
+
+		if ( empty( $drip_candidates ) ) {
+			return $non_drip_tasks;
+		}
+
+		$active_id = (string) get_option( 'burst_active_drip_task', '' );
+		if ( '' !== $active_id ) {
+			foreach ( $drip_candidates as $index => $candidate ) {
+				if ( ( $candidate['id'] ?? '' ) === $active_id ) {
+					return $non_drip_tasks + [ $index => $candidate ];
+				}
+			}
+		}
+
+		return $non_drip_tasks;
+	}
+
+	/**
+	 * Advance to the next active drip task if none is active or current is no longer valid,
+	 * respecting the cooldown interval after dismissals.
+	 */
+	public function maybe_advance_drip_task(): void {
+		$active_id = (string) get_option( 'burst_active_drip_task', '' );
+
+		// Check if cooldown is active.
+		$last_dismissed = (int) get_option( 'burst_drip_last_dismissed_time', 0 );
+		if ( 0 !== $last_dismissed && ( time() - $last_dismissed ) < $this->get_drip_interval() ) {
+			if ( '' !== $active_id ) {
+				delete_option( 'burst_active_drip_task' );
+			}
+			return;
+		}
+
+		// Find all eligible drip candidates.
+		$raw_tasks  = $this->get_raw_tasks();
+		$candidates = [];
+		foreach ( $raw_tasks as $task ) {
+			if ( ! $this->is_drip_task( $task ) ) {
+				continue;
+			}
+			if ( ! $this->has_task( $task['id'] ) ) {
+				continue;
+			}
+			if ( $this->is_dismissed_permanently( $task['id'] ) ) {
+				continue;
+			}
+			$candidates[] = $task;
+		}
+
+		if ( empty( $candidates ) ) {
+			delete_option( 'burst_active_drip_task' );
+			return;
+		}
+
+		// Sort by drip_order ascending.
+		usort(
+			$candidates,
+			static function ( array $a, array $b ): int {
+				$order_a = $a['drip_order'] ?? 0;
+				$order_b = $b['drip_order'] ?? 0;
+				return $order_a <=> $order_b;
+			}
+		);
+
+		$next_task = reset( $candidates );
+
+		// If current active task is still active and valid in burst_tasks.
+		if ( '' !== $active_id && $this->has_task( $active_id ) ) {
+			$active_task  = $this->get_task_by_id( $active_id );
+			$active_order = (int) ( $active_task['drip_order'] ?? PHP_INT_MAX );
+			$next_order   = (int) ( $next_task['drip_order'] ?? PHP_INT_MAX );
+			// Keep current active task unless a strictly higher-priority (lower drip_order) candidate is available.
+			if ( $active_order <= $next_order ) {
+				return;
+			}
+		}
+
+		update_option( 'burst_active_drip_task', $next_task['id'], false );
+		delete_transient( 'burst_plusone_count' );
+	}
+
+	/**
+	 * Check if a task is an informative/new task subject to dripping.
+	 *
+	 * @param array<string, mixed> $task Task definition.
+	 */
+	public function is_drip_task( array $task ): bool {
+		return isset( $task['drip_order'] );
+	}
+
+	/**
+	 * Get the drip interval in seconds (default 3 days).
+	 */
+	public function get_drip_interval(): int {
+		/**
+		 * Filter the interval between dripped tasks.
+		 *
+		 * @param int $interval Interval in seconds.
+		 */
+		return (int) apply_filters( 'burst_drip_interval', self::DEFAULT_DRIP_INTERVAL );
+	}
+
+	/**
+	 * Handle tour completion: immediately advance to next drip task (bypass 3-day wait).
+	 */
+	public function on_tour_completed(): void {
+		delete_option( 'burst_drip_last_dismissed_time' );
+		$this->dismiss_task( 'interactive_tour', false );
+		$this->maybe_dismiss_permanently( 'interactive_tour' );
+		if ( get_option( 'burst_active_drip_task' ) === 'interactive_tour' ) {
+			delete_option( 'burst_active_drip_task' );
+		}
+
+		delete_transient( 'burst_plusone_count' );
+		$this->schedule_task_validation();
+		$this->maybe_advance_drip_task();
 	}
 
 	/**
@@ -324,6 +542,7 @@ class Tasks {
 			'offer'     => __( 'Offer', 'burst-statistics' ),
 			'milestone' => __( 'Milestone', 'burst-statistics' ),
 			'insight'   => __( 'Update', 'burst-statistics' ),
+			'important' => __( 'Important', 'burst-statistics' ),
 		];
 		return $icon_labels[ $icon ];
 	}
@@ -392,7 +611,19 @@ class Tasks {
 			if ( $count === 0 ) {
 				$count = 'empty';
 			}
-			set_transient( 'burst_plusone_count', $count, DAY_IN_SECONDS );
+
+			$ttl            = DAY_IN_SECONDS;
+			$last_dismissed = (int) get_option( 'burst_drip_last_dismissed_time', 0 );
+			if ( 0 !== $last_dismissed ) {
+				$elapsed  = time() - $last_dismissed;
+				$interval = $this->get_drip_interval();
+				if ( $elapsed < $interval ) {
+					$remaining = $interval - $elapsed;
+					$ttl       = min( DAY_IN_SECONDS, max( 60, $remaining ) );
+				}
+			}
+
+			set_transient( 'burst_plusone_count', $count, $ttl );
 		}
 
 		if ( $count === 'empty' ) {

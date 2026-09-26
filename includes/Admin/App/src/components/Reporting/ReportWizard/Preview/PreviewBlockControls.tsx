@@ -91,7 +91,7 @@ export const PreviewBlockControls: React.FC<PreviewBlockControlsProps> = ({
 		}
 	};
 
-	const FULL_WIDTH_BLOCKS = [ 'hero', 'text_block', 'footer' ];
+	const FULL_WIDTH_BLOCKS = [ 'hero', 'text_block', 'footer', 'ai_summary' ];
 
 	// Full-width blocks: no comment column.
 	if ( FULL_WIDTH_BLOCKS.includes( blockId ) ) {

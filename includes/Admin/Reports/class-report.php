@@ -103,6 +103,37 @@ class Report {
 	public bool $is_shared_link = false;
 
 	/**
+	 * Report delivery channels ('email', 'both').
+	 */
+	public string $channels = 'email';
+
+	/**
+	 * Set report delivery channels.
+	 *
+	 * @param string $channels Delivery channels ('email', 'both').
+	 * @return Report Return report to allow method chaining.
+	 */
+	public function set_channels( string $channels ): Report {
+		$valid_channels = [ 'email', 'both' ];
+		$default        = (string) burst_get_option( 'default_report_channels', 'email' );
+		$fallback       = in_array( $default, $valid_channels, true ) ? $default : 'email';
+		$this->channels = in_array( $channels, $valid_channels, true ) ? $channels : $fallback;
+
+		return $this;
+	}
+
+	/**
+	 * The stored AI-generated summary text (persisted on the report row).
+	 */
+	public string $ai_summary = '';
+
+	/**
+	 * The queue_id of the send that generated the stored ai_summary.
+	 * Used to determine when a new summary needs to be generated.
+	 */
+	public string $ai_summary_period = '';
+
+	/**
 	 * Set report ID.
 	 *
 	 * @param int $id ID.
@@ -292,6 +323,30 @@ class Report {
 	}
 
 	/**
+	 * Set AI summary text.
+	 *
+	 * @param string $ai_summary Stored AI-generated summary.
+	 * @return Report Return report to allow method chaining.
+	 */
+	public function set_ai_summary( string $ai_summary ): Report {
+		$this->ai_summary = $ai_summary;
+
+		return $this;
+	}
+
+	/**
+	 * Set AI summary period (queue_id of the send it was generated for).
+	 *
+	 * @param string $ai_summary_period The queue_id string.
+	 * @return Report Return report to allow method chaining.
+	 */
+	public function set_ai_summary_period( string $ai_summary_period ): Report {
+		$this->ai_summary_period = $ai_summary_period;
+
+		return $this;
+	}
+
+	/**
 	 * Constructor
 	 */
 	public function __construct( ?int $id = null, bool $is_shared_link = false ) {
@@ -330,7 +385,10 @@ class Report {
 			->set_last_edit( absint( $row['last_edit'] ) )
 			->set_enabled( (bool) $row['enabled'] )
 			->set_scheduled( (bool) $row['scheduled'] )
-			->set_next_send_timestamp( $this->get_next_send_timestamp() );
+			->set_channels( (string) ( $row['channels'] ?? 'email' ) )
+			->set_next_send_timestamp( $this->get_next_send_timestamp() )
+			->set_ai_summary( (string) ( $row['ai_summary'] ?? '' ) )
+			->set_ai_summary_period( (string) ( $row['ai_summary_period'] ?? '' ) );
 
 		return true;
 	}
@@ -556,6 +614,7 @@ class Report {
 			'scheduled'      => $this->scheduled ? 1 : 0,
 			'content'        => wp_json_encode( $this->content ),
 			'recipients'     => wp_json_encode( $this->recipients ),
+			'channels'       => $this->channels,
 			'date_range'     => $this->date_range,
 		];
 	}
@@ -579,7 +638,7 @@ class Report {
 				continue;
 			}
 
-			if ( in_array( $block['id'], [ 'text_block', 'hero', 'footer' ], true ) ) {
+			if ( in_array( $block['id'], [ 'text_block', 'hero', 'footer', 'ai_summary' ], true ) ) {
 				$block['content'] = isset( $block['content'] ) ? wp_kses_post( $block['content'] ) : '';
 			} else {
 				$block['content'] = isset( $block['content'] ) ? sanitize_textarea_field( $block['content'] ) : '';
@@ -673,6 +732,7 @@ class Report {
 			'name'            => $this->name,
 			'format'          => $this->format,
 			'enabled'         => $this->enabled,
+			'channels'        => $this->channels,
 			'content'         => $this->content,
 			'reportDateRange' => $this->date_range,
 			'fixedEndDate'    => $this->fixed_end_date,
@@ -688,7 +748,12 @@ class Report {
 		];
 
 		if ( ! $this->is_shared_link ) {
-			$last_send_status = Report_Logs::instance()->get_report_status( $this->id );
+			$last_send_status = ! empty( $this->id )
+				? Report_Logs::instance()->get_report_status( $this->id )
+				: [
+					'status'  => '',
+					'message' => '',
+				];
 			$array            = array_merge(
 				$array,
 				[
@@ -701,6 +766,7 @@ class Report {
 					'recipients'      => $this->recipients,
 					'lastSendStatus'  => $last_send_status['status'],
 					'lastSendMessage' => $last_send_status['message'],
+					'ai_summary'      => $this->ai_summary,
 				]
 			);
 		}

@@ -97,18 +97,88 @@ const normalizeChatStatus = ( status: unknown ): ChatAvailability => {
 	};
 };
 
+// fallow-ignore-next-line complexity
+const buildDisabledReason = (
+	abilitiesEnabled: boolean,
+	chatStatus: ChatAvailability,
+	isSummary: boolean
+): string => {
+	if ( ! abilitiesEnabled ) {
+		return isSummary ?
+			__(
+				'AI summaries are disabled because Abilities API is switched off in Burst settings.',
+				'burst-statistics'
+			) :
+			__(
+				'Chat is disabled because Abilities API is switched off in Burst settings.',
+				'burst-statistics'
+			);
+	}
+
+	if ( false === chatStatus.ai_client_loaded ) {
+		return isSummary ?
+			__(
+				'To enable AI summaries, please install and configure the WordPress AI plugin.',
+				'burst-statistics'
+			) :
+			__(
+				'To enable AI chat, please install and configure the WordPress AI plugin.',
+				'burst-statistics'
+			);
+	}
+
+	if ( false === chatStatus.has_configured_provider ) {
+		return isSummary ?
+			__(
+				'No AI connector is configured. Install the WordPress AI plugin and connect a provider to use AI summaries.',
+				'burst-statistics'
+			) :
+			__(
+				'No AI connector is configured. Install the WordPress AI plugin and connect a provider to use chat.',
+				'burst-statistics'
+			);
+	}
+
+	const missingApprovals = chatStatus.missing_approvals ?? [];
+	if ( 0 < missingApprovals.length ) {
+		return sprintf(
+
+			/* translators: %s is a comma-separated list of approval names (e.g. "Burst, WordPress AI, OpenAI Provider"). */
+			isSummary ?
+				__(
+					'To enable AI summaries, please go to Tools > Connector Approvals and approve the following: %s.',
+					'burst-statistics'
+				) :
+				__(
+					'To enable AI chat, please go to Tools > Connector Approvals and approve the following: %s.',
+					'burst-statistics'
+				),
+			missingApprovals.join( ', ' )
+		);
+	}
+
+	if ( false === chatStatus.enabled ) {
+		return isSummary ?
+			__( 'AI summaries are currently unavailable.', 'burst-statistics' ) :
+			__( 'Chat is currently unavailable.', 'burst-statistics' );
+	}
+
+	return '';
+};
+
+export type AiAvailabilityContext = 'chat' | 'summary';
+
 /**
- * Availability of the AI chat: whether the button should render at all and,
- * if it renders, whether it is disabled and why. Shared by the trigger button
- * and the lazily loaded modal so the status query is only defined once.
+ * Availability of AI features (chat or summaries): whether the feature should
+ * be active, whether it is disabled, and why.
  */
-export const useChatAvailability = () => {
+export const useChatAvailability = ( context: AiAvailabilityContext = 'chat' ) => {
 	const { getValue } = useSettingsData();
 
 	// Single source of truth for chat status: one cached REST call, deduped,
 	// refetched at most once per 60s. The REST endpoint is the only source —
 	// PHP does not preload via localize_script.
-	const { data: chatStatus = {} as ChatAvailability } = useQuery<ChatAvailability>({
+	const { data: chatStatus = {} as ChatAvailability, isFetched } = useQuery<ChatAvailability>({
 		queryKey: [ 'chat-status' ],
 		queryFn: async() => normalizeChatStatus( await getChatStatus() ),
 		staleTime: 60_000,
@@ -123,52 +193,19 @@ export const useChatAvailability = () => {
 		explicitAbilitiesSetting :
 		( chatStatus.abilities_enabled ?? false );
 
-	// fallow-ignore-next-line complexity
-	const disabledReason = useMemo( () => {
-		if ( ! abilitiesEnabled ) {
-			return __(
-				'Chat is disabled because Abilities API is switched off in Burst settings.',
-				'burst-statistics'
-			);
-		}
-
-		if ( false === chatStatus.ai_client_loaded ) {
-			return __(
-				'To enable AI chat, please install and configure the WordPress AI plugin.',
-				'burst-statistics'
-			);
-		}
-
-		if ( false === chatStatus.has_configured_provider ) {
-			return __(
-				'No AI connector is configured. Install the WordPress AI plugin and connect a provider to use chat.',
-				'burst-statistics'
-			);
-		}
-
-		const missingApprovals = chatStatus.missing_approvals ?? [];
-		if ( 0 < missingApprovals.length ) {
-			return sprintf(
-
-				/* translators: %s is a comma-separated list of approval names (e.g. "Burst, WordPress AI, OpenAI Provider"). */
-				__(
-					'To enable AI chat, please go to Tools > Connector Approvals and approve the following: %s.',
-					'burst-statistics'
-				),
-				missingApprovals.join( ', ' )
-			);
-		}
-
-		if ( false === chatStatus.enabled ) {
-			return __( 'Chat is currently unavailable.', 'burst-statistics' );
-		}
-
-		return '';
-	}, [ abilitiesEnabled, chatStatus ]);
+	const isSummary = 'summary' === context;
+	const disabledReason = useMemo(
+		() => buildDisabledReason( abilitiesEnabled, chatStatus, isSummary ),
+		[ abilitiesEnabled, chatStatus, isSummary ]
+	);
 
 	return {
 		abilitiesEnabled,
 		disabledReason,
-		isDisabled: Boolean( disabledReason )
+		isDisabled: Boolean( disabledReason ),
+		isFetched
 	};
 };
+
+export const useAiSummaryAvailability = () => useChatAvailability( 'summary' );
+

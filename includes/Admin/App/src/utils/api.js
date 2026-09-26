@@ -183,7 +183,13 @@ const generateError = ( error, path = false ) => {
 			'/' +
 			urlParts[index + 1];
 	}
-	message += ': ' + rawError;
+
+	// Strip HTML from rawError for clean formatting in toast
+	const cleanRawError = 'string' === typeof rawError ?
+		rawError.replace( /<[^>]*>?/gm, ' ' ).replace( /\s+/g, ' ' ).trim() :
+		rawError;
+
+	message += ': ' + cleanRawError;
 
 	// Skip if same message was shown in the last 3 seconds
 	const now = Date.now();
@@ -199,6 +205,7 @@ const generateError = ( error, path = false ) => {
 	const messageDiv = (
 		<div
 			title={__( 'Click to copy', 'burst-statistics' )}
+			className="line-clamp-3 text-xs leading-relaxed"
 			onClick={() => {
 				navigator.clipboard.writeText( message );
 				toast.success(
@@ -519,9 +526,15 @@ export const doAction = ( action, data = {}) =>
 			return [];
 		}
 
-		return Object.prototype.hasOwnProperty.call( response, 'data' ) ?
-			response.data :
-			[];
+		if ( Object.prototype.hasOwnProperty.call( response, 'data' ) ) {
+			return response.data;
+		}
+
+		if ( false === response.success && response.message ) {
+			return response;
+		}
+
+		return [];
 	});
 
 /**

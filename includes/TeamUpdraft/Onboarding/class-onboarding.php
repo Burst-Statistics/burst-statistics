@@ -386,6 +386,10 @@ class Onboarding {
 			case 'user_completed_wizard':
 				update_option( $this->prefix . '_completed_onboarding', true, false );
 				update_option( $this->prefix . '_telemetry_completed_onboarding', true, false );
+				// Remember a completed free onboarding, so the pro onboarding can skip the first_run_only steps.
+				if ( ! $this->is_pro ) {
+					update_option( "{$this->prefix}_onboarding_free_completed", time(), false );
+				}
 				$response = $this->response( true, [], 'User Completed the wizard' );
 				break;
 			case 'activate_license':
@@ -546,15 +550,12 @@ class Onboarding {
 	}
 
 	/**
-	 * Check if the user has completed the onboarding in the free version.
-	 * At least an hour ago, so we don't drop steps for the curren premium installing user.
+	 * Check if this is the pro plugin and the user completed the onboarding in the free version,
+	 * so the first_run_only steps can be skipped. A skipped free onboarding does not count, as
+	 * those users never saw the first_run_only steps.
 	 */
 	private function is_pro_with_onboarding_free_completed(): bool {
-		// if the pro plugin is active, and the free plugin has completed onboarding, we can skip some parts of the onboarding.
-		$free_completed_time            = get_option( "{$this->prefix}_onboarding_free_completed" );
-		$now                            = time();
-		$free_completed_over_1_hour_ago = $free_completed_time && ( $now - $free_completed_time > HOUR_IN_SECONDS );
-		return $this->is_pro && $free_completed_over_1_hour_ago;
+		return $this->is_pro && (bool) get_option( "{$this->prefix}_onboarding_free_completed" );
 	}
 
 	/**
@@ -608,9 +609,5 @@ class Onboarding {
 				'track_test_token'      => $token,
 			]
 		);
-		// remember if user has completed the onboarding in the free plugin.
-		if ( $this->is_pro ) {
-			update_option( "{$this->prefix}_onboarding_free_completed", time(), false );
-		}
 	}
 }

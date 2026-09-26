@@ -66,6 +66,13 @@ export type TaskProp = {
 	status?: string;
 	url?: string;
 	fix?: string;
+
+	/**
+	 * Whether the task is also served inside the MainWP dashboard. The server
+	 * sets it on every task it returns; the client-only placeholders above
+	 * (loading, no tasks) never carry it.
+	 */
+	mainwp?: boolean;
 };
 
 /**

@@ -21,6 +21,7 @@ import useLicenseData from '@/hooks/useLicenseData';
 import DownloadCsvButton from '@/components/Statistics/DownloadCsvButton';
 import { COLUMN_FORMATTERS, FORMATS, isUnknownLocationRow } from '@/api/getDataTableData';
 import ClickToFilter from '@/components/Common/ClickToFilter';
+import NotFoundHitsCell from '@/components/NotFoundPages/NotFoundHitsCell';
 import {
 	getCountryName,
 	getContinentName,
@@ -667,7 +668,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 					align: 'right'
 				},
 				click_through_rate: {
-					label: __( 'Click Through Rate', 'burst-statistics' ),
+					label: __( 'Click through rate', 'burst-statistics' ),
 					format: 'percentage',
 					align: 'right'
 				},
@@ -1187,47 +1188,63 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		}) );
 	}, [ filteredData, paramVariationsEnabled, parameterCounts ]);
 
-	// Replace the page_url column's cell renderer to inject a "n variations"
-	// badge between the URL text and the hover action icons. Uses ClickToFilter
-	// directly so the badge renders inside the component's layout via afterChildren.
+	// Replace column cell renderers when needed:
+	// 1. In pages table: inject parameter variations badge if enabled.
+	// 2. In not_found_pages table: inject referrers popover on hits column.
 	const enhancedColumnsData = useMemo( () => {
-		if ( ! paramVariationsEnabled ) {
+		if ( ! paramVariationsEnabled && 'not_found_pages' !== selectedConfig ) {
 			return sortedColumnsData;
 		}
 		return sortedColumnsData.map( ( col ) => {
-			if ( 'page_url' !== col.id ) {
-				return col;
+			if ( paramVariationsEnabled && 'page_url' === col.id ) {
+				return {
+					...col,
+					cell: ( row ) => {
+						const value = row[col.id];
+						const count = Number( row?.parameter_count ?? 0 );
+						const badge = 0 < count ? (
+							<span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+								{sprintf(
+
+									// translators: %d is the number of parameter variations recorded for this page.
+									_n( '%d parameter', '%d parameters', count, 'burst-statistics' ),
+									count
+								)}
+							</span>
+						) : null;
+
+						return (
+							<ClickToFilter
+								filter="page_url"
+								filterValue={value}
+								row={row}
+								afterChildren={badge}
+							>
+								{safeDecodeURI( value )}
+							</ClickToFilter>
+						);
+					}
+				};
 			}
-			return {
-				...col,
-				cell: ( row ) => {
-					const value = row[col.id];
-					const count = Number( row?.parameter_count ?? 0 );
-					const badge = 0 < count ? (
-						<span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
-							{sprintf(
 
-								// translators: %d is the number of parameter variations recorded for this page.
-								_n( '%d parameter', '%d parameters', count, 'burst-statistics' ),
-								count
-							)}
-						</span>
-					) : null;
+			if ( 'not_found_pages' === selectedConfig && 'hits' === col.id ) {
+				const originalCell = col.cell;
+				return {
+					...col,
+					minWidth: '120px',
+					cell: ( row ) => (
+						<NotFoundHitsCell
+							pageUrl={row.page_url}
+							hits={row.hits}
+							formattedHits={originalCell ? originalCell( row ) : undefined}
+						/>
+					)
+				};
+			}
 
-					return (
-						<ClickToFilter
-							filter="page_url"
-							filterValue={value}
-							row={row}
-							afterChildren={badge}
-						>
-							{safeDecodeURI( value )}
-						</ClickToFilter>
-					);
-				}
-			};
+			return col;
 		});
-	}, [ sortedColumnsData, paramVariationsEnabled ]);
+	}, [ sortedColumnsData, paramVariationsEnabled, selectedConfig ]);
 
 	// Reset to page 1 when the dataset changes.
 	useEffect( () => {

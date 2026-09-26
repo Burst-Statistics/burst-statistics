@@ -37,9 +37,9 @@ interface UpsellConfigsProps {
 const upsellConfigs: UpsellConfigsProps = {
 	sales: {
 		upgradePlan: {
-			header: __( 'Unlock Sales Performance', 'burst-statistics' ),
+			header: __( 'See your sales performance', 'burst-statistics' ),
 			subTitle: __(
-				'Gain valuable insights into your store’s revenue, top products, and sales trends.',
+				'Gain valuable insights into your store’s revenue, top products and sales trends.',
 				'burst-statistics'
 			),
 			licenseInsufficient: __(
@@ -52,7 +52,7 @@ const upsellConfigs: UpsellConfigsProps = {
 			B: {
 				utm_medium: 'sales-upsell-variation-b',
 				title: __(
-					'Are your visitors buying, or just browsing?',
+					'Are your visitors buying, or only browsing?',
 					'burst-statistics'
 				),
 				description: '',

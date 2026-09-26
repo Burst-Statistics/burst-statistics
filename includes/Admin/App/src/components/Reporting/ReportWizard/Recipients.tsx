@@ -4,6 +4,9 @@ import React, {useEffect, useRef} from 'react';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import { useFormContext } from 'react-hook-form';
 import { EmailSelectInput } from '@/components/Inputs/EmailSelectInput';
+import RadioButtonsInput, { RadioOption } from '@/components/Inputs/RadioButtonsInput';
+import { DeliveryChannelType } from '@/store/reports/types';
+import useLicenseData from '@/hooks/useLicenseData';
 
 const isValidEmail = ( email: string ): boolean => {
 	const trimmed = email.trim();
@@ -16,6 +19,10 @@ const MAX_RECIPIENTS = 100;
 export const Recipients = () => {
 	const emails = useWizardStore( ( state ) => state.wizard.recipients );
 	const setEmails = useWizardStore( ( state ) => state.setRecipients );
+	const channels = useWizardStore( ( state ) => state.wizard.channels || 'email' );
+	const setChannels = useWizardStore( ( state ) => state.setChannels );
+	const format = useWizardStore( ( state ) => state.wizard.format );
+	const { isLicenseValid } = useLicenseData();
 
 	const isFirstRender = useRef( true );
 	const {
@@ -23,6 +30,17 @@ export const Recipients = () => {
 		setValue,
 		formState: { errors }
 	} = useFormContext();
+
+	// If format changes away from story or license is not valid and both was selected, reset to email.
+	// fallow-ignore-next-line complexity
+	useEffect( () => {
+		const isBothValid = 'story' === format && isLicenseValid;
+		if ( 'both' === channels && ! isBothValid ) {
+			setChannels( 'email' );
+		} else if ( 'email' !== channels && 'both' !== channels ) {
+			setChannels( 'email' );
+		}
+	}, [ format, channels, isLicenseValid, setChannels ]);
 
 	useEffect( () => {
 		register( 'recipients', {
@@ -61,9 +79,56 @@ export const Recipients = () => {
 		});
 	}, [ emails, setValue ]); // eslint-disable-line react-hooks/exhaustive-deps
 
+	const channelOptions: Record<string, RadioOption> = {
+		email: {
+			type: 'email',
+			label: __( 'Email', 'burst-statistics' ),
+			icon: 'mail'
+		},
+		both: {
+			type: 'both',
+			label: __( 'Email and Slack', 'burst-statistics' ),
+			icon: 'webhook',
+			disabled: 'story' !== format,
+			pro: true
+		}
+	};
 
 	return (
 		<>
+			<div className="burst-reporting-wizard-gutter">
+				<p className="text-lg font-semibold">
+					{__( 'Delivery channel', 'burst-statistics' )}
+				</p>
+			</div>
+
+			<FieldWrapper
+				label=""
+				inputId="report-channels"
+				fullWidthContent
+				className="burst-reporting-wizard-gutter !pt-0 mt-3 mb-6"
+			>
+				<RadioButtonsInput
+					inputId="report-channels"
+					options={channelOptions}
+					value={channels}
+					columns={2}
+					onChange={( value ) => {
+						setChannels( value as DeliveryChannelType );
+					}}
+				/>
+				{'both' === channels && (
+					<p className="text-xs text-text-gray mt-2">
+						{__( 'This report will be sent to your configured email addresses and your Slack channel.', 'burst-statistics' )}
+					</p>
+				)}
+				{'story' !== format && (
+					<p className="text-xs text-text-gray mt-2">
+						{__( 'Slack delivery is available for story reports.', 'burst-statistics' )}
+					</p>
+				)}
+			</FieldWrapper>
+
 			<div className="burst-reporting-wizard-gutter">
 				<p className="text-lg font-semibold">
 					{__( 'Recipients', 'burst-statistics' )}
@@ -75,7 +140,7 @@ export const Recipients = () => {
 				inputId="recipients"
 				error={errors.recipients?.message as string}
 				fullWidthContent
-				className="burst-reporting-wizard-gutter !pt-0 mt-5"
+				className="burst-reporting-wizard-gutter !pt-0 mt-3"
 			>
 				<div className="mt-3">
 					<EmailSelectInput
@@ -87,7 +152,6 @@ export const Recipients = () => {
 						}}
 					/>
 				</div>
-
 			</FieldWrapper>
 		</>
 	);

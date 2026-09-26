@@ -139,7 +139,7 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		exclusion_allowed: false
 	},
 	bounce_rate: {
-		label: __( 'Bounce Rate', 'burst-statistics' ),
+		label: __( 'Bounce rate', 'burst-statistics' ),
 		icon: 'bounce',
 		type: 'int',
 		pro: true,
@@ -155,7 +155,7 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		exclusion_allowed: false
 	},
 	conversion_rate: {
-		label: __( 'Conversion Rate', 'burst-statistics' ),
+		label: __( 'Conversion rate', 'burst-statistics' ),
 		icon: 'conversion',
 		type: 'int',
 		pro: true,
@@ -297,7 +297,7 @@ export const FILTER_CONFIG: Record<string, FilterConfig> = {
 		type: 'int',
 		pro: true,
 		category: 'behavior',
-		new_badge: { version: '3.2.3', days: 30, tooltip: __( 'New in 3.2.3 – filter visitors by how long they spent on your site.', 'burst-statistics' ) }
+		new_badge: { version: '3.2.3', days: 30, tooltip: __( 'New in 3.2.3: filter visitors by how long they spent on your site.', 'burst-statistics' ) }
 	},
 	platform_id: {
 		label: __( 'Operating system', 'burst-statistics' ),

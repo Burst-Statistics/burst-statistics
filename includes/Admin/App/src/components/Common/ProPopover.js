@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import Icon from '../../utils/Icon';
+import getPortalContainer from '@/utils/getPortalContainer';
 import { __ } from '@wordpress/i18n';
 
 const ProPopover = ({
@@ -23,13 +24,7 @@ const ProPopover = ({
 				{children}
 			</Popover.Trigger>
 			<Popover.Portal
-				container={
-					document.getElementById( 'modal-root' ) ||
-					document.getElementById( 'burst-statistics' ) ||
-					document.getElementById( 'burst-mainwp' ) ||
-					document.querySelector( '.burst' ) ||
-					undefined
-				}
+				container={getPortalContainer()}
 			>
 				<Popover.Content
 					className="burst z-modal"

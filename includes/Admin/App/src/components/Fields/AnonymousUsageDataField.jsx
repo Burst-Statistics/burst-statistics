@@ -45,7 +45,7 @@ const AnonymousUsageDataField = forwardRef(
 							</span>
 							<span className={ `text-sm ${ isEnabled ? 'text-primary' : 'text-text-gray' }` }>
 								{ isEnabled ?
-									__( 'Enabled — thank you for helping us improve!', 'burst-statistics' ) :
+									__( 'Enabled. Thank you for helping us improve.', 'burst-statistics' ) :
 									__( 'Disabled', 'burst-statistics' )
 								}
 							</span>

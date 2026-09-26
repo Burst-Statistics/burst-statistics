@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useState } from '@wordpress/element';
 import Icon from '@/utils/Icon';
+import getPortalContainer from '@/utils/getPortalContainer';
 import MenuItemLink, { MenuItemLabel } from './HeaderMenuItemLink';
 import ButtonInput from '../Inputs/ButtonInput';
 
@@ -265,13 +266,7 @@ const MobileMenuDrawer = ({ leftMenuItems, rightMenuItems, supportUrl, upgradeUr
 			 * positioned overlay and panel are contained within the plugin area.
 			 */}
 			<Dialog.Portal
-				container={
-					document.getElementById( 'modal-root' ) ||
-					document.getElementById( 'burst-statistics' ) ||
-					document.getElementById( 'burst-mainwp' ) ||
-					document.querySelector( '.burst' ) ||
-					undefined
-				}
+				container={getPortalContainer()}
 			>
 				{/* Backdrop overlay — covers the app container. */}
 				<Dialog.Overlay className="absolute inset-0 z-overlay bg-black/40 data-[state=open]:animate-fadeIn data-[state=closed]:animate-fadeOut" />

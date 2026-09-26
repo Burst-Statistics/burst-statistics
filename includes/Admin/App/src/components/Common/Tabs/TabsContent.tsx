@@ -34,6 +34,7 @@ export function TabsContent({
 
     return (
         <div
+            id={ 'string' === typeof id ? id : undefined }
             className={ clsx( '', className ) }
             {...rest}
         >

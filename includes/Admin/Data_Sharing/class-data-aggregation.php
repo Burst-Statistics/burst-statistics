@@ -131,14 +131,18 @@ class Data_Aggregation {
 			return null;
 		}
 
-		$reports_sent = isset( $logs['reports_sent_last_month'] ) ? (int) $logs['reports_sent_last_month'] : 0;
-		$successes    = isset( $logs['successful_sends'] ) ? (int) $logs['successful_sends'] : 0;
-		$failures     = isset( $logs['failed_sends'] ) ? (int) $logs['failed_sends'] : 0;
+		$reports_sent       = isset( $logs['reports_sent_last_month'] ) ? (int) $logs['reports_sent_last_month'] : 0;
+		$successes          = isset( $logs['successful_sends'] ) ? (int) $logs['successful_sends'] : 0;
+		$failures           = isset( $logs['failed_sends'] ) ? (int) $logs['failed_sends'] : 0;
+		$slack_sends        = isset( $logs['slack_sends'] ) ? (int) $logs['slack_sends'] : 0;
+		$slack_failed_sends = isset( $logs['slack_failed_sends'] ) ? (int) $logs['slack_failed_sends'] : 0;
 
 		return [
 			'reports_sent_last_month' => max( 0, $reports_sent ),
 			'successful_sends'        => max( 0, $successes ),
 			'failed_sends'            => max( 0, $failures ),
+			'slack_sends'             => max( 0, $slack_sends ),
+			'slack_failed_sends'      => max( 0, $slack_failed_sends ),
 		];
 	}
 

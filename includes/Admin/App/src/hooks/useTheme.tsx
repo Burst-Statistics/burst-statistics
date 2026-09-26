@@ -38,7 +38,7 @@ const ALL_DARK_THEME_CLASSES = [
 	DASHBOARD_DARK_THEME_CLASS
 ];
 
-const ThemeContext = createContext<ThemeContextValue | undefined>( undefined );
+export const ThemeContext = createContext<ThemeContextValue | undefined>( undefined );
 
 const getBodyTheme = (): ThemeMode => {
 	if ( 'undefined' === typeof document ) {

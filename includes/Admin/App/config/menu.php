@@ -150,10 +150,10 @@ return [
 					],
 					[
 						'id'    => 'restore_archives',
-						'title' => __( 'Archived Data', 'burst-statistics' ),
+						'title' => __( 'Archived data', 'burst-statistics' ),
 						'pro'   => [
 							'url'  => 'pricing/',
-							'text' => __( 'With Pro, you can archive old data to keep your dashboard clean and restore it anytime when needed. No more lost data. No more clutter. Just seamless control.', 'burst-statistics' ),
+							'text' => __( 'With Pro, you can archive old data to keep your dashboard clean and restore it anytime when needed. No more lost data, no more clutter.', 'burst-statistics' ),
 						],
 					],
 					[
@@ -161,7 +161,7 @@ return [
 						'title' => __( 'Import data', 'burst-statistics' ),
 						'pro'   => [
 							'url'  => 'pricing/',
-							'text' => __( 'With Pro, you can import historical analytics data from Google Analytics, WP Statistics, Matomo, Plausible, Fathom, and more.', 'burst-statistics' ),
+							'text' => __( 'With Pro, you can import historical analytics data from Google Analytics, WP Statistics, Matomo, Plausible, Fathom and more.', 'burst-statistics' ),
 						],
 					],
 					[
@@ -191,6 +191,22 @@ return [
 					[
 						'id'    => 'smart_update_timing',
 						'title' => __( 'Smart update timing', 'burst-statistics' ),
+					],
+				],
+			],
+			[
+				'id'       => 'notifications',
+				'group_id' => 'notifications',
+				'icon'     => 'bell',
+				'title'    => __( 'Notifications', 'burst-statistics' ),
+				'groups'   => [
+					[
+						'id'    => 'report_notifications',
+						'title' => __( 'Report notifications', 'burst-statistics' ),
+						'pro'   => [
+							'url'  => 'pricing/',
+							'text' => __( 'With Pro, receive story reports, traffic anomaly alerts, and tracking health notifications directly in your Slack channel.', 'burst-statistics' ),
+						],
 					],
 				],
 			],
@@ -227,7 +243,7 @@ return [
 				'groups'       => [
 					[
 						'id'    => 'secret',
-						'title' => __( 'Secret Settings', 'burst-statistics' ),
+						'title' => __( 'Secret settings', 'burst-statistics' ),
 					],
 				],
 			],

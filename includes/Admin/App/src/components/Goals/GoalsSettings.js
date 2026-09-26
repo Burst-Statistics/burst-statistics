@@ -5,6 +5,7 @@ import Icon from '../../utils/Icon';
 import GoalSetup from './GoalSetup';
 import { burst_get_website_url } from '../../utils/lib';
 import * as Popover from '@radix-ui/react-popover';
+import getPortalContainer from '@/utils/getPortalContainer';
 import useLicenseData from '@/hooks/useLicenseData';
 import ButtonInput from '../Inputs/ButtonInput';
 import IconButton from '../Inputs/IconButton';
@@ -70,16 +71,7 @@ const GoalsSettings = () => {
 		});
 	}, [ predefinedGoals, predefinedSearch ]);
 
-	const popoverContainer =
-		'undefined' !== typeof document ?
-			(
-				document.getElementById( 'modal-root' ) ||
-				document.getElementById( 'burst-statistics' ) ||
-				document.getElementById( 'burst-mainwp' ) ||
-				document.querySelector( '.burst' ) ||
-				undefined
-			) :
-			undefined;
+	const popoverContainer = getPortalContainer();
 
 	const handleAddPredefinedGoal = async( goal ) => {
 		await addPredefinedGoal( goal.id );

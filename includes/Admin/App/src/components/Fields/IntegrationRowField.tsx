@@ -81,7 +81,7 @@ const IntegrationRowField = forwardRef<HTMLButtonElement, IntegrationRowFieldPro
 			}
 
 			if ( ! isEnabled ) {
-				return __( 'Disabled — Burst won\'t track events for this plugin', 'burst-statistics' );
+				return __( 'Disabled: Burst won\'t track events for this plugin', 'burst-statistics' );
 			}
 			return meta.status;
 		};

@@ -861,7 +861,7 @@
 		return el(
 			Modal,
 			{
-				title: __( 'Confirm Block Deletion', 'burst-statistics' ),
+				title: __( 'Confirm block deletion', 'burst-statistics' ),
 				onRequestClose: handleCancel,
 			},
 			el(

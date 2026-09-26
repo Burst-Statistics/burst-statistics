@@ -185,7 +185,8 @@ class Chunked_Uploader {
 			[
 				'success'    => true,
 				'upload_id'  => $upload_id,
-				'chunk_size' => 4 * 1024 * 1024, // 4MB chunks
+				// 4MB chunks
+				'chunk_size' => 4 * 1024 * 1024,
 			],
 			200
 		);
@@ -384,7 +385,8 @@ class Chunked_Uploader {
 			return;
 		}
 
-		$entries = @scandir( $base_dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		$entries = @scandir( $base_dir );
 		if ( ! is_array( $entries ) ) {
 			return;
 		}
@@ -462,7 +464,8 @@ class Chunked_Uploader {
 	 * @param string $dir Directory path, already confined by the caller.
 	 */
 	private function delete_directory( string $dir ): void {
-		$entries = @scandir( $dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		$entries = @scandir( $dir );
 		if ( ! is_array( $entries ) ) {
 			return;
 		}
@@ -479,6 +482,7 @@ class Chunked_Uploader {
 			}
 		}
 
-		@rmdir( $dir ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir, WordPress.PHP.NoSilencedErrors.Discouraged
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir, WordPress.PHP.NoSilencedErrors.Discouraged
+		@rmdir( $dir );
 	}
 }

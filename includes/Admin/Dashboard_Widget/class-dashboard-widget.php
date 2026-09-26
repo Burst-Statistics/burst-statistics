@@ -53,7 +53,7 @@ class Dashboard_Widget {
 		}
 
 		$js_data = $this->get_chunk_translations( 'includes/Admin/Dashboard_Widget/build' );
-		if ( empty( $js_data ) ) {
+		if ( empty( $js_data['js_file'] ) ) {
 			return;
 		}
 
