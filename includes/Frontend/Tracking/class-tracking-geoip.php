@@ -56,7 +56,7 @@ class Tracking_GeoIp {
 	 * Reset the geo ip database on a detected error, unless it's currently downloading.
 	 */
 	public static function reset_geo_ip(): void {
-		if ( ! get_transient( 'burst_importing' ) && ! self::is_test() ) {
+		if ( ! get_transient( 'burst_importing' ) ) {
 			update_option( 'burst_import_geo_ip_on_activation', true );
 			delete_option( 'burst_geo_ip_file' );
 			delete_option( 'burst_last_update_geo_ip' );
@@ -99,16 +99,7 @@ class Tracking_GeoIp {
 
 		$reader = static::get_reader();
 		if ( $reader === null ) {
-			if ( ! empty( $ip ) && ( str_contains( $ip, '::1' ) || '127.0.0.1' === $ip ) ) {
-				$data = static::handle_lookup_exception(
-					new \Exception( "The address $ip is not in the database." ),
-					$defaults
-				);
-				if ( '' !== $data['country_code'] ) {
-					return $data;
-				}
-			}
-			return $defaults;
+			return static::get_localhost_location_data( $ip ) ?? $defaults;
 		}
 
 		if ( empty( $ip ) ) {
@@ -126,7 +117,7 @@ class Tracking_GeoIp {
 
 			return wp_parse_args( $location_data, $defaults );
 		} catch ( \Exception $e ) {
-			return static::handle_lookup_exception( $e, $defaults );
+			return static::handle_lookup_exception( $e, $defaults, $ip );
 		}
 	}
 
@@ -249,32 +240,64 @@ class Tracking_GeoIp {
 	}
 
 	/**
+	 * Check whether the IP is the server's own loopback address.
+	 *
+	 * Exact match on purpose: a substring check on '::1' also matches real IPv6
+	 * addresses such as 2a02:1810::1c4f:9a2b.
+	 *
+	 * @param string $ip The visitor IP address.
+	 * @return bool True for 127.0.0.1 or ::1.
+	 */
+	protected static function is_loopback_ip( string $ip ): bool {
+		return in_array( $ip, [ '127.0.0.1', '::1' ], true );
+	}
+
+	/**
+	 * Get filler location data for loopback requests, which have no real location.
+	 *
+	 * @param string $ip The visitor IP address.
+	 * @return array<string, mixed>|null Filler location data, or null for any other IP.
+	 */
+	protected static function get_localhost_location_data( string $ip ): ?array {
+		if ( ! static::is_loopback_ip( $ip ) ) {
+			return null;
+		}
+
+		self::error_log( 'Localhost detected. No real ip possible, so responding with filler data.' );
+		return apply_filters(
+			'burst_localhost_location_data',
+			[
+				'city'            => 'Groningen',
+				'city_code'       => 2755251,
+				'state'           => 'Groningen',
+				'state_code'      => 'GR',
+				'country_code'    => 'NL',
+				'continent_code'  => 'EU',
+				'accuracy_radius' => 50,
+			]
+		);
+	}
+
+	/**
 	 * Shared handling for reader lookup exceptions (localhost / not-in-database).
+	 *
+	 * Side effect: resets the GeoIP database when the error is not a missing
+	 * record, so a corrupt file gets downloaded again.
 	 *
 	 * @param \Exception           $e        The thrown exception.
 	 * @param array<string, mixed> $defaults The default location response.
+	 * @param string               $ip       The IP address that was looked up.
 	 * @return array<string, mixed>
 	 */
-	protected static function handle_lookup_exception( \Exception $e, array $defaults ): array {
+	protected static function handle_lookup_exception( \Exception $e, array $defaults, string $ip ): array {
 		$error_msg = $e->getMessage();
 		if ( strpos( $error_msg, ' is not in the databas' ) !== false ) {
-			self::error_log( 'Localhost detected. No real ip possible, so responding with filler data.' );
-			if ( false !== strpos( $error_msg, '::1' ) || false !== strpos( $error_msg, '127.0.0.1' ) ) {
-				$defaults = apply_filters(
-					'burst_localhost_location_data',
-					[
-						'city'            => 'Groningen',
-						'city_code'       => 2755251,
-						'state'           => 'Groningen',
-						'state_code'      => 'GR',
-						'country_code'    => 'NL',
-						'continent_code'  => 'EU',
-						'accuracy_radius' => 50,
-					]
-				);
-			} else {
-				self::error_log( 'MaxMind error: ' . $error_msg );
+			$localhost = static::get_localhost_location_data( $ip );
+			if ( null !== $localhost ) {
+				return $localhost;
 			}
+
+			self::error_log( 'MaxMind error: ' . $error_msg );
 			return $defaults;
 		}
 

@@ -3,7 +3,6 @@ import { __ } from '@wordpress/i18n';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import TextInput from '@/components/Inputs/TextInput';
 import ButtonInput from '@/components/Inputs/ButtonInput';
-import Modal from '@/components/Common/Modal';
 import Icon from '@/utils/Icon';
 import { doAction } from '@/utils/api';
 
@@ -32,7 +31,6 @@ const SlackWebhookField = forwardRef<HTMLDivElement, SlackWebhookFieldProps>(
 	({ field, fieldState, help, context, disabled = false, ...props }, ref ) => {
 		const [ isTesting, setIsTesting ] = useState( false );
 		const [ testResult, setTestResult ] = useState<{ success: boolean; message: string } | null>( null );
-		const [ isHelpModalOpen, setIsHelpModalOpen ] = useState( false );
 
 		const inputId = props.id || field.name;
 
@@ -154,24 +152,6 @@ const SlackWebhookField = forwardRef<HTMLDivElement, SlackWebhookFieldProps>(
 							</div>
 						)}
 
-						{/* Inline info and guide link row */}
-						<div className="flex flex-wrap items-center justify-between gap-2 text-xs text-text-gray mt-0.5">
-							<span>
-								{__(
-									'Anyone with access to the Slack channel will be able to open story links shared in notifications.',
-									'burst-statistics'
-								)}
-							</span>
-							<button
-								type="button"
-								onClick={() => setIsHelpModalOpen( true )}
-								className="inline-flex items-center gap-1 text-primary hover:underline font-medium cursor-pointer shrink-0 focus:outline-none"
-							>
-								<Icon name="help" size={13} />
-								<span>{__( 'How to set up a Slack incoming webhook', 'burst-statistics' )}</span>
-							</button>
-						</div>
-
 						{/* Test Feedback */}
 						{testResult && (
 							<div
@@ -191,96 +171,6 @@ const SlackWebhookField = forwardRef<HTMLDivElement, SlackWebhookFieldProps>(
 						)}
 					</div>
 				</FieldWrapper>
-
-				{/* Help Guide Modal */}
-				<Modal
-					isOpen={isHelpModalOpen}
-					onClose={() => setIsHelpModalOpen( false )}
-					title={__( 'Setting up a Slack incoming webhook', 'burst-statistics' )}
-					subtitle={__( 'Follow these steps to generate a webhook URL in Slack', 'burst-statistics' )}
-					content={
-						<div className="flex flex-col gap-4 text-sm text-text-black py-2">
-							<p className="text-text-gray leading-relaxed">
-								{__(
-									'Incoming webhooks allow Burst Statistics to post story reports, traffic spike/dip alerts, and tracking health notifications into your Slack channel.',
-									'burst-statistics'
-								)}
-							</p>
-
-							<ol className="list-decimal pl-5 space-y-3 text-text-gray leading-relaxed">
-								<li>
-									<span className="font-semibold text-text-black">{__( 'Create a Slack app:', 'burst-statistics' )}</span>{' '}
-									{__( 'Go to', 'burst-statistics' )}{' '}
-									<a
-										href="https://api.slack.com/apps"
-										target="_blank"
-										rel="noopener noreferrer"
-										className="text-primary hover:underline focus:outline-none inline-flex items-center gap-1 font-medium"
-									>
-										api.slack.com/apps <Icon name="external-link" size={12} />
-									</a>{' '}
-									{__( 'and click', 'burst-statistics' )}{' '}
-									<strong className="text-text-black">{__( '"Create New App" → "Blank app"', 'burst-statistics' )}</strong>.{' '}
-									{__( 'Give it a name (e.g., "Burst Statistics") and choose your workspace.', 'burst-statistics' )}
-								</li>
-
-								<li>
-									<span className="font-semibold text-text-black">{__( 'Enable webhooks:', 'burst-statistics' )}</span>{' '}
-									{__( 'In your app settings, click on', 'burst-statistics' )}{' '}
-									<strong className="text-text-black">{__( '"Incoming Webhooks"', 'burst-statistics' )}</strong>{' '}
-									{__( 'in the left menu and toggle the switch to', 'burst-statistics' )}{' '}
-									<strong className="text-text-black">{__( '"On"', 'burst-statistics' )}</strong>.
-								</li>
-
-								<li>
-									<span className="font-semibold text-text-black">{__( 'Add webhook to workspace:', 'burst-statistics' )}</span>{' '}
-									{__( 'Click the', 'burst-statistics' )}{' '}
-									<strong className="text-text-black">{__( '"Add New Webhook to Workspace"', 'burst-statistics' )}</strong>{' '}
-									{__( 'button at the bottom of the page.', 'burst-statistics' )}
-								</li>
-
-								<li>
-									<span className="font-semibold text-text-black">{__( 'Select channel:', 'burst-statistics' )}</span>{' '}
-									{__( 'Choose the channel where you would like notifications to appear and click', 'burst-statistics' )}{' '}
-									<strong className="text-text-black">{__( '"Allow"', 'burst-statistics' )}</strong>.
-								</li>
-
-								<li>
-									<span className="font-semibold text-text-black">{__( 'Copy and paste:', 'burst-statistics' )}</span>{' '}
-									{__( 'Copy the generated webhook URL (starts with', 'burst-statistics' )}{' '}
-									<code className="bg-white text-text-black border border-border px-1.5 py-0.5 rounded text-xs font-mono">
-										https://hooks.slack.com/services/...
-									</code>
-									{__( ') and paste it into the field above.', 'burst-statistics' )}
-								</li>
-
-								<li>
-									<span className="font-semibold text-text-black">{__( 'Test and save:', 'burst-statistics' )}</span>{' '}
-									{__( 'Click "Send test message" to verify delivery, then click "Save" on this settings page.', 'burst-statistics' )}
-								</li>
-							</ol>
-
-							<div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-xs text-text-black mt-2 leading-relaxed">
-								<strong className="font-semibold">{__( 'Security note:', 'burst-statistics' )}</strong>{' '}
-								{__(
-									'Treat your webhook URL like a password. It gives permission to post messages to your channel. Burst Statistics masks this URL once saved and excludes it from diagnostic exports.',
-									'burst-statistics'
-								)}
-							</div>
-						</div>
-					}
-					footer={
-						<div className="flex justify-end">
-							<ButtonInput
-								btnVariant="tertiary"
-								size="sm"
-								onClick={() => setIsHelpModalOpen( false )}
-							>
-								{__( 'Close', 'burst-statistics' )}
-							</ButtonInput>
-						</div>
-					}
-				/>
 			</div>
 		);
 	}

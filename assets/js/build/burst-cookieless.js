@@ -292,7 +292,8 @@ const burst_get_time_on_page = () => {
  */
 const burst_is_user_agent = () => {
   if (burst.cache.isUserAgent !== null) return burst.cache.isUserAgent;
-  const botPattern = /bot|spider|crawl|slurp|mediapartners|applebot|bing|duckduckgo|yandex|baidu|facebook|twitter/i;
+  // GoogleOther and Google-InspectionTool render JavaScript but have no "bot" in their user agent.
+  const botPattern = /bot|spider|crawl|slurp|mediapartners|applebot|bing|duckduckgo|yandex|baidu|facebook|twitter|googleother|google-inspectiontool/i;
   const result = botPattern.test(navigator.userAgent);
   burst.cache.isUserAgent = result;
   return result;
@@ -350,35 +351,60 @@ const burst_log_tracking_error = ({ status = 0, error = '', data = {} }) => {
   });
 };
 
+/**
+ * Send the hit payload to the beacon endpoint with a keepalive fetch.
+ *
+ * @param {Blob}   blob    The JSON payload as a blob.
+ * @param {string} payload The raw JSON payload, reported on failure in debug mode.
+ */
+const burst_beacon_fetch = (blob, payload) => {
+  fetch(burst.tracking.beacon_url, {
+    method: 'POST',
+    body: blob,
+    keepalive: true,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then(response => {
+    if (!response.ok && burst_debug_enabled()) {
+      burst_log_tracking_error({
+        status: 0,
+        error: 'sendBeacon failed',
+        data: payload
+      });
+    }
+  }).catch(error => {
+    if (burst_debug_enabled()) {
+      burst_log_tracking_error({
+        status: 0,
+        error: error?.message || 'sendBeacon failed',
+        data: payload
+      });
+    }
+  });
+};
+
+/**
+ * Send the hit payload to the beacon endpoint.
+ *
+ * sendBeacon is the default transport: JavaScript-rendering crawlers such as
+ * Google's renderer execute fetch() but drop beacons, so a fetch-first
+ * transport counts them as visitors. fetch is only used in debug mode, where
+ * the response is needed to report errors, or when the beacon was not queued.
+ *
+ * @param {string} payload The JSON payload.
+ */
 const burst_beacon_request = (payload) => {
   const blob = new Blob([payload], { type: 'application/json' });
-  if (typeof fetch === 'function') {
-    fetch(burst.tracking.beacon_url, {
-      method: 'POST',
-      body: blob,
-      keepalive: true,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    }).then(response => {
-      if (!response.ok && burst_debug_enabled()) {
-        burst_log_tracking_error({
-          status: 0,
-          error: 'sendBeacon failed',
-          data: payload
-        });
-      }
-    }).catch(error => {
-      if (burst_debug_enabled()) {
-        burst_log_tracking_error({
-          status: 0,
-          error: error?.message || 'sendBeacon failed',
-          data: payload
-        });
-      }
-    });
-  } else if (navigator.sendBeacon) {
-    navigator.sendBeacon(burst.tracking.beacon_url, blob);
+  const canFetch = typeof fetch === 'function';
+  if (burst_debug_enabled() && canFetch) {
+    burst_beacon_fetch(blob, payload);
+    return;
+  }
+
+  const isQueued = typeof navigator.sendBeacon === 'function' && navigator.sendBeacon(burst.tracking.beacon_url, blob);
+  if (!isQueued && canFetch) {
+    burst_beacon_fetch(blob, payload);
   }
 };
 

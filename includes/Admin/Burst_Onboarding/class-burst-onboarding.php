@@ -16,6 +16,10 @@ class Burst_Onboarding {
 	use Save;
 	use Admin_Helper;
 
+	/**
+	 * The onboarding, when it is active on this request.
+	 */
+	private ?Onboarding $onboarding = null;
 
 	/**
 	 * Setup hooks.
@@ -87,7 +91,46 @@ class Burst_Onboarding {
 			$onboarding->text_domain                    = 'burst-statistics';
 			$onboarding->reload_settings_page_on_finish = true;
 			$onboarding->init();
+
+			// Runs right before the onboarding enqueues its wizard (priority 1), when the steps are
+			// final: an auto installed license has been activated on admin_init by then.
+			$this->onboarding = $onboarding;
+			add_action( "admin_print_scripts-{$onboarding->page_hook_suffix}", [ $this, 'maybe_close_empty_onboarding' ], 0 );
 		}
+	}
+
+	/**
+	 * Close the onboarding instead of showing a wizard that only has an intro and a finish page.
+	 *
+	 * That happens in pro after a completed free onboarding with a valid license: every
+	 * first_run_only step and the license step are dropped. Side effect: removes the
+	 * onboarding's script and root element hooks, and deletes burst_start_onboarding, so the
+	 * onboarding does not start again. It is not marked as completed, to keep the telemetry honest.
+	 */
+	public function maybe_close_empty_onboarding(): void {
+		if ( null === $this->onboarding || $this->has_configurable_steps( $this->onboarding->get_steps() ) ) {
+			return;
+		}
+
+		remove_action( "admin_print_scripts-{$this->onboarding->page_hook_suffix}", [ $this->onboarding, 'enqueue_onboarding_scripts' ], 1 );
+		remove_action( 'admin_footer', [ $this->onboarding, 'add_root_html' ] );
+		delete_option( 'burst_start_onboarding' );
+	}
+
+	/**
+	 * Check if the onboarding has at least one step to configure between the intro and the finish page.
+	 *
+	 * @param array<int, array{type: string}> $steps The onboarding steps, after the conditional drops.
+	 * @return bool True if there is something to configure.
+	 */
+	public function has_configurable_steps( array $steps ): bool {
+		foreach ( $steps as $step ) {
+			if ( ! in_array( $step['type'], [ 'intro', 'completed' ], true ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	//phpcs:disable

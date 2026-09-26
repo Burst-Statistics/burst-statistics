@@ -304,11 +304,10 @@ trait Helper {
 	 * Check if we are running in a test environment
 	 */
 	protected static function is_test(): bool {
+		// Only Burst's own flag: a generic CI variable can survive into production
+		// images, and test mode switches off GeoIP downloads and telemetry.
 		return ( defined( 'BURST_CI_ACTIVE' ) && BURST_CI_ACTIVE )
-			|| ( defined( 'CI' ) && CI )
-			|| ( defined( 'BURST_DO_NOT_UPDATE_GEO_IP' ) && BURST_DO_NOT_UPDATE_GEO_IP )
-			|| getenv( 'BURST_CI_ACTIVE' ) !== false
-			|| getenv( 'CI' ) !== false;
+			|| getenv( 'BURST_CI_ACTIVE' ) !== false;
 	}
 
 	// phpcs:disable

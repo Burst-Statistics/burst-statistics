@@ -68,10 +68,6 @@ class Geo_Ip {
 
 		$this->maybe_migrate_database_directory();
 
-		if ( self::is_test() ) {
-			return;
-		}
-
 		$last_update = (int) get_option( 'burst_last_update_geo_ip', 0 );
 		$time_passed = time() - $last_update;
 		$file_name   = (string) get_option( 'burst_geo_ip_file', '' );
@@ -157,7 +153,7 @@ class Geo_Ip {
 			return;
 		}
 
-		if ( ! self::is_test() && $this->has_admin_access() && get_option( 'burst_import_geo_ip_on_activation' ) ) {
+		if ( $this->has_admin_access() && get_option( 'burst_import_geo_ip_on_activation' ) ) {
 			if ( $this->get_geo_ip_database_file( true ) ) {
 				update_option( 'burst_import_geo_ip_on_activation', false, false );
 			}
@@ -170,7 +166,7 @@ class Geo_Ip {
 
 		// Pro forces a re-download when the on-disk database is the wrong variant
 		// (e.g. only the Country database is present but City is required).
-		if ( ! self::is_test() && $this->should_force_redownload( (string) $file_name ) ) {
+		if ( $this->should_force_redownload( (string) $file_name ) ) {
 			$this->get_geo_ip_database_file( true );
 		}
 

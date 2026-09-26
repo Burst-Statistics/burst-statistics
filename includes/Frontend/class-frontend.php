@@ -148,9 +148,7 @@ class Frontend {
 			return;
 		}
 
-		// not processing form data, only a conditional redirect, which is available only temporarily.
-		// phpcs:ignore
-		if ( ! get_transient( 'burst_redirect_to_settings_page' ) || ( isset( $_GET['page'] ) && $_GET['page'] === 'burst' ) ) {
+		if ( ! get_transient( 'burst_redirect_to_settings_page' ) ) {
 			return;
 		}
 
@@ -159,6 +157,14 @@ class Frontend {
 		}
 
 		delete_transient( 'burst_redirect_to_settings_page' );
+
+		// Already on the page the redirect leads to: the redirect is used up, so a later
+		// admin page does not unexpectedly send the user back here.
+		// not processing form data, only a conditional redirect, which is available only temporarily.
+		// phpcs:ignore
+		if ( isset( $_GET['page'] ) && $_GET['page'] === 'burst' ) {
+			return;
+		}
 
 		// we don't redirect when installed through the onboarding of another plugin.
 		if ( get_site_option( 'teamupdraft_installation_source_burst-statistics' ) ) {

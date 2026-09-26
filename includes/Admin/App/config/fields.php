@@ -538,7 +538,10 @@ return [
 		'group_id'   => 'report_notifications',
 		'type'       => 'slack_webhook',
 		'label'      => __( 'Slack webhook URL', 'burst-statistics' ),
-		'context'    => __( 'Receive story reports, traffic anomaly alerts, and tracking health notifications directly in your Slack channel.', 'burst-statistics' ),
+		'context'    => [
+			'text' => __( 'Receive story reports, traffic anomaly alerts and tracking health notifications in your Slack channel.', 'burst-statistics' ),
+			'url'  => 'guides/how-to-set-up-slack-notifications/',
+		],
 		'help'       => __( 'Anyone with access to the Slack channel will be able to open story links shared in notifications.', 'burst-statistics' ),
 		'pro'        => [
 			'url'      => 'pricing/',
