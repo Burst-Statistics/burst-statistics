@@ -84,11 +84,21 @@ class Tour {
 	}
 
 	/**
-	 * Check whether the tour is currently requested via URL parameter or active session.
+	 * Check whether the tour is currently requested via URL parameter.
 	 */
-	public function is_tour_requested(): bool {
+	public static function is_tour_requested(): bool {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		return isset( $_GET['tour'] );
+	}
+
+	/**
+	 * Check whether the site runs as a demo environment (WordPress Playground blueprint).
+	 *
+	 * In demo mode the mock data stays active after the tour ends, because the
+	 * environment has no real statistics to fall back on.
+	 */
+	public static function is_demo_mode(): bool {
+		return defined( 'BURST_BLUEPRINT' );
 	}
 
 	/**
@@ -112,7 +122,7 @@ class Tour {
 	public function maybe_localize_tour_data( array $data ): array {
 		$user_id = get_current_user_id();
 
-		if ( ! $this->is_tour_requested() ) {
+		if ( ! self::is_tour_requested() ) {
 			// The tour keeps ?tour in the url while it runs, so a dashboard load
 			// without it means no tour is running. Clear the server-side flag:
 			// left set after an abandoned tour (tab closed mid-tour), it would
@@ -209,15 +219,18 @@ class Tour {
 
 		}
 
-		$is_tour_active = $this->is_tour_requested();
+		$is_tour_active = self::is_tour_requested();
 		$tour_id        = $is_tour_active ? $this->get_requested_tour_id() : 'dashboard';
+
+		$is_demo_mode = self::is_demo_mode();
 
 		$data['tour'] = [
 			'active'             => $is_tour_active,
 			'tour_id'            => $tour_id,
 			'steps'              => $is_tour_active ? $this->get_tour_steps( $tour_id ) : [],
 			'completed_features' => $this->get_completed_features( $user_id ),
-			'mock_data_enabled'  => $is_tour_active,
+			'mock_data_enabled'  => $is_tour_active || $is_demo_mode,
+			'demo_mode'          => $is_demo_mode,
 			'last_section'       => $this->get_last_section( $user_id ),
 			'completed'          => $this->is_tour_completed( $user_id ),
 		];
@@ -364,8 +377,8 @@ class Tour {
 			return $result;
 		}
 
-		// Verify tour is active server-side for this user.
-		if ( ! $this->is_user_tour_active( $user_id ) ) {
+		// Verify tour is active server-side for this user. Demo environments keep intercepting after the tour ends.
+		if ( ! $this->is_user_tour_active( $user_id ) && ! self::is_demo_mode() ) {
 			return $result;
 		}
 
@@ -1354,6 +1367,7 @@ class Tour {
 						delete_user_meta( $user_id, self::TOUR_ACTIVE_META_KEY );
 					}
 					update_option( 'burst_tour_completed', true, false );
+					do_action( 'burst_tour_completed' );
 				}
 
 				return [
@@ -1564,6 +1578,8 @@ class Tour {
 	public function add_tour_task( array $tasks ): array {
 		$tasks[] = [
 			'id'                  => 'interactive_tour',
+			'mainwp'              => false,
+			'drip_order'          => 10,
 			'condition'           => [
 				'type'     => 'serverside',
 				'function' => 'Burst\Admin\Tour\Tour::should_show_tour_task()',
@@ -1616,6 +1632,11 @@ class Tour {
 	 * @return array<int, array<string, mixed>>
 	 */
 	public function add_settings_field( array $fields ): array {
+		// See add_tour_task(): no tour entry point inside the MainWP dashboard.
+		if ( $this->is_mainwp_request() ) {
+			return $fields;
+		}
+
 		$duration = self::get_estimated_duration_minutes( 'dashboard' );
 
 		$fields[] = [
@@ -1651,7 +1672,7 @@ class Tour {
 	 * @return array<string, mixed>
 	 */
 	public function reset_field_in_tour( array $field ): array {
-		if ( $this->is_tour_requested() && isset( $field['default'] ) ) {
+		if ( self::is_tour_requested() && isset( $field['default'] ) ) {
 			$field['value'] = $field['default'];
 		}
 		return $field;

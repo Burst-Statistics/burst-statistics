@@ -126,24 +126,6 @@ class Burst_Wp_Cli {
 	}
 
 	/**
-	 * Install demo data
-	 *
-	 * @throws \WP_CLI\ExitException //exit exception.
-	 */
-	public function install_demo_data( array $args, array $assoc_args ): void {
-		// prevent phpcs warnings.
-		unset( $args, $assoc_args );
-		if ( ! $this->wp_cli_active() ) {
-			return;
-		}
-
-		$admin = new Admin();
-		$admin->init();
-		$admin->install_demo_data();
-		\WP_CLI::success( 'Demo data installed' );
-	}
-
-	/**
 	 * Reset data
 	 */
 	public function reset_data(): void {
@@ -218,6 +200,20 @@ class Burst_Wp_Cli {
 	}
 
 	/**
+	 * Run activation processing through CLI
+	 */
+	public function activate(): void {
+		if ( ! $this->wp_cli_active() ) {
+			return;
+		}
+
+		$admin = new Admin();
+		$admin->init();
+		$admin->activation();
+		\WP_CLI::success( 'Burst activation completed' );
+	}
+
+	/**
 	 * Save options through CLI
 	 *
 	 * @throws \WP_CLI\ExitException //exit exception.
@@ -232,7 +228,11 @@ class Burst_Wp_Cli {
 		}
 		$last_updated_name = 'none';
 		foreach ( $assoc_args as $name => $value ) {
-			$value = $value === 'true' ? true : $value;
+			if ( 'true' === $value ) {
+				$value = true;
+			} elseif ( 'false' === $value ) {
+				$value = false;
+			}
 			$this->update_option( $name, $value );
 			$last_updated_name = $name;
 		}

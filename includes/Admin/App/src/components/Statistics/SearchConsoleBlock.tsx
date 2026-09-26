@@ -55,7 +55,7 @@ const SearchConsoleBlock = (): JSX.Element => {
 
 	if ( tourActive ) {
 		return (
-			<div data-tour="search-console-block" className="row-span-2 @xl:col-span-6 flex flex-col">
+			<div data-tour="search-console-block" className="col-span-12 row-span-2 @xl:col-span-6 flex flex-col">
 				<DataTableBlock allowedConfigs={[ 'search_console' ]} id="search_console" isInOverlay={ true } />
 			</div>
 		);
@@ -63,7 +63,7 @@ const SearchConsoleBlock = (): JSX.Element => {
 
 	if ( 'connected' === status ) {
 		return (
-			<div data-tour="search-console-block" className="row-span-2 @xl:col-span-6 flex flex-col">
+			<div data-tour="search-console-block" className="col-span-12 row-span-2 @xl:col-span-6 flex flex-col">
 				<ConnectedSearchConsoleBlock propertyStatus={ propertyStatus } />
 			</div>
 		);
@@ -72,7 +72,7 @@ const SearchConsoleBlock = (): JSX.Element => {
 	// Not connected: the toggle is off, or it is on but not yet connected /
 	// needs reconnecting. Show an activation overlay that routes to settings.
 	return (
-		<div data-tour="search-console-block" className="row-span-2 @xl:col-span-6 flex flex-col">
+		<div data-tour="search-console-block" className="col-span-12 row-span-2 @xl:col-span-6 flex flex-col">
 			<OverlayBlock
 				title={ __( 'Google searches', 'burst-statistics' ) }
 				blurLabel={ __( 'Google searches', 'burst-statistics' ) }

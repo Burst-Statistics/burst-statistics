@@ -59,21 +59,46 @@ class Settings_Data extends Data_Collector {
 	}
 
 	/**
+	 * Read the raw Team Updraft installation source options.
+	 *
+	 * The installer writes these with update_site_option(), so on multisite
+	 * they live in the sitemeta table instead of the blog's options table.
+	 *
+	 * @return array<int, array{option_name: string, option_value: string}>
+	 */
+	private function get_installation_source_rows( string $prefix ): array {
+		global $wpdb;
+
+		if ( is_multisite() ) {
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT meta_key AS option_name, meta_value AS option_value FROM {$wpdb->sitemeta} WHERE site_id = %d AND meta_key LIKE %s",
+					get_current_network_id(),
+					$wpdb->esc_like( $prefix ) . '%'
+				),
+				ARRAY_A
+			);
+		} else {
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s",
+					$wpdb->esc_like( $prefix ) . '%'
+				),
+				ARRAY_A
+			);
+		}
+
+		return is_array( $rows ) ? $rows : [];
+	}
+
+	/**
 	 * Get Team Updraft plugin install source map.
 	 *
 	 * @return array<string,string>
 	 */
 	private function get_udp_plugin_install_sources(): array {
-		global $wpdb;
-
 		$prefix = 'teamupdraft_installation_source_';
-		$rows   = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s",
-				$wpdb->esc_like( $prefix ) . '%'
-			),
-			ARRAY_A
-		);
+		$rows   = $this->get_installation_source_rows( $prefix );
 
 		if ( empty( $rows ) ) {
 			return [];
@@ -105,6 +130,10 @@ class Settings_Data extends Data_Collector {
 	 * Count active (non-expired) dashboard share links, excluding report tokens.
 	 */
 	private function get_shared_links_count(): int {
+		if ( ! isset( burst_loader()->admin, burst_loader()->admin->share, burst_loader()->admin->share->tokens ) ) {
+			return 0;
+		}
+
 		$share_links = burst_loader()->admin->share->tokens->get_share_links( 'link' );
 
 		if ( ! is_array( $share_links ) ) {
@@ -198,7 +227,7 @@ class Settings_Data extends Data_Collector {
 			'archive_mode'                        => $this->get_option( 'archive_data', 'none' ),
 			'archive_months'                      => $this->get_option_int( 'archive_after_months' ),
 			'site_category'                       => $this->get_option( 'site_category', 'uncategorized' ),
-			'plugin_installed_by'                 => get_option( 'teamupdraft_installation_source_burst-statistics', '' ),
+			'plugin_installed_by'                 => get_site_option( 'teamupdraft_installation_source_burst-statistics', '' ),
 			'udp_plugin_install_sources'          => $this->get_udp_plugin_install_sources(),
 			'burst_auto_installed'                => $this->get_wordpress_option_bool( 'burst_auto_installed', false ),
 			'burst_activation_time_pro'           => $burst_activation_time_pro,

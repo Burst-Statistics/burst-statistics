@@ -33,6 +33,7 @@ const resolveContextText = ( context ) => {
  * @param {boolean} [disabled]        - Whether the field is disabled.
  * @return {JSX.Element}
  */
+// fallow-ignore-next-line complexity
 const RadioField = (
 	{
 		field,
@@ -63,16 +64,20 @@ const RadioField = (
 			{...props}
 		>
 			<div className="flex flex-col gap-4">
-				<div className="flex items-center justify-between gap-4">
-					<span className="text-md font-medium text-text-black">
-						{label}
-					</span>
-					{contextText && (
-						<span className="text-sm text-text-gray text-right">
-							{contextText}
-						</span>
-					)}
-				</div>
+				{( label || contextText ) && (
+					<div className="flex flex-col gap-1">
+						{label && (
+							<span className="text-md font-medium text-text-black">
+								{label}
+							</span>
+						)}
+						{contextText && (
+							<span className="text-sm text-text-gray">
+								{contextText}
+							</span>
+						)}
+					</div>
+				)}
 
 				<div className="flex flex-col gap-3">
 					{Object.entries( options ).map( ([ value, option ]) => (

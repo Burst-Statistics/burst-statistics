@@ -84,10 +84,21 @@ class Tracking_Health {
 	private const OPTION = 'burst_tracking_health';
 
 	/**
+	 * Option key holding the timestamp of the last dispatched health notification.
+	 */
+	public const LAST_NOTIFICATION_OPTION = 'burst_tracking_health_last_notification';
+
+	/**
+	 * Default minimum confidence threshold to dispatch a health notification.
+	 */
+	public const DEFAULT_NOTIFICATION_CONFIDENCE = 0.85;
+
+	/**
 	 * Register hooks.
 	 */
 	public function init(): void {
 		add_action( 'burst_daily', [ $this, 'run_daily_check' ] );
+		add_action( 'burst_tracking_health_checked', [ $this, 'maybe_dispatch_notification' ] );
 	}
 
 	/**
@@ -335,5 +346,61 @@ class Tracking_Health {
 			$day->setTime( 0, 0, 0 )->getTimestamp(),
 			$day->setTime( 23, 59, 59 )->getTimestamp(),
 		];
+	}
+
+	/**
+	 * Dispatch health.degraded notification when confidence is high enough
+	 * and weekly throttle allows.
+	 *
+	 * @param array<string, mixed> $health_result The result fired by run_daily_check.
+	 */
+	public function maybe_dispatch_notification( array $health_result ): void {
+		if ( 'ok' === ( $health_result['status'] ?? 'ok' ) ) {
+			return;
+		}
+
+		$min_confidence = (float) apply_filters( 'burst_tracking_health_notification_confidence', self::DEFAULT_NOTIFICATION_CONFIDENCE );
+		if ( (float) ( $health_result['confidence'] ?? 0 ) < $min_confidence ) {
+			return;
+		}
+
+		$last_sent = (int) get_option( self::LAST_NOTIFICATION_OPTION, 0 );
+		if ( $last_sent > 0 && ( time() - $last_sent ) < WEEK_IN_SECONDS ) {
+			return;
+		}
+
+		update_option( self::LAST_NOTIFICATION_OPTION, time(), false );
+
+		$host          = wp_parse_url( home_url(), PHP_URL_HOST );
+		$pretty_domain = is_string( $host ) && '' !== $host ? $host : (string) home_url();
+		$status        = (string) ( $health_result['status'] ?? '' );
+		$status_label  = 'down' === $status
+			? __( 'No hits recorded', 'burst-statistics' )
+			: __( 'Hits far below normal', 'burst-statistics' );
+
+		$facts = [
+			__( 'Status', 'burst-statistics' )         => $status_label,
+			__( 'Hits yesterday', 'burst-statistics' ) => (string) (int) ( $health_result['hits'] ?? 0 ),
+			__( 'Baseline', 'burst-statistics' )       => (string) round( (float) ( $health_result['baseline'] ?? 0 ) ),
+		];
+
+		$notification = new \Burst\Admin\Notifications\Notification(
+			'health.degraded',
+			sprintf(
+				// translators: %s is the website domain name.
+				__( 'Tracking health degraded on %s', 'burst-statistics' ),
+				$pretty_domain
+			),
+			sprintf(
+				// translators: %s is the website domain name.
+				__( 'Burst detected that visitor tracking on %s may have stopped working: yesterday recorded far fewer hits than normal.', 'burst-statistics' ),
+				$pretty_domain
+			),
+			admin_url( 'admin.php?page=burst' ),
+			$facts,
+			0
+		);
+
+		do_action( 'burst_notification', $notification );
 	}
 }

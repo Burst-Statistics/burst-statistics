@@ -10,6 +10,7 @@ import {
 
 import { doAction, getAction } from '@/utils/api';
 import { getLocalStorage, setLocalStorage, removeLocalStorage } from '@/utils/storage';
+import useTasks from '@/store/useTasksStore';
 
 export type TourStepAction =
 	| 'click_tab'
@@ -44,6 +45,7 @@ interface LocalizedTourData {
 	steps?: TourStep[];
 	completed_features?: string[];
 	mock_data_enabled?: boolean;
+	demo_mode?: boolean;
 	last_section?: string;
 	completed?: boolean;
 }
@@ -66,6 +68,7 @@ interface TourState {
 	prevStep: () => void;
 	setIsHotspotActive: ( active: boolean ) => void;
 	setInteractionComplete: ( complete: boolean ) => void;
+	setMockDataActive: ( active: boolean ) => void;
 	completeFeature: ( featureId: string ) => Promise<void>;
 	dismissTour: () => Promise<void>;
 	updateSectionProgress: ( sectionId: string ) => Promise<void>;
@@ -79,6 +82,9 @@ interface TourState {
 const initialData: LocalizedTourData = ( window as unknown as { burst_settings?: { tour?: LocalizedTourData } })?.burst_settings?.tour || {};
 
 const rawSteps = Array.isArray( initialData.steps ) ? initialData.steps : [];
+
+// Demo environments (Playground blueprint) keep serving mock data after the tour ends.
+const isDemoMode = Boolean( initialData.demo_mode );
 
 export const ensureTourInUrl = () => {
 	if ( 'undefined' !== typeof window ) {
@@ -109,7 +115,7 @@ const removeTourFromUrl = () => {
 			const burstSettings = ( window as unknown as { burst_settings?: { tour?: LocalizedTourData } })?.burst_settings;
 			if ( burstSettings?.tour ) {
 				burstSettings.tour.active = false;
-				burstSettings.tour.mock_data_enabled = false;
+				burstSettings.tour.mock_data_enabled = isDemoMode;
 			}
 			const url = new URL( window.location.href );
 			if ( url.searchParams.has( 'tour' ) ) {
@@ -137,8 +143,11 @@ export const invalidateAllBurstQueries = () => {
 	}
 };
 
-const isUrlTourActive = 'undefined' !== typeof window ? new URLSearchParams( window.location.search ).has( 'tour' ) : false;
-const isInitialTourActive = Boolean( initialData.active || isUrlTourActive );
+// The tour cannot run inside the MainWP dashboard: its entry points are not
+// offered there and a stray ?tour parameter on the dashboard URL is ignored.
+const isTourSupported = true !== ( window as unknown as { burst_settings?: { is_mainwp?: boolean } })?.burst_settings?.is_mainwp;
+const isUrlTourActive = isTourSupported && 'undefined' !== typeof window && new URLSearchParams( window.location.search ).has( 'tour' );
+const isInitialTourActive = isTourSupported && Boolean( initialData.active || isUrlTourActive );
 
 const resolveLastSection = ( candidateA?: string | null, candidateB?: string | null ): string => {
 	if ( candidateA && 'overview' !== candidateA ) {
@@ -213,13 +222,16 @@ export const useTourStore = create<TourState>( ( set, get ) => ({
 	stepIndex: 0,
 	steps: rawSteps,
 	completedFeatures: Array.isArray( initialData.completed_features ) ? initialData.completed_features : [],
-	mockDataActive: isInitialTourActive,
+	mockDataActive: isInitialTourActive || isDemoMode,
 	isHotspotActive: false,
 	interactionComplete: false,
 	lastSectionId: storedLastSection,
 	isResumeModalOpen: shouldShowResumeInitially,
 
 	startTour: async( tourId = 'dashboard', customSteps ) => {
+		if ( ! isTourSupported ) {
+			return;
+		}
 		const rawStoreSection = get().lastSectionId;
 		const rawLocalSection = getLocalStorage<string | null>( 'tour_last_section', null );
 		const effectiveLastSection = resolveLastSection(
@@ -332,7 +344,7 @@ export const useTourStore = create<TourState>( ( set, get ) => ({
 		removeTourFromUrl();
 		set({
 			tourActive: false,
-			mockDataActive: false,
+			mockDataActive: isDemoMode,
 			isHotspotActive: false,
 			interactionComplete: false,
 			isResumeModalOpen: false
@@ -401,6 +413,17 @@ export const useTourStore = create<TourState>( ( set, get ) => ({
 		set({ stepIndex: targetStepIndex, isHotspotActive: false, interactionComplete: false });
 	},
 
+	setMockDataActive: ( mockDataActive: boolean ) => {
+
+		// Demo environments never drop below "mock data on".
+		const next = mockDataActive || isDemoMode;
+		if ( get().mockDataActive === next ) {
+			return;
+		}
+		set({ mockDataActive: next });
+		invalidateAllBurstQueries();
+	},
+
 	setIsHotspotActive: ( isHotspotActive: boolean ) => {
 		set({ isHotspotActive });
 	},
@@ -428,6 +451,12 @@ export const useTourStore = create<TourState>( ( set, get ) => ({
 			await doAction( 'tour_progress', { completed: true });
 		} catch ( e ) {
 			console.debug( 'Tour completion sync failed', e );
+		}
+
+		try {
+			await useTasks.getState().getTasks();
+		} catch ( e ) {
+			console.debug( 'Tasks refetch failed', e );
 		}
 	},
 

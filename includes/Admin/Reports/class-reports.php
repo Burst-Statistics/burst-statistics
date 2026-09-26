@@ -116,7 +116,31 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				->set_batch_id( $batch_id );
 
 			self::error_log( "Report email: building report content for report $report_id." );
-			$this->build_report( $mailer, $report->frequency, $report->content, $report->format );
+			$story_url = $this->build_report( $mailer, $report->frequency, $report->content, $report->format );
+
+			if ( 1 === $batch_id && 'both' === $report->channels && $report->format === Report_Format::STORY ) {
+				$story_url = $mailer->get_read_more_button_url() ?: ( $story_url ?: $this->get_story_url( $report->id ) );
+				$facts     = [
+					__( 'Frequency', 'burst-statistics' )  => ucfirst( $report->frequency ),
+					__( 'Date Range', 'burst-statistics' ) => $report->date_range,
+				];
+
+				$notification = new \Burst\Admin\Notifications\Notification(
+					'report.story',
+					$this->get_title_string( $report->scheduled, $report->frequency, $mailer->pretty_domain ),
+					sprintf(
+						// translators: %s is the website domain name.
+						__( 'A new analytics report is available for %s.', 'burst-statistics' ),
+						$mailer->pretty_domain
+					),
+					$story_url,
+					$facts,
+					$report->id,
+					$queue_id
+				);
+
+				do_action( 'burst_notification', $notification );
+			}
 
 			self::error_log( "Report email: handing off to mailer queue for report $report_id, batch " . ( $batch_id ?? 'null' ) . '.' );
 			$mailer->send_mail_queue();
@@ -216,6 +240,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			return $this->send_report_instance( $report, $this->get_test_queue_id() );
 		}
 
+
 		/**
 		 * Delete an existing report
 		 *
@@ -285,14 +310,22 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				'sendTime'        => 'send_time',
 				'content'         => 'content',
 				'recipients'      => 'recipients',
+				'channels'        => 'channels',
 				'enabled'         => 'enabled',
 				'scheduled'       => 'scheduled',
 				'reportDateRange' => 'date_range',
 			];
 
+			// Capture original content before overwriting (used for AI summary regeneration check).
+			$original_content = $report->content;
+
 			foreach ( $map as $request_key => $property ) {
 				if ( array_key_exists( $request_key, $data ) ) {
-					$report->{$property} = $data[ $request_key ];
+					if ( 'channels' === $request_key ) {
+						$report->set_channels( (string) $data['channels'] );
+					} else {
+						$report->{$property} = $data[ $request_key ];
+					}
 
 					if ( $request_key === 'frequency' ) {
 						if ( $data[ $request_key ] === Report_Frequency::DAILY ) {
@@ -317,6 +350,21 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					'success' => false,
 					'message' => 'Failed to update report.',
 				];
+			}
+
+			// Generate and persist AI summary when the block is newly added or empty.
+			$had_ai_block_before = self::has_ai_summary_block( $original_content );
+			$has_ai_block_now    = self::has_ai_summary_block( $report->content );
+			if (
+				$has_ai_block_now &&
+				Report_AI_Summary::is_available() &&
+				( ! $had_ai_block_before || '' === $report->ai_summary )
+			) {
+				$rendered_blocks = $this->render_report_blocks( $report );
+				$summary         = (string) apply_filters( 'burst_report_ai_summary', '', $report, $rendered_blocks, null );
+				if ( '' !== $summary ) {
+					self::persist_ai_summary( $report->id, $summary, $report->ai_summary_period );
+				}
 			}
 
 			return [
@@ -382,6 +430,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					->set_content( $data['content'] )
 					->set_date_range( $data['reportDateRange'] )
 					->set_recipients( $data['recipients'] )
+					->set_channels( $data['channels'] ?? burst_get_option( 'default_report_channels', 'email' ) )
 					->set_enabled( $data['enabled'] )
 					->set_scheduled( $data['scheduled'] );
 
@@ -397,6 +446,19 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					'success' => false,
 					'message' => 'Failed to create report.',
 				];
+			}
+
+			// Generate and persist AI summary for new reports that include the ai_summary block.
+			if (
+				null !== $report->id &&
+				self::has_ai_summary_block( $report->content ) &&
+				Report_AI_Summary::is_available()
+			) {
+				$rendered_blocks = $this->render_report_blocks( $report );
+				$summary         = (string) apply_filters( 'burst_report_ai_summary', '', $report, $rendered_blocks, null );
+				if ( '' !== $summary ) {
+					self::persist_ai_summary( $report->id, $summary, '' );
+				}
 			}
 
 			return [
@@ -529,6 +591,18 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			$hero_color_overlay_enabled = (bool) burst_get_option( 'hero_color_overlay_enabled', true );
 			$report_array               = ! empty( $report ) ? $report->to_array() : null;
 
+			if ( ! empty( $report ) && ! empty( $report->content ) && ! empty( $report->ai_summary ) ) {
+				// Inject the stored AI summary text into the content block for rendering.
+				if ( ! empty( $report_array['content'] ) ) {
+					foreach ( $report_array['content'] as &$b ) {
+						if ( is_array( $b ) && isset( $b['id'] ) && Report_Content_Block::AI_SUMMARY === $b['id'] ) {
+							$b['content'] = $report->ai_summary;
+						}
+					}
+					unset( $b );
+				}
+			}
+
 			// Custom CSS is sanitized on save (the 'css' field type), but re-read raw here so the
 			// publicly shared story view stays in sync with the stored value.
 			$custom_css = (string) burst_get_option( 'custom_css', '' );
@@ -653,6 +727,9 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				`scheduled` tinyint(1) NOT NULL DEFAULT 0,
 				`content` longtext NOT NULL,
 				`recipients` longtext NOT NULL,
+				`channels` varchar(32) NOT NULL DEFAULT 'email',
+				`ai_summary` longtext DEFAULT NULL,
+				`ai_summary_period` varchar(255) DEFAULT NULL,
 				PRIMARY KEY (`ID`)
 			) {$charset_collate};";
 
@@ -895,15 +972,19 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 *
 		 * @return array<int, array{0: string, 1: array{raw: string}}> List of compare rows grouped by type.
 		 */
-		private function get_compare_data( int $date_start, int $date_end, int $compare_date_start, int $compare_date_end ): array {
+		private function get_compare_data( int $date_start, int $date_end, int $compare_date_start, int $compare_date_end, array $filters = [] ): array {
 			$args = [
 				'date_start'         => $date_start,
 				'date_end'           => $date_end,
 				'compare_date_start' => $compare_date_start,
 				'compare_date_end'   => $compare_date_end,
+				'filters'            => $filters,
 			];
 
-			$compare_data = \Burst\burst_loader()->admin->statistics->get_compare_data( $args );
+			$stats        = isset( \Burst\burst_loader()->admin, \Burst\burst_loader()->admin->statistics )
+				? \Burst\burst_loader()->admin->statistics
+				: new \Burst\Admin\Statistics\Statistics();
+			$compare_data = $stats->get_compare_data( $args );
 			// For current bounced sessions percentage calculation.
 			if ( ( (int) $compare_data['current']['sessions'] + (int) $compare_data['current']['bounced_sessions'] ) > 0 ) {
 				$compare_data['current']['bounced_sessions'] = round(
@@ -963,7 +1044,10 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 
 			$current  = $compare_data['current'][ $type ];
 			$previous = $compare_data['previous'][ $type ];
-			$uplift   = \Burst\burst_loader()->admin->statistics->calculate_uplift( $current, $previous );
+			$stats    = isset( \Burst\burst_loader()->admin, \Burst\burst_loader()->admin->statistics )
+				? \Burst\burst_loader()->admin->statistics
+				: new \Burst\Admin\Statistics\Statistics();
+			$uplift   = $stats->calculate_uplift( $current, $previous );
 
 			$color = $uplift >= 0 ? '#2e8a37' : '#d7263d';
 			if ( $type === 'bounced_sessions' ) {
@@ -1076,9 +1160,217 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			return sprintf( $title_string, $domain );
 		}
 		/**
-		 * Build the report data into the Mailer instance.
+		 * Persist the AI summary and its period (queue_id) directly to the report row.
+		 *
+		 * Uses a targeted UPDATE so that `last_edit`, `content`, and `recipients`
+		 * are never touched — mirroring the contract of Report::save().
+		 *
+		 * @param int    $report_id  The report ID.
+		 * @param string $summary    The AI-generated summary text.
+		 * @param string $period     The queue_id this summary was generated for.
 		 */
-		private function build_report( Mailer $mailer, string $frequency, array $content, string $format ): void {
+		private static function persist_ai_summary( int $report_id, string $summary, string $period ): void {
+			global $wpdb;
+			$wpdb->update(
+				$wpdb->prefix . 'burst_reports',
+				[
+					'ai_summary'        => $summary,
+					'ai_summary_period' => $period,
+				],
+				[ 'ID' => $report_id ],
+				[ '%s', '%s' ],
+				[ '%d' ]
+			);
+		}
+
+		/**
+		 * Check whether a content array contains the ai_summary block.
+		 *
+		 * @param array $content The report content array.
+		 * @return bool True when the ai_summary block is present.
+		 */
+		private static function has_ai_summary_block( array $content ): bool {
+			foreach ( $content as $block ) {
+				if ( is_array( $block ) && isset( $block['id'] ) && Report_Content_Block::AI_SUMMARY === $block['id'] ) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/**
+		 * Render structured block data for a report with resolved dates and filters.
+		 *
+		 * @param Report     $report  The report instance.
+		 * @param array|null $content Optional content blocks array; defaults to $report->content.
+		 * @return array<string, array<string, mixed>> Rendered blocks keyed by block id.
+		 */
+		public function render_report_blocks( Report $report, ?array $content = null ): array {
+			$raw_content = $content ?? $report->content;
+			if ( empty( $raw_content ) ) {
+				$raw_content = Report_Content_Block::default();
+			}
+
+			$rendered_blocks  = [];
+			$available_blocks = $this->get_blocks();
+			$aliases          = [
+				'compare_story' => Report_Content_Block::COMPARE,
+				'pages'         => Report_Content_Block::MOST_VISITED_PAGES,
+				'referrers'     => Report_Content_Block::TOP_REFERRERS,
+				'locations'     => Report_Content_Block::COUNTRIES,
+				'world'         => Report_Content_Block::COUNTRIES,
+				'campaigns'     => Report_Content_Block::TOP_CAMPAIGNS,
+			];
+
+			$skip_blocks = [
+				Report_Content_Block::LOGO,
+				Report_Content_Block::HERO,
+				Report_Content_Block::TEXT,
+				Report_Content_Block::FOOTER,
+			];
+
+			foreach ( $raw_content as $item ) {
+				$block = is_array( $item ) ? $item : [
+					'id'                 => (string) $item,
+					'filters'            => [],
+					'content'            => '',
+					'date_range'         => '',
+					'fixed_end_date'     => '',
+					'date_range_enabled' => false,
+				];
+
+				$block_id = isset( $block['id'] ) ? (string) $block['id'] : '';
+				if ( '' === $block_id || in_array( $block_id, $skip_blocks, true ) ) {
+					continue;
+				}
+
+				if ( Report_Content_Block::AI_SUMMARY === $block_id ) {
+					$summary = $report->ai_summary;
+					if ( '' !== $summary ) {
+						$rendered_blocks[ $block_id ] = [
+							'id'       => $block_id,
+							'title'    => __( 'Summary', 'burst-statistics' ),
+							'subtitle' => '',
+							'table'    => '<tr><td style="font-weight: 400; font-size: 14px; line-height: 1.6; color: #475569; padding: 12px 0;">' . wp_kses_post( $summary ) . '</td></tr>',
+							'url'      => $this->admin_url( 'burst#/reporting' ),
+						];
+					}
+					continue;
+				}
+
+				$canonical_id = $aliases[ $block_id ] ?? $block_id;
+				$dates        = Report_Date_Range::resolve_block_dates( $block, $report );
+				$filters      = ! empty( $block['filters'] ) && is_array( $block['filters'] ) ? $block['filters'] : [];
+
+				// Check if an extension/pro filter handles this block.
+				$custom_block = apply_filters( 'burst_render_report_block', null, $block_id, $block, $dates, $report );
+				if ( is_array( $custom_block ) ) {
+					$rendered_blocks[ $block_id ] = $custom_block;
+					continue;
+				}
+
+				if ( Report_Content_Block::COMPARE === $canonical_id ) {
+					$stats = isset( burst_loader()->admin, burst_loader()->admin->statistics )
+						? burst_loader()->admin->statistics
+						: new \Burst\Admin\Statistics\Statistics();
+
+					$diff          = $dates['end'] - $dates['start'];
+					$compare_start = $dates['start'] - $diff;
+					$compare_end   = $dates['end'] - $diff;
+
+					$compare_args = [
+						'date_start'         => $dates['start'],
+						'date_end'           => $dates['end'],
+						'compare_date_start' => $compare_start,
+						'compare_date_end'   => $compare_end,
+						'filters'            => $filters,
+					];
+					$compare_raw  = $stats->get_compare_data( $compare_args );
+					$table_rows   = $this->get_compare_data( $dates['start'], $dates['end'], $compare_start, $compare_end, $filters );
+
+					$subtitle = $report->frequency === Report_Frequency::WEEKLY
+						? __( 'vs. previous week', 'burst-statistics' )
+						: __( 'vs. previous month', 'burst-statistics' );
+
+					$rendered_blocks[ $block_id ] = [
+						'id'            => $block_id,
+						'title'         => __( 'Compare', 'burst-statistics' ),
+						'subtitle'      => $subtitle,
+						'table'         => self::format_array_as_table( $table_rows ),
+						'url'           => $this->admin_url( 'burst#/statistics' ),
+						'period'        => $dates,
+						'filters'       => $filters,
+						'data'          => $compare_raw,
+						'rows'          => $table_rows,
+						'comment_text'  => $block['comment_text'] ?? '',
+						'comment_title' => $block['comment_title'] ?? '',
+					];
+					continue;
+				}
+
+				// Standard query blocks (most_visited_pages, top_referrers, countries, top_campaigns, devices, etc.).
+				$block_def = $available_blocks[ $canonical_id ] ?? null;
+
+				if ( null === $block_def && Report_Content_Block::DEVICES === $canonical_id ) {
+					$block_def = [
+						'title'      => __( 'Devices', 'burst-statistics' ),
+						'query_args' => [
+							'select'   => [ 'device', 'pageviews' ],
+							'group_by' => 'device',
+							'order_by' => 'pageviews DESC',
+						],
+						'url'        => '#/sources',
+						'header'     => [ __( 'Device', 'burst-statistics' ), __( 'Pageviews', 'burst-statistics' ) ],
+					];
+				}
+
+				if ( null === $block_def ) {
+					continue;
+				}
+
+				$query_data_args = $block_def['query_args'] ?? $block_def;
+				$query_id        = sprintf( 'report_block_%s', sanitize_key( $canonical_id ) );
+				$qd              = Statistics_Query::create( $query_id )->apply_args( $query_data_args );
+
+				if ( ! empty( $filters ) ) {
+					$qd->filters( $filters );
+				}
+
+				$raw_results = $this->get_top_results( $dates['start'], $dates['end'], $qd );
+				$table_data  = $raw_results;
+				if ( isset( $block_def['header'] ) && is_array( $block_def['header'] ) ) {
+					array_unshift( $table_data, $block_def['header'] );
+				}
+
+				$url = isset( $block_def['url'] ) ? (string) $block_def['url'] : '#/statistics';
+
+				$rendered_blocks[ $block_id ] = [
+					'id'            => $block_id,
+					'title'         => $block_def['title'] ?? ucfirst( str_replace( '_', ' ', $block_id ) ),
+					'subtitle'      => '',
+					'table'         => self::format_array_as_table( $table_data ),
+					'url'           => $this->admin_url( 'burst' . $url ),
+					'period'        => $dates,
+					'filters'       => $filters,
+					'rows'          => $raw_results,
+					'comment_text'  => $block['comment_text'] ?? '',
+					'comment_title' => $block['comment_title'] ?? '',
+				];
+			}
+
+			return $rendered_blocks;
+		}
+
+		/**
+		 * Build the report data into the Mailer instance.
+		 *
+		 * @param Mailer                   $mailer    Mailer instance.
+		 * @param string                   $frequency Frequency ('weekly', 'monthly', etc).
+		 * @param array<int|string, mixed> $content   Report content blocks.
+		 * @param string                   $format    Format ('classic' or 'story').
+		 * @return string|null Story URL if generated, null otherwise.
+		 */
+		private function build_report( Mailer $mailer, string $frequency, array $content, string $format ): ?string {
 			$date_range = new Date_Range( $frequency );
 			// report_id is 0 when unset; Report::__construct() treats 0 as "no id".
 			$report    = new Report( $mailer->report_id );
@@ -1087,6 +1379,9 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			if ( $scheduled ) {
 				$report->set_fixed_end_date_to_yesterday();
 			}
+
+			// Render the report blocks with resolved dates and filters.
+			$rendered_blocks = $this->render_report_blocks( $report, $content );
 
 			$title_string = $this->get_title_string( $scheduled, $frequency, $mailer->pretty_domain );
 			$mailer->set_subject( $title_string );
@@ -1100,11 +1395,57 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					$date_range->end_nice
 				)
 			);
+			$story_url = null;
+			// The ai_summary block is the only switch: classic renders it as a block, story adds it to the email as a card.
+			$is_classic_with_ai = 'classic' === $format && in_array( Report_Content_Block::AI_SUMMARY, $this->flatten_content_array_for_classic( $content ), true );
+			$has_ai_block       = self::has_ai_summary_block( $content ) || $is_classic_with_ai;
+
+			if ( $has_ai_block ) {
+				$queue_id   = $mailer->queue_id;
+				$is_test    = '' !== $queue_id && str_starts_with( $queue_id, 'test-' );
+				$report_id  = $mailer->report_id;
+				$need_regen = ! $is_test && $report_id > 0 && '' !== $queue_id && $queue_id !== $report->ai_summary_period;
+
+				if ( $need_regen ) {
+					$summary = (string) apply_filters( 'burst_report_ai_summary', '', $report, $rendered_blocks, $date_range );
+					if ( '' !== $summary ) {
+						self::persist_ai_summary( $report_id, $summary, $queue_id );
+						$report->ai_summary        = $summary;
+						$report->ai_summary_period = $queue_id;
+					}
+				} else {
+					$summary = $report->ai_summary;
+					if ( '' === $summary ) {
+						$summary = (string) apply_filters( 'burst_report_ai_summary', '', $report, $rendered_blocks, $date_range );
+						if ( '' !== $summary && ! $is_test && $report_id > 0 && '' !== $queue_id ) {
+							self::persist_ai_summary( $report_id, $summary, $queue_id );
+							$report->ai_summary        = $summary;
+							$report->ai_summary_period = $queue_id;
+						}
+					}
+				}
+
+				if ( '' !== $summary && ! $is_classic_with_ai ) {
+					$mailer->set_ai_summary( $summary );
+				}
+
+				// If classic format has ai_summary block, ensure it's in rendered_blocks.
+				if ( '' !== $summary && $is_classic_with_ai ) {
+					$rendered_blocks[ Report_Content_Block::AI_SUMMARY ] = [
+						'id'       => Report_Content_Block::AI_SUMMARY,
+						'title'    => __( 'Summary', 'burst-statistics' ),
+						'subtitle' => '',
+						'table'    => '<tr><td style="font-weight: 400; font-size: 14px; line-height: 1.6; color: #475569; padding: 12px 0;">' . wp_kses_post( $summary ) . '</td></tr>',
+						'url'      => $this->admin_url( 'burst#/reporting' ),
+					];
+				}
+			}
 
 			if ( $format === 'classic' ) {
-				$this->build_classic_report( $mailer, $content, $frequency, $date_range );
+				$this->build_classic_report( $mailer, $content, $frequency, $date_range, $report, $rendered_blocks );
 			} else {
-				$mailer->set_read_more_button_url( $this->get_story_url( $mailer->report_id ) )
+				$story_url = $this->get_story_url( $mailer->report_id );
+				$mailer->set_read_more_button_url( $story_url )
 				->set_read_more_button_text( __( 'View story', 'burst-statistics' ) )
 				->set_read_more_header( '' )
 				// translators: %s is the website's domain name (e.g., example.com).
@@ -1112,59 +1453,26 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				// Story reports need the "view report" button regardless of footer customization.
 				->set_force_read_more( true );
 			}
+
+			return $story_url;
 		}
 
 		/**
 		 * Build classic report content.
+		 *
+		 * @param Mailer                    $mailer          Mailer instance.
+		 * @param array                     $content         Content array.
+		 * @param string                    $frequency       Report frequency.
+		 * @param Date_Range                $date_range      Date range.
+		 * @param Report|null               $report          Report instance.
+		 * @param array<string, mixed>|null $rendered_blocks Optional pre-rendered blocks.
 		 */
-		private function build_classic_report( Mailer $mailer, array $content, string $frequency, Date_Range $date_range ): void {
-			$blocks = [];
-
-			$content = $this->flatten_content_array_for_classic( $content );
-			if ( in_array( Report_Content_Block::COMPARE, $content, true ) ) {
-
-				$blocks[ Report_Content_Block::COMPARE ] = [
-					'title'    => __( 'Compare', 'burst-statistics' ),
-					'subtitle' => $frequency === Report_Frequency::WEEKLY
-						? __( 'vs. previous week', 'burst-statistics' )
-						: __( 'vs. previous month', 'burst-statistics' ),
-					'table'    => self::format_array_as_table(
-						$this->get_compare_data(
-							$date_range->start,
-							$date_range->end,
-							$date_range->compare_start,
-							$date_range->compare_end
-						)
-					),
-					'url'      => $this->admin_url( 'burst#/statistics' ),
-				];
+		private function build_classic_report( Mailer $mailer, array $content, string $frequency, Date_Range $date_range, ?Report $report = null, ?array $rendered_blocks = null ): void {
+			if ( null === $report ) {
+				$report = new Report( $mailer->report_id );
 			}
 
-			foreach ( $this->get_blocks() as $key => $block ) {
-				if ( ! in_array( $key, $content, true ) ) {
-					continue;
-				}
-
-				if ( isset( $block['query_args'] ) ) {
-					$query_data_args = $block['query_args'];
-				} else {
-					self::error_log( 'Query args should be passed into query_args key for block: ' . $key );
-					$query_data_args = $block;
-				}
-
-				$query_id = sprintf( 'report_block_%s', sanitize_key( (string) $key ) );
-				$qd       = Statistics_Query::create( $query_id )->apply_args( $query_data_args );
-				$results  = $this->get_top_results( $date_range->start, $date_range->end, $qd );
-
-				// Prepend header row to results.
-				array_unshift( $results, $block['header'] );
-
-				$blocks[ $key ] = [
-					'title' => $block['title'],
-					'table' => self::format_array_as_table( $results ),
-					'url'   => $this->admin_url( 'burst' . $block['url'] ),
-				];
-			}
+			$blocks = $rendered_blocks ?? $this->render_report_blocks( $report, $content );
 
 			$blocks = apply_filters(
 				'burst_mail_reports_blocks',
@@ -1173,10 +1481,25 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				$date_range->end,
 			);
 
-			foreach ( $blocks as $key => $block ) {
-				if ( ! in_array( $key, $content, true ) ) {
-					unset( $blocks[ $key ] );
+			// Order blocks according to $content order so user placement is respected.
+			$ordered_blocks = [];
+			foreach ( $content as $item ) {
+				$key = is_array( $item ) && isset( $item['id'] ) ? (string) $item['id'] : (string) $item;
+				if ( isset( $blocks[ $key ] ) ) {
+					$ordered_blocks[ $key ] = $blocks[ $key ];
 				}
+			}
+			// Append any blocks added by filters that were not in $content.
+			foreach ( $blocks as $key => $block ) {
+				if ( ! isset( $ordered_blocks[ $key ] ) ) {
+					$ordered_blocks[ $key ] = $block;
+				}
+			}
+			$blocks = $ordered_blocks;
+
+			// The summary introduces the report, so it leads the classic layout regardless of the order the blocks were picked in.
+			if ( isset( $blocks[ Report_Content_Block::AI_SUMMARY ] ) ) {
+				$blocks = [ Report_Content_Block::AI_SUMMARY => $blocks[ Report_Content_Block::AI_SUMMARY ] ] + $blocks;
 			}
 
 			$logo_attachment_id = (int) burst_get_option( 'logo_attachment_id', 0 );
@@ -1215,6 +1538,10 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 * @return string The story url.
 		 */
 		public function get_story_url( int $report_id ): string {
+			if ( ! isset( burst_loader()->admin, burst_loader()->admin->share ) ) {
+				return '';
+			}
+
 			$share       = burst_loader()->admin->share;
 			$share_links = $share->tokens->get_share_links( 'report', '', $report_id );
 
@@ -1240,7 +1567,11 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		private function flatten_content_array_for_classic( array $content ): array {
 			$flattened = [];
 			foreach ( $content as $key => $value ) {
-				$flattened[] = $value['id'];
+				if ( is_array( $value ) && isset( $value['id'] ) ) {
+					$flattened[] = (string) $value['id'];
+				} elseif ( is_string( $value ) ) {
+					$flattened[] = $value;
+				}
 			}
 			return $flattened;
 		}

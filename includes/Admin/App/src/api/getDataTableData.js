@@ -435,7 +435,7 @@ const addABTestIcon = ( content, row ) => {
 	let styleClass = '';
 
 	if ( 'no_winner' === row.significant ) {
-		tooltip = __( 'The test resulted in a tie. More hits might still result in a winner, but the difference will probably be very small.', 'burst-statistics' );
+		tooltip = __( 'The test resulted in a tie. More hits might still result in a winner, but the difference will probably be small.', 'burst-statistics' );
 		color = 'gold';
 		name = 'scale';
 		styleClass = 'text-yellow-500 font-medium';

@@ -25,7 +25,7 @@ class Mailer {
 	/**
 	 * Queue ID.
 	 */
-	public string $queue_id;
+	public string $queue_id = '';
 
 	/**
 	 * Batch ID.
@@ -40,12 +40,12 @@ class Mailer {
 	/**
 	 * Logo URL
 	 */
-	public string $logo;
+	public string $logo = '';
 
 	/**
 	 * Dark mode logo URL
 	 */
-	public string $logo_dark;
+	public string $logo_dark = '';
 
 	/**
 	 * Recipient e-mail addresses
@@ -55,47 +55,52 @@ class Mailer {
 	/**
 	 * Pretty domain name (e.g., example.com)
 	 */
-	public string $pretty_domain;
+	public string $pretty_domain = '';
 
 	/**
 	 * Email title
 	 */
-	public string $title;
+	public string $title = '';
 
 	/**
 	 * Email subtitle
 	 */
-	public string $subtitle;
+	public string $subtitle = '';
 
 	/**
 	 * Email message body
 	 */
-	public string $message;
+	public string $message = '';
 
 	/**
 	 * Email introduction
 	 */
-	public string $introduction;
+	public string $introduction = '';
+
+	/**
+	 * Email AI summary
+	 */
+	public string $ai_summary = '';
 
 	/**
 	 * Brand color
 	 */
-	public string $brand_color;
+	public string $brand_color = '';
 
 	/**
 	 * Email subject
 	 */
-	public string $subject;
+	public string $subject = '';
 
 	/**
 	 * Read more section
 	 */
-	public string $read_more;
+	public string $read_more = '';
 
 	/**
 	 * Sent by text
 	 */
-	public string $sent_by_text;
+	public string $sent_by_text = '';
 
 	/**
 	 * Email blocks
@@ -105,17 +110,17 @@ class Mailer {
 	/**
 	 * Template filenames
 	 */
-	public string $template_filename;
+	public string $template_filename = '';
 
 	/**
 	 * Block template filename
 	 */
-	public string $block_template_filename;
+	public string $block_template_filename = '';
 
 	/**
 	 * Read more template filename
 	 */
-	public string $read_more_template_filename;
+	public string $read_more_template_filename = '';
 
 	/**
 	 * Sent count.
@@ -137,7 +142,7 @@ class Mailer {
 	/**
 	 * The read more url.
 	 */
-	private string $read_more_button_url;
+	private ?string $read_more_button_url = null;
 	/**
 	 * The read more url.
 	 */
@@ -299,6 +304,18 @@ class Mailer {
 	 */
 	public function set_introduction( string $introduction ): Mailer {
 		$this->introduction = $introduction;
+
+		return $this;
+	}
+
+	/**
+	 * Set AI summary.
+	 *
+	 * @param string $ai_summary AI summary text.
+	 * @return Mailer Returns the Mailer instance for method chaining.
+	 */
+	public function set_ai_summary( string $ai_summary ): Mailer {
+		$this->ai_summary = $ai_summary;
 
 		return $this;
 	}
@@ -488,6 +505,13 @@ class Mailer {
 	public function set_read_more_button_url( string $url ): Mailer {
 		$this->read_more_button_url = $url;
 		return $this;
+	}
+
+	/**
+	 * Get the read more url.
+	 */
+	public function get_read_more_button_url(): ?string {
+		return $this->read_more_button_url;
 	}
 
 	/**
@@ -829,6 +853,18 @@ class Mailer {
 				. '</div>';
 		}
 
+		$ai_summary_html = '';
+		if ( trim( wp_strip_all_tags( $this->ai_summary ) ) !== '' ) {
+			$ai_summary_html = '<div class="email-ai-summary" style="margin: 24px 24px 0; padding: 16px 20px; background-color: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; text-align: left;">'
+				. '<div class="email-ai-summary-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #718096; margin-bottom: 8px;">'
+				. esc_html__( 'Summary', 'burst-statistics' )
+				. '</div>'
+				. '<div class="email-ai-summary-content" style="font-size: 14px; line-height: 1.6; color: #2d3748;">'
+				. wp_kses_post( $this->ai_summary )
+				. '</div>'
+				. '</div>';
+		}
+
 		return str_replace(
 			[
 				'{base}',
@@ -838,6 +874,7 @@ class Mailer {
 				'{logo_dark}',
 				'{message}',
 				'{introduction}',
+				'{ai_summary}',
 				'{blocks}',
 				'{read_more}',
 				'{sent_by_text}',
@@ -851,6 +888,7 @@ class Mailer {
 				esc_url_raw( $this->logo_dark ),
 				wp_kses_post( $this->message ),
 				$introduction_html,
+				$ai_summary_html,
 				wp_kses_post( $block_html ),
 				wp_kses_post( $this->read_more ),
 				wp_kses_post( $this->sent_by_text ),

@@ -2,6 +2,8 @@ import FieldWrapper from '@/components/Fields/FieldWrapper';
 import { memo, useRef, useState } from 'react';
 import useLicenseData from '@/hooks/useLicenseData';
 import ProBadge from '@/components/Common/ProBadge';
+import AiSummaryUnavailableBadge from './AiSummaryUnavailableBadge';
+import { useAiSummaryAvailability } from '@/hooks/useChatAvailability';
 import { ContentBlockId, ContentItem } from '@/store/reports/types';
 import Icon from '@/utils/Icon';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,13 +33,15 @@ const StoryContentSelection = () => {
 
 	const { isLicenseValidFor } = useLicenseData();
 	const isAgency = isLicenseValidFor( 'reporting' );
+	const { isDisabled: isAiSummaryDisabled, disabledReason: aiSummaryDisabledReason } = useAiSummaryAvailability();
 	const [ animatingBlock, setAnimatingBlock ] = useState<AnimatingBlock | null>( null );
 	const containerRef = useRef<HTMLDivElement>( null );
 	const { errors } = useContentSelectionFormSync( content );
 
+	// fallow-ignore-next-line complexity
 	const handleClick = ( blockId: ContentBlockId, event: React.MouseEvent<HTMLButtonElement> ) => {
 		const block = availableContent.find( item => item.id === blockId );
-		if ( ! block || ( block.pro && ! isAgency ) ) {
+		if ( ! block || ( block.pro && ! isAgency ) || ( 'ai_summary' === blockId && isAiSummaryDisabled ) ) {
 			return;
 		}
 
@@ -64,10 +68,59 @@ const StoryContentSelection = () => {
 		<FieldWrapper error={errors.content?.message as string} label="" inputId="content_selection" fullWidthContent={ true } className="!pt-0 !px-0">
 			<div ref={containerRef} data-tour="wizard-story-blocks" className="relative grid grid-cols-2 gap-3 py-4">
 				{
-					getSelectableContentBlocks( availableContent, shouldLoadEcommerce, true )
+					getSelectableContentBlocks( availableContent, shouldLoadEcommerce, 'story' )
 						.filter( ( block ) => ! block.pro || isAgency )
+
+						// fallow-ignore-next-line complexity
 						.map( ( block:ContentItem, index ) => {
 							const isBlockProDisabled = block.pro && ! isAgency;
+							const isAiDisabled = 'ai_summary' === block.id && isAiSummaryDisabled;
+							const isBlockDisabled = isBlockProDisabled || isAiDisabled;
+							const cardClassName = `
+								relative flex flex-col items-center justify-center min-h-[82px] gap-3 p-4 bg-white rounded-lg ring-1 ring-gray-400 transition-all shadow-layered-low-b
+								${isBlockDisabled ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-gray-500 hover:scale-105 hover:shadow-layered-mid-b'}
+							`;
+							const cardContent = (
+								<>
+									{block.icon && (
+										<div className={`shrink-0 text-text-gray-light ${isBlockDisabled ? 'opacity-50' : ''}`}>
+											<Icon name={block.icon} size={18} />
+										</div>
+									)}
+									<p className={`flex-1 text-sm text-text-gray text-center whitespace-nowrap ${isBlockDisabled ? 'opacity-50' : ''}`}>
+										{block.label}
+									</p>
+									{
+										isBlockProDisabled && (
+											<div className="absolute top-2 right-2">
+												<ProBadge label={'Pro'}/>
+											</div>
+										)
+									}
+									{
+										isAiDisabled && aiSummaryDisabledReason && (
+											<div className="absolute top-2 right-2">
+												<AiSummaryUnavailableBadge reason={aiSummaryDisabledReason} />
+											</div>
+										)
+									}
+								</>
+							);
+
+							// A disabled card has no action, so it is not a button: a disabled button swallows the
+							// hover and focus events the unavailable-badge tooltip needs, and a button may not contain a focusable element.
+							if ( isBlockDisabled ) {
+								return (
+									<div
+										key={index}
+										aria-disabled="true"
+										data-tour-block={block.id}
+										className={cardClassName}
+									>
+										{cardContent}
+									</div>
+								);
+							}
 
 							return (
 								<button
@@ -75,34 +128,12 @@ const StoryContentSelection = () => {
 									type="button"
 									data-tour="wizard-add-block-btn"
 									data-tour-block={block.id}
-									onClick={( e ) => {
-										if ( ! isBlockProDisabled ) {
-											handleClick( block.id, e );
-										}
-									}}
+									onClick={( e ) => handleClick( block.id, e )}
 
 									// grow on hover
-									className={`
-										flex flex-col items-center gap-3 p-4 bg-white rounded-lg ring-1 ring-gray-400 cursor-pointer transition-all shadow-layered-low-b
-										${isBlockProDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:ring-gray-500 hover:scale-105 hover:shadow-layered-mid-b'}
-
-									`}
+									className={cardClassName}
 								>
-									{block.icon && (
-										<div className="shrink-0 text-text-gray-light">
-											<Icon name={block.icon} size={18} />
-										</div>
-									)}
-									<p className="flex-1 text-sm text-text-gray cursor-pointer">
-										{block.label}
-									</p>
-									{
-										isBlockProDisabled && (
-											<div className="shrink-0">
-												<ProBadge label={'Pro'}/>
-											</div>
-										)
-									}
+									{cardContent}
 								</button>
 							);
 						})

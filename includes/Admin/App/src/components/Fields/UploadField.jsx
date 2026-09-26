@@ -68,8 +68,8 @@ const EXCLUDED_FIELDS = [
 			if ( 'application/json' !== file.type && ! file.name.endsWith( '.json' ) ) {
 				setDisabled( true );
 				setImportStatus( 'error' );
-				setImportMessage( __( 'You can only upload .json files!', 'burst-statistics' ) );
-				toast.error( __( 'You can only upload .json files!', 'burst-statistics' ) );
+				setImportMessage( __( 'You can only upload .json files', 'burst-statistics' ) );
+				toast.error( __( 'You can only upload .json files', 'burst-statistics' ) );
 			} else {
 				setDisabled( false );
 			}

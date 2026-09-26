@@ -5,6 +5,8 @@ import Icon from '@/utils/Icon';
 import { ContentBlock } from '@/store/reports/types';
 import { Reorder } from 'framer-motion';
 import { getContentBlockConfig } from './reportContentHelpers';
+import { useAiSummaryAvailability } from '@/hooks/useChatAvailability';
+import AiSummaryUnavailableBadge from './AiSummaryUnavailableBadge';
 
 /**
  * ContentListView displays a list of selected content blocks for the report.
@@ -17,6 +19,7 @@ export const ContentListView = () => {
 	const selectedBlockIndex = useWizardStore( ( state ) => state.selectedBlockIndex );
 	const setSelectedBlockIndex = useWizardStore( ( state ) => state.setSelectedBlockIndex );
 	const availableContent = useReportConfigStore( ( state ) => state.availableContent );
+	const { isDisabled: isAiSummaryDisabled, disabledReason: aiSummaryDisabledReason } = useAiSummaryAvailability();
 
 	/**
 	 * Handle block click to select it.
@@ -111,14 +114,21 @@ export const ContentListView = () => {
 								)}
 
 								{/* Content label. */}
-								<div className="flex-1 flex items-center gap-2">
-									<span className="text-sm text-text-gray">
-										{contentItem?.label || block.id}
-									</span>
-									{( block.comment_title || block.comment_text ) && (
-										<span className="text-xs text-text-gray-light italic" title={block.comment_text}>
-											{__( '(has comment)', 'burst-statistics' )}
+								<div className="flex-1 min-w-0 flex flex-col items-start gap-1">
+									<div className="flex items-center gap-2">
+										<span className="text-sm text-text-gray">
+											{contentItem?.label || block.id}
 										</span>
+										{( block.comment_title || block.comment_text ) && (
+											<span className="text-xs text-text-gray-light italic" title={block.comment_text}>
+												{__( '(has comment)', 'burst-statistics' )}
+											</span>
+										)}
+									</div>
+
+									{/* An AI summary block added earlier stays in the report but renders empty until AI is set up. */}
+									{'ai_summary' === block.id && isAiSummaryDisabled && aiSummaryDisabledReason && (
+										<AiSummaryUnavailableBadge reason={aiSummaryDisabledReason} />
 									)}
 								</div>
 

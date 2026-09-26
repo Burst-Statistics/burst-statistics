@@ -107,7 +107,7 @@ function Sources() {
 			</ErrorBoundary>
 
 			<ErrorBoundary>
-				<div data-tour="campaigns-block" className="row-span-2 @xl:col-span-6 flex flex-col">
+				<div data-tour="campaigns-block" className="col-span-12 row-span-2 @xl:col-span-6 flex flex-col">
 					{ sourcesUnlocked ? (
 						<DataTableBlock allowedConfigs={[ 'campaigns' ]} id="sources_campaigns" />
 					) : (

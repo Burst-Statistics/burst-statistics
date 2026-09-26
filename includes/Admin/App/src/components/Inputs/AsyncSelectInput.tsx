@@ -399,7 +399,8 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 					)}
 				>
 					{/* Container for selected items and input */}
-					<div className="flex flex-1 flex-wrap items-center gap-1 p-1">
+					{/* min-w-0 lets this shrink below the input's intrinsic width, so the toggle button stays inside narrow selects. */}
+					<div className="flex min-w-0 flex-1 flex-wrap items-center gap-1 p-1">
 						{/* Selected items (tags) */}
 						{1 < maxSelections && currentSelectedItems.map( ( selectedItem, index ) => (
 							<Fragment key={`selected-item-${index}`}>
@@ -476,7 +477,7 @@ const AsyncSelectInput = forwardRef<HTMLInputElement, AsyncSelectInputProps>(
 					</div>
 
 					{/* Selection counter and toggle button */}
-					<div className="flex items-center border-l border-gray-300">
+					<div className="flex shrink-0 items-center border-l border-gray-300">
 						{/* Max selections indicator (hidden when there is no cap) */}
 						{1 < maxSelections && Number.isFinite( maxSelections ) && (
 							<span className="px-2 text-xs text-text-gray-light border-r border-gray-200">

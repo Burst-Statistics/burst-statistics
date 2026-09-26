@@ -1,5 +1,6 @@
 import Icon from '../../utils/Icon';
 import * as ReactPopover from '@radix-ui/react-popover';
+import getPortalContainer from '@/utils/getPortalContainer';
 
 // fallow-ignore-next-line complexity
 const Popover = ({
@@ -11,12 +12,7 @@ const Popover = ({
 	setIsOpen,
 	showFilterIcon = true
 }) => {
-	const portalContainer =
-		document.getElementById( 'modal-root' ) ||
-		document.getElementById( 'burst-statistics' ) ||
-		document.getElementById( 'burst-mainwp' ) ||
-		document.querySelector( '.burst' ) ||
-		undefined;
+	const portalContainer = getPortalContainer();
 
 	return (
 		<ReactPopover.Root open={isOpen} onOpenChange={setIsOpen}>

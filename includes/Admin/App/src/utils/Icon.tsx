@@ -18,6 +18,8 @@ import {
 	AlertOctagon,
 	AlertTriangle,
 	Ban,
+	Bell,
+	Mail,
 	Braces,
 	Building,
 	Banknote,
@@ -125,7 +127,8 @@ import {
 	Shield,
 	Fingerprint,
 	Repeat,
-	Plug
+	Plug,
+	Sparkles
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -141,7 +144,9 @@ const iconColors = {
 	lightgray: 'gray-300',
 	white: 'white',
 	'text-white': 'text-white',
-
+	current: 'current',
+	currentColor: 'current',
+	inherit: 'inherit',
 	gold: 'gold'
 };
 
@@ -189,6 +194,7 @@ const iconComponents = {
 	'visitors-crowd': Users,
 	time: Clock,
 	pageviews: Eye,
+	link: Link,
 	referrer: Link,
 	sessions: UserCircle,
 	bounces: LogOut,
@@ -219,6 +225,7 @@ const iconComponents = {
 	filters: Filter,
 	referrers: ExternalLink,
 	hook: Webhook,
+	webhook: Webhook,
 	'log-in': LogIn,
 	'log-out': LogOut,
 	alert: CircleAlert,
@@ -227,6 +234,10 @@ const iconComponents = {
 	'pin-off': PinOff,
 	upload: Upload,
 	plug: Plug,
+	bell: Bell,
+	notifications: Bell,
+	mail: Mail,
+	sparkles: Sparkles,
 
 	// Filter icons from useFiltersStore
 	bounce: LogOut,
@@ -322,6 +333,13 @@ interface IconProps {
 	style?: React.CSSProperties;
 }
 
+const resolveColor = ( color: string ): string | undefined => {
+	if ( 'currentColor' === color || 'current' === color || 'inherit' === color ) {
+		return undefined;
+	}
+	return iconColors[color as keyof typeof iconColors] || color;
+};
+
 const Icon = memo(
 	({
 		style = {},
@@ -335,7 +353,7 @@ const Icon = memo(
 	}: IconProps ) => {
 
 		// Get color value from our color mappings or use the provided color directly
-		const colorVal = iconColors[color as keyof typeof iconColors] || color;
+		const colorVal = resolveColor( color );
 
 		// Get the icon component or fallback to Circle
 		const IconComponent =

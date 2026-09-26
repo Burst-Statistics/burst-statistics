@@ -329,42 +329,4 @@ class Reading_Engagement {
 
 		return $processed;
 	}
-
-	/**
-	 * Resolve tracked post IDs for a set of page URLs from the statistics table.
-	 *
-	 * One indexed query for the whole candidate set: the tracking payload
-	 * stores the queried post ID per hit, so within one page_url the value is
-	 * constant (or 0 for non-singular pages) and MAX() simply picks the
-	 * stored ID over untracked zeros.
-	 *
-	 * @param string[] $page_urls Page URLs from the candidate rows.
-	 * @return array<string, int> Map of page_url to post ID (0 when unknown).
-	 */
-	private function get_page_ids_for_urls( array $page_urls ): array {
-		$page_urls = array_values( array_unique( array_filter( array_map( 'strval', $page_urls ), static fn( string $url ): bool => $url !== '' ) ) );
-		if ( empty( $page_urls ) ) {
-			return [];
-		}
-
-		global $wpdb;
-		$placeholders = implode( ', ', array_fill( 0, count( $page_urls ), '%s' ) );
-
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- placeholder list built above, values bound via prepare.
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT page_url, MAX(page_id) AS page_id FROM {$wpdb->prefix}burst_statistics WHERE page_url IN ( {$placeholders} ) GROUP BY page_url",
-				$page_urls
-			),
-			ARRAY_A
-		);
-		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-
-		$map = [];
-		foreach ( (array) $rows as $row ) {
-			$map[ (string) $row['page_url'] ] = (int) $row['page_id'];
-		}
-
-		return $map;
-	}
 }

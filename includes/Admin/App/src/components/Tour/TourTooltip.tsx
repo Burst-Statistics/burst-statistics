@@ -53,7 +53,7 @@ const YourTurnLabel = (): React.ReactElement => {
 				<span style={{ position: 'absolute', width: '100%', height: '100%', borderRadius: '50%', backgroundColor: 'currentColor', opacity: 0.5, animation: 'hud-ping 1.4s ease-in-out infinite' }} />
 				<span style={{ position: 'relative', width: 7, height: 7, borderRadius: '50%', backgroundColor: 'currentColor' }} />
 			</span>
-			{ __( 'Your turn 👆', 'burst-statistics' ) }
+			{ __( 'Your turn', 'burst-statistics' ) }
 		</span>
 	);
 };
@@ -185,12 +185,12 @@ export const TourInteractiveHUD: React.FC<TourInteractiveHUDProps> = ({
 	let primaryDisabled = false;
 
 	if ( isLastStep && actionDone ) {
-		primaryLabel = __( 'Finish 🎉', 'burst-statistics' );
+		primaryLabel = __( 'Finish', 'burst-statistics' );
 	} else if ( isTabTransition && ! interactionComplete ) {
 		primaryLabel = <YourTurnLabel />;
 		primaryDisabled = true;
 	} else if ( isDateRange ) {
-		primaryLabel = __( 'Try it 📅', 'burst-statistics' );
+		primaryLabel = __( 'Try it', 'burst-statistics' );
 	} else if ( isBlockingAction && ! interactionComplete ) {
 		primaryLabel = <YourTurnLabel />;
 		primaryDisabled = true;

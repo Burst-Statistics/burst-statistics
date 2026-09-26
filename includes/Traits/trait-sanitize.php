@@ -564,6 +564,7 @@ trait Sanitize {
 				'css',
 				'integration_row',
 				'integrations_intro',
+				'slack_webhook',
 			]
 		);
 	}

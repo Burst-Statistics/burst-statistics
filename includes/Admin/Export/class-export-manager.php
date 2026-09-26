@@ -326,14 +326,7 @@ class Export_Manager {
 	 * @return string Absolute directory path.
 	 */
 	public function get_export_dir(): string {
-		$hash = get_option( 'burst_export_dir_hash', '' );
-		if ( empty( $hash ) ) {
-			$hash = bin2hex( random_bytes( 16 ) );
-			update_option( 'burst_export_dir_hash', $hash, false );
-		}
-
-		// Created and hardened (index.php + .htaccess) by the shared helper.
-		return $this->upload_dir( 'exports/' . $hash );
+		return $this->random_upload_dir( 'burst_export_dir_hash', 'exports' );
 	}
 
 	/**

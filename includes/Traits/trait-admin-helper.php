@@ -487,6 +487,7 @@ trait Admin_Helper {
 				'week-to-date',
 				'month-to-date',
 				'year-to-date',
+				'all-time',
 			]
 		);
 	}

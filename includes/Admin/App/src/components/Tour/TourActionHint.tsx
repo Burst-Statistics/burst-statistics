@@ -29,7 +29,7 @@ function getActionLabel( anchor: string, action: TourStepAction ): { label: stri
 		return { label: __( 'Toggle update timing', 'burst-statistics' ), icon: '🕒' };
 	}
 	if ( anchor.includes( 'field-ghost_mode' ) ) {
-		return { label: __( 'Toggle Ghost Mode', 'burst-statistics' ), icon: '👻' };
+		return { label: __( 'Toggle Ghost mode', 'burst-statistics' ), icon: '👻' };
 	}
 	if ( anchor.includes( 'add-goal-button' ) ) {
 		return { label: __( 'Add goal', 'burst-statistics' ), icon: '🎯' };

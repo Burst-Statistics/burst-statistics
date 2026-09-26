@@ -7,7 +7,7 @@ interface StoryBlockWrapperProps {
 	blockId: string;
 }
 
-const FULL_WIDTH_BLOCKS = [ 'hero', 'text_block', 'footer' ];
+const FULL_WIDTH_BLOCKS = [ 'hero', 'text_block', 'footer', 'ai_summary' ];
 
 export const StoryBlockWrapper: React.FC<StoryBlockWrapperProps> = ({
 	children,

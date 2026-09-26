@@ -167,6 +167,46 @@ class Share_Auth {
 	}
 
 	/**
+	 * Restore the viewer account to its generated state.
+	 *
+	 * Before Viewer_Lockdown, a share-link recipient could edit the viewer's own
+	 * profile through POST /wp/v2/users/me. This resets every field that endpoint
+	 * could change (password, email, names, bio, website, locale) and ends all
+	 * sessions. The change notification emails are suppressed: they would go to
+	 * an address a recipient may have set.
+	 *
+	 * Side effects: updates the viewer user and destroys its sessions.
+	 */
+	public function reset_viewer_account(): void {
+		$user = get_user_by( 'login', 'burst_statistics_viewer' );
+		if ( ! $user ) {
+			return;
+		}
+
+		$profile = $this->get_viewer_profile_fields();
+		add_filter( 'send_password_change_email', '__return_false' );
+		add_filter( 'send_email_change_email', '__return_false' );
+		wp_update_user(
+			[
+				'ID'           => $user->ID,
+				'user_pass'    => wp_generate_password( 64, true, true ),
+				'user_email'   => 'noreply@' . wp_parse_url( home_url(), PHP_URL_HOST ),
+				'display_name' => $user->user_login,
+				'nickname'     => $user->user_login,
+				'first_name'   => '',
+				'last_name'    => '',
+				'user_url'     => $profile['user_url'],
+				'description'  => $profile['description'],
+				'locale'       => '',
+			]
+		);
+		remove_filter( 'send_password_change_email', '__return_false' );
+		remove_filter( 'send_email_change_email', '__return_false' );
+
+		$this->cleanup_viewer_sessions();
+	}
+
+	/**
 	 * Delete all sessions for the burst_statistics_viewer user.
 	 * Runs daily via burst_daily cron to ensure viewer sessions never exceed 24 hours.
 	 */

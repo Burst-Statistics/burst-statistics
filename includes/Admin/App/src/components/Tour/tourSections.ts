@@ -23,28 +23,28 @@ const SECTION_DEFINITIONS: SectionDefinition[] = [
 	{
 		id: 'overview',
 		title: __( 'Dashboard overview', 'burst-statistics' ),
-		description: __( 'Live traffic, daily summary metrics, and conversion goals.', 'burst-statistics' ),
+		description: __( 'Live traffic, daily summary metrics and conversion goals.', 'burst-statistics' ),
 		icon: '⚡',
 		route: '/'
 	},
 	{
 		id: 'insights',
 		title: __( 'Detailed insights & graphs', 'burst-statistics' ),
-		description: __( 'Metric trends, date ranges, shareable links, and community comparisons.', 'burst-statistics' ),
+		description: __( 'Metric trends, date ranges, shareable links and community comparisons.', 'burst-statistics' ),
 		icon: '📈',
 		route: '/statistics'
 	},
 	{
 		id: 'datatables',
 		title: __( 'Data tables & page analytics', 'burst-statistics' ),
-		description: __( 'Interactive row filtering, deep-dive per-page metrics, and expandable rows.', 'burst-statistics' ),
+		description: __( 'Interactive row filtering, deep-dive per-page metrics and expandable rows.', 'burst-statistics' ),
 		icon: '📋',
 		route: '/statistics'
 	},
 	{
 		id: 'sources',
 		title: __( 'Traffic sources', 'burst-statistics' ),
-		description: __( 'Acquisition channels, UTM tracking parameters, and Google Search Console.', 'burst-statistics' ),
+		description: __( 'Acquisition channels, UTM tracking parameters and Google Search Console.', 'burst-statistics' ),
 		icon: '🌐',
 		route: '/sources'
 	},
@@ -58,21 +58,21 @@ const SECTION_DEFINITIONS: SectionDefinition[] = [
 	{
 		id: 'engagement',
 		title: __( 'Reading engagement', 'burst-statistics' ),
-		description: __( 'Time on page, scroll depth, and content rankings.', 'burst-statistics' ),
+		description: __( 'Time on page, scroll depth and content rankings.', 'burst-statistics' ),
 		icon: '📖',
 		route: '/engagement'
 	},
 	{
 		id: 'reporting',
 		title: __( 'Automated reports wizard', 'burst-statistics' ),
-		description: __( 'Story report builder, block selections, recipients, and automated email delivery.', 'burst-statistics' ),
+		description: __( 'Story report builder, block selections, recipients and automated email delivery.', 'burst-statistics' ),
 		icon: '📊',
 		route: '/reporting/reports'
 	},
 	{
 		id: 'customization',
 		title: __( 'Report customization & branding', 'burst-statistics' ),
-		description: __( 'Brand email reports with custom logos, accent colors, hero headers, and custom CSS.', 'burst-statistics' ),
+		description: __( 'Brand email reports with custom logos, accent colors, hero headers and custom CSS.', 'burst-statistics' ),
 		icon: '🎨',
 		route: '/reporting/customization'
 	},
@@ -86,7 +86,7 @@ const SECTION_DEFINITIONS: SectionDefinition[] = [
 	{
 		id: 'settings',
 		title: __( 'Settings, privacy & advanced', 'burst-statistics' ),
-		description: __( 'Privacy controls, low-traffic auto updates, and stealth Ghost Mode.', 'burst-statistics' ),
+		description: __( 'Privacy controls, low-traffic auto updates and stealth Ghost mode.', 'burst-statistics' ),
 		icon: '⚙️',
 		route: '/settings/general'
 	}

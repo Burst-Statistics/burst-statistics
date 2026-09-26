@@ -78,7 +78,7 @@ const GoogleSearchConsoleField = () => {
 
 			<p className="mt-4 text-sm text-text-gray">
 				{ createInterpolateElement(
-					__( 'Burst shows your Search Console data using read-only access. Your authorization is stored only on this site and the data is fetched directly from Google – nothing is stored on Burst’s servers. <a>Read our Search Console privacy policy</a>.', 'burst-statistics' ),
+					__( 'Burst shows your Search Console data using read-only access. Your authorization is stored only on this site and the data is fetched directly from Google. Nothing is stored on Burst’s servers. <a>Read our Search Console privacy policy</a>.', 'burst-statistics' ),
 					{
 						a: (
 							<a
@@ -97,7 +97,7 @@ const GoogleSearchConsoleField = () => {
 					{ sprintf(
 
 						/* translators: %s is the site URL that needs a Search Console property. */
-						__( 'No matching property found — add a URL-prefix property for %s in Search Console.', 'burst-statistics' ),
+						__( 'No matching property found. Add a URL-prefix property for %s in Search Console.', 'burst-statistics' ),
 						siteUrl
 					) }
 				</p>

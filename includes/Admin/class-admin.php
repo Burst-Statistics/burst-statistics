@@ -178,7 +178,8 @@ class Admin {
 			$plugin_updates->init();
 
 			$this->tasks = new Tasks();
-			$widget      = new Dashboard_Widget();
+			add_action( 'burst_tour_completed', [ $this->tasks, 'on_tour_completed' ] );
+			$widget = new Dashboard_Widget();
 			$widget->init();
 
 			$debug = new Debug();
@@ -190,11 +191,6 @@ class Admin {
 			if ( $this->get_option_bool( 'anonymous_usage_data' ) ) {
 				$data_sharing = new Data_Sharing();
 				$data_sharing->init();
-			}
-
-			if ( defined( 'BURST_BLUEPRINT' ) && ! get_option( 'burst_demo_data_installed' ) ) {
-				add_action( 'init', [ $this, 'install_demo_data' ] );
-				update_option( 'burst_demo_data_installed', true, false );
 			}
 
 			$this->share = new Share();
@@ -544,22 +540,6 @@ class Admin {
 	}
 
 	/**
-	 * Insert row in a table
-	 */
-	private function insert_row( string $table, array $rows ): void {
-		if ( ! $this->user_can_manage() ) {
-			return;
-		}
-		global $wpdb;
-		$table = "{$wpdb->prefix}burst_$table";
-		foreach ( $rows as $row ) {
-			// Use INSERT IGNORE so re-running (e.g. demo data via WP-CLI) does not log duplicate-key errors on the UNIQUE name column.
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe.
-			$wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO $table (name) VALUES (%s)", $row['name'] ) );
-		}
-	}
-
-	/**
 	 * Clean up errors after some time, to prevent them hanging around indefinitely.
 	 */
 	public function cleanup_php_error_notices(): void {
@@ -584,142 +564,6 @@ class Admin {
 			delete_option( 'burst_php_error_time' );
 			delete_option( 'burst_php_error_detected' );
 			delete_option( 'burst_php_error_count' );
-		}
-	}
-
-	/**
-	 * Get a random referrer for the demo data setup
-	 */
-	private function get_random_referrer(): string {
-		$referrers = [
-			'https://www.google.com',
-			'https://duckduckgo.com',
-			'https://bing.com',
-			'https://burst-statistics.com',
-		];
-		return $referrers[ array_rand( $referrers ) ];
-	}
-
-	/**
-	 * Install demo data in Burst if blueprint.json is active
-	 */
-	public function install_demo_data(): void {
-		// check if database installed.
-		if ( ! $this->table_exists( 'burst_statistics' ) ) {
-			return;
-		}
-
-		global $wpdb;
-
-		$data = [
-			[
-				'name' => 'Chrome',
-			],
-			[
-				'name' => 'Safari',
-			],
-			[
-				'name' => 'Firefox',
-			],
-		];
-		$this->insert_row( 'browsers', $data );
-
-		$data = [
-			[
-				'name' => 'desktop',
-			],
-			[
-				'name' => 'mobile',
-			],
-			[
-				'name' => 'tablet',
-			],
-		];
-		$this->insert_row( 'devices', $data );
-
-		$data = [
-			[
-				'name' => 'Windows',
-			],
-			[
-				'name' => 'MacOS',
-			],
-			[
-				'name' => 'Linux',
-			],
-		];
-		$this->insert_row( 'platforms', $data );
-		// get all demo pages.
-		$posts           = get_posts(
-			[
-				'post_type'      => [ 'page', 'post' ],
-				'post_status'    => 'publish',
-				'posts_per_page' => -1,
-			]
-		);
-		$start_date_unix = time();
-		$total_days      = 30;
-		// we're walking back in time, so to get an increasing nr of pageviews, we decrease the max views each day.
-		$max_views = 500;
-		for ( $i = 0; $i < $total_days; $i++ ) {
-			$stats_date_unix = $start_date_unix - ( $i * DAY_IN_SECONDS );
-			$max_views      -= $i * 2;
-			$min_views       = 10;
-			if ( $max_views <= $min_views ) {
-				$max_views = $min_views + 5;
-			}
-			foreach ( $posts as $post ) {
-				$post_id = $post->ID;
-
-				$page_url     = str_replace( home_url(), '', get_permalink( $post_id ) );
-				$visitors     = random_int( $min_views, $max_views );
-				$values       = [];
-				$placeholders = [];
-
-				for ( $j = 0; $j < $visitors; $j++ ) {
-					$uid          = random_int( 1, 1000 );
-					$bounce       = random_int( 0, 1 );
-					$browser_id   = random_int( 1, 3 );
-					$device_id    = random_int( 1, 3 );
-					$platform_id  = random_int( 1, 3 );
-					$time_on_page = wp_rand( 20, 3 * MINUTE_IN_SECONDS );
-					$referrer     = $this->get_random_referrer();
-
-					$wpdb->insert(
-						"{$wpdb->prefix}burst_sessions",
-						[
-							'referrer'         => $referrer,
-							'browser_id'       => $browser_id,
-							'device_id'        => $device_id,
-							'platform_id'      => $platform_id,
-							'bounce'           => $bounce,
-							'first_time_visit' => 1,
-						],
-						[ '%s', '%d', '%d', '%d', '%d', '%d' ]
-					);
-
-					$session_id = $wpdb->insert_id;
-
-					$placeholders[] = '(%d, %s, %d, %d, %d)';
-					$values         = array_merge(
-						$values,
-						[
-							$stats_date_unix,
-							$page_url,
-							$uid,
-							$time_on_page,
-							$session_id,
-						]
-					);
-				}
-
-				$query = "
-					INSERT INTO {$wpdb->prefix}burst_statistics
-					(time, page_url, uid_id, time_on_page, session_id)
-					VALUES " . implode( ', ', $placeholders );
-                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- values are prepared.
-				$wpdb->query( $wpdb->prepare( $query, ...$values ) );
-			}
 		}
 	}
 

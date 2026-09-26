@@ -527,7 +527,7 @@ const ExportDataField = () => {
 								{ __( 'Include Burst configuration settings & options in export', 'burst-statistics' ) }
 							</label>
 							<p className="text-xs text-text-gray m-0 leading-relaxed max-w-xl">
-								{ __( 'Includes your tracking settings, custom goals, license status, and reporting preferences.', 'burst-statistics' ) }
+								{ __( 'Includes your tracking settings, custom goals, license status and reporting preferences.', 'burst-statistics' ) }
 							</p>
 						</div>
 						<div className="shrink-0">

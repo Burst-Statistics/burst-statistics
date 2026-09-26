@@ -58,6 +58,7 @@ class Reports_Data extends Data_Collector {
 			$filtered_report['report_id'] = $report->id;
 			$filtered_report['frequency'] = $report->frequency;
 			$filtered_report['format']    = $report->format;
+			$filtered_report['channels']  = ! empty( $report->channels ) ? $report->channels : 'email';
 			$filtered_report['enabled']   = ! empty( $report->enabled );
 
 			// Extract only the string IDs from content blocks, filter out any non-strings.
@@ -113,9 +114,21 @@ class Reports_Data extends Data_Collector {
 			return null;
 		}
 
-		$queue_states = [];
+		$queue_states       = [];
+		$slack_sends        = 0;
+		$slack_failed_sends = 0;
 
 		foreach ( $rows as $row ) {
+			// Slack channel writes logs with explicit Slack statuses.
+			$status = Report_Log_Status::from_string( (string) $row['status'] );
+			if ( Report_Log_Status::SLACK_SUCCESSFUL === $status || Report_Log_Status::SLACK_FAILED === $status ) {
+				++$slack_sends;
+				if ( Report_Log_Status::SLACK_FAILED === $status ) {
+					++$slack_failed_sends;
+				}
+				continue;
+			}
+
 			$key = sprintf( '%d|%s', (int) $row['report_id'], $row['queue_id'] );
 
 			if ( ! isset( $queue_states[ $key ] ) ) {
@@ -156,7 +169,7 @@ class Reports_Data extends Data_Collector {
 			}
 		}
 
-		if ( empty( $reports_sent ) && empty( $successful_sends ) && empty( $failed_sends ) ) {
+		if ( empty( $reports_sent ) && empty( $successful_sends ) && empty( $failed_sends ) && empty( $slack_sends ) && empty( $slack_failed_sends ) ) {
 			return null;
 		}
 
@@ -164,6 +177,8 @@ class Reports_Data extends Data_Collector {
 			'reports_sent_last_month' => $reports_sent,
 			'successful_sends'        => $successful_sends,
 			'failed_sends'            => $failed_sends,
+			'slack_sends'             => $slack_sends,
+			'slack_failed_sends'      => $slack_failed_sends,
 		];
 	}
 
