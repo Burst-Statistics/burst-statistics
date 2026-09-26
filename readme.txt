@@ -304,9 +304,11 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Improvement: the interactive tour fills the dashboard with sample data while it runs, instead of installing demo data in the database.
 * Improvement: the page picker for goals loads faster on sites with a lot of statistics, and lists pages of every post type.
 * Improvement: every dashboard task declares whether it applies inside the MainWP dashboard; tasks that assume the site's own wp-admin are no longer served to MainWP.
+* Improvement: the GoogleOther and Google-InspectionTool crawlers are recognized as bots and no longer tracked, props @draven666
 * Fix: the MainWP dashboard offered every date range preset except "All time"; the presets are now localized from one list for the WP admin and the MainWP dashboard.
 * Fix: the interactive tour is no longer offered inside the MainWP dashboard (task and settings button), where it cannot run.
 * Fix: long messages in the report log batch details wrapped outside their row.
+* Fix: since 3.7.1 the beacon hit was sent with fetch() instead of navigator.sendBeacon, so crawlers that render JavaScript, such as Google's renderer, were counted as visitors. The hit is sent with sendBeacon again; fetch is only used when the beacon cannot be queued, or in debug mode, props @draven666
 * Hardening: a user with share link access could extend access to the statistics after the share link expired by changing the password, props Chloe Chamberland / Wordfence.
 
 = 3.7.1 =
