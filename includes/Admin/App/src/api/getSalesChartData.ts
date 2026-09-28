@@ -6,7 +6,6 @@ export interface GetSalesChartDataArgs {
 	startDate: string;
 	endDate: string;
 	range: string;
-	filters: Record<string, unknown>;
 	chartMode: 'revenue' | 'sales';
 	compareMode: string;
 	groupBy?: 'auto' | 'day' | 'week' | 'month' | 'year';
@@ -15,7 +14,10 @@ export interface GetSalesChartDataArgs {
 /**
  * Fetch total sales-over-time chart data from the ecommerce API.
  *
- * @param args - Date range, filters and the chart mode/series toggles.
+ * The chart shows the store's total revenue next to its forecast, so visitor
+ * filters do not apply and are deliberately not part of the request.
+ *
+ * @param args - Date range and the chart mode/series toggles.
  * @return Sales chart payload from PHP `Sales_Chart::get_data()`.
  */
 // fallow-ignore-next-line complexity
@@ -23,7 +25,6 @@ export async function getSalesChartData({
 	startDate,
 	endDate,
 	range,
-	filters,
 	chartMode,
 	compareMode,
 	groupBy = 'auto'
@@ -34,7 +35,6 @@ export async function getSalesChartData({
 		endDate,
 		range,
 		{
-			filters,
 			chart_mode: chartMode,
 			...( compareMode ? { compare_mode: compareMode } : {}),
 			...( 'auto' !== groupBy ? { group_by: groupBy } : {})

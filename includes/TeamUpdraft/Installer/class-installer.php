@@ -447,36 +447,64 @@ class Installer {
 	/**
 	 * Retrieve plugin info for rating or download.
 	 *
+	 * The download url is always fetched fresh and is the versioned zip of the
+	 * Stable tag (the same one wp-admin installs). The unversioned trunk zip is
+	 * built and CDN-cached separately and lags behind after a release. It is not
+	 * cached, because it is only requested when a user explicitly installs a
+	 * plugin. Rating and number of ratings are cached for a week.
+	 *
 	 * @uses plugins_api() Get the plugin data.
-	 * @param  string $slug The WP.org directory repo slug of the plugin.
-	 * @param string $type The type of info we need, download_url, rating, or num_ratings.
-	 * @version 1.0
+	 * @param string $slug The WP.org directory repo slug of the plugin.
+	 * @param string $type The type of info we need: download_url, rating or num_ratings.
+	 * @return string The requested value, or an empty string when unavailable.
+	 * @version 1.1
 	 */
 	public function get_plugin_info( string $slug, string $type ): string {
+		$slug = $this->sanitize_slug( $slug );
+		if ( $slug === '' ) {
+			return '';
+		}
 
 		require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
-		$slug        = $this->sanitize_slug( $slug );
-		$plugin_info = get_transient( 'teamupdraft_' . $slug . '_plugin_info' );
-		if ( empty( $plugin_info ) ) {
-			$plugin_info_total = plugins_api( 'plugin_information', [ 'slug' => $slug ] );
-			if ( ! is_wp_error( $plugin_info_total ) ) {
-				$plugin_info = [
-					// the plugin_info properties are not described, but do exist.
-					// @phpstan-ignore-next-line.
-					'download_url' => esc_url_raw( $plugin_info_total->versions['trunk'] ),
-					// @phpstan-ignore-next-line.
-					'rating'       => $plugin_info_total->rating,
-					// @phpstan-ignore-next-line.
-					'num_ratings'  => $plugin_info_total->num_ratings,
-				];
-				set_transient( 'teamupdraft_' . $slug . '_plugin_info', $plugin_info, WEEK_IN_SECONDS );
+
+		if ( $type === 'download_url' ) {
+			$plugin_info_total = plugins_api(
+				'plugin_information',
+				[
+					'slug'   => $slug,
+					'fields' => [ 'sections' => false ],
+				]
+			);
+			if ( is_wp_error( $plugin_info_total ) || empty( $plugin_info_total->download_link ) ) {
+				return '';
 			}
+			return esc_url_raw( $plugin_info_total->download_link );
 		}
 
-		if ( isset( $plugin_info[ $type ] ) ) {
-			return $plugin_info[ $type ];
+		// New transient key, so old transients that still hold the trunk url are no longer read.
+		$transient_key = 'teamupdraft_' . $slug . '_plugin_rating';
+		$plugin_info   = get_transient( $transient_key );
+		if ( empty( $plugin_info ) ) {
+			$plugin_info_total = plugins_api(
+				'plugin_information',
+				[
+					'slug'   => $slug,
+					'fields' => [ 'sections' => false ],
+				]
+			);
+			if ( is_wp_error( $plugin_info_total ) ) {
+				return '';
+			}
+			$plugin_info = [
+				// The plugin_info properties are not described, but do exist.
+				// @phpstan-ignore-next-line.
+				'rating'      => (string) $plugin_info_total->rating,
+				// @phpstan-ignore-next-line.
+				'num_ratings' => (string) $plugin_info_total->num_ratings,
+			];
+			set_transient( $transient_key, $plugin_info, WEEK_IN_SECONDS );
 		}
 
-		return '';
+		return isset( $plugin_info[ $type ] ) ? (string) $plugin_info[ $type ] : '';
 	}
 }

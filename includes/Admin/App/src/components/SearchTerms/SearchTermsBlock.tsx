@@ -4,6 +4,7 @@ import * as Checkbox from '@radix-ui/react-checkbox';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
+import { ExpandTableButton } from '@/components/Blocks/ExpandTableButton';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import Icon from '@/utils/Icon';
 import { BarDataTable } from '@/components/DataTable/BarDataTable';
@@ -71,16 +72,7 @@ const SearchTermsBlock = memo( ({ className = '' }: SearchTermsBlockProps ) => {
 					<MetricInfo metricKey="search_terms" side="bottom">
 						{__( 'Website searches', 'burst-statistics' )}
 					</MetricInfo>
-					{/* Expand to overlay. */}
-					<button
-						type="button"
-						className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-						onClick={handleExpand}
-						aria-label={__( 'Expand table', 'burst-statistics' )}
-						title={__( 'Expand table', 'burst-statistics' )}
-					>
-						<Icon name="expand" size={14} />
-					</button></>}
+					<ExpandTableButton onClick={ handleExpand } /></>}
 				controls={
 					<div className="flex items-center gap-2">
 						{/* No-results toggle. */}

@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useDate } from '@/store/useDateStore';
-import { useFilters } from '@/hooks/useFilters';
 import { getForecastData } from '@/api/getForecastData';
 import { getForecastRange } from '@/utils/formatting';
 import type {
@@ -19,8 +18,7 @@ interface UseForecastDataArgs {
 /**
  * Retrieve a source-specific forecast for an existing historical chart.
  *
- * Sales receives the active visitor filters. `getForecastData()` deliberately
- * omits those filters for Subscriptions.
+ * Visitor filters never apply to a forecast, see `getForecastData()`.
  *
  * @param args - Forecast source, chart mode and toggle state.
  * @return TanStack Query result with a normalized placeholder payload.
@@ -31,7 +29,6 @@ export function useForecastData({
 	enabled
 }: UseForecastDataArgs ) {
 	const { range } = useDate( ( state ) => state );
-	const { filters } = useFilters();
 
 	// The forecast view is anchored to now, not to the picker: the request
 	// always covers the last 12 complete months, so the forecast is exactly
@@ -66,15 +63,13 @@ export function useForecastData({
 			startDate,
 			endDate,
 			chartMode,
-			groupBy,
-			'sales' === source ? filters : null
+			groupBy
 		],
 		queryFn: () => getForecastData({
 			source,
 			startDate,
 			endDate,
 			range,
-			filters: filters as Record<string, unknown>,
 			chartMode,
 			groupBy
 		}),

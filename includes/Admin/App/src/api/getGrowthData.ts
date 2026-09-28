@@ -11,7 +11,6 @@ interface GetGrowthDataArgs {
 	startDate: string;
 	endDate: string;
 	range: string;
-	filters: Record<string, unknown>;
 }
 
 export interface GrowthItem {
@@ -114,18 +113,15 @@ const toGrowthMetadata = (
  * Fetch the Growth block payload and shape it for ExplanationAndStatsItem.
  *
  * The block is calendar-anchored server-side: the dates are sent for the
- * standard request signature but do not influence the payload — only the
- * visitor filters do.
+ * standard request signature but do not influence the payload. Visitor
+ * filters do not apply either: the forecast is the store's total revenue.
  */
 export async function getGrowthData({
 	startDate,
 	endDate,
-	range,
-	filters
+	range
 }: GetGrowthDataArgs ): Promise<GrowthBlockData> {
-	const { data } = await getData( 'ecommerce/growth', startDate, endDate, range, {
-		filters
-	});
+	const { data } = await getData( 'ecommerce/growth', startDate, endDate, range );
 
 	const currency = 'string' === typeof data?.currency ? data.currency : 'USD';
 	const items: Record<string, GrowthItem> = {};
