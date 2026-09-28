@@ -123,8 +123,12 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 				if ( perPage && 'page_url' === key ) {
 					return;
 				}
+
+				// The router JSON-parses search params, so a hand-typed or shared
+				// link like ?device_id=1 arrives as a number. Normalize it the
+				// same way buildSearchParams() does on write.
 				if ( searchParams[key]) {
-					result[key] = searchParams[key];
+					result[key] = normalizeFilterValue( searchParams[key]);
 				}
 			});
 		}
