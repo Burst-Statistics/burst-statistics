@@ -438,14 +438,14 @@ class Upgrade {
 			// 3.7.1 group in DB_Upgrade::get_db_upgrades().
 		}
 
-		if ( '' !== $prev_version && version_compare( $prev_version, '3.7.0.1', '<' ) ) {
+		if ( $prev_version && version_compare( $prev_version, '3.7.0.1', '<' ) ) {
 			// The page_id repair of this release is Pro-only (see
 			// Pro::upgrade_premium()): free never shipped 3.7.0, and the 3.7.0
 			// pipeline above now seeds and backfills the clean key space.
 			$this->mark_noop_upgrade( '3.7.0.1', $prev_version );
 		}
 
-		if ( '' !== $prev_version && version_compare( $prev_version, '3.7.1', '<' ) ) {
+		if ( $prev_version && version_compare( $prev_version, '3.7.1', '<' ) ) {
 			// Posts first seen after the 3.7.0 seed had no dictionary row
 			// (the tracker registered rows for page_id 0 urls only) and
 			// displayed as an empty url in the page tables when the read path
@@ -474,7 +474,7 @@ class Upgrade {
 			\Burst\burst_loader()->admin->tasks->dismiss_task_permanently( 'import_statistics_data' );
 		}
 
-		if ( '' !== $prev_version && version_compare( $prev_version, '3.7.2', '<' ) ) {
+		if ( $prev_version && version_compare( $prev_version, '3.7.2', '<' ) ) {
 			// The MaxMind database moved from the predictable
 			// uploads/burst/maxmind/ directory to a random-token directory so
 			// it cannot be downloaded from a guessable url. Move an existing
