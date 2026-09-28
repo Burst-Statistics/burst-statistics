@@ -104,6 +104,42 @@ class Geo_Ip {
 	}
 
 	/**
+	 * Get the url of the archive whose name carries its SHA-256 hash.
+	 *
+	 * The fixed-name archive and its checksum are cached separately by the CDN, so
+	 * for up to an hour after an update one can be stale while the other is fresh.
+	 * The hashed archive is never overwritten, so it always matches the hash that
+	 * points to it, stale or not.
+	 *
+	 * @param string $hash The normalized SHA-256 hash of the archive.
+	 * @return string The archive url, e.g. …/GeoLite2-City-<hash>.tar.gz.
+	 */
+	private function get_hashed_database_url( string $hash ): string {
+		return $this->download_url . str_replace( '.tar.gz', '-' . $hash . '.tar.gz', $this->db_name );
+	}
+
+	/**
+	 * Download the database archive to a temporary file.
+	 *
+	 * Prefers the archive named after the published hash, and falls back to the
+	 * fixed-name archive when there is no hash or the hashed archive is missing,
+	 * e.g. for an archive published before hashed names existed.
+	 *
+	 * @param string|null $expected_hash The published SHA-256 hash, or null when unavailable.
+	 * @return string|\WP_Error The temporary file path, or the download error.
+	 */
+	private function download_database_archive( ?string $expected_hash ): string|\WP_Error {
+		if ( null !== $expected_hash ) {
+			$tmpfile = download_url( $this->get_hashed_database_url( $expected_hash ), 25 );
+			if ( ! is_wp_error( $tmpfile ) ) {
+				return $tmpfile;
+			}
+		}
+
+		return download_url( $this->db_url, 25 );
+	}
+
+	/**
 	 * Get the delay before another failed import may be retried.
 	 *
 	 * @param int $failed_attempts Number of consecutive failed attempts.
@@ -276,7 +312,7 @@ class Geo_Ip {
 			}
 			// Only download when the archive can actually be stored: without this
 			// check every admin request would fetch the full database and discard it.
-			$tmpfile = $wp_filesystem->is_dir( $upload_dir ) ? download_url( $this->db_url, 25 ) : null;
+			$tmpfile = $wp_filesystem->is_dir( $upload_dir ) ? $this->download_database_archive( $expected_hash ) : null;
 			// check for errors.
 			if ( ! $wp_filesystem->is_dir( $upload_dir ) ) {
 				// store the error for use in the callback notice for geo ip.

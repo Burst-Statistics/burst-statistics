@@ -11,7 +11,6 @@ interface GetForecastDataArgs {
 	startDate: string;
 	endDate: string;
 	range: string;
-	filters: Record<string, unknown>;
 	chartMode: ForecastMode;
 	groupBy?: 'month' | 'year';
 }
@@ -24,9 +23,9 @@ const FORECAST_ENDPOINTS: Record<ForecastSource, string> = {
 /**
  * Fetch and normalize the common sales/subscription forecast response.
  *
- * Sales forecasts receive the active visitor filters. Subscription forecasts
- * deliberately omit them because subscription aggregates are not connected to
- * visitor statistics.
+ * Visitor filters deliberately do not apply: a forecast projects the store's
+ * total revenue, which does not change when the dashboard is filtered, and
+ * subscription aggregates are not connected to visitor statistics at all.
  */
 // fallow-ignore-next-line complexity
 export async function getForecastData({
@@ -34,7 +33,6 @@ export async function getForecastData({
 	startDate,
 	endDate,
 	range,
-	filters,
 	chartMode,
 	groupBy
 }: GetForecastDataArgs ): Promise<ForecastData> {
@@ -45,10 +43,6 @@ export async function getForecastData({
 		// backend cannot resolve a different interval than the chart shows.
 		...( groupBy ? { group_by: groupBy } : {})
 	};
-
-	if ( 'sales' === source ) {
-		requestArgs.filters = filters;
-	}
 
 	const { data } = await getData(
 		FORECAST_ENDPOINTS[source],

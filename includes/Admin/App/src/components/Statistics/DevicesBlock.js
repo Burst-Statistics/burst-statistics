@@ -1,4 +1,4 @@
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import ClickToFilter from '../Common/ClickToFilter';
 import ExplanationAndStatsItem from '@/components/Common/ExplanationAndStatsItem';
 import { useQuery } from '@tanstack/react-query';
@@ -12,9 +12,10 @@ import { BlockContent } from '@/components/Blocks/BlockContent';
 import { useMemo, memo } from 'react';
 import {useBlockConfig} from '@/hooks/useBlockConfig';
 import useSettingsData from '@/hooks/useSettingsData';
+import { getDeviceComparison } from '@/utils/communityComparison';
 
 // Memoize the device item to prevent unnecessary re-renders.
-const DeviceItem = memo( ({ deviceKey, deviceData, communityTooltipText, communityTooltipLink }) => {
+const DeviceItem = memo( ({ deviceKey, deviceData, communityComparison }) => {
 	return (
 		<ClickToFilter
 			key={deviceKey}
@@ -30,8 +31,7 @@ const DeviceItem = memo( ({ deviceKey, deviceData, communityTooltipText, communi
 				change={deviceData.change}
 				changeStatus={deviceData.changeStatus}
 				metricKey={deviceKey}
-				communityTooltipText={communityTooltipText}
-				communityTooltipLink={communityTooltipLink}
+				communityComparison={communityComparison}
 			/>
 		</ClickToFilter>
 	);
@@ -140,30 +140,19 @@ const DevicesBlock = ( props ) => {
 			<BlockContent>
 				{/* fallow-ignore-next-line complexity */}
 				{deviceKeys.map( ( key ) => {
-					let communityTooltipText = null;
-					let communityTooltipLink = false;
-
-					if ( ! anonymousUsageDataEnabled ) {
-						communityTooltipText = __( 'Opt in to data sharing to see how your site compares to peers.', 'burst-statistics' );
-						communityTooltipLink = true;
-					} else if ( communityData && ! communityData.insufficient_data && communityData.devices ) {
-						const avg = communityData.devices[key];
-						if ( 'number' === typeof avg ) {
-							communityTooltipText = sprintf(
-								__( 'Community average: %s%% of visitors use %s.', 'burst-statistics' ),
-								avg.toFixed( 1 ),
-								data[key].title.toLowerCase()
-							);
-						}
-					}
+					const communityComparison = getDeviceComparison(
+						!! anonymousUsageDataEnabled,
+						communityData,
+						key,
+						data[key].title
+					);
 
 					return (
 						<DeviceItem
 							key={key}
 							deviceKey={key}
 							deviceData={data[key]}
-							communityTooltipText={communityTooltipText}
-							communityTooltipLink={communityTooltipLink}
+							communityComparison={communityComparison}
 						/>
 					);
 				})}

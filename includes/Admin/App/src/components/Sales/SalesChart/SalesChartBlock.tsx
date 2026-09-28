@@ -10,7 +10,6 @@ import { ChartModeFilter } from '@/components/Common/ChartModeFilter';
 import { ChartEmptyState } from '@/components/Common/ChartEmptyState';
 import { ChartErrorNotice } from '@/components/Common/ChartErrorNotice';
 import { useDate } from '@/store/useDateStore';
-import { useFilters } from '@/hooks/useFilters';
 import { COMPARE_MODES, useCompareStore } from '@/store/useCompareStore';
 import { useSalesChartStore } from '@/store/useSalesChartStore';
 import { useForecastData } from '@/hooks/useForecastData';
@@ -28,7 +27,9 @@ import type { SalesChartData } from '@/types/api-endpoints';
 /**
  * SalesChartBlock renders the total sales-over-time line chart on the Sales
  * tab, styled like the Insights graph. Separate historical and forecast
- * endpoint responses are rendered together in this one chart.
+ * endpoint responses are rendered together in this one chart. Visitor
+ * filters do not apply: the chart shows the store's total revenue, which a
+ * page or segment filter does not change.
  *
  * @return The SalesChartBlock component.
  */
@@ -44,7 +45,6 @@ const SALES_CHART_PLACEHOLDER: SalesChartData = {
 // fallow-ignore-next-line complexity
 export function SalesChartBlock(): JSX.Element {
 	const { startDate, endDate, range } = useDate( ( state ) => state );
-	const { filters } = useFilters();
 	const compareMode = useCompareStore( ( state ) => state.compareMode );
 	const chartMode = useSalesChartStore( ( state ) => state.chartMode );
 	const setChartMode = useSalesChartStore( ( state ) => state.setChartMode );
@@ -65,12 +65,11 @@ export function SalesChartBlock(): JSX.Element {
 	const chartEndDate = showForecast ? forecastRange.endDate : endDate;
 
 	const chartQuery = useQuery<SalesChartData>({
-		queryKey: [ 'salesChart', chartStartDate, chartEndDate, range, filters, chartMode, groupBy, showComparison ? compareMode : '' ],
+		queryKey: [ 'salesChart', chartStartDate, chartEndDate, range, chartMode, groupBy, showComparison ? compareMode : '' ],
 		queryFn: () => getSalesChartData({
 			startDate: chartStartDate,
 			endDate: chartEndDate,
 			range,
-			filters,
 			chartMode,
 			compareMode: showComparison ? compareMode : '',
 			groupBy
@@ -186,8 +185,8 @@ export function SalesChartBlock(): JSX.Element {
 				{ showEmptyState ? (
 					<ChartEmptyState
 						message={ isRevenueMode ?
-							__( 'There is no revenue data available for the selected filters and date range.', 'burst-statistics' ) :
-							__( 'There is no sales data available for the selected filters and date range.', 'burst-statistics' ) }
+							__( 'There is no revenue data available for the selected date range.', 'burst-statistics' ) :
+							__( 'There is no sales data available for the selected date range.', 'burst-statistics' ) }
 					/>
 				) : (
 					<div

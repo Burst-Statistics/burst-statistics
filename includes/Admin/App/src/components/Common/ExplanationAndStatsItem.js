@@ -18,8 +18,8 @@ import { Link } from '@tanstack/react-router';
  * @param {string}        [props.className]  Optional additional class names. Default is ''.
  * @param {string|null}   [props.tooltipText] Optional text for tooltip display. Default is null.
  * @param {string|null}   [props.metricKey]  Optional metric key to show a metric-explainer ⓘ icon.
- * @param {string|null}   [props.communityTooltipText] Optional text for community percentile/devices tooltip.
- * @param {boolean|null}  [props.communityTooltipLink] Optional flag to link community tooltip icon to settings.
+ * @param {Object|null}   [props.communityComparison] Optional community comparison: `{ state, text }`, see utils/communityComparison.
+ *                                          The icon is greyed out until the state is 'active', and links to the settings when 'disabled'.
  *
  * @return {JSX.Element} The rendered component.
  */
@@ -35,8 +35,7 @@ const ExplanationAndStatsItem = ({
 	className = '',
 	tooltipText = null,
 	metricKey = null,
-	communityTooltipText = null,
-	communityTooltipLink = null
+	communityComparison = null
 }) => {
 
 	if ( exactValue && 1000 < exactValue ) {
@@ -57,19 +56,26 @@ const ExplanationAndStatsItem = ({
 
 		return (
 			<span className="text-xl font-bold text-text-black value flex items-center justify-end gap-1.5">
-				{communityTooltipText && (
-					<HelpTooltip content={ communityTooltipText } delayDuration={200}>
-						{communityTooltipLink ? (
+				{communityComparison && (
+					<HelpTooltip content={ communityComparison.text } delayDuration={200}>
+						{'disabled' === communityComparison.state ? (
 							<Link
 								to="/settings/$settingsId"
 								params={{ settingsId: 'general' }}
-								className="text-text-gray hover:text-primary transition-colors flex items-center"
+								className="text-text-gray opacity-40 hover:opacity-100 hover:text-primary transition flex items-center"
+								aria-label={ communityComparison.text }
 								data-tour="community-comparison"
+								data-community-state={ communityComparison.state }
 							>
 								<Icon name="compare-arrows" size={16} />
 							</Link>
 						) : (
-							<span className="text-text-gray flex items-center" data-tour="community-comparison">
+							<span
+								className={ `text-text-gray flex items-center ${'active' === communityComparison.state ? '' : 'opacity-40'}` }
+								aria-label={ communityComparison.text }
+								data-tour="community-comparison"
+								data-community-state={ communityComparison.state }
+							>
 								<Icon name="compare-arrows" size={16} />
 							</span>
 						)}

@@ -47,20 +47,22 @@ const PLACEHOLDER_DATA: GrowthBlockData = {
  * Growth component: the forecasted revenue for the current month and year,
  * and for the next month and year. Calendar-anchored to now — the picked
  * date range deliberately does not apply, matching the forecast view of the
- * revenue chart it sits next to; visitor filters do apply.
+ * revenue chart it sits next to. Visitor filters do not apply either: the
+ * store's revenue does not change when the dashboard is filtered to a page.
  *
  * @return {JSX.Element} The Growth component.
  */
 const GrowthBlock = ( props: BlockComponentProps ): JSX.Element => {
-	const { startDate, endDate, range, filters, index } = useBlockConfig( props );
+	const { startDate, endDate, range, index } = useBlockConfig( props );
 
+	// The payload depends on neither the picked range nor the filters, so
+	// the key stays constant and every block instance shares one request.
 	const growthQuery = useQuery<GrowthBlockData>({
-		queryKey: [ 'growth', filters ],
+		queryKey: [ 'growth' ],
 		queryFn: () => getGrowthData({
 			startDate,
 			endDate,
-			range,
-			filters: filters as Record<string, unknown>
+			range
 		}),
 		placeholderData: PLACEHOLDER_DATA,
 		gcTime: 10000
