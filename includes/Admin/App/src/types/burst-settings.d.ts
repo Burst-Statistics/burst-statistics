@@ -57,6 +57,9 @@ export interface BurstCommunityData {
 	range: { min: number; max: number | null };
 	sample_size: number;
 	insufficient_data?: boolean;
+
+	/** Metrics the endpoint filled from all sites because the visitor range had too few values. */
+	fallback_metrics?: string[];
 	bounce_rate?: BurstCommunityDistribution;
 	pageviews_per_session?: BurstCommunityDistribution;
 	time_per_session?: BurstCommunityDistribution;

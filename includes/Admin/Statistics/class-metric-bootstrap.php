@@ -136,7 +136,7 @@ class Metric_Bootstrap {
 			'device'           => 'sessions.device_id',
 			'device_id'        => 'sessions.device_id',
 			'entry_exit_pages' => 'entry_exit_pages',
-			'parameter'        => 'parameter',
+			'parameter'        => 'params.parameter',
 			'parameters'       => 'statistics.parameters',
 			'goal_id'          => 'goals.goal_id',
 			// Virtual filter: resolved against page_type in add_filter_condition(), there is no status column.

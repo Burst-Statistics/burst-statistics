@@ -3,8 +3,8 @@ import { __ } from '@wordpress/i18n';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
+import { ExpandTableButton } from '@/components/Blocks/ExpandTableButton';
 import { BlockContent } from '@/components/Blocks/BlockContent';
-import Icon from '@/utils/Icon';
 import { BarDataTable } from '@/components/DataTable/BarDataTable';
 import { useOutgoingLinksData } from './useOutgoingLinksData';
 import { getOutgoingLinksColumns } from './columns';
@@ -12,8 +12,8 @@ import useSettingsData from '@/hooks/useSettingsData';
 import useLicenseData from '@/hooks/useLicenseData';
 import OverlayBlock from '@/components/Upsell/OverlayBlock';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
+import ActivationCopy from '@/components/Upsell/ActivationCopy';
 import MetricInfo from '@/components/Common/MetricInfo';
-import UpsellOverlay from '@/components/Upsell/UpsellOverlay';
 import { isTourActive } from '@/store/useTourStore';
 import type { FilterSearchParams } from '@/config/filterConfig';
 
@@ -93,6 +93,19 @@ const OutgoingLinksBlock = memo( ({ className = '', customFilters }: OutgoingLin
 		);
 	}
 
+	if ( ! isEnabled ) {
+		return (
+			<OverlayBlock
+				className={ className }
+				title={ __( 'Outgoing links', 'burst-statistics' ) }
+				blurLabel={ __( 'Outgoing link tracking is disabled.', 'burst-statistics' ) }
+				dataTour="outgoing-links-block"
+			>
+				<ActivationCopy type="outgoing_links" />
+			</OverlayBlock>
+		);
+	}
+
 	return (
 		<Block className={ className } data-tour="outgoing-links-block">
 			<BlockHeading
@@ -102,56 +115,27 @@ const OutgoingLinksBlock = memo( ({ className = '', customFilters }: OutgoingLin
 					<MetricInfo metricKey="outgoing_links" side="bottom">
 						{ __( 'Outgoing links', 'burst-statistics' ) }
 					</MetricInfo>
-					{ ( tourActive || isLicenseValid ) && isEnabled && hasData && (
-						<button
-							type="button"
-							className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-							onClick={ handleExpand }
-							aria-label={ __( 'Expand table', 'burst-statistics' ) }
-							title={ __( 'Expand table', 'burst-statistics' ) }
-						>
-							<Icon name="expand" size={ 14 } />
-						</button>
+					{ hasData && (
+						<ExpandTableButton onClick={ handleExpand } />
 					) }
 				</> }
 			/>
 			<BlockContent className="px-0 py-0 overflow-y-auto">
-				{ ! isEnabled && (
-					<div className="flex h-48 flex-col items-center justify-center p-4 text-center text-sm text-gray-500">
-						<p className="font-medium text-gray-600 mb-1">
-							{ __( 'External link tracking has been disabled.', 'burst-statistics' ) }
-						</p>
-						<p className="text-xs text-gray-400">
-							{ __( 'You can enable it in the settings page to start tracking outgoing link clicks.', 'burst-statistics' ) }
-						</p>
-					</div>
-				) }
-				{ isEnabled && (
-					<BarDataTable
-						columns={ columns }
-						data={ topData }
-						rowKey={ ( row ) => row.url }
-						barColumnKey="clicks"
-						isLoading={ isLoading }
-						emptyState={ firstCycleCompleted ? __( 'No outgoing link clicks recorded yet.', 'burst-statistics' ) : '' }
-					/>
-				) }
-				{ isEnabled && ! firstCycleCompleted && (
+				<BarDataTable
+					columns={ columns }
+					data={ topData }
+					rowKey={ ( row ) => row.url }
+					barColumnKey="clicks"
+					isLoading={ isLoading }
+					emptyState={ firstCycleCompleted ? __( 'No outgoing link clicks recorded yet.', 'burst-statistics' ) : '' }
+				/>
+				{ ! firstCycleCompleted && (
 					<div className="flex items-center gap-2 px-4 py-2 text-xs text-gray-400 border-t border-gray-100">
 						<span>
 							{ __( 'Burst is gathering all used external links on your site, data will appear when this is completed.', 'burst-statistics' ) }
 							{ 'number' === typeof scrapingProgress && ` (${ scrapingProgress }%)` }
 						</span>
 					</div>
-				) }
-				{ ! tourActive && ! isLicenseValid && (
-					<UpsellOverlay
-						className="flex items-center justify-center pt-0 mt-0 m-0 border-0 bg-transparent"
-						containerClassName="pt-1 m-1 mt-4"
-						cardClassName="mx-4 min-w-fit rounded-md border border-gray-300 bg-gray-100 px-6 py-6 shadow-sm"
-					>
-						<UpsellCopy type="external_links" compact={ true } />
-					</UpsellOverlay>
 				) }
 			</BlockContent>
 		</Block>

@@ -110,18 +110,13 @@ class Data_Sharing {
 			return;
 		}
 
-		$this->last_send = get_option( 'burst_last_telemetry_send', 0 );
-		$one_month_ago   = strtotime( '-1 month' );
+		$this->last_send = (int) get_option( 'burst_last_telemetry_send', 0 );
 
-		if ( $this->last_send === 0 ) {
-			$this->capture_data_from = $one_month_ago;
-		} else {
-			$this->capture_data_from = $this->last_send + 1;
-		}
-
-		if ( $this->last_send > $one_month_ago ) {
+		if ( ! $this->is_send_due( $this->last_send, $this->current_send_time ) ) {
 			return;
 		}
+
+		$this->capture_data_from = $this->get_capture_start( $this->last_send, $this->current_send_time );
 
 		$aggregation = new Data_Aggregation( $this->capture_data_from, $this->current_send_time );
 		try {
@@ -151,6 +146,41 @@ class Data_Sharing {
 	}
 
 	/**
+	 * Whether enough time has passed since the last send to send again.
+	 *
+	 * The send is triggered by burst_monthly, which runs every MONTH_IN_SECONDS
+	 * (30 days). Comparing against a calendar month (strtotime( '-1 month' ))
+	 * skipped every send that followed a 31-day month, so the check uses the
+	 * same 30-day unit with a day of slack for cron timing.
+	 *
+	 * @param int $last_send Timestamp of the last send, 0 if never sent.
+	 * @param int $now       Current timestamp.
+	 * @return bool True when a send is due.
+	 */
+	private function is_send_due( int $last_send, int $now ): bool {
+		if ( 0 === $last_send ) {
+			return true;
+		}
+
+		return $last_send <= $now - ( MONTH_IN_SECONDS - DAY_IN_SECONDS );
+	}
+
+	/**
+	 * Get the start of the period to aggregate for this send.
+	 *
+	 * Starts right after the last send, but never more than a month back: the
+	 * endpoint buckets sites by monthly visitors, so a longer window (e.g. after
+	 * a missed send) would place the site in a too-high visitor range.
+	 *
+	 * @param int $last_send Timestamp of the last send, 0 if never sent.
+	 * @param int $now       Current timestamp.
+	 * @return int Timestamp to capture data from.
+	 */
+	private function get_capture_start( int $last_send, int $now ): int {
+		return max( $last_send + 1, $now - MONTH_IN_SECONDS );
+	}
+
+	/**
 	 * Send test telemetry data
 	 *
 	 * This method is used for testing and will send data with the is_test flag set to true.
@@ -161,15 +191,8 @@ class Data_Sharing {
 	 */
 	public function send_test_telemetry( ?string $custom_endpoint = null ): array {
 		$this->current_send_time = time();
-		$one_month_ago           = strtotime( '-1 month' );
-
-		$this->last_send = get_option( 'burst_last_telemetry_send', 0 );
-
-		if ( $this->last_send === 0 ) {
-			$this->capture_data_from = $one_month_ago;
-		} else {
-			$this->capture_data_from = $this->last_send + 1;
-		}
+		$this->last_send         = (int) get_option( 'burst_last_telemetry_send', 0 );
+		$this->capture_data_from = $this->get_capture_start( $this->last_send, $this->current_send_time );
 
 		$aggregation = new Data_Aggregation( $this->capture_data_from, $this->current_send_time, true );
 
