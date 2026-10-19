@@ -31,9 +31,6 @@ function getActionLabel( anchor: string, action: TourStepAction ): { label: stri
 	if ( anchor.includes( 'field-ghost_mode' ) ) {
 		return { label: __( 'Toggle Ghost mode', 'burst-statistics' ), icon: '👻' };
 	}
-	if ( anchor.includes( 'add-goal-button' ) ) {
-		return { label: __( 'Add goal', 'burst-statistics' ), icon: '🎯' };
-	}
 	if ( anchor.includes( 'page-filter' ) || 'apply_filter' === action ) {
 		return { label: __( 'Add filter', 'burst-statistics' ), icon: '🔍' };
 	}
@@ -63,9 +60,6 @@ function getActionLabel( anchor: string, action: TourStepAction ): { label: stri
 	}
 	if ( anchor.includes( 'chat-assistant' ) ) {
 		return { label: __( 'Open AI chat', 'burst-statistics' ), icon: '🤖' };
-	}
-	if ( anchor.includes( 'subnav-goals' ) ) {
-		return { label: __( 'Click Goals', 'burst-statistics' ), icon: '🎯' };
 	}
 	if ( anchor.includes( 'subnav-general' ) ) {
 		return { label: __( 'Click General', 'burst-statistics' ), icon: '⚙️' };

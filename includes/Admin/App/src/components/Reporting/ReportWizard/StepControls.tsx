@@ -3,9 +3,10 @@ import { __ } from '@wordpress/i18n';
 import { useWizardStore } from '@/store/reports/useWizardStore';
 import { useReportConfigStore } from '@/store/reports/useReportConfigStore';
 import { useReportsStore } from '@/store/reports/useReportsStore';
-import { useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { toast } from '@/utils/toast';
+import useEscapeToClose from '@/components/Common/Wizard/useEscapeToClose';
 
 export const StepControls = () => {
 	const { nextStep, prevStep, resetWizard, closeWizard, wizard } = useWizardStore();
@@ -25,16 +26,7 @@ export const StepControls = () => {
 		closeWizard();
 	}, [ resetWizard, closeWizard ]);
 
-	useEffect( () => {
-		const onKeyDown = ( e: KeyboardEvent ) => {
-			if ( 'Escape' === e.key && isFirstStep ) {
-				handleClose();
-			}
-		};
-
-		window.addEventListener( 'keydown', onKeyDown );
-		return () => window.removeEventListener( 'keydown', onKeyDown );
-	}, [ isFirstStep, handleClose ]);
+	useEscapeToClose( isFirstStep, handleClose );
 
 	// Validates current step fields and saves the report.
 	const validateAndSave = useCallback( async( options?: { enabled?: boolean }) => {

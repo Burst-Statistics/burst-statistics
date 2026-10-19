@@ -150,12 +150,7 @@ class Share_Routing {
 		}
 
 		// Handle per-datatable endpoints: data/datatable/{id} and data/ecommerce/datatable/{id}.
-		$datatable_id = '';
-		if ( str_starts_with( $endpoint_path, 'data/ecommerce/datatable/' ) ) {
-			$datatable_id = substr( $endpoint_path, 25 );
-		} elseif ( str_starts_with( $endpoint_path, 'data/datatable/' ) ) {
-			$datatable_id = substr( $endpoint_path, 15 );
-		}
+		$datatable_id = $this->get_datatable_id_from_path( $endpoint_path );
 
 		if ( ! empty( $datatable_id ) ) {
 			$datatable_map = self::get_datatable_id_tab_map();
@@ -191,11 +186,11 @@ class Share_Routing {
 	public function get_current_rest_endpoint_path( ?\WP_REST_Request $request = null ): string {
 		// Authoritative source: resolve from the route WordPress dispatched, so
 		// the authorization decision uses the exact endpoint that will execute.
-		// Regex: `#burst/v1/(.+?)$#` extracts the path after `burst/v1/`.
+		// Regex: `#burst/v1/(.+?)$#i` matches WordPress's case-insensitive route namespace.
 		// Example: route `/burst/v1/data/today` -> `data/today`.
 		if ( $request instanceof \WP_REST_Request ) {
 			$route = $request->get_route();
-			if ( is_string( $route ) && preg_match( '#burst/v1/(.+?)$#', $route, $matches ) ) {
+			if ( is_string( $route ) && preg_match( '#burst/v1/(.+?)$#i', $route, $matches ) ) {
 				return trim( $matches[1], '/' );
 			}
 		}
@@ -470,19 +465,7 @@ class Share_Routing {
 				return $args;
 			}
 
-			// Derive datatable_id from endpoint path if possible.
-			$datatable_id = '';
-			if ( str_starts_with( $endpoint_path, 'data/ecommerce/datatable/' ) ) {
-				$datatable_id = substr( $endpoint_path, 25 );
-			} elseif ( str_starts_with( $endpoint_path, 'data/datatable/' ) ) {
-				$datatable_id = substr( $endpoint_path, 15 );
-			}
-
-			// If it's not a per-datatable endpoint, fall back to $_GET['id'] for legacy support.
-			if ( empty( $datatable_id ) || 'datatable' === $datatable_id ) {
-				// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				$datatable_id = isset( $_GET['id'] ) ? sanitize_text_field( wp_unslash( $_GET['id'] ) ) : '';
-			}
+			$datatable_id = $this->get_datatable_id_from_path( $endpoint_path );
 
 			foreach ( $report->content as $block ) {
 				if ( $this->is_block_match( $block, $endpoint_path, $datatable_id ) ) {
@@ -539,19 +522,7 @@ class Share_Routing {
 			return false;
 		}
 
-		// Derive datatable_id from endpoint path if possible.
-		$datatable_id = '';
-		if ( str_starts_with( $endpoint_path, 'data/ecommerce/datatable/' ) ) {
-			$datatable_id = substr( $endpoint_path, 25 );
-		} elseif ( str_starts_with( $endpoint_path, 'data/datatable/' ) ) {
-			$datatable_id = substr( $endpoint_path, 15 );
-		}
-
-		// If it's not a per-datatable endpoint, fall back to $_GET['id'] for legacy support.
-		if ( empty( $datatable_id ) || 'datatable' === $datatable_id ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$datatable_id = isset( $_GET['id'] ) ? sanitize_text_field( wp_unslash( $_GET['id'] ) ) : '';
-		}
+		$datatable_id = $this->get_datatable_id_from_path( $endpoint_path );
 
 		foreach ( $report->content as $block ) {
 			// Allow filter options if the block has filters applied.
@@ -565,6 +536,27 @@ class Share_Routing {
 		}
 
 		return false;
+	}
+
+	/**
+	 * The datatable id of a per-datatable endpoint path (data/datatable/{id},
+	 * data/ecommerce/datatable/{id}). Story requests take the id from here
+	 * only. There is deliberately no fallback to `$_GET['id']` for them:
+	 * any endpoint would then pass as a report block's datatable, so
+	 * `data/ecommerce/sales?id=statistics_pages` was allowed on a story link
+	 * with only a pages block. The generic datatable endpoints that read the
+	 * id from the query string are blocked anyway.
+	 *
+	 * @param string $endpoint_path The requested API endpoint path.
+	 * @return string The datatable id, or an empty string for any other endpoint.
+	 */
+	private function get_datatable_id_from_path( string $endpoint_path ): string {
+		foreach ( [ 'data/ecommerce/datatable/', 'data/datatable/' ] as $prefix ) {
+			if ( str_starts_with( $endpoint_path, $prefix ) ) {
+				return substr( $endpoint_path, strlen( $prefix ) );
+			}
+		}
+		return '';
 	}
 
 	/**

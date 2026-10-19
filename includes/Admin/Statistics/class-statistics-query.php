@@ -790,6 +790,8 @@ class Statistics_Query {
 	 */
 	public function select( string|array $metrics ): self {
 		$this->select = $this->sanitizer->sanitize_metrics( is_array( $metrics ) ? $metrics : [ $metrics ] );
+		// The goals JOIN ON depends on the select (see get_available_joins()).
+		$this->avail_joins_cache = null;
 		return $this;
 	}
 
@@ -1284,10 +1286,13 @@ class Statistics_Query {
 	 * the goal_id filter into the goals JOIN ON clause when set. Cached per instance;
 	 * invalidated by set_filters() because the goals ON depends on the current goal_id.
 	 *
-	 * Goal id is baked into the JOIN ON (not added as a WHERE) because goals is a LEFT
-	 * JOIN — a WHERE on goals.goal_id would filter out rows with no matching goal row,
-	 * silently downgrading the LEFT JOIN to an INNER JOIN and breaking conversion-rate
-	 * math where the denominator must include sessions with no conversion.
+	 * The goals join only feeds the conversion metrics; which rows the goal filter keeps
+	 * is decided by the session semi-join in add_goal_session_condition(). The goal id
+	 * is baked into the ON so those metrics count completions of the filtered goal
+	 * only. It is not added as a WHERE because goals is a LEFT JOIN — a WHERE on
+	 * goals.goal_id would filter out rows with no matching goal row, silently
+	 * downgrading the LEFT JOIN to an INNER JOIN and breaking conversion-rate math
+	 * where the denominator must include sessions with no conversion.
 	 *
 	 * @return array<string, array{table: string, on: string, type?: string, depends_on?: array}>
 	 */
@@ -1299,8 +1304,14 @@ class Statistics_Query {
 		$filters         = $this->get_filters();
 		$goal_id_filter  = $filters['goal_id'] ?? 0;
 		if ( isset( $available_joins['goals'] ) ) {
-			$is_exclude                      = ( $this->get_filter_exclusions()['goal_id'] ?? 'include' ) === 'exclude';
-			$available_joins['goals']['on'] .= self::goal_condition_sql( $goal_id_filter, $is_exclude, 'goals.goal_id' );
+			// The campaign and parameter attribution shapes drop the goal_id WHERE
+			// (see should_suppress_goal_id_filter()), so the session NOT IN that
+			// normally carries an exclusion is never added. The ON is then the only
+			// goal constraint left and has to be negated itself, or `!5` would
+			// count exactly the completions of goal 5.
+			$is_negated                      = $this->should_suppress_goal_id_filter()
+				&& 'exclude' === ( $this->get_filter_exclusions()['goal_id'] ?? 'include' );
+			$available_joins['goals']['on'] .= self::goal_condition_sql( $goal_id_filter, 'goals.goal_id', $is_negated );
 		}
 		$this->avail_joins_cache = $available_joins;
 		return $available_joins;
@@ -1309,27 +1320,37 @@ class Statistics_Query {
 	/**
 	 * SQL fragment (" AND <column> ...", or '' when no goal filter is active)
 	 * enforcing the goal_id filter on a goals join. Single source of truth for
-	 * every goals-join builder — the hit-keyed ON baking above and the
-	 * session-keyed derived table in Session_Grain_Shape — so both paths always
-	 * count the same completions.
+	 * every goals-join builder — the hit-keyed ON baking above, the
+	 * session-keyed derived table in Session_Grain_Shape and the session
+	 * semi-join of the filter itself — so all paths count the same completions.
+	 * An exclusion normally uses the same condition: add_goal_session_condition()
+	 * negates it in the WHERE (`session_id NOT IN`).
 	 *
 	 * @param mixed  $goal_id_filter The goal_id filter value: 'all', a goal id, or 0/absent.
 	 *                               Mixed because filter values arrive as strings or ints from the REST layer.
-	 * @param bool   $is_exclude     Whether the goal_id filter is an exclusion.
 	 * @param string $column         Qualified goal id column (e.g. 'goals.goal_id').
+	 * @param bool   $is_negated     Negate the condition in the join itself. Only for
+	 *                               queries without the goal_id WHERE (see get_available_joins()).
 	 */
-	public static function goal_condition_sql( mixed $goal_id_filter, bool $is_exclude, string $column ): string {
+	public static function goal_condition_sql( mixed $goal_id_filter, string $column, bool $is_negated = false ): string {
 		global $wpdb;
 		if ( 'all' === $goal_id_filter ) {
 			$active_goal_ids = $wpdb->get_col( "SELECT ID FROM {$wpdb->prefix}burst_goals WHERE status = 'active'" );
-			return empty( $active_goal_ids )
-				? ' AND 1 = 0'
-				: " AND {$column} IN (" . implode( ',', array_map( 'intval', $active_goal_ids ) ) . ')';
+			if ( empty( $active_goal_ids ) ) {
+				// Excluding an empty set excludes nothing.
+				return $is_negated ? '' : ' AND 1 = 0';
+			}
+			$in_operator = $is_negated ? 'NOT IN' : 'IN';
+			return " AND {$column} {$in_operator} (" . implode( ',', array_map( 'intval', $active_goal_ids ) ) . ')';
 		}
 		if ( (int) $goal_id_filter > 0 ) {
-			$goal_operator = $is_exclude ? '!=' : '=';
+			// An exclusion normally joins on `=` as well: the join finds the
+			// completions of this goal and the WHERE keeps the rows without one
+			// (see add_filter_condition()). Joining on `!=` would match every
+			// other completed goal, one row each.
+			$operator = $is_negated ? '!=' : '=';
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- operator and column are fixed tokens, value is prepared.
-			return (string) $wpdb->prepare( " AND {$column} {$goal_operator} %d", (int) $goal_id_filter );
+			return (string) $wpdb->prepare( " AND {$column} {$operator} %d", (int) $goal_id_filter );
 		}
 		return '';
 	}
@@ -1569,6 +1590,11 @@ class Statistics_Query {
 				// The materialized column needs no classifier fallback, so the
 				// campaigns join (keyed on the hit id) can be skipped entirely.
 				$this->with_source_category_joins();
+				continue;
+			}
+			// The goal filter is a session semi-join (see
+			// add_goal_session_condition()) and reads no column of the goals join.
+			if ( $filter_key === 'goal_id' ) {
 				continue;
 			}
 			$col = $filter_map[ $filter_key ] ?? '';
@@ -1821,9 +1847,10 @@ class Statistics_Query {
 		$filters          = $this->get_filters();
 		$possible_filters = Filter_Registry::all();
 
-		// goal_id is normally enforced via the goals JOIN ON clause (see get_available_joins).
-		// When campaign/parameter attribution shapes are active, the JOIN-side constraint is
-		// the correct one and a WHERE on goals.goal_id would double-filter the subquery results.
+		// goal_id is normally enforced as a session semi-join (see add_goal_session_condition()).
+		// When campaign/parameter attribution shapes are active, the goals JOIN ON constraint
+		// (see get_available_joins()) is the correct one and a WHERE would double-filter the
+		// attribution subquery results.
 		if ( $this->should_suppress_goal_id_filter() ) {
 			unset( $possible_filters['goal_id'] );
 		}
@@ -1867,6 +1894,123 @@ class Statistics_Query {
 	}
 
 	/**
+	 * Whether the query itself joins burst_parameters under the 'params' alias:
+	 * the registered join for a selected 'parameter' metric, or the FROM
+	 * subquery of Parameter_Conversion_Shape. Those queries group by parameter,
+	 * so the parameter filter stays a row-level condition on that alias.
+	 */
+	private function has_parameter_rows(): bool {
+		return isset( $this->joins['params'] ) || $this->from_alias === 'params';
+	}
+
+	/**
+	 * Apply the parameter filter as a correlated (NOT) EXISTS on burst_parameters.
+	 *
+	 * A hit has one burst_parameters row per URL parameter, so joining the table to
+	 * filter on it repeats the hit once per matching row: sums such as revenue and
+	 * pageviews were multiplied, and an exclusion matched every other parameter of
+	 * the hit. A semi-join never repeats a row, and per hit it is an index seek on
+	 * (statistic_id, parameter, value). A value with '=' matches one parameter and
+	 * value, a bare value matches a parameter name or a value.
+	 *
+	 * @param Query  $query      The query being assembled.
+	 * @param string $value      Filter value, e.g. 'utm_source=google' or 'ref'.
+	 * @param bool   $is_exclude Whether to keep the hits without a matching parameter.
+	 */
+	private function add_parameter_exists_condition( Query $query, string $value, bool $is_exclude ): void {
+		global $wpdb;
+		$value = sanitize_text_field( $value );
+		if ( str_contains( $value, '=' ) ) {
+			[ $name, $param_value ] = explode( '=', $value, 2 );
+			$match                  = 'p_filter.parameter = %s AND p_filter.value = %s';
+			$args                   = [ $name, $param_value ];
+		} else {
+			$match = '( p_filter.parameter = %s OR p_filter.value = %s )';
+			$args  = [ $value, $value ];
+		}
+		$operator = $is_exclude ? 'NOT EXISTS' : 'EXISTS';
+		$query->where_raw(
+			"{$operator} ( SELECT 1 FROM {$wpdb->prefix}burst_parameters p_filter WHERE p_filter.statistic_id = statistics.ID AND {$match} )",
+			$args
+		);
+	}
+
+	/**
+	 * Apply the goal_id filter as a session semi-join: keep every hit of a session
+	 * that completed the goal (or, for an exclusion, of a session that did not).
+	 *
+	 * A goal describes a visit, not the single hit it fired on. Keyed on the hit,
+	 * a goal filter only ever kept the page the goal completed on (a thank-you
+	 * page goal showed nothing but the thank-you page) and combined with any
+	 * other hit-level filter, such as a UTM parameter on the landing page, it
+	 * matched nothing. The semi-join never repeats a row, so sums such as revenue
+	 * and pageviews are counted once however often the session completed the
+	 * goal, and it needs no goals join: the conversions metrics keep their own
+	 * goals join, still restricted to the filtered goal (see get_available_joins()).
+	 * Both the hit-grain FROM and the session-grain FROM expose
+	 * statistics.session_id, so both grains filter the same sessions.
+	 *
+	 * Completions count when their hit falls in the date range, the same window
+	 * the goals join uses.
+	 *
+	 * @param Query  $query      The query being assembled.
+	 * @param string $value      Filter value: 'all' or a goal id.
+	 * @param bool   $is_exclude Whether to keep the sessions without a completion.
+	 */
+	private function add_goal_session_condition( Query $query, string $value, bool $is_exclude ): void {
+		$goal_condition = self::goal_condition_sql( $value, 'g_filter.goal_id' );
+		if ( $goal_condition === '' ) {
+			// The value names no goal (the sanitizer turns anything else into 0):
+			// no session completed it, so an inclusion matches nothing and an
+			// exclusion excludes nothing.
+			if ( ! $is_exclude ) {
+				$query->where_raw( '1 = 0' );
+			}
+			return;
+		}
+		$query->where_raw( $this->session_semi_join_sql( 'burst_goal_statistics', 'g_filter', $goal_condition, $is_exclude ) );
+	}
+
+	/**
+	 * SQL condition keeping the hits of the sessions that have a row in a
+	 * per-hit table (goal completions, orders) in the date range, or with
+	 * $is_exclude the hits of the sessions that have none. The condition is
+	 * `statistics.session_id [NOT] IN ( SELECT st_filter.session_id FROM <table>
+	 * <alias> INNER JOIN burst_statistics st_filter ON st_filter.ID =
+	 * <alias>.statistic_id WHERE st_filter.session_id IS NOT NULL AND
+	 * st_filter.time BETWEEN … <condition> )`.
+	 *
+	 * Single source of truth for every session-scoped filter (the goal filter
+	 * here, the Pro sales filter). A semi-join never repeats a row, so sums such
+	 * as revenue and pageviews count once however many matching rows a session
+	 * has. It reads only statistics.session_id, which the hit-grain FROM, the
+	 * session-grain FROM and the campaign and parameter attribution shapes all
+	 * expose. NULL session ids are left out of the set: a single NULL in it
+	 * would make every NOT IN comparison unknown and an exclusion would keep
+	 * nothing.
+	 *
+	 * @param string $table      Unprefixed table name with a statistic_id column, e.g. 'burst_orders'.
+	 * @param string $alias      Alias for that table, referenced by $condition.
+	 * @param string $condition  Extra SQL (" AND …") on the table, already prepared, or ''.
+	 * @param bool   $is_exclude Whether to keep the sessions without a matching row.
+	 * @return string SQL condition without a leading AND.
+	 * @throws \InvalidArgumentException When the table or alias is not a plain identifier.
+	 */
+	public function session_semi_join_sql( string $table, string $alias, string $condition, bool $is_exclude ): string {
+		global $wpdb;
+		// Identifiers cannot be prepared: only plain burst table names and aliases pass.
+		if ( ! preg_match( '/^burst_[a-z_]+$/', $table ) || ! preg_match( '/^[a-z_]+$/', $alias ) ) {
+			throw new \InvalidArgumentException( 'Invalid table or alias for a session filter.' );
+		}
+		$date_condition = '';
+		if ( $this->get_date_start() > 0 && $this->get_date_end() > 0 ) {
+			$date_condition = (string) $wpdb->prepare( ' AND st_filter.time BETWEEN %d AND %d', $this->get_date_start(), $this->get_date_end() );
+		}
+		$operator = $is_exclude ? 'NOT IN' : 'IN';
+		return "statistics.session_id {$operator} ( SELECT st_filter.session_id FROM {$wpdb->prefix}{$table} {$alias} INNER JOIN {$wpdb->prefix}burst_statistics st_filter ON st_filter.ID = {$alias}.statistic_id WHERE st_filter.session_id IS NOT NULL{$date_condition}{$condition} )";
+	}
+
+	/**
 	 * Returns true when the goal_id filter should be omitted — specifically when a
 	 * campaign or parameter metric is selected alongside conversion metrics, which uses a
 	 * JOIN-based attribution subquery incompatible with a direct goal_id WHERE clause.
@@ -1904,12 +2048,13 @@ class Statistics_Query {
 		$eq_operator  = $is_exclude ? '!=' : '=';
 		$like_keyword = $is_exclude ? 'NOT LIKE' : 'LIKE';
 
-		if ( $filter === 'goal_id' && $value === 'all' ) {
-			// 'all' means "any active goal": the goals JOIN ON already restricts
-			// the join to the active set (see goal_condition_sql()), so the
-			// WHERE only needs to demand a matching completion row. The generic
-			// path below would cast 'all' to 0 and match nothing.
-			$query->where_raw( 'goals.ID IS ' . ( $is_exclude ? 'NULL' : 'NOT NULL' ) );
+		if ( $filter === 'goal_id' ) {
+			$this->add_goal_session_condition( $query, $value, $is_exclude );
+			return;
+		}
+
+		if ( $filter === 'parameter' && ! $this->has_parameter_rows() ) {
+			$this->add_parameter_exists_condition( $query, $value, $is_exclude );
 			return;
 		}
 
@@ -2014,6 +2159,17 @@ class Statistics_Query {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 			$query->where_raw( "({$cat_expr}) {$operator} %s", [ $value ] );
 			return;
+		} elseif ( $filter === 'page_url' && ! empty( $this->page_filter_page_ids( $value ) ) ) {
+			// The page tables group on statistics.page_id and label each row
+			// with its canonical url (see Page_Url_Metric). Filtering on that
+			// url string would miss the hits stored under the post's other
+			// urls (an old slug), so a page filter could show 0 for a row the
+			// Pages table counts. Filter on the same page_ids instead.
+			if ( $is_exclude ) {
+				$query->where_not_in( 'statistics.page_id', $this->page_filter_page_ids( $value ), '%d' );
+			} else {
+				$query->where_in( 'statistics.page_id', $this->page_filter_page_ids( $value ), '%d' );
+			}
 		} elseif ( $value === 'include' ) {
 			$query->where( $column, 1, '=', '%d' );
 		} elseif ( $value === 'exclude' ) {
@@ -2167,14 +2323,57 @@ class Statistics_Query {
 	}
 
 	/**
+	 * Whether the query's status filter lets 404 hits into the result set.
+	 *
+	 * 404 hits are stored with page_id = 0 by design (the tracker never assigns
+	 * them a dictionary id and the backfill skips them), so under page-grain
+	 * grouping every distinct 404 url would collapse into a single row whose
+	 * page_id 0 hydrates to an empty url, and a page_id filter would never
+	 * match them. Without a status filter the builder appends
+	 * page_type != '404' itself (see build_query_internal()), which keeps the
+	 * page-grain path safe. With one, the rows are excluded only for '200'
+	 * include or '404' exclude — 'all' skips the page_type condition entirely,
+	 * and '404' include / '200' exclude select 404 rows. In those cases the
+	 * caller must keep grouping and filtering on the url string.
+	 */
+	public function status_filter_allows_404(): bool {
+		$filters = $this->get_filters();
+		if ( ! isset( $filters['status'] ) ) {
+			return false;
+		}
+
+		// The sanitizer casts numeric values to int; compare as string like
+		// add_filter_condition() effectively does after PHP's type coercion.
+		$status     = (string) $filters['status'];
+		$is_exclude = ( $this->get_filter_exclusions()['status'] ?? 'include' ) === 'exclude';
+		return 'all' === $status || ( ( '404' === $status ) !== $is_exclude );
+	}
+
+	/**
+	 * The page_ids a page_url filter value selects, or [] to filter on the url
+	 * string: wildcard and list values are url patterns, and 404 hits carry
+	 * page_id 0 (see status_filter_allows_404()).
+	 *
+	 * @param string $value The page_url filter value.
+	 * @return int[]
+	 */
+	private function page_filter_page_ids( string $value ): array {
+		if ( str_ends_with( $value, '*' ) || str_contains( $value, ',' ) || $this->status_filter_allows_404() ) {
+			return [];
+		}
+		return $this->page_grain_ids_for_url( $value );
+	}
+
+	/**
 	 * Replace integer page ids under the page_url alias with display urls, in
 	 * bulk over the grouped result rows: negative ids are burst_page_urls rows
 	 * (the url IS the identity), positive ids resolve to the post's canonical
 	 * row, falling back to the most recently seen url for that post id (a
 	 * post the weekly sweep has not promoted yet, or a deleted post that
-	 * never got a canonical assigned). Two or three chunked IN() lookups
-	 * against the small dictionary — never per statistics row, and never a
-	 * permalink lookup: the dictionary is the only source of display urls.
+	 * never got a canonical assigned). A few chunked IN() lookups (see
+	 * chunk_ids_for_in_list()) against the small dictionary — never per
+	 * statistics row, and never a permalink lookup: the dictionary is the
+	 * only source of display urls.
 	 * A post id with hits always has a row, registered by the tracker
 	 * (resolve_page_id()) or the seed/backfill; deriving a url from
 	 * get_permalink() here is not possible, as the REST optimizer leaves
@@ -2200,31 +2399,14 @@ class Statistics_Query {
 
 		$url_map = [];
         // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table name, integer id lists.
-		foreach ( array_chunk( array_keys( $negative_ids ), 5000 ) as $chunk ) {
-			$id_list = implode( ',', array_map( 'intval', $chunk ) );
+		foreach ( $this->chunk_ids_for_in_list( array_keys( $negative_ids ) ) as $chunk ) {
+			$id_list = implode( ',', $chunk );
 			foreach ( $wpdb->get_results( "SELECT ID, page_url FROM {$wpdb->prefix}burst_page_urls WHERE ID IN ({$id_list})", ARRAY_A ) as $dict_row ) {
 				$url_map[ - (int) $dict_row['ID'] ] = (string) $dict_row['page_url'];
 			}
 		}
-		foreach ( array_chunk( array_keys( $positive_ids ), 5000 ) as $chunk ) {
-			$id_list = implode( ',', array_map( 'intval', $chunk ) );
-			foreach ( $wpdb->get_results( "SELECT page_id, page_url FROM {$wpdb->prefix}burst_page_urls WHERE is_canonical = 1 AND page_id IN ({$id_list})", ARRAY_A ) as $dict_row ) {
-				$url_map[ (int) $dict_row['page_id'] ] = (string) $dict_row['page_url'];
-			}
-		}
-		$missing = array_diff( array_keys( $positive_ids ), array_keys( $url_map ) );
-		foreach ( array_chunk( $missing, 5000 ) as $chunk ) {
-			$id_list = implode( ',', array_map( 'intval', $chunk ) );
-			$latest  = $wpdb->get_results(
-				"SELECT d.page_id, d.page_url FROM {$wpdb->prefix}burst_page_urls d
-				JOIN ( SELECT page_id, MAX(ID) AS mid FROM {$wpdb->prefix}burst_page_urls WHERE page_id IN ({$id_list}) GROUP BY page_id ) m ON d.ID = m.mid",
-				ARRAY_A
-			);
-			foreach ( $latest as $dict_row ) {
-				$url_map[ (int) $dict_row['page_id'] ] = (string) $dict_row['page_url'];
-			}
-		}
         // phpcs:enable
+		$url_map += $this->get_page_paths_by_post_id( array_keys( $positive_ids ) );
 
 		foreach ( $rows as $index => $row ) {
 			if ( is_object( $row ) ) {

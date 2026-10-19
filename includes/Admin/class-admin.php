@@ -22,15 +22,18 @@ use Burst\Admin\Reports\Report_Logs;
 use Burst\Admin\Reports\Reports;
 use Burst\Admin\Search\Search;
 use Burst\Admin\Errors\Errors;
+use Burst\Admin\Events\Events;
 use Burst\Admin\Export\Export_Manager;
 use Burst\Admin\Import\Import_Manager;
 use Burst\Admin\Integrations\Integrations_Settings;
 use Burst\Admin\Search_Console\Search_Console;
+use Burst\Admin\Engagement\Page_Weight;
 use Burst\Admin\Engagement\Reading_Engagement;
 use Burst\Admin\Share\Share;
 use Burst\Admin\Tour\Tour;
 use Burst\Admin\Geo_Ip\Geo_Ip;
 use Burst\Admin\Statistics\Geo_Statistics;
+use Burst\Admin\Statistics\Green_Hosting;
 use Burst\Admin\Statistics\Goal_Statistics;
 use Burst\Admin\Statistics\Statistics;
 use Burst\Frontend\Goals\Goal;
@@ -46,6 +49,12 @@ class Admin {
 	use Admin_Helper;
 	use Save;
 
+	/**
+	 * Hits removed per batch by the anomalous visitor cleanup; also the
+	 * length of every IN () list it builds.
+	 */
+	private const CLEANUP_BATCH_SIZE = 1000;
+
 	public Tasks $tasks;
 	public Statistics $statistics;
 	public App $app;
@@ -58,6 +67,9 @@ class Admin {
 		$recalculate_cron_interval = apply_filters( 'burst_recalculate_cron_interval', 'burst_every_ten_minutes' );
 		add_action( $recalculate_cron_interval, [ $this, 'update_last_statistic_data' ] );
 		add_action( 'burst_recalculate_bounces_cron', [ $this, 'recalculate_bounces' ] );
+		// Outside the track-only gate: the frontend picks its tracking transport from the stored test result.
+		$endpoint_test = new Endpoint_Test();
+		$endpoint_test->init();
 
 		if ( ! BURST_TRACK_ONLY ) {
 			/**
@@ -127,6 +139,8 @@ class Admin {
 			$this->statistics->init();
 			$geo_statistics = new Geo_Statistics();
 			$geo_statistics->init();
+			$green_hosting = new Green_Hosting();
+			$green_hosting->init();
 			// The Country GeoIP database manager ships in free. Pro replaces it with
 			// its City variant (Geo_Ip_Pro), so only load the core manager when Pro
 			// is not active.
@@ -138,12 +152,16 @@ class Admin {
 			$search->init();
 			$errors = new Errors();
 			$errors->init();
+			$events = new Events();
+			$events->init();
 			$integrations_settings = new Integrations_Settings();
 			$integrations_settings->init();
 			$search_console = new Search_Console();
 			$search_console->init();
 			$reading_engagement = new Reading_Engagement();
 			$reading_engagement->init();
+			$page_weight = new Page_Weight();
+			$page_weight->init();
 			$reports = new Reports();
 			$reports->init();
 			$reports_logs = Report_Logs::instance();
@@ -355,6 +373,13 @@ class Admin {
 		if ( ! $this->uid_id_active() ) {
 			return;
 		}
+
+		// A visitor whose hits are being removed still has hits until the last
+		// batch ran; detecting it again would bring the task back mid-cleanup.
+		if ( (int) get_option( 'burst_cleanup_running_uid', 0 ) > 0 ) {
+			return;
+		}
+
 		$interval_days = (int) apply_filters( 'burst_data_cleanup_interval_days', 1 );
 		$data_treshold = (int) apply_filters( 'burst_data_cleanup_treshold', 1000 );
 		global $wpdb;
@@ -387,38 +412,77 @@ class Admin {
 			$detected_time     = (int) get_option( 'burst_cleanup_data_detected_time', time() );
 			$max_age_threshold = time() - ( 14 * DAY_IN_SECONDS );
 			if ( $detected_time < $max_age_threshold ) {
-				delete_option( 'burst_cleanup_data_detected_time' );
-				delete_option( 'burst_clean_data' );
-				delete_option( 'burst_cleanup_uid' );
-				delete_option( 'burst_cleanup_uid_visits' );
+				$this->clear_malicious_data_notice();
 			}
 		}
 	}
 
 	/**
-	 * Clean up the notification data when the task has been dismissed instead of fixed.
+	 * Handle the dismissal of the anomalous visitor task. The task's "fix"
+	 * button sets burst_clean_data and then dismisses the task in the same
+	 * request, so a dismissal with burst_clean_data set starts the cleanup;
+	 * a plain dismissal discards the detection.
+	 *
+	 * @param string $task_id The dismissed task.
 	 */
 	public function dismiss_malicious_data_notice( string $task_id ): void {
-		if ( $task_id === 'malicious_data_removal' ) {
-			delete_option( 'burst_cleanup_data_detected_time' );
-			delete_option( 'burst_clean_data' );
-			delete_option( 'burst_cleanup_uid' );
-			delete_option( 'burst_cleanup_uid_visits' );
+		if ( $task_id !== 'malicious_data_removal' ) {
+			return;
 		}
+
+		if ( get_option( 'burst_clean_data' ) ) {
+			$this->start_malicious_data_cleanup();
+		}
+		$this->clear_malicious_data_notice();
 	}
 
 	/**
-	 * Remove the detected anomalous visitor's data, triggered by the "fix" button on the task.
+	 * Delete the detection state of the anomalous visitor task.
+	 */
+	private function clear_malicious_data_notice(): void {
+		delete_option( 'burst_cleanup_data_detected_time' );
+		delete_option( 'burst_clean_data' );
+		delete_option( 'burst_cleanup_uid' );
+		delete_option( 'burst_cleanup_uid_visits' );
+	}
+
+	/**
+	 * Hand the detected visitor over to the batched cleanup: store its id in
+	 * burst_cleanup_running_uid and the time of its first hit, from which the
+	 * visitor bitmaps are rebuilt once the cleanup is done. A detection that
+	 * is invalid or over two weeks old starts nothing.
+	 */
+	private function start_malicious_data_cleanup(): void {
+		$uid_raw       = get_option( 'burst_cleanup_uid' );
+		$detected_time = (int) get_option( 'burst_cleanup_data_detected_time', time() );
+
+		// Detection stores an integer dictionary id; anything else is invalid.
+		if ( ! is_scalar( $uid_raw ) || ! ctype_digit( (string) $uid_raw ) || (int) $uid_raw <= 0 ) {
+			self::error_log( 'Invalid uid dictionary id, cleanup aborted.' );
+			return;
+		}
+		if ( $detected_time < time() - ( 14 * DAY_IN_SECONDS ) ) {
+			return;
+		}
+
+		$uid = (int) $uid_raw;
+		global $wpdb;
+		$first_hit = (int) $wpdb->get_var( $wpdb->prepare( "SELECT MIN(time) FROM {$wpdb->prefix}burst_statistics WHERE uid_id = %d", $uid ) );
+		update_option( 'burst_cleanup_running_uid', $uid, false );
+		update_option( 'burst_cleanup_running_from', $first_hit > 0 ? $first_hit : time(), false );
+	}
+
+	/**
+	 * Remove every hit of the anomalous visitor, with the rows that belong
+	 * to those hits and the sessions they leave empty. Runs on the cron event
+	 * the task's "fix" button schedules, in batches within a time budget, and
+	 * schedules itself again while hits remain, so a visitor with hundreds of
+	 * thousands of hits never exceeds a request's time limit.
 	 *
 	 * @hooked burst_scheduled_task_fix_malicious_data_removal
 	 */
 	public function clean_malicious_data(): void {
 		if ( ! $this->user_can_manage() ) {
-			return;
-		}
-
-		// only when explicitly triggerred.
-		if ( ! get_option( 'burst_clean_data' ) ) {
 			return;
 		}
 
@@ -429,107 +493,91 @@ class Admin {
 			return;
 		}
 
-		$uid_raw           = get_option( 'burst_cleanup_uid' );
-		$detected_time     = (int) get_option( 'burst_cleanup_data_detected_time', time() );
-		$max_age_threshold = time() - ( 14 * DAY_IN_SECONDS );
-
-		delete_option( 'burst_cleanup_data_detected_time' );
-		delete_option( 'burst_clean_data' );
-		delete_option( 'burst_cleanup_uid' );
-		delete_option( 'burst_cleanup_uid_visits' );
-
-		// Detection stores an integer dictionary id; anything else is invalid.
-		if ( ! is_scalar( $uid_raw ) || ! ctype_digit( (string) $uid_raw ) || (int) $uid_raw <= 0 ) {
-			self::error_log( 'Invalid uid dictionary id, cleanup aborted.' );
-			return;
-		}
-		$uid = (int) $uid_raw;
-
-		if ( $detected_time < $max_age_threshold ) {
+		$uid = (int) get_option( 'burst_cleanup_running_uid', 0 );
+		if ( $uid <= 0 ) {
 			return;
 		}
 
-		$interval_days     = (int) apply_filters( 'burst_data_cleanup_interval_days', 1 );
-		$cleanup_threshold = $detected_time - ( $interval_days * DAY_IN_SECONDS );
+		$deadline = microtime( true ) + (float) apply_filters( 'burst_data_cleanup_time_budget', 10.0 );
+		do {
+			$deleted = $this->delete_visitor_hits_batch( $uid );
+		} while ( $deleted >= self::CLEANUP_BATCH_SIZE && microtime( true ) < $deadline );
 
+		if ( $deleted >= self::CLEANUP_BATCH_SIZE ) {
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'burst_scheduled_task_fix_malicious_data_removal' );
+			return;
+		}
+
+		$this->finish_malicious_data_cleanup();
+	}
+
+	/**
+	 * Delete one batch of a visitor's hits, the rows that reference them and
+	 * the sessions left without hits. The batch size also bounds every IN ()
+	 * list, keeping each query far below a host's query length cap (WP
+	 * Engine never runs a query over ~16,000 characters).
+	 *
+	 * @param int $uid Visitor dictionary id (burst_statistics.uid_id).
+	 * @return int Hits deleted; fewer than CLEANUP_BATCH_SIZE means none remain.
+	 */
+	private function delete_visitor_hits_batch( int $uid ): int {
 		global $wpdb;
-		$wpdb->query( 'START TRANSACTION' );
-
-		try {
-			// 1. Get statistic IDs first.
-			$statistic_ids = $wpdb->get_col(
-				$wpdb->prepare(
-					"
-            SELECT ID
-            FROM {$wpdb->prefix}burst_statistics
-            WHERE uid_id = %d
-            AND time >= %d
-        ",
-					$uid,
-					$cleanup_threshold
-				)
-			);
-
-			// 2. Delete goal statistics.
-			if ( ! empty( $statistic_ids ) ) {
-				$placeholders = implode( ',', array_fill( 0, count( $statistic_ids ), '%d' ) );
-				$sql          = "DELETE FROM {$wpdb->prefix}burst_goal_statistics WHERE statistic_id IN ($placeholders)";
-                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- values are prepared above.
-				$wpdb->query( $wpdb->prepare( $sql, ...$statistic_ids ) );
-			}
-
-			// 3. Get session IDs first.
-			$session_ids = $wpdb->get_col(
-				$wpdb->prepare(
-					"
-            SELECT DISTINCT session_id
-            FROM {$wpdb->prefix}burst_statistics
-            WHERE uid_id = %d
-            AND time >= %d
-            AND session_id IS NOT NULL
-        ",
-					$uid,
-					$cleanup_threshold
-				)
-			);
-
-			// 4. Delete sessions.
-			if ( ! empty( $session_ids ) ) {
-				$placeholders = implode( ',', array_fill( 0, count( $session_ids ), '%d' ) );
-				$sql          = "DELETE FROM {$wpdb->prefix}burst_sessions WHERE ID IN ($placeholders)";
-                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- values are prepared above.
-				$wpdb->query( $wpdb->prepare( $sql, ...$session_ids ) );
-			}
-
-			// 5. Delete statistics.
-			$deleted = (int) $wpdb->query(
-				$wpdb->prepare(
-					"
-            DELETE FROM {$wpdb->prefix}burst_statistics
-            WHERE uid_id = %d
-            AND time >= %d
-        ",
-					$uid,
-					$cleanup_threshold
-				)
-			);
-
-			$wpdb->query( 'COMMIT' );
-
-			// Deleted hits change history: re-arm the visitor bitmap builder from
-			// the earliest affected day and bump the generation so cached day sets rebuild.
-			if ( $deleted > 0 ) {
-				$affected_from = wp_date( 'Y-m-d', $cleanup_threshold );
-				$rebuild_from  = (string) get_option( 'burst_visitor_bitmaps_rebuild_from' );
-				if ( '' === $rebuild_from || $affected_from < $rebuild_from ) {
-					update_option( 'burst_visitor_bitmaps_rebuild_from', $affected_from, false );
-				}
-				update_option( 'burst_visitor_bitmaps_generation', (string) time(), false );
-			}
-		} catch ( \Exception $e ) {
-			$wpdb->query( 'ROLLBACK' );
-			self::error_log( 'Rolled back data cleanup: ' . $e->getMessage() );
+		$hits = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT ID, session_id FROM {$wpdb->prefix}burst_statistics WHERE uid_id = %d LIMIT %d",
+				$uid,
+				self::CLEANUP_BATCH_SIZE
+			)
+		);
+		if ( ! is_array( $hits ) || empty( $hits ) ) {
+			return 0;
 		}
+
+		$this->delete_hit_child_rows( array_map( static fn( object $hit ): int => (int) $hit->ID, $hits ) );
+		$this->delete_hits( $hits );
+		return count( $hits );
+	}
+
+	/**
+	 * Delete the rows that reference the given hits by statistic_id, so the
+	 * cleanup leaves no orphans behind. Orders are not touched: sales data is
+	 * never removed by a traffic cleanup.
+	 *
+	 * @param int[] $statistic_ids Hit ids, at most CLEANUP_BATCH_SIZE.
+	 */
+	private function delete_hit_child_rows( array $statistic_ids ): void {
+		global $wpdb;
+		$tables       = (array) apply_filters(
+			'burst_cleanup_hit_child_tables',
+			[ 'burst_goal_statistics', 'burst_statistics_searches', 'burst_statistics_external_links', 'burst_parameters', 'burst_campaigns', 'burst_forms' ]
+		);
+		$placeholders = implode( ',', array_fill( 0, count( $statistic_ids ), '%d' ) );
+		foreach ( $tables as $table ) {
+			$table = sanitize_key( (string) $table );
+			if ( ! $this->table_exists( $table ) ) {
+				continue;
+			}
+			$sql = "DELETE FROM {$wpdb->prefix}{$table} WHERE statistic_id IN ($placeholders)";
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table checked with table_exists(), placeholders are %d only.
+			$wpdb->query( $wpdb->prepare( $sql, ...$statistic_ids ) );
+		}
+	}
+
+	/**
+	 * Close the cleanup: re-arm the visitor bitmap builder from the day of
+	 * the visitor's first hit and bump the generation, so cached day sets
+	 * that still count the removed visitor rebuild.
+	 */
+	private function finish_malicious_data_cleanup(): void {
+		$affected_from = wp_date( 'Y-m-d', (int) get_option( 'burst_cleanup_running_from', time() ) );
+		$rebuild_from  = (string) get_option( 'burst_visitor_bitmaps_rebuild_from' );
+		if ( '' === $rebuild_from || $affected_from < $rebuild_from ) {
+			update_option( 'burst_visitor_bitmaps_rebuild_from', $affected_from, false );
+		}
+		update_option( 'burst_visitor_bitmaps_generation', (string) time(), false );
+
+		delete_option( 'burst_cleanup_running_uid' );
+		delete_option( 'burst_cleanup_running_from' );
 	}
 
 	/**
@@ -594,7 +642,11 @@ class Admin {
 		$cookieless_text = $cookieless ? '-cookieless' : '';
 		$localize_args   = \Burst\burst_loader()->frontend->tracking->get_options();
 
-		$js = 'let burst = ' . wp_json_encode( $localize_args ) . ';';
+		// window.burst = window.burst || {} + Object.assign (not `let burst = {...}`): a `let`
+		// declaration here would create a lexical binding scoped to this file, shadowing
+		// window.burst entirely and silently ignoring a pre-init placeholder a theme/plugin
+		// set on window.burst before this combined file loaded (see class-frontend.php).
+		$js = $this->get_burst_bootstrap_script( $localize_args );
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		$js                .= file_get_contents( BURST_PATH . "assets/js/build/burst$cookieless_text.min.js" );
@@ -603,15 +655,17 @@ class Admin {
 		$upload_dir         = $this->upload_dir( 'js', $ghost_mode_enabled, true );
 		$file               = $upload_dir . $filename;
 
-		// copy timeme script to uploads dir if ghost mode is enabled.
-		$timeme_copy_failed = false;
+		// copy the other tracking-path scripts to uploads dir if ghost mode is enabled.
+		$script_copy_failed = false;
 		if ( $ghost_mode_enabled ) {
-			$js                      = $this->strip_window_exports( $js );
-			$timeme_original_file    = BURST_PATH . 'assets/js/timeme/timeme.min.js';
-			$timeme_obfustcated_file = $upload_dir . 'timeme.min.js';
-			// also refresh an existing copy when the bundled file is newer, e.g. after a plugin update.
-			if ( ! file_exists( $timeme_obfustcated_file ) || filemtime( $timeme_original_file ) > filemtime( $timeme_obfustcated_file ) ) {
-				$timeme_copy_failed = ! copy( $timeme_original_file, $timeme_obfustcated_file );
+			$js = $this->strip_window_exports( $js );
+			foreach ( $this->get_ghost_mode_scripts() as $bundled_file => $ghost_file ) {
+				$original_file   = BURST_PATH . $bundled_file;
+				$obfuscated_file = $upload_dir . $ghost_file;
+				// also refresh an existing copy when the bundled file is newer, e.g. after a plugin update.
+				if ( ! file_exists( $obfuscated_file ) || filemtime( $original_file ) > filemtime( $obfuscated_file ) ) {
+					$script_copy_failed = ! copy( $original_file, $obfuscated_file ) || $script_copy_failed;
+				}
 			}
 		}
 
@@ -636,7 +690,7 @@ class Admin {
 		// Only clear the error flag once everything is actually on disk: put_contents()
 		// can fail with a writable directory (e.g. an unwritable existing file), and
 		// WP_Filesystem() itself can fail (e.g. FS_METHOD ftpext without credentials).
-		if ( $written && ! $timeme_copy_failed ) {
+		if ( $written && ! $script_copy_failed ) {
 			delete_option( 'burst_js_write_error' );
 			$this->delete_js_files( $ghost_mode_enabled );
 		} else {
@@ -660,7 +714,9 @@ class Admin {
 		$files = [];
 		if ( $keep_ghost_mode !== true ) {
 			$files[] = $this->upload_dir( 'js', true, true ) . $this->get_frontend_js_filename( true );
-			$files[] = $this->upload_dir( 'js', true, true ) . 'timeme.min.js';
+			foreach ( $this->get_ghost_mode_scripts() as $ghost_file ) {
+				$files[] = $this->upload_dir( 'js', true, true ) . $ghost_file;
+			}
 		}
 		if ( $keep_ghost_mode !== false ) {
 			$files[] = $this->upload_dir( 'js', false, true ) . $this->get_frontend_js_filename( false );
@@ -784,6 +840,11 @@ class Admin {
 			$this->update_option( 'enable_turbo_mode', true );
 			$this->update_option( 'privacy_level', 'cookie' );
 			$this->update_option( 'plugin_update_suggestions', true );
+			$this->update_option( 'alert_email_recipients', [ get_option( 'admin_email' ) ] );
+			// The combined script bakes in the tracking transport, so test the endpoint
+			// before building it. Otherwise the script is written with the beacon off and
+			// stays that way until the next daily rebuild.
+			( new Endpoint_Test() )->run_test();
 			$this->create_js_file();
 
 			$this->tasks->add_initial_tasks();
@@ -1204,6 +1265,12 @@ class Admin {
 		// tracking hits) must never hit a missing table during a reset.
 		$this->truncate_all_burst_data();
 
+		// TRUNCATE restarts every auto-increment, but the object cache still
+		// maps event names, property values and lookup rows to the ids just
+		// released: a beacon in the next five minutes would attribute its
+		// events to whichever new rows reuse those ids.
+		$this->flush_burst_object_cache();
+
 		// The bitmap cursor and the uid-pipeline watermarks describe data that
 		// no longer exists after the truncate: a stale bitmap cursor would
 		// permanently skip the wiped range (built_until only moves forward),
@@ -1231,6 +1298,21 @@ class Admin {
 	}
 
 	/**
+	 * Drop the 'burst' object-cache group: the dictionary and lookup memos
+	 * (event names, property values, browser and platform rows, active goals)
+	 * that describe rows a reset has just removed. Flushed as a group where the
+	 * object cache supports it (WP 6.1+ API; the common Redis and Memcached
+	 * drop-ins do), never as a site-wide wp_cache_flush(). Elsewhere the
+	 * entries expire by their own TTL of at most five minutes, and a
+	 * non-persistent cache never outlives the request.
+	 */
+	private function flush_burst_object_cache(): void {
+		if ( function_exists( 'wp_cache_supports' ) && wp_cache_supports( 'flush_group' ) ) {
+			wp_cache_flush_group( 'burst' );
+		}
+	}
+
+	/**
 	 * Empty all Burst tables without dropping them, so concurrent requests
 	 * never hit a missing table. TRUNCATE also resets the auto-increment.
 	 * The uninstall flow keeps using delete_all_burst_data(), which drops the
@@ -1247,6 +1329,8 @@ class Admin {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange -- table name comes from SHOW TABLES on the burst prefix.
 			$wpdb->query( "TRUNCATE TABLE `{$table}`" );
 		}
+		// TRUNCATE resets the burst_uids auto-increment: a cached uid id would be handed out again to another visitor.
+		self::flush_uid_id_cache();
 	}
 
 	/**
@@ -1295,6 +1379,8 @@ class Admin {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange -- table name comes from SHOW TABLES on the burst prefix.
 			$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" );
 		}
+		self::flush_table_exists_cache();
+		self::flush_uid_id_cache();
 	}
 
 	/**

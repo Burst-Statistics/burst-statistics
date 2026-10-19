@@ -81,7 +81,7 @@ const SECTION_DEFINITIONS: SectionDefinition[] = [
 		title: __( 'Conversion goals setup', 'burst-statistics' ),
 		description: __( 'Create and customize conversion goals with visual selector and block tracking.', 'burst-statistics' ),
 		icon: '🎯',
-		route: '/settings/goals'
+		route: '/goals'
 	},
 	{
 		id: 'settings',

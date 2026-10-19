@@ -6,7 +6,7 @@ import debounce from 'lodash/debounce';
 import usePostsStore from '../../store/usePostsStore';
 import AsyncSelectInput from '@/components/Inputs/AsyncSelectInput';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 
 /**
  * SelectField component
@@ -42,7 +42,10 @@ const SelectPageField =
 			callback( data );
 		}, 500 );
 
-		const selectValue = field?.value || '';
+		// Where an element is picked, no page means the home page, so show and
+		// reset to '/' rather than an empty field that silently means home.
+		const emptyValue = [ 'clicks', 'views' ].includes( props.goal?.type ) ? '/' : '';
+		const selectValue = field?.value || emptyValue;
 
 		return (
 			<FieldWrapper
@@ -58,6 +61,7 @@ const SelectPageField =
 				{...props}
 			>
 				<AsyncSelectInput
+					inputId={inputId}
 					onChange={( e ) => {
 						if ( 1 === maxSelections ) {
 							if ( ! e?.value ) {
@@ -77,6 +81,14 @@ const SelectPageField =
 					defaultInputValue={selectValue}
 					defaultOptions={posts.data || []}
 					loadOptions={loadOptions}
+					isValidCustomValue={( value ) => value.startsWith( '/' )}
+					customValueLabel={( value ) => sprintf(
+
+						/* translators: %s: a page path typed by the user, e.g. /shop/. */
+						__( 'Use "%s"', 'burst-statistics' ),
+						value
+					)}
+					onClear={() => props.onChange( emptyValue )}
 					components={{ Option: OptionLayout }}
 				/>
 				{props.goal && props.goal.is_draft && (

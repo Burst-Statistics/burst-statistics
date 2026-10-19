@@ -339,7 +339,7 @@ const RestoreArchivesField = forwardRef( ( _props, ref ) => {
 		},
 		{
 			name: __( 'Archive', 'burst-statistics' ),
-			selector: ( row ) => row.title,
+			selector: ( row ) => row.titleCell,
 			sortable: true
 		},
 		{
@@ -357,6 +357,25 @@ const RestoreArchivesField = forwardRef( ( _props, ref ) => {
 	const data = [];
 	filteredArchives.forEach( ( archive ) => {
 		const archiveCopy = { ...archive };
+
+		// Only a failed month says anything the user has to act on, so the
+		// status is shown on that row alone instead of as a column of
+		// 'archived' repeated for every other one.
+		archiveCopy.titleCell = 'failed' === archiveCopy.status ? (
+			<span className="flex items-center gap-1.5">
+				{archiveCopy.title}
+				<span
+					className="text-xs text-red-600"
+					title={__(
+						'The last restore of this archive failed. Part of the month may still be in its archive files, so it cannot be deleted until a restore succeeds.',
+						'burst-statistics'
+					)}
+				>
+					{__( 'Restore failed', 'burst-statistics' )}
+				</span>
+			</span>
+		) : archiveCopy.title;
+
 		archiveCopy.selectControl = (
 			<input
 				type="checkbox"
@@ -381,6 +400,14 @@ const RestoreArchivesField = forwardRef( ( _props, ref ) => {
 			'' !== currentSelected[0].download_url;
 	}
 	const displayProgress = restoring ? localProgress : 0;
+
+	// The server refuses to delete a month whose restore failed, because its
+	// un-restored rows still live in the archive files. Reflect that here
+	// rather than letting the request succeed silently without deleting.
+	const hasFailedSelected = archives.some(
+		( archive ) =>
+			selectedArchives.includes( archive.id ) && 'failed' === archive.status
+	);
 
 	return (
 		<div className="w-full" ref={ref}>
@@ -447,7 +474,18 @@ const RestoreArchivesField = forwardRef( ( _props, ref ) => {
 							</button>
 
 							<button
-								disabled={progress && 100 > progress}
+								disabled={
+									hasFailedSelected ||
+									( progress && 100 > progress )
+								}
+								title={
+									hasFailedSelected ?
+										__(
+											'A failed restore has to succeed before its archive can be deleted, otherwise the rows it still holds are lost.',
+											'burst-statistics'
+										) :
+										undefined
+								}
 								className="burst-button burst-button--tertiary"
 								onClick={( e ) =>
 									onDeleteArchives( e, selectedArchives )

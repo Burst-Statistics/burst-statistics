@@ -1,4 +1,4 @@
-import { useEffect, memo, useMemo, useState } from '@wordpress/element';
+import { useEffect, memo, useMemo, useRef, useState } from '@wordpress/element';
 import type { FC } from '@wordpress/element';
 import Modal from './Modal/Modal';
 import ProgressBar from './ProgressBar';
@@ -19,6 +19,9 @@ import { updateAction } from '../utils/api';
 const Onboarding: FC = () => {
 	const [ ConfettiExplosion, setConfettiExplosion ] = useState( null );
 	const [ isExploding, setIsExploding ] = useState( false );
+	// The ref blocks a second click synchronously, before React re-renders the disabled button.
+	const isSubmittingRef = useRef( false );
+	const [ isSubmitting, setIsSubmitting ] = useState( false );
 
 	const {
 		isOpen,
@@ -90,7 +93,36 @@ const Onboarding: FC = () => {
 		setCurrentStepIndex( currentStepIndex - 1 );
 	};
 
+	/**
+	 * Submits the current step once, ignoring clicks while a submission is in flight.
+	 *
+	 * Without this guard a double click on Continue sends the step's request twice,
+	 * for example two mailing list signups for the same email address.
+	 *
+	 * @param {Object} e The click event.
+	 * @return {Promise<void>} Resolves when the submission has finished.
+	 */
 	const validateAndContinue = async ( e ) => {
+		if ( isSubmittingRef.current ) {
+			return;
+		}
+		isSubmittingRef.current = true;
+		setIsSubmitting( true );
+		try {
+			await submitStep( e );
+		} finally {
+			isSubmittingRef.current = false;
+			setIsSubmitting( false );
+		}
+	};
+
+	/**
+	 * Saves the current step and moves on to the next one when it is valid.
+	 *
+	 * @param {Object} e The click event.
+	 * @return {Promise<void>} Resolves when the step has been saved.
+	 */
+	const submitStep = async ( e ) => {
 		let success = true;
 		if ( currentStep.type === 'license' ) {
 			success = await validateLicense();
@@ -133,6 +165,11 @@ const Onboarding: FC = () => {
 
 	// Function to determine if the continue button should be disabled.
 	const isContinueDisabled = () => {
+		// Block a second submission while the current step is still being saved.
+		if ( isSubmitting ) {
+			return true;
+		}
+
 		// For tracking test step, only disable continue button while test is running.
 		if ( currentStep?.id === 'tracking' ) {
 			return trackingTestRunning;
@@ -184,6 +221,8 @@ const Onboarding: FC = () => {
 	if ( ! currentStep ) {
 		return null;
 	}
+	// Keep the spinner visible for the whole submission, not only during the store's own requests.
+	const isBusy = isUpdating || isInstalling || isSubmitting;
 	const upgradeUrl = get_website_url( onboardingData.upgrade, {
 		utm_source: onboardingData.prefix + '_onboarding',
 		utm_content: 'upgrade',
@@ -273,9 +312,7 @@ const Onboarding: FC = () => {
 									<ButtonInput
 										className={
 											'flex-1 burst-continue flex justify-center items-center whitespace-nowrap text-center ' +
-											( isUpdating || isInstalling
-												? 'burst-updating'
-												: '' )
+											( isBusy ? 'burst-updating' : '' )
 										}
 										btnVariant="tertiary"
 										size="md"
@@ -283,7 +320,7 @@ const Onboarding: FC = () => {
 										onClick={ ( e ) => validateAndContinue( e ) }
 										key={ currentStep.id + 'continue' }
 									>
-										{ ( isUpdating || isInstalling ) && (
+										{ isBusy && (
 											<Icon
 												name="loading-circle"
 												size={ 18 }
@@ -298,9 +335,7 @@ const Onboarding: FC = () => {
 								<ButtonInput
 									className={
 										'w-full burst-continue flex justify-center items-center ' +
-										( isUpdating || isInstalling
-											? 'burst-updating'
-											: '' )
+										( isBusy ? 'burst-updating' : '' )
 									}
 									btnVariant={
 										isLastStep() ? 'tertiary' : 'secondary'
@@ -310,7 +345,7 @@ const Onboarding: FC = () => {
 									onClick={ ( e ) => validateAndContinue( e ) }
 									key={ currentStep.id + 'continue' }
 								>
-									{ ( isUpdating || isInstalling ) && (
+									{ isBusy && (
 										<Icon
 											name="loading-circle"
 											size={ 18 }

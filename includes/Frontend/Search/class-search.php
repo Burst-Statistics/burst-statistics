@@ -11,11 +11,98 @@ class Search {
 	use Helper;
 
 	/**
+	 * ID of the burst_statistics_searches row written for the last logged search
+	 * in this request, so a later SmartMatch ranking can be attached to it.
+	 */
+	private int $last_link_id = 0;
+
+	/**
+	 * Sanitized term of the last logged search in this request.
+	 */
+	private string $last_search_term = '';
+
+	/**
 	 * Initialize the Search class.
 	 */
 	public function init(): void {
 		add_filter( 'the_posts', [ $this, 'capture_search_and_posts' ], 10, 2 );
 		add_action( 'burst_after_create_statistic', [ $this, 'link_pending_search' ], 10, 2 );
+		// SmartMatch ranks at the_posts PHP_INT_MAX, after Burst logged the search at
+		// priority 10, so the row for this request already exists when this fires.
+		add_action( 'smartmatch_search_ranked', [ $this, 'record_smartmatch_suggestion' ], 10, 2 );
+	}
+
+	/**
+	 * Store the post SmartMatch showed for the search logged in this request.
+	 *
+	 * NULL (untouched) means no suggestion was computed, 0 means the AI found
+	 * nothing relevant, and a positive value is the post ID that was shown.
+	 * Cached rankings fire the action as well, so they count as shown.
+	 *
+	 * @param mixed $ids         int[] ranked post IDs, [] for "nothing relevant",
+	 *                           or false when the ranking failed.
+	 * @param mixed $search_term The term SmartMatch ranked.
+	 *
+	 * mixed: action callback for a third-party hook; the arguments are validated here.
+	 */
+	public function record_smartmatch_suggestion( mixed $ids, mixed $search_term ): void {
+		if ( $this->last_link_id <= 0 || ! is_string( $search_term ) ) {
+			return;
+		}
+
+		if ( $this->sanitize_search_term( $search_term ) !== $this->last_search_term ) {
+			return;
+		}
+
+		$suggested_post_id = $this->get_shown_suggestion_id( $ids );
+		if ( null === $suggested_post_id ) {
+			return;
+		}
+
+		global $wpdb;
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->update(
+			$wpdb->prefix . 'burst_statistics_searches',
+			[ 'suggested_post_id' => $suggested_post_id ],
+			[ 'ID' => $this->last_link_id ],
+			[ '%d' ],
+			[ '%d' ]
+		);
+		// phpcs:enable
+	}
+
+	/**
+	 * Resolve the post a visitor actually saw from a SmartMatch ranking.
+	 *
+	 * Applies the same cap SmartMatch uses and returns the first published post
+	 * within it.
+	 *
+	 * @param mixed $ids Ranked post IDs, [] or false.
+	 * @return int|null Post ID, 0 when nothing was relevant, or null when no
+	 *                  suggestion should be recorded.
+	 *
+	 * mixed: the value comes straight from the smartmatch_search_ranked action.
+	 */
+	private function get_shown_suggestion_id( mixed $ids ): ?int {
+		if ( ! is_array( $ids ) ) {
+			return null;
+		}
+
+		if ( empty( $ids ) ) {
+			return 0;
+		}
+
+		// Filter owned by SmartMatch: keep the cap in sync with what it renders.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$count = max( 1, (int) apply_filters( 'smartmatch_search_suggestion_count', 1 ) );
+		foreach ( array_slice( $ids, 0, $count ) as $post_id ) {
+			$post_id = (int) $post_id;
+			if ( $post_id > 0 && get_post_status( $post_id ) === 'publish' ) {
+				return $post_id;
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -72,9 +159,22 @@ class Search {
 		$statistic    = $burst_uid !== '' ? burst_loader()->frontend->tracking->get_last_user_statistic( $burst_uid ) : [];
 		$statistic_id = isset( $statistic['ID'] ) ? (int) $statistic['ID'] : 0;
 
-		$this->log_search( $statistic_id, $search_term, $result_count );
+		$this->record_search( $statistic_id, $search_term, $result_count );
 
 		return $posts;
+	}
+
+	/**
+	 * Log a search and remember its row, so a SmartMatch ranking that fires later
+	 * in the same request can be attached to it.
+	 *
+	 * @param int    $statistic_id The statistic ID the search belongs to, 0 when pending.
+	 * @param string $search_term  Sanitized search term.
+	 * @param int    $result_count Number of posts returned for this search.
+	 */
+	private function record_search( int $statistic_id, string $search_term, int $result_count ): void {
+		$this->last_link_id     = $this->log_search( $statistic_id, $search_term, $result_count );
+		$this->last_search_term = $search_term;
 	}
 
 	/**
@@ -121,14 +221,15 @@ class Search {
 	 * @param int    $statistic_id The statistic ID the search belongs to.
 	 * @param string $search_term  Sanitized search term.
 	 * @param int    $result_count Number of posts returned for this search.
+	 * @return int ID of the burst_statistics_searches row that was written, 0 on failure.
 	 */
-	private function log_search( int $statistic_id, string $search_term, int $result_count ): void {
+	private function log_search( int $statistic_id, string $search_term, int $result_count ): int {
 		global $wpdb;
 
 		$now = time();
 
 		$merge_window = (int) apply_filters( 'burst_search_merge_window', 2 * MINUTE_IN_SECONDS );
-		$merged       = false;
+		$merged_id    = 0;
 
 		// Only attempt merge for linked (non-pending) rows; pending rows (statistic_id = 0)
 		// have no reliable identity to merge against.
@@ -153,7 +254,7 @@ class Search {
 			if ( $candidate ) {
 				$old_search = (string) $candidate->old_search;
 				if ( $old_search !== '' && str_starts_with( $search_term, $old_search ) ) {
-					$merged = $this->merge_search(
+					$merged_id = $this->merge_search(
 						$statistic_id,
 						(int) $candidate->link_id,
 						(int) $candidate->old_search_id,
@@ -165,30 +266,42 @@ class Search {
 			}
 		}
 
-		if ( $merged ) {
-			return;
+		if ( $merged_id > 0 ) {
+			return $merged_id;
 		}
 
 		$search_id = $this->get_or_insert_search_id( $search_term );
 		if ( $search_id === 0 ) {
-			return;
+			return 0;
 		}
 
 		// Use NULL for pending rows (no statistic_id yet) so that UNIQUE(statistic_id, search_id)
 		// treats each pending row as distinct — MySQL considers NULL != NULL in unique indexes.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		if ( $statistic_id > 0 ) {
+			// ID = LAST_INSERT_ID(ID) makes insert_id report the existing row on the update path.
 			$wpdb->query(
 				$wpdb->prepare(
 					"INSERT INTO {$wpdb->prefix}burst_statistics_searches (statistic_id, search_id, result_count, created)
 					VALUES (%d, %d, %d, %d)
-					ON DUPLICATE KEY UPDATE result_count = VALUES(result_count), created = VALUES(created)",
+					ON DUPLICATE KEY UPDATE ID = LAST_INSERT_ID(ID), result_count = VALUES(result_count), created = VALUES(created)",
 					$statistic_id,
 					$search_id,
 					$result_count,
 					$now
 				)
 			);
+
+			$link_id = (int) $wpdb->insert_id;
+			if ( $link_id === 0 ) {
+				$link_id = (int) $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT ID FROM {$wpdb->prefix}burst_statistics_searches WHERE statistic_id = %d AND search_id = %d LIMIT 1",
+						$statistic_id,
+						$search_id
+					)
+				);
+			}
 		} else {
 			$wpdb->insert(
 				$wpdb->prefix . 'burst_statistics_searches',
@@ -200,8 +313,11 @@ class Search {
 				],
 				[ '%s', '%d', '%d', '%d' ]
 			);
+			$link_id = (int) $wpdb->insert_id;
 		}
 		// phpcs:enable
+
+		return $link_id;
 	}
 
 	/**
@@ -214,14 +330,14 @@ class Search {
 	 * @param string $new_search    The longer search term.
 	 * @param int    $result_count  The latest result count.
 	 * @param int    $now           Current timestamp.
-	 * @return bool true on successful merge.
+	 * @return int ID of the link row that now holds the search, 0 when the merge failed.
 	 */
-	private function merge_search( int $statistic_id, int $link_id, int $old_search_id, string $new_search, int $result_count, int $now ): bool {
+	private function merge_search( int $statistic_id, int $link_id, int $old_search_id, string $new_search, int $result_count, int $now ): int {
 		global $wpdb;
 
 		$new_search_id = $this->get_or_insert_search_id( $new_search );
 		if ( $new_search_id === 0 ) {
-			return false;
+			return 0;
 		}
 
 		if ( $new_search_id === $old_search_id ) {
@@ -237,7 +353,7 @@ class Search {
 				[ '%d' ]
 			);
 			// phpcs:enable
-			return true;
+			return $link_id;
 		}
 
 		// The longer term may already have its own link row for this statistic,
@@ -253,37 +369,42 @@ class Search {
 		);
 		// phpcs:enable
 
+		// A suggestion stored for the shorter term does not apply to the longer one;
+		// clear it so the SmartMatch ranking for the final term (if any) takes its place.
 		if ( $existing_link_id > 0 && $existing_link_id !== $link_id ) {
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$wpdb->prefix . 'burst_statistics_searches',
 				[
-					'result_count' => $result_count,
-					'created'      => $now,
+					'result_count'      => $result_count,
+					'created'           => $now,
+					'suggested_post_id' => null,
 				],
 				[ 'ID' => $existing_link_id ],
-				[ '%d', '%d' ],
+				[ '%d', '%d', '%d' ],
 				[ '%d' ]
 			);
 			$wpdb->delete( $wpdb->prefix . 'burst_statistics_searches', [ 'ID' => $link_id ], [ '%d' ] );
 			// phpcs:enable
+			$link_id = $existing_link_id;
 		} else {
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$updated = $wpdb->update(
 				$wpdb->prefix . 'burst_statistics_searches',
 				[
-					'search_id'    => $new_search_id,
-					'result_count' => $result_count,
-					'created'      => $now,
+					'search_id'         => $new_search_id,
+					'result_count'      => $result_count,
+					'created'           => $now,
+					'suggested_post_id' => null,
 				],
 				[ 'ID' => $link_id ],
-				[ '%d', '%d', '%d' ],
+				[ '%d', '%d', '%d', '%d' ],
 				[ '%d' ]
 			);
 			// phpcs:enable
 
 			if ( $updated === false ) {
-				return false;
+				return 0;
 			}
 		}
 
@@ -300,7 +421,7 @@ class Search {
 		}
 		// phpcs:enable
 
-		return true;
+		return $link_id;
 	}
 
 	/**
@@ -466,7 +587,7 @@ class Search {
 	}
 
 	/**
-	 * Detect HTML/JS/CSS injection probes fired at the search box (XSS payloads)
+	 * Detect HTML/JS/CSS and template injection probes fired at the search box
 	 * rather than genuine searches. The pattern list is filterable via
 	 * `burst_search_injection_patterns`.
 	 *
@@ -491,6 +612,10 @@ class Search {
 			'#\b(?:alert|prompt|confirm|eval|atob|String\.fromCharCode)\s*\(#i',
 			// an HTML tag that carries an attribute, e.g. "<div style=", "<img src=".
 			'#<[a-z][a-z0-9]*\s[^>]*=#i',
+			// server-side template injection probes: a multiplication inside
+			// template delimiters, e.g. {{7*7}}, ${7*7}, #{7*7}, *{7*7}, @(7*7).
+			// A plain "(2*4)" is left alone, as it can be a real size search.
+			'#(?:[$\#*@]?\{|@\()[^{}()]*\d\s*\*\s*\d[^{}()]*[})]#',
 		];
 
 		/**

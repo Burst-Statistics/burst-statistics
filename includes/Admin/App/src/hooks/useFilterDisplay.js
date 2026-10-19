@@ -143,6 +143,11 @@ export const useFilterDisplay = ( reportBlockIndex ) => {
 				__( 'New', 'burst-statistics' ) :
 				__( 'Returning', 'burst-statistics' );
 
+		case 'sales':
+			return 'include' === value ?
+				__( 'With an order', 'burst-statistics' ) :
+				__( 'Without an order', 'burst-statistics' );
+
 		case 'entry_exit_pages':
 			if ( 'entry' === value ) {
 				return __( 'Entry', 'burst-statistics' );

@@ -89,17 +89,19 @@ const createDefaultBlocks = ( ids: ContentBlockId[]): ContentBlock[] => {
 const DEFAULT_CLASSIC_BLOCKS = createDefaultBlocks( DEFAULT_CLASSIC_IDS );
 const DEFAULT_STORY_BLOCKS = createDefaultBlocks( DEFAULT_STORY_IDS );
 
-// fallow-ignore-next-line complexity
+/**
+ * The delivery channel a new report starts with. Localized from PHP
+ * (Report::get_default_channels()): the channel chosen in Settings, otherwise
+ * 'both' once Pro has a valid Slack webhook.
+ *
+ * @return {DeliveryChannelType} 'email' or 'both'.
+ */
 const getDefaultReportChannels = (): DeliveryChannelType => {
 	if ( 'undefined' !== typeof window ) {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const burstSettings = ( window as any ).burst_settings;
-		const field = burstSettings?.fields?.find(
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			( f: any ) => 'default_report_channels' === f.id
-		);
-		if ( 'both' === field?.value || 'email' === field?.value ) {
-			return field.value;
+		const channels = ( window as any ).burst_settings?.default_report_channels;
+		if ( 'both' === channels || 'email' === channels ) {
+			return channels;
 		}
 	}
 	return 'email';

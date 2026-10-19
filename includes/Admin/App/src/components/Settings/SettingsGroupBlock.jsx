@@ -35,14 +35,15 @@ const SettingsGroupBlock = memo( ({ group, fields, control, isLastGroup, isShowi
 		}
 
     return (
-      <Block key={group.id} className={className}>
+      <Block key={group.id} className={className} id={`burst-settings-group-${group.id}`}>
         {group.pro && ! isLicenseValid  && (
           <Overlay className='backdrop-blur-sm'>
             <div className='flex flex-col gap-4'>
-              <h4>{__( 'Get advanced features with Burst Pro', 'burst-statistics' )}</h4>
+              {/* A group with its own upgrade title shows only its own text. */}
+              <h4>{group.pro.title || __( 'Get advanced features with Burst Pro', 'burst-statistics' )}</h4>
               <p>
-                {__( 'This setting is exclusive to Pro users.', 'burst-statistics' )}
-              {group.pro && group.pro.text && ( ' ' + group.pro.text )}
+                {! group.pro.title && __( 'This setting is exclusive to Pro users.', 'burst-statistics' )}
+                {group.pro.text && ( ( group.pro.title ? '' : ' ' ) + group.pro.text )}
               </p>
               {group.pro.url && <ButtonInput className="text-center" target="_blank" link={{ to: group.pro.url }} btnVariant='primary' btnSize='small'>
                 {__( 'Upgrade to Pro', 'burst-statistics' )}
@@ -52,7 +53,7 @@ const SettingsGroupBlock = memo( ({ group, fields, control, isLastGroup, isShowi
         )}
         <BlockHeading title={group.title} className="burst-settings-group-block" />
         <BlockContent className={'p-0'}>
-          {group.description && <h3 className="mb-5 text-sm">{group.description}</h3>}
+          {group.description && <p className="px-6 pb-2 text-base text-text-gray">{group.description}</p>}
           <div className="flex flex-wrap">
             {fields.map( ( field ) => (
               <ErrorBoundary key={field.id} fallback={'Could not load field'}>

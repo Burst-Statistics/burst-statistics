@@ -1,22 +1,39 @@
 import { __ } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
 import { formatNumber } from '@/utils/formatting';
+import SearchVolume from './SearchVolume';
 import type { BarColumn } from '@/components/DataTable/BarDataTable';
 import type { SearchTermRow } from './useSearchTermsData';
+import AiMatchCell from './AiMatchCell';
+import AiMatchHeader from './AiMatchHeader';
+import { isSmartMatchActive } from './isSmartMatchActive';
+
+/**
+ * The SmartMatch "AI match" column. The block is narrow, so it only shows the
+ * link icon; the popover carries the page title and the history.
+ */
+const aiMatchColumn: BarColumn<SearchTermRow> = {
+	key: 'ai_match',
+	label: __( 'AI match', 'burst-statistics' ),
+	header: <AiMatchHeader />,
+	align: 'center',
+	minWidth: 104,
+	cell: ( row ) => <AiMatchCell row={ row } compact />
+};
 
 /**
  * Returns the column definitions for the search-terms table.
  *
  * @param {Object} options         - Options object.
  * @param {string} options.siteUrl - The WordPress site URL, used to build the search result links.
- * @return {BarColumn<SearchTermRow>[]} The column definitions.
+ * @return {BarColumn<SearchTermRow>[]} The column definitions, with the AI match column while SmartMatch is active.
  */
 export function getSearchTermsColumns({
 	siteUrl
 }: {
 	siteUrl: string;
 }): BarColumn<SearchTermRow>[] {
-	return [
+	const columns: BarColumn<SearchTermRow>[] = [
 		{
 			key: 'term',
 			label: __( 'Search term', 'burst-statistics' ),
@@ -38,7 +55,7 @@ export function getSearchTermsColumns({
 			minWidth: 80,
 			cell: ( row ) => (
 				<span className="font-medium text-text-black">
-					{ formatNumber( row.volume ) }
+					<SearchVolume volume={ row.volume } aiShown={ row.ai_shown } />
 				</span>
 			)
 		},
@@ -78,4 +95,6 @@ export function getSearchTermsColumns({
 			}
 		}
 	];
+
+	return isSmartMatchActive() ? [ ...columns, aiMatchColumn ] : columns;
 }

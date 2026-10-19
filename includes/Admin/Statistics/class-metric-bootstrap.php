@@ -63,6 +63,10 @@ class Metric_Bootstrap {
 			new Metrics\Session_Id_Metric(),
 			new Metrics\Time_Metric(),
 			new Metrics\Time_On_Page_Metric(),
+			new Metrics\Co2_Metric(),
+			new Metrics\Page_Weight_Metric(),
+			new Metrics\Measured_Pageviews_Metric(),
+			new Metrics\Page_Weight_Samples_Metric(),
 		];
 		foreach ( $handlers as $handler ) {
 			Metric_Registry::register( $handler );
@@ -116,6 +120,30 @@ class Metric_Bootstrap {
 				];
 			}
 		);
+		// Joined on page_id, not page_url: page-grain grouping resolves to
+		// statistics.page_id (see Page_Url_Metric), and one url can carry
+		// several page_ids. Joining on the url would show a page's measured
+		// weight against every other page that happens to share its path.
+		Join_Registry::register(
+			'page_weights',
+			[
+				'table'      => 'burst_page_weights',
+				'on'         => 'statistics.page_id = page_weights.page_id AND page_weights.samples >= ' . Page_Weight_Store::MIN_SAMPLES,
+				'type'       => 'LEFT',
+				'depends_on' => [],
+			]
+		);
+		// Every sampled page, including those still short of MIN_SAMPLES, for
+		// the sampling progress. page_weights above only holds finished pages.
+		Join_Registry::register(
+			'sample_counts',
+			[
+				'table'      => 'burst_page_weights',
+				'on'         => 'statistics.page_id = sample_counts.page_id',
+				'type'       => 'LEFT',
+				'depends_on' => [],
+			]
+		);
 	}
 
 	/**
@@ -136,7 +164,10 @@ class Metric_Bootstrap {
 			'device'           => 'sessions.device_id',
 			'device_id'        => 'sessions.device_id',
 			'entry_exit_pages' => 'entry_exit_pages',
-			'parameter'        => 'params.parameter',
+			// No 'params.' alias: that would join burst_parameters, one row per URL
+			// parameter, so an exclusion keeps the hit through its other parameters and
+			// sums are multiplied. add_filter_condition() applies a (NOT) EXISTS instead.
+			'parameter'        => 'parameter',
 			'parameters'       => 'statistics.parameters',
 			'goal_id'          => 'goals.goal_id',
 			// Virtual filter: resolved against page_type in add_filter_condition(), there is no status column.

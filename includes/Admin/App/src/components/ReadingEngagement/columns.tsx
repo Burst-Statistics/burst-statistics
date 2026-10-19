@@ -1,7 +1,6 @@
 import { __ } from '@wordpress/i18n';
-import Icon from '@/utils/Icon';
-import { formatTime, truncateMiddle } from '@/utils/formatting';
-import { safeDecodeURI } from '@/utils/lib';
+import { formatTime } from '@/utils/formatting';
+import { getPageUrlColumn } from '@/components/DataTable/BarDataTable';
 import type { BarColumn } from '@/components/DataTable/BarDataTable';
 import type { ReadingEngagementRow } from './useReadingEngagementData';
 
@@ -18,28 +17,7 @@ export function getReadingEngagementColumns({
 	siteUrl: string;
 }): BarColumn<ReadingEngagementRow>[] {
 	return [
-		{
-			key: 'page_url',
-			label: __( 'Page', 'burst-statistics' ),
-			align: 'left',
-			minWidth: 160,
-			cell: ( row ) => {
-				const pageUrl = `${siteUrl.replace( /\/$/, '' )}${row.page_url}`;
-				const decoded = safeDecodeURI( row.page_url );
-				return (
-					<a
-						href={ pageUrl }
-						target="_blank"
-						rel="noopener noreferrer"
-						className="inline-flex items-center gap-1 text-text-black hover:text-blue-600 transition-colors font-medium"
-						title={ row.page_url }
-					>
-						<span>{ truncateMiddle( decoded, 30 ) }</span>
-						<Icon name="external-link" size={ 11 } color="gray" className="shrink-0" />
-					</a>
-				);
-			}
-		},
+		getPageUrlColumn<ReadingEngagementRow>({ siteUrl }),
 		{
 			key: 'reading_engagement_score',
 			label: __( 'Score', 'burst-statistics' ),

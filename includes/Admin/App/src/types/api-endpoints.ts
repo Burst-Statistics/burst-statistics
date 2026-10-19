@@ -20,14 +20,19 @@ export type BurstCoreDataType =
 /** Pro / filter handlers (`burst_get_data`). */
 export type BurstProDataType =
 	| 'geo'
+	| 'page_weight'
 	| 'not_found_pages'
 	| 'not_found_page_referrers'
 	| 'page-parameters'
+	| 'page-parameter-keys'
 	| 'page-parameter-counts'
+	| 'source-referrers'
 	| 'sources-over-time'
 	| 'visitor-flow'
 	| 'page-revisions'
-	| 'search-queries';
+	| 'search-queries'
+	| 'search_terms'
+	| 'search_term_suggestions';
 
 /** Ecommerce segment after `ecommerce/` (Pro). */
 export type BurstEcommerceDataType =

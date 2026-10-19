@@ -12,6 +12,10 @@ import { BlockHeading } from '@/components/Blocks/BlockHeading';
 import { BlockContent } from '@/components/Blocks/BlockContent';
 import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import GoalsHeader from './GoalsHeader';
+import GoalsBlockNotice from './GoalsBlockNotice';
+import { useNavigate } from '@tanstack/react-router';
+import { useGoalWizardStore } from '@/store/goals/useGoalWizardStore';
+import { getGoalResumeStep } from '@/components/Goals/goalHelpers';
 import { useQueries } from '@tanstack/react-query';
 import getLiveGoals from '@//api/getLiveGoals';
 import getGoalsData, { goalsPlaceholderData } from '@//api/getGoalsData';
@@ -83,6 +87,7 @@ const GoalsBlock = () => {
 
 	// Replace useGoalsStore with useGoalsData
 	const { goals, isLoading: isGoalsLoading } = useGoalsData();
+	const navigate = useNavigate();
 	const { startDate, endDate, today } = useDashboardDateRange();
 
 	// Derive values using memoization instead of recalculating on every render
@@ -232,6 +237,8 @@ const GoalsBlock = () => {
 					</div>
 				) : (
 					<>
+						{! isGoalsLoading && <GoalsBlockNotice goals={goals} goalId={goalId} />}
+						{0 !== goals.length && <>
 						<div className="px-2.5 py-5 md:px-6 grid w-full grid-cols-2 gap-4 bg-yellow-50">
 							<TodayFilterItem {...todayFilterProps} />
 							<TotalFilterItem {...totalFilterProps} />
@@ -302,13 +309,23 @@ const GoalsBlock = () => {
 								</div>
 							</Tooltip>
 						</div>
+						</>}
 					</>
 				)}
 			</BlockContent>
 
 			{0 !== goals.length && (
 				<BlockFooter>
-					{burst_settings.manage_burst_statistics && <ButtonInput btnVariant={'tertiary'} link={{ to: '/settings/goals' }}>
+					{burst_settings.manage_burst_statistics && <ButtonInput
+						btnVariant={'tertiary'}
+						onClick={() => {
+							const selectedGoal = goals.find( ( g ) => String( g.id ) === String( goalId ) );
+							if ( selectedGoal ) {
+								useGoalWizardStore.getState().openWizard( selectedGoal.id, getGoalResumeStep( selectedGoal ) );
+							}
+							navigate({ to: '/goals' });
+						}}
+					>
 						{__( 'View setup', 'burst-statistics' )}
 					</ButtonInput>
 					}

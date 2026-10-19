@@ -23,7 +23,9 @@ const VARIANT_META: Record<string, { label: string; icon: string }> = {
 	not_found_pages: { label: __( '404 Pages', 'burst-statistics' ), icon: 'page' },
 	outgoing_links: { label: __( 'Outgoing links', 'burst-statistics' ), icon: 'external-link' },
 	forms: { label: __( 'Forms', 'burst-statistics' ), icon: 'chat' },
-	reading_engagement: { label: __( 'Reading engagement', 'burst-statistics' ), icon: 'page' }
+	reading_engagement: { label: __( 'Reading engagement', 'burst-statistics' ), icon: 'page' },
+	events: { label: __( 'Events', 'burst-statistics' ), icon: 'zap' },
+	page_weight: { label: __( 'Page weight', 'burst-statistics' ), icon: 'page' }
 };
 
 /**

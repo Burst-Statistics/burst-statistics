@@ -57,6 +57,8 @@ class Debug {
 		$settings = $this->format_array_as_string( $settings );
 		unset( $settings['license'] );
 		unset( $settings['slack_webhook_url'] );
+		// Email addresses are personal data and stay out of a pasted Site Health export.
+		unset( $settings['alert_email_recipients'] );
 
 		// WordPress burst options. Get all options that start with 'burst_'.
 		$wp_options = $wpdb->get_results( $wpdb->prepare( "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'burst_' ) . '%' ), ARRAY_A );
@@ -165,13 +167,14 @@ class Debug {
 	 *
 	 * @return array<string, array{label: string, value: array<string, string>}>
 	 */
-	private function get_uid_pipeline_fields(): array {
+	public function get_uid_pipeline_fields(): array {
 		$tasks = [ 'seed_uid_dictionary', 'statistics_uid_id', 'sessions_first_time', 'finalize_uid_id', 'seed_page_urls', 'statistics_page_id', 'sessions_has_pageview', 'pro_sessions_source_category' ];
 
 		// Any other registered task that is still pending (e.g. a stuck
-		// drop_session_visited_urls) disables db_upgrades_complete() just the
-		// same — list it, or this field shows every task 'done' while the
-		// fast paths stay off, exactly the diagnosis gap it exists to close.
+		// backfill_page_urls) disables db_upgrades_complete() just the same —
+		// list it, or this field shows every task 'done' while the fast paths
+		// stay off, exactly the diagnosis gap it exists to close. Non-blocking
+		// cleanups (drop_legacy_columns) are listed too, for support.
 		foreach ( ( new DB_Upgrade() )->get_all_upgrade_slugs() as $slug ) {
 			if ( ! in_array( $slug, $tasks, true ) && get_option( "burst_db_upgrade_{$slug}" ) ) {
 				$tasks[] = $slug;
@@ -189,6 +192,17 @@ class Debug {
 			'page grain index' => $this->page_grain_index_exists() ? 'present' : 'MISSING (time, page_id, uid_id) — run the table init',
 		];
 
+		$db_upgrade = new DB_Upgrade();
+		$stalled    = $db_upgrade->stalled_task();
+		if ( ! empty( $stalled['slug'] ) ) {
+			$state['stalled task'] = sprintf(
+				'%s: %s (%d attempts)',
+				(string) $stalled['slug'],
+				(string) ( $stalled['error'] ?? 'unknown error' ),
+				(int) ( $stalled['attempts'] ?? 0 )
+			);
+		}
+
 		foreach ( $tasks as $task ) {
 			$status = 'done';
 			if ( get_option( "burst_db_upgrade_{$task}" ) ) {
@@ -200,6 +214,14 @@ class Debug {
 				$progress = get_transient( "burst_progress_{$task}" );
 				if ( false !== $progress ) {
 					$status .= ', ' . round( (float) $progress * 100 ) . '%';
+				}
+				if ( ( $stalled['slug'] ?? '' ) === $task ) {
+					$status .= ' [STALLED]';
+				} else {
+					$attempts = (int) get_option( "burst_db_upgrade_{$task}_attempts", 0 );
+					if ( $attempts > 0 ) {
+						$status .= " (attempt {$attempts})";
+					}
 				}
 			}
 			$state[ "task {$task}" ] = $status;
@@ -222,7 +244,7 @@ class Debug {
 	 *
 	 * @return array<string, array{label: string, value: array<string, string>}>
 	 */
-	private function get_visitor_bitmaps_fields(): array {
+	public function get_visitor_bitmaps_fields(): array {
 		global $wpdb;
 
 		if ( ! $this->table_exists( 'burst_visitor_bitmaps' ) ) {
@@ -248,7 +270,21 @@ class Debug {
 
 		$last_error = get_option( 'burst_visitor_bitmaps_last_error' );
 		if ( is_array( $last_error ) && ! empty( $last_error['day'] ) ) {
-			$state['last builder error'] = $last_error['day'] . ' at ' . gmdate( 'Y-m-d H:i:s', (int) ( $last_error['time'] ?? 0 ) ) . ' UTC';
+			$error_text = $last_error['day'] . ' at ' . gmdate( 'Y-m-d H:i:s', (int) ( $last_error['time'] ?? 0 ) ) . ' UTC';
+			if ( ! empty( $last_error['message'] ) ) {
+				$error_text .= ' (' . $last_error['message'] . ')';
+			}
+			$state['last builder error'] = $error_text;
+		}
+
+		$day_progress = get_option( 'burst_visitor_bitmaps_day_progress' );
+		if ( is_array( $day_progress ) && ! empty( $day_progress['day'] ) ) {
+			$state['day progress'] = sprintf(
+				'%s (%s, cursor %d)',
+				$day_progress['day'],
+				$day_progress['phase'] ?? 'unknown',
+				(int) ( $day_progress['cursor'] ?? 0 )
+			);
 		}
 
 		$last_serve = get_option( 'burst_visitor_bitmaps_last_serve' );

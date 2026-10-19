@@ -153,7 +153,8 @@ const AVAILABLE_CONTENT = once( (): ContentItems => [
 		icon: 'shopping-cart',
 		pro: true,
 		component: Sales,
-		ecommerce: true
+		ecommerce: true,
+		formats: [ 'classic', 'story' ]
 	},
 	{
 		id: 'growth',
@@ -177,7 +178,8 @@ const AVAILABLE_CONTENT = once( (): ContentItems => [
 		icon: 'filter',
 		pro: true,
 		component: FunnelChartSection,
-		ecommerce: true
+		ecommerce: true,
+		formats: [ 'classic', 'story' ]
 	},
 	{
 		id: 'most_visited_pages',

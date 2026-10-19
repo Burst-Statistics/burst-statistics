@@ -1,15 +1,14 @@
 import { memo, useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
-import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
-import { ExpandTableButton } from '@/components/Blocks/ExpandTableButton';
 import { BlockContent } from '@/components/Blocks/BlockContent';
+import ExpandableBlockTitle from '@/components/Blocks/ExpandableBlockTitle';
 import Icon from '@/utils/Icon';
 import { BarDataTable } from '@/components/DataTable/BarDataTable';
+import { useExpandableTopBlock } from '@/hooks/useExpandableTopBlock';
 import { useNotFoundPagesData } from './useNotFoundPagesData';
 import NotFoundHitsCell from './NotFoundHitsCell';
-import MetricInfo from '@/components/Common/MetricInfo';
 import type { BarColumn } from '@/components/DataTable/BarDataTable';
 import type { NotFoundPageRow } from './useNotFoundPagesData';
 
@@ -19,17 +18,11 @@ type NotFoundPagesBlockProps = {
 	className?: string;
 };
 
-/** Maximum rows shown in the compact block view. */
-const TOP_N = 5;
-
 /**
 	* Compact dashboard block showing the top 404 pages.
 	*/
 const NotFoundPagesBlock = memo( ({ className = '' }: NotFoundPagesBlockProps ) => {
 	const { data, isLoading } = useNotFoundPagesData();
-
-	const navigate = useNavigate();
-	const location = useRouterState({ select: ( s ) => s.location });
 
 	const siteUrl =
 		( window as unknown as { burst_settings?: { site_url?: string } })
@@ -74,38 +67,30 @@ const NotFoundPagesBlock = memo( ({ className = '' }: NotFoundPagesBlockProps ) 
 		[ siteUrl ]
 	);
 
-	const filteredData = useMemo( () => {
-		return ( Array.isArray( data ) ? data : []).slice( 0, TOP_N );
-	}, [ data ]);
-
-	const handleExpand = () => {
-		navigate({
-			to: '/table/$variant',
-			params: { variant: 'not_found_pages' },
-			search: {
-				from: location.pathname,
-				allowed: 'not_found_pages',
-				dataTableId: 'not-found-pages',
-				...location.search
-			}
-		});
-	};
+	const { topData, hasData, handleExpand } = useExpandableTopBlock({
+		data,
+		variant: 'not_found_pages',
+		dataTableId: 'not-found-pages'
+	});
 
 	return (
 		<Block className={className}>
 			<BlockHeading
 				className="border-b border-gray-200"
 				isLoading={isLoading}
-				title={<>
-					<MetricInfo metricKey="not_found_pages" side="bottom">
-						{__( '404 Pages', 'burst-statistics' )}
-					</MetricInfo>
-					<ExpandTableButton onClick={ handleExpand } /></>}
+				title={
+					<ExpandableBlockTitle
+						metricKey="not_found_pages"
+						label={__( '404 Pages', 'burst-statistics' )}
+						hasData={hasData}
+						onExpand={handleExpand}
+					/>
+				}
 			/>
 			<BlockContent className="px-0 py-0 overflow-y-auto">
 				<BarDataTable
 					columns={columns}
-					data={filteredData}
+					data={topData}
 					rowKey={( row ) => row.page_url}
 					barColumnKey="hits"
 					isLoading={isLoading}

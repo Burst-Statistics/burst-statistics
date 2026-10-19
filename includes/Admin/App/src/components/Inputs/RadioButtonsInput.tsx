@@ -146,7 +146,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 
 								{/* Content area */}
 								<div className="flex items-center flex-row min-w-0 gap-2 flex-1">
-									<div className="flex items-center gap-2">
+									<div className="flex shrink-0 items-center gap-2">
 										{
 											option.icon && (
 												<Icon
@@ -161,7 +161,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 										}
 										<h5
 											className={clsx(
-												'text-base font-medium transition-colors text-text-black',
+												'text-base font-medium transition-colors text-text-black whitespace-nowrap',
 												isSelected && 'font-semibold'
 											)}
 										>
@@ -182,6 +182,7 @@ const RadioButtonsInput = forwardRef<HTMLDivElement, RadioButtonsInputProps>(
 											<>
 												<div className="w-px bg-gray-300 mx-2 h-4 shrink-0" />
 												<p
+													title={option.description}
 													className="text-sm transition-colors truncate text-text-gray"
 												>
 													{option.description}

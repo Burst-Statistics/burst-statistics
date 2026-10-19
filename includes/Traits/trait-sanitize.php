@@ -1,6 +1,8 @@
 <?php
 namespace Burst\Traits;
 
+use Burst\Admin\Notifications\Alert_Preferences;
+
 /**
  * Trait containing sanitization methods for consistent data cleaning throughout the application.
  */
@@ -113,6 +115,10 @@ trait Sanitize {
 				return $this->sanitize_ip_field( $value );
 			case 'email_reports':
 				return $this->sanitize_email_reports( $value );
+			case 'email_list':
+				return $this->sanitize_email_list( $value );
+			case 'alert_channels':
+				return $this->sanitize_alert_channels( $value );
 			case 'license':
 				return defined( 'BURST_PRO' ) && class_exists( '\\Burst\\Pro\\Admin\\Licensing\\Licensing' ) ? ( new \Burst\Pro\Admin\Licensing\Licensing() )->sanitize_license( $value ) : '';
 			case 'wysiwyg':
@@ -322,6 +328,84 @@ trait Sanitize {
 	}
 
 	/**
+	 * Sanitize a list of email addresses.
+	 *
+	 * Accepts an array, a JSON array or a comma or newline separated string (the
+	 * last two for WP-CLI). Invalid addresses are dropped, duplicates removed
+	 * (case-insensitive) and the list is capped. Used for report recipients and
+	 * alert email recipients; the React side mirrors the cap (MAX_EMAIL_RECIPIENTS).
+	 *
+	 * @param mixed $value Raw value.
+	 * @param int   $max   Maximum number of addresses kept.
+	 * @return string[] Valid, unique email addresses.
+	 */
+	public function sanitize_email_list( mixed $value, int $max = 100 ): array {
+		if ( is_string( $value ) ) {
+			$decoded = json_decode( $value, true );
+			$value   = is_array( $decoded ) ? $decoded : preg_split( '/[\s,]+/', $value );
+		}
+
+		if ( ! is_array( $value ) ) {
+			return [];
+		}
+
+		$emails = [];
+		foreach ( $value as $email ) {
+			if ( ! is_string( $email ) ) {
+				continue;
+			}
+
+			$email = sanitize_email( $email );
+			$key   = strtolower( $email );
+			if ( '' === $email || ! is_email( $email ) || isset( $emails[ $key ] ) ) {
+				continue;
+			}
+
+			$emails[ $key ] = $email;
+			if ( count( $emails ) >= $max ) {
+				break;
+			}
+		}
+
+		return array_values( $emails );
+	}
+
+	/**
+	 * Sanitize the alert grid: known alerts and channels only, booleans only.
+	 *
+	 * Only the rows this install stores are kept: free leaves out the Pro rows
+	 * (Alert_Preferences::get_storable_rows()). Missing channels get their
+	 * default. Accepts a JSON object as well, for WP-CLI.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return array<string, array<string, bool>> Alert switches keyed by alert and channel.
+	 */
+	public function sanitize_alert_channels( mixed $value ): array {
+		if ( is_string( $value ) ) {
+			$value = json_decode( $value, true );
+		}
+
+		$alerts = array_intersect_key( Alert_Preferences::get_defaults(), array_flip( ( new Alert_Preferences() )->get_storable_rows() ) );
+		if ( ! is_array( $value ) ) {
+			return $alerts;
+		}
+
+		foreach ( $alerts as $row => $channels ) {
+			if ( ! isset( $value[ $row ] ) || ! is_array( $value[ $row ] ) ) {
+				continue;
+			}
+
+			foreach ( array_keys( $channels ) as $channel ) {
+				if ( array_key_exists( $channel, $value[ $row ] ) ) {
+					$alerts[ $row ][ $channel ] = (bool) filter_var( $value[ $row ][ $channel ], FILTER_VALIDATE_BOOLEAN );
+				}
+			}
+		}
+
+		return $alerts;
+	}
+
+	/**
 	 * Sanitize and destructure a URL.
 	 *
 	 * Ensures the URL is safe and valid, then extracts its components.
@@ -441,7 +525,70 @@ trait Sanitize {
 	}
 
 	/**
-	 * Sanitize a referrer URL.
+	 * Memoized referrer spam list as a lookup map [ host => true ].
+	 *
+	 * @var array<string, bool>|null
+	 */
+	protected static ?array $referrer_spam_lookup = null;
+
+	/**
+	 * Reset the referrer spam lookup memo (e.g. for unit tests).
+	 */
+	public static function reset_referrer_spam_lookup(): void {
+		self::$referrer_spam_lookup = null;
+	}
+
+	/**
+	 * Get the referrer spam lookup set.
+	 *
+	 * Reads the spam list file once per process, applies the filter, and
+	 * converts to an associative array for O(1) isset() lookups.
+	 *
+	 * @return array<string, bool> Associative array of spam domains as keys.
+	 */
+	protected function get_referrer_spam_lookup(): array {
+		if ( null !== self::$referrer_spam_lookup ) {
+			return self::$referrer_spam_lookup;
+		}
+
+		if ( ! defined( 'BURST_PATH' ) ) {
+			$dir     = plugin_dir_path( __FILE__ );
+			$src_pos = strpos( $dir, '/includes/' );
+			$dir     = $src_pos !== false ? substr( $dir, 0, $src_pos + 1 ) : $dir;
+			define( 'BURST_PATH', $dir );
+		}
+
+		$spam_file = BURST_PATH . 'lib/vendor/matomo/referrer-spam-list/spammers.txt';
+		$raw_list  = file_exists( $spam_file ) ? file( $spam_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES ) : [];
+		if ( ! is_array( $raw_list ) ) {
+			$raw_list = [];
+		}
+
+		/**
+		 * Filters the raw list of referrer spam domains.
+		 *
+		 * @param array<int, string> $raw_list List of domain names considered spam.
+		 */
+		$filtered_list = apply_filters( 'burst_referrer_spam_list', $raw_list );
+
+		// Host names are case-insensitive: keys are lowercased here and the
+		// referrer host is lowercased before the lookup.
+		$lookup = [];
+		if ( is_array( $filtered_list ) ) {
+			foreach ( $filtered_list as $domain ) {
+				$domain = is_string( $domain ) ? strtolower( trim( $domain ) ) : '';
+				if ( '' !== $domain ) {
+					$lookup[ $domain ] = true;
+				}
+			}
+		}
+
+		self::$referrer_spam_lookup = $lookup;
+		return self::$referrer_spam_lookup;
+	}
+
+	/**
+	 * Sanitize referrer.
 	 *
 	 * @param string|null $referrer Referrer URL to sanitize.
 	 * @return string Sanitized referrer URL.
@@ -451,12 +598,6 @@ trait Sanitize {
 			return '';
 		}
 
-		if ( ! defined( 'BURST_PATH' ) ) {
-			$dir     = plugin_dir_path( __FILE__ );
-			$src_pos = strpos( $dir, '/includes/' );
-			$dir     = $src_pos !== false ? substr( $dir, 0, $src_pos + 1 ) : $dir;
-			define( 'BURST_PATH', $dir );
-		}
 		$referrer = filter_var( $referrer, FILTER_SANITIZE_URL );
 		// we use parse_url instead of wp_parse_url so we don't need to load a wp file here.
         //phpcs:ignore
@@ -486,9 +627,8 @@ trait Sanitize {
 			return '';
 		}
 
-		$ref_spam_list = file( BURST_PATH . 'lib/vendor/matomo/referrer-spam-list/spammers.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
-		$ref_spam_list = apply_filters( 'burst_referrer_spam_list', $ref_spam_list );
-		if ( array_search( $referrer_host, $ref_spam_list, true ) ) {
+		$spam_lookup = $this->get_referrer_spam_lookup();
+		if ( isset( $spam_lookup[ strtolower( $referrer_host ) ] ) ) {
 			return 'spammer';
 		}
 
@@ -565,6 +705,8 @@ trait Sanitize {
 				'integration_row',
 				'integrations_intro',
 				'slack_webhook',
+				'email_list',
+				'alert_channels',
 			]
 		);
 	}
@@ -641,6 +783,7 @@ trait Sanitize {
 				'archived',
 				'restored',
 				'archiving',
+				'failed',
 				'deleted',
 			]
 		);
@@ -770,33 +913,6 @@ trait Sanitize {
 			return false;
 		}
 		return false;
-	}
-
-	/**
-	 * Allowed goal types
-	 *
-	 * This function returns an array of allowed goal types
-	 * It uses the goal_fields configuration to extract valid goal types
-	 *
-	 * @return array<int, string> List of valid goal types
-	 */
-	public function allowed_goal_types(): array {
-		// Get the goal types from the goal_fields array, which is dynamically built.
-		// This ensures we always have the most up-to-date list.
-		$fields = require_once __DIR__ . '/goal-fields.php';
-
-		// Find the type field in the goal fields.
-		$type_field = array_filter(
-			$fields,
-			static function ( $goal ) {
-				return isset( $goal['id'] ) && $goal['id'] === 'type';
-			}
-		);
-
-		$type_field = reset( $type_field );
-		$goal_types = isset( $type_field['options'] ) ? array_keys( $type_field['options'] ) : [ 'clicks' ];
-
-		return apply_filters( 'burst_allowed_goal_types', $goal_types );
 	}
 
 	/**

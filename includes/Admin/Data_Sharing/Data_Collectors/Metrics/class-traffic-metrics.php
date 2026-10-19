@@ -113,6 +113,11 @@ class Traffic_Metrics {
 			$traffic_metrics['conversion_rate'] = max( 0.0, (float) ( $goals_data['current']['conversion_rate'] ?? 0 ) );
 		}
 
+		$ai_referrals = ( new Ai_Referral_Metrics( $this->capture_data_from, $this->capture_data_to ) )->collect( $sessions );
+		if ( null !== $ai_referrals ) {
+			$traffic_metrics['ai_referrals'] = $ai_referrals;
+		}
+
 		return $traffic_metrics;
 	}
 }

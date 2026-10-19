@@ -1,85 +1,17 @@
-import { __, sprintf } from '@wordpress/i18n';
-import React from 'react';
-import Icon from '@/utils/Icon';
-import { motion } from 'framer-motion';
-import clsx from 'clsx';
+import WizardStepBar from '@/components/Common/Wizard/WizardStepBar';
 import { useWizardStore } from '@/store/reports/useWizardStore';
 import { useReportConfigStore } from '@/store/reports/useReportConfigStore';
 
-export const Steps = () => {
+/**
+ * Step bar of the report wizard. Steps become clickable once the report exists.
+ *
+ * @return {JSX.Element} The step bar.
+ */
+export const Steps = (): JSX.Element => {
 	const steps = useReportConfigStore( ( state ) => state.steps );
 	const currentStep = useWizardStore( ( state ) => state.wizard.currentStep );
 	const setCurrentStep = useWizardStore( ( state ) => state.setCurrentStep );
-	const { wizard } = useWizardStore();
-	const reportId = wizard.id;
+	const reportId = useWizardStore( ( state ) => state.wizard.id );
 
-	const canNavigateToStep = () =>
-		null !== reportId;
-
-	return (
-		<div className="flex items-center justify-between">
-			{/* fallow-ignore-next-line complexity */}
-			{steps.map( ( step, idx ) => {
-				const isClickable = canNavigateToStep();
-
-				return (
-					<React.Fragment key={'report-step-' + step.number}>
-						<div
-							className={`flex items-center gap-2 rounded-md p-2 transition-all duration-300 ease-in-out group ${
-								isClickable ? 'cursor-pointer hover:bg-gray-200' : 'cursor-not-allowed'
-							}`}
-							onClick={ () => {
-								if ( isClickable ) {
-									setCurrentStep( step.number );
-								}
-							} }
-						>
-							<div
-								className={`flex items-center justify-center w-6 h-6 rounded-full border-2 transition-all duration-300 ease-in-out ${
-									step.number <= currentStep ?
-										'bg-green-50 border-green' :
-										'border-gray-400 bg-gray-200'
-								}`}
-							>
-								{step.number < currentStep && (
-									<motion.div
-										initial={{ scale: 0.8, opacity: 0 }}
-										animate={{ scale: 1, opacity: 1 }}
-										transition={{
-											type: 'spring',
-											stiffness: 120,
-											damping: 14
-										}}
-									>
-										<Icon
-											strokeWidth={2}
-											name="check"
-											size={18}
-											className="w-4 h-4"
-											color="green"
-										/>
-									</motion.div>
-								)}
-							</div>
-
-							<div className="flex flex-col max-sm:hidden">
-								<p className="text-xs text-text-gray-light uppercase tracking-[0.05em] whitespace-nowrap">
-									{sprintf( __( 'Step %d', 'burst-statistics' ), step.number )}
-								</p>
-
-								<p className={clsx( 'text-md font-medium whitespace-nowrap transition-all duration-300 ease-in-out group-hover:text-text-gray', step.number === currentStep ? 'text-text-gray' : 'text-text-gray-light' )}>
-									{step.label}
-								</p>
-							</div>
-						</div>
-
-						{idx < steps.length - 1 && (
-							<div className="h-0.5 w-full mx-1 sm:mx-3 md:mx-5 bg-gray-300 rounded-xs min-w-[8px]" />
-						)}
-					</React.Fragment>
-				);
-			})}
-		</div>
-	);
+	return <WizardStepBar steps={steps} currentStep={currentStep} isClickable={null !== reportId} onSelect={setCurrentStep} />;
 };
-

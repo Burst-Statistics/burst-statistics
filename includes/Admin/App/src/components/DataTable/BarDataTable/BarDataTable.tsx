@@ -26,6 +26,20 @@ function colTrack( col: { align?: string; width?: string; minWidth?: number }): 
 }
 
 /**
+ * Text-alignment class for a column's header and cells.
+ *
+ * @param {string|undefined} align - The column alignment; left when unset.
+ * @return {string} The Tailwind text-alignment class.
+ */
+function alignClass( align?: string ): string {
+	if ( 'right' === align ) {
+		return 'text-right';
+	}
+
+	return 'center' === align ? 'text-center' : 'text-left';
+}
+
+/**
  * Generic, minimalist data table with a full-row proportional background bar.
  *
  * The bar spans the entire row width and is drawn behind all cell content,
@@ -92,13 +106,10 @@ function BarDataTableInner<T extends Record<string, unknown>>({
 							role="columnheader"
 							className={clsx(
 								'px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-text-gray select-none',
-								'left' === col.align && 'text-left',
-								'right' === col.align && 'text-right',
-								'center' === col.align && 'text-center',
-								! col.align && 'text-left'
+								alignClass( col.align )
 							)}
 						>
-							{ col.label }
+							{ col.header ?? col.label }
 						</div>
 					) ) }
 				</div>
@@ -169,10 +180,7 @@ function BarDataTableInner<T extends Record<string, unknown>>({
 											role="cell"
 											className={clsx(
 												'relative z-10 px-3 py-2.5 text-sm text-text-black',
-												'left' === col.align && 'text-left',
-												'right' === col.align && 'text-right',
-												'center' === col.align && 'text-center',
-												! col.align && 'text-left'
+												alignClass( col.align )
 											)}
 										>
 											{ col.cell ? (

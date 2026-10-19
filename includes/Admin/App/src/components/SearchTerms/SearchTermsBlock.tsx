@@ -1,26 +1,24 @@
 import { memo, useMemo, useState } from 'react';
 import { __ } from '@wordpress/i18n';
 import * as Checkbox from '@radix-ui/react-checkbox';
-import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
-import { ExpandTableButton } from '@/components/Blocks/ExpandTableButton';
 import { BlockContent } from '@/components/Blocks/BlockContent';
+import ExpandableBlockTitle from '@/components/Blocks/ExpandableBlockTitle';
 import Icon from '@/utils/Icon';
 import { BarDataTable } from '@/components/DataTable/BarDataTable';
+import { useExpandableTopBlock } from '@/hooks/useExpandableTopBlock';
 import { useSearchTermsData } from './useSearchTermsData';
 import { getSearchTermsColumns } from './columns';
-import MetricInfo from '@/components/Common/MetricInfo';
 import useColumnsBySiteUrl from '@/hooks/useColumnsBySiteUrl';
+import SmartMatchSummary from './SmartMatchSummary';
+import { isSmartMatchActive } from './isSmartMatchActive';
 
 type SearchTermsBlockProps = {
 
 	/** Additional CSS class names passed to the wrapping Block. */
 	className?: string;
 };
-
-/** Maximum rows shown in the compact block view. */
-const TOP_N = 5;
 
 /**
  * Compact dashboard block showing the top site-search terms.
@@ -37,42 +35,31 @@ const SearchTermsBlock = memo( ({ className = '' }: SearchTermsBlockProps ) => {
 	const { data, isLoading } = useSearchTermsData();
 	const [ noResultsOnly, setNoResultsOnly ] = useState( false );
 
-	const navigate = useNavigate();
-	const location = useRouterState({ select: ( s ) => s.location });
 	const columns = useColumnsBySiteUrl( getSearchTermsColumns );
 
 	const filteredData = useMemo( () => {
 		const safeData = Array.isArray( data ) ? data : [];
-		const base = noResultsOnly ? safeData.filter( ( r ) => 0 === r.results ) : safeData;
-		return base.slice( 0, TOP_N );
+		return noResultsOnly ? safeData.filter( ( r ) => 0 === r.results ) : safeData;
 	}, [ data, noResultsOnly ]);
-
-	/**
-	 * Navigate to the fullscreen overlay with the search_terms variant active.
-	 */
-	const handleExpand = () => {
-		navigate({
-			to: '/table/$variant',
-			params: { variant: 'search_terms' },
-			search: {
-				from: location.pathname,
-				allowed: 'search_terms',
-				dataTableId: 'search-terms',
-				...location.search
-			}
-		});
-	};
+	const { topData, hasData, handleExpand } = useExpandableTopBlock({
+		data: filteredData,
+		variant: 'search_terms',
+		dataTableId: 'search-terms'
+	});
 
 	return (
 		<Block className={className}>
 			<BlockHeading
 				className="border-b border-gray-200"
 				isLoading={isLoading}
-				title={<>
-					<MetricInfo metricKey="search_terms" side="bottom">
-						{__( 'Website searches', 'burst-statistics' )}
-					</MetricInfo>
-					<ExpandTableButton onClick={ handleExpand } /></>}
+				title={
+					<ExpandableBlockTitle
+						metricKey="search_terms"
+						label={__( 'Website searches', 'burst-statistics' )}
+						hasData={hasData}
+						onExpand={handleExpand}
+					/>
+				}
 				controls={
 					<div className="flex items-center gap-2">
 						{/* No-results toggle. */}
@@ -96,7 +83,7 @@ const SearchTermsBlock = memo( ({ className = '' }: SearchTermsBlockProps ) => {
 			<BlockContent className="px-0 py-0 overflow-y-auto">
 				<BarDataTable
 					columns={columns}
-					data={filteredData}
+					data={topData}
 					rowKey={( row ) => row.term as string}
 					barColumnKey="volume"
 					isLoading={isLoading}
@@ -107,6 +94,7 @@ const SearchTermsBlock = memo( ({ className = '' }: SearchTermsBlockProps ) => {
 					}
 				/>
 			</BlockContent>
+			{isSmartMatchActive() && <SmartMatchSummary rows={Array.isArray( data ) ? data : []} />}
 		</Block>
 	);
 });

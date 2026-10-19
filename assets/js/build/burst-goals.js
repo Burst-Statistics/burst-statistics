@@ -5,9 +5,27 @@
 let viewportGoals = [];
 const scrollListeners = new Map();
 
+/**
+ * Whether the browser accepts a goal's selector.
+ * An invalid selector throws, which would stop the remaining goals from being set up.
+ * @param selector
+ * @returns {boolean}
+ */
+const burst_is_valid_selector = (selector) => {
+  try {
+    document.createDocumentFragment().querySelector(selector);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
 const burst_goals_setup = () => {
   // Filter out goals that don't match the current path/page
   burst.goals.active = burst.goals.active.filter((goal) => {
+    if (!burst_is_valid_selector(goal.selector)) {
+      return false;
+    }
     // 1. If page_id is set and matches
     if (goal.page_id && burst.options.page_id && parseInt(goal.page_id, 10) === parseInt(burst.options.page_id, 10)) {
       return true;

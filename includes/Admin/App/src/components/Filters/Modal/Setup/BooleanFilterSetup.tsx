@@ -21,6 +21,130 @@ interface RadioOptions {
 	[key: string]: RadioOption;
 }
 
+/**
+ * Radio options per boolean filter key, built on call so translations are loaded.
+ *
+ * @return Options keyed by filter key.
+ */
+const getBooleanFilterOptions = (): Record<string, RadioOptions> => ({
+	bounces: {
+		'': {
+			type: '',
+			icon: 'user',
+			label: __( 'All visitors (default)', 'burst-statistics' )
+		},
+		include: {
+			type: 'include',
+			icon: 'bounce',
+			label: __( 'Bounced', 'burst-statistics' )
+		},
+		exclude: {
+			type: 'exclude',
+			icon: 'user-check',
+			label: __( 'Active', 'burst-statistics' )
+		}
+	},
+	new_visitor: {
+		'': {
+			type: '',
+			icon: 'user',
+			label: __( 'All visitors (default)', 'burst-statistics' )
+		},
+		include: {
+			type: 'include',
+			icon: 'user-plus',
+			label: __( 'New', 'burst-statistics' )
+		},
+		exclude: {
+			type: 'exclude',
+			icon: 'user-check',
+			label: __( 'Returning', 'burst-statistics' )
+		}
+	},
+	sales: {
+		'': {
+			type: '',
+			icon: 'user',
+			label: __( 'All visits (default)', 'burst-statistics' )
+		},
+		include: {
+			type: 'include',
+			icon: 'shopping-cart',
+			label: __( 'Visits with an order', 'burst-statistics' )
+		},
+		exclude: {
+			type: 'exclude',
+			icon: 'user',
+			label: __( 'Visits without an order', 'burst-statistics' )
+		}
+	},
+	entry_exit_pages: {
+		'': {
+			type: '',
+			icon: 'user',
+			label: __( 'All pages', 'burst-statistics' )
+		},
+		entry: {
+			type: 'entry',
+			icon: 'user-plus',
+			label: __( 'Entry', 'burst-statistics' )
+		},
+		exit: {
+			type: 'exit',
+			icon: 'user-check',
+			label: __( 'Exit', 'burst-statistics' )
+		}
+	},
+	status: {
+		all: {
+			type: 'all',
+			icon: 'total',
+			label: __( 'All statuses', 'burst-statistics' )
+		},
+		'200': {
+			type: '200',
+			icon: 'circle-check',
+			label: __( 'OK', 'burst-statistics' )
+		},
+		'404': {
+			type: '404',
+			icon: 'file-disabled',
+			label: __( 'Not Found', 'burst-statistics' )
+		}
+	},
+
+	// Fallback for any other boolean filters.
+	fallback: {
+		'': {
+			type: '',
+			icon: 'user',
+			label: __( 'All visitors (default)', 'burst-statistics' ),
+			description: __(
+				'Show all visitors without filtering',
+				'burst-statistics'
+			)
+		},
+		include: {
+			type: 'include',
+			icon: 'check',
+			label: __( 'Include', 'burst-statistics' ),
+			description: __(
+				'Include visitors matching this criteria',
+				'burst-statistics'
+			)
+		},
+		exclude: {
+			type: 'exclude',
+			icon: 'times',
+			label: __( 'Exclude', 'burst-statistics' ),
+			description: __(
+				'Exclude visitors matching this criteria',
+				'burst-statistics'
+			)
+		}
+	}
+});
+
 const BooleanFilterSetup: React.FC<BooleanFilterSetupProps> = ({
 	filterKey,
 	initialValue = '',
@@ -37,115 +161,8 @@ const BooleanFilterSetup: React.FC<BooleanFilterSetupProps> = ({
 		onChange( newValue );
 	};
 
-	// Get filter-specific options based on the filter key
-	const getFilterOptions = (): RadioOptions => {
-		if ( 'bounces' === filterKey ) {
-			return {
-				'': {
-					type: '',
-					icon: 'user',
-					label: __( 'All visitors (default)', 'burst-statistics' )
-				},
-				include: {
-					type: 'include',
-					icon: 'bounce',
-					label: __( 'Bounced', 'burst-statistics' )
-				},
-				exclude: {
-					type: 'exclude',
-					icon: 'user-check',
-					label: __( 'Active', 'burst-statistics' )
-				}
-			};
-		} else if ( 'new_visitor' === filterKey ) {
-			return {
-				'': {
-					type: '',
-					icon: 'user',
-					label: __( 'All visitors (default)', 'burst-statistics' )
-				},
-				include: {
-					type: 'include',
-					icon: 'user-plus',
-					label: __( 'New', 'burst-statistics' )
-				},
-				exclude: {
-					type: 'exclude',
-					icon: 'user-check',
-					label: __( 'Returning', 'burst-statistics' )
-				}
-			};
-		} else if ( 'entry_exit_pages' === filterKey ) {
-			return {
-				'': {
-					type: '',
-					icon: 'user',
-					label: __( 'All pages', 'burst-statistics' )
-				},
-				entry: {
-					type: 'entry',
-					icon: 'user-plus',
-					label: __( 'Entry', 'burst-statistics' )
-				},
-				exit: {
-					type: 'exit',
-					icon: 'user-check',
-					label: __( 'Exit', 'burst-statistics' )
-				}
-			};
-		} else if ( 'status' === filterKey ) {
-			return {
-				all: {
-					type: 'all',
-					icon: 'total',
-					label: __( 'All statuses', 'burst-statistics' )
-				},
-				'200': {
-					type: '200',
-					icon: 'circle-check',
-					label: __( 'OK', 'burst-statistics' )
-				},
-				'404': {
-					type: '404',
-					icon: 'file-disabled',
-					label: __( 'Not Found', 'burst-statistics' )
-				}
-			};
-		}
-
-		// Fallback for any other boolean filters
-		return {
-			'': {
-				type: '',
-				icon: 'user',
-				label: __( 'All visitors (default)', 'burst-statistics' ),
-				description: __(
-					'Show all visitors without filtering',
-					'burst-statistics'
-				)
-			},
-			include: {
-				type: 'include',
-				icon: 'check',
-				label: __( 'Include', 'burst-statistics' ),
-				description: __(
-					'Include visitors matching this criteria',
-					'burst-statistics'
-				)
-			},
-			exclude: {
-				type: 'exclude',
-				icon: 'times',
-				label: __( 'Exclude', 'burst-statistics' ),
-				description: __(
-					'Exclude visitors matching this criteria',
-					'burst-statistics'
-				)
-			}
-		};
-	};
-
-	const radioOptions = getFilterOptions();
+	const filterOptions = getBooleanFilterOptions();
+	const radioOptions = filterOptions[filterKey] ?? filterOptions.fallback;
 
 	return (
 		<div className="flex flex-col gap-6">

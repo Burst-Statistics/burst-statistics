@@ -72,6 +72,37 @@ class Visitor_Bitmaps {
 	private const DAYS_PER_BATCH = 30;
 
 	/**
+	 * Visitors per dimension-pass chunk and pages per page-pass chunk. Each
+	 * chunk is one resumable unit of work: the time budget is checked between
+	 * chunks, so a single high-traffic day no longer has to finish in one run.
+	 * The SQL of a chunk is split further by chunk_ids_for_in_list(), so the
+	 * chunk size (and its filter) never drives the length of an IN () list.
+	 */
+	private const DIMENSION_CHUNK_SIZE = 10000;
+	private const PAGE_CHUNK_SIZE      = 500;
+
+	/**
+	 * Option (autoload off) holding the checkpoint of a day that is partially
+	 * built: [ 'day' => Y-m-d, 'phase' => one of the PHASE_* values, 'cursor' => int ].
+	 */
+	private const DAY_PROGRESS_OPTION = 'burst_visitor_bitmaps_day_progress';
+
+	/**
+	 * Build phases of one day, in order. The cursor is the last uid_id
+	 * (dimensions) or burst_page_urls.ID (pages) already written.
+	 */
+	private const PHASE_SITE       = 'site';
+	private const PHASE_DIMENSIONS = 'dimensions';
+	private const PHASE_PAGES      = 'pages';
+
+	/**
+	 * Outcomes of build_day().
+	 */
+	private const BUILD_DONE   = 'done';
+	private const BUILD_PAUSED = 'paused';
+	private const BUILD_FAILED = 'failed';
+
+	/**
 	 * Why the last get_visitors() call on this instance returned null (empty
 	 * when it served an answer). Powers the Site Health section and the
 	 * fallback telemetry in Statistics_Data — without it, a bitmap fallback in
@@ -122,8 +153,11 @@ class Visitor_Bitmaps {
 		$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}burst_visitor_bitmaps" );
 		delete_option( 'burst_visitor_bitmaps_built_until' );
 		delete_option( 'burst_visitor_bitmaps_rebuild_from' );
+		delete_option( self::DAY_PROGRESS_OPTION );
 		$this->bump_generation();
-		wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'burst_visitor_bitmaps_iteration' );
+		if ( ! wp_next_scheduled( 'burst_visitor_bitmaps_iteration' ) ) {
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'burst_visitor_bitmaps_iteration' );
+		}
 	}
 
 	/**
@@ -168,6 +202,11 @@ class Visitor_Bitmaps {
 		// URL joined back from here). page_id holds the WP post id the URL
 		// belonged to; is_canonical marks the row that displays for that post
 		// id — maintained on save_post and by the weekly permalink sweep.
+		$stats_page_collate        = $this->get_column_charset_collate( 'burst_statistics', 'page_url' );
+		$page_urls_charset_collate = null !== $stats_page_collate
+			? "DEFAULT CHARACTER SET {$stats_page_collate['charset']} COLLATE {$stats_page_collate['collation']}"
+			: $charset_collate;
+
 		$dictionary = $wpdb->prefix . 'burst_page_urls';
 		dbDelta(
 			"CREATE TABLE $dictionary (
@@ -178,7 +217,7 @@ class Visitor_Bitmaps {
             PRIMARY KEY  (ID),
             UNIQUE KEY page_url (page_url),
             KEY page_id (page_id)
-        ) $charset_collate;"
+        ) $page_urls_charset_collate;"
 		);
 		if ( ! empty( $wpdb->last_error ) ) {
 			self::error_log( 'Error creating page url dictionary: ' . $wpdb->last_error );
@@ -216,6 +255,7 @@ class Visitor_Bitmaps {
 		if ( (int) get_option( 'burst_visitor_bitmaps_scopes_version' ) !== self::SCOPES_VERSION ) {
 			$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}burst_visitor_bitmaps" );
 			delete_option( 'burst_visitor_bitmaps_built_until' );
+			delete_option( self::DAY_PROGRESS_OPTION );
 			update_option( 'burst_visitor_bitmaps_scopes_version', self::SCOPES_VERSION, false );
 			$this->bump_generation();
 		}
@@ -227,6 +267,7 @@ class Visitor_Bitmaps {
 			$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}burst_visitor_bitmaps WHERE day >= %s", $rebuild_from ) );
 			delete_option( 'burst_visitor_bitmaps_rebuild_from' );
 			delete_option( 'burst_visitor_bitmaps_built_until' );
+			delete_option( self::DAY_PROGRESS_OPTION );
 			$this->bump_generation();
 		}
 
@@ -251,32 +292,46 @@ class Visitor_Bitmaps {
 		$failed      = false;
 		$build_start = microtime( true );
 		$budget      = (float) apply_filters( 'burst_bitmaps_build_time_budget', 30.0 );
+		$deadline    = $build_start + $budget;
 		while ( $cursor < $today && $built < self::DAYS_PER_BATCH ) {
 			// Keep the re-entrancy guard ahead of the clock: a slow catch-up
 			// must not overlap the next scheduled builder run.
 			set_transient( 'burst_bitmaps_building', true, 5 * MINUTE_IN_SECONDS );
-			if ( ! $this->build_day( $cursor ) ) {
+			$outcome = $this->build_day( $cursor, $deadline );
+			if ( self::BUILD_FAILED === $outcome ) {
 				// Leave built_until untouched: advancing past a failed day
 				// would leave a permanent coverage hole, because closed days
 				// are never revisited. The day is retried on the next run; the
 				// option surfaces a stuck builder in Site Health.
+				$message = (string) $wpdb->last_error;
+				if ( '' === $message ) {
+					$message = 'Bitmap build failed';
+				}
 				update_option(
 					'burst_visitor_bitmaps_last_error',
 					[
-						'day'  => $cursor->format( 'Y-m-d' ),
-						'time' => time(),
+						'day'     => $cursor->format( 'Y-m-d' ),
+						'time'    => time(),
+						'message' => $message,
 					],
 					false
 				);
 				$failed = true;
 				break;
 			}
+			if ( self::BUILD_PAUSED === $outcome ) {
+				// The budget ran out inside this day: its checkpoint is saved
+				// and the follow-up iteration resumes it. built_until stays on
+				// the previous day, so readers never see a half-built day.
+				break;
+			}
+			delete_option( self::DAY_PROGRESS_OPTION );
 			update_option( 'burst_visitor_bitmaps_built_until', $cursor->format( 'Y-m-d' ), false );
 			$cursor = $cursor->modify( '+1 day' );
 			++$built;
 			// Time budget: catch-up over years of history continues via
 			// self-scheduled iterations instead of one unbounded cron run.
-			if ( microtime( true ) - $build_start > $budget ) {
+			if ( microtime( true ) > $deadline ) {
 				break;
 			}
 		}
@@ -290,31 +345,52 @@ class Visitor_Bitmaps {
 		if ( $cursor < $today ) {
 			// Back off after a failure so a persistent error does not spin the
 			// iteration hook every minute.
-			wp_schedule_single_event( time() + ( $failed ? HOUR_IN_SECONDS : MINUTE_IN_SECONDS ), 'burst_visitor_bitmaps_iteration' );
+			if ( $failed ) {
+				wp_clear_scheduled_hook( 'burst_visitor_bitmaps_iteration' );
+				wp_schedule_single_event( time() + HOUR_IN_SECONDS, 'burst_visitor_bitmaps_iteration' );
+			} elseif ( ! wp_next_scheduled( 'burst_visitor_bitmaps_iteration' ) ) {
+				wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'burst_visitor_bitmaps_iteration' );
+			}
 		}
 	}
 
 	/**
-	 * Build (or replace) the bitmaps for one closed day: the site scope, one
-	 * set per dimension value (device/browser/platform), and one set per page.
+	 * Save progress for an incomplete day build and return the paused status.
 	 *
-	 * 404 hits are excluded throughout: the raw visitors path never counts
-	 * them, and the bitmap answer must match it exactly.
-	 *
-	 * Reads and writes are chunked so both the PHP row buffers and the SQL
-	 * statement count stay bounded on high-traffic days. Returns false on the
-	 * first failed read or write — the caller then keeps built_until on the
-	 * previous day and retries this day on the next run.
-	 *
-	 * @param \DateTimeImmutable $day Site-timezone day (00:00).
+	 * @param \DateTimeImmutable $day    Day being built.
+	 * @param string             $phase  Current build phase (self::PHASE_*).
+	 * @param int                $cursor Last processed id or 0.
+	 * @return string self::BUILD_PAUSED
 	 */
-	private function build_day( \DateTimeImmutable $day ): bool {
+	private function save_day_progress( \DateTimeImmutable $day, string $phase, int $cursor ): string {
+		update_option(
+			self::DAY_PROGRESS_OPTION,
+			[
+				'day'    => $day->format( 'Y-m-d' ),
+				'phase'  => $phase,
+				'cursor' => $cursor,
+			],
+			false
+		);
+		return self::BUILD_PAUSED;
+	}
+
+	/**
+	 * Build the site-level visitor bitmap for a day.
+	 *
+	 * Writes the site row even when empty: its presence is what marks
+	 * the day as built. Returns null on failure, empty array if the day has no
+	 * visitors, or the sorted list of distinct visitor IDs.
+	 *
+	 * @param \DateTimeImmutable $day   Site-timezone day (00:00).
+	 * @param int                $start Day start timestamp.
+	 * @param int                $end   Day end timestamp.
+	 * @return int[]|null Sorted uid list, empty array for no visitors, or null on failure.
+	 */
+	private function build_site_phase( \DateTimeImmutable $day, int $start, int $end ): ?array {
 		global $wpdb;
 
-		$start = $day->getTimestamp();
-		$end   = $day->modify( '+1 day' )->getTimestamp();
-
-        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table names, integer id lists, values prepared.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table name, values prepared.
 		$uids = array_map(
 			'intval',
 			$wpdb->get_col(
@@ -325,44 +401,213 @@ class Visitor_Bitmaps {
 				)
 			)
 		);
+		// phpcs:enable
 		if ( ! empty( $wpdb->last_error ) ) {
-			return false;
+			return null;
 		}
 
 		// The site row is written even when empty: its presence is what marks
 		// the day as built (dimension rows are sparse — absent means zero).
 		if ( ! $this->store_day_sets( self::SCOPE_SITE, [ 0 => $uids ], $day ) ) {
-			return false;
+			return null;
 		}
 
 		if ( empty( $uids ) ) {
-			return true;
+			return [];
 		}
 
-		// Dimension pass: one sweep over the day's distinct (visitor, dimension
-		// ids) combos covers all dimension scopes, chunked by the visitor list.
-		// Each chunk's partial sets are flushed into the day's rows right away
-		// (OR-merged, see merge_dimension_chunk()) instead of accumulating in
-		// PHP: on a million-unique day the full per-scope maps would exceed the
-		// memory limit, and because a failed day is retried rather than skipped,
-		// the OOM would wedge the builder on this day forever. This keeps peak
-		// memory proportional to the chunk size, not to the day's uniques.
-		//
-		// The flush merges into rows earlier chunks wrote, so dimension rows a
-		// previously failed run left for this day must not leak into the merge
-		// as pre-set bits: clear them first (the site and page scopes are
-		// replaced on write and need no such reset).
-		$dimension_scopes = array_column( self::DIMENSION_SCOPES, 0 );
-		$scope_in         = implode( ',', array_fill( 0, count( $dimension_scopes ), '%s' ) );
-		$delete_sql       = "DELETE FROM {$wpdb->prefix}burst_visitor_bitmaps WHERE day = %s AND scope IN ({$scope_in})";
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- placeholders built above, values prepared.
-		$wpdb->query( $wpdb->prepare( $delete_sql, array_merge( [ $day->format( 'Y-m-d' ) ], $dimension_scopes ) ) );
+		sort( $uids );
+		return $uids;
+	}
+
+	/**
+	 * Build visitor bitmaps for dimensions (device, browser, platform).
+	 *
+	 * @param \DateTimeImmutable $day      Site-timezone day (00:00).
+	 * @param int                $start    Day start timestamp.
+	 * @param int                $end      Day end timestamp.
+	 * @param int                $cursor   Last processed uid_id, or 0 to start.
+	 * @param float              $deadline Monotonic microtime budget ceiling.
+	 * @param int[]              $uids     Optional pre-fetched sorted uid list from site phase.
+	 * @return string One of BUILD_DONE, BUILD_PAUSED, BUILD_FAILED.
+	 */
+	private function build_dimension_phase( \DateTimeImmutable $day, int $start, int $end, int $cursor, float $deadline, array $uids = [] ): string {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table names, integer id lists, values prepared.
+		if ( 0 === $cursor ) {
+			$dimension_scopes = array_column( self::DIMENSION_SCOPES, 0 );
+			$scope_in         = implode( ',', array_fill( 0, count( $dimension_scopes ), '%s' ) );
+			$delete_sql       = "DELETE FROM {$wpdb->prefix}burst_visitor_bitmaps WHERE day = %s AND scope IN ({$scope_in})";
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- placeholders built above, values prepared.
+			if ( ! $this->run_write( $wpdb->prepare( $delete_sql, array_merge( [ $day->format( 'Y-m-d' ) ], $dimension_scopes ) ) ) ) {
+				return self::BUILD_FAILED;
+			}
+		}
+
+		if ( empty( $uids ) ) {
+			$uids = array_map(
+				'intval',
+				$wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT DISTINCT uid_id
+						FROM {$wpdb->prefix}burst_statistics
+						WHERE time >= %d AND time < %d AND uid_id > %d AND page_type != '404'
+						ORDER BY uid_id ASC",
+						$start,
+						$end,
+						$cursor
+					)
+				)
+			);
+			if ( ! empty( $wpdb->last_error ) ) {
+				return self::BUILD_FAILED;
+			}
+		} elseif ( $cursor > 0 ) {
+			$uids = array_values( array_filter( $uids, static fn( int $id ) => $id > $cursor ) );
+		}
+
+		if ( empty( $uids ) ) {
+			return self::BUILD_DONE;
+		}
+
+		$dimension_chunk_size = (int) apply_filters( 'burst_bitmaps_dimension_chunk_size', self::DIMENSION_CHUNK_SIZE );
+		$chunks               = array_chunk( $uids, $dimension_chunk_size );
+
+		foreach ( $chunks as $chunk_index => $uid_chunk ) {
+			$sets = $this->fetch_dimension_sets( $uid_chunk, $start, $end );
+			if ( null === $sets ) {
+				return self::BUILD_FAILED;
+			}
+			if ( ! $this->merge_dimension_chunk( $sets, $day ) ) {
+				return self::BUILD_FAILED;
+			}
+			unset( $sets );
+
+			$cursor = (int) end( $uid_chunk );
+
+			$is_last_chunk = ( $chunk_index === count( $chunks ) - 1 );
+			if ( ! $is_last_chunk && $deadline > 0.0 && microtime( true ) > $deadline ) {
+				return $this->save_day_progress( $day, self::PHASE_DIMENSIONS, $cursor );
+			}
+		}
+		// phpcs:enable
+
+		return self::BUILD_DONE;
+	}
+
+	/**
+	 * Build visitor bitmaps for the page scope.
+	 *
+	 * @param \DateTimeImmutable $day      Site-timezone day (00:00).
+	 * @param int                $start    Day start timestamp.
+	 * @param int                $end      Day end timestamp.
+	 * @param int                $cursor   Last processed page ID, or 0 to start.
+	 * @param float              $deadline Monotonic microtime budget ceiling.
+	 * @return string One of BUILD_DONE, BUILD_PAUSED, BUILD_FAILED.
+	 */
+	private function build_page_phase( \DateTimeImmutable $day, int $start, int $end, int $cursor, float $deadline ): string {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table names, integer id lists, values prepared.
+		if ( 0 === $cursor ) {
+			$is_deleted = $this->run_write(
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->prefix}burst_visitor_bitmaps WHERE day = %s AND scope = %s",
+					$day->format( 'Y-m-d' ),
+					self::SCOPE_PAGE
+				)
+			);
+			if ( ! $is_deleted ) {
+				return self::BUILD_FAILED;
+			}
+
+			$is_registered = $this->run_write(
+				$wpdb->prepare(
+					"INSERT IGNORE INTO {$wpdb->prefix}burst_page_urls (page_url)
+					SELECT DISTINCT page_url FROM {$wpdb->prefix}burst_statistics
+					WHERE time >= %d AND time < %d AND page_url != '' AND page_type != '404'",
+					$start,
+					$end
+				)
+			);
+			if ( ! $is_registered ) {
+				return self::BUILD_FAILED;
+			}
+		}
+
+		$page_ids = array_map(
+			'intval',
+			$wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT d.ID
+					FROM {$wpdb->prefix}burst_statistics st
+					JOIN {$wpdb->prefix}burst_page_urls d ON st.page_url = d.page_url
+					WHERE st.time >= %d AND st.time < %d AND st.uid_id > 0 AND st.page_type != '404' AND d.ID > %d
+					ORDER BY d.ID ASC",
+					$start,
+					$end,
+					$cursor
+				)
+			)
+		);
 		if ( ! empty( $wpdb->last_error ) ) {
-			return false;
+			return self::BUILD_FAILED;
 		}
 
-		foreach ( array_chunk( $uids, 10000 ) as $uid_chunk ) {
-			$uid_in = implode( ',', $uid_chunk );
+		if ( empty( $page_ids ) ) {
+			return self::BUILD_DONE;
+		}
+
+		$page_chunk_size = (int) apply_filters( 'burst_bitmaps_page_chunk_size', self::PAGE_CHUNK_SIZE );
+		$chunks          = array_chunk( $page_ids, $page_chunk_size );
+
+		foreach ( $chunks as $chunk_index => $page_chunk ) {
+			$page_sets = $this->fetch_page_sets( $page_chunk, $start, $end );
+			if ( null === $page_sets ) {
+				return self::BUILD_FAILED;
+			}
+
+			$value_sets = [];
+			foreach ( $page_sets as $page_id => $uid_set ) {
+				$value_sets[ $page_id ] = array_keys( $uid_set );
+			}
+			if ( ! $this->store_day_sets( self::SCOPE_PAGE, $value_sets, $day ) ) {
+				return self::BUILD_FAILED;
+			}
+
+			$cursor = (int) end( $page_chunk );
+
+			$is_last_chunk = ( $chunk_index === count( $chunks ) - 1 );
+			if ( ! $is_last_chunk && $deadline > 0.0 && microtime( true ) > $deadline ) {
+				return $this->save_day_progress( $day, self::PHASE_PAGES, $cursor );
+			}
+		}
+		// phpcs:enable
+
+		return self::BUILD_DONE;
+	}
+
+	/**
+	 * Read the (device, browser, platform) values of one chunk of visitors.
+	 * The IN () list is split by chunk_ids_for_in_list(): a 10,000-id list is
+	 * ~80 KB of SQL, and a host that caps the query length (WP Engine's long
+	 * query governor) never runs it. wpdb then returns the previous query's
+	 * result without an error, so the day was marked built without its
+	 * dimension rows. The sub-chunks partition the visitors, so their rows
+	 * add up to the result of the single query.
+	 *
+	 * @param int[] $uid_chunk Visitor uid_ids of this chunk.
+	 * @param int   $start     Day start timestamp.
+	 * @param int   $end       Day end timestamp.
+	 * @return array<string, array<int, array<int, true>>>|null scope => value_id => uid set, or null on a query error.
+	 */
+	private function fetch_dimension_sets( array $uid_chunk, int $start, int $end ): ?array {
+		global $wpdb;
+		$sets = [];
+		foreach ( $this->chunk_ids_for_in_list( $uid_chunk ) as $uid_ids ) {
+			$uid_in = implode( ',', $uid_ids );
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table names, integer id list, values prepared.
 			$combos = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT DISTINCT st.uid_id, s.device_id, s.browser_id, s.platform_id
@@ -374,10 +619,11 @@ class Visitor_Bitmaps {
 				),
 				ARRAY_A
 			);
+			// phpcs:enable
 			if ( ! empty( $wpdb->last_error ) ) {
-				return false;
+				return null;
 			}
-			$sets = [];
+
 			foreach ( $combos as $combo ) {
 				$uid = (int) $combo['uid_id'];
 				foreach ( self::DIMENSION_SCOPES as [ $scope, $column ] ) {
@@ -387,48 +633,28 @@ class Visitor_Bitmaps {
 					}
 				}
 			}
-			unset( $combos );
-			if ( ! $this->merge_dimension_chunk( $sets, $day ) ) {
-				return false;
-			}
-			unset( $sets );
 		}
 
-		// Page scope: register the day's pages in the dictionary, then one set
-		// per page, built and stored in bounded page-id groups. Absent rows
-		// mean zero visitors, so only pages with traffic that day get a row.
-		$wpdb->query(
-			$wpdb->prepare(
-				"INSERT IGNORE INTO {$wpdb->prefix}burst_page_urls (page_url)
-				SELECT DISTINCT page_url FROM {$wpdb->prefix}burst_statistics
-				WHERE time >= %d AND time < %d AND page_url != '' AND page_type != '404'",
-				$start,
-				$end
-			)
-		);
-		if ( ! empty( $wpdb->last_error ) ) {
-			return false;
-		}
+		return $sets;
+	}
 
-		$page_ids = array_map(
-			'intval',
-			$wpdb->get_col(
-				$wpdb->prepare(
-					"SELECT DISTINCT d.ID
-					FROM {$wpdb->prefix}burst_statistics st
-					JOIN {$wpdb->prefix}burst_page_urls d ON st.page_url = d.page_url
-					WHERE st.time >= %d AND st.time < %d AND st.uid_id > 0 AND st.page_type != '404'",
-					$start,
-					$end
-				)
-			)
-		);
-		if ( ! empty( $wpdb->last_error ) ) {
-			return false;
-		}
-
-		foreach ( array_chunk( $page_ids, 500 ) as $page_chunk ) {
-			$page_in    = implode( ',', $page_chunk );
+	/**
+	 * Read the visitors of one chunk of pages (burst_page_urls ids). The IN ()
+	 * list is split by chunk_ids_for_in_list() so a raised
+	 * burst_bitmaps_page_chunk_size never exceeds a host's query length cap
+	 * (see fetch_dimension_sets()).
+	 *
+	 * @param int[] $page_chunk Dictionary ids of this chunk.
+	 * @param int   $start      Day start timestamp.
+	 * @param int   $end        Day end timestamp.
+	 * @return array<int, array<int, true>>|null page id => uid set, or null on a query error.
+	 */
+	private function fetch_page_sets( array $page_chunk, int $start, int $end ): ?array {
+		global $wpdb;
+		$page_sets = [];
+		foreach ( $this->chunk_ids_for_in_list( $page_chunk ) as $page_ids ) {
+			$page_in = implode( ',', $page_ids );
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table names, integer id list, values prepared.
 			$page_pairs = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT DISTINCT d.ID AS page_id, st.uid_id
@@ -440,24 +666,87 @@ class Visitor_Bitmaps {
 				),
 				ARRAY_A
 			);
+			// phpcs:enable
 			if ( ! empty( $wpdb->last_error ) ) {
-				return false;
+				return null;
 			}
-			$page_sets = [];
+
 			foreach ( $page_pairs as $pair ) {
 				$page_sets[ (int) $pair['page_id'] ][ (int) $pair['uid_id'] ] = true;
 			}
-			$value_sets = [];
-			foreach ( $page_sets as $page_id => $uid_set ) {
-				$value_sets[ $page_id ] = array_keys( $uid_set );
+		}
+
+		return $page_sets;
+	}
+
+	/**
+	 * Build (or replace) the bitmaps for one closed day: the site scope, one
+	 * set per dimension value (device/browser/platform), and one set per page.
+	 *
+	 * 404 hits are excluded throughout: the raw visitors path never counts
+	 * them, and the bitmap answer must match it exactly.
+	 *
+	 * Reads and writes are chunked and resumable: if the deadline is exceeded
+	 * between chunks, a checkpoint is saved and BUILD_PAUSED returned so the
+	 * follow-up iteration can continue without restarting the day.
+	 *
+	 * @param \DateTimeImmutable $day      Site-timezone day (00:00).
+	 * @param float              $deadline Monotonic microtime budget ceiling.
+	 * @return string One of BUILD_DONE, BUILD_PAUSED, BUILD_FAILED.
+	 */
+	private function build_day( \DateTimeImmutable $day, float $deadline = 0.0 ): string {
+		$start = $day->getTimestamp();
+		$end   = $day->modify( '+1 day' )->getTimestamp();
+
+		$progress = get_option( self::DAY_PROGRESS_OPTION );
+		if ( is_array( $progress ) && isset( $progress['day'] ) && $progress['day'] === $day->format( 'Y-m-d' ) ) {
+			$phase  = (string) ( $progress['phase'] ?? self::PHASE_SITE );
+			$cursor = (int) ( $progress['cursor'] ?? 0 );
+		} else {
+			$phase  = self::PHASE_SITE;
+			$cursor = 0;
+		}
+
+		$uids = [];
+		if ( self::PHASE_SITE === $phase ) {
+			$uids = $this->build_site_phase( $day, $start, $end );
+			if ( null === $uids ) {
+				return self::BUILD_FAILED;
 			}
-			if ( ! $this->store_day_sets( self::SCOPE_PAGE, $value_sets, $day ) ) {
-				return false;
+			if ( empty( $uids ) ) {
+				return self::BUILD_DONE;
+			}
+
+			$phase  = self::PHASE_DIMENSIONS;
+			$cursor = 0;
+
+			if ( $deadline > 0.0 && microtime( true ) > $deadline ) {
+				return $this->save_day_progress( $day, self::PHASE_DIMENSIONS, 0 );
 			}
 		}
-        // phpcs:enable
 
-		return true;
+		if ( self::PHASE_DIMENSIONS === $phase ) {
+			$dim_status = $this->build_dimension_phase( $day, $start, $end, $cursor, $deadline, $uids );
+			if ( self::BUILD_DONE !== $dim_status ) {
+				return $dim_status;
+			}
+
+			$phase  = self::PHASE_PAGES;
+			$cursor = 0;
+
+			if ( $deadline > 0.0 && microtime( true ) > $deadline ) {
+				return $this->save_day_progress( $day, self::PHASE_PAGES, 0 );
+			}
+		}
+
+		if ( self::PHASE_PAGES === $phase ) {
+			$page_status = $this->build_page_phase( $day, $start, $end, $cursor, $deadline );
+			if ( self::BUILD_DONE !== $page_status ) {
+				return $page_status;
+			}
+		}
+
+		return self::BUILD_DONE;
 	}
 
 	/**
@@ -594,15 +883,34 @@ class Visitor_Bitmaps {
 			$sql = "INSERT INTO {$wpdb->prefix}burst_visitor_bitmaps (scope, value_id, day, format, members, data) VALUES "
 				. implode( ',', $placeholders )
 				. ' ON DUPLICATE KEY UPDATE format = VALUES(format), members = VALUES(members), data = VALUES(data)';
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table name, row values prepared.
-			$wpdb->query( $wpdb->prepare( $sql, $values ) );
-			if ( $wpdb->last_error ) {
-				self::error_log( "visitor bitmaps: storing {$scope} rows for {$day_string} failed: " . $wpdb->last_error );
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- fixed table name, row values prepared.
+			if ( ! $this->run_write( $wpdb->prepare( $sql, $values ) ) ) {
+				self::error_log( "visitor bitmaps: storing {$scope} rows for {$day_string} failed: " . ( $wpdb->last_error ?: 'the query was not run' ) );
 				return false;
 			}
 		}
 
 		return true;
+	}
+
+	/**
+	 * Run one write of a day build and report whether it ran. wpdb returns
+	 * false without setting last_error in two cases: a `query` filter
+	 * dropped the statement (an empty query is never sent), or the
+	 * connection was lost and the reconnect failed (flush() already cleared
+	 * the error). Checking last_error alone then reads a skipped write as a
+	 * success, and the day is marked built with rows missing.
+	 *
+	 * Side effect: runs the statement.
+	 *
+	 * @param string $sql Prepared SQL statement.
+	 * @return bool True when the statement ran without an error.
+	 */
+	private function run_write( string $sql ): bool {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- callers pass prepared SQL.
+		$result = $wpdb->query( $sql );
+		return false !== $result && empty( $wpdb->last_error );
 	}
 
 	/**
@@ -716,8 +1024,10 @@ class Visitor_Bitmaps {
 
 		$scope           = self::SCOPE_SITE;
 		$value_id        = 0;
+		$value_ids       = [];
 		$filter_column   = '';
 		$page_filter_url = '';
+		$page_ids        = [];
 		if ( ! empty( $filters ) ) {
 			if ( count( $filters ) !== 1 ) {
 				$this->miss( 'multiple-filters' );
@@ -732,8 +1042,17 @@ class Visitor_Bitmaps {
 				}
 				$scope           = self::SCOPE_PAGE;
 				$page_filter_url = $filter_value;
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-				$value_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM {$wpdb->prefix}burst_page_urls WHERE page_url = %s", $filter_value ) );
+				// Under page grain the page filter selects every url of the
+				// page (see page_grain_ids_for_url()), so the page scope ORs
+				// the day sets of all those urls and the live tail filters on
+				// the same page_ids — the count then matches the row query.
+				$page_ids  = $this->page_grain_ids_for_url( $filter_value );
+				$value_ids = $this->page_scope_value_ids( $page_ids );
+				$value_id  = $value_ids[0] ?? 0;
+				if ( empty( $page_ids ) ) {
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+					$value_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM {$wpdb->prefix}burst_page_urls WHERE page_url = %s", $filter_value ) );
+				}
 				// A dictionary miss (typically a page whose first traffic is
 				// today — the closed-day builder registers URLs) falls back to
 				// SQL: proceeding with value_id 0 would make every unmapped URL
@@ -756,7 +1075,9 @@ class Visitor_Bitmaps {
 		// visitors (current and compare period) calls this per render — without
 		// caching, the today-scan in the tail is exactly the query the store
 		// was built to remove.
-		$result_key = "burst_bitmap_count_{$scope}_{$value_id}_{$start}_{$end}_{$generation}";
+		$value_ids  = ! empty( $value_ids ) ? $value_ids : [ $value_id ];
+		$value_key  = 1 === count( $value_ids ) ? (string) $value_ids[0] : substr( hash( 'sha256', implode( ',', $value_ids ) ), 0, 16 );
+		$result_key = "burst_bitmap_count_{$scope}_{$value_key}_{$start}_{$end}_{$generation}";
 		$found      = false;
 		$cached     = wp_cache_get( $result_key, 'burst', false, $found );
 		if ( $found && is_int( $cached ) ) {
@@ -767,70 +1088,32 @@ class Visitor_Bitmaps {
 			return null;
 		}
 
-		// Cache layer 2: the closed-day union. Closed days are immutable, so
-		// this can live long — the generation in the key invalidates it when
-		// the store itself is rebuilt (timezone reset, archive, rebuild-from).
-		$union        = '';
-		$union_loaded = false;
-		$union_key    = "burst_bitmap_union_{$scope}_{$value_id}_{$coverage_start->format( 'Ymd' )}_{$closed_until->format( 'Ymd' )}_{$generation}";
-		if ( $expected_days > 0 ) {
-			$cached_union = wp_cache_get( $union_key, 'burst' );
-			if ( is_string( $cached_union ) ) {
-				$blob = gzuncompress( $cached_union );
-				if ( false !== $blob ) {
-					$union        = $blob;
-					$union_loaded = true;
-				}
+		// Cache layer 2: one closed-day union per dictionary id; a page scope
+		// ORs the unions of every url of the page (see page_scope_value_ids()).
+		$union = '';
+		foreach ( $value_ids as $union_value_id ) {
+			$id_union = $this->load_closed_day_union( $scope, $union_value_id, $coverage_start, $closed_until, $expected_days, $generation );
+			if ( null === $id_union ) {
+				return null;
 			}
-		}
-
-		if ( ! $union_loaded && $expected_days > 0 ) {
-			// Fetch the day blobs in bounded chunks: a multi-year range holds
-			// hundreds of rows whose decompressed sets should never sit in one
-			// result array at once. The keyset cursor starts one day before the
-			// range: strict SQL mode rejects '' as a DATE value.
-			$last_day = $coverage_start->modify( '-1 day' )->format( 'Y-m-d' );
-			do {
-				$rows      = $wpdb->get_results(
-					$wpdb->prepare(
-						"SELECT day, format, members, data FROM {$wpdb->prefix}burst_visitor_bitmaps
-						WHERE scope = %s AND value_id = %d AND day BETWEEN %s AND %s AND day > %s AND members > 0
-						ORDER BY day LIMIT 50",
-						$scope,
-						$value_id,
-						$coverage_start->format( 'Y-m-d' ),
-						$closed_until->format( 'Y-m-d' ),
-						$last_day
-					),
-					ARRAY_A
-				);
-				$row_count = count( $rows );
-				foreach ( $rows as $row ) {
-					$blob = gzuncompress( (string) $row['data'] );
-					if ( false === $blob ) {
-						$this->miss( 'corrupt-day' );
-						return null;
-					}
-					if ( (int) $row['format'] === self::FORMAT_BITMAP ) {
-						$union = $this->or_bitmaps( $union, $blob );
-					} else {
-						$union = $this->or_list( $union, $blob );
-					}
-					$last_day = (string) $row['day'];
-				}
-			} while ( 50 === $row_count );
-
-			$compressed_union = gzcompress( $union );
-			if ( false !== $compressed_union ) {
-				wp_cache_set( $union_key, $compressed_union, 'burst', 6 * HOUR_IN_SECONDS );
-			}
+			$union = $this->or_bitmaps( $union, $id_union );
 		}
 
 		// Live tail: today (and any part of the range beyond it), with the
 		// dimension filter applied at row level when one is active.
 		if ( $end_in_tail ) {
 			$tail_start = max( $start, $today->getTimestamp() );
-			if ( '' !== $page_filter_url ) {
+			if ( ! empty( $page_ids ) ) {
+				// Integers only, cast in page_grain_ids_for_url().
+				$page_id_list = implode( ',', array_map( 'intval', $page_ids ) );
+                // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- integer id list.
+				$tail_sql = $wpdb->prepare(
+					"SELECT DISTINCT uid_id FROM {$wpdb->prefix}burst_statistics WHERE time >= %d AND time <= %d AND uid_id > 0 AND page_type != '404' AND page_id IN ({$page_id_list})",
+					$tail_start,
+					$end
+				);
+                // phpcs:enable
+			} elseif ( '' !== $page_filter_url ) {
 				$tail_sql = $wpdb->prepare(
 					"SELECT DISTINCT uid_id FROM {$wpdb->prefix}burst_statistics WHERE time >= %d AND time <= %d AND uid_id > 0 AND page_type != '404' AND page_url = %s",
 					$tail_start,
@@ -1074,6 +1357,110 @@ class Visitor_Bitmaps {
 
 		wp_cache_set( $result_key, $counts, 'burst', 30 );
 		return $counts;
+	}
+
+	/**
+	 * The page-scope bitmap value ids (burst_page_urls.ID, one day set per
+	 * url) holding the visitors of the given statistics page_ids: every url
+	 * row of a post id, and the row itself for a negative dictionary id.
+	 *
+	 * @param int[] $page_ids Page ids from page_grain_ids_for_url().
+	 * @return int[] Dictionary ids, empty when $page_ids is empty.
+	 */
+	private function page_scope_value_ids( array $page_ids ): array {
+		global $wpdb;
+		$value_ids = [];
+		$post_ids  = [];
+		foreach ( $page_ids as $page_id ) {
+			if ( $page_id < 0 ) {
+				$value_ids[] = -$page_id;
+			} elseif ( $page_id > 0 ) {
+				$post_ids[] = $page_id;
+			}
+		}
+		if ( ! empty( $post_ids ) ) {
+			$id_list = implode( ',', array_map( 'intval', $post_ids ) );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- integer id list.
+			$value_ids = array_merge( $value_ids, array_map( 'intval', $wpdb->get_col( "SELECT ID FROM {$wpdb->prefix}burst_page_urls WHERE page_id IN ({$id_list})" ) ) );
+		}
+		$value_ids = array_values( array_unique( $value_ids ) );
+		sort( $value_ids );
+		return $value_ids;
+	}
+
+	/**
+	 * The OR-merged closed-day visitor set of one scope value, from the object
+	 * cache or the store. Closed days are immutable, so the cached union can
+	 * live long — the generation in the key invalidates it when the store
+	 * itself is rebuilt (timezone reset, archive, rebuild-from).
+	 *
+	 * @param string             $scope          Bitmap scope.
+	 * @param int                $value_id       Scope value (dictionary or dimension id, 0 for site).
+	 * @param \DateTimeImmutable $coverage_start First closed day in range.
+	 * @param \DateTimeImmutable $closed_until   Last closed day in range.
+	 * @param int                $expected_days  Closed days in range; 0 = none.
+	 * @param string             $generation     Store generation.
+	 * @return string|null Dense bitmap ('' when empty), or null on a corrupt day row (miss reason set).
+	 */
+	private function load_closed_day_union( string $scope, int $value_id, \DateTimeImmutable $coverage_start, \DateTimeImmutable $closed_until, int $expected_days, string $generation ): ?string {
+		global $wpdb;
+		$union        = '';
+		$union_loaded = false;
+		$union_key    = "burst_bitmap_union_{$scope}_{$value_id}_{$coverage_start->format( 'Ymd' )}_{$closed_until->format( 'Ymd' )}_{$generation}";
+		if ( $expected_days > 0 ) {
+			$cached_union = wp_cache_get( $union_key, 'burst' );
+			if ( is_string( $cached_union ) ) {
+				$blob = gzuncompress( $cached_union );
+				if ( false !== $blob ) {
+					$union        = $blob;
+					$union_loaded = true;
+				}
+			}
+		}
+
+		if ( ! $union_loaded && $expected_days > 0 ) {
+			// Fetch the day blobs in bounded chunks: a multi-year range holds
+			// hundreds of rows whose decompressed sets should never sit in one
+			// result array at once. The keyset cursor starts one day before the
+			// range: strict SQL mode rejects '' as a DATE value.
+			$last_day = $coverage_start->modify( '-1 day' )->format( 'Y-m-d' );
+			do {
+				$rows      = $wpdb->get_results(
+					$wpdb->prepare(
+						"SELECT day, format, members, data FROM {$wpdb->prefix}burst_visitor_bitmaps
+						WHERE scope = %s AND value_id = %d AND day BETWEEN %s AND %s AND day > %s AND members > 0
+						ORDER BY day LIMIT 50",
+						$scope,
+						$value_id,
+						$coverage_start->format( 'Y-m-d' ),
+						$closed_until->format( 'Y-m-d' ),
+						$last_day
+					),
+					ARRAY_A
+				);
+				$row_count = count( $rows );
+				foreach ( $rows as $row ) {
+					$blob = gzuncompress( (string) $row['data'] );
+					if ( false === $blob ) {
+						$this->miss( 'corrupt-day' );
+						return null;
+					}
+					if ( (int) $row['format'] === self::FORMAT_BITMAP ) {
+						$union = $this->or_bitmaps( $union, $blob );
+					} else {
+						$union = $this->or_list( $union, $blob );
+					}
+					$last_day = (string) $row['day'];
+				}
+			} while ( 50 === $row_count );
+
+			$compressed_union = gzcompress( $union );
+			if ( false !== $compressed_union ) {
+				wp_cache_set( $union_key, $compressed_union, 'burst', 6 * HOUR_IN_SECONDS );
+			}
+		}
+
+		return $union;
 	}
 
 	/**

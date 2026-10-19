@@ -76,7 +76,6 @@ const RadioFieldOption = ({ inputId, value, field, option, disabled }) => {
 					returning={returning}
 					description={description}
 					pro={pro}
-					inputId={inputId}
 				/>
 				{level && (
 					<RadioFieldPrivacyMeter inputId={optionId} meter={meter} level={level} />

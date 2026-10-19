@@ -50,6 +50,13 @@ class Burst_Adapter implements Import_Adapter {
 	private static array $live_columns = [];
 
 	/**
+	 * Maximum bytes read from the SQL file per fgets() call. Statements and
+	 * lines may be longer: read_next_statement() keeps reading chunks until
+	 * the statement ends.
+	 */
+	private const STATEMENT_READ_CHUNK = 65536;
+
+	/**
 	 * Get adapter identifier.
 	 */
 	public function get_id(): string {
@@ -1417,7 +1424,7 @@ class Burst_Adapter implements Import_Adapter {
 				'ignore' => false,
 			],
 			'statistics_searches' => [
-				'cols'   => [ 'statistic_id', 'search_id', 'result_count', 'created' ],
+				'cols'   => [ 'statistic_id', 'search_id', 'result_count', 'created', 'suggested_post_id' ],
 				'fk'     => [ 'search_id' => 'search' ],
 				'ignore' => true,
 			],
@@ -1828,36 +1835,124 @@ class Burst_Adapter implements Import_Adapter {
 	/**
 	 * Read the next complete SQL statement from the stream.
 	 *
+	 * A statement ends at the first `;` outside a string literal. The stream is
+	 * read in chunks of at most STATEMENT_READ_CHUNK bytes and the lexer state
+	 * (inside a string, after a backslash) carries over between chunks, so a
+	 * line of any length is read whole and a chunk boundary inside a string
+	 * cannot end the statement. Comment and blank lines before a statement are
+	 * skipped.
+	 *
+	 * Side effect: leaves the stream positioned directly after the terminating
+	 * `;`, so ftell() is the exact offset to resume from in the next batch.
+	 *
 	 * @param resource $handle File stream.
+	 * @return string The trimmed statement including its `;`, or the unterminated remainder at EOF.
 	 */
 	private function read_next_statement( $handle ): string {
-		$statement = '';
+		$statement  = '';
+		$in_string  = false;
+		$is_escaped = false;
+		$is_comment = false;
 
 		while ( ! feof( $handle ) ) {
-			$line = fgets( $handle, 65536 );
-			if ( false === $line ) {
+			$chunk = fgets( $handle, self::STATEMENT_READ_CHUNK );
+			if ( false === $chunk ) {
 				break;
 			}
 
-			$trimmed = trim( $line );
+			// A chunk without a trailing newline means the line continues in the next chunk.
+			$continues_line = ! str_ends_with( $chunk, "\n" );
 
-			if ( empty( $statement ) ) {
-				if ( '' === $trimmed || str_starts_with( $trimmed, '--' ) || str_starts_with( $trimmed, '/*' ) ) {
+			if ( '' === $statement ) {
+				// Finish skipping a comment line that was longer than one chunk.
+				if ( $is_comment ) {
+					$is_comment = $continues_line;
+					continue;
+				}
+
+				$trimmed = trim( $chunk );
+				if ( '' === $trimmed ) {
+					continue;
+				}
+
+				if ( str_starts_with( $trimmed, '--' ) || str_starts_with( $trimmed, '/*' ) ) {
+					$is_comment = $continues_line;
 					continue;
 				}
 			}
 
-			$statement .= $line;
-
-			if ( str_ends_with( $trimmed, ';' ) ) {
-				$stripped = str_replace( "\\'", '', $statement );
-				if ( 0 === ( substr_count( $stripped, "'" ) % 2 ) ) {
-					return trim( $statement );
-				}
+			$end = self::find_statement_end( $chunk, $in_string, $is_escaped );
+			if ( -1 === $end ) {
+				$statement .= $chunk;
+				continue;
 			}
+
+			$statement .= substr( $chunk, 0, $end + 1 );
+
+			// Hand the bytes after the terminator back to the stream for the next statement.
+			$unread = strlen( $chunk ) - $end - 1;
+			if ( $unread > 0 ) {
+				fseek( $handle, -$unread, SEEK_CUR );
+			}
+
+			return trim( $statement );
 		}
 
 		return trim( $statement );
+	}
+
+	/**
+	 * Find the `;` that terminates a statement, outside any string literal.
+	 *
+	 * Uses the same quoting rules as parse_values_tuples(): a string is
+	 * delimited by single quotes, a backslash escapes the next character, and
+	 * a doubled quote ('') is a literal quote. The doubled quote needs no
+	 * lookahead here: closing and directly reopening the string leaves the
+	 * lexer in the same state, which also holds when the pair is split over
+	 * two chunks.
+	 *
+	 * @param string $sql        Chunk of SQL text.
+	 * @param bool   $in_string  Lexer state, by reference: inside a string literal at the start of the chunk, updated to the state at its end.
+	 * @param bool   $is_escaped Lexer state, by reference: the previous chunk ended on an escaping backslash, updated likewise.
+	 * @return int Byte offset of the terminating `;` in $sql, or -1 when the statement continues past this chunk.
+	 */
+	private static function find_statement_end( string $sql, bool &$in_string, bool &$is_escaped ): int {
+		$length = strlen( $sql );
+		$i      = 0;
+
+		while ( $i < $length ) {
+			if ( $is_escaped ) {
+				$is_escaped = false;
+				++$i;
+				continue;
+			}
+
+			if ( $in_string ) {
+				$i += strcspn( $sql, "'\\", $i );
+				if ( $i >= $length ) {
+					break;
+				}
+				if ( '\\' === $sql[ $i ] ) {
+					$is_escaped = true;
+				} else {
+					$in_string = false;
+				}
+				++$i;
+				continue;
+			}
+
+			$i += strcspn( $sql, "';", $i );
+			if ( $i >= $length ) {
+				break;
+			}
+			if ( ';' === $sql[ $i ] ) {
+				return $i;
+			}
+			$in_string = true;
+			++$i;
+		}
+
+		return -1;
 	}
 
 	/**

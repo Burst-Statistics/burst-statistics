@@ -181,10 +181,14 @@ function burst_woocommerce_get_order_data( WC_Order $order ): array {
 				continue;
 			}
 
+			// The unit price paid on this order line, excluding tax and before
+			// discounts like the order subtotal. The catalog price is not used:
+			// it can change after the order, and plugins that price items in
+			// the cart (product forms, name-your-price) leave it at 0.
 			$products[] = [
 				'product_id' => $product->get_id(),
 				'amount'     => $item->get_quantity(),
-				'price'      => $product->get_price(),
+				'price'      => (float) $order->get_item_subtotal( $item, false, false ),
 			];
 		}
 	}
