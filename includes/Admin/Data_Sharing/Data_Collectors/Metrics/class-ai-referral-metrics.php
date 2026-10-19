@@ -5,6 +5,7 @@ namespace Burst\Admin\Data_Sharing\Data_Collectors\Metrics;
 use Burst\Admin\Database\Query_Executor;
 use Burst\Admin\Statistics\Ai_Referrer_Rules;
 use Burst\Traits\Database_Helper;
+use Burst\Traits\Helper;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -20,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Ai_Referral_Metrics {
 	use Database_Helper;
+	use Helper;
 
 	private int $capture_data_from;
 
@@ -54,11 +56,14 @@ class Ai_Referral_Metrics {
 
 		// burst_campaigns is a Pro-only table (Pro/Admin/Statistics/class-statistics.php);
 		// on free it doesn't exist, so the UTM-based match is skipped there and
-		// this falls back to the host-based match alone. The UTM tags sit on the
-		// landing hit only, so the match looks across the whole session: every
-		// pageview of a UTM-tagged AI session counts, not just the tagged one.
+		// this falls back to the host-based match alone. The is_pro() check comes
+		// first because free does not register the table on burst_all_tables, so
+		// table_exists() would log it as an unknown table on every telemetry run.
+		// The UTM tags sit on the landing hit only, so the match looks across the
+		// whole session: every pageview of a UTM-tagged AI session counts, not
+		// just the tagged one.
 		$campaign_condition = '';
-		if ( $this->table_exists( 'burst_campaigns' ) ) {
+		if ( $this->is_pro() && $this->table_exists( 'burst_campaigns' ) ) {
 			$campaign_condition = '
 				OR EXISTS (
 					SELECT 1 FROM ' . $wpdb->prefix . 'burst_statistics AS tagged
