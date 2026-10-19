@@ -1,11 +1,11 @@
 import { memo, useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
-import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
-import { ExpandTableButton } from '@/components/Blocks/ExpandTableButton';
 import { BlockContent } from '@/components/Blocks/BlockContent';
+import ExpandableBlockTitle from '@/components/Blocks/ExpandableBlockTitle';
 import { BarDataTable } from '@/components/DataTable/BarDataTable';
+import { useExpandableTopBlock } from '@/hooks/useExpandableTopBlock';
 import { useOutgoingLinksData } from './useOutgoingLinksData';
 import { getOutgoingLinksColumns } from './columns';
 import useSettingsData from '@/hooks/useSettingsData';
@@ -13,7 +13,6 @@ import useLicenseData from '@/hooks/useLicenseData';
 import OverlayBlock from '@/components/Upsell/OverlayBlock';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
 import ActivationCopy from '@/components/Upsell/ActivationCopy';
-import MetricInfo from '@/components/Common/MetricInfo';
 import { isTourActive } from '@/store/useTourStore';
 import type { FilterSearchParams } from '@/config/filterConfig';
 
@@ -25,9 +24,6 @@ type OutgoingLinksBlockProps = {
 	/** Override filters (e.g. page-scoped page_url). */
 	customFilters?: FilterSearchParams;
 };
-
-/** Maximum rows shown in the compact block view. */
-const TOP_N = 5;
 
 /**
  * Compact dashboard block showing the most clicked outgoing links.
@@ -55,31 +51,13 @@ const OutgoingLinksBlock = memo( ({ className = '', customFilters }: OutgoingLin
 
 	const firstCycleCompleted = tourActive || !! window.burst_settings?.external_links_first_cycle_completed || 100 === scrapingProgress;
 
-	const navigate = useNavigate();
-	const location = useRouterState({ select: ( s ) => s.location });
-
 	const columns = useMemo( () => getOutgoingLinksColumns(), []);
-
-	const topData = useMemo( () => ( Array.isArray( data ) ? data : []).slice( 0, TOP_N ), [ data ]);
-
-	/**
-	 * Navigate to the fullscreen overlay with the outgoing_links variant active.
-	 */
-	const handleExpand = () => {
-		navigate({
-			to: '/table/$variant',
-			params: { variant: 'outgoing_links' },
-			search: {
-				from: location.pathname,
-				allowed: 'outgoing_links',
-				dataTableId: 'outgoing-links',
-				...location.search,
-				...( customFilters ?? {})
-			}
-		});
-	};
-
-	const hasData = 0 < topData.length;
+	const { topData, hasData, handleExpand } = useExpandableTopBlock({
+		data,
+		variant: 'outgoing_links',
+		dataTableId: 'outgoing-links',
+		searchOverrides: customFilters
+	});
 
 	if ( ! tourActive && ! isLicenseValid ) {
 		return (
@@ -111,14 +89,14 @@ const OutgoingLinksBlock = memo( ({ className = '', customFilters }: OutgoingLin
 			<BlockHeading
 				className="border-b border-gray-200"
 				isLoading={ isLoading }
-				title={ <>
-					<MetricInfo metricKey="outgoing_links" side="bottom">
-						{ __( 'Outgoing links', 'burst-statistics' ) }
-					</MetricInfo>
-					{ hasData && (
-						<ExpandTableButton onClick={ handleExpand } />
-					) }
-				</> }
+				title={
+					<ExpandableBlockTitle
+						metricKey="outgoing_links"
+						label={ __( 'Outgoing links', 'burst-statistics' ) }
+						hasData={ hasData }
+						onExpand={ handleExpand }
+					/>
+				}
 			/>
 			<BlockContent className="px-0 py-0 overflow-y-auto">
 				<BarDataTable

@@ -746,6 +746,11 @@ class Query_Executor {
 
 	/**
 	 * Detect if the database reported a timeout/interruption for the last query.
+	 *
+	 * MariaDB raises error 1969 for max_statement_time with two wordings:
+	 * "Query execution was interrupted (max_statement_time exceeded)" up to
+	 * 11.x and "Query was interrupted: execution time limit N sec exceeded"
+	 * from 12.x on.
 	 */
 	private function is_timeout_error( string $last_error ): bool {
 		if ( '' === $last_error ) {
@@ -757,6 +762,7 @@ class Query_Executor {
 		return str_contains( $normalized_error, 'max_execution_time' )
 			|| str_contains( $normalized_error, 'maximum statement execution time exceeded' )
 			|| str_contains( $normalized_error, 'query execution was interrupted' )
+			|| str_contains( $normalized_error, 'execution time limit' )
 			|| str_contains( $normalized_error, 'error 3024' )
 			|| str_contains( $normalized_error, 'error 1317' );
 	}

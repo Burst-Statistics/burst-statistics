@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import Settings from '@/components/Settings/Settings';
 import SettingsNotices from '@/components/Settings/SettingsNotices';
 import { notFound } from '@tanstack/react-router';
@@ -43,6 +43,13 @@ function SettingsRoute() {
 
 // Export the Route object directly
 export const Route = createFileRoute( '/settings/$settingsId' )({
+
+	// Goals moved out of settings to their own page; keep old links working.
+	beforeLoad: ({ params }) => {
+		if ( 'goals' === params.settingsId ) {
+			throw redirect({ to: '/goals', replace: true });
+		}
+	},
 	component: SettingsRoute,
 	loader: ({ params }) => SettingsLoader( params.settingsId ),
 	errorComponent: ({ error }) => (

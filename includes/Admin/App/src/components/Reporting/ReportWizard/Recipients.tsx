@@ -1,4 +1,4 @@
-import {__, sprintf} from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import { useWizardStore } from '@/store/reports/useWizardStore';
 import React, {useEffect, useRef} from 'react';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
@@ -7,14 +7,7 @@ import { EmailSelectInput } from '@/components/Inputs/EmailSelectInput';
 import RadioButtonsInput, { RadioOption } from '@/components/Inputs/RadioButtonsInput';
 import { DeliveryChannelType } from '@/store/reports/types';
 import useLicenseData from '@/hooks/useLicenseData';
-
-const isValidEmail = ( email: string ): boolean => {
-	const trimmed = email.trim();
-	const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-	return regex.test( trimmed );
-};
-
-const MAX_RECIPIENTS = 100;
+import { MAX_EMAIL_RECIPIENTS, validateEmailList } from '@/utils/emailList';
 
 export const Recipients = () => {
 	const emails = useWizardStore( ( state ) => state.wizard.recipients );
@@ -45,26 +38,10 @@ export const Recipients = () => {
 	useEffect( () => {
 		register( 'recipients', {
 			value: emails,
-			validate: {
-				required: ( value: string[]) =>
-					0 < value.length ||
-					__( 'Please add at least one recipient', 'burst-statistics' ),
-
-				max: ( value: string[]) =>
-					value.length <= MAX_RECIPIENTS ||
-					sprintf(
-						__( 'Maximum %d recipients allowed', 'burst-statistics' ),
-						MAX_RECIPIENTS
-					),
-
-				format: ( value: string[]) =>
-					value.every( isValidEmail ) ||
-					__( 'One or more email addresses are invalid', 'burst-statistics' ),
-
-				unique: ( value: string[]) =>
-					new Set( value ).size === value.length ||
-					__( 'Duplicate email addresses are not allowed', 'burst-statistics' )
-			}
+			validate: ( value: string[]) => validateEmailList( value, {
+				isRequired: true,
+				requiredMessage: __( 'Please add at least one recipient', 'burst-statistics' )
+			})
 		});
 	}, [ register ]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -146,7 +123,7 @@ export const Recipients = () => {
 					<EmailSelectInput
 						value={emails}
 						name="recipients"
-						maxSelections={MAX_RECIPIENTS}
+						maxSelections={MAX_EMAIL_RECIPIENTS}
 						onChange={( nextEmails ) => {
 							setEmails( nextEmails );
 						}}

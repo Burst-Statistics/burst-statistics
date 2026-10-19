@@ -547,6 +547,17 @@ class Mailer {
 	}
 
 	/**
+	 * A label/value table row for the rows of an email block.
+	 *
+	 * @param string $label Label, shown on the left.
+	 * @param string $value Value, shown on the right.
+	 * @return string Escaped table row HTML.
+	 */
+	public static function table_row( string $label, string $value ): string {
+		return '<tr style="line-height: 28px"><td style="text-align: left; font-weight: 400;">' . esc_html( $label ) . '</td><td style="text-align: right;">' . esc_html( $value ) . '</td></tr>';
+	}
+
+	/**
 	 * Configure the read more section
 	 */
 	private function set_read_more_section(): Mailer {

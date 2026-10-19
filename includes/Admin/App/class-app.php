@@ -425,6 +425,8 @@ class App {
 		$data['community_data'] = is_array( $community_data ) ? $community_data : null;
 		$pinned_filters         = get_user_meta( get_current_user_id(), 'burst_pinned_filters', true );
 		$data['pinned_filters'] = is_array( $pinned_filters ) ? $pinned_filters : (object) [];
+
+		$data['hide_hook_goals'] = $this->fields->are_hook_goals_hidden();
 		return $data;
 	}
 
@@ -504,6 +506,8 @@ class App {
 	 * authorizing the POST body 'path' is what allowed the auth/dispatch desync,
 	 * where a share viewer named a granted endpoint in 'path' while rest_action
 	 * pointed at a non-granted one.
+	 * REST dispatch also uses this resolver to keep its type tied to the
+	 * matched route rather than overridable request parameters.
 	 *
 	 * @param string $action The final, authoritative REST action path.
 	 * @return array{type: string, is_ecommerce: bool} Empty type when $action is not a /data/ endpoint.
@@ -721,8 +725,6 @@ class App {
 				$response = $this->rest_api_goals_upsert_for_block( $request, $data );
 			} elseif ( str_contains( $action, '/goals/delete' ) ) {
 				$response = $this->rest_api_goals_delete( $request, $data );
-			} elseif ( str_contains( $action, '/goal_fields/get' ) ) {
-				$response = $this->rest_api_goal_fields_get( $request );
 			} elseif ( str_contains( $action, '/goals/set' ) ) {
 				$response = $this->rest_api_goals_set( $request, $data );
 			} elseif ( str_contains( $action, '/posts/' ) ) {
@@ -1234,7 +1236,7 @@ class App {
 				'callback'            => function ( \WP_REST_Request $request ) {
 					$request->set_param( 'is_ecommerce', true );
 					// Prepend prefix to identify as datatable request.
-					$request->set_param( 'type', 'datatable-' . $request->get_param( 'type' ) );
+					$request->set_param( 'type', 'datatable-' . $request->get_url_params()['type'] );
 
 					return $this->get_data( $request );
 				},
@@ -1266,7 +1268,7 @@ class App {
 				'methods'             => 'GET',
 				'callback'            => function ( \WP_REST_Request $request ) {
 					// Prepend prefix to identify as datatable request.
-					$request->set_param( 'type', 'datatable-' . $request->get_param( 'type' ) );
+					$request->set_param( 'type', 'datatable-' . $request->get_url_params()['type'] );
 					return $this->get_data( $request );
 				},
 				'permission_callback' => function ( \WP_REST_Request $request ) {
@@ -1930,9 +1932,12 @@ class App {
 			];
 		}
 
+		// Dispatch from the same route that was authorized, not query or body overrides.
+		$dispatch = $this->resolve_fallback_data_type( strtolower( (string) stristr( $request->get_route(), 'burst/v1/' ) ) );
+
 		return [
 			'success' => true,
-			'type'    => sanitize_title( $request->get_param( 'type' ) ),
+			'type'    => sanitize_title( $dispatch['type'] ),
 		];
 	}
 
@@ -2522,51 +2527,11 @@ class App {
 				'request_success'    => true,
 				'goals'              => $goals,
 				'predefinedGoals'    => $predefined_goals,
-				'goalFields'         => $this->fields->get_goal_fields(),
 				'goal_limit'         => $goal_limit,
 				'active_goals_count' => $active_goals_count,
 			],
 			200
 		);
-	}
-
-	/**
-	 * Get the rest api fields
-	 */
-	public function rest_api_goal_fields_get( \WP_REST_Request $request ): \WP_REST_Response {
-		if ( ! $this->user_can_manage() ) {
-			return new \WP_REST_Response(
-				[
-					'success' => false,
-					'message' => 'You do not have permission to perform this action.',
-				]
-			);
-		}
-
-		$nonce = $request->get_param( 'nonce' );
-		if ( ! $this->verify_nonce( $nonce, 'burst_nonce' ) ) {
-			return new \WP_REST_Response(
-				[
-					'success' => false,
-					'message' => $this->nonce_expired_feedback,
-				]
-			);
-		}
-
-		$goals = apply_filters( 'burst_rest_api_goals_get', ( new Goals() )->get_goals() );
-		if ( ob_get_length() ) {
-			ob_clean();
-		}
-
-		$response = new \WP_REST_Response(
-			[
-				'request_success' => true,
-				'goals'           => $goals,
-			]
-		);
-		$response->set_status( 200 );
-
-		return $response;
 	}
 
 	/**

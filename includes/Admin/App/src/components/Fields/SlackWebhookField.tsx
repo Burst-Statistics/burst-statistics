@@ -38,6 +38,9 @@ const SlackWebhookField = forwardRef<HTMLDivElement, SlackWebhookFieldProps>(
 		const hasValue = Boolean( currentValue && 0 < currentValue.trim().length );
 		const isMasked = Boolean( currentValue && currentValue.includes( '•' ) );
 
+		// Without a webhook, explain how to get one instead of what it does.
+		const shownContext = ! hasValue && props.setting?.context_empty ? props.setting.context_empty : context;
+
 		// fallow-ignore-next-line complexity
 		const handleSendTest = async() => {
 			const webhookUrl = currentValue ? currentValue.trim() : '';
@@ -85,7 +88,7 @@ const SlackWebhookField = forwardRef<HTMLDivElement, SlackWebhookFieldProps>(
 					inputId={inputId}
 					help={help}
 					error={fieldState?.error?.message}
-					context={context}
+					context={shownContext}
 					label={props.label || __( 'Slack webhook URL', 'burst-statistics' )}
 					disabled={disabled}
 					className={props.className}
@@ -134,7 +137,7 @@ const SlackWebhookField = forwardRef<HTMLDivElement, SlackWebhookFieldProps>(
 										{__( 'Sending…', 'burst-statistics' )}
 									</span>
 								) : (
-									__( 'Send test message', 'burst-statistics' )
+									__( 'Send test', 'burst-statistics' )
 								)}
 							</ButtonInput>
 						</div>
@@ -148,7 +151,7 @@ const SlackWebhookField = forwardRef<HTMLDivElement, SlackWebhookFieldProps>(
 						)}
 						{hasValue && ! isMasked && (
 							<div className="flex items-center gap-1.5 text-xs text-text-gray mt-0.5">
-								<span>{__( 'Unsaved changes — click Save at the bottom to apply.', 'burst-statistics' )}</span>
+								<span>{__( 'Unsaved changes. Click Save at the bottom to apply.', 'burst-statistics' )}</span>
 							</div>
 						)}
 

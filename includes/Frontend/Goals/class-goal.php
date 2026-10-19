@@ -1,7 +1,6 @@
 <?php
 namespace Burst\Frontend\Goals;
 
-use Burst\Admin\App\Fields\Fields;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Sanitize;
@@ -36,6 +35,12 @@ class Goal {
 	public string $hook            = '';
 	public string $page_or_website = 'website';
 	public string $specific_page   = '';
+	/**
+	 * Page the element was picked on (specific_page), stored for every scope.
+	 * A whole site goal stores url '*', so this is where its specific_page is
+	 * kept and rebuilt from on load. Tracking never reads it.
+	 */
+	public string $element_page = '';
 	/**
 	 * Set to 1 when the goal was created from the Gutenberg block editor.
 	 */
@@ -108,7 +113,8 @@ class Goal {
 
 			// Split url property into two separate properties, depending on * value.
 			$this->page_or_website = $this->url !== '*' ? 'page' : 'website';
-			$this->specific_page   = $this->page_or_website === 'page' ? $this->url : '';
+			$this->element_page    = $goal->element_page ?? '';
+			$this->specific_page   = $this->page_or_website === 'page' ? $this->url : $this->element_page;
 		}
 		return $this;
 	}
@@ -198,19 +204,26 @@ class Goal {
 
 		// Include block_goal only when the column already exists (safe for
 		// existing installs that haven't run the DB upgrade yet).
-		static $block_goal_col_exists = null;
-		static $page_id_col_exists    = null;
+		static $block_goal_col_exists   = null;
+		static $page_id_col_exists      = null;
+		static $element_page_col_exists = null;
 		if ( $block_goal_col_exists === null ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$columns               = $wpdb->get_col( "DESC {$table_name}", 0 );
-			$block_goal_col_exists = in_array( 'block_goal', $columns, true );
-			$page_id_col_exists    = in_array( 'page_id', $columns, true );
+			$columns                 = $wpdb->get_col( "DESC {$table_name}", 0 );
+			$block_goal_col_exists   = in_array( 'block_goal', $columns, true );
+			$page_id_col_exists      = in_array( 'page_id', $columns, true );
+			$element_page_col_exists = in_array( 'element_page', $columns, true );
 		}
 		if ( $block_goal_col_exists ) {
 			$args['block_goal'] = $this->block_goal;
 		}
 		if ( $page_id_col_exists ) {
 			$args['page_id'] = $this->page_id;
+		}
+		if ( $element_page_col_exists ) {
+			// Keep the picked page for every scope, so a whole site goal can still show its element.
+			$this->element_page   = '' !== $this->specific_page ? $this->sanitize_relative_url( $this->specific_page ) : '';
+			$args['element_page'] = $this->element_page;
 		}
 
 		$success = false;
@@ -237,8 +250,9 @@ class Goal {
 		}
 
 		if ( $success ) {
-			// Clear cache for this goal.
+			// Clear cache for this goal and all active goals list.
 			wp_cache_delete( 'burst_goal_' . $this->id, 'burst' );
+			wp_cache_delete( 'burst_active_goals_all', 'burst' );
 			// Prevent loops by ensuring the save (for upgrading) doesn't get called again in the get method.
 			$this->get();
 			do_action( 'burst_after_save_goals', $this );
@@ -257,6 +271,9 @@ class Goal {
 
 		$table_name_statistics = $wpdb->prefix . 'burst_goal_statistics';
 		$result2               = $wpdb->delete( $table_name_statistics, [ 'goal_id' => $this->id ] );
+
+		wp_cache_delete( 'burst_goal_' . $this->id, 'burst' );
+		wp_cache_delete( 'burst_active_goals_all', 'burst' );
 
 		// Check if both delete queries were successful.
 		return $result1 !== false && $result2 !== false;
@@ -319,7 +336,7 @@ class Goal {
 	/**
 	 * Get the goal types. These are an option list from the goal_fields array.
 	 *
-	 * @return array<string, array{label: string, value?: string, description?: string, type?: string, icon?: string, server_side?: bool}>
+	 * @return array<string, array{server_side?: bool}>
 	 */
 	private function get_available_goal_fields(): array {
 		$fields = \Burst\burst_loader()->admin->app->fields->get_goal_fields();

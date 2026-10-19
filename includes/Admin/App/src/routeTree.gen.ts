@@ -18,6 +18,7 @@ import { Route as SourcesImport } from './routes/sources'
 import { Route as SettingsImport } from './routes/settings'
 import { Route as SalesImport } from './routes/sales'
 import { Route as ReportingImport } from './routes/reporting'
+import { Route as GoalsImport } from './routes/goals'
 import { Route as EngagementImport } from './routes/engagement'
 import { Route as IndexImport } from './routes/index'
 import { Route as TableVariantImport } from './routes/table.$variant'
@@ -59,6 +60,11 @@ const SalesRoute = SalesImport.update({
 
 const ReportingRoute = ReportingImport.update({
   path: '/reporting',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const GoalsRoute = GoalsImport.update({
+  path: '/goals',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -108,6 +114,13 @@ declare module '@tanstack/react-router' {
       path: '/engagement'
       fullPath: '/engagement'
       preLoaderRoute: typeof EngagementImport
+      parentRoute: typeof rootRoute
+    }
+    '/goals': {
+      id: '/goals'
+      path: '/goals'
+      fullPath: '/goals'
+      preLoaderRoute: typeof GoalsImport
       parentRoute: typeof rootRoute
     }
     '/reporting': {
@@ -219,6 +232,7 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/engagement': typeof EngagementRoute
+  '/goals': typeof GoalsRoute
   '/reporting': typeof ReportingRouteWithChildren
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRouteWithChildren
@@ -235,6 +249,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/engagement': typeof EngagementRoute
+  '/goals': typeof GoalsRoute
   '/reporting': typeof ReportingRouteWithChildren
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRouteWithChildren
@@ -252,6 +267,7 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/engagement': typeof EngagementRoute
+  '/goals': typeof GoalsRoute
   '/reporting': typeof ReportingRouteWithChildren
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRouteWithChildren
@@ -270,6 +286,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/engagement'
+    | '/goals'
     | '/reporting'
     | '/sales'
     | '/settings'
@@ -285,6 +302,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/engagement'
+    | '/goals'
     | '/reporting'
     | '/sales'
     | '/settings'
@@ -300,6 +318,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/engagement'
+    | '/goals'
     | '/reporting'
     | '/sales'
     | '/settings'
@@ -317,6 +336,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EngagementRoute: typeof EngagementRoute
+  GoalsRoute: typeof GoalsRoute
   ReportingRoute: typeof ReportingRouteWithChildren
   SalesRoute: typeof SalesRoute
   SettingsRoute: typeof SettingsRouteWithChildren
@@ -331,6 +351,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EngagementRoute: EngagementRoute,
+  GoalsRoute: GoalsRoute,
   ReportingRoute: ReportingRouteWithChildren,
   SalesRoute: SalesRoute,
   SettingsRoute: SettingsRouteWithChildren,
@@ -356,6 +377,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/engagement",
+        "/goals",
         "/reporting",
         "/sales",
         "/settings",
@@ -372,6 +394,9 @@ export const routeTree = rootRoute
     },
     "/engagement": {
       "filePath": "engagement.jsx"
+    },
+    "/goals": {
+      "filePath": "goals.jsx"
     },
     "/reporting": {
       "filePath": "reporting.jsx",

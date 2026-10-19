@@ -113,15 +113,15 @@ export const METRIC_DEFINITIONS = {
 		whyItMatters: __( 'Frequently clicked outbound links show where your visitors go next. Useful for partnership and monetization decisions.', 'burst-statistics' ),
 		url: 'https://burst-statistics.com/guides/external-link-tracking-see-where-your-visitors-go-next/'
 	},
-	internal_links: {
-		label: __( 'Internal links', 'burst-statistics' ),
-		definition: __( 'Clicks on links pointing to other pages within your site, showing visitor navigation paths.', 'burst-statistics' ),
-		whyItMatters: __( 'Tracking popular internal journeys reveals what content visitors seek after landing on your site.', 'burst-statistics' )
-	},
 	forms: {
 		label: __( 'Forms', 'burst-statistics' ),
 		definition: __( 'Tracks form views, starts and submissions for any form on your site, including Contact Form 7, Gravity Forms and WPForms.', 'burst-statistics' ),
 		whyItMatters: __( 'Comparing submissions to views reveals your form conversion rate and highlights drop-off points.', 'burst-statistics' )
+	},
+	events: {
+		label: __( 'Events', 'burst-statistics' ),
+		definition: __( 'Custom interactions recorded through the Burst event API, grouped by event name.', 'burst-statistics' ),
+		whyItMatters: __( 'Event counts show how often visitors complete interactions that matter to your site.', 'burst-statistics' )
 	},
 	search_terms: {
 		label: __( 'Website searches', 'burst-statistics' ),

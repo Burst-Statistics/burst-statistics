@@ -238,7 +238,7 @@ const useLicenseData = (): UseLicenseDataReturn => {
 			return false;
 		}
 
-		if ( 'sources' === id ) {
+		if ( 'sources' === id || 'slack' === id ) {
 			return isLicenseValid;
 		}
 
@@ -255,6 +255,7 @@ const useLicenseData = (): UseLicenseDataReturn => {
         const possibleIds = [
             'share-link-advanced',
             'sources',
+            'slack',
             'sales',
             'reporting'
         ];

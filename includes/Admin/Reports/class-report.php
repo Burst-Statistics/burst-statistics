@@ -23,6 +23,13 @@ class Report {
 	protected const NAME_MAX_LENGTH = 255;
 
 	/**
+	 * Valid report delivery channels.
+	 *
+	 * @var string[]
+	 */
+	public const VALID_CHANNELS = [ 'email', 'both' ];
+
+	/**
 	 * Report ID.
 	 */
 	public ?int $id = null;
@@ -114,12 +121,34 @@ class Report {
 	 * @return Report Return report to allow method chaining.
 	 */
 	public function set_channels( string $channels ): Report {
-		$valid_channels = [ 'email', 'both' ];
-		$default        = (string) burst_get_option( 'default_report_channels', 'email' );
-		$fallback       = in_array( $default, $valid_channels, true ) ? $default : 'email';
-		$this->channels = in_array( $channels, $valid_channels, true ) ? $channels : $fallback;
+		$this->channels = in_array( $channels, self::VALID_CHANNELS, true ) ? $channels : self::get_default_channels();
 
 		return $this;
+	}
+
+	/**
+	 * Get the delivery channel a new report starts with.
+	 *
+	 * The channel chosen in Settings › Notifications › Slack wins. Without a
+	 * choice it is email, which Pro's Slack channel filters to 'both' once a
+	 * valid Slack webhook is configured.
+	 *
+	 * @return string 'email' or 'both'.
+	 */
+	public static function get_default_channels(): string {
+		$stored = (string) burst_get_option( 'default_report_channels', '' );
+		if ( in_array( $stored, self::VALID_CHANNELS, true ) ) {
+			return $stored;
+		}
+
+		/**
+		 * Filter the delivery channel a new report starts with.
+		 *
+		 * @param string $channels 'email' or 'both'.
+		 */
+		$channels = (string) apply_filters( 'burst_default_report_channels', 'email' );
+
+		return in_array( $channels, self::VALID_CHANNELS, true ) ? $channels : 'email';
 	}
 
 	/**
@@ -501,7 +530,7 @@ class Report {
 		$this->last_edit      = time();
 
 		$this->content    = $this->sanitize_content( $this->content );
-		$this->recipients = $this->sanitize_recipients( $this->recipients );
+		$this->recipients = $this->sanitize_email_list( $this->recipients );
 		$this->date_range = Report_Date_range::from_string( $this->date_range );
 	}
 
@@ -665,23 +694,6 @@ class Report {
 		}
 
 		return $sanitized;
-	}
-
-	/**
-	 * Sanitize email recipients
-	 */
-	protected function sanitize_recipients( array $recipients ): array {
-		$sanitized = [];
-
-		foreach ( $recipients as $email ) {
-			$email = sanitize_email( trim( $email ) );
-
-			if ( is_email( $email ) ) {
-				$sanitized[] = $email;
-			}
-		}
-
-		return array_values( array_unique( $sanitized ) );
 	}
 
 	/**
@@ -870,6 +882,10 @@ class Report {
 	 * @return int|null The ISO weekday number, or null when no day is set.
 	 */
 	private function day_of_week_iso(): ?int {
+		if ( null === $this->day_of_week ) {
+			return null;
+		}
+
 		$map = [
 			Report_Day_Of_Week::MONDAY    => 1,
 			Report_Day_Of_Week::TUESDAY   => 2,
@@ -882,13 +898,6 @@ class Report {
 
 		return $map[ $this->day_of_week ] ?? null;
 	}
-
-	/**
-	 * Check if the report matches the monthly schedule for the given timestamp.
-	 *
-	 * @param int $timestamp The timestamp to check against.
-	 * @return bool True if it matches the monthly schedule, false otherwise.
-	 */
 
 	/**
 	 * Check if the report matches the monthly schedule for the given timestamp.

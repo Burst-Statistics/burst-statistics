@@ -1,6 +1,7 @@
 <?php
 namespace Burst\Frontend;
 
+use Burst\Frontend\Events\Events;
 use Burst\Frontend\Goals\Goals;
 use Burst\Frontend\Goals\Goals_Tracker;
 use Burst\Frontend\Ip\Ip;
@@ -94,6 +95,7 @@ class Frontend {
 		add_filter( 'render_block', [ $this, 'render_block_filter' ], 10, 2 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_time_tracking_script' ], 0 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_tracking_script' ], 0 );
+		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_events_scripts' ], 0 );
 		add_filter( 'script_loader_tag', [ $this, 'defer_burst_tracking_script' ], 10, 3 );
 		add_action( 'init', [ $this, 'use_logged_out_state_for_tests' ], 0 );
 		add_action( 'wp_ajax_burst_tracking_error', [ $this, 'log_tracking_error' ] );
@@ -107,6 +109,8 @@ class Frontend {
 		add_action( 'shutdown', [ $this, 'end_buffer' ], 999 );
 		$sessions = new Sessions();
 		$sessions->init();
+		$events = new Events();
+		$events->init();
 		$this->tracking = new Tracking();
 		$this->tracking->init();
 		$goals = new Goals();
@@ -568,29 +572,89 @@ class Frontend {
 	public function enqueue_burst_time_tracking_script( string $hook ): void {
 		// fix phpcs warning.
 		unset( $hook );
-		$file   = 'assets/js/timeme/timeme.min.js';
-		$src    = BURST_URL . $file;
-		$path   = BURST_PATH . $file;
-		$prefix = 'burst';
-		if ( $this->uses_obfuscated_combined_file() ) {
-			$prefix      = 'b';
-			$upload_path = $this->upload_dir( 'js', true, true );
-			// Fall back to the bundled file if the uploads copy is missing, so the src
-			// stays loadable while the handle keeps matching the tracking script.
-			if ( file_exists( $upload_path . 'timeme.min.js' ) ) {
-				$src  = $this->upload_url( 'js', true ) . 'timeme.min.js';
-				$path = $upload_path . 'timeme.min.js';
-			}
-		}
+		$script = $this->get_tracking_script_file( 'assets/js/timeme/timeme.min.js' );
 		if ( ! $this->exclude_from_tracking() ) {
 			wp_enqueue_script(
-				$prefix . '-timeme',
-				$src,
+				$script['prefix'] . '-timeme',
+				$script['src'],
 				[],
-				filemtime( $path ),
+				filemtime( $script['path'] ),
 				false
 			);
 		}
+	}
+
+	/**
+	 * Enqueue the custom events scripts: the early bootstrap in <head>, so
+	 * burst.event() can be called before the tracker loads, and the events API,
+	 * loaded like the tracking script. Only when custom events are enabled.
+	 */
+	public function enqueue_burst_events_scripts(): void {
+		if ( ! $this->should_load_events_scripts() ) {
+			return;
+		}
+
+		$bootstrap = $this->get_tracking_script_file( 'assets/js/build/burst-events-early-bootstrap.min.js' );
+		wp_enqueue_script(
+			$bootstrap['prefix'] . '-events-bootstrap',
+			$bootstrap['src'],
+			[],
+			filemtime( $bootstrap['path'] ),
+			false
+		);
+
+		$events = $this->get_tracking_script_file( 'assets/js/build/burst-events.min.js' );
+		wp_enqueue_script(
+			$events['prefix'] . '-events',
+			$events['src'],
+			[ $bootstrap['prefix'] . '-events-bootstrap' ],
+			filemtime( $events['path'] ),
+			$this->get_option_bool( 'enable_turbo_mode' )
+		);
+	}
+
+	/**
+	 * Whether the custom events scripts load on this request: custom events are
+	 * enabled and the tracking script itself loads.
+	 */
+	private function should_load_events_scripts(): bool {
+		return $this->get_option_bool( 'enable_custom_events' ) && ! $this->is_headless() && ! $this->exclude_from_tracking();
+	}
+
+	/**
+	 * Whether tracking runs headless, in which case no tracking scripts are enqueued.
+	 */
+	private function is_headless(): bool {
+		return (bool) apply_filters( 'burst_is_headless', defined( 'BURST_HEADLESS_DOMAIN' ) || $this->get_option_bool( 'headless' ) );
+	}
+
+	/**
+	 * Resolve a tracking-path script's handle prefix, URL and path. In ghost mode
+	 * the script is served from the obfuscated uploads directory under the 'b'
+	 * prefix, falling back to the bundled file if the uploads copy is missing, so
+	 * the src stays loadable while the handle keeps matching the tracking script.
+	 *
+	 * @param string $bundled_file Path of the bundled script, relative to the plugin root; a key of get_ghost_mode_scripts().
+	 * @return array{prefix: string, src: string, path: string}
+	 */
+	private function get_tracking_script_file( string $bundled_file ): array {
+		$script = [
+			'prefix' => 'burst',
+			'src'    => BURST_URL . $bundled_file,
+			'path'   => BURST_PATH . $bundled_file,
+		];
+		if ( ! $this->uses_obfuscated_combined_file() ) {
+			return $script;
+		}
+
+		$script['prefix'] = 'b';
+		$upload_path      = $this->upload_dir( 'js', true, true );
+		$ghost_file       = $this->get_ghost_mode_scripts()[ $bundled_file ];
+		if ( file_exists( $upload_path . $ghost_file ) ) {
+			$script['src']  = $this->upload_url( 'js', true ) . $ghost_file;
+			$script['path'] = $upload_path . $ghost_file;
+		}
+		return $script;
 	}
 
 	/**
@@ -628,8 +692,7 @@ class Frontend {
 		// fix phpcs warning.
 		unset( $hook );
 		// don't enqueue if headless.
-		$is_headless = (bool) apply_filters( 'burst_is_headless', defined( 'BURST_HEADLESS_DOMAIN' ) || $this->get_option_bool( 'headless' ) );
-		if ( $is_headless ) {
+		if ( $this->is_headless() ) {
 			return;
 		}
 
@@ -663,6 +726,11 @@ class Frontend {
 			if ( wp_script_is( 'wp-consent-api', 'registered' ) || function_exists( 'wp_has_consent' ) ) {
 				$deps[] = 'wp-consent-api';
 			}
+			// Print the events bootstrap first: its inline options must not replace the
+			// tracker's, and burst.event() must exist before the tracker can run.
+			if ( $this->should_load_events_scripts() ) {
+				$deps[] = $prefix . '-events-bootstrap';
+			}
 			wp_enqueue_script(
 				$prefix,
 				$file_url,
@@ -672,11 +740,12 @@ class Frontend {
 			);
 
 			if ( $add_localize_script ) {
-				wp_localize_script(
-					$prefix,
-					'burst',
-					$this->tracking->get_options()
-				);
+				// Merge onto window.burst instead of wp_localize_script()'s unconditional
+				// `var burst = {...}`, which would wipe out a pre-init snippet's placeholder
+				// (window.burst = window.burst || { q: [], event: fn }) added by a theme/plugin
+				// before this script loads.
+				$js = $this->get_burst_bootstrap_script( $this->tracking->get_options() );
+				wp_add_inline_script( $prefix, $js, 'before' );
 			}
 
 			if ( $this->debug_window_active() ) {
@@ -698,8 +767,10 @@ class Frontend {
 		// Ghost mode registers the scripts under the obfuscated 'b' prefix instead of 'burst',
 		// so we have to match both handle variants here. Otherwise the tracking script loses
 		// its defer/async attribute in ghost mode, which changes when it executes.
-		$is_timeme   = ( 'burst-timeme' === $handle || 'b-timeme' === $handle );
-		$is_tracking = ( 'burst' === $handle || 'b' === $handle );
+		$is_timeme = ( 'burst-timeme' === $handle || 'b-timeme' === $handle );
+		// The events API loads like the tracking script; its early bootstrap stays
+		// synchronous so burst.event() exists before other scripts run.
+		$is_tracking = in_array( $handle, [ 'burst', 'b', 'burst-events', 'b-events' ], true );
 
 		// time me load asap but async to avoid blocking the page load.
 		if ( $is_timeme ) {

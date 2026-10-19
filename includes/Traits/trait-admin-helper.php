@@ -363,6 +363,7 @@ trait Admin_Helper {
 				'rest_url'                             => get_rest_url(),
 				'site_url'                             => defined( 'BURST_HEADLESS_DOMAIN' ) ? esc_url_raw( BURST_HEADLESS_DOMAIN ) : get_site_url(),
 				'home_url'                             => home_url(),
+				'smartmatch_active'                    => \Burst\Admin\Search\Search::is_smartmatch_active(),
 				'admin_ajax_url'                       => add_query_arg( [ 'action' => 'burst_rest_api_fallback' ], admin_url( 'admin-ajax.php' ) ),
 				'dashboard_url'                        => $this->admin_url( 'burst' ),
 				'network_link'                         => network_site_url( 'plugins.php' ),
@@ -394,6 +395,9 @@ trait Admin_Helper {
 				// (native plugin install date). Both options use autoload = false.
 				'burst_date_picker_start_date'         => (int) ( get_option( 'burst_data_start' ) ?: get_option( 'burst_activation_time', 1640995200 ) ),
 				'external_links_first_cycle_completed' => (int) get_option( 'burst_external_links_last_completed', 0 ) > 0,
+				// The settings fields are manage-only, so viewers and share links
+				// read the custom events switch from here instead.
+				'custom_events_enabled'                => (bool) \burst_get_option( 'enable_custom_events' ),
 			]
 		);
 	}

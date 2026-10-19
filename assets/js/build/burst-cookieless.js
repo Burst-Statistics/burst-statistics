@@ -1,27 +1,77 @@
-!function(e,n){"object"==typeof exports&&"undefined"!=typeof module?n(exports):"function"==typeof define&&define.amd?define(["exports"],n):n((e="undefined"!=typeof globalThis?globalThis:e||self).ThumbmarkJS={})}(this,(function(e){"use strict";const n="https://api.thumbmarkjs.com",t={exclude:[],include:[],stabilize:["private","iframe"],logging:!0,timeout:5e3,cache_api_call:!0,performance:!1};let o={...t};const r={private:[{exclude:["canvas"],browsers:["firefox","safari>=17","brave"]},{exclude:["audio"],browsers:["samsungbrowser","safari"]},{exclude:["fonts"],browsers:["firefox"]},{exclude:["audio.sampleHash","hardware.deviceMemory","header.acceptLanguage.q","system.hardwareConcurrency","plugins"],browsers:["brave"]},{exclude:["tls.extensions"],browsers:["firefox","chrome","safari"]},{exclude:["header.acceptLanguage"],browsers:["edge","chrome"]}],iframe:[{exclude:["permissions.camera","permission.geolocation","permissions.microphone","system.applePayVersion","system.cookieEnabled"],browsers:["safari"]}],vpn:[{exclude:["ip"]}]};function i(e){let n=0;for(let t=0;t<e.length;++t)n+=Math.abs(e[t]);return n}function a(e,n,t){let o=[];for(let n=0;n<e[0].data.length;n++){let t=[];for(let o=0;o<e.length;o++)t.push(e[o].data[n]);o.push(s(t))}const r=new Uint8ClampedArray(o);return new ImageData(r,n,t)}function s(e){if(0===e.length)return 0;const n={};for(const t of e)n[t]=(n[t]||0)+1;let t=e[0];for(const e in n)n[e]>n[t]&&(t=parseInt(e,10));return t}function c(e){return e^=e>>>16,e=Math.imul(e,2246822507),e^=e>>>13,e=Math.imul(e,3266489909),(e^=e>>>16)>>>0}const l=new Uint32Array([597399067,2869860233,951274213,2716044179]);function u(e,n){return e<<n|e>>>32-n}function d(e,n=0){var t;if(n=n?0|n:0,"string"==typeof e&&(t=e,e=(new TextEncoder).encode(t).buffer),!(e instanceof ArrayBuffer))throw new TypeError("Expected key to be ArrayBuffer or string");const o=new Uint32Array([n,n,n,n]);!function(e,n){const t=e.byteLength/16|0,o=new Uint32Array(e,0,4*t);for(let e=0;e<t;e++){const t=o.subarray(4*e,4*(e+1));t[0]=Math.imul(t[0],l[0]),t[0]=u(t[0],15),t[0]=Math.imul(t[0],l[1]),n[0]=n[0]^t[0],n[0]=u(n[0],19),n[0]=n[0]+n[1],n[0]=Math.imul(n[0],5)+1444728091,t[1]=Math.imul(t[1],l[1]),t[1]=u(t[1],16),t[1]=Math.imul(t[1],l[2]),n[1]=n[1]^t[1],n[1]=u(n[1],17),n[1]=n[1]+n[2],n[1]=Math.imul(n[1],5)+197830471,t[2]=Math.imul(t[2],l[2]),t[2]=u(t[2],17),t[2]=Math.imul(t[2],l[3]),n[2]=n[2]^t[2],n[2]=u(n[2],15),n[2]=n[2]+n[3],n[2]=Math.imul(n[2],5)+2530024501,t[3]=Math.imul(t[3],l[3]),t[3]=u(t[3],18),t[3]=Math.imul(t[3],l[0]),n[3]=n[3]^t[3],n[3]=u(n[3],13),n[3]=n[3]+n[0],n[3]=Math.imul(n[3],5)+850148119}}(e,o),function(e,n){const t=e.byteLength/16|0,o=e.byteLength%16,r=new Uint32Array(4),i=new Uint8Array(e,16*t,o);switch(o){case 15:r[3]=r[3]^i[14]<<16;case 14:r[3]=r[3]^i[13]<<8;case 13:r[3]=r[3]^i[12],r[3]=Math.imul(r[3],l[3]),r[3]=u(r[3],18),r[3]=Math.imul(r[3],l[0]),n[3]=n[3]^r[3];case 12:r[2]=r[2]^i[11]<<24;case 11:r[2]=r[2]^i[10]<<16;case 10:r[2]=r[2]^i[9]<<8;case 9:r[2]=r[2]^i[8],r[2]=Math.imul(r[2],l[2]),r[2]=u(r[2],17),r[2]=Math.imul(r[2],l[3]),n[2]=n[2]^r[2];case 8:r[1]=r[1]^i[7]<<24;case 7:r[1]=r[1]^i[6]<<16;case 6:r[1]=r[1]^i[5]<<8;case 5:r[1]=r[1]^i[4],r[1]=Math.imul(r[1],l[1]),r[1]=u(r[1],16),r[1]=Math.imul(r[1],l[2]),n[1]=n[1]^r[1];case 4:r[0]=r[0]^i[3]<<24;case 3:r[0]=r[0]^i[2]<<16;case 2:r[0]=r[0]^i[1]<<8;case 1:r[0]=r[0]^i[0],r[0]=Math.imul(r[0],l[0]),r[0]=u(r[0],15),r[0]=Math.imul(r[0],l[1]),n[0]=n[0]^r[0]}}(e,o),function(e,n){n[0]=n[0]^e.byteLength,n[1]=n[1]^e.byteLength,n[2]=n[2]^e.byteLength,n[3]=n[3]^e.byteLength,n[0]=n[0]+n[1]|0,n[0]=n[0]+n[2]|0,n[0]=n[0]+n[3]|0,n[1]=n[1]+n[0]|0,n[2]=n[2]+n[0]|0,n[3]=n[3]+n[0]|0,n[0]=c(n[0]),n[1]=c(n[1]),n[2]=c(n[2]),n[3]=c(n[3]),n[0]=n[0]+n[1]|0,n[0]=n[0]+n[2]|0,n[0]=n[0]+n[3]|0,n[1]=n[1]+n[0]|0,n[2]=n[2]+n[0]|0,n[3]=n[3]+n[0]|0}(e,o);const r=new Uint8Array(o.buffer);return Array.from(r).map((e=>e.toString(16).padStart(2,"0"))).join("")}const m=280;function h(e,n){return new Promise((t=>setTimeout(t,e,n)))}const f=["Arial","Arial Black","Arial Narrow","Arial Rounded MT","Arimo","Archivo","Barlow","Bebas Neue","Bitter","Bookman","Calibri","Cabin","Candara","Century","Century Gothic","Comic Sans MS","Constantia","Courier","Courier New","Crimson Text","DM Mono","DM Sans","DM Serif Display","DM Serif Text","Dosis","Droid Sans","Exo","Fira Code","Fira Sans","Franklin Gothic Medium","Garamond","Geneva","Georgia","Gill Sans","Helvetica","Impact","Inconsolata","Indie Flower","Inter","Josefin Sans","Karla","Lato","Lexend","Lucida Bright","Lucida Console","Lucida Sans Unicode","Manrope","Merriweather","Merriweather Sans","Montserrat","Myriad","Noto Sans","Nunito","Nunito Sans","Open Sans","Optima","Orbitron","Oswald","Pacifico","Palatino","Perpetua","PT Sans","PT Serif","Poppins","Prompt","Public Sans","Quicksand","Rajdhani","Recursive","Roboto","Roboto Condensed","Rockwell","Rubik","Segoe Print","Segoe Script","Segoe UI","Sora","Source Sans Pro","Space Mono","Tahoma","Taviraj","Times","Times New Roman","Titillium Web","Trebuchet MS","Ubuntu","Varela Round","Verdana","Work Sans"],p=["monospace","sans-serif","serif"];function g(e,n){if(!e)throw new Error("Canvas context not supported");return e.font=`72px ${n}`,e.measureText("WwMmLli0Oo").width}function v(){var e;const n=document.createElement("canvas"),t=null!==(e=n.getContext("webgl"))&&void 0!==e?e:n.getContext("experimental-webgl");if(t&&"getParameter"in t)try{const e=(t.getParameter(t.VENDOR)||"").toString(),n=(t.getParameter(t.RENDERER)||"").toString();let o={vendor:e,renderer:n,version:(t.getParameter(t.VERSION)||"").toString(),shadingLanguageVersion:(t.getParameter(t.SHADING_LANGUAGE_VERSION)||"").toString()};if(!n.length||!e.length){const e=t.getExtension("WEBGL_debug_renderer_info");if(e){const n=(t.getParameter(e.UNMASKED_VENDOR_WEBGL)||"").toString(),r=(t.getParameter(e.UNMASKED_RENDERER_WEBGL)||"").toString();n&&(o.vendorUnmasked=n),r&&(o.rendererUnmasked=r)}}return o}catch(e){}return"undefined"}function w(){const e=new Float32Array(1),n=new Uint8Array(e.buffer);return e[0]=1/0,e[0]=e[0]-e[0],n[3]}const y=(e,n,t,o)=>{const r=(t-n)/o;let i=0;for(let t=0;t<o;t++){i+=e(n+(t+.5)*r)}return i*r};function b(e,n){const t={};return n.forEach((n=>{const o=function(e){if(0===e.length)return null;const n={};e.forEach((e=>{const t=String(e);n[t]=(n[t]||0)+1}));let t=e[0],o=1;return Object.keys(n).forEach((e=>{n[e]>o&&(t=e,o=n[e])})),t}(e.map((e=>n in e?e[n]:void 0)).filter((e=>void 0!==e)));o&&(t[n]=o)})),t}const S=["accelerometer","accessibility","accessibility-events","ambient-light-sensor","background-fetch","background-sync","bluetooth","camera","clipboard-read","clipboard-write","device-info","display-capture","gyroscope","geolocation","local-fonts","magnetometer","microphone","midi","nfc","notifications","payment-handler","persistent-storage","push","speaker","storage-access","top-level-storage-access","window-management","query"];function M(){var e,n,t,o,r,i;if("undefined"==typeof navigator)return{name:"unknown",version:"unknown"};const a=navigator.userAgent,s=[/(?<name>SamsungBrowser)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>EdgA|EdgiOS|Edg)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>OPR|OPX)\/(?<version>\d+(?:\.\d+)+)/,/Opera[\s\/](?<version>\d+(?:\.\d+)+)/,/Opera Mini\/(?<version>\d+(?:\.\d+)+)/,/Opera Mobi\/(?<version>\d+(?:\.\d+)+)/,/(?<name>Vivaldi)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>Brave)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>CriOS)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>FxiOS)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>Chrome|Chromium)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>Firefox|Waterfox|Iceweasel|IceCat)\/(?<version>\d+(?:\.\d+)+)/,/Version\/(?<version1>[\d.]+).*Safari\/[\d.]+|(?<name>Safari)\/(?<version2>[\d.]+)/,/(?<name>MSIE|Trident|IEMobile).+?(?<version>\d+(?:\.\d+)+)/,/(?<name>[A-Za-z]+)\/(?<version>\d+(?:\.\d+)+)/],c={edg:"Edge",edga:"Edge",edgios:"Edge",opr:"Opera",opx:"Opera",crios:"Chrome",fxios:"Firefox",samsung:"SamsungBrowser",vivaldi:"Vivaldi",brave:"Brave"};for(const l of s){const s=a.match(l);if(s){let a=null===(e=s.groups)||void 0===e?void 0:e.name,u=(null===(n=s.groups)||void 0===n?void 0:n.version)||(null===(t=s.groups)||void 0===t?void 0:t.version1)||(null===(o=s.groups)||void 0===o?void 0:o.version2);if(a||!(null===(r=s.groups)||void 0===r?void 0:r.version1)&&!(null===(i=s.groups)||void 0===i?void 0:i.version2)||(a="Safari"),!a&&l.source.includes("Opera Mini")&&(a="Opera Mini"),!a&&l.source.includes("Opera Mobi")&&(a="Opera Mobi"),!a&&l.source.includes("Opera")&&(a="Opera"),!a&&s[1]&&(a=s[1]),!u&&s[2]&&(u=s[2]),a){return{name:c[a.toLowerCase()]||a,version:u||"unknown"}}}}return{name:"unknown",version:"unknown"}}function P(){if("undefined"==typeof navigator||!navigator.userAgent)return!1;const e=navigator.userAgent;return/Mobi|Android|iPhone|iPod|IEMobile|Opera Mini|Opera Mobi|webOS|BlackBerry|Windows Phone/i.test(e)&&!/iPad/i.test(e)}function E(){let e=[];const n={"prefers-contrast":["high","more","low","less","forced","no-preference"],"any-hover":["hover","none"],"any-pointer":["none","coarse","fine"],pointer:["none","coarse","fine"],hover:["hover","none"],update:["fast","slow"],"inverted-colors":["inverted","none"],"prefers-reduced-motion":["reduce","no-preference"],"prefers-reduced-transparency":["reduce","no-preference"],scripting:["none","initial-only","enabled"],"forced-colors":["active","none"]};return Object.keys(n).forEach((t=>{n[t].forEach((n=>{matchMedia(`(${t}: ${n})`).matches&&e.push(`${t}: ${n}`)}))})),e}function A(){if("https:"===window.location.protocol&&"function"==typeof window.ApplePaySession)try{const e=window.ApplePaySession.supportsVersion;for(let n=15;n>0;n--)if(e(n))return n}catch(e){return 0}return 0}const x="SamsungBrowser"!==M().name?1:3;let C,T=null;const k={audio:async function(){return async function(){return new Promise(((e,n)=>{try{const n=44100,t=5e3,o=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,t,n),r=o.createBufferSource(),a=o.createOscillator();a.frequency.value=1e3;const s=o.createDynamicsCompressor();let c;s.threshold.value=-50,s.knee.value=40,s.ratio.value=12,s.attack.value=0,s.release.value=.2,a.connect(s),s.connect(o.destination),a.start(),o.oncomplete=n=>{c=n.renderedBuffer.getChannelData(0),e({sampleHash:i(c),maxChannels:o.destination.maxChannelCount,channelCountMode:r.channelCountMode})},o.startRendering()}catch(e){console.error("Error creating audio fingerprint:",e),n(e)}}))}()},canvas:async function(){return new Promise((e=>{const n=Array.from({length:3},(()=>function(){const e=document.createElement("canvas"),n=e.getContext("2d");if(!n)return new ImageData(1,1);e.width=m,e.height=20;const t=n.createLinearGradient(0,0,e.width,e.height);t.addColorStop(0,"red"),t.addColorStop(1/6,"orange"),t.addColorStop(2/6,"yellow"),t.addColorStop(.5,"green"),t.addColorStop(4/6,"blue"),t.addColorStop(5/6,"indigo"),t.addColorStop(1,"violet"),n.fillStyle=t,n.fillRect(0,0,e.width,e.height);const o="Random Text WMwmil10Oo";n.font="23.123px Arial",n.fillStyle="black",n.fillText(o,-5,15),n.fillStyle="rgba(0, 0, 255, 0.5)",n.fillText(o,-3.3,17.7),n.beginPath(),n.moveTo(0,0),n.lineTo(2*e.width/7,e.height),n.strokeStyle="white",n.lineWidth=2,n.stroke();const r=n.getImageData(0,0,e.width,e.height);return r}()));e({commonPixelsHash:d(a(n,m,20).data.toString()).toString()})}))},fonts:async function(e){return new Promise(((e,n)=>{try{!async function(e){for(var n;!document.body;)await h(50);const t=document.createElement("iframe");t.setAttribute("frameBorder","0");const o=t.style;o.setProperty("position","fixed"),o.setProperty("display","block","important"),o.setProperty("visibility","visible"),o.setProperty("border","0"),o.setProperty("opacity","0"),t.src="about:blank",document.body.appendChild(t);const r=t.contentDocument||(null===(n=t.contentWindow)||void 0===n?void 0:n.document);if(!r)throw new Error("Iframe document is not accessible");e({iframe:r}),setTimeout((()=>{document.body.removeChild(t)}),0)}((async({iframe:n})=>{const t=n.createElement("canvas").getContext("2d"),o=p.map((e=>g(t,e)));let r={};f.forEach((e=>{const n=g(t,e);o.includes(n)||(r[e]=n)})),e(r)}))}catch(e){n({error:"unsupported"})}}))},hardware:function(){return new Promise(((e,n)=>{const t=void 0!==navigator.deviceMemory?navigator.deviceMemory:0,o=window.performance&&window.performance.memory?window.performance.memory:0;e({videocard:v(),architecture:w(),deviceMemory:t.toString()||"undefined",jsHeapSizeLimit:o.jsHeapSizeLimit||0})}))},locales:function(){return new Promise((e=>{e({languages:navigator.language,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone})}))},math:function(){return new Promise((e=>{e({acos:Math.acos(.5),asin:y(Math.asin,-1,1,97),cos:y(Math.cos,0,Math.PI,97),largeCos:Math.cos(1e20),largeSin:Math.sin(1e20),largeTan:Math.tan(1e20),sin:y(Math.sin,-Math.PI,Math.PI,97),tan:y(Math.tan,0,2*Math.PI,97)})}))},permissions:async function(e){let n=(null==e?void 0:e.permissions_to_check)||S;const t=Array.from({length:3},(()=>async function(e){const n={};for(const t of e)try{const e=await navigator.permissions.query({name:t});n[t]=e.state.toString()}catch(e){}return n}(n)));return Promise.all(t).then((e=>b(e,n)))},plugins:async function(){const e=[];if(navigator.plugins)for(let n=0;n<navigator.plugins.length;n++){const t=navigator.plugins[n];e.push([t.name,t.filename,t.description].join("|"))}return new Promise((n=>{n({plugins:e})}))},screen:function(){return new Promise((e=>{const n={is_touchscreen:navigator.maxTouchPoints>0,maxTouchPoints:navigator.maxTouchPoints,colorDepth:screen.colorDepth,mediaMatches:E()};P()&&navigator.maxTouchPoints>0&&(n.resolution=function(){const e=window.screen.width,n=window.screen.height,t=Math.max(e,n).toString(),o=Math.min(e,n).toString();return`${t}x${o}`}()),e(n)}))},system:function(){return new Promise((e=>{const n=M();e({platform:window.navigator.platform,productSub:navigator.productSub,product:navigator.product,useragent:navigator.userAgent,hardwareConcurrency:navigator.hardwareConcurrency,browser:{name:n.name,version:n.version},mobile:P(),applePayVersion:A(),cookieEnabled:window.navigator.cookieEnabled})}))},webgl:async function(){"undefined"!=typeof document&&(C=document.createElement("canvas"),C.width=200,C.height=100,T=C.getContext("webgl"));try{if(!T)throw new Error("WebGL not supported");const e=Array.from({length:x},(()=>function(){try{if(!T)throw new Error("WebGL not supported");const e="\n          attribute vec2 position;\n          void main() {\n              gl_Position = vec4(position, 0.0, 1.0);\n          }\n      ",n="\n          precision mediump float;\n          void main() {\n              gl_FragColor = vec4(0.812, 0.195, 0.553, 0.921); // Set line color\n          }\n      ",t=T.createShader(T.VERTEX_SHADER),o=T.createShader(T.FRAGMENT_SHADER);if(!t||!o)throw new Error("Failed to create shaders");if(T.shaderSource(t,e),T.shaderSource(o,n),T.compileShader(t),!T.getShaderParameter(t,T.COMPILE_STATUS))throw new Error("Vertex shader compilation failed: "+T.getShaderInfoLog(t));if(T.compileShader(o),!T.getShaderParameter(o,T.COMPILE_STATUS))throw new Error("Fragment shader compilation failed: "+T.getShaderInfoLog(o));const r=T.createProgram();if(!r)throw new Error("Failed to create shader program");if(T.attachShader(r,t),T.attachShader(r,o),T.linkProgram(r),!T.getProgramParameter(r,T.LINK_STATUS))throw new Error("Shader program linking failed: "+T.getProgramInfoLog(r));T.useProgram(r);const i=137,a=new Float32Array(4*i),s=2*Math.PI/i;for(let e=0;e<i;e++){const n=e*s;a[4*e]=0,a[4*e+1]=0,a[4*e+2]=Math.cos(n)*(C.width/2),a[4*e+3]=Math.sin(n)*(C.height/2)}const c=T.createBuffer();T.bindBuffer(T.ARRAY_BUFFER,c),T.bufferData(T.ARRAY_BUFFER,a,T.STATIC_DRAW);const l=T.getAttribLocation(r,"position");T.enableVertexAttribArray(l),T.vertexAttribPointer(l,2,T.FLOAT,!1,0,0),T.viewport(0,0,C.width,C.height),T.clearColor(0,0,0,1),T.clear(T.COLOR_BUFFER_BIT),T.drawArrays(T.LINES,0,2*i);const u=new Uint8ClampedArray(C.width*C.height*4);T.readPixels(0,0,C.width,C.height,T.RGBA,T.UNSIGNED_BYTE,u);return new ImageData(u,C.width,C.height)}catch(e){return new ImageData(1,1)}finally{T&&(T.bindBuffer(T.ARRAY_BUFFER,null),T.useProgram(null),T.viewport(0,0,T.drawingBufferWidth,T.drawingBufferHeight),T.clearColor(0,0,0,0))}}()));return{commonPixelsHash:d(a(e,C.width,C.height).data.toString()).toString()}}catch(e){return{webgl:"unsupported"}}}},O={},I={timeout:"true"},R=(e,n,t)=>{O[e]=n};function _(){return"1.2.0"}function L(e,n){var t;let o=M();if("unknown"===o.name&&e.system&&"object"==typeof e.system&&!Array.isArray(e.system)){const n=e.system.browser;if(n&&"object"==typeof n&&!Array.isArray(n)){const e=n;o={name:e.name||"unknown",version:e.version||"unknown"}}}const i=o.name.toLowerCase(),a=o.version.split(".")[0]||"0",s=parseInt(a,10),c=[...(null==n?void 0:n.exclude)||[]],l=(null==n?void 0:n.stabilize)||[],u=(null==n?void 0:n.include)||[];for(const e of l){const n=r[e];if(n)for(const e of n){const n=!("browsers"in e),o=!n&&(null===(t=e.browsers)||void 0===t?void 0:t.some((e=>{const n=e.match(/(.+?)(>=)(\d+)/);if(n){const[,e,,t]=n,o=parseInt(t,10);return i===e&&s>=o}return i===e})));(n||o)&&c.push(...e.exclude)}}return function e(n,t=""){const o={};for(const[r,i]of Object.entries(n)){const n=t?`${t}.${r}`:r;if("object"!=typeof i||Array.isArray(i)||null===i){const e=c.some((e=>n.startsWith(e))),t=u.some((e=>n.startsWith(e)));e&&!t||(o[r]=i)}else{const t=e(i,n);Object.keys(t).length>0&&(o[r]=t)}}return o}(e)}const B="thumbmark_visitor_id";let D=null,F=null;const N=(e,t)=>{if(e.cache_api_call&&F)return Promise.resolve(F);if(D)return D;const o=`${n}/thumbmark`,r=function(){try{return localStorage.getItem(B)}catch(e){return null}}(),i={components:t,options:e,clientHash:d(JSON.stringify(t)),version:"1.2.0"};r&&(i.visitorId=r);const a=fetch(o,{method:"POST",headers:{"x-api-key":e.api_key,Authorization:"custom-authorized","Content-Type":"application/json"},body:JSON.stringify(i)}).then((e=>{if(!e.ok)throw new Error(`HTTP error! status: ${e.status}`);return e.json()})).then((e=>(e.visitorId&&e.visitorId!==r&&function(e){try{localStorage.setItem(B,e)}catch(e){}}(e.visitorId),F=e,D=null,e))).catch((e=>(console.error("Error fetching pro data",e),D=null,null))),s=e.timeout||5e3,c=new Promise((e=>{setTimeout((()=>{e({info:{timed_out:!0},version:"1.2.0"})}),s)}));return D=Promise.race([a,c]),D};async function U(e){const o={...t,...e},r={...k,...O},{elapsed:i,resolvedComponents:a}=await j(r,o),s=o.api_key?N(o,a):null,c=s?await s:null,l=o.performance?{elapsed:i}:{},u=L((null==c?void 0:c.components)||{},o),m={...a,...u},h=(null==c?void 0:c.info)||{uniqueness:{score:"api only"}},f=d(JSON.stringify(m));(async function(e,t,o){var r;const i=`${n}/log`,a={thumbmark:e,components:t,version:"1.2.0",options:o,path:null===(r=null===window||void 0===window?void 0:window.location)||void 0===r?void 0:r.pathname};if(!sessionStorage.getItem("_tmjs_l")&&Math.random()<1e-4){sessionStorage.setItem("_tmjs_l","1");try{await fetch(i,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(a)})}catch(e){}}})(f,m,o).catch((()=>{}));return{...(null==c?void 0:c.visitorId)&&{visitorId:c.visitorId},thumbmark:f,components:m,info:h,version:"1.2.0",...l}}async function j(e,n){const o={...t,...n},r=Object.entries(e).filter((([e])=>{var n;return!(null===(n=null==o?void 0:o.exclude)||void 0===n?void 0:n.includes(e))})).filter((([e])=>{var n,t,r,i;return(null===(n=null==o?void 0:o.include)||void 0===n?void 0:n.some((e=>e.includes("."))))?null===(t=null==o?void 0:o.include)||void 0===t?void 0:t.some((n=>n.startsWith(e))):0===(null===(r=null==o?void 0:o.include)||void 0===r?void 0:r.length)||(null===(i=null==o?void 0:o.include)||void 0===i?void 0:i.includes(e))})),i=r.map((([e])=>e)),a=r.map((([e,t])=>t(n))),s=await function(e,n,t){return Promise.all(e.map((e=>{const o=performance.now();return Promise.race([e.then((e=>({value:e,elapsed:performance.now()-o}))),(r=n,i=t,new Promise((e=>{setTimeout((()=>e(i)),r)}))).then((e=>({value:e,elapsed:performance.now()-o})))]);var r,i})))}(a,(null==o?void 0:o.timeout)||5e3,I),c={},l={};s.forEach(((e,n)=>{var t;null!=e.value&&(l[i[n]]=e.value,c[i[n]]=null!==(t=e.elapsed)&&void 0!==t?t:0)}));const u=L(l,o);return{elapsed:c,resolvedComponents:u}}e.Thumbmark=class{constructor(e){this.options={...t,...e}}async get(e){return U({...this.options,...e})}getVersion(){return"1.2.0"}includeComponent(e,n){R(e,n)}},e.filterThumbmarkData=L,e.getFingerprint=async function(e){try{const n=await U(o);return e?{hash:n.thumbmark.toString(),data:n.components}:n.thumbmark.toString()}catch(e){throw e}},e.getFingerprintData=async function(){return(await U(o)).components},e.getFingerprintPerformance=async function(){try{const{elapsed:e,resolvedComponents:n}=await j(k,o);return{...n,elapsed:e}}catch(e){throw e}},e.getThumbmark=U,e.getVersion=_,e.includeComponent=R,e.setOption=function(e,n){o[e]=n},e.stabilizationExclusionRules=r}));
+!function(e,n){"object"==typeof exports&&"undefined"!=typeof module?n(exports):"function"==typeof define&&define.amd?define(["exports"],n):n((e="undefined"!=typeof globalThis?globalThis:e||self).ThumbmarkJS={})}(this,(function(e){"use strict";const n=2592e5,t="thumbmark",r="https://api.thumbmarkjs.com",o={exclude:[],include:[],stabilize:["private","iframe"],logging:!0,collect_beacon:!0,timeout:5e3,cache_api_call:!0,cache_lifetime_in_ms:0,performance:!1,experimental:!1,simple_request:!1,property_name_factory:e=>`${t}_${e}`};let i={...o};const a={private:[{exclude:["canvas"],browsers:["firefox","safari>=17","brave"]},{exclude:["audio"],browsers:["samsungbrowser","safari"]},{exclude:["fonts"],browsers:["firefox"]},{exclude:["audio.sampleHash","hardware.deviceMemory","header.acceptLanguage.q","system.hardwareConcurrency","plugins"],browsers:["brave"]},{exclude:["tls.extensions"],browsers:["firefox","chrome","safari"]},{exclude:["header.acceptLanguage"],browsers:["edge","chrome"]}],iframe:[{exclude:["system.applePayVersion","system.cookieEnabled"],browsers:["safari"]},{exclude:["permissions"]}],vpn:[{exclude:["ip"]}],always:[{exclude:["speech"],browsers:["brave","firefox"]}]},s="undefined"!=typeof window?window.OfflineAudioContext||window.webkitOfflineAudioContext:null;function c(e){let n=0;for(let t=0;t<e.length;++t)n+=Math.abs(e[t]);return n}function l(e,n,t){if(1===e.length)return e[0];if(3===e.length){const r=e[0].data,o=e[1].data,i=e[2].data,a=new Uint8ClampedArray(r.length);for(let e=0;e<r.length;e++){const n=r[e],t=o[e],s=i[e];a[e]=n===t||n===s?n:t===s?t:n}return new ImageData(a,n,t)}let r=[];for(let n=0;n<e[0].data.length;n++){let t=[];for(let r=0;r<e.length;r++)t.push(e[r].data[n]);r.push(u(t))}const o=new Uint8ClampedArray(r);return new ImageData(o,n,t)}function u(e){if(0===e.length)return 0;const n={};for(const t of e)n[t]=(n[t]||0)+1;let t=e[0];for(const e in n)n[e]>n[t]&&(t=parseInt(e,10));return t}function d(e){return e^=e>>>16,e=Math.imul(e,2246822507),e^=e>>>13,e=Math.imul(e,3266489909),(e^=e>>>16)>>>0}const m=new Uint32Array([597399067,2869860233,951274213,2716044179]);function f(e,n){return e<<n|e>>>32-n}function p(e,n=0){if(n=n?0|n:0,"string"==typeof e&&(e=function(e){if("undefined"!=typeof TextEncoder)return(new TextEncoder).encode(e).buffer;const n=[];for(let t=0;t<e.length;t++){let r=e.charCodeAt(t);r<128?n.push(r):r<2048?n.push(192|r>>6,128|63&r):r<55296||r>=57344?n.push(224|r>>12,128|r>>6&63,128|63&r):(t++,r=65536+((1023&r)<<10|1023&e.charCodeAt(t)),n.push(240|r>>18,128|r>>12&63,128|r>>6&63,128|63&r))}return new Uint8Array(n).buffer}(e)),!(e instanceof ArrayBuffer))throw new TypeError("Expected key to be ArrayBuffer or string");const t=new Uint32Array([n,n,n,n]);!function(e,n){const t=e.byteLength/16|0,r=new Uint32Array(e,0,4*t);for(let e=0;e<t;e++){const t=r.subarray(4*e,4*(e+1));t[0]=Math.imul(t[0],m[0]),t[0]=f(t[0],15),t[0]=Math.imul(t[0],m[1]),n[0]=n[0]^t[0],n[0]=f(n[0],19),n[0]=n[0]+n[1],n[0]=Math.imul(n[0],5)+1444728091,t[1]=Math.imul(t[1],m[1]),t[1]=f(t[1],16),t[1]=Math.imul(t[1],m[2]),n[1]=n[1]^t[1],n[1]=f(n[1],17),n[1]=n[1]+n[2],n[1]=Math.imul(n[1],5)+197830471,t[2]=Math.imul(t[2],m[2]),t[2]=f(t[2],17),t[2]=Math.imul(t[2],m[3]),n[2]=n[2]^t[2],n[2]=f(n[2],15),n[2]=n[2]+n[3],n[2]=Math.imul(n[2],5)+2530024501,t[3]=Math.imul(t[3],m[3]),t[3]=f(t[3],18),t[3]=Math.imul(t[3],m[0]),n[3]=n[3]^t[3],n[3]=f(n[3],13),n[3]=n[3]+n[0],n[3]=Math.imul(n[3],5)+850148119}}(e,t),function(e,n){const t=e.byteLength/16|0,r=e.byteLength%16,o=new Uint32Array(4),i=new Uint8Array(e,16*t,r);switch(r){case 15:o[3]=o[3]^i[14]<<16;case 14:o[3]=o[3]^i[13]<<8;case 13:o[3]=o[3]^i[12],o[3]=Math.imul(o[3],m[3]),o[3]=f(o[3],18),o[3]=Math.imul(o[3],m[0]),n[3]=n[3]^o[3];case 12:o[2]=o[2]^i[11]<<24;case 11:o[2]=o[2]^i[10]<<16;case 10:o[2]=o[2]^i[9]<<8;case 9:o[2]=o[2]^i[8],o[2]=Math.imul(o[2],m[2]),o[2]=f(o[2],17),o[2]=Math.imul(o[2],m[3]),n[2]=n[2]^o[2];case 8:o[1]=o[1]^i[7]<<24;case 7:o[1]=o[1]^i[6]<<16;case 6:o[1]=o[1]^i[5]<<8;case 5:o[1]=o[1]^i[4],o[1]=Math.imul(o[1],m[1]),o[1]=f(o[1],16),o[1]=Math.imul(o[1],m[2]),n[1]=n[1]^o[1];case 4:o[0]=o[0]^i[3]<<24;case 3:o[0]=o[0]^i[2]<<16;case 2:o[0]=o[0]^i[1]<<8;case 1:o[0]=o[0]^i[0],o[0]=Math.imul(o[0],m[0]),o[0]=f(o[0],15),o[0]=Math.imul(o[0],m[1]),n[0]=n[0]^o[0]}}(e,t),function(e,n){n[0]=n[0]^e.byteLength,n[1]=n[1]^e.byteLength,n[2]=n[2]^e.byteLength,n[3]=n[3]^e.byteLength,n[0]=n[0]+n[1]|0,n[0]=n[0]+n[2]|0,n[0]=n[0]+n[3]|0,n[1]=n[1]+n[0]|0,n[2]=n[2]+n[0]|0,n[3]=n[3]+n[0]|0,n[0]=d(n[0]),n[1]=d(n[1]),n[2]=d(n[2]),n[3]=d(n[3]),n[0]=n[0]+n[1]|0,n[0]=n[0]+n[2]|0,n[0]=n[0]+n[3]|0,n[1]=n[1]+n[0]|0,n[2]=n[2]+n[0]|0,n[3]=n[3]+n[0]|0}(e,t);const r=new Uint8Array(t.buffer);return Array.from(r).map((e=>e.toString(16).padStart(2,"0"))).join("")}const h=280;function g(e,n){return new Promise((t=>setTimeout(t,e,n)))}const v=["Arial","Arial Black","Arial Narrow","Arial Rounded MT","Arimo","Archivo","Barlow","Bebas Neue","Bitter","Bookman","Calibri","Cabin","Candara","Century","Century Gothic","Comic Sans MS","Constantia","Courier","Courier New","Crimson Text","DM Mono","DM Sans","DM Serif Display","DM Serif Text","Dosis","Droid Sans","Exo","Fira Code","Fira Sans","Franklin Gothic Medium","Garamond","Geneva","Georgia","Gill Sans","Helvetica","Impact","Inconsolata","Indie Flower","Inter","Josefin Sans","Karla","Lato","Lexend","Lucida Bright","Lucida Console","Lucida Sans Unicode","Manrope","Merriweather","Merriweather Sans","Montserrat","Myriad","Noto Sans","Nunito","Nunito Sans","Open Sans","Optima","Orbitron","Oswald","Pacifico","Palatino","Perpetua","PT Sans","PT Serif","Poppins","Prompt","Public Sans","Quicksand","Rajdhani","Recursive","Roboto","Roboto Condensed","Rockwell","Rubik","Segoe Print","Segoe Script","Segoe UI","Sora","Source Sans Pro","Space Mono","Tahoma","Taviraj","Times","Times New Roman","Titillium Web","Trebuchet MS","Ubuntu","Varela Round","Verdana","Work Sans"],y=["monospace","sans-serif","serif"];function w(e,n){return e.font=`72px ${n}`,e.measureText("WwMmLli0Oo").width}function b(){var e;const n=document.createElement("canvas"),t=null!==(e=n.getContext("webgl"))&&void 0!==e?e:n.getContext("experimental-webgl");if(t&&"getParameter"in t)try{const e=(t.getParameter(t.VENDOR)||"").toString(),n=(t.getParameter(t.RENDERER)||"").toString();let r={vendor:e,renderer:n,version:(t.getParameter(t.VERSION)||"").toString(),shadingLanguageVersion:(t.getParameter(t.SHADING_LANGUAGE_VERSION)||"").toString()};if(!n.length||!e.length){const e=t.getExtension("WEBGL_debug_renderer_info");if(e){const n=(t.getParameter(e.UNMASKED_VENDOR_WEBGL)||"").toString(),o=(t.getParameter(e.UNMASKED_RENDERER_WEBGL)||"").toString();n&&(r.vendorUnmasked=n),o&&(r.rendererUnmasked=o)}}return r}catch(e){}return"undefined"}function S(){const e=new Float32Array(1),n=new Uint8Array(e.buffer);return e[0]=1/0,e[0]=e[0]-e[0],n[3]}const _=(e,n,t,r)=>{const o=(t-n)/r;let i=0;for(let t=0;t<r;t++){i+=e(n+(t+.5)*o)}return i*o};function P(e,n){const t={};return n.forEach((n=>{const r=function(e){if(0===e.length)return null;const n={};e.forEach((e=>{const t=String(e);n[t]=(n[t]||0)+1}));let t=e[0],r=1;return Object.keys(n).forEach((e=>{n[e]>r&&(t=e,r=n[e])})),t}(e.map((e=>n in e?e[n]:void 0)).filter((e=>void 0!==e)));r&&(t[n]=r)})),t}const A=["accelerometer","accessibility","accessibility-events","ambient-light-sensor","background-fetch","background-sync","bluetooth","camera","clipboard-read","clipboard-write","device-info","display-capture","gyroscope","geolocation","local-fonts","magnetometer","microphone","midi","nfc","notifications","payment-handler","persistent-storage","push","speaker","storage-access","top-level-storage-access","window-management","query"];const x=new Map;function M(){if("undefined"==typeof navigator)return{name:"unknown",version:"unknown"};const e=!!navigator.brave,n=(e?"B|":"N|")+navigator.userAgent,t=x.get(n);if(t)return t;const r=[{name:"Brave",detect:()=>e}];let o;for(const e of r)if(e.detect()){const t=C(navigator.userAgent);return o={name:e.name,version:t.version},x.set(n,o),o}return o=C(navigator.userAgent),x.set(n,o),o}function C(e){var n,t,r,o,i,a;const s=[/(?<name>SamsungBrowser)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>EdgA|EdgiOS|Edg)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>OPR|OPX)\/(?<version>\d+(?:\.\d+)+)/,/Opera[\s\/](?<version>\d+(?:\.\d+)+)/,/Opera Mini\/(?<version>\d+(?:\.\d+)+)/,/Opera Mobi\/(?<version>\d+(?:\.\d+)+)/,/(?<name>Vivaldi)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>CriOS)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>FxiOS)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>Chrome|Chromium)\/(?<version>\d+(?:\.\d+)+)/,/(?<name>Firefox|Waterfox|Iceweasel|IceCat)\/(?<version>\d+(?:\.\d+)+)/,/Version\/(?<version1>[\d.]+).*Safari\/[\d.]+|(?<name>Safari)\/(?<version2>[\d.]+)/,/(?<name>MSIE|Trident|IEMobile).+?(?<version>\d+(?:\.\d+)+)/,/(?<name>[A-Za-z]+)\/(?<version>\d+(?:\.\d+)+)/],c={edg:"Edge",edga:"Edge",edgios:"Edge",opr:"Opera",opx:"Opera",crios:"Chrome",fxios:"Firefox",samsung:"SamsungBrowser",vivaldi:"Vivaldi"};for(const l of s){const s=e.match(l);if(s){let e=null===(n=s.groups)||void 0===n?void 0:n.name,u=(null===(t=s.groups)||void 0===t?void 0:t.version)||(null===(r=s.groups)||void 0===r?void 0:r.version1)||(null===(o=s.groups)||void 0===o?void 0:o.version2);if(e||!(null===(i=s.groups)||void 0===i?void 0:i.version1)&&!(null===(a=s.groups)||void 0===a?void 0:a.version2)||(e="Safari"),!e&&l.source.includes("Opera Mini")&&(e="Opera Mini"),!e&&l.source.includes("Opera Mobi")&&(e="Opera Mobi"),!e&&l.source.includes("Opera")&&(e="Opera"),!e&&s[1]&&(e=s[1]),!u&&s[2]&&(u=s[2]),e){return{name:c[e.toLowerCase()]||e,version:u||"unknown"}}}}return{name:"unknown",version:"unknown"}}function E(){if("undefined"==typeof navigator||!navigator.userAgent)return!1;const e=navigator.userAgent;return/Mobi|Android|iPhone|iPod|IEMobile|Opera Mini|Opera Mobi|webOS|BlackBerry|Windows Phone/i.test(e)&&!/iPad/i.test(e)}function T(){let e=[];const n={"prefers-contrast":["high","more","low","less","forced","no-preference"],"any-hover":["hover","none"],"any-pointer":["none","coarse","fine"],pointer:["none","coarse","fine"],hover:["hover","none"],update:["fast","slow"],"inverted-colors":["inverted","none"],"prefers-reduced-motion":["reduce","no-preference"],"prefers-reduced-transparency":["reduce","no-preference"],scripting:["none","initial-only","enabled"],"forced-colors":["active","none"]};return Object.keys(n).forEach((t=>{n[t].forEach((n=>{matchMedia(`(${t}: ${n})`).matches&&e.push(`${t}: ${n}`)}))})),e}function k(){if("https:"===window.location.protocol&&"function"==typeof window.ApplePaySession)try{const e=window.ApplePaySession.supportsVersion;for(let n=15;n>0;n--)if(e(n))return n}catch(e){return 0}return 0}const R="SamsungBrowser"!==M().name?1:3,O="Brave"!==M().name,I=137,B=(()=>{const e=new Float32Array(548),n=2*Math.PI/I;for(let t=0;t<I;t++){const r=t*n;e[4*t]=0,e[4*t+1]=0,e[4*t+2]=100*Math.cos(r),e[4*t+3]=50*Math.sin(r)}return e})();let D=null;function L(){try{if("undefined"==typeof document)return null;const e=document.createElement("canvas");e.width=200,e.height=100;const n=e.getContext("webgl");if(!n)return null;e.addEventListener("webglcontextlost",(e=>{e.preventDefault(),D=null}),{once:!0});const t=n.createShader(n.VERTEX_SHADER),r=n.createShader(n.FRAGMENT_SHADER);if(!t||!r)return null;if(n.shaderSource(t,"\n    attribute vec2 position;\n    void main() {\n        gl_Position = vec4(position, 0.0, 1.0);\n    }\n"),n.compileShader(t),!n.getShaderParameter(t,n.COMPILE_STATUS))return null;if(n.shaderSource(r,"\n    precision mediump float;\n    void main() {\n        gl_FragColor = vec4(0.812, 0.195, 0.553, 0.921); // Set line color\n    }\n"),n.compileShader(r),!n.getShaderParameter(r,n.COMPILE_STATUS))return null;const o=n.createProgram();if(!o)return null;if(n.attachShader(o,t),n.attachShader(o,r),n.linkProgram(o),!n.getProgramParameter(o,n.LINK_STATUS))return null;const i=n.createBuffer();return i?(n.bindBuffer(n.ARRAY_BUFFER,i),n.bufferData(n.ARRAY_BUFFER,B,n.STATIC_DRAW),n.bindBuffer(n.ARRAY_BUFFER,null),{canvas:e,gl:n,program:o,buffer:i}):null}catch(e){return null}}function j(e){const n=new Set;return function e(t){if(t&&t.toJSON&&"function"==typeof t.toJSON&&(t=t.toJSON()),void 0===t)return;if("number"==typeof t)return isFinite(t)?""+t:"null";if("object"!=typeof t)return JSON.stringify(t);let r,o;if(Array.isArray(t)){for(o="[",r=0;r<t.length;r++)r&&(o+=","),o+=e(t[r])||"null";return o+"]"}if(null===t)return"null";if(n.has(t))throw new TypeError("Converting circular structure to JSON");n.add(t);const i=Object.keys(t).sort();for(o="",r=0;r<i.length;r++){const n=i[r],a=e(t[n]);a&&(o&&(o+=","),o+=JSON.stringify(n)+":"+a)}return n.delete(t),"{"+o+"}"}(e)||""}const N={audio:async function(){return s?async function(){return new Promise(((e,n)=>{try{const n=new s(1,5e3,44100),t=n.createBufferSource(),r=n.createOscillator();r.frequency.value=1e3;const o=n.createDynamicsCompressor();let i;o.threshold.value=-50,o.knee.value=40,o.ratio.value=12,o.attack.value=0,o.release.value=.2,r.connect(o),o.connect(n.destination),r.start(),n.oncomplete=r=>{i=r.renderedBuffer.getChannelData(0),e({sampleHash:c(i),maxChannels:n.destination.maxChannelCount,channelCountMode:t.channelCountMode})},n.startRendering()}catch(e){n(e)}}))}():null},canvas:async function(){return new Promise((e=>{const n=Array.from({length:3},(()=>function(){const e=document.createElement("canvas"),n=e.getContext("2d");if(!n)return null;e.width=h,e.height=20;const t=n.createLinearGradient(0,0,e.width,e.height);t.addColorStop(0,"red"),t.addColorStop(1/6,"orange"),t.addColorStop(2/6,"yellow"),t.addColorStop(.5,"green"),t.addColorStop(4/6,"blue"),t.addColorStop(5/6,"indigo"),t.addColorStop(1,"violet"),n.fillStyle=t,n.fillRect(0,0,e.width,e.height);const r="Random Text WMwmil10Oo";return n.font="23.123px Arial",n.fillStyle="black",n.fillText(r,-5,15),n.fillStyle="rgba(0, 0, 255, 0.5)",n.fillText(r,-3.3,17.7),n.beginPath(),n.moveTo(0,0),n.lineTo(2*e.width/7,e.height),n.strokeStyle="white",n.lineWidth=2,n.stroke(),n.getImageData(0,0,e.width,e.height)}())).filter((e=>null!==e));0!==n.length?e({commonPixelsHash:p(l(n,h,20).data.toString()).toString()}):e(null)}))},fonts:async function(e){return new Promise((e=>{try{!async function(e){for(var n;!document.body;)await g(50);const t=document.createElement("iframe");t.setAttribute("frameBorder","0");const r=t.style;r.setProperty("position","fixed"),r.setProperty("display","block","important"),r.setProperty("visibility","visible"),r.setProperty("border","0"),r.setProperty("opacity","0"),t.src="about:blank",document.body.appendChild(t);const o=t.contentDocument||(null===(n=t.contentWindow)||void 0===n?void 0:n.document);if(!o)throw new Error("Iframe document is not accessible");e({iframe:o}),setTimeout((()=>{document.body.removeChild(t)}),0)}((async({iframe:n})=>{const t=n.createElement("canvas").getContext("2d");if(!t)return void e(null);const r=y.map((e=>w(t,e)));let o={};v.forEach((e=>{const n=w(t,e);r.includes(n)||(o[e]=n)})),e(o)}))}catch(n){e(null)}}))},hardware:function(){return new Promise(((e,n)=>{const t=void 0!==navigator.deviceMemory?navigator.deviceMemory:0,r=window.performance&&window.performance.memory?window.performance.memory:0;e({videocard:b(),architecture:S(),deviceMemory:t.toString()||"undefined",jsHeapSizeLimit:r.jsHeapSizeLimit||0})}))},locales:function(){return new Promise((e=>{e({languages:navigator.language,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone})}))},math:function(){return new Promise((e=>{e({acos:Math.acos(.5),asin:_(Math.asin,-1,1,97),cos:_(Math.cos,0,Math.PI,97),largeCos:Math.cos(1e20),largeSin:Math.sin(1e20),largeTan:Math.tan(1e20),sin:_(Math.sin,-Math.PI,Math.PI,97),tan:_(Math.tan,0,2*Math.PI,97)})}))},permissions:async function(e){const n=(null==e?void 0:e.permissions_to_check)||A;return P(await Promise.all(Array.from({length:3},(()=>async function(e){const n={};for(const t of e)try{const e=await navigator.permissions.query({name:t});n[t]=e.state.toString()}catch(e){}return n}(n)))),n)},plugins:async function(){const e=[];if(navigator.plugins)for(let n=0;n<navigator.plugins.length;n++){const t=navigator.plugins[n];e.push([t.name,t.filename,t.description].join("|"))}return new Promise((n=>{n({plugins:e})}))},screen:function(){return new Promise((e=>{if("undefined"==typeof matchMedia||"undefined"==typeof screen)return void e(null);const n={is_touchscreen:navigator.maxTouchPoints>0,maxTouchPoints:navigator.maxTouchPoints,colorDepth:screen.colorDepth,mediaMatches:T()};E()&&navigator.maxTouchPoints>0&&(n.resolution=function(){const e=window.screen.width,n=window.screen.height,t=Math.max(e,n).toString(),r=Math.min(e,n).toString();return`${t}x${r}`}()),e(n)}))},system:function(){return new Promise((e=>{const n=M();e({platform:window.navigator.platform,productSub:navigator.productSub,product:navigator.product,useragent:navigator.userAgent,hardwareConcurrency:navigator.hardwareConcurrency,browser:{name:n.name,version:n.version},mobile:E(),applePayVersion:k(),cookieEnabled:window.navigator.cookieEnabled})}))},webgl:async function(){const e=O?(D||(D=L()),D):L();if(!e)return{webgl:"unsupported"};try{const n=Array.from({length:R},(()=>function(e){const{canvas:n,gl:t,program:r,buffer:o}=e;try{t.useProgram(r),t.bindBuffer(t.ARRAY_BUFFER,o);const e=t.getAttribLocation(r,"position");t.enableVertexAttribArray(e),t.vertexAttribPointer(e,2,t.FLOAT,!1,0,0),t.viewport(0,0,n.width,n.height),t.clearColor(0,0,0,1),t.clear(t.COLOR_BUFFER_BIT),t.drawArrays(t.LINES,0,274);const i=new Uint8ClampedArray(n.width*n.height*4);return t.readPixels(0,0,n.width,n.height,t.RGBA,t.UNSIGNED_BYTE,i),new ImageData(i,n.width,n.height)}catch(e){return D=null,new ImageData(1,1)}finally{t.bindBuffer(t.ARRAY_BUFFER,null),t.useProgram(null),t.viewport(0,0,t.drawingBufferWidth,t.drawingBufferHeight),t.clearColor(0,0,0,0)}}(e)));return{commonPixelsHash:p(l(n,e.canvas.width,e.canvas.height).data.toString()).toString()}}catch(e){return{webgl:"unsupported"}}},webrtc:async function(e){return new Promise((e=>{let n;try{const t=window.RTCPeerConnection||window.webkitRTCPeerConnection||window.mozRTCPeerConnection;if(!t)return void e({supported:!1,error:"WebRTC not supported"});n=new t({iceCandidatePoolSize:1,iceServers:[]});const r=n;r.createDataChannel("");(async()=>{try{const n={offerToReceiveAudio:!0,offerToReceiveVideo:!0},t=await r.createOffer(n);await r.setLocalDescription(t);const o=t.sdp||"",i=[...new Set((o.match(/extmap:\d+ [^\n\r]+/g)||[]).map((e=>e.replace(/extmap:\d+ /,""))))].sort(),a=e=>{const n=o.match(new RegExp(`m=${e} [^\\s]+ [^\\s]+ ([^\\n\\r]+)`));return n?n[1].split(" "):[]},s=(e,n)=>n.map((n=>{const t=new RegExp(`(rtpmap|fmtp|rtcp-fb):${n} (.+)`,"g"),r=[...o.matchAll(t)];if(!r.length)return null;const i={};return r.forEach((n=>{const[t,r,o]=n,a=o.split("/");"rtpmap"===r?(i.mimeType=`${e}/${a[0]}`,i.clockRate=+a[1],"audio"===e&&(i.channels=+a[2]||1)):"rtcp-fb"===r?(i.feedbackSupport=i.feedbackSupport||[],i.feedbackSupport.push(o)):"fmtp"===r&&(i.sdpFmtpLine=o)})),i})).filter(Boolean),c=s("audio",a("audio")),l=s("video",a("video")),u={audio:{count:c.length,hash:p(j(c))},video:{count:l.length,hash:p(j(l))},extensionsHash:p(j(i))};r.close();const d={supported:!0,...u,candidateType:"host"};e({details:d,hash:p(j(d))})}catch(n){r.close(),e({supported:!0,error:`WebRTC offer failed: ${n.message}`})}})()}catch(t){null==n||n.close(),e({supported:!1,error:`WebRTC error: ${t.message}`})}}))},speech:async function(){return new Promise((e=>{try{if("undefined"==typeof window||!window.speechSynthesis||"function"!=typeof window.speechSynthesis.getVoices)return void e({supported:!1,error:"Speech Synthesis API not supported"});let n=!1,t=null;const r=r=>{if(!n){n=!0,t&&clearTimeout(t);try{const n=r.map((e=>{const n=e=>e.replace(/\\/g,"\\\\").replace(/,/g,"\\,");return[n(e.voiceURI||""),n(e.name||""),n(e.lang||""),e.localService?"1":"0",e.default?"1":"0"].join(",")}));n.sort();const t={voiceCount:r.length,voicesHash:p(j(n))};e({details:t,hash:p(j(t))})}catch(n){e({supported:!0,error:`Voice processing failed: ${n.message}`})}}},o=window.speechSynthesis.getVoices();if(o.length>0)return void r(o);t=setTimeout((()=>{const e=window.speechSynthesis.getVoices();r(e)}),800);const i=()=>{window.speechSynthesis.removeEventListener("voiceschanged",i);const e=window.speechSynthesis.getVoices();r(e)};window.speechSynthesis.addEventListener("voiceschanged",i)}catch(n){e({supported:!1,error:`Speech Synthesis error: ${n.message}`})}}))}},U={},F={timeout:"true"};function $(){return"1.12.0"}function V(e,n){var t,r;let o=M();if("unknown"===o.name&&n){const e=null===(t=n.system)||void 0===t?void 0:t.browser;(null==e?void 0:e.name)&&(o={name:String(e.name),version:String(e.version||"unknown")})}const i=o.name.toLowerCase(),s=parseInt(o.version.split(".")[0]||"0",10),c=Array.isArray(null==e?void 0:e.exclude)?[...e.exclude]:[],l=[...new Set([...(null==e?void 0:e.stabilize)||[],"always"])];for(const e of l){const n=a[e];if(n)for(const e of n)"browsers"in e&&!(null===(r=e.browsers)||void 0===r?void 0:r.some((e=>{const n=e.match(/(.+?)(>=)(\d+)/);return n?i===n[1]&&s>=+n[3]:i===e})))||c.push(...e.exclude)}return c}function W(e,n){const t=V(n,e),r=Array.isArray(null==n?void 0:n.include)?n.include:[];return function e(n,o=""){const i={};for(const[a,s]of Object.entries(n)){const n=o?`${o}.${a}`:a;if("object"!=typeof s||Array.isArray(s)||null===s){const e=t.some((e=>n.startsWith(e))),o=r.some((e=>n.startsWith(e)));e&&!o||(i[a]=s)}else{const t=e(s,n);Object.keys(t).length>0&&(i[a]=t)}}return i}(e)}const G="https://experimental.thumbmarkjs.com/experimental.min.js",H=131072;function q(e,n){const t={target:"request",type:e};return n&&(t.message=n.slice(0,200)),{schema:0,payload_id:"none",signals:{},errors:[t]}}function J(e){if("object"!=typeof e||null===e||Array.isArray(e))return!1;const n=Object.getPrototypeOf(e);return n===Object.prototype||null===n}function z(e){return e instanceof Error?e.message:void 0}async function Y(){var e;try{return null!==(e=await function(e,n){let t;const r=new Promise((e=>{t=setTimeout((()=>e(null)),n)}));return Promise.race([e,r]).finally((()=>clearTimeout(t)))}(async function(){let e,n;try{const n=await fetch(G,{method:"GET"});if(!n.ok)return q("http",`HTTP ${n.status}`);e=await n.text()}catch(e){return q("fetch",z(e))}if(!e)return q("empty");if(e.length>H)return q("oversized",`${e.length} chars`);try{const t=eval;n=await Promise.resolve(t(e))}catch(e){return q(function(e){return e instanceof SyntaxError?"syntax":e instanceof EvalError?"eval_blocked":"threw"}(e),z(e))}return function(e){return!!J(e)&&!("number"!=typeof e.schema||e.schema<1)&&"string"==typeof e.payload_id&&J(e.signals)}(n)?{...n,errors:Array.isArray(n.errors)?n.errors:[]}:q("malformed")}(),2e3))&&void 0!==e?e:q("timeout","exceeded 2000ms")}catch(e){return q("threw",z(e))}}const K="_tmjs_c";function X(e){return(new TextEncoder).encode(e).length}function Z(){try{if("undefined"==typeof sessionStorage)return;sessionStorage.setItem(K,"1")}catch(e){}}function Q(e,n,t){try{if(!1===n.collect_beacon)return;if(!e||X(e)>64)return;if(function(){try{return"undefined"!=typeof sessionStorage&&!!sessionStorage.getItem(K)}catch(e){return!1}}())return;const r=n.collect_endpoint||"https://collect.thumbmarkjs.com/beacon",o="undefined"!=typeof navigator?navigator.userAgent:"",i={thumbmark:e};o&&X(o)<=512&&(i.ua=o),(null==t?void 0:t.ja4)&&X(t.ja4)<=64&&(i.ja4=t.ja4),(null==t?void 0:t.source)&&X(t.source)<=32&&(i.ja4_source=t.source);const a=JSON.stringify(i);if("undefined"!=typeof navigator&&"function"==typeof navigator.sendBeacon){let e=!1;try{e=navigator.sendBeacon(r,a)}catch(n){e=!1}if(e)return void Z()}try{const e=fetch(r,{method:"POST",mode:"no-cors",keepalive:!0,headers:{"Content-Type":"text/plain;charset=UTF-8"},body:a});Z(),e.catch((()=>{}))}catch(e){}}catch(e){}}const ee="visitor_id";function ne(e){return e.storage_property_name?e.storage_property_name:e.property_name_factory(ee)}const te=`${t}_${ee}`;function re(e,n){try{localStorage.setItem(ne(n),e)}catch(e){}}const oe="cache";function ie(e){try{const n=localStorage.getItem(e.property_name_factory(oe)),t=JSON.parse(n);return t||{}}catch(e){}return{}}function ae(e){return e.cache_lifetime_in_ms>n?Date.now()+n:Date.now()+e.cache_lifetime_in_ms}class se extends Error{constructor(e){super(`HTTP error! status: ${e}`),this.status=e}}let ce=null,le=null;async function ue(e,n,t,r){const o=t.simple_request?{"Content-Type":"text/plain"}:{"x-api-key":t.api_key,Authorization:"custom-authorized","Content-Type":"application/json"},i=await fetch(e,{method:"POST",headers:o,body:JSON.stringify(n)});if(!i.ok)throw new se(i.status);const a=await i.json();return a.visitorId&&a.visitorId!==r&&re(a.visitorId,t),le=a,function(e,n){if(!e.cache_api_call||!e.cache_lifetime_in_ms)return;const{collect:t,...r}=n;!function(e,n){const t={...ie(e),...n};try{localStorage.setItem(e.property_name_factory(oe),JSON.stringify(t))}catch(e){}}(e,{apiResponseExpiry:ae(e),apiResponse:r})}(t,a),a}const de=(e,n)=>{var t;if(e.cache_api_call){if(le)return Promise.resolve(le);const n=function(e){const n=ie(e);if(n&&n.apiResponse&&n.apiResponseExpiry&&Date.now()<=n.apiResponseExpiry)return n.apiResponse;return}(e);if(n)return Promise.resolve(n);if(ce)return ce}const o=e.api_endpoint||r;let i;try{const e=new URL(o);i="/"!==e.pathname||o.endsWith("/")?o:`${e.origin}/thumbmark`}catch(e){i=`${o}/thumbmark`}const a=function(e){try{const n=ne(e);let t=localStorage.getItem(n);return t||n===te||(t=localStorage.getItem(te),t&&re(t,e)),t}catch(e){return null}}(e),{api_key:s,...c}=e,l={components:n,options:c,clientHash:p(j(n)),version:"1.12.0",path:null===(t=null===window||void 0===window?void 0:window.location)||void 0===t?void 0:t.pathname};if(a&&(l.visitorId=a),e.metadata){const n="function"==typeof e.metadata?e.metadata():e.metadata;if(n){("string"==typeof n?n.length:JSON.stringify(n).length)>1e3?console.error("ThumbmarkJS: Metadata exceeds 1000 characters. Skipping metadata."):l.metadata=n}}const u=e.timeout||5e3,d=async function(e,n,t,r){for(let o=0;o<3;o++){o>0&&await new Promise((e=>setTimeout(e,200*o)));try{return await ue(e,n,t,r)}catch(e){if(e instanceof se||2===o)throw e}}throw new Error("Unreachable")}(i,l,e,a).finally((()=>{ce=null})),m=new Promise((n=>{setTimeout((()=>{const t=ie(e);n((null==t?void 0:t.apiResponse)||{info:{timed_out:!0},...a&&{visitorId:a}})}),u)}));return ce=Promise.race([d,m]),ce};async function me(e,n={}){var t;if("undefined"==typeof document||"undefined"==typeof window)return{thumbmark:"",components:{},info:{},version:"1.12.0",error:[{type:"fatal",message:"Browser environment required"}]};try{const i={...o,...e},a=[],s=i.logging&&!sessionStorage.getItem("_tmjs_l")&&Math.random()<1e-4,c={...N,...U,...n},{elapsed:l,resolvedComponents:u,errors:d,pipelineTimings:m}=await fe(c,i);a.push(...d);const f=i.api_key||i.simple_request?de(i,u):null;let h=null;if(f)try{h=await f}catch(e){if(e instanceof se&&403===e.status)return{error:[{type:"api_unauthorized",message:"Invalid API key or quota exceeded"}],components:{},info:{},version:"1.12.0",thumbmark:""};a.push({type:e instanceof se?"api_error":"network_error",message:e instanceof Error?e.message:String(e)})}(null===(t=null==h?void 0:h.info)||void 0===t?void 0:t.timed_out)&&a.push({type:"api_timeout",message:"API request timed out"});const g=performance.now(),v=W((null==h?void 0:h.components)||{},i),y=performance.now()-g,w={...u,...v},b=(null==h?void 0:h.info)||{uniqueness:{score:"api only"}};let S,_=0,P=0;if(null==h?void 0:h.thumbmark)S=h.thumbmark;else{const e=performance.now(),n=j(w);_=performance.now()-e;const t=performance.now();S=p(n),P=performance.now()-t}const A="1.12.0";s&&async function(e,n,t,o=[]){var i;const a=`${r}/log`;sessionStorage.setItem("_tmjs_l","1");const s={thumbmark:e,components:n,experimental:await Y(),version:"1.12.0",options:t,path:null===(i=null===window||void 0===window?void 0:window.location)||void 0===i?void 0:i.pathname,...o.length>0&&{errors:o}};try{await fetch(a,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)})}catch(e){}}(S,w,i,a).catch((()=>{})),(null==h?void 0:h.collect)&&"object"==typeof h.collect&&Q(S,i,h.collect);const x={"_pipeline.dispatch":m["_pipeline.dispatch"],"_pipeline.resolve":m["_pipeline.resolve"],"_pipeline.filter":m["_pipeline.filter"]+y,"_pipeline.stringify":_,"_pipeline.hash":P,"_pipeline.assembly":0},M={...l,...m,...x},C=i.performance?{elapsed:M}:{},E=performance.now(),T={...(null==h?void 0:h.visitorId)&&{visitorId:h.visitorId},thumbmark:S,components:w,info:b,version:A,...C,...a.length>0&&{error:a},...(null==h?void 0:h.requestId)&&{requestId:h.requestId},...(null==h?void 0:h.metadata)&&{metadata:h.metadata}};return M["_pipeline.assembly"]=performance.now()-E,T}catch(e){return{thumbmark:"",components:{},info:{},version:"1.12.0",error:[{type:"fatal",message:e instanceof Error?e.message:String(e)}]}}}async function fe(e,n){const t={...o,...n},r=V(t).filter((e=>!e.includes("."))),i=Object.entries(e).filter((([e])=>{var n;return!(null===(n=null==t?void 0:t.exclude)||void 0===n?void 0:n.includes(e))})).filter((([e])=>!r.includes(e))).filter((([e])=>{var n,r,o,i;return(null===(n=null==t?void 0:t.include)||void 0===n?void 0:n.some((e=>e.includes("."))))?null===(r=null==t?void 0:t.include)||void 0===r?void 0:r.some((n=>n.startsWith(e))):0===(null===(o=null==t?void 0:t.include)||void 0===o?void 0:o.length)||(null===(i=null==t?void 0:t.include)||void 0===i?void 0:i.includes(e))})),a=i.map((([e])=>e)),s={},c=performance.now(),l=i.map((([e,t])=>{const r=performance.now(),o=t(n);return s[`_dispatch.${e}`]=performance.now()-r,o})),u=performance.now()-c,d=performance.now(),m=await function(e,n,t){return Promise.all(e.map((e=>{const r=performance.now();let o;const i=e.then((e=>(void 0!==o&&clearTimeout(o),{value:e,elapsed:performance.now()-r}))).catch((e=>(void 0!==o&&clearTimeout(o),{value:t,elapsed:performance.now()-r,error:e instanceof Error?e.message:String(e)}))),a=new Promise((e=>{o=setTimeout((()=>{e({value:t,elapsed:performance.now()-r,error:"timeout"})}),n)}));return Promise.race([i,a])})))}(l,(null==t?void 0:t.timeout)||5e3,F),f=performance.now()-d,p={},h={},g=[];m.forEach(((e,n)=>{var t;const r=a[n];p[r]=null!==(t=e.elapsed)&&void 0!==t?t:0,"timeout"===e.error?g.push({type:"component_timeout",message:`Component '${r}' timed out`,component:r}):e.error&&g.push({type:"component_error",message:e.error,component:r}),null!=e.value&&(h[r]=e.value)}));const v=performance.now(),y=W(h,t),w={"_pipeline.dispatch":u,"_pipeline.resolve":f,"_pipeline.filter":performance.now()-v,...s};return{elapsed:p,resolvedComponents:y,errors:g,pipelineTimings:w}}e.Thumbmark=class{constructor(e){this.options={...o,...e},this.customComponents={}}async get(e){return me({...this.options,...e},this.customComponents)}getVersion(){return"1.12.0"}includeComponent(e,n){this.customComponents[e]=n}},e.filterThumbmarkData=W,e.getFingerprint=async function(e){try{const n=await me(i);return e?{hash:n.thumbmark.toString(),data:n.components}:n.thumbmark.toString()}catch(e){throw e}},e.getFingerprintData=async function(){return(await me(i)).components},e.getFingerprintPerformance=async function(){try{const{elapsed:e,resolvedComponents:n}=await fe(N,i);return{...n,elapsed:e}}catch(e){throw e}},e.getThumbmark=me,e.getVersion=$,e.includeComponent=(e,n,t)=>{U[e]=n},e.setOption=function(e,n){i[e]=n},e.stabilizationExclusionRules=a,e.stableStringify=j}));
 //# sourceMappingURL=thumbmark.umd.js.map
+
+/**
+ * Tracking consent check, shared by burst.js and events-early-bootstrap.js.
+ *
+ * Not loaded on its own: gulp prepends it to both builds, so the bootstrap can
+ * check consent when an event is triggered, before burst.js has loaded. Function
+ * declarations, not `const`, because both scripts run on the same page and a
+ * repeated top-level `const` throws "Identifier has already been declared".
+ */
+
+/**
+ * Get tracking consent state via WP Consent API or consent managers.
+ * @returns {'yes' | 'no' | 'undecided'}
+ */
+function burst_consent_state() {
+  if ( typeof wp_has_consent !== 'function' ) {
+    // Optional: the early bootstrap runs in <head> before burst.js sets
+    // burst.options. It only drops events on a definitive 'no', so 'undecided'
+    // and 'yes' are equivalent there and a missing flag must not throw.
+    return window.burst.options?.consent_api_active ? 'undecided' : 'yes';
+  }
+
+  if ( window.waitfor_consent_hook && typeof window.wp_consent_type === 'undefined' ) {
+    return 'undecided';
+  }
+  return wp_has_consent( 'statistics' ) ? 'yes' : 'no';
+}
+
+/**
+ * Check if tracking consent is granted via WP Consent API or consent managers.
+ * @returns {boolean}
+ */
+function burst_has_tracking_consent() {
+  return burst_consent_state() === 'yes';
+}
 
 // TimeMe.js should be loaded and running to track time as soon as it is loaded.
 
 /**
  * @typedef {Object} BurstOptions
- * @property {boolean} enable_cookieless_tracking
+ * @property {string} privacy_level
+ * @property {boolean} cookieless
+ * @property {string} pageUrl
  * @property {boolean} beacon_enabled
  * @property {boolean} do_not_track
  * @property {boolean} enable_turbo_mode
  * @property {boolean} track_url_change
  * @property {boolean} track_external_links
- * @property {string} pageUrl
- * @property {boolean} cookieless
+ * @property {boolean} enable_custom_events
+ * @property {boolean} track_gtag_events
+ * @property {number} page_weight_sample_rate
+ * @property {number} cookie_retention_days
+ * @property {number} page_id
+ * @property {boolean} consent_api_active
+ * @property {boolean} debug
  */
 
 /**
  * @typedef {Object} BurstState
  * @property {Object} tracking
  * @property {boolean} tracking.isInitialHit
+ * @property {boolean} tracking.initialized
  * @property {number} tracking.lastUpdateTimestamp
+ * @property {string|null} tracking.currentUrl
  * @property {string} tracking.beacon_url
+ * @property {string} tracking.ajaxUrl
  * @property {BurstOptions} options
+ * @property {Object} pageWeight
+ * @property {boolean} pageWeight.eligible
+ * @property {boolean} pageWeight.sampled
+ * @property {number|null} pageWeight.bytes
+ * @property {string|null} pageWeight.url
  * @property {Object} goals
  * @property {number[]} goals.completed
  * @property {string} goals.scriptUrl
@@ -32,7 +82,13 @@
  * @property {boolean|null} cache.isUserAgent
  * @property {boolean|null} cache.isDoNotTrack
  * @property {boolean|null} cache.useCookies
+ * @property {Object} [events] Custom events API from events.js, only loaded when custom events are enabled.
+ * @property {boolean} isLoaded
+ * @property {boolean} should_load_ecommerce
  */
+
+// burst_consent_state() and burst_has_tracking_consent() come from consent.js,
+// which gulp prepends to this file's builds.
 
 // Ensure tracking object exists
 burst.tracking = burst.tracking || {
@@ -40,6 +96,7 @@ burst.tracking = burst.tracking || {
   initialized: false,
   lastUpdateTimestamp: 0,
   ajaxUrl: '',
+  currentUrl: null,
 };
 
 burst.should_load_ecommerce = burst.should_load_ecommerce || false;
@@ -100,26 +157,6 @@ const burst_get_cookie = name => {
   }
   return Promise.reject(false);
 };
-/**
- * Get tracking consent state via WP Consent API or consent managers.
- * @returns {'yes' | 'no' | 'undecided'}
- */
-const burst_consent_state = () => {
-  if (typeof wp_has_consent !== 'function') {
-    return burst.options.consent_api_active ? 'undecided' : 'yes';
-  }
-  if (window.waitfor_consent_hook && typeof window.wp_consent_type === 'undefined') {
-    return 'undecided';
-  }
-  return wp_has_consent('statistics') ? 'yes' : 'no';
-};
-
-/**
- * Check if tracking consent is granted via WP Consent API or consent managers.
- * @returns {boolean}
- */
-const burst_has_tracking_consent = () => burst_consent_state() === 'yes';
-
 /**
  * Set a cookie
  * @param name
@@ -525,6 +562,221 @@ if (document.readyState === 'loading') {
 } else {
   burst_init_scroll_tracker();
 }
+
+/**
+ * Page weight sampling: picks a share of pageviews, measures what the initial
+ * load transferred once the network has gone quiet, and hands the sample to
+ * the exit hit (or an SPA navigation flush) for delivery.
+ */
+burst.pageWeight = {
+
+  /** Whether this pageview was picked for sampling. */
+  eligible: false,
+
+  /** Whether a sample has already been handed to a hit. */
+  sampled: false,
+
+  /** Measured bytes, or null until the quiet-period snapshot runs. */
+  bytes: null,
+
+  /** The URL the bytes were measured on. */
+  url: null,
+
+  /**
+   * Decide whether this pageview is sampled and prepare the browser for it.
+   */
+  init() {
+    const sampleRate = Math.min(1, Math.max(0, Number(burst.options.page_weight_sample_rate) || 0));
+    // Purely client-side: a server-computed forced-eligibility flag would get
+    // baked into any full-page cache (Rocket/LiteSpeed/Varnish) and served
+    // statically to every subsequent visitor regardless of the page's real
+    // measurement state, so eligibility is decided fresh per browser instead.
+    this.eligible = Math.random() < sampleRate; // nosemgrep
+
+    // Only a sampled pageview reads the resource entries, so only it needs a
+    // buffer larger than the default 250; everyone else keeps the site's own size.
+    if (this.eligible && performance?.setResourceTimingBufferSize) {
+      performance.setResourceTimingBufferSize(1000);
+    }
+  },
+
+  /**
+   * Whether this pageview still wants a page weight sample: it was picked for
+   * sampling and nothing has delivered one yet. Re-checked around every wait,
+   * because an SPA navigation can end sampling for this pageview mid-flight.
+   *
+   * @returns {boolean}
+   */
+  isWanted() {
+    return this.eligible && !this.sampled;
+  },
+
+  /**
+   * Whether a measured sample is sitting here undelivered. Delivery has exactly
+   * two chances — the exit hit and an SPA navigation flush — and both ask this,
+   * so it is spelled once.
+   *
+   * The bytes check is a loose != null on purpose: a strict !== null lets
+   * undefined through. The exit hit then reports { url: this.url } with the url
+   * also undefined, which overwrites location.href and costs that hit its time
+   * on page.
+   *
+   * @returns {boolean}
+   */
+  hasUndelivered() {
+    return this.isWanted() && this.bytes != null;
+  },
+
+  /**
+   * Measure after completed resource entries have been quiet for three seconds.
+   * Resource Timing does not expose a reliable count of every pending request,
+   * so late-starting resources remain part of the documented lower bound.
+   *
+   * @param {Function} [onSampleStored] Called once a snapshot has been stored.
+   */
+  async measureAfterQuietPeriod(onSampleStored) {
+    if (!this.isWanted()) {
+      return;
+    }
+
+    // A prerendered page loads fully while document.visibilityState is still
+    // 'hidden', so a sample stored during prerender would trip the hidden-send
+    // path: its exit hit races the create hit (both parked on this same
+    // promise) and can reach the server first, and it would measure pages the
+    // visitor never activates. Arm the quiet period only on a page that is
+    // being rendered for real; on a normal load the promise is already
+    // resolved and this changes nothing.
+    await pageIsRendered;
+    if (!this.isWanted()) {
+      return;
+    }
+
+    const quietPeriodMs = 3000;
+    const maxWaitMs = 15000;
+    let quietTimer = null;
+    let maxWaitTimer = null;
+    let observer = null;
+    let measurementQueued = false;
+
+    const cleanup = () => {
+      if (quietTimer !== null) {
+        clearTimeout(quietTimer);
+      }
+
+      if (maxWaitTimer !== null) {
+        clearTimeout(maxWaitTimer);
+      }
+      observer?.disconnect();
+    };
+
+    const measure = () => {
+      if (measurementQueued) {
+        return;
+      }
+
+      measurementQueued = true;
+
+      cleanup();
+
+      // Re-checked after the wait: a URL change can have ended sampling for this
+      // pageview while the quiet period was still running.
+      if (!this.isWanted()) {
+        return;
+      }
+
+      // Snapshot page weight and URL at the quiet moment; delivery happens with
+      // the exit hit, so no extra request is needed. Use currentUrl instead of
+      // location.href so URL changes via pushState/replaceState don't associate
+      // bytes measured for the original pageview with the new URL.
+      const bytes = this.readBytes();
+      if (bytes !== null) {
+        this.bytes = bytes;
+        this.url = burst.tracking.currentUrl;
+        // A sample can arrive after an exit hit has already gone out: a tab
+        // opened in the background is hidden from the start, so its exit hit
+        // leaves before the quiet period and carries nothing. Closing that tab
+        // without ever focusing it never resets the one-shot latch, and pagehide
+        // is the sample's last chance — so reset the latch here, where there is
+        // new information to send.
+        onSampleStored?.();
+      }
+    };
+
+    const resetQuietTimer = () => {
+      if (quietTimer !== null) {
+        clearTimeout(quietTimer);
+      }
+      quietTimer = setTimeout(measure, quietPeriodMs);
+    };
+
+    if (typeof PerformanceObserver === 'function') {
+      try {
+        observer = new PerformanceObserver((list) => {
+          if (list.getEntries().length > 0) {
+            resetQuietTimer();
+          }
+        });
+        observer.observe({ type: 'resource' });
+      } catch {
+        observer = null;
+      }
+    }
+
+    resetQuietTimer();
+    maxWaitTimer = setTimeout(measure, maxWaitMs);
+  },
+
+  /**
+   * Read initial page weight (navigation + resource transfer sizes) now. Returns
+   * null when Resource Timing has no navigation entry to anchor the measurement.
+   * Called for the quiet-period snapshot.
+   *
+   * @returns {number|null}
+   */
+  readBytes() {
+    const nav = performance.getEntriesByType('navigation')[0];
+    if (!nav) return null;
+
+    return nav.transferSize +
+      performance.getEntriesByType('resource')
+        .reduce((total, resource) => total + (resource.transferSize || 0), 0);
+  },
+
+  /**
+   * Hand the undelivered sample to the hit being sent, once.
+   *
+   * @returns {{page_weight_bytes?: number}} The hit data to merge in.
+   */
+  takeSample() {
+    // Only the quiet-period snapshot is trusted: it captures initial page weight
+    // after load, not the whole visit's transfers (lazy-loaded images, infinite
+    // scroll, video). A visit that exits before the quiet period fires has no
+    // reliable weight (the load may still be in flight), so it contributes no
+    // sample rather than an undercount that would drag the per-URL average down.
+    if (!this.hasUndelivered()) {
+      return {};
+    }
+
+    this.sampled = true;
+
+    return {
+      page_weight_bytes: this.bytes
+    };
+  },
+
+  /**
+   * End sampling for this pageview: an SPA navigation is not a page load, so
+   * the pages it shows are never sampled.
+   */
+  reset() {
+    this.eligible = false;
+    this.bytes = null;
+    this.url = null;
+  },
+};
+
+burst.pageWeight.init();
+
 /**
  * Update the tracked hit
  * Mostly used for updating time spent on a page
@@ -534,9 +786,13 @@ async function burst_update_hit(
 	update_uid = false,
 	force = false,
 	extraData = {},
+	include_page_weight = false,
 ) {
 	await pageIsRendered;
-	if (burst_is_user_agent() || burst_is_do_not_track() || !burst_has_tracking_consent()) return;
+	if (burst_is_user_agent() || burst_is_do_not_track() || !burst_has_tracking_consent()) {
+		burst.events?.clearQueue();
+		return;
+	}
 	if (burst.tracking.isInitialHit) {
 		burst_track_hit(extraData);
 		return;
@@ -571,10 +827,14 @@ async function burst_update_hit(
 		dwell_zones: JSON.stringify(burstDwellTimePerZone),
 		completed_goals: burst.goals.completed,
 		should_load_ecommerce: burst.should_load_ecommerce,
+		...(include_page_weight ? burst.pageWeight.takeSample() : {}),
 		...extraData,
 	};
 
-	if (time > 0 || data.uid !== false) {
+	if (time > 0 || data.uid !== false || data.page_weight_bytes !== undefined) {
+		// Take the queue only once a request is going out, so an event triggered
+		// while it is in flight goes with the next hit. Sent once, never resent.
+		data.events = burst.events?.takeQueue() ?? [];
 		await burst_api_request({ data: data });
 		burst.tracking.lastUpdateTimestamp = Date.now();
 	}
@@ -593,10 +853,17 @@ async function burst_track_hit(extraData = {}) {
   }
   if (burst_is_user_agent() || burst_is_do_not_track() || !burst_has_tracking_consent()) {
     burst.tracking.isInitialHit = true;
+    burst.events?.clearQueue();
     return;
   }
 
-  if (Date.now() - burst.tracking.lastUpdateTimestamp < 300) return;
+  // Restore the flag when throttled, as the consent guard above does: returning
+  // with the flag already cleared would turn the next hit into an update and
+  // permanently lose this page's create hit.
+  if (Date.now() - burst.tracking.lastUpdateTimestamp < 300) {
+    burst.tracking.isInitialHit = true;
+    return;
+  }
 
   document.dispatchEvent(new CustomEvent('burst_before_track_hit', { detail: burst }));
 
@@ -632,6 +899,8 @@ async function burst_track_hit(extraData = {}) {
     max_scroll: burstMaxScroll,
     dwell_zones: JSON.stringify(burstDwellTimePerZone),
     completed_goals: burst.goals.completed,
+    // Taken before burst_track_hit is dispatched, so events a listener triggers go with the next hit.
+    events: burst.events?.takeQueue() ?? [],
     page_id: document.body?.dataset?.burst_id ?? document.body?.dataset?.b_id ?? 0,
     page_type: document.body?.dataset?.burst_type ?? document.body?.dataset?.b_type ?? '',
     should_load_ecommerce: burst.should_load_ecommerce,
@@ -655,16 +924,115 @@ async function burst_track_hit(extraData = {}) {
  *
  */
 function burst_init_events() {
+  burst.tracking.currentUrl = location.href;
+
+  // The single exit delivery path: with the page-weight sample no longer sent
+  // by its own beacon, the exit hit carries both time-on-page and the sample.
+  // Registered for visibilitychange AND pagehide so iOS Safari and bfcache
+  // navigations (which can skip visibilitychange) still flush — the two can
+  // both fire for the same exit, so a one-shot latch stops that from sending
+  // the hit twice. The latch resets whenever the page becomes visible again
+  // (tab switch back, or pageshow for a page restored from bfcache), so every
+  // later hide still sends its update, and when a page weight snapshot lands
+  // after an exit hit has gone out (see resetExitHit below).
+
+  let exitHitSent = false;
+  // Clears the latch so exactly one more exit hit can go out. Every reset of
+  // the latch goes through here; also passed to the page weight snapshot, which
+  // cannot see this closure.
+  const resetExitHit = () => {
+    exitHitSent = false;
+  };
+
+  const sendExitHit = () => {
+    if (exitHitSent) {
+      return;
+    }
+    exitHitSent = true;
+    const includePageWeight = burst.pageWeight.hasUndelivered();
+    // The sample is reported against the URL it was actually measured on
+    // (snapshotted alongside the bytes), not wherever location.href points by
+    // the time the visitor leaves — see burst.pageWeight.measureAfterQuietPeriod().
+    const extraData = includePageWeight ? { url: burst.pageWeight.url } : {};
+    // Args: (update_uid=false, force, extraData, include_page_weight).
+    // includePageWeight is passed as BOTH force and include_page_weight: when a
+    // sample is still undelivered we must bypass the 300ms update throttle so
+    // the exit hit is guaranteed to carry it (this is the sample's only
+    // delivery path). With no pending sample, force stays false and this is a
+    // normal best-effort time-on-page update, subject to the throttle.
+    burst_update_hit(false, includePageWeight, extraData, includePageWeight);
+  };
+
   const handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden' || document.visibilityState === 'unloaded') {
-      burst_update_hit();
+      sendExitHit();
+    } else if (document.visibilityState === 'visible') {
+      resetExitHit();
     }
   };
 
-  const handleUrlChange = () => {
-    if (!burst.options.track_url_change) return;
+  const processUrlChange = async () => {
+    // Same-URL history updates (scroll restoration, UTM strippers doing a
+    // same-path replaceState) are not navigations: resetting here would drop
+    // this pageview's sample, which now has only the exit hit to ride on.
+    if (burst.tracking.currentUrl === location.href) {
+      return;
+    }
+
+    const previousUrl = burst.tracking.currentUrl;
+    const currentUrl = location.href;
+    burst.tracking.currentUrl = currentUrl;
+
+    // Flush the finished page's snapshot to a final update hit attributed to
+    // the old URL (page weight is queued server-side per page_url) before
+    // eligibility resets. Awaited so it lands as an update while isInitialHit
+    // is still false — flipping it first would turn this into a new track hit.
+    // Skipped when the quiet-period snapshot has not run yet: there is no
+    // sample to deliver, so a forced update would only cost a request.
+    if (burst.pageWeight.hasUndelivered()) {
+      // The flush stamps lastUpdateTimestamp; put the previous value back so
+      // the 300ms throttle in burst_track_hit() does not swallow the new
+      // page's create hit sent right below.
+      const lastUpdateBeforeFlush = burst.tracking.lastUpdateTimestamp;
+      await burst_update_hit(false, true, { url: previousUrl }, true);
+      if (burst.tracking.currentUrl !== currentUrl) {
+        return;
+      }
+      burst.tracking.lastUpdateTimestamp = lastUpdateBeforeFlush;
+    }
+
+    burst.pageWeight.reset();
+
     burst.tracking.isInitialHit = true;
     burst_track_hit();
+  };
+
+  // A single navigation often arrives as several history calls in one task: a
+  // router pushes '/a' and immediately canonicalizes it to '/a/'. Each call
+  // re-arms isInitialHit and sends its own create hit, and the 300ms throttle
+  // in burst_track_hit() cannot stop the second because it is checked after an
+  // await — both runs read the same pre-navigation timestamp — so the pageview
+  // is counted twice. Coalescing to one run per task collapses the burst, and
+  // the run then reads the URL the router settled on rather than the transient
+  // one.
+  let urlChangeQueued = false;
+  const handleUrlChange = () => {
+    // SPA tracking off: the URL changed but Burst keeps the same pageview, so
+    // page-weight sampling for the original load must continue — do not reset.
+    if (!burst.options.track_url_change) {
+      return;
+    }
+
+    if (urlChangeQueued) {
+      return;
+    }
+
+    urlChangeQueued = true;
+
+    Promise.resolve().then(() => {
+      urlChangeQueued = false;
+      processUrlChange();
+    });
   };
 
   const getExternalLinkUrl = (anchorElement) => {
@@ -746,7 +1114,25 @@ function burst_init_events() {
   }
 
   document.addEventListener('visibilitychange', handleVisibilityChange);
-  document.addEventListener('pagehide', () => burst_update_hit());
+  window.addEventListener('pagehide', sendExitHit);
+  // A bfcache restore can be followed by a later, genuine exit — let that one
+  // send again.
+  window.addEventListener('pageshow', resetExitHit);
+  if (document.readyState === 'complete') {
+    burst.pageWeight.measureAfterQuietPeriod(() => {
+      resetExitHit();
+      if (document.visibilityState === 'hidden') {
+        sendExitHit();
+      }
+    });
+  } else {
+    window.addEventListener('load', () => burst.pageWeight.measureAfterQuietPeriod(() => {
+      resetExitHit();
+      if (document.visibilityState === 'hidden') {
+        sendExitHit();
+      }
+    }), { once: true });
+  }
   document.addEventListener('click', handleExternalLinkClick, true); // Use capture phase to ensure we catch the event
   document.addEventListener('burst_fire_hit', () => burst_track_hit());
   document.addEventListener('burst_enable_cookies', () => {
@@ -790,6 +1176,20 @@ document.addEventListener('wp_listen_for_consent_change', e => {
     burst_maybe_init();
   }
 });
+
+// events.js loads async next to this script and needs burst.options and the
+// consent check: whichever of the two loads last initializes it.
+burst.isLoaded = true;
+if (burst.options.enable_custom_events) {
+  burst.events?.init();
+} else {
+  // Disabled: events.js isn't loaded, so keep burst.event() calls from throwing.
+  burst.event = () => {
+    if (burst.options.debug) {
+      console.warn('Burst: custom events are not enabled, the event was not recorded.');
+    }
+  };
+}
 
 burst_maybe_init();
 

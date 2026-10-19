@@ -44,6 +44,16 @@ return [
 		'shareable'      => true,
 	],
 	[
+		'id'                      => 'goals',
+		'title'                   => __( 'Goals', 'burst-statistics' ),
+		'default_hidden'          => false,
+		'menu_items'              => [],
+		'capabilities'            => 'manage_burst_statistics',
+		'menu_slug'               => 'burst#/goals',
+		'show_in_admin'           => true,
+		'show_in_plugin_overview' => true,
+	],
+	[
 		'id'                      => 'reporting',
 		'title'                   => __( 'Reporting', 'burst-statistics' ),
 		'default_hidden'          => false,
@@ -127,18 +137,6 @@ return [
 				],
 			],
 			[
-				'id'       => 'goals',
-				'group_id' => 'goals',
-				'icon'     => 'goals',
-				'title'    => __( 'Goals', 'burst-statistics' ),
-				'groups'   => [
-					[
-						'id'    => 'goals',
-						'title' => __( 'Goals', 'burst-statistics' ),
-					],
-				],
-			],
-			[
 				'id'       => 'data',
 				'group_id' => 'archiving',
 				'icon'     => 'hard-drive',
@@ -201,12 +199,26 @@ return [
 				'title'    => __( 'Notifications', 'burst-statistics' ),
 				'groups'   => [
 					[
-						'id'    => 'report_notifications',
-						'title' => __( 'Report notifications', 'burst-statistics' ),
+						'id'          => 'alerts',
+						'title'       => __( 'Alerts', 'burst-statistics' ),
+						'description' => __( 'Burst checks your site once a day and tells you when something needs your attention.', 'burst-statistics' ),
+					],
+					[
+						'id'    => 'email',
+						'title' => __( 'Email', 'burst-statistics' ),
+					],
+					[
+						'id'    => 'slack',
+						'title' => __( 'Slack', 'burst-statistics' ),
 						'pro'   => [
-							'url'  => 'pricing/',
-							'text' => __( 'With Pro, receive story reports, traffic anomaly alerts, and tracking health notifications directly in your Slack channel.', 'burst-statistics' ),
+							'url'   => 'pricing/',
+							'title' => __( 'Get alerts and reports in Slack', 'burst-statistics' ),
+							'text'  => __( 'With Pro, traffic spikes, traffic drops, tracking problems and story reports go straight to your Slack channel.', 'burst-statistics' ),
 						],
+					],
+					[
+						'id'    => 'dashboard_notices',
+						'title' => __( 'Dashboard notices', 'burst-statistics' ),
 					],
 				],
 			],

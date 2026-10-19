@@ -2,6 +2,16 @@
 	position: relative;
 }
 
+/*
+ * Only the app root fills the screen. Dialogs, popovers and the sheet portal
+ * reuse #burst-statistics for scoping; a 100vh minimum pushes a dialog's
+ * footer below the viewport.
+ */
+body.dashboard-default-dark-theme,
+#burst-statistics.dark:not([role="dialog"]):not(.overlay-portal-wrapper) {
+	min-height: 100vh;
+}
+
 .burst-statistics-wrapper{
 	margin: 0;
 	/* Hide nags from other plugins */

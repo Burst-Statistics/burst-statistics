@@ -13,8 +13,9 @@ import { useQuery } from '@tanstack/react-query';
  * @param {Function} params.queryFn  Function that fetches the data.
  * @param {boolean}  params.enabled  Whether the query should run.
  *
- * @return {{ isLoading: boolean, error: Error|null, rows: Array }} Query state.
+ * @return {{ isLoading: boolean, error: Error|null, rows: Array, meta: Object }} Query state.
  */
+// fallow-ignore-next-line complexity
 const useExpandableRowQuery = ({ queryKey, queryFn, enabled }) => {
 	const query = useQuery({
 		queryKey,
@@ -28,7 +29,12 @@ const useExpandableRowQuery = ({ queryKey, queryFn, enabled }) => {
 	return {
 		isLoading: query.isLoading || query.isFetching,
 		error: query.error,
-		rows: query.data?.data || []
+		rows: Array.isArray( query.data?.data ) ?
+			query.data.data :
+			Array.isArray( query.data ) ?
+				query.data :
+				[],
+		meta: query.data || {}
 	};
 };
 

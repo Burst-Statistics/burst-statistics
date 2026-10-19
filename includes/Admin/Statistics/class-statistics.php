@@ -219,7 +219,7 @@ class Statistics extends Statistics_Data {
 			return;
 		}
 
-		if ( stripos( $wpdb->db_server_info(), 'mariadb' ) !== false ) {
+		if ( $this->is_mariadb() ) {
 			return;
 		}
 
@@ -280,14 +280,19 @@ class Statistics extends Statistics_Data {
 		// The visitor identity lives in the permanent uid_id column (integer
 		// dictionary ids, see burst_uids). Existing installs additionally carry
 		// the legacy varchar uid column until the finalize step of the DB
-		// upgrade pipeline is done with it (left untouched in 3.7.0, dropped in 3.7.1); that column is deliberately NOT part of
+		// upgrade pipeline is done with it (left untouched in 3.7.0, dropped in 3.7.3); that column is deliberately NOT part of
 		// this schema — dbDelta never drops columns, so it leaves the legacy
 		// column (and its string data) alone while adding uid_id for the
 		// backfill. Never re-introduce a `uid` column here: reusing the legacy
 		// name for integer data is what allowed an older build's dbDelta to
 		// cast identities to varchar and back (the 3.7.0 rollback corruption).
+		$stats_uid_collate    = $this->get_column_charset_collate( 'burst_statistics', 'uid' );
+		$uids_charset_collate = null !== $stats_uid_collate
+			? "DEFAULT CHARACTER SET {$stats_uid_collate['charset']} COLLATE {$stats_uid_collate['collation']}"
+			: $charset_collate;
+
 		$tables = [
-			'burst_statistics'       => "CREATE TABLE {$wpdb->prefix}burst_statistics (
+			'burst_statistics'          => "CREATE TABLE {$wpdb->prefix}burst_statistics (
         `ID` int NOT NULL AUTO_INCREMENT,
         `page_url` varchar(191) NOT NULL,
         `page_id` int(11) NOT NULL,
@@ -302,38 +307,38 @@ class Statistics extends Statistics_Data {
         `session_id` int,
         PRIMARY KEY  (ID)
     ) $charset_collate;",
-			'burst_uids'             => "CREATE TABLE {$wpdb->prefix}burst_uids (
+			'burst_uids'                => "CREATE TABLE {$wpdb->prefix}burst_uids (
         `ID` int unsigned NOT NULL AUTO_INCREMENT,
         `uid` varchar(64) NOT NULL,
         PRIMARY KEY  (ID),
         UNIQUE KEY uid (uid)
-    ) $charset_collate;",
-			'burst_browsers'         => "CREATE TABLE {$wpdb->prefix}burst_browsers (
+    ) $uids_charset_collate;",
+			'burst_browsers'            => "CREATE TABLE {$wpdb->prefix}burst_browsers (
         `ID` int(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(191) NOT NULL UNIQUE,
         PRIMARY KEY  (ID)
     ) $charset_collate;",
-			'burst_browser_versions' => "CREATE TABLE {$wpdb->prefix}burst_browser_versions (
+			'burst_browser_versions'    => "CREATE TABLE {$wpdb->prefix}burst_browser_versions (
         `ID` int(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(191) NOT NULL UNIQUE,
         PRIMARY KEY  (ID)
     ) $charset_collate;",
-			'burst_platforms'        => "CREATE TABLE {$wpdb->prefix}burst_platforms (
+			'burst_platforms'           => "CREATE TABLE {$wpdb->prefix}burst_platforms (
         `ID` int(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(191) NOT NULL UNIQUE,
         PRIMARY KEY  (ID)
     ) $charset_collate;",
-			'burst_devices'          => "CREATE TABLE {$wpdb->prefix}burst_devices (
+			'burst_devices'             => "CREATE TABLE {$wpdb->prefix}burst_devices (
         `ID` int(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(191) NOT NULL UNIQUE,
         PRIMARY KEY  (ID)
     ) $charset_collate;",
-			'burst_referrers'        => "CREATE TABLE {$wpdb->prefix}burst_referrers (
+			'burst_referrers'           => "CREATE TABLE {$wpdb->prefix}burst_referrers (
         `ID` int(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(255) NOT NULL UNIQUE,
         PRIMARY KEY  (ID)
     ) $charset_collate;",
-			'burst_goals'            => "CREATE TABLE {$wpdb->prefix}burst_goals (
+			'burst_goals'               => "CREATE TABLE {$wpdb->prefix}burst_goals (
         `ID` int NOT NULL AUTO_INCREMENT,
         `title` varchar(255) NOT NULL,
         `type` varchar(30) NOT NULL,
@@ -348,9 +353,10 @@ class Statistics extends Statistics_Data {
         `hook` varchar(255) NOT NULL,
         `block_goal` tinyint NOT NULL DEFAULT 0,
         `page_id` int(11) NULL,
+        `element_page` varchar(255) NOT NULL DEFAULT '',
         PRIMARY KEY  (ID)
     ) $charset_collate;",
-			'burst_query_stats'      => "CREATE TABLE {$wpdb->prefix}burst_query_stats (
+			'burst_query_stats'         => "CREATE TABLE {$wpdb->prefix}burst_query_stats (
         `ID` int NOT NULL AUTO_INCREMENT,
         `sql_hash` varchar(16) NOT NULL,
         `sql_query` text NOT NULL,
@@ -362,6 +368,23 @@ class Statistics extends Statistics_Data {
         `date_range_days` int NOT NULL DEFAULT 0,
         PRIMARY KEY  (ID),
         UNIQUE KEY sql_hash (sql_hash)
+    ) $charset_collate;",
+			'burst_page_weights'        => "CREATE TABLE {$wpdb->prefix}burst_page_weights (
+        `ID` bigint unsigned NOT NULL AUTO_INCREMENT,
+        `page_id` int NOT NULL,
+        `page_weight` bigint unsigned NOT NULL,
+        `samples` int unsigned NOT NULL,
+        `measured_at` int unsigned NOT NULL,
+        PRIMARY KEY  (ID),
+        UNIQUE KEY page_id (page_id)
+    ) $charset_collate;",
+			'burst_page_weight_history' => "CREATE TABLE {$wpdb->prefix}burst_page_weight_history (
+        `ID` bigint unsigned NOT NULL AUTO_INCREMENT,
+        `page_id` int NOT NULL,
+        `page_weight` bigint unsigned NOT NULL,
+        `measured_at` int unsigned NOT NULL,
+        PRIMARY KEY  (ID),
+        UNIQUE KEY page_id_measured_at (page_id, measured_at)
     ) $charset_collate;",
 		];
 
@@ -394,7 +417,6 @@ class Statistics extends Statistics_Data {
 		}
 
 		$indexes = [
-			[ 'time' ],
 			[ 'page_url' ],
 			[ 'session_id' ],
 			[ 'time', 'session_id' ],
@@ -418,11 +440,15 @@ class Statistics extends Statistics_Data {
 			$this->add_index( 'burst_statistics', $index );
 		}
 
-		// Legacy duplicates left behind by old versions: extra copies of
-		// (time, uid) / (time, session_id). Every tracking INSERT maintains
-		// them without any read benefit. drop_index() is a no-op when the
-		// index does not exist.
+		// Legacy duplicates and redundant single-column indexes:
+		// Standalone (time) is redundant next to composite indexes starting with time:
+		// (time, session_id), (time, uid_id), and (time, page_id, uid_id). Any
+		// range/equality on time alone uses the leftmost prefix of those composite indexes.
+		// Extra copies of (time, uid) / (time, session_id) left behind by old versions.
+		// Every tracking INSERT maintains them without any read benefit.
+		// drop_index() is a no-op when the index does not exist.
 		$legacy_indexes = [
+			'time_index',
 			'first_time_visit_time_uid_index',
 			'idx_time_uid',
 			'idx_time_session_id',

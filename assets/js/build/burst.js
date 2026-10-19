@@ -1,24 +1,74 @@
+/**
+ * Tracking consent check, shared by burst.js and events-early-bootstrap.js.
+ *
+ * Not loaded on its own: gulp prepends it to both builds, so the bootstrap can
+ * check consent when an event is triggered, before burst.js has loaded. Function
+ * declarations, not `const`, because both scripts run on the same page and a
+ * repeated top-level `const` throws "Identifier has already been declared".
+ */
+
+/**
+ * Get tracking consent state via WP Consent API or consent managers.
+ * @returns {'yes' | 'no' | 'undecided'}
+ */
+function burst_consent_state() {
+  if ( typeof wp_has_consent !== 'function' ) {
+    // Optional: the early bootstrap runs in <head> before burst.js sets
+    // burst.options. It only drops events on a definitive 'no', so 'undecided'
+    // and 'yes' are equivalent there and a missing flag must not throw.
+    return window.burst.options?.consent_api_active ? 'undecided' : 'yes';
+  }
+
+  if ( window.waitfor_consent_hook && typeof window.wp_consent_type === 'undefined' ) {
+    return 'undecided';
+  }
+  return wp_has_consent( 'statistics' ) ? 'yes' : 'no';
+}
+
+/**
+ * Check if tracking consent is granted via WP Consent API or consent managers.
+ * @returns {boolean}
+ */
+function burst_has_tracking_consent() {
+  return burst_consent_state() === 'yes';
+}
+
 // TimeMe.js should be loaded and running to track time as soon as it is loaded.
 
 /**
  * @typedef {Object} BurstOptions
- * @property {boolean} enable_cookieless_tracking
+ * @property {string} privacy_level
+ * @property {boolean} cookieless
+ * @property {string} pageUrl
  * @property {boolean} beacon_enabled
  * @property {boolean} do_not_track
  * @property {boolean} enable_turbo_mode
  * @property {boolean} track_url_change
  * @property {boolean} track_external_links
- * @property {string} pageUrl
- * @property {boolean} cookieless
+ * @property {boolean} enable_custom_events
+ * @property {boolean} track_gtag_events
+ * @property {number} page_weight_sample_rate
+ * @property {number} cookie_retention_days
+ * @property {number} page_id
+ * @property {boolean} consent_api_active
+ * @property {boolean} debug
  */
 
 /**
  * @typedef {Object} BurstState
  * @property {Object} tracking
  * @property {boolean} tracking.isInitialHit
+ * @property {boolean} tracking.initialized
  * @property {number} tracking.lastUpdateTimestamp
+ * @property {string|null} tracking.currentUrl
  * @property {string} tracking.beacon_url
+ * @property {string} tracking.ajaxUrl
  * @property {BurstOptions} options
+ * @property {Object} pageWeight
+ * @property {boolean} pageWeight.eligible
+ * @property {boolean} pageWeight.sampled
+ * @property {number|null} pageWeight.bytes
+ * @property {string|null} pageWeight.url
  * @property {Object} goals
  * @property {number[]} goals.completed
  * @property {string} goals.scriptUrl
@@ -29,7 +79,13 @@
  * @property {boolean|null} cache.isUserAgent
  * @property {boolean|null} cache.isDoNotTrack
  * @property {boolean|null} cache.useCookies
+ * @property {Object} [events] Custom events API from events.js, only loaded when custom events are enabled.
+ * @property {boolean} isLoaded
+ * @property {boolean} should_load_ecommerce
  */
+
+// burst_consent_state() and burst_has_tracking_consent() come from consent.js,
+// which gulp prepends to this file's builds.
 
 // Ensure tracking object exists
 burst.tracking = burst.tracking || {
@@ -37,6 +93,7 @@ burst.tracking = burst.tracking || {
   initialized: false,
   lastUpdateTimestamp: 0,
   ajaxUrl: '',
+  currentUrl: null,
 };
 
 burst.should_load_ecommerce = burst.should_load_ecommerce || false;
@@ -97,26 +154,6 @@ const burst_get_cookie = name => {
   }
   return Promise.reject(false);
 };
-/**
- * Get tracking consent state via WP Consent API or consent managers.
- * @returns {'yes' | 'no' | 'undecided'}
- */
-const burst_consent_state = () => {
-  if (typeof wp_has_consent !== 'function') {
-    return burst.options.consent_api_active ? 'undecided' : 'yes';
-  }
-  if (window.waitfor_consent_hook && typeof window.wp_consent_type === 'undefined') {
-    return 'undecided';
-  }
-  return wp_has_consent('statistics') ? 'yes' : 'no';
-};
-
-/**
- * Check if tracking consent is granted via WP Consent API or consent managers.
- * @returns {boolean}
- */
-const burst_has_tracking_consent = () => burst_consent_state() === 'yes';
-
 /**
  * Set a cookie
  * @param name
@@ -522,6 +559,221 @@ if (document.readyState === 'loading') {
 } else {
   burst_init_scroll_tracker();
 }
+
+/**
+ * Page weight sampling: picks a share of pageviews, measures what the initial
+ * load transferred once the network has gone quiet, and hands the sample to
+ * the exit hit (or an SPA navigation flush) for delivery.
+ */
+burst.pageWeight = {
+
+  /** Whether this pageview was picked for sampling. */
+  eligible: false,
+
+  /** Whether a sample has already been handed to a hit. */
+  sampled: false,
+
+  /** Measured bytes, or null until the quiet-period snapshot runs. */
+  bytes: null,
+
+  /** The URL the bytes were measured on. */
+  url: null,
+
+  /**
+   * Decide whether this pageview is sampled and prepare the browser for it.
+   */
+  init() {
+    const sampleRate = Math.min(1, Math.max(0, Number(burst.options.page_weight_sample_rate) || 0));
+    // Purely client-side: a server-computed forced-eligibility flag would get
+    // baked into any full-page cache (Rocket/LiteSpeed/Varnish) and served
+    // statically to every subsequent visitor regardless of the page's real
+    // measurement state, so eligibility is decided fresh per browser instead.
+    this.eligible = Math.random() < sampleRate; // nosemgrep
+
+    // Only a sampled pageview reads the resource entries, so only it needs a
+    // buffer larger than the default 250; everyone else keeps the site's own size.
+    if (this.eligible && performance?.setResourceTimingBufferSize) {
+      performance.setResourceTimingBufferSize(1000);
+    }
+  },
+
+  /**
+   * Whether this pageview still wants a page weight sample: it was picked for
+   * sampling and nothing has delivered one yet. Re-checked around every wait,
+   * because an SPA navigation can end sampling for this pageview mid-flight.
+   *
+   * @returns {boolean}
+   */
+  isWanted() {
+    return this.eligible && !this.sampled;
+  },
+
+  /**
+   * Whether a measured sample is sitting here undelivered. Delivery has exactly
+   * two chances — the exit hit and an SPA navigation flush — and both ask this,
+   * so it is spelled once.
+   *
+   * The bytes check is a loose != null on purpose: a strict !== null lets
+   * undefined through. The exit hit then reports { url: this.url } with the url
+   * also undefined, which overwrites location.href and costs that hit its time
+   * on page.
+   *
+   * @returns {boolean}
+   */
+  hasUndelivered() {
+    return this.isWanted() && this.bytes != null;
+  },
+
+  /**
+   * Measure after completed resource entries have been quiet for three seconds.
+   * Resource Timing does not expose a reliable count of every pending request,
+   * so late-starting resources remain part of the documented lower bound.
+   *
+   * @param {Function} [onSampleStored] Called once a snapshot has been stored.
+   */
+  async measureAfterQuietPeriod(onSampleStored) {
+    if (!this.isWanted()) {
+      return;
+    }
+
+    // A prerendered page loads fully while document.visibilityState is still
+    // 'hidden', so a sample stored during prerender would trip the hidden-send
+    // path: its exit hit races the create hit (both parked on this same
+    // promise) and can reach the server first, and it would measure pages the
+    // visitor never activates. Arm the quiet period only on a page that is
+    // being rendered for real; on a normal load the promise is already
+    // resolved and this changes nothing.
+    await pageIsRendered;
+    if (!this.isWanted()) {
+      return;
+    }
+
+    const quietPeriodMs = 3000;
+    const maxWaitMs = 15000;
+    let quietTimer = null;
+    let maxWaitTimer = null;
+    let observer = null;
+    let measurementQueued = false;
+
+    const cleanup = () => {
+      if (quietTimer !== null) {
+        clearTimeout(quietTimer);
+      }
+
+      if (maxWaitTimer !== null) {
+        clearTimeout(maxWaitTimer);
+      }
+      observer?.disconnect();
+    };
+
+    const measure = () => {
+      if (measurementQueued) {
+        return;
+      }
+
+      measurementQueued = true;
+
+      cleanup();
+
+      // Re-checked after the wait: a URL change can have ended sampling for this
+      // pageview while the quiet period was still running.
+      if (!this.isWanted()) {
+        return;
+      }
+
+      // Snapshot page weight and URL at the quiet moment; delivery happens with
+      // the exit hit, so no extra request is needed. Use currentUrl instead of
+      // location.href so URL changes via pushState/replaceState don't associate
+      // bytes measured for the original pageview with the new URL.
+      const bytes = this.readBytes();
+      if (bytes !== null) {
+        this.bytes = bytes;
+        this.url = burst.tracking.currentUrl;
+        // A sample can arrive after an exit hit has already gone out: a tab
+        // opened in the background is hidden from the start, so its exit hit
+        // leaves before the quiet period and carries nothing. Closing that tab
+        // without ever focusing it never resets the one-shot latch, and pagehide
+        // is the sample's last chance — so reset the latch here, where there is
+        // new information to send.
+        onSampleStored?.();
+      }
+    };
+
+    const resetQuietTimer = () => {
+      if (quietTimer !== null) {
+        clearTimeout(quietTimer);
+      }
+      quietTimer = setTimeout(measure, quietPeriodMs);
+    };
+
+    if (typeof PerformanceObserver === 'function') {
+      try {
+        observer = new PerformanceObserver((list) => {
+          if (list.getEntries().length > 0) {
+            resetQuietTimer();
+          }
+        });
+        observer.observe({ type: 'resource' });
+      } catch {
+        observer = null;
+      }
+    }
+
+    resetQuietTimer();
+    maxWaitTimer = setTimeout(measure, maxWaitMs);
+  },
+
+  /**
+   * Read initial page weight (navigation + resource transfer sizes) now. Returns
+   * null when Resource Timing has no navigation entry to anchor the measurement.
+   * Called for the quiet-period snapshot.
+   *
+   * @returns {number|null}
+   */
+  readBytes() {
+    const nav = performance.getEntriesByType('navigation')[0];
+    if (!nav) return null;
+
+    return nav.transferSize +
+      performance.getEntriesByType('resource')
+        .reduce((total, resource) => total + (resource.transferSize || 0), 0);
+  },
+
+  /**
+   * Hand the undelivered sample to the hit being sent, once.
+   *
+   * @returns {{page_weight_bytes?: number}} The hit data to merge in.
+   */
+  takeSample() {
+    // Only the quiet-period snapshot is trusted: it captures initial page weight
+    // after load, not the whole visit's transfers (lazy-loaded images, infinite
+    // scroll, video). A visit that exits before the quiet period fires has no
+    // reliable weight (the load may still be in flight), so it contributes no
+    // sample rather than an undercount that would drag the per-URL average down.
+    if (!this.hasUndelivered()) {
+      return {};
+    }
+
+    this.sampled = true;
+
+    return {
+      page_weight_bytes: this.bytes
+    };
+  },
+
+  /**
+   * End sampling for this pageview: an SPA navigation is not a page load, so
+   * the pages it shows are never sampled.
+   */
+  reset() {
+    this.eligible = false;
+    this.bytes = null;
+    this.url = null;
+  },
+};
+
+burst.pageWeight.init();
+
 /**
  * Update the tracked hit
  * Mostly used for updating time spent on a page
@@ -531,9 +783,13 @@ async function burst_update_hit(
 	update_uid = false,
 	force = false,
 	extraData = {},
+	include_page_weight = false,
 ) {
 	await pageIsRendered;
-	if (burst_is_user_agent() || burst_is_do_not_track() || !burst_has_tracking_consent()) return;
+	if (burst_is_user_agent() || burst_is_do_not_track() || !burst_has_tracking_consent()) {
+		burst.events?.clearQueue();
+		return;
+	}
 	if (burst.tracking.isInitialHit) {
 		burst_track_hit(extraData);
 		return;
@@ -568,10 +824,14 @@ async function burst_update_hit(
 		dwell_zones: JSON.stringify(burstDwellTimePerZone),
 		completed_goals: burst.goals.completed,
 		should_load_ecommerce: burst.should_load_ecommerce,
+		...(include_page_weight ? burst.pageWeight.takeSample() : {}),
 		...extraData,
 	};
 
-	if (time > 0 || data.uid !== false) {
+	if (time > 0 || data.uid !== false || data.page_weight_bytes !== undefined) {
+		// Take the queue only once a request is going out, so an event triggered
+		// while it is in flight goes with the next hit. Sent once, never resent.
+		data.events = burst.events?.takeQueue() ?? [];
 		await burst_api_request({ data: data });
 		burst.tracking.lastUpdateTimestamp = Date.now();
 	}
@@ -590,10 +850,17 @@ async function burst_track_hit(extraData = {}) {
   }
   if (burst_is_user_agent() || burst_is_do_not_track() || !burst_has_tracking_consent()) {
     burst.tracking.isInitialHit = true;
+    burst.events?.clearQueue();
     return;
   }
 
-  if (Date.now() - burst.tracking.lastUpdateTimestamp < 300) return;
+  // Restore the flag when throttled, as the consent guard above does: returning
+  // with the flag already cleared would turn the next hit into an update and
+  // permanently lose this page's create hit.
+  if (Date.now() - burst.tracking.lastUpdateTimestamp < 300) {
+    burst.tracking.isInitialHit = true;
+    return;
+  }
 
   document.dispatchEvent(new CustomEvent('burst_before_track_hit', { detail: burst }));
 
@@ -629,6 +896,8 @@ async function burst_track_hit(extraData = {}) {
     max_scroll: burstMaxScroll,
     dwell_zones: JSON.stringify(burstDwellTimePerZone),
     completed_goals: burst.goals.completed,
+    // Taken before burst_track_hit is dispatched, so events a listener triggers go with the next hit.
+    events: burst.events?.takeQueue() ?? [],
     page_id: document.body?.dataset?.burst_id ?? document.body?.dataset?.b_id ?? 0,
     page_type: document.body?.dataset?.burst_type ?? document.body?.dataset?.b_type ?? '',
     should_load_ecommerce: burst.should_load_ecommerce,
@@ -652,16 +921,115 @@ async function burst_track_hit(extraData = {}) {
  *
  */
 function burst_init_events() {
+  burst.tracking.currentUrl = location.href;
+
+  // The single exit delivery path: with the page-weight sample no longer sent
+  // by its own beacon, the exit hit carries both time-on-page and the sample.
+  // Registered for visibilitychange AND pagehide so iOS Safari and bfcache
+  // navigations (which can skip visibilitychange) still flush — the two can
+  // both fire for the same exit, so a one-shot latch stops that from sending
+  // the hit twice. The latch resets whenever the page becomes visible again
+  // (tab switch back, or pageshow for a page restored from bfcache), so every
+  // later hide still sends its update, and when a page weight snapshot lands
+  // after an exit hit has gone out (see resetExitHit below).
+
+  let exitHitSent = false;
+  // Clears the latch so exactly one more exit hit can go out. Every reset of
+  // the latch goes through here; also passed to the page weight snapshot, which
+  // cannot see this closure.
+  const resetExitHit = () => {
+    exitHitSent = false;
+  };
+
+  const sendExitHit = () => {
+    if (exitHitSent) {
+      return;
+    }
+    exitHitSent = true;
+    const includePageWeight = burst.pageWeight.hasUndelivered();
+    // The sample is reported against the URL it was actually measured on
+    // (snapshotted alongside the bytes), not wherever location.href points by
+    // the time the visitor leaves — see burst.pageWeight.measureAfterQuietPeriod().
+    const extraData = includePageWeight ? { url: burst.pageWeight.url } : {};
+    // Args: (update_uid=false, force, extraData, include_page_weight).
+    // includePageWeight is passed as BOTH force and include_page_weight: when a
+    // sample is still undelivered we must bypass the 300ms update throttle so
+    // the exit hit is guaranteed to carry it (this is the sample's only
+    // delivery path). With no pending sample, force stays false and this is a
+    // normal best-effort time-on-page update, subject to the throttle.
+    burst_update_hit(false, includePageWeight, extraData, includePageWeight);
+  };
+
   const handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden' || document.visibilityState === 'unloaded') {
-      burst_update_hit();
+      sendExitHit();
+    } else if (document.visibilityState === 'visible') {
+      resetExitHit();
     }
   };
 
-  const handleUrlChange = () => {
-    if (!burst.options.track_url_change) return;
+  const processUrlChange = async () => {
+    // Same-URL history updates (scroll restoration, UTM strippers doing a
+    // same-path replaceState) are not navigations: resetting here would drop
+    // this pageview's sample, which now has only the exit hit to ride on.
+    if (burst.tracking.currentUrl === location.href) {
+      return;
+    }
+
+    const previousUrl = burst.tracking.currentUrl;
+    const currentUrl = location.href;
+    burst.tracking.currentUrl = currentUrl;
+
+    // Flush the finished page's snapshot to a final update hit attributed to
+    // the old URL (page weight is queued server-side per page_url) before
+    // eligibility resets. Awaited so it lands as an update while isInitialHit
+    // is still false — flipping it first would turn this into a new track hit.
+    // Skipped when the quiet-period snapshot has not run yet: there is no
+    // sample to deliver, so a forced update would only cost a request.
+    if (burst.pageWeight.hasUndelivered()) {
+      // The flush stamps lastUpdateTimestamp; put the previous value back so
+      // the 300ms throttle in burst_track_hit() does not swallow the new
+      // page's create hit sent right below.
+      const lastUpdateBeforeFlush = burst.tracking.lastUpdateTimestamp;
+      await burst_update_hit(false, true, { url: previousUrl }, true);
+      if (burst.tracking.currentUrl !== currentUrl) {
+        return;
+      }
+      burst.tracking.lastUpdateTimestamp = lastUpdateBeforeFlush;
+    }
+
+    burst.pageWeight.reset();
+
     burst.tracking.isInitialHit = true;
     burst_track_hit();
+  };
+
+  // A single navigation often arrives as several history calls in one task: a
+  // router pushes '/a' and immediately canonicalizes it to '/a/'. Each call
+  // re-arms isInitialHit and sends its own create hit, and the 300ms throttle
+  // in burst_track_hit() cannot stop the second because it is checked after an
+  // await — both runs read the same pre-navigation timestamp — so the pageview
+  // is counted twice. Coalescing to one run per task collapses the burst, and
+  // the run then reads the URL the router settled on rather than the transient
+  // one.
+  let urlChangeQueued = false;
+  const handleUrlChange = () => {
+    // SPA tracking off: the URL changed but Burst keeps the same pageview, so
+    // page-weight sampling for the original load must continue — do not reset.
+    if (!burst.options.track_url_change) {
+      return;
+    }
+
+    if (urlChangeQueued) {
+      return;
+    }
+
+    urlChangeQueued = true;
+
+    Promise.resolve().then(() => {
+      urlChangeQueued = false;
+      processUrlChange();
+    });
   };
 
   const getExternalLinkUrl = (anchorElement) => {
@@ -743,7 +1111,25 @@ function burst_init_events() {
   }
 
   document.addEventListener('visibilitychange', handleVisibilityChange);
-  document.addEventListener('pagehide', () => burst_update_hit());
+  window.addEventListener('pagehide', sendExitHit);
+  // A bfcache restore can be followed by a later, genuine exit — let that one
+  // send again.
+  window.addEventListener('pageshow', resetExitHit);
+  if (document.readyState === 'complete') {
+    burst.pageWeight.measureAfterQuietPeriod(() => {
+      resetExitHit();
+      if (document.visibilityState === 'hidden') {
+        sendExitHit();
+      }
+    });
+  } else {
+    window.addEventListener('load', () => burst.pageWeight.measureAfterQuietPeriod(() => {
+      resetExitHit();
+      if (document.visibilityState === 'hidden') {
+        sendExitHit();
+      }
+    }), { once: true });
+  }
   document.addEventListener('click', handleExternalLinkClick, true); // Use capture phase to ensure we catch the event
   document.addEventListener('burst_fire_hit', () => burst_track_hit());
   document.addEventListener('burst_enable_cookies', () => {
@@ -787,6 +1173,20 @@ document.addEventListener('wp_listen_for_consent_change', e => {
     burst_maybe_init();
   }
 });
+
+// events.js loads async next to this script and needs burst.options and the
+// consent check: whichever of the two loads last initializes it.
+burst.isLoaded = true;
+if (burst.options.enable_custom_events) {
+  burst.events?.init();
+} else {
+  // Disabled: events.js isn't loaded, so keep burst.event() calls from throwing.
+  burst.event = () => {
+    if (burst.options.debug) {
+      console.warn('Burst: custom events are not enabled, the event was not recorded.');
+    }
+  };
+}
 
 burst_maybe_init();
 

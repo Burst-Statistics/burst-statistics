@@ -11,7 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
+use Burst\Admin\Statistics\Page_Weight_Store;
 use Burst\Frontend\Endpoint;
+use Burst\Frontend\Events\Events;
 use Burst\Frontend\Ip\Ip;
 use Burst\Frontend\Search\Search;
 use Burst\Traits\Database_Helper;
@@ -27,6 +29,7 @@ class Tracking {
 	public string $beacon_enabled;
 	public array $lookup_table_cache = [];
 	public array $goals              = [];
+	private ?Events $events_handler  = null;
 
 	/**
 	 * Maximum number of completed goals accepted from a single hit.
@@ -36,6 +39,14 @@ class Tracking {
 	 * becomes a row in one INSERT on burst_goal_statistics.
 	 */
 	private const MAX_COMPLETED_GOALS_PER_HIT = 50;
+
+	/**
+	 * Session columns a later hit fills in when the first hit of the session
+	 * left them empty: a GeoIP lookup or user agent parse that failed, or a
+	 * session that started without a referrer. get_last_user_statistic()
+	 * selects them so session_needs_update() can compare.
+	 */
+	private const SESSION_BACKFILL_COLUMNS = [ 'referrer', 'city_code', 'browser_id', 'browser_version_id', 'platform_id', 'device_id' ];
 
 	/**
 	 * Register the GeoIP enrichment on construction.
@@ -70,6 +81,18 @@ class Tracking {
 	 */
 	public function init(): void {
 		add_action( 'rest_api_init', [ $this, 'register_track_hit_route' ] );
+		// Runs before the priority 10 create_js_file: that callback rebuilds the
+		// combined tracking script from get_active_goals(), which would otherwise
+		// hand it the goal list as it was before this request changed it.
+		add_action( 'burst_after_updated_goals', [ $this, 'clear_goals_cache' ], 1 );
+	}
+
+	/**
+	 * Drop the memoized and cached active goals after a goal has been written.
+	 */
+	public function clear_goals_cache(): void {
+		$this->goals = [];
+		wp_cache_delete( 'burst_active_goals_all', 'burst' );
 	}
 
 	/**
@@ -134,13 +157,10 @@ class Tracking {
 		$hit_type     = $result['hit_type'];
 		$previous_hit = $result['last_row'];
 
+		Page_Weight_Store::maybe_store_sample( $sanitized_data, $hit_type, $previous_hit ?? [] );
+
 		$filtered_previous_hit = $previous_hit ?? [];
 		$sanitized_data        = apply_filters( 'burst_before_track_hit', $sanitized_data, $hit_type, $filtered_previous_hit );
-
-		// Full path (page_url + parameters) of this hit; compared against the
-		// previous hit in session_needs_update() to detect intra-session
-		// navigation.
-		$current_path = $this->create_path( $sanitized_data );
 
 		$session = [
 			'city_code'          => $sanitized_data['city_code'] ?? '',
@@ -154,6 +174,7 @@ class Tracking {
 		$session = apply_filters( 'burst_session_data', $session, $sanitized_data, $filtered_previous_hit );
 
 		$search_term = $sanitized_data['search_term'] ?? '';
+		$events      = $sanitized_data['events'] ?? [];
 
 		// $statistic contains only fields that belong on burst_statistics.
 		unset(
@@ -165,7 +186,9 @@ class Tracking {
 			$sanitized_data['browser_version_id'],
 			$sanitized_data['platform_id'],
 			$sanitized_data['device_id'],
-			$sanitized_data['search_term']
+			$sanitized_data['search_term'],
+			$sanitized_data['events'],
+			$sanitized_data['page_weight_bytes']
 		);
 		$statistic = $sanitized_data;
 
@@ -209,7 +232,11 @@ class Tracking {
 			if ( $flag_pageview && 0 === (int) ( $previous_hit['has_pageview'] ?? 1 ) ) {
 				$session['has_pageview'] = 1;
 			}
-			if ( $this->session_needs_update( $previous_hit, $session, $current_path ) ) {
+			if ( $this->session_needs_update( $previous_hit, $session ) ) {
+				// bounce is owned by the recalculate_bounces cron once the session
+				// exists; the tracker's constant 1 would mark an engaged session
+				// as bounced again.
+				unset( $session['bounce'] );
 				$this->update_session( (int) $statistic['session_id'], $session );
 			}
 		} elseif ( $previous_hit === null ) {
@@ -342,6 +369,13 @@ class Tracking {
 			// (where the track_external_links option and empty-URL checks live), so
 			// the free build carries no reference to the Pro class.
 			do_action( 'burst_track_external_link', (int) $statistic_id, $external_link_url );
+
+			if ( ! empty( $events ) ) {
+				// uid_id (not uid): the legacy uid column is unset above once the
+				// dictionary is active, but uid_id is always set — see the uid
+				// dictionary block earlier in this method.
+				$this->events()->record_events( (int) $statistic_id, $events, (int) $statistic['uid_id'] );
+			}
 		}
 
 		return 'success';
@@ -562,9 +596,11 @@ class Tracking {
 			'user_agent'            => null,
 			'time_on_page'          => null,
 			'completed_goals'       => null,
+			'events'                => null,
 			'page_id'               => null,
 			'page_type'             => null,
 			'should_load_ecommerce' => false,
+			'page_weight_bytes'     => 0,
 		];
 		$data     = wp_parse_args( $data, $defaults );
 
@@ -603,8 +639,22 @@ class Tracking {
 		$sanitized_data['dwell_zones']           = $this->sanitize_dwell_zones( $data['dwell_zones'] ?? '' );
 		$sanitized_data['should_load_ecommerce'] = filter_var( $data['should_load_ecommerce'], FILTER_VALIDATE_BOOLEAN );
 		$sanitized_data['search_term']           = isset( $data['search_term'] ) ? sanitize_text_field( wp_unslash( (string) $data['search_term'] ) ) : '';
+		$sanitized_data['page_weight_bytes']     = (int) $data['page_weight_bytes'];
+		// Opt-in: a cached page or a hand-crafted beacon can still send events after the site turned them off.
+		$raw_events               = $this->get_option_bool( 'enable_custom_events' ) && is_array( $data['events'] ?? null ) ? $data['events'] : [];
+		$sanitized_data['events'] = empty( $raw_events ) ? [] : $this->events()->sanitize_events( $raw_events );
 
 		return $sanitized_data;
+	}
+
+	/**
+	 * Get the frontend events handler only when a hit actually contains events.
+	 */
+	private function events(): Events {
+		if ( null === $this->events_handler ) {
+			$this->events_handler = new Events();
+		}
+		return $this->events_handler;
 	}
 
 	/**
@@ -743,33 +793,30 @@ class Tracking {
 	/**
 	 * Check if session needs updating by comparing previous hit data with new session data.
 	 *
-	 * @param array  $previous_hit     Previous hit data from burst_statistics (may include host/city_code via JOIN).
-	 * @param array  $new_session_data New session data to be written.
-	 * @param string $current_path     Full path (page_url + parameters) of the current hit.
+	 * A session row only needs an update when session-level attributes actually change
+	 * (e.g. has_pageview flipping 0 → 1, host changing in multi-domain setups, a
+	 * column the first hit left empty that this hit can fill, or custom session
+	 * attributes). Navigation between pages within the same session records hits
+	 * in burst_statistics but does not alter burst_sessions attributes.
+	 *
+	 * @param array $previous_hit     Previous hit data from burst_statistics (may include session columns via JOIN).
+	 * @param array $new_session_data New session data to be written.
 	 * @return bool True if update is needed, false if data hasn't changed.
 	 */
-	private function session_needs_update( array $previous_hit, array $new_session_data, string $current_path ): bool {
+	public function session_needs_update( array $previous_hit, array $new_session_data ): bool {
 		// If we don't have previous hit data, update to be safe.
 		if ( empty( $previous_hit ) ) {
 			return true;
 		}
 
 		// The has_pageview flag is only present when it flips 0 → 1 (see
-		// track_hit()); that transition must reach the row regardless of url.
+		// track_hit()); that transition must reach the row.
 		if ( isset( $new_session_data['has_pageview'] ) ) {
 			return true;
 		}
 
-		$old_url      = $previous_hit['page_url'] ?? '';
-		$old_params   = $previous_hit['parameters'] ?? '';
-		$old_full_url = empty( $old_params ) ? $old_url : $old_url . '?' . $old_params;
-
-		if ( $old_full_url !== $current_path ) {
-			return true;
-		}
-
-		// 2. Check host (only relevant for multi-domain with filtering enabled)
-		// Note: host will only be in previous_hit if JOIN was performed
+		// Check host (only relevant for multi-domain with filtering enabled).
+		// Note: host will only be in previous_hit if JOIN was performed.
 		if ( isset( $previous_hit['host'] ) && isset( $new_session_data['host'] ) ) {
 			$old_host = $previous_hit['host'] ?? '';
 			$new_host = $new_session_data['host'];
@@ -780,7 +827,26 @@ class Tracking {
 			}
 		}
 
-		return false;
+		// Fill in what the first hit could not resolve. Only an empty stored
+		// value counts: a value that differs is the session's own and stays.
+		// A column missing from previous_hit (not selected) is skipped.
+		foreach ( self::SESSION_BACKFILL_COLUMNS as $column ) {
+			if ( array_key_exists( $column, $previous_hit ) && empty( $previous_hit[ $column ] ) && ! empty( $new_session_data[ $column ] ) ) {
+				return true;
+			}
+		}
+
+		/**
+		 * Filter whether the session needs to be updated.
+		 *
+		 * Allows Pro extensions (such as mid-session campaign/source attribution changes)
+		 * to flag that the session row should be updated in the database.
+		 *
+		 * @param bool  $needs_update     Whether the session needs an update.
+		 * @param array $previous_hit     Previous hit data.
+		 * @param array $new_session_data New session data.
+		 */
+		return (bool) apply_filters( 'burst_session_needs_update', false, $previous_hit, $new_session_data );
 	}
 
 	/**
@@ -932,22 +998,28 @@ class Tracking {
 					'isInitialHit'        => true,
 					'initialized'         => false,
 					'lastUpdateTimestamp' => 0,
+					'currentUrl'          => null,
 					'beacon_url'          => self::get_beacon_url(),
 					'ajaxUrl'             => admin_url( 'admin-ajax.php' ),
 				],
 				'options'  => [
-					'privacy_level'         => $this->get_option( 'privacy_level', 'cookie' ),
-					'cookieless'            => ( $this->get_option( 'privacy_level', 'cookie' ) !== 'cookie' ) ? 1 : 0,
-					'pageUrl'               => get_permalink(),
-					'beacon_enabled'        => (int) $this->beacon_enabled(),
-					'do_not_track'          => $this->get_option_int( 'enable_do_not_track' ),
-					'enable_turbo_mode'     => $this->get_option_int( 'enable_turbo_mode' ),
-					'track_url_change'      => $this->get_option_int( 'track_url_change' ),
-					'track_external_links'  => $this->get_option_int( 'track_external_links' ),
-					'cookie_retention_days' => apply_filters( 'burst_cookie_retention_days', 30 ),
-					'page_id'               => is_singular() ? (int) get_queried_object_id() : 0,
-					'consent_api_active'    => \Burst\Admin\Tasks::is_wp_consent_api_active() ? 1 : 0,
-					'debug'                 => defined( 'BURST_DEBUG' ) && \BURST_DEBUG ? 1 : 0,
+					'privacy_level'                => $this->get_option( 'privacy_level', 'cookie' ),
+					'cookieless'                   => ( $this->get_option( 'privacy_level', 'cookie' ) !== 'cookie' ) ? 1 : 0,
+					'pageUrl'                      => get_permalink(),
+					'beacon_enabled'               => (int) $this->beacon_enabled(),
+					'do_not_track'                 => $this->get_option_int( 'enable_do_not_track' ),
+					'enable_turbo_mode'            => $this->get_option_int( 'enable_turbo_mode' ),
+					'track_url_change'             => $this->get_option_int( 'track_url_change' ),
+					'track_external_links'         => $this->get_option_int( 'track_external_links' ),
+					'enable_custom_events'         => $this->get_option_int( 'enable_custom_events' ),
+					// Pro enables automatic capture only after the site opts in.
+					'track_gtag_events'            => 0,
+					'track_gtag_custom_parameters' => 0,
+					'page_weight_sample_rate'      => Page_Weight_Store::get_sample_rate(),
+					'cookie_retention_days'        => apply_filters( 'burst_cookie_retention_days', 30 ),
+					'page_id'                      => is_singular() ? (int) get_queried_object_id() : 0,
+					'consent_api_active'           => \Burst\Admin\Tasks::is_wp_consent_api_active() ? 1 : 0,
+					'debug'                        => defined( 'BURST_DEBUG' ) && \BURST_DEBUG ? 1 : 0,
 				],
 				'goals'    => [
 					'completed' => [],
@@ -984,7 +1056,7 @@ class Tracking {
 	public function get_active_goals( array $goal_types ): array {
 		// Validate and clean goal types.
 		foreach ( $goal_types as $key => $type ) {
-			if ( ! in_array( $type, [ 'hook', 'visits', 'clicks', 'views' ], true ) ) {
+			if ( ! in_array( $type, [ 'hook', 'visits', 'clicks', 'views', 'event' ], true ) ) {
 				unset( $goal_types[ $key ] );
 			}
 		}
@@ -999,10 +1071,6 @@ class Tracking {
 			defined( 'BURST_INSTALL_TABLES_RUNNING' ) ||
 			defined( 'BURST_UNINSTALLING' )
 		) {
-			return [];
-		}
-
-		if ( ! $this->table_exists( 'burst_goals' ) ) {
 			return [];
 		}
 
@@ -1029,18 +1097,23 @@ class Tracking {
 			$all_goals = $this->goals['all'];
 		} else {
 			$all_goals = wp_cache_get( 'burst_active_goals_all', 'burst' );
-			if ( ! $all_goals ) {
+			if ( false === $all_goals ) {
+				// The beacon uses installed tables directly; keep schema probes off its hot path.
+				if ( ! ( defined( 'SHORTINIT' ) && SHORTINIT ) && ! $this->table_exists( 'burst_goals' ) ) {
+					return [];
+				}
 				global $wpdb;
 				// Single query: fetch ALL active goals (no type condition).
-				$all_goals = $wpdb->get_results(
+				$results   = $wpdb->get_results(
 					"SELECT * FROM {$wpdb->prefix}burst_goals WHERE status = 'active'",
 					ARRAY_A
 				);
-				// Cache full set for reuse across calls.
+				$all_goals = is_array( $results ) ? $results : [];
+				// Cache full set for reuse across calls (literal TTL for SHORTINIT).
 				wp_cache_set( 'burst_active_goals_all', $all_goals, 'burst', 60 );
 			}
 			// Memoize for this request.
-			$this->goals['all'] = $all_goals;
+			$this->goals['all'] = (array) $all_goals;
 		}
 
 		// Filter goals by goal type, and store in $this->goals[$type].
@@ -1154,7 +1227,17 @@ class Tracking {
 	 *     time_on_page?: int,
 	 *     bounce?: int,
 	 *     has_pageview?: int,
-	 *     page_url?: string
+	 *     page_url?: string,
+	 *     page_id?: int,
+	 *     host?: string,
+	 *     referrer?: string|null,
+	 *     city_code?: int|null,
+	 *     browser_id?: int,
+	 *     browser_version_id?: int,
+	 *     platform_id?: int,
+	 *     device_id?: int,
+	 *     source?: string|null,
+	 *     source_category?: string|null
 	 * } Associative array of the last user statistic, or empty array if none found.
 	 */
 	public function get_last_user_statistic( string $uid, string $page_url = '', string $fragment = '' ): array {
@@ -1200,9 +1283,16 @@ class Tracking {
 		// sessions.has_pageview exists from the 3.7.1 table init on; read it
 		// so track_hit() can flag the 0 → 1 transition without a second query.
 		$pageview_select = $this->tracking_schema_at_least( '3.7.1' ) ? ', sess.has_pageview' : '';
+		// The stored session attributes let session_needs_update() skip the
+		// session write when a hit changes nothing (back-fill columns here,
+		// source/source_category for the Pro attribution check). Gated on the
+		// 3.7.0 table init, whose dbDelta guarantees the columns exist.
+		$session_select = $this->tracking_schema_current()
+			? ', sess.' . implode( ', sess.', self::SESSION_BACKFILL_COLUMNS ) . ', sess.source, sess.source_category'
+			: '';
 
 		$last_row = $wpdb->get_row(
-			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where, $host_select and $pageview_select are from trusted prepared parts, $uid_column is a fixed column name.
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where, $host_select, $pageview_select and $session_select are from trusted prepared parts or fixed column names, $uid_column is a fixed column name.
 			$wpdb->prepare(
 				"SELECT
                 s.ID,
@@ -1211,9 +1301,11 @@ class Tracking {
                 s.fragment,
                 s.time_on_page,
                 sess.bounce,
-                s.page_url
+                s.page_url,
+                s.page_id
                 {$host_select}
                 {$pageview_select}
+                {$session_select}
             FROM {$wpdb->prefix}burst_statistics s
             LEFT JOIN {$wpdb->prefix}burst_sessions sess ON s.session_id = sess.ID
             WHERE {$uid_column} = %s {$where}
@@ -1291,9 +1383,12 @@ class Tracking {
 			return 0;
 		}
 
+		// Read the id before stamping: the first stamp adds its option with an
+		// INSERT, which overwrites $wpdb->insert_id with the option id.
+		$statistic_id = (int) $wpdb->insert_id;
 		$this->stamp_last_hit_time( (int) ( $data['time'] ?? time() ) );
 
-		return $wpdb->insert_id;
+		return $statistic_id;
 	}
 
 	/**

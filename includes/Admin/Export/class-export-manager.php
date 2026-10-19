@@ -1099,7 +1099,8 @@ class Export_Manager {
 				} elseif ( is_numeric( $val ) && ! is_string( $val ) ) {
 					$escaped_values[] = $val;
 				} else {
-					$escaped_values[] = "'" . $wpdb->_real_escape( (string) $val ) . "'";
+					// _real_escape() swaps % for a per-request placeholder that only $wpdb->query() turns back; the file must hold the real %.
+					$escaped_values[] = "'" . $wpdb->remove_placeholder_escape( $wpdb->_real_escape( (string) $val ) ) . "'";
 				}
 			}
 			$value_rows[] = '(' . implode( ', ', $escaped_values ) . ')';

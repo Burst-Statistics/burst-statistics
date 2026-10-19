@@ -661,7 +661,7 @@ export const getDatatableData = async( id, isEcommerce, startDate, endDate, rang
 export const getData = async( type, startDate, endDate, range, args = {}) => {
 
 	// Extract filters and metrics from args if they exist.
-	const { currentView, chart_mode, distribution_view, product_id, compare_mode, compare_date_start, compare_date_end, page_url, page_id, least_engagement, include_page_metrics, source, metric } = args;
+	const { currentView, chart_mode, distribution_view, product_id, compare_mode, compare_date_start, compare_date_end, page_url, page_id, least_engagement, include_page_metrics, source, metric, parameter, search, term, name } = args;
 
 	const queryParams = buildBaseQueryParams( startDate, endDate, range, args );
 	if ( currentView ) {
@@ -704,6 +704,18 @@ export const getData = async( type, startDate, endDate, range, args = {}) => {
 	if ( metric ) {
 		queryParams.metric = metric;
 	}
+	if ( parameter ) {
+		queryParams.parameter = parameter;
+	}
+	if ( search ) {
+		queryParams.search = search;
+	}
+	if ( term ) {
+		queryParams.term = term;
+	}
+	if ( name ) {
+		queryParams.name = name;
+	}
 
 
 	const queryString = buildQueryString( queryParams );
@@ -744,6 +756,31 @@ export const postChatMessage = ( message, history = [], model = '' ) =>
 		message,
 		history,
 		...( model ? { model } : {})
+	});
+
+/**
+ * Whether a green hosting check response reports a failed check.
+ *
+ * The action can succeed while the upstream lookup fails: the forced refresh
+ * increments failed_attempts on every failure and resets it on success. A
+ * rejected request (permission, expired session) carries no green_hosting.
+ *
+ * @param {Object|undefined} data - The do_action response data.
+ * @return {boolean} Whether the check failed.
+ */
+const isFailedGreenHostingCheck = ( data ) =>
+	! data?.green_hosting || 0 < data.green_hosting.status.failed_attempts;
+
+export const checkGreenHosting = () =>
+	doAction( 'check_green_hosting' ).then( ( data ) => {
+
+		// Reject so useGreenHosting() reports it inline instead of clearing its
+		// error. A rejected request carries its own message; an unreachable
+		// Green Web Foundation carries none.
+		if ( isFailedGreenHostingCheck( data ) ) {
+			throw new Error( data?.message ?? '' );
+		}
+		return data.green_hosting;
 	});
 
 export const getChatStatus = () => doAction( 'chat_status' );

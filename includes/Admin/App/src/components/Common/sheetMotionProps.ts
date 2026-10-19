@@ -9,8 +9,12 @@ export const SHEET_OVERLAY_PROPS: MotionDivPreset = {
 	className:
 		'fixed inset-0 left-0 max-[960px]:left-9 max-[782px]:left-0 z-overlay bg-black/80 flex items-end justify-center px-4',
 	initial: { opacity: 0 },
-	animate: { opacity: 1 },
-	exit: { opacity: 0 },
+
+	// Restored on enter: a sheet reopened while it was still closing reuses the closing element.
+	animate: { opacity: 1, pointerEvents: 'auto' },
+
+	// A closing sheet must not swallow clicks meant for the page underneath, e.g. reopening it.
+	exit: { opacity: 0, pointerEvents: 'none' },
 	transition: { duration: 0.15, ease: 'easeOut' }
 };
 

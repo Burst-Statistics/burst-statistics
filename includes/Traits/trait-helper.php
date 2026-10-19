@@ -53,6 +53,31 @@ trait Helper {
 	}
 
 	/**
+	 * Tracking-path scripts that ghost mode copies into its obfuscated uploads
+	 * directory, keyed by bundled path (relative to the plugin root) with the
+	 * copy's file name as value. The combined tracking script itself is written
+	 * separately, see Admin::create_js_file().
+	 *
+	 * @return array<string, string>
+	 */
+	protected function get_ghost_mode_scripts(): array {
+		return [
+			'assets/js/timeme/timeme.min.js'      => 'timeme.min.js',
+			'assets/js/build/burst-events.min.js' => 'events.min.js',
+			'assets/js/build/burst-events-early-bootstrap.min.js' => 'events-early-bootstrap.min.js',
+		];
+	}
+
+	/**
+	 * Build the inline script that merges tracking options into window.burst.
+	 *
+	 * @param array $options Tracking options to expose to the frontend script.
+	 */
+	protected function get_burst_bootstrap_script( array $options ): string {
+		return 'window.burst = window.burst || {}; Object.assign( window.burst, ' . wp_json_encode( $options ) . ' );';
+	}
+
+	/**
 	 * Get an option from the burst settings and cast it to a boolean
 	 */
 	protected function get_option_bool( string $option, ?bool $default_value = null ): bool {

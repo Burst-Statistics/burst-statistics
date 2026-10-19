@@ -475,7 +475,7 @@ class Installer {
 					'fields' => [ 'sections' => false ],
 				]
 			);
-			if ( is_wp_error( $plugin_info_total ) || empty( $plugin_info_total->download_link ) ) {
+			if ( is_wp_error( $plugin_info_total ) || ! is_object( $plugin_info_total ) || empty( $plugin_info_total->download_link ) ) {
 				return '';
 			}
 			return esc_url_raw( $plugin_info_total->download_link );

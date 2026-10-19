@@ -385,6 +385,11 @@ class Plugin_Updates {
 			return $update;
 		}
 
+		// WP_Site_Health::detect_plugin_theme_auto_update_issues() calls the filter with a fake plugin object.
+		if ( isset( $item->slug ) && $item->slug === 'a-fake-plugin' ) {
+			return $update;
+		}
+
 		if ( $this->get_window_start_hour() === false ) {
 			// Window unknown (yet): keep the WordPress default rather than blocking updates.
 			return $update;

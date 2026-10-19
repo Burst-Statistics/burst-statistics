@@ -10,7 +10,6 @@ import SwitchField from './SwitchField';
 import ButtonControlField from './ButtonControlField';
 import ReportingField from './ReportingField';
 import CheckboxGroupField from './CheckboxGroupField';
-import GoalsSettings from '../Goals/GoalsSettings';
 import LicenseField from './LicenseField';
 import SelectField from './SelectField';
 import NumberField from './NumberField';
@@ -32,6 +31,10 @@ import IntegrationsIntroField from './IntegrationsIntroField';
 import SlackWebhookField from './SlackWebhookField';
 import ImportDataField from './ImportDataField';
 import ExportDataField from './ExportDataField';
+import AlertChannelsField from './AlertChannels/AlertChannelsField';
+import EmailListField from './EmailListField';
+import { isChannelInUse } from './AlertChannels/alertSettings';
+import { validateEmailList } from '@/utils/emailList';
 
 export const fieldComponents = {
 	text: TextField,
@@ -44,7 +47,6 @@ export const fieldComponents = {
 	button: ButtonControlField,
 	email_reports: ReportingField,
 	checkbox_group: CheckboxGroupField,
-	goals: GoalsSettings,
 	license: LicenseField,
 	select: SelectField,
 	image_picker: ImagePickerField,
@@ -63,21 +65,14 @@ export const fieldComponents = {
 	gsc_connect: GoogleSearchConsoleField,
 	integration_row: IntegrationRowField,
 	integrations_intro: IntegrationsIntroField,
-	slack_webhook: SlackWebhookField
+	slack_webhook: SlackWebhookField,
+	alert_channels: AlertChannelsField,
+	email_list: EmailListField
 };
 
 // fallow-ignore-next-line complexity
 const Field = memo( ({ setting, control, ...props }) => {
 	const { isLicenseValid, tier } = useLicenseData();
-
-	// Special handling for goal(s) type that should not be wrapped in a controller.
-	if ( 'goals' === setting.type ) {
-		return (
-			<ErrorBoundary>
-				<GoalsSettings />
-			</ErrorBoundary>
-		);
-	}
 
 	const FieldComponent = fieldComponents[setting.type];
 
@@ -177,6 +172,24 @@ const Field = memo( ({ setting, control, ...props }) => {
 			};
 		}
 
+		// Email list: valid, unique addresses. With required_when, at least one
+		// address while a usable alert is switched on for that channel.
+		if ( 'email_list' === setting.type ) {
+			const requiredWhen = setting.required_when;
+			return {
+				validate: ( value, formValues ) => validateEmailList( value, {
+					isRequired: !! requiredWhen && isChannelInUse(
+						formValues?.[ requiredWhen.field ],
+						requiredWhen.rows || {},
+						requiredWhen.channel,
+						isLicenseValid,
+						requiredWhen.defaults
+					),
+					requiredMessage: requiredWhen?.message
+				})
+			};
+		}
+
 		// Fallback to existing validation if present
 		return setting.validation?.validate ?
 			{ validate: setting.validation.validate } :
@@ -224,7 +237,10 @@ const Field = memo( ({ setting, control, ...props }) => {
 				}
 			}),
 		...( setting.minLength && { minLength: setting.minLength }),
-		...( setting.maxLength && { maxLength: setting.maxLength })
+		...( setting.maxLength && { maxLength: setting.maxLength }),
+
+		// Validate these fields again when this one changes (e.g. recipients when an alert is switched on).
+		...( setting.validation_deps && { deps: setting.validation_deps })
 	};
 
 	const isAgencyField = 'agency' === setting?.pro?.tier;

@@ -6,7 +6,8 @@ import NotFoundPagesBlock from '@/components/NotFoundPages/NotFoundPagesBlock';
 import { OutgoingLinksBlock } from '@/components/OutgoingLinks';
 import { FormsBlock } from '@/components/Forms';
 import { ReadingEngagementBlock } from '@/components/ReadingEngagement';
-import { InternalLinksBlock } from '@/components/InternalLinks';
+import { EventsBlock } from '@/components/Events';
+import { PageWeightBlock } from '@/components/PageWeight';
 
 export const Route = createFileRoute( '/engagement' )({
 
@@ -25,11 +26,13 @@ function Engagement() {
 			<PageHeader />
 			<OutgoingLinksBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
 
+			<EventsBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
+
 			<ReadingEngagementBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
 
 			<FormsBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
 
-			<InternalLinksBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
+			<PageWeightBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
 
 			<SearchTermsBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
 

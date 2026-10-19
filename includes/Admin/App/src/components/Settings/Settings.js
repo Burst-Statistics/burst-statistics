@@ -1,5 +1,4 @@
 import ErrorBoundary from '@/components/Common/ErrorBoundary';
-import useGoalsData from '@/hooks/useGoalsData';
 import SettingsGroupBlock from './SettingsGroupBlock';
 import SettingsFooter from './SettingsFooter';
 import useSettingsData from '@/hooks/useSettingsData';
@@ -15,7 +14,6 @@ import {
  */
 const Settings = ({ currentSettingPage }) => {
 	const { settings, saveSettings } = useSettingsData();
-	const { saveGoals } = useGoalsData();
 	const settingsId = currentSettingPage.id;
 	const {
 		handleSubmit,
@@ -57,15 +55,12 @@ const Settings = ({ currentSettingPage }) => {
 								},
 								{}
 							);
-							await Promise.all([
-								saveSettings( changedData ).then( () => {
-									reset( formData, {
-										keepValues: true,
-										keepDefaultValues: false
-									});
-								}),
-								saveGoals()
-							]);
+							await saveSettings( changedData ).then( () => {
+								reset( formData, {
+									keepValues: true,
+									keepDefaultValues: false
+								});
+							});
 						})}
 						control={control}
 					/>

@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.1
-Stable tag: 3.7.2
+Stable tag: 3.7.3
 
 Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner needed.
  
@@ -296,6 +296,32 @@ We value your feedback. You can [submit a support request on the WordPress forum
  
 
 == Change log ==
+= 3.7.3 =
+* October 19th 2026
+* New: custom events. Send events from your site with burst.event() or the burst_event action and see them, with their properties, in the new Events block on the Engagement page. Turn it on under Settings > Features.
+* New: a Page weight block on the Engagement page shows how heavy your pages are and estimates the CO2 emission per pageview, with a carbon rating and an optional check whether your host runs on green energy.
+* New: a goal wizard that guides you step by step through creating a goal, with an element picker that lets you click the button or link to track on a preview of the page.
+* New: the 'website searches' block shows which result the SmartMatch Search plugin suggested for each search, how often it found a match and how often visitors clicked it, when SmartMatch is active.
+* New: Brevo integration, form submissions can be tracked as goals.
+* New: a Notifications settings page that brings alerts, email recipients and dashboard notices together, with a choice per alert which channel it uses.
+* Improvement: faster tracking on busy sites: fewer database lookups per hit and no redundant session updates.
+* Improvement: deleting archived statistics and cleaning up orphaned sessions now runs in batches, so it no longer times out or locks the tables on large sites.
+* Improvement: the visitor counts background build resumes where it stopped, so it completes on sites where a single run hits the time limit.
+* Improvement: the database uses less space: the columns kept after the 3.7.0 migration for rollback and a redundant index on the statistics table are removed.
+* Improvement: searches that are template injection probes, such as {{7*7}}, are recognized as spam and no longer show up in the Website searches block.
+* Improvement: the bounce rate and conversion rate filters that were marked as coming soon are removed from the filter list.
+* Improvement: the goal filter now shows the whole visit in which the goal was completed, not only the page it was completed on. A goal on a thank-you page now also shows the pages visitors saw before it, and a goal filter combined with a filter on the landing page, such as a UTM parameter, no longer shows no data.
+* Fix: the query time limit was ignored on MariaDB and for some queries on MySQL, so a slow statistics query could keep running for minutes.
+* Fix: on hosts that limit the length of database queries, such as WP Engine, visitor counts filtered by device, browser or operating system left out the visitors of busy days.
+* Fix: excluding a goal or URL parameter in the filters counted hits more than once, which inflated pageviews, or showed no data at all.
+* Fix: the per-page view showed 0 pageviews for a page after its slug had changed, while the Pages table did count them.
+* Fix: on hosts that limit the length of database queries, such as WP Engine, the Pages table showed empty urls for archive and pagination pages on sites with many of them.
+* Fix: the fix button on the task about anomalous visits from one visitor removed nothing. It now removes all hits of that visitor, also those from before the last day, in batches.
+* Fix: a fatal error on admin pages and in application password logins when another plugin checked a capability without a name, such as a menu page registered without a capability.
+* Fix: Site Health reported a plugin auto-update issue caused by the Burst update window.
+* Fix: clicking Continue twice in onboarding submitted the same step twice.
+* Fix: predefined goals showed an undefined title in the MainWP dashboard.
+
 = 3.7.2 =
 * September 29th 2026
 * New: an AI summary block for email reports, which sums up the report period in a few sentences. The block is available when the AI assistant is enabled.

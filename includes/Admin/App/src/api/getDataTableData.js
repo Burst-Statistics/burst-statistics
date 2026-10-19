@@ -6,6 +6,7 @@ import {
 	getCountryName,
 	getContinentName,
 	formatCurrency, formatCurrencyCompact,
+	formatFileSize,
 	truncateMiddle
 } from '@/utils/formatting';
 import Flag from '@/components/Statistics/Flag';
@@ -15,6 +16,10 @@ import { safeDecodeURI } from '@/utils/lib';
 import { __ } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
 import HelpTooltip from '@/components/Common/HelpTooltip';
+import AiMatchCell from '@/components/SearchTerms/AiMatchCell';
+import AiMatchHeader from '@/components/SearchTerms/AiMatchHeader';
+import SearchVolume from '@/components/SearchTerms/SearchVolume';
+import { formatEmissions } from '@/components/PageWeight/pageWeightFormat';
 
 // Column format constants
 const FORMATS = {
@@ -24,11 +29,15 @@ const FORMATS = {
 	CONTINENT: 'continent',
 	URL: 'url',
 	TEXT: 'text',
+	CO2: 'co2',
+	FILESIZE: 'filesize',
 	INTEGER: 'integer',
 	REFERRER: 'referrer',
 	FLOAT: 'float',
 	CURRENCY: 'currency',
 	SEARCH_RESULTS: 'search_results',
+	AI_MATCH: 'ai_match',
+	SEARCH_VOLUME: 'search_volume',
 	STRING: 'string',
 	EXTERNAL_LINK: 'external_link',
 	FORM_TITLE: 'form_title',
@@ -282,11 +291,21 @@ const COLUMN_FORMATTERS = {
 	[FORMATS.CONTINENT]: ( value, _columnId, row ) => <ContinentFilter value={value} row={row} />,
 	[FORMATS.URL]: ( value, columnId, row ) => <UrlFilter filter={columnId} value={value} row={row} />,
 	[FORMATS.TEXT]: ( value, columnId, row ) => <TextFilter filter={columnId} value={value} row={row} />,
+	[FORMATS.CO2]: ( value ) => (
+		isUnmeasuredValue( value ) ? '—' : formatEmissions( Number( value ) )
+	),
+	[FORMATS.FILESIZE]: ( value ) => (
+		isUnmeasuredValue( value ) ? '—' : formatFileSize( Number( value ) )
+	),
 	[FORMATS.REFERRER]: ( value ) => <ReferrerFilter value={value} />,
 	[FORMATS.FLOAT]: ( value ) => parseFloat( value ),
 	[FORMATS.CURRENCY]: ( value ) => <CurrencyValue value={value} />,
 	[FORMATS.SEARCH_RESULTS]: ( value, _columnId, row ) => (
 		<SearchResultsCell value={value} term={ row?.term } />
+	),
+	[FORMATS.AI_MATCH]: ( _value, _columnId, row ) => <AiMatchCell row={ row } />,
+	[FORMATS.SEARCH_VOLUME]: ( value, _columnId, row ) => (
+		<SearchVolume volume={ parseInt( value, 10 ) } aiShown={ parseInt( row?.ai_shown ?? 0, 10 ) } />
 	),
 	[FORMATS.STRING]: ( value ) => value,
 	[FORMATS.SOURCE_CATEGORY]: ( value ) => <SourceCategoryFilter value={value} />,
@@ -352,6 +371,15 @@ const COLUMN_FORMATTERS = {
 };
 
 /**
+ * Page weight is sampled, so a page Burst has not measured yet has no value at
+ * all. That is different from a measured zero and is shown as such.
+ * @param {*} value - The raw cell value.
+ * @returns {boolean} Whether the value is missing rather than zero.
+ */
+const isUnmeasuredValue = ( value ) =>
+	null === value || undefined === value || '' === value;
+
+/**
  * Unified sorting function that handles all data types
  * @param {string} columnId - The column identifier
  * @param {string} format - The column format type
@@ -361,8 +389,12 @@ const createSortFunction = ( columnId, format ) => {
 	const isNumeric = [
 		FORMATS.PERCENTAGE,
 		FORMATS.TIME,
+		FORMATS.CO2,
+		FORMATS.FILESIZE,
 		FORMATS.INTEGER,
-		FORMATS.FLOAT
+		FORMATS.FLOAT,
+		FORMATS.AI_MATCH,
+		FORMATS.SEARCH_VOLUME
 	].includes( format );
 
 	const isCurrency = format === FORMATS.CURRENCY;
@@ -531,6 +563,13 @@ const transformColumn = ( column, columnOptions ) => {
 		sortFunction: createSortFunction( column.id, format ),
 		cell: createCellFormatter( format, column.id )
 	};
+
+	// The AI match column carries its own header and needs room for the page title.
+	if ( FORMATS.AI_MATCH === format ) {
+		transformedColumn.name = <AiMatchHeader />;
+		transformedColumn.minWidth = '220px';
+		transformedColumn.grow = 2;
+	}
 
 	return transformedColumn;
 };
