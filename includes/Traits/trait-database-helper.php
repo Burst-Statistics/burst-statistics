@@ -87,24 +87,89 @@ trait Database_Helper {
 	}
 
 	/**
-	 * Add MAX_EXECUTION_TIME optimizer hint to SELECT queries.
+	 * Cap the execution time of a SELECT (or WITH ... SELECT) statement.
+	 *
+	 * MySQL gets the MAX_EXECUTION_TIME optimizer hint, which it only honours
+	 * on the top-level query block: for a WITH statement that is the main
+	 * SELECT after the CTE list — a hint on a SELECT inside WITH is silently
+	 * ignored. MariaDB before 12.0 does not implement the hint at all (it
+	 * parses it as a plain comment, so the query runs unbounded); it gets a
+	 * per-statement max_statement_time (seconds, MariaDB 10.1+) prefix
+	 * instead, which Query_Executor::is_timeout_error() recognizes.
 	 */
 	protected function add_query_timeout_hint( string $sql, int $timeout_ms ): string {
 		if ( $timeout_ms <= 0 ) {
 			return $sql;
 		}
 
-		if ( stripos( $sql, 'MAX_EXECUTION_TIME(' ) !== false ) {
+		if ( stripos( $sql, 'MAX_EXECUTION_TIME(' ) !== false || stripos( $sql, 'max_statement_time' ) !== false ) {
 			return $sql;
 		}
 
-		if ( 1 !== preg_match( '/^\s*SELECT\s+/i', $sql ) ) {
+		if ( 1 !== preg_match( '/^\s*(SELECT|WITH)\s+/i', $sql, $matches, PREG_OFFSET_CAPTURE ) ) {
 			return $sql;
 		}
 
-		$hint = sprintf( 'SELECT /*+ MAX_EXECUTION_TIME(%d) */ ', $timeout_ms );
+		if ( $this->is_mariadb() ) {
+			return sprintf( 'SET STATEMENT max_statement_time=%.3F FOR ', $timeout_ms / 1000 ) . ltrim( $sql );
+		}
 
-		return preg_replace( '/^\s*SELECT\s+/i', $hint, $sql, 1 ) ?? $sql;
+		$offset = 'SELECT' === strtoupper( $matches[1][0] ) ? $matches[1][1] : $this->find_top_level_select_offset( $sql );
+		if ( null === $offset ) {
+			return $sql;
+		}
+
+		return substr( $sql, 0, $offset ) . sprintf( 'SELECT /*+ MAX_EXECUTION_TIME(%d) */', $timeout_ms ) . substr( $sql, $offset + 6 );
+	}
+
+	/**
+	 * Byte offset of the first SELECT keyword outside parentheses and quoted
+	 * strings: the statement's own SELECT, or the main SELECT after a WITH
+	 * clause's CTE list. Null when there is none.
+	 *
+	 * @param string $sql SQL statement.
+	 */
+	private function find_top_level_select_offset( string $sql ): ?int {
+		$depth  = 0;
+		$quote  = '';
+		$length = strlen( $sql );
+		for ( $i = 0; $i < $length; $i++ ) {
+			$char = $sql[ $i ];
+			if ( '' !== $quote ) {
+				if ( '\\' === $char ) {
+					++$i;
+				} elseif ( $char === $quote ) {
+					$quote = '';
+				}
+				continue;
+			}
+			if ( "'" === $char || '"' === $char || '`' === $char ) {
+				$quote = $char;
+			} elseif ( '(' === $char ) {
+				++$depth;
+			} elseif ( ')' === $char ) {
+				--$depth;
+			} elseif ( 0 === $depth
+				&& 0 === substr_compare( $sql, 'SELECT', $i, 6, true )
+				&& ( 0 === $i || 1 !== preg_match( '/\w/', $sql[ $i - 1 ] ) )
+				&& ( $i + 6 >= $length || 1 !== preg_match( '/\w/', $sql[ $i + 6 ] ) )
+			) {
+				return $i;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Whether the connected database server is MariaDB.
+	 */
+	protected function is_mariadb(): bool {
+		static $is_mariadb = null;
+		if ( null === $is_mariadb ) {
+			global $wpdb;
+			$is_mariadb = stripos( (string) $wpdb->db_server_info(), 'mariadb' ) !== false;
+		}
+		return $is_mariadb;
 	}
 
 	/**
@@ -140,8 +205,9 @@ trait Database_Helper {
 		}
 
 		// The modifier must follow the optional /*+ ... */ optimizer hint block,
-		// which itself must directly follow SELECT.
-		return preg_replace( '/^(\s*SELECT\s+(?:\/\*\+.*?\*\/\s*)?)/is', '$1SQL_BIG_RESULT ', $sql, 1 ) ?? $sql;
+		// which itself must directly follow SELECT — and, on MariaDB, the
+		// optional SET STATEMENT ... FOR timeout prefix.
+		return preg_replace( '/^(\s*(?:SET\s+STATEMENT\s+\S+\s+FOR\s+)?SELECT\s+(?:\/\*\+.*?\*\/\s*)?)/is', '$1SQL_BIG_RESULT ', $sql, 1 ) ?? $sql;
 	}
 
 	/**
@@ -183,7 +249,7 @@ trait Database_Helper {
 	 * treat uid_id (integer dictionary ids, see burst_uids) as the identity
 	 * column. Derived from the ACTUAL SCHEMA, not from options or task flags:
 	 *
-	 * - the legacy varchar uid column is absent (fresh install, or the 3.7.1
+	 * - the legacy varchar uid column is absent (fresh install, or the 3.7.3
 	 *   drop has run), or
 	 * - the uid_id indexes exist — the finalize step creates them right after
 	 *   the backfill, and nothing else does on a migrating install (the
@@ -191,7 +257,7 @@ trait Database_Helper {
 	 *
 	 * The finalize step deliberately does NOT alter the legacy column (making
 	 * it nullable would be a full table rebuild); the column stays NOT NULL
-	 * until 3.7.1 drops it, and the tracker no longer writes it (MySQL's
+	 * until 3.7.3 drops it, and the tracker no longer writes it (MySQL's
 	 * implicit '' under WordPress' non-strict sql_mode). A rollback to the
 	 * previous release therefore finds the column exactly as it left it.
 	 *
@@ -230,7 +296,7 @@ trait Database_Helper {
 
 	/**
 	 * Whether burst_statistics still carries the legacy varchar uid column —
-	 * i.e. this blog was installed before 3.7.0 and the 3.7.1 drop has not run.
+	 * i.e. this blog was installed before 3.7.0 and the 3.7.3 drop has not run.
 	 * The pipeline tasks gate on this (there is string data to migrate), the
 	 * completion check uid_id_active() combines it with the index probe.
 	 * Memoized per request (a class property so flush_uid_id_active_cache()
@@ -331,19 +397,112 @@ trait Database_Helper {
 	}
 
 	/**
+	 * Cache key for a uid's dictionary id in burst_uids.
+	 *
+	 * Uses sha256 to avoid collisions and keep cache keys within safe limits.
+	 *
+	 * @param string $uid The visitor uid string.
+	 * @return string Cache key for wp_cache.
+	 */
+	protected static function uid_id_cache_key( string $uid ): string {
+		$blog_id    = get_current_blog_id();
+		$generation = self::db_cache_generation();
+		return "burst_uid_id_lookup_{$blog_id}_{$generation}_" . hash( 'sha256', $uid );
+	}
+
+	/**
+	 * Generation token that prefixes the persistent table_exists() and
+	 * resolve_uid_id() cache keys of the current blog. The object cache API
+	 * cannot delete keys by prefix, so a flush of all entries swaps the token
+	 * instead: every old key becomes unreachable and expires on its TTL. An
+	 * evicted token is simply replaced, which only costs a cache miss.
+	 * random_int() rather than wp_rand(): pluggable.php is not loaded on the
+	 * SHORTINIT beacon.
+	 *
+	 * @return string The current generation token.
+	 */
+	protected static function db_cache_generation(): string {
+		$key        = 'burst_db_cache_generation_' . get_current_blog_id();
+		$generation = wp_cache_get( $key, 'burst' );
+		if ( false === $generation ) {
+			$generation = (string) random_int( 1, PHP_INT_MAX );
+			// add() rather than set(): a concurrent request that created the token first wins, so both use the same keys.
+			if ( ! wp_cache_add( $key, $generation, 'burst' ) ) {
+				$generation = wp_cache_get( $key, 'burst' );
+			}
+		}
+		return (string) $generation;
+	}
+
+	/**
+	 * Invalidate all persistent table_exists() and resolve_uid_id() entries of
+	 * the current blog. Side effect: replaces the cache generation token.
+	 */
+	protected static function bump_db_cache_generation(): void {
+		wp_cache_set( 'burst_db_cache_generation_' . get_current_blog_id(), (string) random_int( 1, PHP_INT_MAX ), 'burst' );
+	}
+
+	/**
+	 * Drop the cached dictionary id of a uid, or of all uids. Call it after
+	 * burst_uids rows are deleted or the table is emptied: TRUNCATE resets the
+	 * auto-increment, so a stale cached id would later belong to another visitor.
+	 *
+	 * @param string|null $uid The visitor uid string, or null to flush all.
+	 */
+	public static function flush_uid_id_cache( ?string $uid = null ): void {
+		$blog_id = get_current_blog_id();
+		if ( null !== $uid ) {
+			unset(
+				self::$uid_dictionary_cache[ $blog_id ][ $uid ],
+				self::$uids_created_this_request[ $blog_id ][ $uid ]
+			);
+			wp_cache_delete( self::uid_id_cache_key( $uid ), 'burst' );
+		} else {
+			unset(
+				self::$uid_dictionary_cache[ $blog_id ],
+				self::$uids_created_this_request[ $blog_id ]
+			);
+			self::bump_db_cache_generation();
+		}
+	}
+
+	/**
+	 * Per-request memo for resolve_uid_id(), per blog: the ID in burst_uids.
+	 *
+	 * @var array<int, array<string, int>>
+	 */
+	protected static array $uid_dictionary_cache = [];
+
+	/**
 	 * Resolve a uid string to its dictionary id in burst_uids, creating the
 	 * dictionary row on first sight (see resolve_dictionary_id() for the
 	 * concurrency and retry semantics). Returns 0 when the uid is empty or the
 	 * dictionary table is not available yet.
+	 *
+	 * Resolved IDs are memoized per request and cached in the object cache so
+	 * subsequent hits from the same visitor resolve without touching MySQL.
+	 *
+	 * @param string $uid The visitor uid string.
+	 * @return int The dictionary ID in burst_uids, or 0 when not resolved.
 	 */
 	protected function resolve_uid_id( string $uid ): int {
-		static $cache = [];
 		if ( '' === $uid ) {
 			return 0;
 		}
 		$blog_id = get_current_blog_id();
-		if ( isset( $cache[ $blog_id ][ $uid ] ) ) {
-			return $cache[ $blog_id ][ $uid ];
+		if ( isset( self::$uid_dictionary_cache[ $blog_id ][ $uid ] ) ) {
+			return self::$uid_dictionary_cache[ $blog_id ][ $uid ];
+		}
+
+		$cache_key = self::uid_id_cache_key( $uid );
+		$found     = false;
+		$cached    = wp_cache_get( $cache_key, 'burst', false, $found );
+		if ( $found && false !== $cached ) {
+			$id = (int) $cached;
+			if ( $id > 0 ) {
+				self::$uid_dictionary_cache[ $blog_id ][ $uid ] = $id;
+				return $id;
+			}
 		}
 
 		$created = false;
@@ -353,7 +512,9 @@ trait Database_Helper {
 		}
 
 		if ( $id > 0 ) {
-			$cache[ $blog_id ][ $uid ] = $id;
+			self::$uid_dictionary_cache[ $blog_id ][ $uid ] = $id;
+			// Literal TTL (seconds): time constants aren't guaranteed on the SHORTINIT beacon path.
+			wp_cache_set( $cache_key, $id, 'burst', 300 );
 		}
 		return $id;
 	}
@@ -725,6 +886,105 @@ trait Database_Helper {
 	}
 
 	/**
+	 * Delete the given hits, then the sessions those hits left without any hit.
+	 *
+	 * Deleting by ID guarantees the session cleanup covers exactly the sessions of
+	 * the deleted hits, without scanning the whole sessions table.
+	 *
+	 * @param object[] $hits Rows with an `ID` and a `session_id` property.
+	 */
+	protected function delete_hits( array $hits ): void {
+		$hit_ids     = [];
+		$session_ids = [];
+		foreach ( $hits as $hit ) {
+			if ( (int) $hit->ID > 0 ) {
+				$hit_ids[] = (int) $hit->ID;
+			}
+			if ( (int) $hit->session_id > 0 ) {
+				$session_ids[ (int) $hit->session_id ] = true;
+			}
+		}
+		$session_ids = array_keys( $session_ids );
+		if ( empty( $hit_ids ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$placeholders = implode( ',', array_fill( 0, count( $hit_ids ), '%d' ) );
+		$sql          = "DELETE FROM {$wpdb->prefix}burst_statistics WHERE ID IN ($placeholders)";
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- placeholders are %d only.
+		$wpdb->query( $wpdb->prepare( $sql, ...$hit_ids ) );
+
+		if ( empty( $session_ids ) ) {
+			return;
+		}
+
+		$placeholders = implode( ',', array_fill( 0, count( $session_ids ), '%d' ) );
+		$sql          = "DELETE sess FROM {$wpdb->prefix}burst_sessions sess
+						LEFT JOIN {$wpdb->prefix}burst_statistics st ON st.session_id = sess.ID
+						WHERE sess.ID IN ($placeholders)
+						AND st.ID IS NULL";
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- placeholders are %d only.
+		$wpdb->query( $wpdb->prepare( $sql, ...$session_ids ) );
+	}
+
+	/**
+	 * Split integer ids into chunks for a literal IN () list. A chunk of 1000
+	 * ids stays under ~8 KB of SQL: hosts cap the query length, and WP
+	 * Engine's long query governor never runs a query over ~16,000
+	 * characters, so wpdb returns no rows and the caller silently loses data
+	 * (a 5000-id chunk is ~30,000 characters).
+	 *
+	 * @param int[] $ids Integer ids.
+	 * @return array<int, int[]> Chunks of at most 1000 ids each.
+	 */
+	protected function chunk_ids_for_in_list( array $ids ): array {
+		return array_chunk( array_map( 'intval', $ids ), 1000 );
+	}
+
+	/**
+	 * Resolve display paths for post ids from the burst_page_urls dictionary.
+	 *
+	 * Uses the post's canonical row, falling back to the most recently seen
+	 * url (a post the weekly sweep has not promoted yet, or a deleted post
+	 * that never got a canonical assigned). Chunked IN() lookups against the
+	 * small dictionary, never get_permalink(): on burst/v1 REST requests the
+	 * optimizer leaves plugin post types unregistered, so permalinks would be
+	 * wrong for e.g. WooCommerce products.
+	 *
+	 * @param int[] $post_ids Positive post ids.
+	 * @return array<int, string> Post id => path, only for ids with a dictionary row.
+	 */
+	protected function get_page_paths_by_post_id( array $post_ids ): array {
+		global $wpdb;
+
+		$post_ids = array_values( array_unique( array_filter( array_map( 'intval', $post_ids ), static fn( int $id ): bool => $id > 0 ) ) );
+		$paths    = [];
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table name, integer id lists.
+		foreach ( $this->chunk_ids_for_in_list( $post_ids ) as $chunk ) {
+			$id_list = implode( ',', $chunk );
+			foreach ( $wpdb->get_results( "SELECT page_id, page_url FROM {$wpdb->prefix}burst_page_urls WHERE is_canonical = 1 AND page_id IN ({$id_list})", ARRAY_A ) as $dict_row ) {
+				$paths[ (int) $dict_row['page_id'] ] = (string) $dict_row['page_url'];
+			}
+		}
+		$missing = array_diff( $post_ids, array_keys( $paths ) );
+		foreach ( $this->chunk_ids_for_in_list( $missing ) as $chunk ) {
+			$id_list = implode( ',', $chunk );
+			$latest  = $wpdb->get_results(
+				"SELECT d.page_id, d.page_url FROM {$wpdb->prefix}burst_page_urls d
+				JOIN ( SELECT page_id, MAX(ID) AS mid FROM {$wpdb->prefix}burst_page_urls WHERE page_id IN ({$id_list}) GROUP BY page_id ) m ON d.ID = m.mid",
+				ARRAY_A
+			);
+			foreach ( $latest as $dict_row ) {
+				$paths[ (int) $dict_row['page_id'] ] = (string) $dict_row['page_url'];
+			}
+		}
+		// phpcs:enable
+
+		return $paths;
+	}
+
+	/**
 	 * The permalink path to store as a post's canonical url, or '' when the
 	 * post must not get one: non-viewable post types (product variations,
 	 * form/field-group post types) and non-viewable statuses (draft, pending,
@@ -780,11 +1040,82 @@ trait Database_Helper {
 			)
 			GROUP BY d.page_id"
 		);
-		foreach ( array_chunk( array_map( 'intval', $row_ids ), 1000 ) as $chunk ) {
+		foreach ( $this->chunk_ids_for_in_list( $row_ids ) as $chunk ) {
 			$id_list = implode( ',', $chunk );
 			$wpdb->query( "UPDATE {$wpdb->prefix}burst_page_urls SET is_canonical = 1 WHERE ID IN ({$id_list})" );
 		}
         // phpcs:enable
+	}
+
+	/**
+	 * The statistics.page_id values that hold the hits of the page behind a
+	 * url, so a single-page filter matches the row the Pages table shows for
+	 * that url. Page-grain queries group on page_id and label each row with
+	 * its canonical url (see Page_Url_Metric), so hits stored under the
+	 * post's other urls (an old slug, comment pagination) belong to the same
+	 * row while their page_url string differs. The set is the WP post id the
+	 * url maps to (when it has one) plus the url's own negative dictionary id
+	 * (-ID, see resolve_page_url_id()), which covers hits a canonical claim
+	 * has not merged onto the post id yet. Read-only: an unknown url is never
+	 * inserted. Empty when the dictionary is not ready or the url is unknown;
+	 * the caller then filters on the page_url string, which is what the page
+	 * tables group on in that case as well.
+	 *
+	 * @param string $page_url Relative url path, as displayed in the page tables.
+	 * @return int[] The page_ids to filter on, empty to fall back to the url string.
+	 */
+	protected function page_grain_ids_for_url( string $page_url ): array {
+		static $cache = [];
+		if ( '' === $page_url || ! $this->page_dictionary_ready() ) {
+			return [];
+		}
+		$blog_id = get_current_blog_id();
+		if ( isset( $cache[ $blog_id ][ $page_url ] ) ) {
+			return $cache[ $blog_id ][ $page_url ];
+		}
+
+		global $wpdb;
+		// The canonical row first: sites whose UNIQUE(page_url) migration
+		// failed can still hold duplicate rows for one url.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT ID, page_id FROM {$wpdb->prefix}burst_page_urls WHERE page_url = %s ORDER BY is_canonical DESC, page_id > 0 DESC, ID ASC LIMIT 1",
+				$page_url
+			),
+			ARRAY_A
+		);
+
+		$page_ids = [];
+		if ( is_array( $row ) ) {
+			if ( (int) $row['page_id'] > 0 ) {
+				$page_ids[] = (int) $row['page_id'];
+			}
+			$page_ids[] = - (int) $row['ID'];
+		}
+		$cache[ $blog_id ][ $page_url ] = $page_ids;
+		return $page_ids;
+	}
+
+	/**
+	 * Prepared WHERE condition that selects the hits of one page for the
+	 * per-page reports, matching the row the Pages table shows for that url
+	 * (see page_grain_ids_for_url()).
+	 *
+	 * @param string $alias    Table alias of burst_statistics in the query.
+	 * @param string $page_url Relative url path, as displayed in the page tables.
+	 * @return string SQL condition without a leading AND, already prepared.
+	 */
+	protected function single_page_condition_sql( string $alias, string $page_url ): string {
+		global $wpdb;
+		$alias    = sanitize_key( $alias );
+		$page_ids = $this->page_grain_ids_for_url( $page_url );
+		if ( ! empty( $page_ids ) ) {
+			// Integers only, cast in page_grain_ids_for_url().
+			return "{$alias}.page_id IN (" . implode( ',', array_map( 'intval', $page_ids ) ) . ')';
+		}
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- alias sanitized above.
+		return $wpdb->prepare( "{$alias}.page_url = %s", $page_url );
 	}
 
 	/**
@@ -889,7 +1220,7 @@ trait Database_Helper {
 	 * loop in db_upgrades_complete() (one non-autoloaded SELECT per registered
 	 * slug, on every request, forever) on a finished install.
 	 */
-	protected function has_pending_db_upgrade(): bool {
+	public function has_pending_db_upgrade(): bool {
 		return (bool) get_option( 'burst_has_db_upgrade', false );
 	}
 
@@ -945,8 +1276,9 @@ trait Database_Helper {
 			// burst_db_upgrade_* options are state flags (e.g. ecommerce
 			// activation) or orphaned leftovers from removed features; a
 			// blanket LIKE scan would let one of those disable every fast path
-			// forever. The dispatcher's own registry is the source of truth.
-			foreach ( ( new \Burst\Admin\DB_Upgrade\DB_Upgrade() )->get_all_upgrade_slugs() as $slug ) {
+			// forever. The dispatcher's own registry is the source of truth;
+			// cleanup tasks the read paths do not depend on are left out.
+			foreach ( ( new \Burst\Admin\DB_Upgrade\DB_Upgrade() )->get_blocking_upgrade_slugs() as $slug ) {
 				if ( get_option( "burst_db_upgrade_{$slug}" ) ) {
 					$complete = false;
 					break;
@@ -1050,8 +1382,7 @@ trait Database_Helper {
 			return $supported;
 		}
 		global $wpdb;
-		$is_mariadb = stripos( $wpdb->db_server_info(), 'mariadb' ) !== false;
-		$supported  = $is_mariadb
+		$supported = $this->is_mariadb()
 			? version_compare( $wpdb->db_version(), '10.2', '>=' )
 			: version_compare( $wpdb->db_version(), '8.0.2', '>=' );
 		return $supported;
@@ -1068,10 +1399,29 @@ trait Database_Helper {
 			return $supported;
 		}
 		global $wpdb;
-		$is_mariadb = stripos( $wpdb->db_server_info(), 'mariadb' ) !== false;
-		$supported  = $is_mariadb
+		$supported = $this->is_mariadb()
 			? version_compare( $wpdb->db_version(), '10.2.3', '>=' )
 			: version_compare( $wpdb->db_version(), '5.7.8', '>=' );
+		return $supported;
+	}
+
+	/**
+	 * Whether InnoDB can drop a column as a metadata-only change
+	 * (ALGORITHM=INSTANT): MariaDB 10.4+ or MySQL 8.0.29+. MySQL is held to
+	 * 8.0.32+, because the instant ADD/DROP COLUMN of 8.0.29–8.0.31 had
+	 * corruption bugs (8.0.29 was withdrawn for it). Older servers can still
+	 * drop the column, but only by rebuilding the table.
+	 */
+	protected function supports_instant_drop_column(): bool {
+		static $supported = null;
+		if ( null !== $supported ) {
+			return $supported;
+		}
+		global $wpdb;
+		$is_mariadb = stripos( $wpdb->db_server_info(), 'mariadb' ) !== false;
+		$supported  = $is_mariadb
+			? version_compare( $wpdb->db_version(), '10.4', '>=' )
+			: version_compare( $wpdb->db_version(), '8.0.32', '>=' );
 		return $supported;
 	}
 
@@ -1088,8 +1438,49 @@ trait Database_Helper {
 	}
 
 	/**
+	 * Per-request memo for table_exists(), per blog and table name.
+	 *
+	 * @var array<int, array<string, bool>>
+	 */
+	protected static array $table_exists_cache = [];
+
+	/**
+	 * Cache key for the table_exists() result of a table.
+	 *
+	 * @param string $table Table name without wp_ prefix.
+	 * @return string Cache key for wp_cache.
+	 */
+	protected static function table_exists_cache_key( string $table ): string {
+		$blog_id    = get_current_blog_id();
+		$generation = self::db_cache_generation();
+		return "burst_table_exists_{$table}_{$blog_id}_{$generation}";
+	}
+
+	/**
+	 * Flush the table_exists() caches. Call it after dropping Burst tables.
+	 *
+	 * @param string|null $table Table name without wp_ prefix, or null to flush all.
+	 */
+	public static function flush_table_exists_cache( ?string $table = null ): void {
+		$blog_id = get_current_blog_id();
+		if ( null !== $table ) {
+			unset( self::$table_exists_cache[ $blog_id ][ $table ] );
+			wp_cache_delete( self::table_exists_cache_key( $table ), 'burst' );
+		} else {
+			unset( self::$table_exists_cache[ $blog_id ] );
+			self::bump_db_cache_generation();
+		}
+	}
+
+	/**
 	 * Check if table exists
 	 * $table should include the burst prefix, but not the WordPress prefix. E.g. burst_sessions.
+	 *
+	 * Memoized per request and cached in the object cache to eliminate redundant
+	 * SHOW TABLES LIKE queries on high-traffic paths.
+	 *
+	 * @param string $table Table name without wp_ prefix.
+	 * @return bool True if table exists, false otherwise.
 	 */
 	protected function table_exists( string $table ): bool {
 		global $wpdb;
@@ -1098,8 +1489,30 @@ trait Database_Helper {
 			return false;
 		}
 
+		$blog_id = get_current_blog_id();
+		if ( isset( self::$table_exists_cache[ $blog_id ][ $table ] ) ) {
+			return self::$table_exists_cache[ $blog_id ][ $table ];
+		}
+
+		$cache_key = self::table_exists_cache_key( $table );
+		if ( wp_cache_get( $cache_key, 'burst' ) ) {
+			self::$table_exists_cache[ $blog_id ][ $table ] = true;
+			return true;
+		}
+
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated against known whitelist above.
-		return (bool) $wpdb->query( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . $table ) );
+		$exists = (bool) $wpdb->query( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . $table ) );
+
+		// Only a positive answer is cached: a missing table is a transient state (install, upgrade) and a cached
+		// "missing" would keep hiding the table after it has been created.
+		if ( $exists ) {
+			self::$table_exists_cache[ $blog_id ][ $table ] = true;
+			// Literal TTL (seconds): time constants aren't guaranteed on the SHORTINIT beacon path. Kept short
+			// because a table dropped outside Burst (a database restore, manual cleanup) cannot flush this entry.
+			wp_cache_set( $cache_key, true, 'burst', 300 );
+		}
+
+		return $exists;
 	}
 
 	/**
@@ -1130,6 +1543,50 @@ trait Database_Helper {
 	}
 
 	/**
+	 * Return the collation and charset of a column, or null if not found.
+	 *
+	 * Probes information_schema so a missing table or column simply returns null
+	 * without generating a database error.
+	 *
+	 * @param string $table_name  Table name without WordPress prefix.
+	 * @param string $column_name Column name.
+	 * @return array{collation:string,charset:string}|null
+	 */
+	protected function get_column_charset_collate( string $table_name, string $column_name ): ?array {
+		global $wpdb;
+		$table_name = $this->validate_table_name( $table_name );
+		if ( '' === $table_name ) {
+			return null;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT COLLATION_NAME, CHARACTER_SET_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s',
+				$wpdb->prefix . $table_name,
+				$column_name
+			),
+			ARRAY_A
+		);
+
+		if ( ! is_array( $row ) || empty( $row['COLLATION_NAME'] ) || empty( $row['CHARACTER_SET_NAME'] ) ) {
+			return null;
+		}
+
+		$collation = (string) $row['COLLATION_NAME'];
+		$charset   = (string) $row['CHARACTER_SET_NAME'];
+
+		if ( ! preg_match( '/^[a-zA-Z0-9_]+$/', $collation ) || ! preg_match( '/^[a-zA-Z0-9_]+$/', $charset ) ) {
+			return null;
+		}
+
+		return [
+			'collation' => $collation,
+			'charset'   => $charset,
+		];
+	}
+
+	/**
 	 * Check if a table has a named index.
 	 * Pass the table name without WordPress (wp_) prefix, but with burst prefix.
 	 * Indexes added through add_index() are named `{columns}_index` (columns joined by underscores).
@@ -1142,6 +1599,59 @@ trait Database_Helper {
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated, index name escaped.
 		$result = $wpdb->get_results( $wpdb->prepare( "SHOW INDEX FROM $table_name WHERE Key_name = %s", $index_name ) );
 		return ! empty( $result );
+	}
+
+	/**
+	 * The last database error with everything from its first to its last quote
+	 * replaced, for debug logs. MySQL quotes the data it failed on ("Duplicate
+	 * entry '…' for key", "near '…'" with the query's values), which can be
+	 * visitor data; quotes nest inside "near", so quoted parts can't be
+	 * replaced one by one. The rest still says what went wrong.
+	 */
+	protected function redacted_db_error(): string {
+		global $wpdb;
+		return (string) preg_replace( "/'.*'/s", "'…'", (string) $wpdb->last_error );
+	}
+
+	/**
+	 * Take a named MySQL advisory lock. Non-blocking by default: a caller that
+	 * cannot afford to wait (the tracking path) passes no timeout and handles
+	 * the false, one that can afford a short wait passes seconds. The lock is
+	 * released by the server the moment the holding connection dies, so a
+	 * killed PHP process never strands it. Errors are suppressed and treated
+	 * as "not acquired" — GET_LOCK returns NULL on error, never 1.
+	 *
+	 * @param string $lock_name Lock identifier; MariaDB caps these at 64 chars.
+	 * @param int    $timeout   Seconds to wait for the lock, 0 to fail immediately.
+	 */
+	protected function acquire_db_lock( string $lock_name, int $timeout = 0 ): bool {
+		global $wpdb;
+		if ( ! isset( $wpdb ) ) {
+			return true;
+		}
+
+		$suppress = $wpdb->suppress_errors( true );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', substr( $lock_name, 0, 64 ), $timeout ) );
+		$wpdb->suppress_errors( $suppress );
+
+		return '1' === (string) $result;
+	}
+
+	/**
+	 * Release a lock taken by acquire_db_lock(). No-op when this connection
+	 * does not hold it.
+	 */
+	protected function release_db_lock( string $lock_name ): void {
+		global $wpdb;
+		if ( ! isset( $wpdb ) ) {
+			return;
+		}
+
+		$suppress = $wpdb->suppress_errors( true );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', substr( $lock_name, 0, 64 ) ) );
+		$wpdb->suppress_errors( $suppress );
 	}
 
 	/**
@@ -1167,6 +1677,10 @@ trait Database_Helper {
 				'burst_query_stats',
 				'burst_searches',
 				'burst_statistics_searches',
+				'burst_event_names',
+				'burst_events',
+				'burst_page_weights',
+				'burst_page_weight_history',
 			],
 		);
 	}
@@ -1258,6 +1772,93 @@ trait Database_Helper {
 		if ( $wpdb->last_error ) {
 			self::error_log( "Error dropping index $index_name from $table_name: " . $wpdb->last_error );
 		}
+	}
+
+	/**
+	 * Drop columns from a table without blocking the writes to it — the
+	 * statistics and sessions tables take a tracking insert on every hit, so a
+	 * locking ALTER would hold every beacon request for the whole run.
+	 *
+	 * 1. Every index containing one of the columns is dropped first, by what
+	 *    information_schema reports rather than by name: DROP COLUMN silently
+	 *    shrinks such an index to its remaining columns under the same name.
+	 *    Dropping a secondary index is metadata-only.
+	 * 2. The columns are dropped with ALGORITHM=INSTANT where the server
+	 *    supports it (metadata-only, seconds on any table size).
+	 * 3. Otherwise — older server, or INSTANT refused (e.g. MySQL's limit of
+	 *    64 instant row versions) — with ALGORITHM=INPLACE, LOCK=NONE: an
+	 *    online rebuild during which reads and writes continue. The server
+	 *    refuses rather than falling back to a locking table copy.
+	 *
+	 * Every ALTER needs a short exclusive metadata lock at its start and end.
+	 * While it waits for that lock, new writes queue up behind it, so the wait
+	 * is capped with lock_wait_timeout: the ALTER fails and is retried later
+	 * instead of stalling tracking behind a long-running dashboard query.
+	 *
+	 * Runs from cron / WP-CLI only (a rebuild can take long on large tables).
+	 *
+	 * @param string   $table_name   Table without the WordPress prefix, validated against the table list.
+	 * @param string[] $column_names Columns to drop; must all exist.
+	 * @return bool True when the columns are dropped.
+	 */
+	protected function drop_columns_online( string $table_name, array $column_names ): bool {
+		global $wpdb;
+		$table_name = $this->validate_table_name( $table_name );
+		if ( '' === $table_name || empty( $column_names ) ) {
+			return false;
+		}
+		$full_table   = $wpdb->prefix . $table_name;
+		$column_names = array_map( 'sanitize_key', $column_names );
+
+		$placeholders = implode( ', ', array_fill( 0, count( $column_names ), '%s' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholder list built from the column array, every value prepared.
+		$indexes = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT INDEX_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME IN ($placeholders)", $full_table, ...$column_names ) );
+		if ( in_array( 'PRIMARY', $indexes, true ) ) {
+			// Dropping a primary key column always rebuilds the table and
+			// changes the row identity; never done implicitly.
+			self::error_log( "drop_columns_online: refusing to drop a primary key column from {$full_table}." );
+			return false;
+		}
+
+		if ( function_exists( 'set_time_limit' ) ) {
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- some hosts disable it; a failure only shortens the budget.
+			@set_time_limit( 0 );
+		}
+		ignore_user_abort( true );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- validated table name, index and column names from information_schema / sanitize_key.
+		$lock_wait_timeout = (int) $wpdb->get_var( 'SELECT @@SESSION.lock_wait_timeout' );
+		$wpdb->query( 'SET SESSION lock_wait_timeout = 10' );
+
+		$dropped = true;
+		if ( ! empty( $indexes ) ) {
+			$drop_indexes = array_map( static fn( $index ) => 'DROP INDEX `' . esc_sql( (string) $index ) . '`', $indexes );
+			$dropped      = false !== $wpdb->query( "ALTER TABLE `{$full_table}` " . implode( ', ', $drop_indexes ) . ', ALGORITHM=INPLACE, LOCK=NONE' );
+		}
+
+		if ( $dropped ) {
+			$drop_columns = 'ALTER TABLE `' . $full_table . '` ' . implode( ', ', array_map( static fn( $column ) => "DROP COLUMN `{$column}`", $column_names ) );
+			$dropped      = false;
+			if ( $this->supports_instant_drop_column() ) {
+				// A refusal is expected on some tables (row version limit);
+				// keep it out of the error log, the online rebuild follows.
+				$suppress = $wpdb->suppress_errors();
+				$dropped  = false !== $wpdb->query( $drop_columns . ', ALGORITHM=INSTANT' );
+				$wpdb->suppress_errors( $suppress );
+			}
+			if ( ! $dropped ) {
+				$dropped = false !== $wpdb->query( $drop_columns . ', ALGORITHM=INPLACE, LOCK=NONE' );
+			}
+		}
+
+		if ( ! $dropped ) {
+			self::error_log( "drop_columns_online: dropping {$full_table}." . implode( ', ', $column_names ) . ' failed: ' . $wpdb->last_error );
+		}
+		if ( $lock_wait_timeout > 0 ) {
+			$wpdb->query( $wpdb->prepare( 'SET SESSION lock_wait_timeout = %d', $lock_wait_timeout ) );
+		}
+		// phpcs:enable
+		return $dropped;
 	}
 
 	/**

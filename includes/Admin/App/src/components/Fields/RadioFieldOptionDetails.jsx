@@ -13,12 +13,12 @@ import useLicenseData from '@/hooks/useLicenseData';
  * @param {?string}     props.icon        - Optional icon name shown before the label.
  * @param {?string}     props.returning   - Optional "returning" descriptor text.
  * @param {?string}     props.description - Optional description text.
- * @param {?Object|boolean} props.pro     - Optional pro config.
- * @param {?string}     props.inputId     - Optional input ID.
+ * @param {?Object|boolean} props.pro     - Optional pro config. `pro.feature` is the license
+ *                                         feature the badge checks (see isLicenseValidFor()).
  * @return {JSX.Element}
  */
 // fallow-ignore-next-line complexity
-const RadioFieldOptionDetails = ({ label, icon, returning, description, pro, inputId }) => {
+const RadioFieldOptionDetails = ({ label, icon, returning, description, pro }) => {
 	const { isTrial } = useLicenseData();
 
 	return (
@@ -32,7 +32,7 @@ const RadioFieldOptionDetails = ({ label, icon, returning, description, pro, inp
 				</span>
 				{pro && (
 					<ProBadge
-						id={inputId || 'reporting'}
+						id={pro?.feature || 'reporting'}
 						url={'object' === typeof pro && pro?.url ? pro.url : undefined}
 						type={isTrial ? 'icon' : 'badge'}
 					/>

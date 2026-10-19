@@ -701,7 +701,7 @@ class Statistics_Data {
 		$start   = (int) $args['date_start'];
 		$end     = (int) $args['date_end'];
 		$filters = (array) $args['filters'];
-		$prev    = $this->calculate_comparison_dates( $start, $end, $args );
+		$prev    = self::calculate_comparison_dates( $start, $end, $args );
 
 		$current  = $this->get_data( [ 'visitors', 'pageviews', 'sessions', 'first_time_visitors', 'avg_time_on_page', 'bounce_rate' ], $start, $end, $filters );
 		$previous = $this->get_data( [ 'pageviews', 'sessions', 'visitors', 'avg_time_on_page', 'bounce_rate' ], $prev['start'], $prev['end'], $filters );
@@ -778,7 +778,7 @@ class Statistics_Data {
 		$start   = (int) $args['date_start'];
 		$end     = (int) $args['date_end'];
 		$filters = (array) $args['filters'];
-		$prev    = $this->calculate_comparison_dates( $start, $end, $args );
+		$prev    = self::calculate_comparison_dates( $start, $end, $args );
 
 		$filters_without_goal = $filters;
 		unset( $filters_without_goal['goal_id'] );
@@ -1128,7 +1128,16 @@ class Statistics_Data {
 				->group_by( $group_by )
 				->order_by( $order_by )
 				->limit( $limit );
-			$data              = $qd->fetch( ARRAY_A );
+
+			/**
+			 * Adjust a datatable query before it runs, for example to point a
+			 * join at another source. Return the query.
+			 *
+			 * @param Statistics_Query $qd   The datatable query.
+			 * @param array            $args The datatable request arguments, including its id.
+			 */
+			$qd   = apply_filters( 'burst_datatable_query', $qd, $args );
+			$data = $qd->fetch( ARRAY_A );
 		}
 
 		$metric_labels = $qd->get_allowlist()->metric_labels();
@@ -1309,7 +1318,7 @@ class Statistics_Data {
 	 * @param array $args  Arguments containing optional comparison dates.
 	 * @return array{start: int, end: int} Array with start and end timestamps for comparison period.
 	 */
-	private function calculate_comparison_dates( int $start, int $end, array $args ): array {
+	public static function calculate_comparison_dates( int $start, int $end, array $args ): array {
 		if ( isset( $args['compare_date_start'] ) && isset( $args['compare_date_end'] ) ) {
 			return [
 				'start' => (int) $args['compare_date_start'],

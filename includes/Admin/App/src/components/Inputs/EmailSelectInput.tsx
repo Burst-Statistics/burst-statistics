@@ -5,7 +5,7 @@ import React, {
 	forwardRef,
 	ForwardedRef
 } from 'react';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 
 interface EmailSelectInputProps {
 	value: string[];
@@ -15,9 +15,17 @@ interface EmailSelectInputProps {
 	placeholder?: string;
 	maxSelections?: number;
 	showRemoveButton?: boolean;
+
+	/** Show the "n/max" counter. The cap still applies when hidden. */
+	showCounter?: boolean;
+
+	/** Id for the text input, so a label can point to it. */
+	id?: string;
 }
 
 export const EmailSelectInput = forwardRef<HTMLInputElement, EmailSelectInputProps>(
+
+	// fallow-ignore-next-line complexity
 	function EmailSelectInput(
 		props: EmailSelectInputProps,
 		ref: ForwardedRef<HTMLInputElement>
@@ -29,7 +37,9 @@ export const EmailSelectInput = forwardRef<HTMLInputElement, EmailSelectInputPro
 			disabled = false,
 			placeholder = __( 'Add email...', 'burst-statistics' ),
 			maxSelections = 10,
-			showRemoveButton = true
+			showRemoveButton = true,
+			showCounter = true,
+			id
 		} = props;
 
 		const [ inputValue, setInputValue ] = useState<string>( '' );
@@ -65,8 +75,9 @@ export const EmailSelectInput = forwardRef<HTMLInputElement, EmailSelectInputPro
 			setInputValue( event.target.value );
 		};
 
-		const handleRemove = ( email: string ): void => {
-			onChange( value.filter( ( e ) => e !== email ) );
+		// By position, not by address: removing one of two identical entries keeps the other.
+		const handleRemove = ( index: number ): void => {
+			onChange( value.filter( ( _, i ) => i !== index ) );
 		};
 
 		const handleBlur = (): void => {
@@ -98,7 +109,14 @@ export const EmailSelectInput = forwardRef<HTMLInputElement, EmailSelectInputPro
 							{showRemoveButton && (
 								<button
 									type="button"
-									onClick={() => handleRemove( email )}
+									disabled={disabled}
+									aria-label={sprintf(
+
+										// translators: %s is an email address.
+										__( 'Remove %s', 'burst-statistics' ),
+										email
+									)}
+									onClick={() => handleRemove( index )}
 									className="ml-1 rounded-full hover:bg-primary hover:text-text-white"
 								>
 									✕
@@ -110,6 +128,7 @@ export const EmailSelectInput = forwardRef<HTMLInputElement, EmailSelectInputPro
 					{( ! maxSelections || value.length < maxSelections ) && (
 						<input
 							ref={ref}
+							id={id}
 							name={name}
 							value={inputValue}
 							disabled={disabled}
@@ -122,7 +141,7 @@ export const EmailSelectInput = forwardRef<HTMLInputElement, EmailSelectInputPro
 					)}
 				</div>
 
-				{maxSelections && (
+				{showCounter && maxSelections && (
 					<div className="flex items-center border-l border-gray-300">
 						<span className="px-2 text-xs text-text-gray-light border-r border-gray-200">
 							{value.length}/{maxSelections}

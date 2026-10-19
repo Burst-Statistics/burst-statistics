@@ -93,12 +93,12 @@ class Fields {
 				$fields[ $key ] = apply_filters( 'burst_field', $field, $field['id'] );
 			}
 
-			foreach ( [ 'notice', 'pro', 'context' ] as $type ) {
+			foreach ( [ 'notice', 'pro', 'context', 'context_empty' ] as $type ) {
 				if ( isset( $field[ $type ]['url'] ) ) {
 					$source = 'setting-notice';
 					if ( $type === 'pro' ) {
 						$source = 'setting-upgrade';
-					} elseif ( $type === 'context' ) {
+					} elseif ( $type === 'context' || $type === 'context_empty' ) {
 						$source = 'setting-context';
 					}
 					$fields[ $key ][ $type ]['url'] = $this->get_website_url(
@@ -133,7 +133,7 @@ class Fields {
 			$this->goal_fields = require BURST_PATH . 'includes/Admin/App/config/goal-fields.php';
 		}
 		$goals = $this->goal_fields;
-		if ( defined( 'BURST_HEADLESS_DOMAIN' ) && $this->get_option( 'privacy_level', 'cookie' ) !== 'cookie' ) {
+		if ( $this->are_hook_goals_hidden() ) {
 			foreach ( $goals as $key => $field ) {
 				if ( isset( $field['id'] ) && $field['id'] === 'type' && isset( $field['options']['hook'] ) ) {
 					unset( $goals[ $key ]['options']['hook'] );
@@ -142,5 +142,12 @@ class Fields {
 			$goals = array_values( $goals );
 		}
 		return apply_filters( 'burst_goal_fields', $goals );
+	}
+
+	/**
+	 * Whether hook goals are unavailable: a headless site without cookies cannot tie a server-side hook to a visitor.
+	 */
+	public function are_hook_goals_hidden(): bool {
+		return defined( 'BURST_HEADLESS_DOMAIN' ) && $this->get_option( 'privacy_level', 'cookie' ) !== 'cookie';
 	}
 }

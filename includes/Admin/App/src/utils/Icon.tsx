@@ -128,7 +128,9 @@ import {
 	Fingerprint,
 	Repeat,
 	Plug,
-	Sparkles
+	Sparkles,
+	Code,
+	Info
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -225,6 +227,8 @@ const iconComponents = {
 	filters: Filter,
 	referrers: ExternalLink,
 	hook: Webhook,
+	code: Code,
+	info: Info,
 	webhook: Webhook,
 	'log-in': LogIn,
 	'log-out': LogOut,

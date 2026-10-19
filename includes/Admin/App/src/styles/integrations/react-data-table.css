@@ -81,4 +81,13 @@
 	.rdt_TableRow button:disabled svg {
 		opacity: 0.2 !important;
 	}
+
+	/*
+	 * SmartMatch "AI match" column: cells have no horizontal padding, so keep it
+	 * off the right-aligned Results value.
+	 */
+	.rdt_TableCol[data-column-id="ai_match"],
+	.rdt_TableCell[data-column-id="ai_match"] {
+		padding-left: 1.5rem !important;
+	}
 }

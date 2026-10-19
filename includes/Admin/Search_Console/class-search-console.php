@@ -202,7 +202,9 @@ class Search_Console {
 		);
 		// add_query_arg does not encode the values it appends (only the base
 		// URL's pre-existing query string), so encode them here. The relay
-		// decodes once and checks the site contains action=burst_gsc_callback.
+		// decodes once and parses the site as a URL: it must be https on a
+		// public host and its action query parameter must equal
+		// burst_gsc_callback.
 		$site = admin_url( 'admin-post.php?action=burst_gsc_callback' );
 		$this->log( 'oauth.start', 'info', 'Started Google authorization.', [ 'callback_url' => $site ] );
 		$url = add_query_arg(

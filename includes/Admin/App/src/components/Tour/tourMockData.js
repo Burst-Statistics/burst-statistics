@@ -29,126 +29,11 @@ const defaultMockGoals = [
 		status: 'active',
 		type: 'visits',
 		page_or_website: 'page',
-		selector: '/thank-you',
+		specific_page: '/thank-you',
 		conversion_metric: 'visitors',
 		date_start: 0,
 		date_end: 0,
 		value: '10'
-	}
-];
-
-const mockGoalFields = [
-	{
-		id: 'title',
-		type: 'hidden',
-		default: false
-	},
-	{
-		id: 'status',
-		type: 'hidden',
-		default: false
-	},
-	{
-		id: 'type',
-		type: 'radio-buttons',
-		label: __( 'What type of goal do you want to set?', 'burst-statistics' ),
-		options: {
-			clicks: {
-				label: __( 'Clicks', 'burst-statistics' ),
-				description: __( 'Track clicks on element', 'burst-statistics' ),
-				type: 'clicks',
-				icon: 'mouse'
-			},
-			views: {
-				label: __( 'Views', 'burst-statistics' ),
-				description: __( 'Track views of element', 'burst-statistics' ),
-				type: 'views',
-				icon: 'eye'
-			},
-			visits: {
-				label: __( 'Visits', 'burst-statistics' ),
-				description: __( 'Track visits to page', 'burst-statistics' ),
-				type: 'visits',
-				icon: 'visitors'
-			},
-			hook: {
-				label: __( 'Hook', 'burst-statistics' ),
-				description: __( 'Track execution of a WordPress hook', 'burst-statistics' ),
-				type: 'hook',
-				icon: 'hook',
-				server_side: true
-			}
-		},
-		disabled: false,
-		default: 'clicks'
-	},
-	{
-		id: 'page_or_website',
-		type: 'radio-buttons',
-		label: __( 'Do you want to track a specific page or the entire website?', 'burst-statistics' ),
-		options: {
-			page: {
-				label: __( 'Page', 'burst-statistics' ),
-				description: __( 'Track page specific', 'burst-statistics' ),
-				type: 'page',
-				icon: 'page'
-			},
-			website: {
-				label: __( 'Website', 'burst-statistics' ),
-				description: __( 'Track on whole site', 'burst-statistics' ),
-				type: 'website',
-				icon: 'website'
-			}
-		},
-		disabled: false,
-		default: 'website',
-		react_conditions: {
-			type: [ 'clicks', 'views', 'hook' ]
-		}
-	},
-	{
-		id: 'selector',
-		type: 'selector',
-		label: __( 'What element do you want to track?', 'burst-statistics' ),
-		disabled: false,
-		default: '.checkout-btn, #buy-now',
-		react_conditions: {
-			type: [ 'clicks', 'views' ]
-		}
-	},
-	{
-		id: 'hook',
-		type: 'hook',
-		label: __( 'What hook do you want to track?', 'burst-statistics' ),
-		disabled: false,
-		default: '',
-		react_conditions: {
-			type: [ 'hook' ]
-		}
-	},
-	{
-		id: 'conversion_metric',
-		type: 'radio-buttons',
-		label: __( 'What metric do you want to use to calculate the conversion rate?', 'burst-statistics' ),
-		options: {
-			visitors: {
-				label: __( 'Visitors', 'burst-statistics' ),
-				type: 'visitors',
-				icon: 'visitors'
-			},
-			sessions: {
-				label: __( 'Sessions', 'burst-statistics' ),
-				type: 'sessions',
-				icon: 'sessions'
-			},
-			pageviews: {
-				label: __( 'Pageviews', 'burst-statistics' ),
-				type: 'pageviews',
-				icon: 'pageviews'
-			}
-		},
-		disabled: false,
-		default: 'visitors'
 	}
 ];
 
@@ -495,7 +380,6 @@ export const getFrontendTourMockData = ( path ) => {
 			request_success: true,
 			goals: dynamicMockGoals,
 			predefinedGoals: [],
-			goalFields: mockGoalFields,
 			goal_limit: -1,
 			active_goals_count: dynamicMockGoals.length
 		};
@@ -712,38 +596,6 @@ export const getFrontendTourMockData = ( path ) => {
 					}
 				],
 				total_rows: 3
-			}
-		};
-	}
-
-	// 14b. Internal Links
-	if (
-		'data/internal-links' === cleanPath ||
-		'internal-links' === cleanPath ||
-		'data/datatable/internal-links' === cleanPath ||
-		cleanPath.includes( 'internal-links' ) ||
-		cleanPath.includes( 'internal_links' ) ||
-		'internal_links' === query.get( 'type' ) ||
-		'internal_links' === query.get( 'config' ) ||
-		'internal-links' === query.get( 'type' ) ||
-		'internal-links' === query.get( 'config' )
-	) {
-		return {
-			request_success: true,
-			data: {
-				columns: [
-					{ id: 'url', name: __( 'Page URL', 'burst-statistics' ), format: 'url', sortable: true, align: 'left' },
-					{ id: 'clicks', name: __( 'Clicks', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-					{ id: 'previous_clicks', name: __( 'Previous', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' }
-				],
-				data: [
-					{ url: '/pricing', clicks: 940, previous_clicks: 780 },
-					{ url: '/features', clicks: 710, previous_clicks: 620 },
-					{ url: '/blog/getting-started-with-analytics', clicks: 520, previous_clicks: 430 },
-					{ url: '/documentation', clicks: 380, previous_clicks: 310 },
-					{ url: '/contact', clicks: 195, previous_clicks: 160 }
-				],
-				total_rows: 5
 			}
 		};
 	}
@@ -1028,28 +880,6 @@ export const getFrontendTourMockData = ( path ) => {
 						}
 					],
 					total_rows: 3
-				}
-			};
-		}
-
-		// Internal links datatable
-		if ( cleanPath.includes( 'internal' ) || 'internal_links' === query.get( 'type' ) || 'internal_links' === query.get( 'config' ) || 'internal-links' === query.get( 'type' ) || 'internal-links' === query.get( 'config' ) ) {
-			return {
-				request_success: true,
-				data: {
-					columns: [
-						{ id: 'url', name: __( 'Page URL', 'burst-statistics' ), format: 'url', sortable: true, align: 'left' },
-						{ id: 'clicks', name: __( 'Clicks', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-						{ id: 'previous_clicks', name: __( 'Previous', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' }
-					],
-					data: [
-						{ url: '/pricing', clicks: 940, previous_clicks: 780 },
-						{ url: '/features', clicks: 710, previous_clicks: 620 },
-						{ url: '/blog/getting-started-with-analytics', clicks: 520, previous_clicks: 430 },
-						{ url: '/documentation', clicks: 380, previous_clicks: 310 },
-						{ url: '/contact', clicks: 195, previous_clicks: 160 }
-					],
-					total_rows: 5
 				}
 			};
 		}
@@ -1403,20 +1233,95 @@ export const getFrontendTourMockData = ( path ) => {
 		};
 	}
 
-	if ( 'data/page-parameters' === cleanPath || 'page-parameters' === cleanPath ) {
+	if ( 'data/page-parameter-keys' === cleanPath || 'page-parameter-keys' === cleanPath ) {
 		return {
 			request_success: true,
 			data: {
 				columns: [
 					{ id: 'parameter', name: __( 'Parameter', 'burst-statistics' ), align: 'left' },
-					{ id: 'pageviews', name: __( 'Pageviews', 'burst-statistics' ), align: 'right' },
-					{ id: 'visitors', name: __( 'Visitors', 'burst-statistics' ), align: 'right' }
+					{ id: 'pageviews', name: __( 'Views', 'burst-statistics' ), align: 'right' },
+					{ id: 'visitors', name: __( 'Visitors', 'burst-statistics' ), align: 'right' },
+					{ id: 'share', name: __( 'Share of page views', 'burst-statistics' ), align: 'right' }
 				],
 				data: [
-					{ parameter: 'utm_source=google', pageviews: 420, visitors: 310 },
-					{ parameter: 'utm_source=twitter', pageviews: 180, visitors: 140 },
-					{ parameter: 'ref=newsletter', pageviews: 95, visitors: 78 }
+					{
+						parameter: 'utm_source',
+						pageviews: 7841,
+						visitors: 5302,
+						value_count: 9,
+						high_cardinality: false
+					},
+					{
+						parameter: 'utm_campaign',
+						pageviews: 6204,
+						visitors: 4118,
+						value_count: 18,
+						high_cardinality: false
+					},
+					{
+						parameter: 'utm_medium',
+						pageviews: 2930,
+						visitors: 1904,
+						value_count: 5,
+						high_cardinality: false
+					}
+				],
+				total_pageviews: 20573,
+				total_visitors: 13704,
+				tagged_pageviews: 12480,
+				untagged_pageviews: 8093,
+				untagged_visitors: 5611
+			}
+		};
+	}
+
+	if ( 'data/page-parameters' === cleanPath || 'page-parameters' === cleanPath ) {
+		const searchParam = ( query.get( 'search' ) || '' ).toLowerCase().trim();
+		const allData = [
+			{
+				value: 'burst-free-3.*',
+				pageviews: 4209,
+				visitors: 2812,
+				group: true,
+				member_count: 11,
+				min_version: '3.1.4',
+				max_version: '3.6.3',
+				newest_value: '3.6.3',
+				newest_views: 571,
+				members: [
+					{ value: 'burst-free-3.6.3', pageviews: 571, visitors: 390 },
+					{ value: 'burst-free-3.6.2', pageviews: 480, visitors: 320 }
 				]
+			},
+			{ value: 'burstpricing', pageviews: 812, visitors: 601, group: false },
+			{ value: 'burst-readme', pageviews: 604, visitors: 448, group: false },
+			{ value: 'paac', pageviews: 379, visitors: 291, group: false }
+		];
+
+		const filteredData = searchParam ?
+			allData.filter( ( item ) => {
+				if ( item.value.toLowerCase().includes( searchParam ) ) {
+					return true;
+				}
+				if ( item.members && item.members.some( ( m ) => m.value.toLowerCase().includes( searchParam ) ) ) {
+					return true;
+				}
+				return false;
+			}) :
+			allData;
+
+		return {
+			request_success: true,
+			data: {
+				columns: [
+					{ id: 'value', name: __( 'Value', 'burst-statistics' ), align: 'left' },
+					{ id: 'pageviews', name: __( 'Views', 'burst-statistics' ), align: 'right' },
+					{ id: 'visitors', name: __( 'Visitors', 'burst-statistics' ), align: 'right' },
+					{ id: 'share', name: __( 'Share', 'burst-statistics' ), align: 'right' }
+				],
+				data: filteredData,
+				has_more: false,
+				total_values: filteredData.length
 			}
 		};
 	}

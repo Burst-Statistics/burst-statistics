@@ -4,7 +4,7 @@ import { shouldLoadRoute, shouldRedirectToFirstMenuItem } from '@/utils/helper';
 import NotFoundModal from '@/components/Common/NotFoundModal';
 
 export const Route = createFileRoute( '/reporting' )({
-	beforeLoad: ({ routeId, context, params }) => {
+	beforeLoad: ({ context, params }) => {
 		const { reportingId } = params;
 
 		// Already in sub route.
@@ -25,7 +25,9 @@ export const Route = createFileRoute( '/reporting' )({
 		const firstItem = result.menu_items[0];
 
 		throw redirect({
-			to: routeId + '/$reportingId',
+
+			// beforeLoad gets no routeId in this router version, so the path is spelled out.
+			to: '/reporting/$reportingId',
 			params: {
 				reportingId: firstItem.id
 			},

@@ -39,12 +39,16 @@ class Viewer_Lockdown {
 	 * with the cookie + nonce from the shared dashboard page and create a credential
 	 * that survives share-token revocation or expiry.
 	 *
-	 * @param bool     $available Whether Application Passwords are available for the user.
-	 * @param \WP_User $user      The user being checked.
-	 * @return bool False for the viewer, the unchanged value otherwise.
+	 * Mixed params: an earlier callback from another plugin may return a non-bool
+	 * (e.g. null from a void callback), and a strict type would fatal REST
+	 * authentication and profile.php.
+	 *
+	 * @param mixed $available Whether Application Passwords are available for the user.
+	 * @param mixed $user      The user being checked.
+	 * @return mixed False for the viewer, the unchanged value otherwise.
 	 */
-	public function disable_app_passwords_for_viewer( bool $available, \WP_User $user ): bool {
-		if ( self::is_viewer( $user ) ) {
+	public function disable_app_passwords_for_viewer( mixed $available, mixed $user ): mixed {
+		if ( $user instanceof \WP_User && self::is_viewer( $user ) ) {
 			return false;
 		}
 
@@ -58,19 +62,29 @@ class Viewer_Lockdown {
 	 * the viewer (password, email and profile fields). Administrators editing the
 	 * viewer account are unaffected, as the rule only applies to editing oneself.
 	 *
-	 * @param string[] $caps    The primitive capabilities required.
-	 * @param string   $cap     The meta capability being checked.
-	 * @param int      $user_id The user the capability is checked for.
-	 * @param array    $args    Extra arguments; $args[0] is the user being edited.
-	 * @return string[] ['do_not_allow'] for the viewer editing itself, $caps otherwise.
+	 * Untyped params: other plugins call current_user_can() with null or non-string
+	 * caps (e.g. add_menu_page() with a null capability), and a strict signature
+	 * would fatal every admin page for every user.
+	 *
+	 * @param mixed $caps    The primitive capabilities required.
+	 * @param mixed $cap     The meta capability being checked.
+	 * @param mixed $user_id The user the capability is checked for.
+	 * @param mixed $args    Extra arguments; $args[0] is the user being edited.
+	 * @return mixed ['do_not_allow'] for the viewer editing itself, $caps otherwise.
 	 */
-	public function block_viewer_self_edit( array $caps, string $cap, int $user_id, array $args ): array {
+	public function block_viewer_self_edit( mixed $caps, mixed $cap, mixed $user_id = 0, mixed $args = [] ): mixed {
 		// Cheapest checks first: this filter runs on every capability check.
-		if ( 'edit_user' !== $cap || ! isset( $args[0] ) || (int) $args[0] !== $user_id ) {
+		if ( 'edit_user' !== $cap ) {
 			return $caps;
 		}
 
-		$user = get_userdata( $user_id );
+		// Cast instead of bailing on a non-array, so a malformed call can't skip the block.
+		$args = (array) $args;
+		if ( ! isset( $args[0] ) || (int) $args[0] !== (int) $user_id ) {
+			return $caps;
+		}
+
+		$user = get_userdata( (int) $user_id );
 		if ( ! $user instanceof \WP_User || ! self::is_viewer( $user ) ) {
 			return $caps;
 		}
@@ -105,12 +119,14 @@ class Viewer_Lockdown {
 	/**
 	 * Disable the password reset flow for the viewer account.
 	 *
-	 * @param bool $allow   Whether a password reset is allowed.
-	 * @param int  $user_id The user requesting the reset.
-	 * @return bool False for the viewer, the unchanged value otherwise.
+	 * Mixed $allow: other plugins return a WP_Error here to block resets.
+	 *
+	 * @param mixed $allow   Whether a password reset is allowed (bool or WP_Error).
+	 * @param mixed $user_id The user requesting the reset.
+	 * @return mixed False for the viewer, the unchanged value otherwise.
 	 */
-	public function block_viewer_password_reset( bool $allow, int $user_id ): bool {
-		$user = get_userdata( $user_id );
+	public function block_viewer_password_reset( mixed $allow, mixed $user_id ): mixed {
+		$user = get_userdata( (int) $user_id );
 		if ( $user instanceof \WP_User && self::is_viewer( $user ) ) {
 			return false;
 		}

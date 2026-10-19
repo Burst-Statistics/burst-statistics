@@ -376,6 +376,8 @@ class Rollback_Service {
 			)
 		);
 		// phpcs:enable
+		// The tracker caches uid ids; drop them so no hit is stored under a deleted id.
+		self::flush_uid_id_cache();
 
 		$last = end( $rows );
 

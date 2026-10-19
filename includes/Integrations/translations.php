@@ -115,6 +115,19 @@ return [
 		],
 	],
 	// Contact from plugins.
+	'brevo'                       => [
+		'goals' =>
+			[
+				[
+					'id'    => 'brevo_form_submit',
+					'title' => 'Brevo - ' . __( 'Form submitted', 'burst-statistics' ),
+				],
+				[
+					'id'    => 'brevo_form_submit_click',
+					'title' => 'Brevo - ' . __( 'Submit button clicked', 'burst-statistics' ),
+				],
+			],
+	],
 	'admin-site-enhancements'     => [
 		'goals' =>
 			[

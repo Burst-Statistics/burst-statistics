@@ -13,6 +13,9 @@ export type BarColumn<T> = {
 	/** Column header label. */
 	label: string;
 
+	/** Custom header content, rendered instead of the label (which stays the column's name). */
+	header?: ReactNode;
+
 	/** Horizontal alignment for header and cell content. */
 	align?: 'left' | 'right' | 'center';
 

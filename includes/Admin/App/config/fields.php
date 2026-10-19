@@ -10,10 +10,11 @@ defined( 'ABSPATH' ) || die();
  * ---------------------------
  *
  * @property string $id                 Unique identifier for the setting
- * @property string $menu_id            Menu/tab where the setting appears (e.g., 'general', 'features', 'advanced', 'data', 'goals')
+ * @property string $menu_id            Menu/tab where the setting appears (e.g., 'general', 'features', 'advanced', 'data')
  * @property string $group_id           Group within the menu where the setting belongs
  * @property string $type               Input type: 'checkbox', 'radio', 'select', 'number', 'text', 'button', 'hidden',
- *                                      'email_reports', 'image_picker', 'goals', 'ip_blocklist', 'restore_archives', 'checkbox_group'
+ *                                      'email_reports', 'image_picker', 'ip_blocklist', 'restore_archives', 'checkbox_group',
+ *                                      'alert_channels', 'email_list'
  * @property string $label              Display label for the setting
  * @property string|array $context      Help text or contextual information
  *                                      - string: Simple help text
@@ -34,6 +35,8 @@ defined( 'ABSPATH' ) || die();
  * @property array|null $pro            Pro feature configuration
  *                                      - 'url': Link to upgrade/pricing page
  *                                      - 'disabled': Whether pro features are disabled
+ *                                      - 'feature': On a radio option, the license feature its Pro badge
+ *                                        checks (see isLicenseValidFor() in useLicenseData.ts), e.g. 'slack'
  * @property array|null $notice         Notice/help box displayed with the setting
  *                                      - 'label': Notice type (e.g., 'default')
  *                                      - 'title': Notice title
@@ -64,6 +67,15 @@ defined( 'ABSPATH' ) || die();
  * @property string|null $warnContent   Warning dialog content
  * @property string|null $warnType      Warning type: 'info', 'warning', 'danger'
  * @property int|null $min              Minimum value for number inputs
+ * @property array|null $context_empty  Context shown instead of 'context' while the field is empty (slack_webhook)
+ *                                      - array: ['text' => '...', 'url' => '...', 'link_text' => '...']
+ * @property array|null $required_when  For 'email_list': require at least one address while a channel is switched on
+ *                                      in an 'alert_channels' field
+ *                                      - 'field': ID of the alert_channels field to watch
+ *                                      - 'channel': Channel that needs the addresses (e.g. 'email')
+ *                                      - 'rows': The alert rows of that field, to skip Pro rows without a license
+ *                                      - 'message': Error shown when the list is empty
+ * @property array|null $validation_deps Field IDs to validate again when this field changes
  *
  * React Conditions Examples:
  * --------------------------
@@ -110,6 +122,27 @@ defined( 'ABSPATH' ) || die();
  * Note: All conditions must be met simultaneously for the badge to appear.
  *       The badge is reactive and appears before the user saves the settings.
  */
+
+// Alert rows for Settings › Notifications › Alerts. The notification type each row
+// controls is mapped in Admin\Notifications\Alert_Preferences::ROWS.
+$burst_alert_rows = [
+	'tracking_health' => [
+		'label'   => __( 'Tracking stopped working', 'burst-statistics' ),
+		'context' => __( 'Yesterday recorded far fewer hits than usual. Sent at most once a week.', 'burst-statistics' ),
+		'pro'     => false,
+	],
+	'traffic_spike'   => [
+		'label'   => __( 'Traffic spike', 'burst-statistics' ),
+		'context' => __( 'At least twice as many visitors as usual for that weekday.', 'burst-statistics' ),
+		'pro'     => true,
+	],
+	'traffic_drop'    => [
+		'label'   => __( 'Traffic drop', 'burst-statistics' ),
+		// translators: %d is a percentage, e.g. 40. The %% after it is a literal percent sign.
+		'context' => sprintf( __( 'Fewer than %d%% of your usual visitors for that weekday.', 'burst-statistics' ), 40 ),
+		'pro'     => true,
+	],
+];
 
 return [
 	[
@@ -175,15 +208,6 @@ return [
 		'default'  => false,
 	],
 	[
-		'id'       => 'dismiss_non_error_notices',
-		'menu_id'  => 'general',
-		'group_id' => 'general',
-		'type'     => 'checkbox',
-		'label'    => __( 'Dismiss all notices in your dashboard except critical ones', 'burst-statistics' ),
-		'disabled' => false,
-		'default'  => false,
-	],
-	[
 		'id'       => 'track_external_links',
 		'menu_id'  => 'features',
 		'group_id' => 'features',
@@ -195,6 +219,51 @@ return [
 		'pro'      => [
 			'url'      => 'pricing/',
 			'disabled' => false,
+		],
+	],
+	[
+		'id'       => 'enable_custom_events',
+		'menu_id'  => 'features',
+		'group_id' => 'features',
+		'type'     => 'checkbox',
+		'label'    => __( 'Track custom events', 'burst-statistics' ),
+		'context'  => __( 'Record events your site sends with burst.event() or the burst_event action.', 'burst-statistics' ),
+		'disabled' => false,
+		'default'  => false,
+	],
+	[
+		'id'               => 'track_gtag_events',
+		'menu_id'          => 'features',
+		'group_id'         => 'features',
+		'type'             => 'checkbox',
+		'label'            => __( 'Track Google Analytics / Google Tag Manager events', 'burst-statistics' ),
+		'context'          => __( 'Automatically capture events already sent to dataLayer/gtag (e.g. by other plugins) as Burst custom events.', 'burst-statistics' ),
+		'disabled'         => false,
+		'default'          => false,
+		'pro'              => [
+			'url'      => 'pricing/',
+			'disabled' => false,
+		],
+		'react_conditions' => [
+			'enable_custom_events' => true,
+		],
+	],
+	[
+		'id'               => 'track_gtag_custom_parameters',
+		'menu_id'          => 'features',
+		'group_id'         => 'features',
+		'type'             => 'checkbox',
+		'label'            => __( 'Store your own Google Analytics / Tag Manager parameters', 'burst-statistics' ),
+		'context'          => __( 'By default only standard Google Analytics parameters are stored as event properties. Enable this to also store custom parameters your site or plugins send.', 'burst-statistics' ),
+		'disabled'         => false,
+		'default'          => false,
+		'pro'              => [
+			'url'      => 'pricing/',
+			'disabled' => false,
+		],
+		'react_conditions' => [
+			'enable_custom_events' => true,
+			'track_gtag_events'    => true,
 		],
 	],
 	[
@@ -235,20 +304,6 @@ return [
 		],
 		'disabled' => false,
 		'default'  => false,
-	],
-	[
-		'id'       => 'goals',
-		'menu_id'  => 'goals',
-		'group_id' => 'goals',
-		'type'     => 'goals',
-		'label'    => __( 'Goals', 'burst-statistics' ),
-		'notice'   => [
-			'label'       => 'default',
-			'title'       => __( 'How to set goals?', 'burst-statistics' ),
-			'description' => __( 'To set goals for a website, you need to identify the purpose of the site and the key actions you want visitors to take. Set measurable and achievable goals for each action and track your progress.', 'burst-statistics' ),
-			'url'         => 'how-to-set-goals/',
-		],
-		'default'  => [],
 	],
 	[
 		'id'       => 'user_role_blocklist',
@@ -533,36 +588,68 @@ return [
 		'default'  => false,
 	],
 	[
-		'id'         => 'slack_webhook_url',
-		'menu_id'    => 'notifications',
-		'group_id'   => 'report_notifications',
-		'type'       => 'slack_webhook',
-		'label'      => __( 'Slack webhook URL', 'burst-statistics' ),
-		'context'    => [
-			'text' => __( 'Receive story reports, traffic anomaly alerts and tracking health notifications in your Slack channel.', 'burst-statistics' ),
+		'id'              => 'alerts',
+		'menu_id'         => 'notifications',
+		'group_id'        => 'alerts',
+		'type'            => 'alert_channels',
+		'label'           => __( 'Alerts', 'burst-statistics' ),
+		'disabled'        => false,
+		'default'         => \Burst\Admin\Notifications\Alert_Preferences::get_defaults(),
+		'options'         => $burst_alert_rows,
+		'validation_deps' => [ 'alert_email_recipients' ],
+	],
+	[
+		'id'            => 'alert_email_recipients',
+		'menu_id'       => 'notifications',
+		'group_id'      => 'email',
+		'type'          => 'email_list',
+		'label'         => __( 'Send alert emails to', 'burst-statistics' ),
+		'context'       => __( 'Press Enter after each address. Reports have their own recipients.', 'burst-statistics' ),
+		'disabled'      => false,
+		'default'       => [ get_option( 'admin_email' ) ],
+		'required_when' => [
+			'field'    => 'alerts',
+			'channel'  => 'email',
+			'rows'     => $burst_alert_rows,
+			'defaults' => \Burst\Admin\Notifications\Alert_Preferences::get_defaults(),
+			'message'  => __( 'Add at least one address, or turn off email alerts.', 'burst-statistics' ),
+		],
+	],
+	[
+		'id'            => 'slack_webhook_url',
+		'menu_id'       => 'notifications',
+		'group_id'      => 'slack',
+		'type'          => 'slack_webhook',
+		'label'         => __( 'Slack webhook URL', 'burst-statistics' ),
+		'context'       => [
+			'text' => __( 'Posts the alerts you switched on above, and reports you deliver to Slack.', 'burst-statistics' ),
 			'url'  => 'guides/how-to-set-up-slack-notifications/',
 		],
-		'help'       => __( 'Anyone with access to the Slack channel will be able to open story links shared in notifications.', 'burst-statistics' ),
-		'pro'        => [
+		'context_empty' => [
+			'text'      => __( 'Create an incoming webhook in Slack and paste its URL here.', 'burst-statistics' ),
+			'url'       => 'guides/how-to-set-up-slack-notifications/',
+			'link_text' => __( 'How to set up Slack', 'burst-statistics' ),
+		],
+		'help'          => __( 'Anyone with access to the Slack channel will be able to open story links shared in notifications.', 'burst-statistics' ),
+		'pro'           => [
 			'url'      => 'pricing/',
 			'disabled' => false,
 		],
-		'disabled'   => false,
-		'default'    => '',
-		'validation' => [
-			'regex'   => '^https:\/\/hooks\.slack\.com\/services\/.*$',
-			'message' => __( 'The Slack webhook URL must start with https://hooks.slack.com/services/', 'burst-statistics' ),
-		],
+		'disabled'      => false,
+		'default'       => '',
+		// The webhook validation is added by Pro (Slack_Channel::add_webhook_validation()).
 	],
 	[
 		'id'       => 'default_report_channels',
 		'menu_id'  => 'notifications',
-		'group_id' => 'report_notifications',
+		'group_id' => 'slack',
 		'type'     => 'radio',
-		'label'    => __( 'Default delivery channel', 'burst-statistics' ),
-		'context'  => __( 'Choose where to send reports by default. You can still customize delivery for individual reports.', 'burst-statistics' ),
+		'label'    => __( 'Default delivery channel for new reports', 'burst-statistics' ),
+		'context'  => __( 'You can still change the delivery for each report.', 'burst-statistics' ),
 		'disabled' => false,
-		'default'  => 'email',
+		// No stored choice: Report::get_default_channels() decides, and the
+		// field shows that value (Reports::show_default_report_channels()).
+		'default'  => '',
 		'options'  => [
 			'email' => [
 				'label'       => __( 'Email', 'burst-statistics' ),
@@ -575,9 +662,20 @@ return [
 				'description' => __( 'Send reports to configured email addresses and your Slack channel.', 'burst-statistics' ),
 				'pro'         => [
 					'url'      => 'pricing/',
+					'feature'  => 'slack',
 					'disabled' => false,
 				],
 			],
 		],
+	],
+	[
+		'id'       => 'dismiss_non_error_notices',
+		'menu_id'  => 'notifications',
+		'group_id' => 'dashboard_notices',
+		'type'     => 'checkbox',
+		'label'    => __( 'Only show critical notices', 'burst-statistics' ),
+		'context'  => __( 'Hides tips, announcements, offers and warnings in your dashboard. Errors always show.', 'burst-statistics' ),
+		'disabled' => false,
+		'default'  => false,
 	],
 ];

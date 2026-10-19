@@ -1,17 +1,16 @@
 import { memo, useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
-import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Block } from '@/components/Blocks/Block';
 import { BlockHeading } from '@/components/Blocks/BlockHeading';
-import { ExpandTableButton } from '@/components/Blocks/ExpandTableButton';
 import { BlockContent } from '@/components/Blocks/BlockContent';
+import ExpandableBlockTitle from '@/components/Blocks/ExpandableBlockTitle';
 import { BarDataTable } from '@/components/DataTable/BarDataTable';
+import { useExpandableTopBlock } from '@/hooks/useExpandableTopBlock';
 import { useFormsData } from './useFormsData';
 import { getFormsColumns } from './columns';
 import useLicenseData from '@/hooks/useLicenseData';
 import OverlayBlock from '@/components/Upsell/OverlayBlock';
 import UpsellCopy from '@/components/Upsell/UpsellCopy';
-import MetricInfo from '@/components/Common/MetricInfo';
 import { isTourActive } from '@/store/useTourStore';
 
 type FormsBlockProps = {
@@ -19,9 +18,6 @@ type FormsBlockProps = {
 	/** Additional CSS class names passed to the wrapping Block. */
 	className?: string;
 };
-
-/** Maximum rows shown in the compact block view. */
-const TOP_N = 5;
 
 /**
  * Compact dashboard block showing the top performing forms by submissions.
@@ -38,30 +34,11 @@ const FormsBlock = memo( ({ className = '' }: FormsBlockProps ) => {
 	const { isLicenseValid } = useLicenseData();
 	const { data, isLoading } = useFormsData();
 	const tourActive = isTourActive();
-
-	const navigate = useNavigate();
-	const location = useRouterState({ select: ( s ) => s.location });
-
 	const columns = useMemo( () => getFormsColumns(), []);
-	const topData = useMemo( () => ( Array.isArray( data ) ? data : []).slice( 0, TOP_N ), [ data ]);
-
-	const hasData = 0 < topData.length;
-
-	/**
-	 * Navigate to the fullscreen overlay with the forms variant active.
-	 */
-	const handleExpand = () => {
-		navigate({
-			to: '/table/$variant',
-			params: { variant: 'forms' },
-			search: {
-				from: location.pathname,
-				allowed: 'forms',
-				dataTableId: 'forms',
-				...location.search
-			}
-		});
-	};
+	const { topData, hasData, handleExpand } = useExpandableTopBlock({
+		data,
+		variant: 'forms'
+	});
 
 	if ( ! tourActive && ! isLicenseValid ) {
 		return (
@@ -80,14 +57,14 @@ const FormsBlock = memo( ({ className = '' }: FormsBlockProps ) => {
 			<BlockHeading
 				className="border-b border-gray-200"
 				isLoading={ isLoading }
-				title={ <>
-					<MetricInfo metricKey="forms" side="bottom">
-						{ __( 'Forms', 'burst-statistics' ) }
-					</MetricInfo>
-					{ hasData && (
-						<ExpandTableButton onClick={ handleExpand } />
-					) }
-				</> }
+				title={
+					<ExpandableBlockTitle
+						metricKey="forms"
+						label={ __( 'Forms', 'burst-statistics' ) }
+						hasData={ hasData }
+						onExpand={ handleExpand }
+					/>
+				}
 			/>
 			<BlockContent className="px-0 py-0 overflow-y-auto">
 				<BarDataTable

@@ -16,6 +16,19 @@ export type SearchTermRow = {
 
 	/** Number of results returned for this term by the site search. */
 	results: number;
+
+	/** Searches that showed a SmartMatch suggestion. */
+	ai_shown: number;
+
+	/** Searches where the AI found nothing relevant. */
+	ai_none: number;
+
+	/** Title and url of the most-shown suggestion, empty when none. */
+	ai_title: string;
+	ai_url: string;
+
+	/** Number of other pages that were suggested for the term. */
+	ai_alternatives: number;
 };
 
 type UseSearchTermsDataReturn = {

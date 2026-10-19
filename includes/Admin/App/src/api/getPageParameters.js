@@ -10,26 +10,93 @@ import { getData } from '@/utils/api';
  *
  * @param {Object} params           Request parameters.
  * @param {string} params.pageUrl   The page URL to fetch parameter variations for.
+ * @param {string} [params.parameter] Parameter key to fetch values for.
+ * @param {string} [params.search]    Search query to filter parameter values.
  * @param {string} params.startDate Start date for the query.
  * @param {string} params.endDate   End date for the query.
  * @param {string} params.range     Date range identifier.
  *
- * @returns {Promise<{columns: Array, data: Array}>} Datatable-shaped response.
+ * @returns {Promise<{columns: Array, data: Array, has_more?: boolean, total_values?: number}>} Datatable-shaped response.
+ */
+/**
+ * Extract normalized payload object and row array from an API response.
+ *
+ * @param {*} response Raw API response.
+ * @return {{ payload: Object, rows: Array }} Extracted payload and row array.
  */
 // fallow-ignore-next-line complexity
-export const getPageParameters = async({ pageUrl, startDate, endDate, range }) => {
+const extractPayloadAndRows = ( response ) => {
+	const payload = response?.data || response || {};
+	const rows = Array.isArray( payload.data ) ?
+		payload.data :
+		Array.isArray( payload ) ?
+			payload :
+			[];
+	return { payload, rows };
+};
+
+// fallow-ignore-next-line complexity
+export const getPageParameters = async({ pageUrl, parameter = '', search = '', startDate, endDate, range }) => {
 	if ( ! pageUrl ) {
-		return { columns: [], data: [] };
+		return { columns: [], data: [], has_more: false, total_values: 0 };
 	}
 
 	const response = await getData( 'page-parameters', startDate, endDate, range, {
+		page_url: pageUrl,
+		...( parameter ? { parameter } : {}),
+		...( search ? { search } : {})
+	});
+
+	const { payload, rows } = extractPayloadAndRows( response );
+	return {
+		columns: payload.columns || [],
+		data: rows,
+		has_more: payload.has_more ?? false,
+		total_values: payload.total_values ?? rows.length
+	};
+};
+
+/**
+ * Fetch the parameter keys breakdown for a single page URL.
+ *
+ * Aggregates over p.parameter only. Returns per key: parameter, pageviews,
+ * visitors, value_count, and high_cardinality.
+ *
+ * @param {Object} params           Request parameters.
+ * @param {string} params.pageUrl   The page URL.
+ * @param {string} params.startDate Start date.
+ * @param {string} params.endDate   End date.
+ * @param {string} params.range     Date range identifier.
+ *
+ * @returns {Promise<Object>} Response with columns, data, and totals.
+ */
+// fallow-ignore-next-line complexity
+export const getPageParameterKeys = async({ pageUrl, startDate, endDate, range }) => {
+	if ( ! pageUrl ) {
+		return {
+			columns: [],
+			data: [],
+			total_pageviews: 0,
+			total_visitors: 0,
+			tagged_pageviews: 0,
+			untagged_pageviews: 0,
+			untagged_visitors: 0
+		};
+	}
+
+	const response = await getData( 'page-parameter-keys', startDate, endDate, range, {
 		page_url: pageUrl
 	});
 
-	const payload = response?.data || {};
+	const { payload, rows } = extractPayloadAndRows( response );
 	return {
 		columns: payload.columns || [],
-		data: payload.data || []
+		data: rows,
+		total_pageviews: payload.total_pageviews ?? 0,
+		total_visitors: payload.total_visitors ?? 0,
+		tagged_pageviews: payload.tagged_pageviews ?? 0,
+		untagged_pageviews: payload.untagged_pageviews ?? 0,
+		untagged_visitors: payload.untagged_visitors ?? 0
 	};
 };
 

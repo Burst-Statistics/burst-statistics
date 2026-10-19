@@ -24,10 +24,31 @@ class DB_Upgrade {
 	private int $cron_interval = MINUTE_IN_SECONDS;
 
 	/**
-	 * Retry budget of the finalize step (straggler conversion + index build)
+	 * Retry budget of an upgrade task (watermarked batch or finalize step)
 	 * before it is marked stalled and backed off to one attempt per day.
 	 */
-	private const FINALIZE_MAX_ATTEMPTS = 3;
+	private const TASK_MAX_ATTEMPTS     = 3;
+	private const FINALIZE_MAX_ATTEMPTS = self::TASK_MAX_ATTEMPTS;
+	/**
+	 * Retry budget per table of the legacy column drop before it is given up.
+	 */
+	private const DROP_LEGACY_COLUMNS_MAX_ATTEMPTS = 3;
+	/**
+	 * Cleanup tasks the read paths do not depend on: while they are pending,
+	 * db_upgrades_complete() stays true, so a long-running cleanup (a table
+	 * rebuild) does not switch off the fast paths.
+	 */
+	private const NON_BLOCKING_UPGRADES = [ 'drop_legacy_columns' ];
+	/**
+	 * Columns the 3.7.0 migration stopped using, per table (without prefix),
+	 * dropped by upgrade_drop_legacy_columns(). Ordered small to large, so
+	 * the cheap drops are done before a possible statistics table rebuild.
+	 */
+	private const LEGACY_COLUMNS = [
+		'burst_cart'       => [ 'uid' ],
+		'burst_sessions'   => [ 'first_visited_url', 'last_visited_url' ],
+		'burst_statistics' => [ 'uid' ],
+	];
 	/**
 	 * Option (autoload off) holding the number of tasks in the running
 	 * upgrade batch, the denominator of the progress notice.
@@ -56,6 +77,26 @@ class DB_Upgrade {
 	 * Length of the lookup tables' `name` column since 3.6.3.
 	 */
 	private const LOOKUP_NAME_LENGTH = 191;
+
+	/**
+	 * Tasks that join burst_statistics to the uid or page_url dictionary. Their
+	 * joins fail with MySQL error 1267 when the collations differ, so the
+	 * dispatcher aligns the collations before running any of them.
+	 */
+	private const DICTIONARY_TASKS = [
+		'seed_uid_dictionary',
+		'statistics_uid_id',
+		'finalize_uid_id',
+		'seed_page_urls',
+		'statistics_page_id',
+		'backfill_page_urls',
+	];
+
+	/**
+	 * Option (autoload off) set once the dictionary collations match
+	 * burst_statistics, so the information_schema probes stop.
+	 */
+	private const COLLATIONS_ALIGNED_OPTION = 'burst_migration_collations_aligned';
 
 	/**
 	 * The burst_install_tables firing the lookup dedupe last ran for. In Pro both
@@ -90,14 +131,7 @@ class DB_Upgrade {
 	 * a future-dated event counts as "coming".
 	 */
 	public function ensure_upgrade_scheduled(): void {
-		// Burst dashboard page loads only (as the old dashboard fallback was):
-		// keep this off every other admin request, and never inside a cron
-		// run, which is already the thing we are trying to start.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only comparison, no form data used.
-		if ( ! isset( $_GET['page'] ) || 'burst' !== $_GET['page'] || wp_doing_cron() ) {
-			return;
-		}
-		if ( ! $this->has_pending_db_upgrade() || ! $this->has_admin_access() ) {
+		if ( ! $this->is_dashboard_upgrade_request() ) {
 			return;
 		}
 		if ( get_transient( 'burst_upgrade_running' ) ) {
@@ -131,25 +165,54 @@ class DB_Upgrade {
 	}
 
 	/**
+	 * Whether this request is a Burst dashboard page load by an admin while an
+	 * upgrade is pending. Kept off every other admin request, and never true
+	 * inside a cron run, which is already what the page-load fallbacks try to
+	 * start.
+	 *
+	 * @return bool True when a page-load fallback may act.
+	 */
+	protected function is_dashboard_upgrade_request(): bool {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only comparison, no form data used.
+		if ( ! isset( $_GET['page'] ) || 'burst' !== $_GET['page'] || wp_doing_cron() ) {
+			return false;
+		}
+		return $this->has_pending_db_upgrade() && $this->has_admin_access();
+	}
+
+	/**
+	 * Whether a free task that the read paths depend on is still pending. The
+	 * NON_BLOCKING_UPGRADES cleanups are left out: Pro tasks don't depend on
+	 * them, and they only run from cron or WP-CLI.
+	 *
+	 * @return bool True when a blocking free task is still armed.
+	 */
+	protected function has_pending_free_blocking_upgrade(): bool {
+		$free_blocking = array_intersect( $this->get_db_upgrades( 'free', 'all' ), $this->get_blocking_upgrade_slugs() );
+		foreach ( $free_blocking as $slug ) {
+			if ( get_option( "burst_db_upgrade_{$slug}" ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Take a MySQL advisory lock for the dispatcher run. Unlike the
 	 * burst_upgrade_running transient, the lock is released by the server the
 	 * moment the holding connection dies, so a PHP process killed mid-task
 	 * (gateway timeout, host limits) never leaves the pipeline parked behind
 	 * a stale flag. Non-blocking: a second runner simply skips its turn.
 	 */
-	private function acquire_upgrade_lock(): bool {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		return 1 === (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK( %s, 0 )', $this->upgrade_lock_name() ) );
+	protected function acquire_upgrade_lock(): bool {
+		return $this->acquire_db_lock( $this->upgrade_lock_name() );
 	}
 
 	/**
 	 * Release the dispatcher lock taken by acquire_upgrade_lock().
 	 */
-	private function release_upgrade_lock(): void {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK( %s )', $this->upgrade_lock_name() ) );
+	protected function release_upgrade_lock(): void {
+		$this->release_db_lock( $this->upgrade_lock_name() );
 	}
 
 	/**
@@ -191,6 +254,16 @@ class DB_Upgrade {
 	 */
 	public function get_all_upgrade_slugs(): array {
 		return $this->get_db_upgrades( 'all', 'all' );
+	}
+
+	/**
+	 * The task slugs whose pending state keeps db_upgrades_complete() false:
+	 * every registered task except the NON_BLOCKING_UPGRADES cleanups.
+	 *
+	 * @return string[]
+	 */
+	public function get_blocking_upgrade_slugs(): array {
+		return array_values( array_diff( $this->get_all_upgrade_slugs(), self::NON_BLOCKING_UPGRADES ) );
 	}
 
 	/**
@@ -376,23 +449,29 @@ class DB_Upgrade {
 	 * Init the upgrades
 	 * - upgrade only if admin is logged in
 	 * - only one upgrade at a time
+	 *
+	 * A stalled task is not skipped: it keeps running, only at the daily
+	 * interval chosen at the end of this method, so it recovers by itself once
+	 * the cause (e.g. a collation mismatch) is gone.
+	 *
+	 * @return bool True if an upgrade task or the Pro iteration ran, false if idle or locked.
 	 */
-	public function upgrade(): void {
+	public function upgrade(): bool {
 		if ( defined( 'BURST_NO_UPGRADE' ) && BURST_NO_UPGRADE ) {
-			return;
+			return false;
 		}
 		if ( ! $this->has_admin_access() ) {
-			return;
+			return false;
 		}
 		$upgrade_running = get_transient( 'burst_upgrade_running' );
 		if ( $upgrade_running ) {
-			return;
+			return false;
 		}
 		// The transient is the cheap cross-request flag; the advisory lock is
 		// the guarantee (server-released when the runner dies), so a task
 		// outrunning the 60 seconds cannot be joined by a second runner.
 		if ( ! $this->acquire_upgrade_lock() ) {
-			return;
+			return false;
 		}
 		set_transient( 'burst_upgrade_running', true, 60 );
 		// check if we need to upgrade.
@@ -408,6 +487,13 @@ class DB_Upgrade {
 			}
 		}
 
+		// Align before any dictionary task: a collation mismatch is a typical
+		// reason such a task stalled, and sites that already passed
+		// seed_uid_dictionary would otherwise never be aligned.
+		if ( in_array( $do_upgrade, self::DICTIONARY_TASKS, true ) ) {
+			$this->align_migration_column_collations();
+		}
+
 		// @phpstan-ignore-next-line.
 		if ( WP_DEBUG ) {
 			// log all upgrades that still need to be done.
@@ -419,124 +505,124 @@ class DB_Upgrade {
 		}
 
 		// ensure that the tasks get updated with the continuing upgrade process.
-		if ( $do_upgrade ) {
-			\Burst\burst_loader()->admin->tasks->schedule_task_validation();
-		}
+		\Burst\burst_loader()->admin->tasks->schedule_task_validation();
 		// only one upgrade at a time.
-		if ( 'bounces' === $do_upgrade ) {
-			$this->upgrade_bounces();
-		}
-		if ( 'goals_remove_columns' === $do_upgrade ) {
-			$this->upgrade_goals_remove_columns();
-		}
-		if ( 'goals_set_conversion_metric' === $do_upgrade ) {
-			$this->upgrade_goals_set_conversion_metric();
-		}
-		if ( 'drop_user_agent' === $do_upgrade ) {
-			$this->upgrade_drop_user_agent();
-		}
-		if ( 'empty_referrer_when_current_domain' === $do_upgrade ) {
-			$this->upgrade_empty_referrer_when_current_domain();
-		}
-		if ( 'strip_domain_names_from_entire_page_url' === $do_upgrade ) {
-			$this->upgrade_strip_domain_names_from_entire_page_url();
-		}
+		if ( $do_upgrade ) {
+			if ( 'bounces' === $do_upgrade ) {
+				$this->upgrade_bounces();
+			}
+			if ( 'goals_remove_columns' === $do_upgrade ) {
+				$this->upgrade_goals_remove_columns();
+			}
+			if ( 'goals_set_conversion_metric' === $do_upgrade ) {
+				$this->upgrade_goals_set_conversion_metric();
+			}
+			if ( 'drop_user_agent' === $do_upgrade ) {
+				$this->upgrade_drop_user_agent();
+			}
+			if ( 'empty_referrer_when_current_domain' === $do_upgrade ) {
+				$this->upgrade_empty_referrer_when_current_domain();
+			}
+			if ( 'strip_domain_names_from_entire_page_url' === $do_upgrade ) {
+				$this->upgrade_strip_domain_names_from_entire_page_url();
+			}
 
-		if ( 'create_lookup_tables' === $do_upgrade ) {
-			$this->create_lookup_tables();
-		}
-		if ( 'init_lookup_ids' === $do_upgrade ) {
-			$this->initialize_lookup_ids();
-		}
-		if ( 'upgrade_lookup_tables' === $do_upgrade ) {
-			$this->upgrade_lookup_tables();
-		}
-		if ( 'upgrade_lookup_tables_drop_columns' === $do_upgrade ) {
-			$this->upgrade_lookup_tables_drop_columns();
-		}
+			if ( 'create_lookup_tables' === $do_upgrade ) {
+				$this->create_lookup_tables();
+			}
+			if ( 'init_lookup_ids' === $do_upgrade ) {
+				$this->initialize_lookup_ids();
+			}
+			if ( 'upgrade_lookup_tables' === $do_upgrade ) {
+				$this->upgrade_lookup_tables();
+			}
+			if ( 'upgrade_lookup_tables_drop_columns' === $do_upgrade ) {
+				$this->upgrade_lookup_tables_drop_columns();
+			}
 
-		if ( 'drop_page_id_column' === $do_upgrade ) {
-			$this->upgrade_drop_page_id_column();
-		}
+			if ( 'drop_page_id_column' === $do_upgrade ) {
+				$this->upgrade_drop_page_id_column();
+			}
 
-		if ( 'rename_entire_page_url_column' === $do_upgrade ) {
-			$this->change_column_name_entire_page_url();
-		}
+			if ( 'rename_entire_page_url_column' === $do_upgrade ) {
+				$this->change_column_name_entire_page_url();
+			}
 
-		if ( 'drop_path_from_parameters_column' === $do_upgrade ) {
-			$this->drop_path_from_parameters_column();
-		}
+			if ( 'drop_path_from_parameters_column' === $do_upgrade ) {
+				$this->drop_path_from_parameters_column();
+			}
 
-		if ( 'fix_missing_session_ids' === $do_upgrade ) {
-			delete_option( 'burst_db_upgrade_fix_missing_session_ids' );
-		}
+			if ( 'fix_missing_session_ids' === $do_upgrade ) {
+				delete_option( 'burst_db_upgrade_fix_missing_session_ids' );
+			}
 
-		if ( 'clean_orphaned_session_ids' === $do_upgrade ) {
-			delete_option( 'burst_db_upgrade_clean_orphaned_session_ids' );
-		}
+			if ( 'clean_orphaned_session_ids' === $do_upgrade ) {
+				delete_option( 'burst_db_upgrade_clean_orphaned_session_ids' );
+			}
 
-		if ( 'report_table_types' === $do_upgrade ) {
-			$this->upgrade_report_table_types();
-		}
+			if ( 'report_table_types' === $do_upgrade ) {
+				$this->upgrade_report_table_types();
+			}
 
-		if ( 'add_page_ids' === $do_upgrade ) {
-			$this->upgrade_add_page_ids();
-		}
+			if ( 'add_page_ids' === $do_upgrade ) {
+				$this->upgrade_add_page_ids();
+			}
 
-		if ( 'move_referrers_to_sessions' === $do_upgrade ) {
-			$this->upgrade_referrers();
-		}
+			if ( 'move_referrers_to_sessions' === $do_upgrade ) {
+				$this->upgrade_referrers();
+			}
 
-		if ( 'fix_trailing_slash_on_referrers' === $do_upgrade ) {
-			$this->fix_trailing_slash_on_referrers();
-		}
+			if ( 'fix_trailing_slash_on_referrers' === $do_upgrade ) {
+				$this->fix_trailing_slash_on_referrers();
+			}
 
-		if ( 'move_reports_to_new_tables' === $do_upgrade ) {
-			$this->move_reports_to_new_tables();
-		}
+			if ( 'move_reports_to_new_tables' === $do_upgrade ) {
+				$this->move_reports_to_new_tables();
+			}
 
-		if ( 'move_columns_to_sessions' === $do_upgrade ) {
-			$this->upgrade_move_columns_to_sessions();
-		}
+			if ( 'move_columns_to_sessions' === $do_upgrade ) {
+				$this->upgrade_move_columns_to_sessions();
+			}
 
-		if ( 'clean_spam_browsers' === $do_upgrade ) {
-			$this->clean_spam_browsers();
-		}
+			if ( 'clean_spam_browsers' === $do_upgrade ) {
+				$this->clean_spam_browsers();
+			}
 
-		if ( 'seed_uid_dictionary' === $do_upgrade ) {
-			$this->upgrade_seed_uid_dictionary();
-		}
+			if ( 'seed_uid_dictionary' === $do_upgrade ) {
+				$this->upgrade_seed_uid_dictionary();
+			}
 
-		if ( 'statistics_uid_id' === $do_upgrade ) {
-			$this->upgrade_statistics_uid_id();
-		}
+			if ( 'statistics_uid_id' === $do_upgrade ) {
+				$this->upgrade_statistics_uid_id();
+			}
 
-		if ( 'sessions_first_time' === $do_upgrade ) {
-			$this->upgrade_sessions_first_time();
-		}
+			if ( 'sessions_first_time' === $do_upgrade ) {
+				$this->upgrade_sessions_first_time();
+			}
 
-		if ( 'finalize_uid_id' === $do_upgrade ) {
-			$this->upgrade_finalize_uid_id();
-		}
+			if ( 'finalize_uid_id' === $do_upgrade ) {
+				$this->upgrade_finalize_uid_id();
+			}
 
-		if ( 'seed_page_urls' === $do_upgrade ) {
-			$this->upgrade_seed_page_urls();
-		}
+			if ( 'seed_page_urls' === $do_upgrade ) {
+				$this->upgrade_seed_page_urls();
+			}
 
-		if ( 'statistics_page_id' === $do_upgrade ) {
-			$this->upgrade_statistics_page_id();
-		}
+			if ( 'statistics_page_id' === $do_upgrade ) {
+				$this->upgrade_statistics_page_id();
+			}
 
-		if ( 'backfill_page_urls' === $do_upgrade ) {
-			$this->upgrade_backfill_page_urls();
-		}
+			if ( 'backfill_page_urls' === $do_upgrade ) {
+				$this->upgrade_backfill_page_urls();
+			}
 
-		if ( 'drop_session_visited_urls' === $do_upgrade ) {
-			$this->upgrade_drop_session_visited_urls();
-		}
+			if ( 'drop_legacy_columns' === $do_upgrade ) {
+				$this->upgrade_drop_legacy_columns();
+			}
 
-		if ( 'sessions_has_pageview' === $do_upgrade ) {
-			$this->upgrade_sessions_has_pageview();
+			if ( 'sessions_has_pageview' === $do_upgrade ) {
+				$this->upgrade_sessions_has_pageview();
+			}
 		}
 
 		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
@@ -562,8 +648,11 @@ class DB_Upgrade {
 			}
 		}
 
+		$pro_ran = $this->get_progress( 'free', 'all' ) >= 100 && $this->get_progress( 'pro', 'all' ) < 100;
+
 		delete_transient( 'burst_upgrade_running' );
 		$this->release_upgrade_lock();
+		return ! empty( $do_upgrade ) || $pro_ran;
 	}
 
 	/**
@@ -711,17 +800,6 @@ class DB_Upgrade {
 					// dictionary ids so page queries can group on page_id.
 					'seed_page_urls',
 					'statistics_page_id',
-					// first/last_visited_url on sessions are no longer written
-					// (entry/exit pages are derived from burst_statistics),
-					// but dropping the columns is deferred one release so a
-					// rollback to the previous version — which writes them on
-					// every session create/update — hits no database errors.
-					// @todo 3.7.1: add 'drop_session_visited_urls' (and the
-					// deferred legacy uid column/table drops, see
-					// upgrade_finalize_uid_id() and
-					// convert_uid_table_to_dictionary_ids()) to the '3.7.1'
-					// group below and arm the task from the 3.7.1 block in
-					// class-upgrade.php.
 				],
 				'3.7.1'   => [
 					// Dictionary rows for the urls of posts first seen after
@@ -735,6 +813,12 @@ class DB_Upgrade {
 					// can apply the hit-grain 404 rule (see
 					// Session_Grain_Shape::sessions_from_subquery()).
 					'sessions_has_pageview',
+				],
+				'3.7.3'   => [
+					// Drop the legacy columns and table 3.7.0 kept for
+					// rollback safety. Last in line: runs after the whole
+					// uid pipeline. Non-blocking, see NON_BLOCKING_UPGRADES.
+					'drop_legacy_columns',
 				],
 			]
 		);
@@ -902,7 +986,9 @@ class DB_Upgrade {
 	protected function complete_watermarked_task( string $slug ): void {
 		delete_option( "burst_db_upgrade_{$slug}" );
 		delete_option( "burst_db_upgrade_{$slug}_last_id" );
+		delete_option( "burst_db_upgrade_{$slug}_attempts" );
 		delete_transient( "burst_progress_{$slug}" );
+		$this->clear_task_stalled( $slug );
 	}
 
 	/**
@@ -925,18 +1011,39 @@ class DB_Upgrade {
 	protected function run_watermarked_batch( string $slug, string $watermark_table, string $batch_filter, int $batch_size, callable $run_batch, ?callable $on_complete = null, bool $schedule_next_iteration = false ): void {
 		global $wpdb;
 		$watermark_option = "burst_db_upgrade_{$slug}_last_id";
-        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- callers pass burst_-prefixed filter names.
+		$attempts_option  = "burst_db_upgrade_{$slug}_attempts";
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- callers pass burst_-prefixed filter names.
 		$batch_size = (int) apply_filters( $batch_filter, $batch_size );
 		$last_id    = (int) get_option( $watermark_option, 0 );
+
+		// Track retry attempts per watermark position. If previous attempts
+		// did not complete (e.g. process terminated by web worker timeout),
+		// dynamically back off the batch size and mark stalled if the budget expires.
+		$attempts = (int) get_option( $attempts_option, 0 ) + 1;
+		update_option( $attempts_option, $attempts, false );
+
+		if ( $attempts > self::TASK_MAX_ATTEMPTS && empty( $this->stalled_task() ) ) {
+			$this->mark_task_stalled( $slug, $attempts, 'previous attempts did not complete (process terminated or timed out?)' );
+		}
+
+		if ( $attempts > 1 ) {
+			$backoff_divisor = pow( 2, min( 4, $attempts - 1 ) );
+			$batch_size      = max( 100, (int) floor( $batch_size / $backoff_divisor ) );
+		}
+
 		$end_id     = $last_id + $batch_size;
 		$table_name = $wpdb->prefix . $this->validate_table_name( $watermark_table );
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated above.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated above.
 		$max_id = (int) $wpdb->get_var( "SELECT MAX(ID) FROM {$table_name}" );
 
 		$result = $run_batch( $last_id, $end_id );
 
 		if ( $result === false ) {
-			self::error_log( "db upgrade {$slug} failed: " . $wpdb->last_error );
+			$error = ! empty( $wpdb->last_error ) ? $wpdb->last_error : 'database query returned false';
+			self::error_log( "db upgrade {$slug} failed: " . $error );
+			if ( $attempts >= self::TASK_MAX_ATTEMPTS ) {
+				$this->mark_task_stalled( $slug, $attempts, $error );
+			}
 			return;
 		}
 
@@ -967,6 +1074,8 @@ class DB_Upgrade {
 		$watermark = max( $end_id, (int) $next_id - 1 );
 
 		update_option( $watermark_option, $watermark, false );
+		delete_option( $attempts_option );
+		$this->clear_task_stalled( $slug );
 		// Intermediate progress for the upgrade notice (fraction of this task).
 		set_transient( "burst_progress_{$slug}", min( 0.99, $watermark / max( 1, $max_id ) ), HOUR_IN_SECONDS );
 
@@ -993,7 +1102,7 @@ class DB_Upgrade {
 		}
 
 		// Nothing to migrate when the legacy uid column is gone (fresh install,
-		// or the 3.7.1 drop has run while a stale version option re-armed the
+		// or the 3.7.3 drop has run while a stale version option re-armed the
 		// pipeline). Gated on the column, not on uid_id_active(): after a
 		// rollback the older build writes new uid strings with uid_id 0, and
 		// the re-upgrade must seed those even though the indexes already exist.
@@ -1035,6 +1144,101 @@ class DB_Upgrade {
 				}
 			}
 		);
+	}
+
+	/**
+	 * Align dictionary table column collations to match burst_statistics.
+	 *
+	 * When burst_statistics was created on an older WordPress release (e.g.
+	 * utf8mb4_unicode_ci) and the 3.7.0 dictionary tables on a newer release
+	 * (e.g. utf8mb4_unicode_520_ci), JOINs on uid or page_url fail with MySQL
+	 * error 1267 ("Illegal mix of collations for operation '='").
+	 *
+	 * Modifying the small dictionary tables to match burst_statistics takes
+	 * milliseconds and preserves UNIQUE index lookups during migration joins.
+	 *
+	 * Only a run in which every ALTER succeeded and every dictionary table
+	 * existed is remembered: a failed ALTER (e.g. a lock wait timeout) or a
+	 * dictionary that table init has not created yet is retried on the next
+	 * dispatcher run.
+	 *
+	 * @param bool $force Re-check even if the collations were aligned before.
+	 */
+	public function align_migration_column_collations( bool $force = false ): void {
+		if ( ! $force && (bool) get_option( self::COLLATIONS_ALIGNED_OPTION ) ) {
+			return;
+		}
+
+		$is_complete = true;
+
+		// 1. Align uid collation: burst_uids and burst_cart to burst_statistics.
+		$stats_uid  = $this->get_column_charset_collate( 'burst_statistics', 'uid' );
+		$target_uid = $stats_uid;
+		if ( null === $target_uid && $this->table_exists( 'burst_uids' ) ) {
+			$target_uid = $this->get_column_charset_collate( 'burst_uids', 'uid' );
+		}
+		if ( null !== $stats_uid && ! $this->table_exists( 'burst_uids' ) ) {
+			$is_complete = false;
+		}
+
+		if ( null !== $target_uid ) {
+			if ( $this->table_exists( 'burst_uids' ) && null !== $stats_uid ) {
+				$dict_uid = $this->get_column_charset_collate( 'burst_uids', 'uid' );
+				if ( null !== $dict_uid && $dict_uid['collation'] !== $stats_uid['collation'] ) {
+					$is_complete = $this->modify_column_collation( 'burst_uids', "`uid` varchar(64) CHARACTER SET {$stats_uid['charset']} COLLATE {$stats_uid['collation']} NOT NULL" ) && $is_complete;
+				}
+			}
+			$cart_table = 'burst_cart';
+			if ( $this->table_exists( $cart_table ) && $this->column_exists( $cart_table, 'uid' ) ) {
+				$cart_uid = $this->get_column_charset_collate( $cart_table, 'uid' );
+				if ( null !== $cart_uid && $cart_uid['collation'] !== $target_uid['collation'] ) {
+					$is_complete = $this->modify_column_collation( $cart_table, "`uid` varchar(64) CHARACTER SET {$target_uid['charset']} COLLATE {$target_uid['collation']} NOT NULL" ) && $is_complete;
+				}
+			}
+		}
+
+		// 2. Align page_url collation: burst_page_urls to burst_statistics.
+		$stats_page = $this->get_column_charset_collate( 'burst_statistics', 'page_url' );
+		if ( null !== $stats_page ) {
+			if ( $this->table_exists( 'burst_page_urls' ) ) {
+				$dict_page = $this->get_column_charset_collate( 'burst_page_urls', 'page_url' );
+				if ( null !== $dict_page && $dict_page['collation'] !== $stats_page['collation'] ) {
+					$is_complete = $this->modify_column_collation( 'burst_page_urls', "`page_url` varchar(191) CHARACTER SET {$stats_page['charset']} COLLATE {$stats_page['collation']} NOT NULL" ) && $is_complete;
+				}
+			} else {
+				$is_complete = false;
+			}
+		}
+
+		if ( ! $is_complete ) {
+			return;
+		}
+		update_option( self::COLLATIONS_ALIGNED_OPTION, true, false );
+	}
+
+	/**
+	 * Run one collation-aligning ALTER and report whether it succeeded.
+	 *
+	 * @param string $table_name        Table name without WordPress prefix.
+	 * @param string $column_definition Column definition for MODIFY, built from
+	 *                                  charset and collation names that
+	 *                                  get_column_charset_collate() validated.
+	 * @return bool True when the ALTER ran without a database error.
+	 */
+	private function modify_column_collation( string $table_name, string $column_definition ): bool {
+		global $wpdb;
+		$table_name = $this->validate_table_name( $table_name );
+		if ( '' === $table_name ) {
+			return false;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name validated, column definition built from validated collation names.
+		$result = $wpdb->query( "ALTER TABLE {$wpdb->prefix}{$table_name} MODIFY {$column_definition}" );
+		if ( false === $result ) {
+			self::error_log( "Aligning the collation of {$table_name} failed: " . $wpdb->last_error );
+			return false;
+		}
+		return true;
 	}
 
 	/**
@@ -1192,7 +1396,7 @@ class DB_Upgrade {
 	/**
 	 * Finalize the uid dictionary migration: convert the straggler rows, build
 	 * the uid_id indexes (online index operations — the legacy varchar uid
-	 * column is left untouched, see uid_id_active(); 3.7.1 drops it), convert
+	 * column is left untouched, see uid_id_active(); 3.7.3 drops it), convert
 	 * the cart table to uid_id so identity joins stay int = int, and retire the
 	 * known_uids crons. Every sub-step is idempotent, so a run that dies
 	 * halfway simply continues on the next iteration, and a re-upgrade after a
@@ -1336,12 +1540,9 @@ class DB_Upgrade {
 		// known_uids is obsolete once the dictionary is active: first_time_visit
 		// is then set at session creation (the dictionary insert is the "first
 		// time ever seen" event), so its recalculation crons are unscheduled.
-		// The table itself is deliberately NOT dropped in this release: the
-		// previous version's ten-minute cron reads and upserts it, so keeping
-		// it (stale, unused by this version) lets a rollback run without
-		// database errors — the old cron simply resumes maintaining it.
-		// @todo 3.7.1: add a task under the 3.7.1 registry group that runs
-		// DROP TABLE IF EXISTS {$prefix}burst_known_uids.
+		// The table itself is not dropped here: the 3.6.x ten-minute cron
+		// reads and upserts it, so keeping it lets a rollback run without
+		// database errors. upgrade_drop_legacy_columns() (3.7.3) drops it.
 		wp_clear_scheduled_hook( 'burst_recalculate_known_uids_cron' );
 		wp_clear_scheduled_hook( 'burst_recalculate_first_time_visits_cron' );
 
@@ -1375,6 +1576,10 @@ class DB_Upgrade {
 		delete_option( 'burst_last_first_time_visit_update' );
 
 		if ( ! $this->convert_uid_table_to_dictionary_ids( 'burst_cart' ) ) {
+			if ( $attempts >= self::FINALIZE_MAX_ATTEMPTS ) {
+				$error = ! empty( $wpdb->last_error ) ? $wpdb->last_error : 'converting burst_cart to uid_id failed';
+				$this->mark_task_stalled( 'finalize_uid_id', $attempts, $error );
+			}
 			return;
 		}
 
@@ -1758,11 +1963,8 @@ class DB_Upgrade {
 		// would be a full table rebuild for a signal nobody reads any more
 		// (the cart write paths gate on tracking_schema_current()), and a
 		// rollback to the previous release finds the column exactly as it
-		// left it. The legacy uid indexes stay with the column.
-		// @todo 3.7.1: drop the legacy `uid` column and its indexes here for
-		// real (uid_index, uid_updated_at_converted_index — drop the indexes
-		// BEFORE the column: DROP COLUMN silently shrinks an index to its
-		// remaining columns under the same name).
+		// left it. The legacy uid indexes stay with the column;
+		// upgrade_drop_legacy_columns() (3.7.3) drops both.
 		$wpdb->query( "DELETE t FROM {$table_name} t LEFT JOIN {$wpdb->prefix}burst_uids d ON t.uid = d.uid WHERE t.uid != '' AND d.ID IS NULL" );
 		$wpdb->query( "UPDATE {$table_name} t JOIN {$wpdb->prefix}burst_uids d ON t.uid = d.uid SET t.uid_id = d.ID WHERE t.uid_id = 0" );
         // phpcs:enable
@@ -1775,52 +1977,81 @@ class DB_Upgrade {
 	}
 
 	/**
-	 * Drop the unused first_visited_url / last_visited_url columns from the
-	 * sessions table. They were written on every session create/update but
-	 * never read back: entry and exit pages are derived from burst_statistics
-	 * (MIN/MAX ID per session), so the two TEXT columns only added row weight.
-	 * Tracking stopped writing them in 3.7.0; dbDelta never drops columns,
-	 * hence this one-time ALTER.
+	 * Drop the columns and table the 3.7.0 migration left behind for rollback
+	 * safety — nothing reads or writes them any more:
 	 *
-	 * Currently dormant: not registered in get_db_upgrades() and not armed by
-	 * any upgrade block — the drop is deferred one release so a rollback to
-	 * the pre-3.7.0 version (which writes these columns) hits no database
-	 * errors.
+	 * - burst_statistics.uid and burst_cart.uid: the legacy varchar identity,
+	 *   replaced by the uid_id dictionary ids (see upgrade_finalize_uid_id()).
+	 * - burst_sessions.first_visited_url / last_visited_url: write-only; entry
+	 *   and exit pages are derived from burst_statistics (MIN/MAX ID per
+	 *   session).
+	 * - burst_known_uids: replaced by the uid dictionary.
 	 *
-	 * @todo 3.7.1: re-register this task under the 3.7.1 registry group and
-	 * arm it from the 3.7.1 block in class-upgrade.php.
+	 * All legacy columns are NOT NULL without a default, so every tracking
+	 * insert since 3.7.0 raised a MySQL 1364 warning per column ("doesn't
+	 * have a default value") that hosts with warning logging recorded.
+	 *
+	 * Runs after the whole 3.7.x pipeline (registry order); the uid column is
+	 * only dropped once integer uid mode is active. One table per iteration:
+	 * where the server cannot drop a column instantly it rebuilds the table
+	 * online (see drop_columns_online()), which can take a while on a large
+	 * statistics table, so each cron run is bounded to one rebuild. A table
+	 * that keeps failing (disk space for the rebuild, lock timeouts) is given
+	 * up after the retry budget: the columns are harmless, and this cleanup
+	 * must not keep the dispatcher — and with it the Pro tasks — busy.
 	 */
-	private function upgrade_drop_session_visited_urls(): void {
+	private function upgrade_drop_legacy_columns(): void {
 		if ( ! $this->has_admin_access() ) {
 			return;
 		}
-		$option_name = 'burst_db_upgrade_drop_session_visited_urls';
+		$option_name = 'burst_db_upgrade_drop_legacy_columns';
 		if ( ! get_option( $option_name ) ) {
 			return;
 		}
-
-		// Drop only what is present: fresh installs already have the new
-		// schema, and a resumed run may have dropped one column already.
-		$drops = [];
-		foreach ( [ 'first_visited_url', 'last_visited_url' ] as $column ) {
-			if ( $this->column_exists( 'burst_sessions', $column ) ) {
-				$drops[] = "DROP COLUMN `{$column}`";
-			}
+		// A table rebuild must not run inside a page request (the dashboard
+		// fallback of ensure_upgrade_scheduled()); wait for the next cron run.
+		if ( ! wp_doing_cron() && ! ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+			return;
 		}
-		if ( empty( $drops ) ) {
-			delete_option( $option_name );
+
+		// Attempts per table, counted before the work so a run that is killed
+		// mid-rebuild counts as well.
+		$attempts_option = 'burst_db_upgrade_drop_legacy_columns_attempts';
+		$attempts        = (array) get_option( $attempts_option, [] );
+		foreach ( self::LEGACY_COLUMNS as $table => $columns ) {
+			if ( (int) ( $attempts[ $table ] ?? 0 ) >= self::DROP_LEGACY_COLUMNS_MAX_ATTEMPTS ) {
+				continue;
+			}
+			$present = array_values( array_filter( $columns, fn( $column ) => $this->column_exists( $table, $column ) ) );
+			if ( empty( $present ) ) {
+				continue;
+			}
+			// The legacy uid column carries the string identities until the
+			// uid pipeline has converted them. The pipeline runs before this
+			// task, so this only skips a table whose uid_id indexes went
+			// missing — never waits, which would park the dispatcher.
+			if ( in_array( 'uid', $present, true ) && ! $this->uid_id_active() ) {
+				continue;
+			}
+
+			$attempts[ $table ] = (int) ( $attempts[ $table ] ?? 0 ) + 1;
+			update_option( $attempts_option, $attempts, false );
+			if ( $this->drop_columns_online( $table, $present ) ) {
+				unset( $attempts[ $table ] );
+				update_option( $attempts_option, $attempts, false );
+				$this->flush_uid_id_active_cache();
+			} elseif ( $attempts[ $table ] >= self::DROP_LEGACY_COLUMNS_MAX_ATTEMPTS ) {
+				self::error_log( "db upgrade drop_legacy_columns: giving up on {$table} after {$attempts[ $table ]} attempts." );
+			}
 			return;
 		}
 
 		global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- fixed table and column names.
-		$result = $wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_sessions " . implode( ', ', $drops ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table name.
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}burst_known_uids" );
 
-		if ( $result !== false ) {
-			delete_option( $option_name );
-		} else {
-			self::error_log( 'db upgrade drop_session_visited_urls failed: ' . $wpdb->last_error );
-		}
+		delete_option( $attempts_option );
+		delete_option( $option_name );
 	}
 
 	/**

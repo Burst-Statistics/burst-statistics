@@ -296,7 +296,7 @@ class Integrations {
 	 * Load translations for integrations in the react dashboard
 	 */
 	public function load_translations(): void {
-		if ( ! $this->is_logged_in_rest() ) {
+		if ( ! $this->is_logged_in_rest() && ! $this->is_mainwp_request() ) {
 			return;
 		}
 

@@ -17,7 +17,7 @@ import useShareableLinkStore from '@/store/useShareableLinkStore';
  * This replaces the Zustand store (useGoalsStore) with a more efficient
  * React Query implementation for better caching and data management.
  *
- * @return {Object} - An object containing goals data and CRUD operations
+ * @return An object containing goals data and CRUD operations.
  */
 // fallow-ignore-next-line complexity
 const useGoalsData = () => {
@@ -36,7 +36,6 @@ const useGoalsData = () => {
 			return {
 				goals: response.goals || [],
 				predefinedGoals: response.predefinedGoals || [],
-				goalFields: Object.values( response.goalFields || {}),
 				activeGoalsCount: response.active_goals_count || 0,
 				goalLimit: response.goal_limit ?? window.burst_settings?.goal_limit ?? 3
 			};
@@ -44,6 +43,19 @@ const useGoalsData = () => {
 		enabled: shouldFetchGoals,
 		retry: 1
 	});
+
+	/**
+	 * Refetch the goals list and the goal statistics that depend on a goal's settings.
+	 * Filter objects, not arrays: in TanStack Query v5 an array is read as a filter
+	 * without a queryKey and invalidates every query in the app.
+	 *
+	 * @return {Promise<void[]>} Resolves when the invalidated queries have refetched.
+	 */
+	const invalidateGoals = () => Promise.all([
+		queryClient.invalidateQueries({ queryKey: [ 'goals_data' ] }),
+		queryClient.invalidateQueries({ queryKey: [ 'goals' ] }),
+		queryClient.invalidateQueries({ queryKey: [ 'live-goals' ] })
+	]);
 
 	// Get a single goal by ID
 	const getGoal = ( id ) => {
@@ -105,18 +117,22 @@ const useGoalsData = () => {
 		});
 	};
 
-	// Mutation to save all goals (triggered by the global Settings Save button)
-	const saveGoalsMutation = useMutation({
-		mutationFn: async() => {
+	// Mutation to persist one goal's cached values (each goal wizard step saves the goal it edits)
+	const saveGoalMutation = useMutation({
+
+		/** @param {number} id Goal id. */
+		mutationFn: async( id ) => {
+
+			// Read the cache directly: a value set in the same tick is not in this render's goalsQuery.data yet.
 			const goals = queryClient.getQueryData([ 'goals_data' ])?.goals || [];
-			return await setGoals({ goals });
+			return await setGoals({ goals: goals.filter( ( goal ) => goal.id === id ) });
 		},
 		onSuccess: () => {
-			queryClient.invalidateQueries([ 'goals_data' ]);
+			invalidateGoals();
 		},
 		onError: ( error ) => {
 			console.error( error );
-			toast.error( __( 'Failed to save goals', 'burst-statistics' ) );
+			toast.error( __( 'Failed to save goal', 'burst-statistics' ) );
 		}
 	});
 
@@ -143,14 +159,14 @@ const useGoalsData = () => {
 			updateGoalInCache( id, ( goal ) => {
 				goal.status = status;
 			});
-			queryClient.invalidateQueries([ 'goals_data' ]);
+			invalidateGoals();
 		},
 		onError: ( error ) => {
 			console.error( error );
 			toast.error( __( 'Failed to update goal status', 'burst-statistics' ) );
 
 			// Revert the optimistic UI update by re-fetching
-			queryClient.invalidateQueries([ 'goals_data' ]);
+			invalidateGoals();
 		}
 	});
 
@@ -170,7 +186,7 @@ const useGoalsData = () => {
 				});
 			});
 
-			queryClient.invalidateQueries([ 'goals_data' ]);
+			invalidateGoals();
 
 			toast.success( __( 'Goal added successfully!', 'burst-statistics' ) );
 		},
@@ -182,6 +198,8 @@ const useGoalsData = () => {
 
 	// Mutation to delete a goal
 	const deleteGoalMutation = useMutation({
+
+		/** @param {number} id Goal id. */
 		mutationFn: async( id ) => {
 			return await deleteGoal( id );
 		},
@@ -210,7 +228,7 @@ const useGoalsData = () => {
 					});
 				});
 
-				queryClient.invalidateQueries([ 'goals_data' ]);
+				invalidateGoals();
 
 				toast.success(
 					__( 'Goal deleted successfully!', 'burst-statistics' )
@@ -248,7 +266,7 @@ const useGoalsData = () => {
 				});
 			});
 
-			queryClient.invalidateQueries([ 'goals_data' ]);
+			invalidateGoals();
 
 			toast.success(
 				__( 'Successfully added predefined goal!', 'burst-statistics' )
@@ -273,7 +291,6 @@ const useGoalsData = () => {
 		activeGoalsCount,
 		goalLimit,
 		goals: goalsQuery.data?.goals || [],
-		goalFields: goalsQuery.data?.goalFields || [],
 		predefinedGoals: goalsQuery.data?.predefinedGoals || [],
 		isLoading: goalsQuery.isLoading,
 		isError: goalsQuery.isError,
@@ -285,7 +302,7 @@ const useGoalsData = () => {
 		getGoalAsync,
 
 		// Mutations
-		saveGoals: saveGoalsMutation.mutateAsync,
+		saveGoal: saveGoalMutation.mutateAsync,
 		saveGoalTitle: ( id, value ) =>
 			saveGoalTitleMutation.mutateAsync({ id, value }),
 		toggleGoalStatus: ( id, status ) =>
@@ -296,61 +313,8 @@ const useGoalsData = () => {
 			addPredefinedGoalMutation.mutateAsync({ predefinedGoalId }),
 
 		// Utility for invalidating queries
-		invalidateGoals: () => queryClient.invalidateQueries([ 'goals_data' ])
+		invalidateGoals
 	};
-};
-
-// Export the condition validation utility function
-const validateConditions = ( conditions, fields ) => {
-
-	// If no conditions, always return true
-	if ( ! conditions || 0 === Object.keys( conditions ).length ) {
-		return true;
-	}
-
-	// Check if ANY condition is met (OR logic)
-	return Object.entries( conditions ).some( ([ fieldName, allowedValues ]) => {
-
-		// Find the field value from the fields array
-		const field = fields.find( ( f ) => f.id === fieldName );
-		if ( ! field ) {
-			return false;
-		}
-
-		const fieldValue = field.value;
-
-		// If field value is not set, condition is not met
-		if ( ! fieldValue ) {
-			return false;
-		}
-
-		// Check if the field value is in the allowed values array
-		return allowedValues.includes( fieldValue );
-	});
-};
-
-// Export the updateFieldsListWithConditions utility function
-export const updateFieldsListWithConditions = ( fields ) => {
-	return fields.map( ( field ) => {
-		const newField = { ...field };
-
-		// If field has conditions, check if they are met
-		if ( field.react_conditions ) {
-			const conditionsMet = validateConditions(
-				field.react_conditions,
-				fields
-			);
-
-			// Apply the appropriate action based on condition_action
-			if ( 'disable' === field.condition_action ) {
-				newField.disabled = ! conditionsMet;
-			} else {
-				newField.conditionallyDisabled = ! conditionsMet;
-			}
-		}
-
-		return newField;
-	});
 };
 
 export default useGoalsData;

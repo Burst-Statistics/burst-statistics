@@ -15,7 +15,7 @@ import {
 } from 'date-fns';
 import type { Locale } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 
 /**
  * Runtime global injected by `wp_localize_script` in
@@ -494,6 +494,18 @@ function formatNumber( value: number | string, decimals: number = 1, compact: bo
 	}
 
 	return new Intl.NumberFormat( getLocale(), options ).format( numeric );
+}
+
+/**
+ * Formats a count of occurrences as "131×", with the full (non-compact) number.
+ *
+ * @param count - The number of times.
+ * @return The formatted count.
+ */
+function formatTimes( count: number | string ): string {
+
+	/* translators: %s: a number of times, e.g. "131×". */
+	return sprintf( __( '%s×', 'burst-statistics' ), formatNumber( count, 0, false ) );
 }
 
 /**
@@ -1425,6 +1437,7 @@ export {
 	isValidDate,
 	formatTime,
 	formatNumber,
+	formatTimes,
 	formatPercentage,
 	getCountryName,
 	getContinentName,

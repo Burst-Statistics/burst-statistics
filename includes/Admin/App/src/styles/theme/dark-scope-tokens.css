@@ -12,7 +12,6 @@
  */
 body.dashboard-default-dark-theme, #burst-statistics.dark {
 	background-color: var(--color-gray-50);
-	min-height: 100vh;
 
 	/* Systematic dark accent transform: shared L ladder, shared C scaling, hue preserved. */
 	--dark-chroma-scale: 0.72;

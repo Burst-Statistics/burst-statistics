@@ -115,7 +115,10 @@ class Session_Grain_Shape implements From_Strategy_Interface {
 
 	/**
 	 * Pre-register the session-keyed goals join when the query needs goal data
-	 * (conversions/conversion_rate metrics or a goal_id filter). Must run before
+	 * (conversions/conversion_rate metrics). A goal_id filter alone needs no
+	 * join: it is a semi-join on statistics.session_id, which the session-grain
+	 * FROM exposes (see Statistics_Query::add_goal_session_condition()), and a
+	 * join would repeat the session row once per completion. Must run before
 	 * the metric handlers: with('goals') is first-write-wins, so this join wins
 	 * over the registered hit-keyed one — which would break against the
 	 * session-grain FROM (statistics.ID is not exposed).
@@ -131,15 +134,13 @@ class Session_Grain_Shape implements From_Strategy_Interface {
 		global $wpdb;
 
 		$filters   = $qd->get_filters();
-		$has_goals = ! empty( array_intersect( $qd->get_select(), [ 'conversions', 'conversion_rate' ] ) )
-			|| isset( $filters['goal_id'] );
+		$has_goals = ! empty( array_intersect( $qd->get_select(), [ 'conversions', 'conversion_rate' ] ) );
 		if ( ! $has_goals ) {
 			return;
 		}
 
 		$goal_id_filter = $filters['goal_id'] ?? 0;
-		$is_exclude     = ( $qd->get_filter_exclusions()['goal_id'] ?? 'include' ) === 'exclude';
-		$goal_condition = Statistics_Query::goal_condition_sql( $goal_id_filter, $is_exclude, 'g.goal_id' );
+		$goal_condition = Statistics_Query::goal_condition_sql( $goal_id_filter, 'g.goal_id' );
 
 		$qd->join(
 			'goals',

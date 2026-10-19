@@ -43,6 +43,31 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			add_filter( 'burst_get_action', [ $this, 'get_action_handler' ], 10, 3 );
 			add_action( 'burst_create_report_from_onboarding', [ $this, 'create_report_from_onboarding' ] );
 			add_filter( 'burst_allowed_field_types', [ $this, 'allowed_field_types' ] );
+			add_filter( 'burst_localize_script', [ $this, 'add_default_report_channels' ] );
+			add_filter( 'burst_field_value_default_report_channels', [ $this, 'show_default_report_channels' ] );
+		}
+
+		/**
+		 * Show the channel new reports actually start with while no choice is
+		 * stored, instead of an empty radio.
+		 *
+		 * @param mixed $value Stored value, '' when never chosen. Mixed: it is read
+		 *                     from the options table, so it can be any stored type.
+		 * @return string 'email' or 'both'.
+		 */
+		public function show_default_report_channels( mixed $value ): string {
+			return in_array( $value, Report::VALID_CHANNELS, true ) ? $value : Report::get_default_channels();
+		}
+
+		/**
+		 * Expose the delivery channel new reports start with to the report wizard.
+		 *
+		 * @param array<string, mixed> $data Localized settings.
+		 * @return array<string, mixed> Localized settings with 'default_report_channels'.
+		 */
+		public function add_default_report_channels( array $data ): array {
+			$data['default_report_channels'] = Report::get_default_channels();
+			return $data;
 		}
 
 		/**
@@ -430,7 +455,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					->set_content( $data['content'] )
 					->set_date_range( $data['reportDateRange'] )
 					->set_recipients( $data['recipients'] )
-					->set_channels( $data['channels'] ?? burst_get_option( 'default_report_channels', 'email' ) )
+					->set_channels( $data['channels'] ?? Report::get_default_channels() )
 					->set_enabled( $data['enabled'] )
 					->set_scheduled( $data['scheduled'] );
 

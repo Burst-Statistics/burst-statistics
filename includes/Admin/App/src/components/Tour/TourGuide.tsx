@@ -27,7 +27,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * Returns true when currentPath satisfies the step target URL.
  * For generic /settings or /reporting, any corresponding sub-page matches.
- * For specific subroutes like /settings/goals or /reporting/customization, only that exact path matches.
+ * For specific subroutes like /settings/features or /reporting/customization, only that exact path matches.
  */
 function pathMatchesTarget( currentPath: string, targetPath: string, exact = false ): boolean {
 	const cur = currentPath.replace( /\/$/, '' );
@@ -49,7 +49,7 @@ function pathMatchesTarget( currentPath: string, targetPath: string, exact = fal
 	}
 
 	// /settings or /settings/general → any /settings/* satisfies generic tab
-	// Specific subroutes (/settings/goals, /settings/features, /settings/advanced) require exact match
+	// Specific subroutes (/settings/features, /settings/advanced) require exact match
 	const settingsGeneric = '/settings' === tgt || '/settings/general' === tgt;
 	if ( settingsGeneric && cur.startsWith( '/settings' ) ) {
 		return true;
@@ -156,9 +156,9 @@ const FEATURE_ENTRY_STEP_IDS = new Set([
 	'prompt_reporting_tab',
 	'reporting_new_report',
 	'reporting_customization_branding',
-	'prompt_settings_tab',
-	'settings_goal_setup',
-	'prompt_general_settings'
+	'prompt_goals_tab',
+	'goals_new_button',
+	'prompt_settings_tab'
 ]);
 
 const cleanUpOpenFeatureOverlays = () => {
@@ -441,17 +441,6 @@ const TourGuide: React.FC = () => {
 			if ( ! recipients || 0 === recipients.length ) {
 				useWizardStore.getState().setRecipients([ 'team@example.com' ]);
 			}
-		}
-	}, [ tourActive, currentStep?.id ]);
-
-	// Auto-open goal details when entering any settings_goals_* step
-	useEffect( () => {
-		const stepId = currentStep?.id;
-		if ( tourActive && 'string' === typeof stepId && stepId.startsWith( 'settings_goals_' ) && 'settings_goals_add' !== stepId ) {
-			const detailsElements = document.querySelectorAll<HTMLDetailsElement>( '[data-tour="goal-item"] details, [data-tour="goal-details"]' );
-			detailsElements.forEach( ( el ) => {
-				el.open = true;
-			});
 		}
 	}, [ tourActive, currentStep?.id ]);
 

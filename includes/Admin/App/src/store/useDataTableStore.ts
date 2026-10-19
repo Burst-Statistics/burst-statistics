@@ -1,5 +1,13 @@
 import {create} from 'zustand';
 import {persist} from 'zustand/middleware';
+import {resolveTableColumns} from '@/utils/resolveTableColumns';
+
+/**
+ * The column option fields the column resolver reads.
+ */
+interface ColumnOption {
+    addWhenAvailable?: boolean;
+}
 
 interface SortConfig {
     fieldId: number | string;
@@ -9,6 +17,10 @@ interface SortConfig {
 interface DataTableState {
     selectedConfigs: Record<string, string>;
     columns: Record<string, string[]>;
+
+    // The columns that existed when each selection was saved, so a column that
+    // appears later can be told apart from one the user switched off.
+    knownColumns: Record<string, string[]>;
 
     sortConfigs: Record<string, SortConfig>;
 
@@ -20,8 +32,8 @@ interface DataTableState {
 
     getSelectedConfig: ( id: string, defaultValue: string ) => string;
     setSelectedConfig: ( id: string, value: string ) => void;
-    getColumns: ( configKey: string, defaultColumns: string[]) => string[];
-    setColumns: ( configKey: string, columns: string[]) => void;
+    getColumns: ( configKey: string, defaultColumns: string[], columnsOptions: Record<string, ColumnOption> ) => string[];
+    setColumns: ( configKey: string, columns: string[], availableColumns: string[]) => void;
 
     getSortConfig: ( configKey: string, defaultSort?: SortConfig ) => SortConfig | undefined;
     setSortConfig: ( configKey: string, sortConfig: SortConfig ) => void;
@@ -39,6 +51,7 @@ export const useDataTableStore = create<DataTableState>()(
         ( set, get ) => ({
             selectedConfigs: {},
             columns: {},
+            knownColumns: {},
             sortConfigs: {},
             parameterVariations: {},
             rowsPerPage: {},
@@ -56,15 +69,25 @@ export const useDataTableStore = create<DataTableState>()(
                 }) );
             },
 
-            getColumns: ( configKey: string, defaultColumns: string[]) => {
-                return get().columns[configKey] || defaultColumns;
+            getColumns: ( configKey: string, defaultColumns: string[], columnsOptions: Record<string, ColumnOption> ) => {
+                return resolveTableColumns({
+                    saved: get().columns[configKey],
+                    known: get().knownColumns[configKey],
+                    defaults: defaultColumns,
+                    available: Object.keys( columnsOptions ),
+                    addWhenAvailable: Object.keys( columnsOptions ).filter( ( column ) => columnsOptions[column]?.addWhenAvailable )
+                });
             },
 
-            setColumns: ( configKey: string, columns: string[]) => {
+            setColumns: ( configKey: string, columns: string[], availableColumns: string[]) => {
                 set( ( state ) => ({
                     columns: {
                         ...state.columns,
                         [configKey]: columns
+                    },
+                    knownColumns: {
+                        ...state.knownColumns,
+                        [configKey]: availableColumns
                     }
                 }) );
             },
@@ -121,6 +144,7 @@ export const useDataTableStore = create<DataTableState>()(
             partialize: ( state ) => ({
                 selectedConfigs: state.selectedConfigs,
                 columns: state.columns,
+                knownColumns: state.knownColumns,
                 sortConfigs: state.sortConfigs,
                 parameterVariations: state.parameterVariations,
                 rowsPerPage: state.rowsPerPage

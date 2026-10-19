@@ -253,6 +253,30 @@ return [
 		],
 	],
 	// Contact form plugins.
+	'brevo'                       => [
+		'constant_or_function' => 'SIB_Manager',
+		'label'                => 'Brevo',
+		'category'             => 'forms',
+		'status'               => 'tracks_form_submissions',
+		'wporg_slug'           => 'mailin',
+		'php_scripts'          => [
+			'admin_scripts'    => [],
+			'frontend_scripts' => [ 'frontend.php' ],
+		],
+		'goals'                =>
+			[
+				[
+					'id'   => 'brevo_form_submit',
+					'type' => 'hook',
+					'hook' => 'brevo_form_submit',
+				],
+				[
+					'id'       => 'brevo_form_submit_click',
+					'type'     => 'clicks',
+					'selector' => '.sib-default-btn',
+				],
+			],
+	],
 	'admin-site-enhancements'     => [
 		// Contact Form module class, only loaded when the module is enabled.
 		// ASENHA_VERSION is defined by both ASE Free and ASE Pro, so it cannot

@@ -13,7 +13,7 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 		 * Constructor
 		 */
 		public function init(): void {
-			add_action( 'init', [ $this, 'add_dynamic_hooks' ] );
+			add_action( 'init', [ $this, 'add_dynamic_hooks' ], 5 );
 		}
 
 		/**
@@ -21,8 +21,9 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 		 */
 		public function add_dynamic_hooks(): void {
 			$goals = \Burst\burst_loader()->frontend->tracking->get_active_goals( [ 'hook' ] );
-			foreach ( $goals as $goal ) {
-				$hook = (string) $goal['hook'];
+			// One listener per hook: handle_hook() records every goal on that hook.
+			$hooks = array_unique( array_map( static fn ( array $goal ): string => (string) $goal['hook'], $goals ) );
+			foreach ( $hooks as $hook ) {
 				if ( strlen( $hook ) > 0 ) {
 					add_action(
 						$hook,
@@ -35,20 +36,23 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 		}
 
 		/**
-		 * Get the goal by hook name
+		 * Get the ids of all active goals that listen to a hook.
+		 *
+		 * @param string $find_hook_name The hook name.
+		 * @return array<int> The goal ids, empty when no goal uses the hook.
 		 */
-		public function get_goal_by_hook_name( string $find_hook_name ): int {
+		public function get_goal_ids_by_hook_name( string $find_hook_name ): array {
 			$goals = \Burst\burst_loader()->frontend->tracking->get_active_goals( [ 'hook' ] );
 
+			$goal_ids = [];
 			foreach ( $goals as $goal ) {
 				$goal = new Goal( $goal['ID'] );
-				$hook = $goal->hook;
-				if ( $hook === $find_hook_name ) {
-					return $goal->id;
+				if ( $goal->hook === $find_hook_name ) {
+					$goal_ids[] = $goal->id;
 				}
 			}
 
-			return 0;
+			return $goal_ids;
 		}
 
 		/**
@@ -70,25 +74,28 @@ if ( ! class_exists( 'goals_tracker' ) ) {
 				if ( ! $statistic_id ) {
 					return;
 				}
-				$page_url   = $statistic['page_url'] ?? '';
-				$parameters = $statistic['parameters'] ?? '';
-				$page_url  .= $parameters;
-				// get the goal by $hook_name.
-				$goal_id = $this->get_goal_by_hook_name( $hook_name );
-				if ( $goal_id === 0 ) {
-					return;
-				}
-				$goal = new Goal( $goal_id );
-				// if the goal should be tracked on a specific page only, check if the current page is the page to track.
-				if ( $goal->page_or_website === 'page' ) {
-					// this is a relative url.
-					$tracking_page = $goal->specific_page;
-					if ( ! empty( $page_url ) && strpos( $page_url, $tracking_page ) === false ) {
-						return;
+				$page_url           = $statistic['page_url'] ?? '';
+				$parameters         = $statistic['parameters'] ?? '';
+				$page_url          .= $parameters;
+				$completed_goal_ids = [];
+				foreach ( $this->get_goal_ids_by_hook_name( $hook_name ) as $goal_id ) {
+					$goal = new Goal( $goal_id );
+					// if the goal should be tracked on a specific page only, check if the current page is the page to track.
+					if ( $goal->page_or_website === 'page' ) {
+						// this is a relative url.
+						$tracking_page = $goal->specific_page;
+						if ( ! empty( $page_url ) && strpos( $page_url, $tracking_page ) === false ) {
+							continue;
+						}
 					}
+					$completed_goal_ids[] = $goal_id;
 				}
 
-				\Burst\burst_loader()->frontend->tracking->create_goal_statistic( $statistic_id, [ $goal_id ] );
+				if ( count( $completed_goal_ids ) === 0 ) {
+					return;
+				}
+
+				\Burst\burst_loader()->frontend->tracking->create_goal_statistic( $statistic_id, $completed_goal_ids );
 			} else {
 				self::error_log( 'No burst_uid found in handle_hook' );
 			}

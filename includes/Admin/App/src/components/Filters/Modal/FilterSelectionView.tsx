@@ -6,7 +6,7 @@ import { useFilters } from '@/hooks/useFilters';
 import Icon from '@/utils/Icon';
 import useSettingsData from '@/hooks/useSettingsData';
 import { useLocation } from '@tanstack/react-router';
-import { type FilterConfig } from '@/config/filterConfig';
+import { type FilterConfig, isSalesFilterAvailable } from '@/config/filterConfig';
 import { isPerPageRoute } from '@/utils/routeUtils';
 
 interface FilterSelectionViewProps {
@@ -44,6 +44,12 @@ const FilterSelectionView: React.FC<FilterSelectionViewProps> = ({
 		if ( ! filterByDomain ) {
 			filtered = Object.fromEntries(
 				Object.entries( filtered ).filter( ([ key ]) => 'host' !== key )
+			);
+		}
+
+		if ( ! isSalesFilterAvailable() ) {
+			filtered = Object.fromEntries(
+				Object.entries( filtered ).filter( ([ key ]) => 'sales' !== key )
 			);
 		}
 

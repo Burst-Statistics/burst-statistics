@@ -111,7 +111,10 @@ class Archive {
 	}
 
 	/**
-	 * Delete data from the statistics table
+	 * Delete data from the statistics table in batches.
+	 *
+	 * Deletes at most one batch of the oldest overdue month per run and
+	 * schedules the next iteration while overdue data remains.
 	 */
 	private function delete_data(): void {
 		if ( ! $this->user_can_manage() ) {
@@ -123,22 +126,152 @@ class Archive {
 
 		set_transient( 'burst_running_delete', 'true', 30 );
 
-		$data = $this->get_data_args();
+		try {
+			$data           = $this->get_data_args();
+			$unix_start     = (int) $data['unix_start'];
+			$unix_end       = (int) $data['unix_end'];
+			$rows_per_batch = (int) $data['rows_per_batch'];
 
+			// An empty table yields a 1970 month start, an in-retention month an end before its start.
+			if ( $unix_start <= 0 || $unix_start >= $unix_end || $rows_per_batch <= 0 ) {
+				return;
+			}
+
+			global $wpdb;
+			$hits = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT ID, session_id
+					FROM {$wpdb->prefix}burst_statistics
+					WHERE time >= %d AND time < %d
+					LIMIT %d",
+					$unix_start,
+					$unix_end,
+					$rows_per_batch
+				)
+			);
+			$hits = is_array( $hits ) ? $hits : [];
+			$this->delete_hits( $hits );
+
+			// Events are deleted in their own batches: a hit can carry many of
+			// them, so a month's events can outlast its hits, and an event-only
+			// month has no hits at all.
+			$deleted_events = $this->delete_events( $unix_start, $unix_end, $rows_per_batch );
+
+			// A short batch of both means this was the last one for the month.
+			if ( count( $hits ) >= $rows_per_batch || $deleted_events >= $rows_per_batch ) {
+				$this->schedule_archive_iteration();
+				return;
+			}
+
+			$this->set_month_status( (int) $data['month'], (int) $data['year'], 'deleted' );
+			$this->purge_visitor_bitmaps( $unix_start, $unix_end );
+			$this->delete_sessions_before_oldest_hit( $rows_per_batch );
+			$this->estimate_table_size();
+
+			// The next run returns at once when no further month is overdue.
+			$this->schedule_archive_iteration();
+		} finally {
+			delete_transient( 'burst_running_delete' );
+		}
+	}
+
+	/**
+	 * Delete one batch of the custom events recorded in a month, firing
+	 * burst_before_delete_events first so Pro can remove their properties while
+	 * the events can still be found by this time range.
+	 *
+	 * @param int $unix_start     Start of the month, inclusive.
+	 * @param int $unix_end       End of the month, exclusive.
+	 * @param int $rows_per_batch Most events deleted in one call.
+	 * @return int Number of events deleted; fewer than $rows_per_batch means the month is exhausted.
+	 */
+	private function delete_events( int $unix_start, int $unix_end, int $rows_per_batch ): int {
 		global $wpdb;
-		// get rows from database.
-		$result = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}burst_statistics where time<= %d and time>=%d", (int) $data['unix_end'], (int) $data['unix_start'] ) );
-		// delete.
-		if ( is_array( $result ) && count( $result ) > 0 ) {
-			$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}burst_statistics where time<= %d and time>=%d", (int) $data['unix_end'], (int) $data['unix_start'] ) );
+		$event_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->prefix}burst_events
+				WHERE time >= %d AND time < %d
+				ORDER BY time
+				LIMIT %d",
+				$unix_start,
+				$unix_end,
+				$rows_per_batch
+			)
+		);
+		if ( empty( $event_ids ) ) {
+			return 0;
 		}
 
-		// Delete orphaned data from the sessions table.
-		$wpdb->query( "DELETE s FROM {$wpdb->prefix}burst_sessions s LEFT JOIN {$wpdb->prefix}burst_statistics st ON s.id = st.session_id WHERE st.session_id IS NULL" );
+		do_action( 'burst_before_delete_events', $unix_start, $unix_end );
 
-		$this->set_month_status( (int) $data['month'], (int) $data['year'], 'deleted' );
-		$this->estimate_table_size();
-		delete_transient( 'burst_running_delete' );
+		$placeholders = implode( ',', array_fill( 0, count( $event_ids ), '%d' ) );
+		$sql          = "DELETE FROM {$wpdb->prefix}burst_events WHERE ID IN ($placeholders)";
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- placeholders are %d only.
+		$wpdb->query( $wpdb->prepare( $sql, ...$event_ids ) );
+
+		return count( $event_ids );
+	}
+
+	/**
+	 * Delete sessions older than the oldest session that still has a hit.
+	 *
+	 * Catches orphans the per-batch cleanup never sees, such as sessions left by
+	 * earlier runs or other deletion paths. Session IDs grow over time, so an ID
+	 * below the lowest referenced one can have no hits; the delete walks the
+	 * primary key instead of joining the whole sessions table.
+	 *
+	 * @param int $limit Maximum number of sessions to delete in this run.
+	 */
+	protected function delete_sessions_before_oldest_hit( int $limit ): void {
+		global $wpdb;
+		$lowest_session_id = (int) $wpdb->get_var( "SELECT MIN(session_id) FROM {$wpdb->prefix}burst_statistics WHERE session_id > 0" );
+		// Without any referenced session there is no safe lower bound.
+		if ( $lowest_session_id <= 0 ) {
+			return;
+		}
+
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->prefix}burst_sessions WHERE ID < %d LIMIT %d",
+				$lowest_session_id,
+				$limit
+			)
+		);
+	}
+
+	/**
+	 * Drop the visitor bitmaps of a purged period.
+	 *
+	 * Their raw data is gone, so a bitmap-served visitors count would contradict
+	 * every other metric. Absent site rows make the reader fall back for ranges
+	 * touching this period.
+	 *
+	 * @param int $unix_start First second of the period.
+	 * @param int $unix_end   First second after the period.
+	 */
+	protected function purge_visitor_bitmaps( int $unix_start, int $unix_end ): void {
+		if ( ! $this->table_exists( 'burst_visitor_bitmaps' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->prefix}burst_visitor_bitmaps WHERE day BETWEEN %s AND %s",
+				wp_date( 'Y-m-d', $unix_start ),
+				wp_date( 'Y-m-d', $unix_end - 1 )
+			)
+		);
+		update_option( 'burst_visitor_bitmaps_generation', (string) time(), false );
+	}
+
+	/**
+	 * Schedule the next archive iteration, unless one is already queued.
+	 */
+	protected function schedule_archive_iteration(): void {
+		if ( ! wp_next_scheduled( 'burst_archive_iteration' ) ) {
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'burst_archive_iteration' );
+		}
 	}
 
 	/**
@@ -151,15 +284,26 @@ class Archive {
 	}
 
 	/**
-	 * Get the oldest available timestamp from the database
+	 * Get the oldest statistics or event timestamp so neither table is skipped.
+	 *
+	 * @return int Oldest timestamp, or zero when both tables are empty.
 	 */
 	protected function get_oldest_timestamp(): int {
 		global $wpdb;
-		return (int) $wpdb->get_var( "SELECT MIN(time) FROM {$wpdb->prefix}burst_statistics" );
+		return (int) $wpdb->get_var(
+			"SELECT MIN(oldest_time) FROM (
+				SELECT MIN(time) AS oldest_time FROM {$wpdb->prefix}burst_statistics
+				UNION ALL
+				SELECT MIN(time) AS oldest_time FROM {$wpdb->prefix}burst_events
+			) AS oldest_times"
+		);
 	}
 
 	/**
-	 * Based on the current month, add x months, and return the timestamp for the first second of that month
+	 * Based on the current month, add x months, and return the timestamp for the first second (00:00:00) of that month.
+	 *
+	 * Callers query months as half-open ranges (time >= start AND time < end), so no
+	 * second falls between two months or belongs to both.
 	 */
 	protected function get_timestamp_for_month( int $current_timestamp, int $add_months = 0 ): int {
 		// Current year and month (YYYY-MM).
@@ -172,7 +316,7 @@ class Archive {
 		$add_months_string = strpos( (string) $add_months, '-' ) === 0 ? (string) $add_months : "+$add_months";
 		$next_month->modify( "$add_months_string months" );
 		// Set the time to the first second of the next month.
-		$next_month->setTime( 0, 0, 1 );
+		$next_month->setTime( 0, 0, 0 );
 
 		// Get the Unix timestamp.
 		return $next_month->getTimestamp();

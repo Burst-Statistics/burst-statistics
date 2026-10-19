@@ -33,7 +33,7 @@ class Upgrade {
 			return;
 		}
 
-		$prev_version = get_option( 'burst-current-version', false );
+		$prev_version = get_option( 'burst-current-version', null );
 		$new_version  = BURST_VERSION;
 
 		if ( $prev_version === $new_version ) {
@@ -52,7 +52,7 @@ class Upgrade {
 		// confirms everything is done and clears the flag itself. A fresh
 		// install has no earlier version and nothing pending; arm_db_upgrade()
 		// sets the flag itself should activation arm a task.
-		if ( $prev_version ) {
+		if ( null !== $prev_version ) {
 			update_option( 'burst_has_db_upgrade', true );
 		}
 
@@ -61,7 +61,7 @@ class Upgrade {
 
 		// no upgrade.
 		// add burst capabilities.
-		if ( $prev_version
+		if ( null !== $prev_version
 			&& version_compare( $prev_version, '1.1.1', '<' )
 		) {
 			Capability::add_capability( 'view', [ 'administrator', 'editor' ] );
@@ -71,17 +71,17 @@ class Upgrade {
 		// Version 1.3.5.
 		// - Upgrade to new bounce table.
 		// - Upgrade to remove `event` and `action` columns from `burst_statistics` table.
-		if ( $prev_version
+		if ( null !== $prev_version
 			&& version_compare( $prev_version, '1.4.2.1', '<' ) ) {
 			$this->arm_db_upgrade( 'bounces' );
 			$this->arm_db_upgrade( 'goals_remove_columns' );
 		}
-		if ( $prev_version
+		if ( null !== $prev_version
 			&& version_compare( $prev_version, '1.5.2', '<' ) ) {
 			$this->arm_db_upgrade( 'goals_set_conversion_metric' );
 		}
 
-		if ( $prev_version
+		if ( null !== $prev_version
 			&& version_compare( $prev_version, '1.5.3', '<' ) ) {
 			$this->arm_db_upgrade( 'strip_domain_names_from_entire_page_url' );
 			$this->arm_db_upgrade( 'empty_referrer_when_current_domain' );
@@ -93,7 +93,7 @@ class Upgrade {
 			}
 		}
 
-		if ( $prev_version
+		if ( null !== $prev_version
 			&& version_compare( $prev_version, '1.6.1', '<' ) ) {
 			// add the admin to the email reports mailing list.
 			$mailinglist = burst_get_option( 'email_reports_mailinglist' );
@@ -109,8 +109,8 @@ class Upgrade {
 		}
 
 		// check if column 'device_id' exists in the table 'burst_statistics'.
-		$is_version_upgrade      = $prev_version && version_compare( $prev_version, '1.7.0', '<' );
-		$lookup_table_incomplete = version_compare( $prev_version, '1.7.1', '=' ) && ! $this->column_exists( 'burst_statistics', 'device_id' );
+		$is_version_upgrade      = null !== $prev_version && version_compare( $prev_version, '1.7.0', '<' );
+		$lookup_table_incomplete = null !== $prev_version && version_compare( $prev_version, '1.7.1', '=' ) && ! $this->column_exists( 'burst_statistics', 'device_id' );
 		if ( $lookup_table_incomplete || $is_version_upgrade ) {
 			update_option( 'burst_last_cron_hit', time(), false );
 			// this option is used in the tracking, so should autoload until completed.
@@ -140,7 +140,7 @@ class Upgrade {
 			}
 		}
 
-		if ( $prev_version
+		if ( null !== $prev_version
 			&& version_compare( $prev_version, '1.7.3', '<' ) ) {
 			wp_clear_scheduled_hook( 'burst_every_5_minutes' );
 			$this->arm_db_upgrade( 'rename_entire_page_url_column' );
@@ -149,26 +149,26 @@ class Upgrade {
 			wp_schedule_single_event( time() + 300, 'burst_upgrade_iteration' );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '2.0.0', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '2.0.0', '<' ) ) {
 			add_action( 'plugins_loaded', [ $this, 'upgrade_goals' ], 30 );
 		}
 
 		// upgrade missing session_ids.
 		// in the stats table, find the oldest session_id = 1 that is preceded with a higher sesssion_id.
-		if ( $prev_version && version_compare( $prev_version, '2.0.4', '<' ) && ! defined( 'BURST_FREE' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '2.0.4', '<' ) && ! defined( 'BURST_FREE' ) ) {
 			update_option( 'burst_fix_incorrect_bounces', true, false );
 			$this->arm_db_upgrade( 'fix_missing_session_ids' );
 			$this->arm_db_upgrade( 'clean_orphaned_session_ids' );
 		}
 
 		// ensure the onboarding doesn't start again if users already had the plugin activated.
-		if ( $prev_version && version_compare( $prev_version, '2.1.0', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '2.1.0', '<' ) ) {
 			if ( ! defined( 'BURST_FREE' ) ) {
 				update_option( 'burst_activation_time_pro', time(), false );
 			}
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '2.2.3', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '2.2.3', '<' ) ) {
 			$mu_plugin = trailingslashit( WPMU_PLUGIN_DIR ) . 'burst_rest_api_optimizer.php';
 			if ( file_exists( $mu_plugin ) ) {
 				wp_delete_file( $mu_plugin );
@@ -189,17 +189,17 @@ class Upgrade {
 			}
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '2.2.6', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '2.2.6', '<' ) ) {
 			$this->arm_db_upgrade( 'add_page_ids' );
 			delete_post_meta_by_key( 'burst_total_pageviews_count' );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.0.0', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.0.0', '<' ) ) {
 			\Burst\burst_loader()->admin->tasks->add_task( 'ecommerce_integration' );
 			burst_reinstall_rest_api_optimizer();
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.0.1', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.0.1', '<' ) ) {
 			update_option( 'burst_is_multi_domain', false );
 			$plugin_activated_time = get_option( 'burst_activation_time', 0 );
 			$cutoff_date           = strtotime( '2025-11-24 00:00:00' );
@@ -212,7 +212,7 @@ class Upgrade {
 		}
 
         // phpcs:disable
-        if ( $prev_version && version_compare( $prev_version, '3.1.0', '<' ) ) {
+        if ( null !== $prev_version && version_compare( $prev_version, '3.1.0', '<' ) ) {
             global $wpdb;
             $sql = "DROP TABLE IF EXISTS {$wpdb->prefix}burst_summary";
             $wpdb->query( $sql );
@@ -223,7 +223,7 @@ class Upgrade {
         }
 
         //phpcs:enable
-		if ( $prev_version && version_compare( $prev_version, '3.1.0.4', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.1.0.4', '<' ) ) {
 			$plugin_activated_time = get_option( 'burst_activation_time', 0 );
 			$cutoff_date           = strtotime( '2025-11-24 00:00:00' );
 			if ( $plugin_activated_time > 0 && $plugin_activated_time < $cutoff_date ) {
@@ -236,12 +236,12 @@ class Upgrade {
 			}
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.1.1', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.1.1', '<' ) ) {
 			// reinstall with permalink for woocommerce exclusion.
 			burst_reinstall_rest_api_optimizer();
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.1.4', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.1.4', '<' ) ) {
 			\Burst\burst_loader()->admin->tasks->add_task( 'filters_in_url' );
 			$this->arm_db_upgrade( 'move_referrers_to_sessions' );
 			delete_option( 'burst_pageviews_to_update' );
@@ -249,7 +249,7 @@ class Upgrade {
 			\Burst\burst_loader()->admin->app->weekly_clear_referrers_table();
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.2.0', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.2.0', '<' ) ) {
 			burst_reinstall_rest_api_optimizer();
 			$installed_by = get_option( 'teamupdraft_installation_source_burst-statistics' );
 			if ( ! empty( $installed_by ) ) {
@@ -259,7 +259,7 @@ class Upgrade {
 			\Burst\burst_loader()->admin->tasks->add_task( 'join-discord' );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.2.1', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.2.1', '<' ) ) {
 			if ( ! $this->get_option_bool( 'anonymous_usage_data' ) ) {
 				\Burst\burst_loader()->admin->tasks->add_task( 'opt-in-sharing' );
 			}
@@ -270,11 +270,11 @@ class Upgrade {
 			}
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.3.0-beta1', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.3.0-beta1', '<' ) ) {
 			$this->arm_db_upgrade( 'move_columns_to_sessions' );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.4.0', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.4.0', '<' ) ) {
 			// Truncate query_stats table because SQL normalization changed (timestamps are now replaced with placeholders).
 			if ( $this->table_exists( 'burst_query_stats' ) ) {
 				global $wpdb;
@@ -285,7 +285,7 @@ class Upgrade {
 			burst_reinstall_rest_api_optimizer();
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.4.2', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.4.2', '<' ) ) {
 			global $wpdb;
 			$oldest_timestamp = (int) $wpdb->get_var( "SELECT MIN(time) FROM {$wpdb->prefix}burst_statistics" );
 			$activation_time  = (int) get_option( 'burst_activation_time', 0 );
@@ -308,12 +308,12 @@ class Upgrade {
 			flush_rewrite_rules();
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.4.2.1', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.4.2.1', '<' ) ) {
 			// No-op code to pass the unit test when no upgrade required.
 			$prev_version .= '';
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.4.3', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.4.3', '<' ) ) {
 			// Drop burst_plugin_path and store only the validated
 			// plugin directory slug instead. The MU optimizer now builds the
 			// integration path from WP_PLUGIN_DIR + slug.
@@ -327,16 +327,16 @@ class Upgrade {
 			delete_transient( 'burst_use_fallback_licensing_domain' );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.5.0', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.5.0', '<' ) ) {
 			burst_reinstall_rest_api_optimizer();
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.5.1', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.5.1', '<' ) ) {
 			// Convert oversized/string report columns to fitted/native types.
 			$this->arm_db_upgrade( 'report_table_types' );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.6.0', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.6.0', '<' ) ) {
 			// Remove historic spam/invalid browsers left over from before the
 			// user agent allowlist was tightened.
 			$this->arm_db_upgrade( 'clean_spam_browsers' );
@@ -352,7 +352,7 @@ class Upgrade {
 			$this->update_option( 'country_geo_database_available_time', time() );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.6.1', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.6.1', '<' ) ) {
 			// Reinstall the optimizer so fields/get keeps other plugins loaded,
 			// which the integrations settings page needs for plugin detection.
 			burst_reinstall_rest_api_optimizer();
@@ -375,7 +375,7 @@ class Upgrade {
 			\Burst\burst_loader()->admin->tasks->add_task( 'search_console_integration' );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.6.2', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.6.2', '<' ) ) {
 			// Enable the low-traffic plugin update suggestions for existing
 			// installs. Free feature; fresh installs get it via setup_defaults().
 			$this->update_option( 'plugin_update_suggestions', true );
@@ -384,15 +384,15 @@ class Upgrade {
 			wp_schedule_single_event( time() + 10 * MINUTE_IN_SECONDS, 'burst_calculate_low_traffic_time' );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.6.3', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.6.3', '<' ) ) {
 			$this->mark_noop_upgrade( '3.6.3', $prev_version );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.6.3.1', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.6.3.1', '<' ) ) {
 			$this->mark_noop_upgrade( '3.6.3.1', $prev_version );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.7.0', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.7.0', '<' ) ) {
 			if ( ! State_Store::migrate_legacy_options() ) {
 				return;
 			}
@@ -401,7 +401,7 @@ class Upgrade {
 			// one task at a time in registry order: seed the dictionary, backfill
 			// statistics.uid_id, backfill sessions (start_time + uid_id), then
 			// finalize (build the uid_id indexes online — the legacy varchar uid
-			// column is left untouched until 3.7.1 drops it — and convert the
+			// column is left untouched until 3.7.3 drops it — and convert the
 			// other visitor-keyed tables to uid_id). From the table init below on,
 			// the tracker writes uid_id only (see tracking_schema_current());
 			// the read paths switch to uid_id as well, so historic rows count
@@ -429,23 +429,17 @@ class Upgrade {
 
 			// first/last_visited_url on sessions were write-only (entry/exit
 			// pages come from burst_statistics); tracking no longer writes
-			// them. Dropping the columns is deliberately deferred: the
-			// previous version writes them on every session create/update, so
-			// keeping them lets a rollback to that version run without
-			// database errors.
-			// @todo 3.7.1: arm burst_db_upgrade_drop_session_visited_urls here
-			// (in the 3.7.1 upgrade block) and re-register the task under the
-			// 3.7.1 group in DB_Upgrade::get_db_upgrades().
+			// them. The columns are dropped in 3.7.3, see below.
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.7.0.1', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.7.0.1', '<' ) ) {
 			// The page_id repair of this release is Pro-only (see
 			// Pro::upgrade_premium()): free never shipped 3.7.0, and the 3.7.0
 			// pipeline above now seeds and backfills the clean key space.
 			$this->mark_noop_upgrade( '3.7.0.1', $prev_version );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.7.1', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.7.1', '<' ) ) {
 			// Posts first seen after the 3.7.0 seed had no dictionary row
 			// (the tracker registered rows for page_id 0 urls only) and
 			// displayed as an empty url in the page tables when the read path
@@ -474,7 +468,7 @@ class Upgrade {
 			\Burst\burst_loader()->admin->tasks->dismiss_task_permanently( 'import_statistics_data' );
 		}
 
-		if ( $prev_version && version_compare( $prev_version, '3.7.2', '<' ) ) {
+		if ( null !== $prev_version && version_compare( $prev_version, '3.7.2', '<' ) ) {
 			// The MaxMind database moved from the predictable
 			// uploads/burst/maxmind/ directory to a random-token directory so
 			// it cannot be downloaded from a guessable url. Move an existing
@@ -486,6 +480,24 @@ class Upgrade {
 			// (password, email) through the core users/me endpoint, now blocked
 			// by Viewer_Lockdown. Reset the account as a precaution.
 			( new \Burst\Admin\Share\Share() )->auth->reset_viewer_account();
+		}
+
+		if ( null !== $prev_version && version_compare( $prev_version, '3.7.3', '<' ) ) {
+			// Drop what 3.7.0 kept only so a rollback to 3.6.x would run
+			// without database errors: the legacy uid columns, the unused
+			// session entry/exit url columns and the known_uids table. The
+			// columns are NOT NULL without a default and no longer written,
+			// so every tracking insert raised a MySQL 1364 warning for them.
+			// The task waits behind the uid pipeline in the dispatcher.
+			$this->arm_db_upgrade( 'drop_legacy_columns' );
+
+			// Settings › Notifications: the diagnostic email switch moves into the
+			// alert grid, alert emails get their own recipients list (starting
+			// with the admin email) and the default report channel setting is
+			// replaced by the burst_default_report_channels filter. Email for
+			// traffic spikes and drops stays off, so an update does not start
+			// sending emails nobody asked for.
+			( new \Burst\Admin\Notifications\Alert_Preferences() )->migrate_legacy_settings();
 		}
 
 		// bump-version.sh inserts new release versions above this line — do not remove.

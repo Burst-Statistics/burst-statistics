@@ -36,6 +36,7 @@ export async function getReportsData(): Promise<Report[]> {
 			name: String( r.name ),
 			format: r.format,
 			enabled: Boolean( r.enabled ),
+			channels: r.channels,
 			lastEdit: Number( r.lastEdit ),
 			content: contentKeys,
 			recipients: r.recipients,
@@ -52,7 +53,8 @@ export async function getReportsData(): Promise<Report[]> {
 				'monthly' === frequency && hasWeekOfMonth ?
 					( r.weekOfMonth as WeekOfMonthType ) :
 					undefined,
-			sendTime: r.sendTime
+			sendTime: r.sendTime,
+			ai_summary: r.ai_summary
 		};
 	});
 }

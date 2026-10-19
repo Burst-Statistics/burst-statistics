@@ -207,7 +207,7 @@ const ExportDataField = () => {
 						filename: ''
 					});
 					toast.success( __( 'Burst data export completed successfully!', 'burst-statistics' ) );
-					await queryClient.invalidateQueries([ 'burst_export_status' ]);
+					await queryClient.invalidateQueries({ queryKey: [ 'burst_export_status' ] });
 					setTimeout( () => {
 						archivesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 					}, 200 );
@@ -287,7 +287,7 @@ const ExportDataField = () => {
 		if ( activeExportId ) {
 			try {
 				await doAction( 'export_pause', { export_id: activeExportId });
-				queryClient.invalidateQueries([ 'burst_export_status' ]);
+				queryClient.invalidateQueries({ queryKey: [ 'burst_export_status' ] });
 			} catch ( error ) { // eslint-disable-line @typescript-eslint/no-unused-vars
 
 				// Non-fatal.
@@ -337,7 +337,7 @@ const ExportDataField = () => {
 			}
 		}
 		toast.info( __( 'Export cancelled.', 'burst-statistics' ) );
-		queryClient.invalidateQueries([ 'burst_export_status' ]);
+		queryClient.invalidateQueries({ queryKey: [ 'burst_export_status' ] });
 	};
 
 	// 7. Save Schedule Mutation.
@@ -354,7 +354,7 @@ const ExportDataField = () => {
 			if ( data?.next_scheduled ) {
 				setNextScheduled( data.next_scheduled );
 			}
-			queryClient.invalidateQueries([ 'burst_export_status' ]);
+			queryClient.invalidateQueries({ queryKey: [ 'burst_export_status' ] });
 		},
 		onError: ( error ) => {
 			toast.error( error.message );
@@ -394,7 +394,7 @@ const ExportDataField = () => {
 		},
 		onSuccess: () => {
 			toast.success( __( 'Export archive deleted.', 'burst-statistics' ) );
-			queryClient.invalidateQueries([ 'burst_export_status' ]);
+			queryClient.invalidateQueries({ queryKey: [ 'burst_export_status' ] });
 		},
 		onError: ( error ) => {
 			toast.error( error.message );

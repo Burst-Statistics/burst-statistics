@@ -1,9 +1,6 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useDate } from '@/store/useDateStore';
-import { getDatatableData } from '@/utils/api';
 import useLicenseData from '@/hooks/useLicenseData';
-import useFilters from '@/hooks/useFilters';
+import { useDatatableData } from '@/hooks/useDatatableData';
 import { isTourActive } from '@/store/useTourStore';
 
 /**
@@ -84,30 +81,11 @@ type UseFormsDataReturn = {
  * @return {UseFormsDataReturn} The forms dataset and request state.
  */
 export function useFormsData(): UseFormsDataReturn {
-	const { startDate, endDate, range } = useDate( ( state ) => state );
 	const { isLicenseValid } = useLicenseData();
-	const { getActiveFilters } = useFilters();
-	const filters = getActiveFilters();
 	const tourActive = isTourActive();
-
-	const { data: apiData, isLoading, error } = useQuery({
-		queryKey: [ 'forms', startDate, endDate, range, filters ],
-		enabled: tourActive || isLicenseValid,
-		queryFn: async() => {
-			const response = await getDatatableData(
-				'forms',
-				false,
-				startDate,
-				endDate,
-				range,
-				{ filters }
-			);
-
-			// getDatatableData returns the full REST response; the datatable data is in response.data.
-			const rows: ApiRow[] = response?.data?.data ?? [];
-			return rows;
-		},
-		placeholderData: []
+	const { data: apiData, isLoading, error } = useDatatableData<ApiRow>({
+		id: 'forms',
+		enabled: tourActive || isLicenseValid
 	});
 
 	const data = useMemo( () => {
@@ -133,6 +111,6 @@ export function useFormsData(): UseFormsDataReturn {
 	return {
 		data,
 		isLoading,
-		error: ( error as Error | null )
+		error
 	};
 }
