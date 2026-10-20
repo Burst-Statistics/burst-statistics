@@ -2662,6 +2662,15 @@ class DB_Upgrade {
 			return;
 		}
 
+		// The current statistics schema has no referrer column, so a table
+		// created from it (e.g. after a site move) leaves nothing to migrate.
+		// Waiting would park the dispatcher on this task forever.
+		if ( ! $this->column_exists( 'burst_statistics', 'referrer' ) ) {
+			delete_option( 'burst_db_upgrade_move_referrers_to_sessions' );
+			delete_transient( 'burst_progress_move_referrers_to_sessions' );
+			return;
+		}
+
 		$batch = $this->batch;
 		$start = microtime( true );
 
