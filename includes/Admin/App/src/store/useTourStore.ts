@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { QueryClient } from '@tanstack/react-query';
 const lazyTourReset = () => import( '@/components/Tour/tourReset' );
 import {
 	getSectionStartingStepIndex,
@@ -129,18 +130,65 @@ const removeTourFromUrl = () => {
 	}
 };
 
-export const invalidateAllBurstQueries = () => {
-	if ( 'undefined' !== typeof window ) {
-		try {
-			const qc = ( window as unknown as { __burst_query_client?: { invalidateQueries: () => void } }).__burst_query_client;
-			if ( qc ) {
-				qc.invalidateQueries();
-			}
-		} catch {
-
-			// ignore
-		}
+/**
+ * Get the app's shared query client, which index.tsx exposes on window.
+ *
+ * @return {QueryClient|undefined} The query client, or undefined outside the app.
+ */
+const getBurstQueryClient = (): QueryClient | undefined => {
+	if ( 'undefined' === typeof window ) {
+		return undefined;
 	}
+	return ( window as unknown as { __burst_query_client?: QueryClient }).__burst_query_client;
+};
+
+export const invalidateAllBurstQueries = () => {
+	try {
+		getBurstQueryClient()?.invalidateQueries();
+	} catch {
+
+		// ignore
+	}
+};
+
+/**
+ * Replace cached mock data with real data after mock data is switched off.
+ *
+ * Mock data is switched off from an unmount cleanup (the Sales upsell
+ * background), which runs before the unmounting components' query observers
+ * unsubscribe. A plain invalidateQueries() refetches those still-active
+ * queries for real, so leaving the upsell sent requests to Pro-only endpoints
+ * that free does not register. Instead, mark every query stale without
+ * fetching, so whatever mounts next fetches real data, and refetch the queries
+ * that are still observed once the unmount has finished.
+ *
+ * Side effect: schedules a refetch of the active, stale queries.
+ *
+ * @return {void}
+ */
+const invalidateQueriesAfterMockData = (): void => {
+	const queryClient = getBurstQueryClient();
+	if ( ! queryClient ) {
+		return;
+	}
+
+	try {
+		void queryClient.invalidateQueries({ refetchType: 'none' });
+	} catch {
+
+		// ignore
+	}
+
+	setTimeout( () => {
+
+		// Mock data was switched on again meanwhile, which refetched everything already.
+		if ( useTourStore.getState().mockDataActive ) {
+			return;
+		}
+
+		// Queries that mounted in the meantime are already fetching: join those requests instead of restarting them.
+		void queryClient.refetchQueries({ type: 'active', stale: true }, { cancelRefetch: false });
+	}, 0 );
 };
 
 // The tour cannot run inside the MainWP dashboard: its entry points are not
@@ -421,7 +469,11 @@ export const useTourStore = create<TourState>( ( set, get ) => ({
 			return;
 		}
 		set({ mockDataActive: next });
-		invalidateAllBurstQueries();
+		if ( next ) {
+			invalidateAllBurstQueries();
+			return;
+		}
+		invalidateQueriesAfterMockData();
 	},
 
 	setIsHotspotActive: ( isHotspotActive: boolean ) => {
