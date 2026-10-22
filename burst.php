@@ -40,96 +40,72 @@ if ( defined( 'BURST_PRO_FILE' ) ) {
     return;
 }
 
-try {
-    define( 'BURST_FREE_FILE', __FILE__ );
-    define( 'BURST_FREE', true );
+define( 'BURST_FREE_FILE', __FILE__ );
+define( 'BURST_FREE', true );
 
-    require_once __DIR__ . '/includes/autoload.php';
+require_once __DIR__ . '/includes/autoload.php';
 
-    if ( ! function_exists( '\Burst\burst_loader' ) ) {
-        require_once __DIR__ . '/includes/functions.php';
-        require_once __DIR__ . '/includes/class-compatibility.php';
-        /**
-         * Get the Burst instance
-         */
-        function burst_loader(): Burst {
-            return Burst::instance();
-        }
+if ( ! function_exists( '\Burst\burst_loader' ) ) {
+    require_once __DIR__ . '/includes/functions.php';
+    require_once __DIR__ . '/includes/class-compatibility.php';
+    /**
+     * Get the Burst instance
+     */
+    function burst_loader(): Burst {
+        return Burst::instance();
     }
+}
 
-    add_action(
-        'plugins_loaded',
-        static function () {
-            // creates/returns the singleton; constructor registers hooks.
-            burst_loader();
-        },
-        1
-    );
+add_action(
+    'plugins_loaded',
+    static function () {
+        // creates/returns the singleton; constructor registers hooks.
+        burst_loader();
+    },
+    1
+);
 
-    if ( ! function_exists( '\Burst\burst_on_activation' ) ) {
-        /**
-         * Set an activation time stamp
-         * This function has te have a different name, to ensure that it runs and deactivates free, if required.
-         */
-        function burst_on_activation(): void {
-            Bootstrap::on_activation( false );
-        }
-        register_activation_hook( __FILE__, '\Burst\burst_on_activation' );
+if ( ! function_exists( '\Burst\burst_on_activation' ) ) {
+    /**
+     * Set an activation time stamp
+     * This function has te have a different name, to ensure that it runs and deactivates free, if required.
+     */
+    function burst_on_activation(): void {
+        Bootstrap::on_activation( false );
     }
+    register_activation_hook( __FILE__, '\Burst\burst_on_activation' );
+}
 
-    if ( ! function_exists( '\Burst\burst_clear_scheduled_hooks' ) && ! function_exists( 'burst_clear_scheduled_hooks' ) ) {
-        /**
-         * Clear every scheduled Burst cron event on deactivation.
-         *
-         * Scans the cron array for hooks with the burst_ prefix instead of
-         * keeping a list: recurring schedules, chained single events and hooks
-         * scheduled with arguments are all removed, including ones added later.
-         */
-        function burst_clear_scheduled_hooks(): void {
-            $crons = _get_cron_array();
-            if ( ! is_array( $crons ) ) {
-                return;
+if ( ! function_exists( '\Burst\burst_clear_scheduled_hooks' ) && ! function_exists( 'burst_clear_scheduled_hooks' ) ) {
+    /**
+     * Clear every scheduled Burst cron event on deactivation.
+     *
+     * Scans the cron array for hooks with the burst_ prefix instead of
+     * keeping a list: recurring schedules, chained single events and hooks
+     * scheduled with arguments are all removed, including ones added later.
+     */
+    function burst_clear_scheduled_hooks(): void {
+        $crons = _get_cron_array();
+        if ( ! is_array( $crons ) ) {
+            return;
+        }
+
+        $hooks = [];
+        foreach ( $crons as $events ) {
+            // The array also carries a scalar 'version' entry.
+            if ( ! is_array( $events ) ) {
+                continue;
             }
-
-            $hooks = [];
-            foreach ( $crons as $events ) {
-                // The array also carries a scalar 'version' entry.
-                if ( ! is_array( $events ) ) {
-                    continue;
-                }
-                foreach ( array_keys( $events ) as $hook ) {
-                    if ( str_starts_with( (string) $hook, 'burst_' ) ) {
-                        $hooks[ $hook ] = true;
-                    }
+            foreach ( array_keys( $events ) as $hook ) {
+                if ( str_starts_with( (string) $hook, 'burst_' ) ) {
+                    $hooks[ $hook ] = true;
                 }
             }
-
-            foreach ( array_keys( $hooks ) as $hook ) {
-                wp_unschedule_hook( $hook );
-            }
         }
-        register_deactivation_hook( __FILE__, '\Burst\burst_clear_scheduled_hooks' );
-    }
-} catch ( \Throwable $e ) {
-    $burst_message = $e->getMessage();
-    // phpcs:ignore
-    error_log( 'Burst could not load, due to error: ' . $burst_message . ' in ' . $e->getFile() . ' on line ' . $e->getLine() );
-    update_option( 'burst_php_error_time', time() );
-    $burst_count = get_option( 'burst_php_error_count', 0 ) + 1;
-    update_option( 'burst_php_error_count', $burst_count );
-    $burst_existing_errors = get_option( 'burst_php_error_detected', '' );
-    if ( strpos( $burst_existing_errors, $burst_message ) === false ) {
-        $burst_existing_errors .= $burst_message . ' in ' . $e->getFile() . ' on line ' . $e->getLine() . PHP_EOL;
-        update_option( 'burst_php_error_detected', $burst_existing_errors );
-    }
 
-    add_action(
-        'admin_notices',
-        function () {
-            echo '<div class="notice notice-error">';
-            echo '<h3>Urgent action required</h3>';
-            echo '<p>Burst can not load due to the following error:<br>' . esc_html( str_replace( PHP_EOL, '<br>', get_option( 'burst_php_error_detected', '' ) ) ) . '</p>';
-            echo '</div>';
+        foreach ( array_keys( $hooks ) as $hook ) {
+            wp_unschedule_hook( $hook );
         }
-    );
+    }
+    register_deactivation_hook( __FILE__, '\Burst\burst_clear_scheduled_hooks' );
 }
