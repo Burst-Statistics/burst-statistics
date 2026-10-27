@@ -18,6 +18,13 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 		use Helper;
 
 		/**
+		 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+		 *
+		 * @var string
+		 */
+		public const BUILD = '3.7.4';
+
+		/**
 		 * Constructor
 		 */
 		public function init(): void {
@@ -571,34 +578,33 @@ if ( ! class_exists( 'Goal_Statistics' ) ) {
 		}
 
 		/**
-		 * Install goal statistic table
-		 * */
-		public function install_goal_statistics_table(): void {
-			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-			global $wpdb;
-			$charset_collate = $wpdb->get_charset_collate();
-			$sql             = "CREATE TABLE {$wpdb->prefix}burst_goal_statistics (
+		 * Schema of the goal statistics table, read by install_goal_statistics_table() and the schema check.
+		 *
+		 * @return array<string, array{columns: string, indexes?: array<int, string[]>}>
+		 */
+		protected function get_schema_definition(): array {
+			return [
+				'burst_goal_statistics' => [
+					'columns' => '
                 `ID` int NOT NULL AUTO_INCREMENT,
                 `statistic_id` int NOT NULL,
                 `goal_id` int NOT NULL,
                 PRIMARY KEY (ID),
                 UNIQUE KEY goal_statistic_unique (goal_id, statistic_id)
-            ) $charset_collate;";
-
-			dbDelta( $sql );
-			if ( ! empty( $wpdb->last_error ) ) {
-				self::error_log( 'Error creating goal statistics table: ' . $wpdb->last_error );
-				return;
-			}
-
-			$indexes = [
-				[ 'statistic_id' ],
-				[ 'goal_id' ],
+            ',
+					'indexes' => [
+						[ 'statistic_id' ],
+						[ 'goal_id' ],
+					],
+				],
 			];
+		}
 
-			foreach ( $indexes as $index ) {
-				$this->add_index( 'burst_goal_statistics', $index );
-			}
+		/**
+		 * Install goal statistic table
+		 * */
+		public function install_goal_statistics_table(): void {
+			$this->install_schema( [ 'burst_goal_statistics' ] );
 		}
 	}
 }

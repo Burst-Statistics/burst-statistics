@@ -7,6 +7,10 @@ const ESLintPlugin = require( 'eslint-webpack-plugin' );
 module.exports = {
   ...defaultConfig,
   target: 'web',
+  entry: {
+    index: path.resolve( __dirname, 'src/index.tsx' ),
+    editor: path.resolve( __dirname, 'src/editor.tsx' )
+  },
   externals: {
     ...( defaultConfig.externals || {}),
     react: 'React',

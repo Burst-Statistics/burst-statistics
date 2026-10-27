@@ -1,4 +1,8 @@
 <?php
+
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
+
 defined( 'ABSPATH' ) || die();
 // deprecated constant.
 if ( defined( 'burst_rest_api_optimizer' ) ) {
@@ -43,7 +47,7 @@ if ( ! function_exists( 'burst_install_rest_api_optimizer' ) ) {
 		// Attempt to create mu-plugins dir if missing.
 		if ( ! $wp_filesystem->is_dir( WPMU_PLUGIN_DIR ) ) {
 			if ( ! $wp_filesystem->is_writable( dirname( WPMU_PLUGIN_DIR ) ) || ! wp_mkdir_p( WPMU_PLUGIN_DIR ) ) {
-				update_option( 'burst_rest_api_optimizer_not_writable', true, false );
+				Admin_Options::update( Admin_Option_Category::CORE, 'rest_api_optimizer_not_writable', true );
 				return;
 			}
 		}
@@ -51,7 +55,7 @@ if ( ! function_exists( 'burst_install_rest_api_optimizer' ) ) {
 		// Write file if dir now exists and is writable.
 		if ( $wp_filesystem->is_dir( WPMU_PLUGIN_DIR ) && $wp_filesystem->is_writable( WPMU_PLUGIN_DIR ) ) {
 			if ( $wp_filesystem->put_contents( $burst_mu_plugin_file, $burst_php_code, FS_CHMOD_FILE ) === false ) {
-				update_option( 'burst_rest_api_optimizer_not_writable', true, false );
+				Admin_Options::update( Admin_Option_Category::CORE, 'rest_api_optimizer_not_writable', true );
 			} else {
 				// Store only the plugin directory slug, not the full filesystem
 				// path. The MU plugin combines this with WP_PLUGIN_DIR and
@@ -64,12 +68,12 @@ if ( ! function_exists( 'burst_install_rest_api_optimizer' ) ) {
 				}
 			}
 		} else {
-			update_option( 'burst_rest_api_optimizer_not_writable', true, false );
+			Admin_Options::update( Admin_Option_Category::CORE, 'rest_api_optimizer_not_writable', true );
 		}
 	}
 }
 
 // check if our optimizer is installed, or if the mu plugins folder is not writable.
-if ( ! defined( 'BURST_REST_API_OPTIMIZER' ) && ! get_option( 'burst_rest_api_optimizer_not_writable' ) ) {
+if ( ! defined( 'BURST_REST_API_OPTIMIZER' ) && ! Admin_Options::get( Admin_Option_Category::CORE, 'rest_api_optimizer_not_writable', false ) ) {
 	burst_install_rest_api_optimizer();
 }

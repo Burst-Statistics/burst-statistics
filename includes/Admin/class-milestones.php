@@ -4,6 +4,7 @@
  */
 namespace Burst\Admin;
 
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Admin\Statistics\Statistics_Query;
 use Burst\Traits\Helper;
 
@@ -29,7 +30,7 @@ class Milestones {
 	 */
 	public static function pageviews_milestone_reached(): bool {
 		// Get last milestone.
-		$last_milestone = (int) get_option( 'burst_last_pageviews_milestone', 0 );
+		$last_milestone = (int) Admin_Options::get( Admin_Option_Category::CORE, 'last_pageviews_milestone', 0 );
 
 		// If no milestone yet, check activation date.
 		if ( $last_milestone === 0 ) {
@@ -60,7 +61,7 @@ class Milestones {
 		// Determine next milestone.
 		$next_milestone = self::get_next_milestone( $current_pv );
 		if ( $next_milestone > 0 && $next_milestone > $last_milestone ) {
-			update_option( 'burst_current_pageviews_milestone', $next_milestone, false );
+			Admin_Options::update( Admin_Option_Category::CORE, 'current_pageviews_milestone', $next_milestone );
 			return true;
 		}
 
@@ -119,9 +120,9 @@ class Milestones {
 			return;
 		}
 
-		$current_pageviews_milestone = (int) get_option( 'burst_current_pageviews_milestone', 0 );
-		delete_option( 'burst_current_pageviews_milestone' );
-		update_option( 'burst_last_pageviews_milestone', $current_pageviews_milestone, false );
+		$current_pageviews_milestone = (int) Admin_Options::get( Admin_Option_Category::CORE, 'current_pageviews_milestone', 0 );
+		Admin_Options::delete( Admin_Option_Category::CORE, 'current_pageviews_milestone' );
+		Admin_Options::update( Admin_Option_Category::CORE, 'last_pageviews_milestone', $current_pageviews_milestone );
 	}
 
 	/**

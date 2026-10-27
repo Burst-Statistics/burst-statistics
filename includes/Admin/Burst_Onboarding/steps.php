@@ -164,14 +164,24 @@ return [
 		'id'             => 'anonymous_usage_data',
 		'type'           => 'settings',
 		'first_run_only' => true,
-		'title'          => __( 'Help improve Burst', 'burst-statistics' ),
-		'subtitle'       => __( 'Help us build better features and improve recommendations by sharing anonymous usage data. We never collect personal information.', 'burst-statistics' ),
+		'title'          => __( 'Share usage data and learn how you compare', 'burst-statistics' ),
+		'subtitle'       => __( 'See how your site compares to similar websites. Burst also uses this anonymous data to learn which features are used.', 'burst-statistics' ),
 		'fields'         => [
 			[
-				'id'      => 'anonymous_usage_data',
-				'type'    => 'anonymous_usage_data',
-				'label'   => '',
-				'default' => false,
+				'id'             => 'anonymous_usage_data',
+				'type'           => 'anonymous_usage_data',
+				'label'          => '',
+				'default'        => false,
+				'privacy_note'   => __( 'No URLs, IP addresses or personal data.', 'burst-statistics' ),
+				'toggle_label'   => __( 'Share anonymous usage data with Burst', 'burst-statistics' ),
+				'enabled_status' => __( 'On. Your first comparison arrives after a month of tracking.', 'burst-statistics' ),
+				// A static example of the comparison on the dashboard. The numbers are made up.
+				'example'        => [
+					'caption' => __( 'Example', 'burst-statistics' ),
+					'metric'  => __( 'Bounce rate', 'burst-statistics' ),
+					'value'   => '34%',
+					'text'    => __( 'Your site performs better than 79% of websites with similar traffic. Based on websites with 1K–5K visitors a month.', 'burst-statistics' ),
+				],
 			],
 		],
 		'button'         => [

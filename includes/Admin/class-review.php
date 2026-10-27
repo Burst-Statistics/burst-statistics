@@ -1,6 +1,7 @@
 <?php
 namespace Burst\Admin;
 
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 
@@ -33,7 +34,7 @@ class Review {
 		}
 
 		// uncomment for testing.
-		// update_option( 'burst_review_notice_shown', false );.
+		// Admin_Options::update( \Burst\Admin\DomainTypes\Admin_Option_Category::CORE, 'review_notice_shown', false );.
 		// update_option( 'burst_activation_time', strtotime( "-5 weeks" ) );.
 		// show review notice, but only on single site installs.
 		if ( is_multisite() ) {
@@ -46,7 +47,7 @@ class Review {
 			return false;
 		}
 
-		if ( get_option( 'burst_review_notice_shown' ) ) {
+		if ( Admin_Options::get( Admin_Option_Category::CORE, 'review_notice_shown', false ) ) {
 			return false;
 		}
 
@@ -182,12 +183,15 @@ class Review {
 						<a id="burst-dismiss-review" href="
 						<?php
 						echo esc_url(
-							add_query_arg(
-								[
-									'page'                 => 'burst',
-									'burst_dismiss_review' => 1,
-								],
-								admin_url( 'admin.php' )
+							wp_nonce_url(
+								add_query_arg(
+									[
+										'page' => 'burst',
+										'burst_dismiss_review' => 1,
+									],
+									admin_url( 'admin.php' )
+								),
+								'burst_dismiss_review'
 							)
 						)
 						?>
@@ -253,7 +257,7 @@ class Review {
 			wp_die();
 		}
 		if ( $type === 'dismiss' ) {
-			update_option( 'burst_review_notice_shown', true, false );
+			Admin_Options::update( Admin_Option_Category::CORE, 'review_notice_shown', true );
 		}
 		if ( $type === 'later' ) {
 			update_option( 'burst_activation_time', time(), false );
@@ -267,10 +271,13 @@ class Review {
 	 * Dismiss review notice with get, which is more stable
 	 */
 	public function process_get_review_dismiss(): void {
-        //phpcs:ignore
-		if ( isset( $_GET['burst_dismiss_review'] ) ) {
-			update_option( 'burst_review_notice_shown', true, false );
+		if ( ! isset( $_GET['burst_dismiss_review'] ) || ! $this->user_can_manage() ) {
+			return;
 		}
+		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'burst_dismiss_review' ) ) {
+			return;
+		}
+		Admin_Options::update( Admin_Option_Category::CORE, 'review_notice_shown', true );
 	}
 }
-

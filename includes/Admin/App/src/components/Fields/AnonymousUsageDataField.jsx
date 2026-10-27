@@ -2,25 +2,28 @@ import { forwardRef } from 'react';
 import { __ } from '@wordpress/i18n';
 import FieldWrapper from '@/components/Fields/FieldWrapper';
 import SwitchInput from '@/components/Inputs/SwitchInput';
-import Icon from '@/utils/Icon';
-import { burst_get_website_url } from '@/utils/lib';
+import CommunityComparisonExample from '@/components/Fields/AnonymousUsageData/CommunityComparisonExample';
+import DataSharingDetails from '@/components/Fields/AnonymousUsageData/DataSharingDetails';
+import DataSharingStatusText from '@/components/Fields/AnonymousUsageData/DataSharingStatusText';
 
 /**
  * AnonymousUsageDataField component.
  *
- * Displays a comprehensive UI for managing anonymous usage data sharing preferences.
- * Uses a toggle switch for immediate visual feedback and shows transparency details by default.
+ * Sharing anonymous usage data unlocks the comparison with similar websites on
+ * the dashboard. Leads with that comparison, shows an example of it and when the
+ * data was last synced, and keeps the details of what is shared always visible.
  *
  * @param {object} field - Provided by react-hook-form's Controller.
  * @param {object} fieldState - Contains validation state.
  * @param {string} help - Help text for the field.
  * @param {string} context - Contextual information for the field.
  * @param {string} className - Additional Tailwind CSS classes.
+ * @param {object} setting - The field config, with the saved value and the sync status.
  * @param {object} props - Additional props from react-hook-form's Controller.
  * @returns {JSX.Element}
  */
 const AnonymousUsageDataField = forwardRef(
-	({ field, fieldState, help, context, ...props }, ref ) => {
+	({ field, fieldState, help, context, setting, ...props }, ref ) => {
 		const inputId = props.id || field.name;
 		const isEnabled = Boolean( field.value );
 
@@ -37,18 +40,26 @@ const AnonymousUsageDataField = forwardRef(
 				{ ...props }
 			>
 				<div className="w-full flex flex-col gap-5 px-6">
+					{/* Heading: the same title and explanation as the onboarding step */ }
+					<div className="flex flex-col gap-2">
+						<h3 className="text-md font-semibold text-text-black">
+							{ __( 'Share usage data and learn how you compare', 'burst-statistics' ) }
+						</h3>
+						<p className="text-sm leading-relaxed text-text-gray">
+							{ __( 'See how your site compares to similar websites. Burst also uses this anonymous data to learn which features are used.', 'burst-statistics' ) }
+						</p>
+						<p className="text-sm leading-relaxed text-text-gray">
+							{ __( 'No URLs, IP addresses or personal data.', 'burst-statistics' ) }
+						</p>
+					</div>
+
 					{/* Control: Toggle with label and status */ }
 					<div className="flex items-center justify-between gap-4">
 						<div className="flex flex-col gap-1">
 							<span className="text-md font-medium text-text-black">
-								{ __( 'Share anonymous usage data', 'burst-statistics' ) }
+								{ __( 'Share anonymous usage data with Burst', 'burst-statistics' ) }
 							</span>
-							<span className={ `text-sm ${ isEnabled ? 'text-primary' : 'text-text-gray' }` }>
-								{ isEnabled ?
-									__( 'Enabled. Thank you for helping us improve.', 'burst-statistics' ) :
-									__( 'Disabled', 'burst-statistics' )
-								}
-							</span>
+							<DataSharingStatusText isEnabled={ isEnabled } setting={ setting } />
 						</div>
 						<SwitchInput
 							id={ inputId }
@@ -59,67 +70,9 @@ const AnonymousUsageDataField = forwardRef(
 						/>
 					</div>
 
-					{/* Explanation */ }
-					<p className="text-sm leading-relaxed text-text-gray">
-						{ __(
-							'Help us build better features, prioritize integrations, and improve recommendations by sharing anonymous usage data. We never collect personal information, your site URL, or IP addresses. Everything stays completely anonymous.',
-							'burst-statistics'
-						) }
-					</p>
+					<CommunityComparisonExample />
 
-					{/* Details: Always visible for transparency */ }
-					<div className="grid gap-4 @sm:grid-cols-2">
-						{/* What we collect */ }
-						<div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
-							<h4 className="flex items-center gap-2 text-sm font-semibold text-text-black">
-								<Icon name="circle-check" color="green" size={ 16 } />
-								{ __( 'What we collect', 'burst-statistics' ) }
-							</h4>
-							<ul className="flex flex-col gap-1.5 text-sm text-text-gray">
-								<li className="flex items-start gap-2">
-									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400"></span>
-									{ __( 'General site metrics (e.g., monthly visitors, bounce rate)', 'burst-statistics' ) }
-								</li>
-								<li className="flex items-start gap-2">
-									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400"></span>
-									{ __( 'Active plugins & WordPress/PHP versions', 'burst-statistics' ) }
-								</li>
-								<li className="flex items-start gap-2">
-									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400"></span>
-									{ __( 'Burst settings you use', 'burst-statistics' ) }
-								</li>
-							</ul>
-						</div>
-
-						{/* What we don't collect */ }
-						<div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
-							<h4 className="flex items-center gap-2 text-sm font-semibold text-text-black">
-								<Icon name="ban" color="red" size={ 16 } />
-								{ __( 'What we never collect', 'burst-statistics' ) }
-							</h4>
-							<ul className="flex flex-col gap-1.5 text-sm text-text-gray">
-								<li className="flex items-start gap-2">
-									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400"></span>
-									{ __( 'Your site URL, admin emails, or user data', 'burst-statistics' ) }
-								</li>
-								<li className="flex items-start gap-2">
-									<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400"></span>
-									{ __( 'Visitor IP addresses or specific page URLs', 'burst-statistics' ) }
-								</li>
-							</ul>
-						</div>
-					</div>
-
-					{/* Learn more link */ }
-					<a
-						href={burst_get_website_url( 'how-we-handle-anonymous-usage-data' )}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="inline-flex items-center gap-1 text-sm text-wp-blue hover:underline"
-					>
-						{ __( 'Learn more about how we handle data', 'burst-statistics' ) }
-
-					</a>
+					<DataSharingDetails />
 				</div>
 			</FieldWrapper>
 		);

@@ -368,7 +368,7 @@ class MainWP_Proxy {
 		$body_origin       = is_string( $body['dashboard_origin'] ?? null ) ? sanitize_url( $body['dashboard_origin'] ) : '';
 		$normalized_origin = $this->normalize_origin( $body_origin );
 		if ( $normalized_origin !== '' ) {
-			update_option( 'burst_mainwp_dashboard_url', $normalized_origin );
+			update_option( 'burst_mainwp_dashboard_url', $normalized_origin, false );
 		}
 
 		return true;

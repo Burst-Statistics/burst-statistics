@@ -22,6 +22,13 @@ class Geo_Statistics {
 	use Database_Helper;
 
 	/**
+	 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
+
+	/**
 	 * Register the geo hooks.
 	 */
 	public function init(): void {
@@ -508,16 +515,15 @@ class Geo_Statistics {
 	}
 
 	/**
-	 * Install locations table.
+	 * Schema of the locations table, read by install_locations_table() and the schema check.
+	 *
+	 * @return array<string, array{columns: string, indexes?: array<int, string[]>}>
 	 */
-	public function install_locations_table(): void {
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		global $wpdb;
-		$charset_collate = $wpdb->get_charset_collate();
-		$table_name      = $wpdb->prefix . 'burst_locations';
-
-		// Create table with city_code as primary key.
-		$sql = "CREATE TABLE `$table_name` (
+	protected function get_schema_definition(): array {
+		return [
+			// city_code is the primary key.
+			'burst_locations' => [
+				'columns' => "
             `city_code` int DEFAULT 0,
             `city` varchar(255) DEFAULT '',
             `state_code` varchar(18) DEFAULT '',
@@ -525,23 +531,22 @@ class Geo_Statistics {
             `country_code` char(2) DEFAULT '',
             `continent_code` char(5) NOT NULL DEFAULT '',
             PRIMARY KEY  (`city_code`)
-        ) $charset_collate;";
-
-		dbDelta( $sql );
-		if ( ! empty( $wpdb->last_error ) ) {
-			self::error_log( 'Error creating locations table: ' . $wpdb->last_error );
-			return;
-		}
-
-		// Add indexes for performance.
-		$indexes = [
-			[ 'country_code' ],
-			[ 'state_code' ],
-			[ 'city' ],
+        ",
+				'indexes' => [
+					[ 'country_code' ],
+					[ 'state_code' ],
+					[ 'city' ],
+				],
+			],
 		];
+	}
 
-		foreach ( $indexes as $index ) {
-			$this->add_index( 'burst_locations', $index );
+	/**
+	 * Install locations table.
+	 */
+	public function install_locations_table(): void {
+		if ( ! $this->install_schema( [ 'burst_locations' ] ) ) {
+			return;
 		}
 
 		$this->seed_country_lookup_rows();

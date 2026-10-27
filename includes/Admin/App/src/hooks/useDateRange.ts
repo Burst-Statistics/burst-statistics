@@ -1,8 +1,9 @@
 import { useLocation, useNavigate, useSearch } from '@tanstack/react-router';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { format, parseISO, isValid } from 'date-fns';
 import { useDate } from '@/store/useDateStore';
 import { availableRanges } from '@/utils/formatting';
+import { isDateRangeEnabledRoute } from '@/utils/routeUtils';
 import { TRAILING_PARAM_KEY } from '@/config/filterConfig';
 
 // Date format for URL parameters.
@@ -32,21 +33,6 @@ interface DateRangeSearchParams {
 	endDate?: string;
 	range?: RangeKey;
 }
-
-// Routes where URL date range sync is enabled.
-const DATE_RANGE_ENABLED_ROUTES = [ '/statistics', '/engagement', '/sources', '/sales', '/table', '/page' ];
-
-/**
- * Check if current route supports URL date range sync.
- *
- * @param pathname - The current route pathname.
- * @return True if date range should sync with URL on this route.
- */
-const isDateRangeEnabledRoute = ( pathname: string ): boolean => {
-	return DATE_RANGE_ENABLED_ROUTES.some( ( route ) =>
-		pathname.startsWith( route )
-	);
-};
 
 /**
  * Validate a date string in YYYY-MM-DD format.
@@ -82,7 +68,7 @@ const isValidRangeKey = ( rangeKey: string | undefined ): rangeKey is RangeKey =
  * @return True if URL contains valid date range params.
  */
 // fallow-ignore-next-line complexity
-const hasUrlDateRange = ( searchParams: DateRangeSearchParams ): boolean => {
+export const hasUrlDateRange = ( searchParams: DateRangeSearchParams ): boolean => {
 	const { range, startDate, endDate } = searchParams;
 
 	// Check for valid range key.
@@ -134,6 +120,24 @@ const getDatesFromRange = (
 		startDate: format( startDate, DATE_FORMAT ),
 		endDate: format( endDate, DATE_FORMAT )
 	};
+};
+
+/**
+ * Get the last used date range from the persisted store, as URL params.
+ *
+ * @return Date range search params for the URL.
+ */
+export const getStoredDateParams = (): DateRangeSearchParams => {
+	const { range, startDate, endDate } = useDate.getState();
+	const dateParams: DateRangeSearchParams = { range };
+
+	// For custom range, include the dates.
+	if ( 'custom' === range ) {
+		dateParams.startDate = startDate;
+		dateParams.endDate = endDate;
+	}
+
+	return dateParams;
 };
 
 /**
@@ -192,7 +196,6 @@ const buildDateSearchParams = (
 export const useDateRange = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
-	const hasInitialized = useRef( false );
 
 	// Check if current route supports URL date range sync.
 	const isDateRangeRoute = isDateRangeEnabledRoute( location.pathname );
@@ -251,60 +254,10 @@ export const useDateRange = () => {
 		zustandRange
 	]);
 
-	// Initialize: restore from Zustand if URL has no date range (only on enabled routes).
-	// fallow-ignore-next-line complexity
-	useEffect( () => {
-		if ( ! isDateRangeRoute || hasInitialized.current ) {
-			return;
-		}
-		hasInitialized.current = true;
-
-		// If URL already has date range, save to Zustand and use those.
-		if ( hasUrlDateRange( searchParams ) ) {
-			const { range, startDate, endDate } = searchParams;
-
-			if ( isValidRangeKey( range ) && 'custom' !== range ) {
-
-				// Predefined range - set the range key (Zustand will calculate dates).
-				setZustandRange( range );
-			} else if (
-				isValidDateString( startDate ) &&
-				isValidDateString( endDate )
-			) {
-
-				// Custom range - set dates directly.
-				setZustandStartDate( startDate as string );
-				setZustandEndDate( endDate as string );
-				setZustandRange( 'custom' );
-			}
-			return;
-		}
-
-		// Load from Zustand store and apply to URL.
-		if ( zustandRange ) {
-			const dateParams: DateRangeSearchParams = {
-				range: zustandRange as RangeKey
-			};
-
-			// For custom range, include the dates.
-			if ( 'custom' === zustandRange ) {
-				dateParams.startDate = zustandStartDate;
-				dateParams.endDate = zustandEndDate;
-			}
-
-			const newSearch = buildDateSearchParams( searchParams, dateParams );
-			navigate({
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				search: newSearch as any,
-				replace: true // Replace to not create extra history entry on init.
-			});
-		}
-	}, [ isDateRangeRoute ]); // eslint-disable-line react-hooks/exhaustive-deps
-
 	// Sync date range to Zustand whenever it changes from URL.
 	// fallow-ignore-next-line complexity
 	useEffect( () => {
-		if ( ! isDateRangeRoute || ! hasInitialized.current ) {
+		if ( ! isDateRangeRoute ) {
 			return;
 		}
 

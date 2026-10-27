@@ -138,7 +138,7 @@ const useGSCData = (): UseGSCDataReturn => {
 				popup?.close();
 				popupRef.current = null;
 				setIsConnecting( false );
-				setError( __( 'Could not start the connection. Please try again.', 'burst-statistics' ) );
+				setError( res?.message || __( 'Could not start the connection. Please try again.', 'burst-statistics' ) );
 				return;
 			}
 

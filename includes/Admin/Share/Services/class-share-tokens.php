@@ -101,7 +101,7 @@ class Share_Tokens {
 				$this->generate_token( '7d', $view_url, [], [], [], $report_id );
 				$tokens = get_option( 'burst_share_tokens', [] );
 			} elseif ( $refreshed ) {
-				update_option( 'burst_share_tokens', $tokens );
+				update_option( 'burst_share_tokens', $tokens, false );
 			}
 		}
 
@@ -138,7 +138,7 @@ class Share_Tokens {
 
 		// Update option with only valid tokens.
 		if ( count( $valid_tokens ) !== count( $tokens ) ) {
-			update_option( 'burst_share_tokens', $valid_tokens );
+			update_option( 'burst_share_tokens', $valid_tokens, false );
 		}
 
 		// Sort by expiry: soonest first, never-expiring (0) last.
@@ -221,7 +221,7 @@ class Share_Tokens {
 			}
 		);
 
-		update_option( 'burst_share_tokens', array_values( $tokens ) );
+		update_option( 'burst_share_tokens', array_values( $tokens ), false );
 	}
 
 	/**
@@ -477,7 +477,7 @@ class Share_Tokens {
 			$existing_tokens[]   = $token_data;
 		}
 
-		update_option( 'burst_share_tokens', $existing_tokens );
+		update_option( 'burst_share_tokens', $existing_tokens, false );
 		return $token;
 	}
 

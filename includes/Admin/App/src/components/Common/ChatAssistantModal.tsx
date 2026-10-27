@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { __ } from '@wordpress/i18n';
 import clsx from 'clsx';
 import { Close } from '@radix-ui/react-dialog';
@@ -239,6 +240,21 @@ const createSession = (): ChatSession => {
 	};
 };
 
+const isBurstAdminLink = ( url?: string ): boolean => {
+	if ( ! url ) {
+		return false;
+	}
+	if ( url.startsWith( '#/' ) || url.startsWith( '/#/' ) ) {
+		return true;
+	}
+	try {
+		const parsed = new URL( url, window.location.href );
+		return parsed.origin === window.location.origin && 'burst' === parsed.searchParams.get( 'page' );
+	} catch {
+		return false;
+	}
+};
+
 const isSessionBlank = ( session: ChatSession ): boolean => {
 	return 0 === sanitizeHistoryForStorage( session.history ).length;
 };
@@ -299,6 +315,7 @@ const ChatAssistantModal = ({ isOpen, onClose }: ChatAssistantModalProps ) => {
 	const [ editingTitleValue, setEditingTitleValue ] = useState( '' );
 
 	const queryClient = useQueryClient();
+	const navigate = useNavigate();
 
 	// Fetch available AI models (once per session).
 	const { data: modelsData } = useQuery<{ models: AiModel[]; default?: AiModel | null }>({
@@ -1055,19 +1072,38 @@ const ChatAssistantModal = ({ isOpen, onClose }: ChatAssistantModalProps ) => {
 														</code>
 													);
 												},
-												a: ({ href, children }) => (
-													<a
-														href={href}
-														target="_blank"
-														rel="noopener noreferrer"
-														className={clsx(
-															'underline decoration-current underline-offset-2 hover:opacity-80',
-															markdownTextClass
-														)}
-													>
-														{children}
-													</a>
-												),
+												a: ({ href, children }) => {
+													const isInternal = isBurstAdminLink( href );
+													const handleClick = ( e: React.MouseEvent<HTMLAnchorElement> ) => {
+														if ( isInternal && href ) {
+															const hashIndex = href.indexOf( '#' );
+															const routePath = -1 !== hashIndex ? href.slice( hashIndex + 1 ) : '';
+															if ( routePath && routePath.startsWith( '/' ) ) {
+																e.preventDefault();
+																navigate({
+																	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+																	to: routePath as any
+																});
+																onClose();
+															}
+														}
+													};
+
+													return (
+														<a
+															href={href}
+															target={isInternal ? undefined : '_blank'}
+															rel={isInternal ? undefined : 'noopener noreferrer'}
+															onClick={handleClick}
+															className={clsx(
+																'underline decoration-current underline-offset-2 hover:opacity-80',
+																markdownTextClass
+															)}
+														>
+															{children}
+														</a>
+													);
+												},
 												table: ({ children }) => (
 													<div className="my-2 overflow-x-auto">
 														<table className="w-full min-w-[22rem] border-collapse text-left text-xs text-inherit">

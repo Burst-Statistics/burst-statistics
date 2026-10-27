@@ -6,7 +6,7 @@ Requires at least: 6.6
 License: GPL2
 Requires PHP: 8.0
 Tested up to: 7.1
-Stable tag: 3.7.3
+Stable tag: 3.7.4
 
 Simple, lightweight WordPress analytics with privacy-friendly visitor tracking. Cookieless and GDPR-ready. Setup in seconds, no cookie banner needed.
  
@@ -293,9 +293,25 @@ Yes. Both the free and premium plugins can be managed with Composer. Read the [C
 = Can I give feedback about the plugin? =
  
 We value your feedback. You can [submit a support request on the WordPress forums](https://wordpress.org/support/plugin/burst-statistics/), and we will respond promptly.
- 
 
 == Change log ==
+= 3.7.4 =
+* October 29th 2026
+* New: a Burst panel in the post editor shows how a post performs: pageviews, visitors, bounce rate, time on page, an engagement score and where visitors come from.
+* New: show the Green Web Foundation badge on your site with the Green hosting badge block or the [burst_green_hosting_badge] shortcode, once a green hosting check confirms your host runs on green energy. The badge is stored on your own site, so visitors load nothing from a third party.
+* New: essentials mode loads a minimal tracking script without scroll depth, goals and CO2 measurement, for the smallest possible footprint. Turn it on under Settings > General.
+* New: click a goal in the Goals block to filter the dashboard by that goal.
+* New: AI assistants connected through the WordPress MCP Adapter can now find and use the Burst abilities, also over HTTP, and can look up Burst settings and dashboard pages.
+* Improvement: the community comparison icon on the dashboard is shown as a pill next to the value, its tooltip names the group of similar websites you are compared with, and while the dashboard is filtered it is greyed out with an explanation, because a filtered view cannot be compared.
+* Improvement: the first community comparison arrives after a month of tracking, so a new site is compared with sites of its own size instead of the smallest group.
+* Improvement: the data sharing opt-in explains more clearly what you share and what you get in return.
+* Improvement: Burst stores its internal admin data in a few grouped database options instead of dozens of separate ones.
+* Improvement: database tables are only upgraded when their structure changed, and Burst shows a notice when a table upgrade could not be completed.
+* Security: rest api optimizer improvements, props Mateusz Będziński.
+* Fix: the insights chart shifted all days by one when the date range crossed a daylight saving time change: the first day showed 0 and every other day showed the numbers of the day before.
+* Fix: on hosts with a read-only plugin folder the articles block on the dashboard came back empty with a PHP warning.
+* Fix: some Burst abilities returned an error or rows without the page or referrer they belonged to when an AI assistant requested them.
+
 = 3.7.3 =
 * October 19th 2026
 * New: custom events. Send events from your site with burst.event() or the burst_event action and see them, with their properties, in the new Events block on the Engagement page. Turn it on under Settings > Features.
@@ -321,38 +337,6 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * Fix: Site Health reported a plugin auto-update issue caused by the Burst update window.
 * Fix: clicking Continue twice in onboarding submitted the same step twice.
 * Fix: predefined goals showed an undefined title in the MainWP dashboard.
-
-= 3.7.2 =
-* September 29th 2026
-* New: an AI summary block for email reports, which sums up the report period in a few sentences. The block is available when the AI assistant is enabled.
-* New: the 404 pages block shows which pages link to a missing page, split into internal and external referrers, with a link to edit the internal page that holds the broken link.
-* Improvement: informative dashboard tasks are shown one at a time, and after you dismiss one the next appears three days later. Warnings and errors are always shown.
-* Improvement: the interactive tour fills the dashboard with sample data while it runs, instead of installing demo data in the database.
-* Improvement: the page picker for goals loads faster on sites with a lot of statistics, and lists pages of every post type.
-* Improvement: every dashboard task declares whether it applies inside the MainWP dashboard; tasks that assume the site's own wp-admin are no longer served to MainWP.
-* Improvement: the GoogleOther and Google-InspectionTool crawlers are recognized as bots and no longer tracked, props @draven666
-* Fix: the MainWP dashboard offered every date range preset except "All time"; the presets are now localized from one list for the WP admin and the MainWP dashboard.
-* Fix: the interactive tour is no longer offered inside the MainWP dashboard (task and settings button), where it cannot run.
-* Fix: long messages in the report log batch details wrapped outside their row.
-* Fix: since 3.7.1 the beacon hit was sent with fetch() instead of navigator.sendBeacon, so crawlers that render JavaScript, such as Google's renderer, were counted as visitors. The hit is sent with sendBeacon again; fetch is only used when the beacon cannot be queued, or in debug mode, props @draven666
-* Hardening: a user with share link access could extend access to the statistics after the share link expired by changing the password, props Chloe Chamberland / Wordfence.
-
-= 3.7.1 =
-* September 17th 2026
-* New: CartFlows integration, checkout steps count as checkout visits in the Live traffic block.
-* New: interactive tour: a guided walkthrough of the dashboard, insights, data tables, traffic sources, AI assistant, reading engagement, reports, goals and settings, using sample data so every block is populated; the tour can be paused and resumed where you left off.
-* Improvement: the cookieless fingerprint no longer renders a WebGL test image, which removed most of the tracking script's CPU time on first interaction (up to ~190ms on desktop, more on mobile) with no meaningful loss of uniqueness; cookieless visitors are counted as new visitors once after the update.
-* Improvement: visitor icons in the Live traffic block use twelve distinct colors and a better hash, so different visitors are easier to tell apart.
-* Improvement: activating or deactivating a plugin during an optimized Burst REST request can no longer persist the reduced plugin list the REST API optimizer uses for that request, props Will Lassalle / JLSTech.
-* Fix: the Compare block counted sessions, visitors and bounces for visits that only requested non-existing pages (404 hits, typically bot scans), while the Today block and the other blocks left those out; all blocks now apply the same rule, and existing sessions are updated by a background migration.
-* Fix: pages of post types registered by plugins, such as WooCommerce products, showed an empty url in the Pages table; existing data is completed by a background migration.
-* Fix: the "Today" count in the Goals block started the day at UTC midnight instead of midnight in the WordPress timezone.
-* Fix: visitor counts for historic date ranges showed near zero while the 3.7.0 visitor-index migration was still running; rows the migration has not converted yet are now counted by their legacy visitor id until the migration completes.
-* Fix: the database upgrade progress notice started in the nineties and barely moved, because it counted every upgrade ever shipped instead of the tasks in the running batch.
-* Fix: the Source column of the Campaigns table had no header label, and campaign queries on that column were not recognized as campaign queries by the goal filter.
-* Fix: a missing-table notice was shown for a search-terms table that is no longer in use.
-* Fix: the tracking script did not start when the consent-change event of a cookie banner did not include the statistics category; it now also checks the WP Consent API directly, and the beacon request uses fetch with keepalive where available.
-* Fix: the REST API optimizer read and decoded the request body once per active plugin instead of once per request, and now inspects at most 64 KB of it, props Will Lassalle / JLSTech.
 
 For the full changelog, see [burst-statistics.com/docs/changelog](https://burst-statistics.com/docs/changelog/).
 

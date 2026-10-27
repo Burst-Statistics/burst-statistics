@@ -2,6 +2,8 @@
 
 namespace Burst\Traits;
 
+use Burst\Admin\Upgrade;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -14,6 +16,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 trait Database_Helper {
 
 	use Admin_Helper;
+
+	/**
+	 * The plugin version this trait file belongs to, as a literal.
+	 *
+	 * The counterpart of the BUILD constant on the classes of the upgrade
+	 * path: a trait file is loaded separately from the classes that use it, so
+	 * a stale (OPcache) copy of this file can run inside fresh classes.
+	 * Upgrade::check_upgrade() compares it to BURST_VERSION and postpones the
+	 * upgrade while they differ. A constant cannot be used: PHP 8.0 has no
+	 * trait constants, and a class using the trait defines BUILD itself.
+	 * bump-version.sh updates the literal.
+	 */
+	public function database_helper_build(): string {
+		return '3.7.4';
+	}
 
 	/**
 	 * Resolve query timeout in milliseconds based on runtime context.
@@ -778,10 +795,10 @@ trait Database_Helper {
 	 * Point the canonical dictionary row for a post id at the given url path:
 	 * the row for that url is created or claimed and flagged canonical, any
 	 * previous canonical row of the same post id is demoted. Shared by the
-	 * save_post sync, the weekly sweep and the read-path self-heal in
-	 * Statistics_Query::hydrate_page_url_rows(). Callers guarantee the path is
-	 * a real permalink path (viewable post, no query-string permalink) — a
-	 * "/" from a ?p=N permalink would re-assign the homepage row.
+	 * save_post sync and the weekly permalink sweep (Statistics). Callers
+	 * guarantee the path is a real permalink path (viewable post, no
+	 * query-string permalink) — a "/" from a ?p=N permalink would re-assign
+	 * the homepage row.
 	 *
 	 * Claiming a row that had no post id yet also re-keys the hits stored
 	 * under its negative dictionary id to the post id: the tracker assigns
@@ -792,9 +809,16 @@ trait Database_Helper {
 	 * page table. The merge is bounded per call; the weekly sweep finishes
 	 * any remainder (see merge_negative_page_id_hits()).
 	 *
+	 * Re-pointing a row that carried another post id re-keys that url's hits
+	 * the same way, from the superseded id to the new one: without it they
+	 * match no dictionary row and hydrate to an empty page name (see
+	 * merge_superseded_page_id_hits()). That merge is bounded per call too,
+	 * and the sweep does not re-enter it (the path is already current), so a
+	 * capped-out merge queues the remainder for repair_superseded_page_ids.
+	 *
 	 * @param int      $page_id          WP post id.
 	 * @param string   $path             Current permalink path.
-	 * @param int|null $merge_max_chunks Cap on the hit merge for this caller (see merge_negative_page_id_hits()); null = the default.
+	 * @param int|null $merge_max_chunks Cap on both hit merges for this caller (see merge_negative_page_id_hits() and merge_superseded_page_id_hits()); null = the default.
 	 */
 	protected function set_canonical_page_url( int $page_id, string $path, ?int $merge_max_chunks = null ): void {
 		global $wpdb;
@@ -831,6 +855,70 @@ trait Database_Helper {
 		if ( $row_id > 0 && is_array( $existing ) && (int) $existing['page_id'] <= 0 ) {
 			$this->merge_negative_page_id_hits( $row_id, $page_id, $merge_max_chunks );
 		}
+
+		// A row that carried another post id has just been re-pointed: the
+		// hits under the superseded id would hydrate to an empty page name.
+		if ( is_array( $existing ) && (int) $existing['page_id'] > 0 && (int) $existing['page_id'] !== $page_id
+			&& true !== $this->merge_superseded_page_id_hits( $path, (int) $existing['page_id'], $page_id, $merge_max_chunks ) ) {
+			// Hits left under the superseded id: the merge spent its chunk
+			// cap (a save_post on a url with more hits than the editor
+			// request may move) or the UPDATE failed. Unlike its negative
+			// twin, nothing re-enters this merge — the sweep only calls
+			// set_canonical_page_url() when the permalink changed, and the
+			// path is already current here. So hand the remainder to the
+			// repair task, which converges it from cron.
+			$this->queue_superseded_page_id_merge( $path, (int) $existing['page_id'] );
+		}
+	}
+
+	/**
+	 * Hand an unfinished superseded merge to repair_superseded_page_ids. The
+	 * url and the superseded id are queued, not just the task armed: the
+	 * task's own probe only finds ids without any dictionary row, and a
+	 * superseded post that still exists under another url (a page renamed
+	 * before a new page took over its slug) keeps its row, so the remainder
+	 * would never be found.
+	 *
+	 * @param string $page_url    Url path whose hits still carry the superseded id.
+	 * @param int    $old_page_id The superseded post id.
+	 */
+	protected function queue_superseded_page_id_merge( string $page_url, int $old_page_id ): void {
+		$queue                                   = $this->get_superseded_page_id_merge_queue();
+		$queue[ $old_page_id . '|' . $page_url ] = [
+			'page_url'    => $page_url,
+			'old_page_id' => $old_page_id,
+		];
+		update_option( 'burst_db_upgrade_repair_superseded_page_ids_queue', $queue, false );
+		$this->arm_db_upgrade( 'repair_superseded_page_ids' );
+	}
+
+	/**
+	 * The superseded merges queued by queue_superseded_page_id_merge(), keyed
+	 * by "old_page_id|page_url".
+	 *
+	 * @return array<string, array{page_url: string, old_page_id: int}>
+	 */
+	protected function get_superseded_page_id_merge_queue(): array {
+		$queue = get_option( 'burst_db_upgrade_repair_superseded_page_ids_queue', [] );
+		return is_array( $queue ) ? $queue : [];
+	}
+
+	/**
+	 * Drop a finished or obsolete merge from the queue.
+	 *
+	 * @param string $key Queue key, "old_page_id|page_url".
+	 */
+	protected function dequeue_superseded_page_id_merge( string $key ): void {
+		$queue = $this->get_superseded_page_id_merge_queue();
+		if ( ! isset( $queue[ $key ] ) ) {
+			return;
+		}
+		unset( $queue[ $key ] );
+		if ( empty( $queue ) ) {
+			delete_option( 'burst_db_upgrade_repair_superseded_page_ids_queue' );
+			return;
+		}
+		update_option( 'burst_db_upgrade_repair_superseded_page_ids_queue', $queue, false );
 	}
 
 	/**
@@ -845,27 +933,104 @@ trait Database_Helper {
 	 * @param int      $dictionary_id burst_page_urls.ID of the claimed row.
 	 * @param int      $page_id       WP post id the hits move to.
 	 * @param int|null $max_chunks    Cap on the 5000-row chunks for this call; null = 40 (200k rows), the sweep's budget. save_post passes a lower cap: an editor save must stay quick, the weekly sweep finishes the rest.
-	 * @return bool True when no hits remain under the negative id.
+	 * @return bool|null True when no hits remain under the negative id, false when the chunk cap was spent, null when the UPDATE failed (see run_chunked_page_id_merge()).
 	 */
-	protected function merge_negative_page_id_hits( int $dictionary_id, int $page_id, ?int $max_chunks = null ): bool {
+	protected function merge_negative_page_id_hits( int $dictionary_id, int $page_id, ?int $max_chunks = null ): ?bool {
 		global $wpdb;
 		if ( $dictionary_id <= 0 || $page_id <= 0 ) {
 			return true;
 		}
-		$chunk      = 5000;
+		$chunk = 5000;
+		$sql   = $wpdb->prepare(
+			"UPDATE {$wpdb->prefix}burst_statistics SET page_id = %d WHERE page_id = %d LIMIT %d",
+			$page_id,
+			-$dictionary_id,
+			$chunk
+		);
+		return $this->run_chunked_page_id_merge( $sql, $chunk, $max_chunks );
+	}
+
+	/**
+	 * Re-key the hits a superseded post id left stranded on a url, to the
+	 * post id its dictionary row carries now. A url keeps its path while its
+	 * post id changes (a page deleted and recreated, a content migration);
+	 * set_canonical_page_url() re-points the row, and hits stored under the
+	 * previous post id then match no row at all, so hydrate_page_url_rows()
+	 * renders them with an empty page name and splits the page's history off
+	 * from its current traffic.
+	 *
+	 * Driven by the superseded id, like its twin, so the driving index is
+	 * (page_id, page_type) and every chunk starts on rows that still need
+	 * work: a chunk re-keys them out of the range it scans. Selecting the
+	 * hits by url instead costs a scan of the whole url — 157ms per no-op
+	 * call on a 100k-hit url, growing with its traffic. The url is still
+	 * matched, because the superseded id can legitimately own other urls and
+	 * those hits must stay where they are.
+	 *
+	 * Only positive ids are touched: a negative id is the url's own
+	 * dictionary id and belongs to merge_negative_page_id_hits().
+	 *
+	 * @param string   $page_url     Url path whose hits converge.
+	 * @param int      $old_page_id  The superseded post id the hits carry now.
+	 * @param int      $page_id      WP post id the hits move to.
+	 * @param int|null $max_chunks   Cap on the 5000-row chunks for this call; null = 40 (200k rows). save_post passes a lower cap: an editor save must stay quick, and set_canonical_page_url() queues what is left for repair_superseded_page_ids.
+	 * @return bool|null True when no hits remain under the superseded id for this url, false when the chunk cap was spent, null when the UPDATE failed (see run_chunked_page_id_merge()).
+	 */
+	protected function merge_superseded_page_id_hits( string $page_url, int $old_page_id, int $page_id, ?int $max_chunks = null ): ?bool {
+		global $wpdb;
+		if ( '' === $page_url || $old_page_id <= 0 || $page_id <= 0 || $old_page_id === $page_id ) {
+			return true;
+		}
+		$chunk = 5000;
+		$sql   = $wpdb->prepare(
+			"UPDATE {$wpdb->prefix}burst_statistics SET page_id = %d
+			WHERE page_id = %d AND page_type != '404' AND page_url = %s
+			LIMIT %d",
+			$page_id,
+			$old_page_id,
+			$page_url,
+			$chunk
+		);
+		return $this->run_chunked_page_id_merge( $sql, $chunk, $max_chunks );
+	}
+
+	/**
+	 * Run one of the page_id merges above in bounded chunks: the statement is
+	 * re-run until a chunk comes back short (nothing left to move) or the cap
+	 * is spent, which keeps the transactions small on a busy table. Each
+	 * chunk moves its rows out of the range the statement matches, so the
+	 * same prepared statement makes progress every time.
+	 *
+	 * Takes a finished statement rather than a WHERE clause on purpose: a
+	 * helper that interpolates a fragment would have to switch off the
+	 * prepared-SQL sniff for every caller, and the day a caller builds that
+	 * fragment from request data nothing would flag it. The two callers keep
+	 * their SQL literal and bind their own values.
+	 *
+	 * The three outcomes are told apart, because a caller must act on them
+	 * differently: a spent cap means work is left and someone has to finish
+	 * it (set_canonical_page_url() queues it for the repair task), while a failed
+	 * UPDATE (lock wait timeout, a host's query killer) means the same work
+	 * is still to do and a retried caller would otherwise loop on it forever
+	 * (DB_Upgrade::upgrade_repair_superseded_page_ids() counts it against the
+	 * task's retry budget).
+	 *
+	 * @param string   $prepared_sql A complete `UPDATE … LIMIT` statement, already through $wpdb->prepare().
+	 * @param int      $chunk        The row limit that statement carries: a smaller number of affected rows ends the merge.
+	 * @param int|null $max_chunks   Cap on the chunks for this call; null = 40 (200k rows).
+	 * @return bool|null True when nothing is left to move, false when the chunk cap was spent, null when the UPDATE failed.
+	 */
+	private function run_chunked_page_id_merge( string $prepared_sql, int $chunk, ?int $max_chunks ): ?bool {
+		global $wpdb;
 		$max_chunks = (int) apply_filters( 'burst_merge_page_id_max_chunks', $max_chunks ?? 40 );
 		for ( $i = 0; $i < $max_chunks; $i++ ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$affected = $wpdb->query(
-				$wpdb->prepare(
-					"UPDATE {$wpdb->prefix}burst_statistics SET page_id = %d WHERE page_id = %d LIMIT %d",
-					$page_id,
-					-$dictionary_id,
-					$chunk
-				)
-			);
-			if ( false === $affected || (int) $affected < $chunk ) {
-				return false !== $affected;
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- the caller binds every value through wpdb::prepare().
+			$affected = $wpdb->query( $prepared_sql );
+			if ( false === $affected ) {
+				return null;
+			}
+			if ( (int) $affected < $chunk ) {
+				return true;
 			}
 		}
 		return false;
@@ -1681,6 +1846,8 @@ trait Database_Helper {
 				'burst_events',
 				'burst_page_weights',
 				'burst_page_weight_history',
+				// Archive is shared code: free installs this table as well.
+				'burst_archived_months',
 			],
 		);
 	}
@@ -1691,6 +1858,13 @@ trait Database_Helper {
 	 * Attempts to create a database index with proper error handling. If an index already exists
 	 * with the same name, it will skip the operation. If the index creation fails due to key length,
 	 * it will retry with a reduced key length.
+	 *
+	 * A failure is logged and the caller carries on; install_schema() checks
+	 * afterwards whether the index is there. The reduced length retry below
+	 * appends the prefix to the column list as a whole, so for a multi-column
+	 * index it lands on the last column only and fails again when that column
+	 * takes no prefix — the retry keeps the same index name, so an index that
+	 * only fits at a reduced length still counts as installed.
 	 *
 	 * @param string $table_name The table to add the index to (without prefix).
 	 * @param array  $indexes Array of column names to include in the index.
@@ -1707,43 +1881,53 @@ trait Database_Helper {
 		$index_exists = $this->index_exists( $table_name, $index_name );
 		$table_name   = $wpdb->prefix . $this->validate_table_name( $table_name );
 
-		if ( ! $index_exists ) {
-			$sql = "ALTER TABLE $table_name ADD INDEX $index_name ($index)";
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --called with predefined table names, and sanitized above.
-			$wpdb->query( $sql );
-
-			if ( $wpdb->last_error ) {
-				// Skip reporting duplicate key errors as they're not actual errors.
-				if ( str_contains( $wpdb->last_error, 'Duplicate key name' ) ) {
-					return;
-				}
-
-				self::error_log( "Error creating index $index_name in $table_name: " . $wpdb->last_error );
-				// If the error is about key length, try with reduced length.
-				if ( str_contains( $wpdb->last_error, 'Specified key was too long' ) ) {
-					// Remove the original index.
-					$drop_sql = "ALTER TABLE $table_name DROP INDEX $index_name";
-                    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --called with predefined table names, and sanitized above.
-					$wpdb->query( $drop_sql );
-
-					// Try with reduced length.
-                    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --called with predefined table names, and sanitized above.
-					$reduced_sql = "ALTER TABLE $table_name ADD INDEX $index_name ($index(100))";
-                    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --called with predefined table names, and sanitized above.
-					$wpdb->query( $reduced_sql );
-					// Ignore phpstan error for the last_error check.
-					// @phpstan-ignore-next-line.
-					if ( $wpdb->last_error ) {
-						// Skip duplicate key errors on retry as well.
-						// @phpstan-ignore-next-line.
-						if ( str_contains( $wpdb->last_error, 'Duplicate key name' ) ) {
-							return;
-						}
-						self::error_log( 'Error creating reduced length sessions index: ' . $wpdb->last_error );
-					}
-				}
-			}
+		if ( $index_exists ) {
+			return;
 		}
+
+		$sql = "ALTER TABLE $table_name ADD INDEX $index_name ($index)";
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --called with predefined table names, and sanitized above.
+		$wpdb->query( $sql );
+
+		if ( ! $wpdb->last_error ) {
+			return;
+		}
+
+		// Skip reporting duplicate key errors as they're not actual errors.
+		if ( str_contains( $wpdb->last_error, 'Duplicate key name' ) ) {
+			return;
+		}
+
+		self::error_log( "Error creating index $index_name in $table_name: " . $wpdb->last_error );
+		// If the error is about key length, try with reduced length.
+		if ( ! str_contains( $wpdb->last_error, 'Specified key was too long' ) ) {
+			return;
+		}
+
+		// Remove the original index.
+		$drop_sql = "ALTER TABLE $table_name DROP INDEX $index_name";
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --called with predefined table names, and sanitized above.
+		$wpdb->query( $drop_sql );
+
+		// Try with reduced length.
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --called with predefined table names, and sanitized above.
+		$reduced_sql = "ALTER TABLE $table_name ADD INDEX $index_name ($index(100))";
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared --called with predefined table names, and sanitized above.
+		$wpdb->query( $reduced_sql );
+		// Ignore phpstan error for the last_error check.
+		// @phpstan-ignore-next-line.
+		if ( ! $wpdb->last_error ) {
+			return;
+		}
+
+		// Skip duplicate key errors on retry as well.
+		// @phpstan-ignore-next-line.
+		if ( str_contains( $wpdb->last_error, 'Duplicate key name' ) ) {
+			return;
+		}
+
+		// @phpstan-ignore-next-line.
+		self::error_log( 'Error creating reduced length sessions index: ' . $wpdb->last_error );
 	}
 
 	/**
@@ -1772,6 +1956,321 @@ trait Database_Helper {
 		if ( $wpdb->last_error ) {
 			self::error_log( "Error dropping index $index_name from $table_name: " . $wpdb->last_error );
 		}
+	}
+
+	/**
+	 * The table schemas this class installs, keyed by table name without prefix.
+	 *
+	 * Each definition holds the `columns` body of the CREATE TABLE statement
+	 * (without prefix and charset) and optionally the `indexes` passed to
+	 * add_index(). The installer and the check that verifies the result both
+	 * read it, so what is checked always describes what the installer creates.
+	 * Classes that install tables override this; the default installs nothing.
+	 *
+	 * A dictionary table whose key column is joined against a statistics column
+	 * declares `charset_collate_from` as [ table, column ]: install_schema()
+	 * then creates it with that column's charset and collation instead of the
+	 * database default, because a collation mismatch makes the join drop the
+	 * index. It stays a static pair here — the lookup itself runs at install
+	 * time only, so the schema check never queries the database.
+	 *
+	 * @return array<string, array{columns: string, indexes?: array<int, string[]>, charset_collate_from?: array{0: string, 1: string}}>
+	 */
+	protected function get_schema_definition(): array {
+		return [];
+	}
+
+	/**
+	 * The CREATE TABLE charset and collation clause for one schema definition.
+	 *
+	 * Follows the `charset_collate_from` column when the definition names one
+	 * and that column exists, so a dictionary table is created in the collation
+	 * of the column it is joined against. Falls back to the database default
+	 * when the source column is not there yet — on a fresh install both tables
+	 * are created in the same default anyway.
+	 *
+	 * @param array  $definition      One entry of get_schema_definition().
+	 * @param string $charset_collate The database default from get_charset_collate().
+	 * @return string The clause to append to the CREATE TABLE statement.
+	 */
+	private function table_charset_collate( array $definition, string $charset_collate ): string {
+		if ( ! isset( $definition['charset_collate_from'] ) ) {
+			return $charset_collate;
+		}
+
+		[ $source_table, $source_column ] = $definition['charset_collate_from'];
+		$source                           = $this->get_column_charset_collate( $source_table, $source_column );
+		if ( null === $source ) {
+			return $charset_collate;
+		}
+
+		return "DEFAULT CHARACTER SET {$source['charset']} COLLATE {$source['collation']}";
+	}
+
+	/**
+	 * Create or update the tables of get_schema_definition() and verify the result.
+	 *
+	 * A table counts as installed when it exists and every column of its
+	 * definition is present with the type the definition gives it.
+	 * $wpdb->last_error cannot answer that: it holds the error of the last query
+	 * dbDelta ran, so a failing CHANGE COLUMN followed by a successful ADD
+	 * COLUMN leaves it empty.
+	 *
+	 * Such a mismatch is reported to Upgrade::record_schema_install_failure(),
+	 * which postpones the upgrade, because the new code would query a column
+	 * that is not there. A missing index is only logged: the queries still
+	 * work, and the causes (duplicate rows under a unique key, a key over the
+	 * length limit of an old table) are not fixed by running the install again.
+	 *
+	 * @param string[] $table_names Tables to install, keys of get_schema_definition().
+	 * @return bool False when a table or one of its columns does not match the definition afterwards.
+	 */
+	protected function install_schema( array $table_names ): bool {
+		global $wpdb;
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$definitions     = $this->get_schema_definition();
+		$charset_collate = $wpdb->get_charset_collate();
+		$is_created      = true;
+
+		foreach ( $table_names as $table_name ) {
+			if ( ! isset( $definitions[ $table_name ] ) ) {
+				// A caller asked for a table this class does not define — a typo
+				// in the install method. Say so instead of fataling on the
+				// missing columns key.
+				self::error_log( "No schema definition for table {$table_name} in " . static::class );
+				$is_created = false;
+				continue;
+			}
+
+			$definition      = $definitions[ $table_name ];
+			$table_collation = $this->table_charset_collate( $definition, $charset_collate );
+			dbDelta( "CREATE TABLE {$wpdb->prefix}{$table_name} ({$definition['columns']}) $table_collation;" );
+
+			foreach ( $definition['indexes'] ?? [] as $index ) {
+				$this->add_index( $table_name, $index );
+			}
+
+			$missing_columns = $this->missing_schema_columns( $table_name, $definition );
+			if ( [] !== $missing_columns ) {
+				self::error_log( "Table {$table_name} does not match its definition in " . static::class . ': ' . implode( ', ', $missing_columns ) );
+				Upgrade::record_schema_install_failure( $table_name );
+				$is_created = false;
+				continue;
+			}
+
+			$missing_indexes = $this->missing_schema_indexes( $table_name, $definition );
+			if ( [] !== $missing_indexes ) {
+				self::error_log( "Table {$table_name} misses indexes of its definition in " . static::class . ': ' . implode( ', ', $missing_indexes ) );
+			}
+		}
+
+		return $is_created;
+	}
+
+	/**
+	 * What the live table misses of the columns of one schema definition.
+	 *
+	 * Columns are compared by name and by normalized type: the display width
+	 * of an integer type is dropped (MySQL 8.0.19 no longer reports it, 5.7 and
+	 * MariaDB do) and the spacing of a decimal precision is normalized, so a
+	 * column that is in fact correct never counts as missing. Everything else
+	 * of a column definition (NOT NULL, DEFAULT) is left out on purpose: it
+	 * does not break a query the way a missing column or a changed type does.
+	 *
+	 * @param string $table_name The table without prefix, as used in the definition.
+	 * @param array  $definition One entry of get_schema_definition().
+	 * @return string[] Descriptions of the missing parts, empty when the columns match.
+	 */
+	private function missing_schema_columns( string $table_name, array $definition ): array {
+		$missing = [];
+		$live    = $this->live_column_types( $table_name );
+
+		if ( [] === $live ) {
+			return [ 'the table itself' ];
+		}
+
+		foreach ( $this->definition_column_types( (string) $definition['columns'] ) as $column => $type ) {
+			if ( ! isset( $live[ $column ] ) ) {
+				$missing[] = "column {$column}";
+				continue;
+			}
+			if ( $live[ $column ] !== $type ) {
+				$missing[] = "column {$column} is {$live[ $column ]} instead of {$type}";
+			}
+		}
+
+		return $missing;
+	}
+
+	/**
+	 * The indexes of one schema definition the live table does not have.
+	 *
+	 * Indexes are compared by name: the ones the definition declares inline
+	 * (PRIMARY KEY, UNIQUE KEY, KEY and a UNIQUE on the column itself) and the
+	 * ones it lists under `indexes` for add_index(). An index add_index() could
+	 * only create at a reduced key length keeps its name, so it is found here
+	 * as well.
+	 *
+	 * @param string $table_name The table without prefix, as used in the definition.
+	 * @param array  $definition One entry of get_schema_definition().
+	 * @return string[] Descriptions of the missing indexes, empty when all exist.
+	 */
+	private function missing_schema_indexes( string $table_name, array $definition ): array {
+		$missing = [];
+		foreach ( $this->definition_index_names( $definition ) as $index_name ) {
+			if ( ! $this->index_exists( $table_name, $index_name ) ) {
+				$missing[] = "index {$index_name}";
+			}
+		}
+
+		return $missing;
+	}
+
+	/**
+	 * The columns of the live table, as name => normalized type.
+	 *
+	 * Read with SHOW COLUMNS rather than information_schema: the test suite
+	 * creates the Burst tables as temporary tables, which information_schema
+	 * does not list. A missing table returns an empty array.
+	 *
+	 * @param string $table_name The table without prefix.
+	 * @return array<string, string>
+	 */
+	private function live_column_types( string $table_name ): array {
+		global $wpdb;
+		$table_name = $this->validate_table_name( $table_name );
+		if ( '' === $table_name ) {
+			return [];
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- table name validated against the allowlist above.
+		$rows = $wpdb->get_results( "SHOW COLUMNS FROM {$wpdb->prefix}{$table_name}", ARRAY_A );
+		if ( ! is_array( $rows ) ) {
+			return [];
+		}
+
+		$columns = [];
+		foreach ( $rows as $row ) {
+			$columns[ (string) $row['Field'] ] = $this->normalize_column_type( (string) $row['Type'] );
+		}
+
+		return $columns;
+	}
+
+	/**
+	 * The columns one definition declares, as name => normalized type.
+	 *
+	 * @param string $columns_sql The `columns` body of a schema definition.
+	 * @return array<string, string>
+	 */
+	private function definition_column_types( string $columns_sql ): array {
+		$columns = [];
+		foreach ( $this->split_definition_parts( $columns_sql ) as $part ) {
+			if ( $this->is_index_definition( $part ) ) {
+				continue;
+			}
+			if ( ! preg_match( '/^`?([a-zA-Z0-9_]+)`?\s+([a-zA-Z]+(?:\s*\([^)]*\))?(?:\s+unsigned)?)/i', $part, $matches ) ) {
+				continue;
+			}
+			$columns[ $matches[1] ] = $this->normalize_column_type( $matches[2] );
+		}
+
+		return $columns;
+	}
+
+	/**
+	 * The index names one definition declares, inline and under `indexes`.
+	 *
+	 * @param array $definition One entry of get_schema_definition().
+	 * @return string[]
+	 */
+	private function definition_index_names( array $definition ): array {
+		$names = [];
+		foreach ( $this->split_definition_parts( (string) $definition['columns'] ) as $part ) {
+			if ( preg_match( '/^PRIMARY\s+KEY/i', $part ) ) {
+				$names[] = 'PRIMARY';
+				continue;
+			}
+			if ( preg_match( '/^(?:UNIQUE|FULLTEXT|SPATIAL)?\s*(?:KEY|INDEX)\s+`?([a-zA-Z0-9_]+)`?/i', $part, $matches ) ) {
+				$names[] = $matches[1];
+				continue;
+			}
+			// A UNIQUE on the column itself (`name` varchar(191) NOT NULL UNIQUE):
+			// MySQL names that index after the column.
+			if ( ! $this->is_index_definition( $part ) && preg_match( '/^`?([a-zA-Z0-9_]+)`?\s.*\bUNIQUE\b/i', $part, $matches ) ) {
+				$names[] = $matches[1];
+			}
+		}
+
+		foreach ( $definition['indexes'] ?? [] as $index ) {
+			$names[] = $this->index_name_for_columns( $index );
+		}
+
+		return array_unique( $names );
+	}
+
+	/**
+	 * Whether one part of a definition body declares an index instead of a column.
+	 *
+	 * @param string $part One comma-separated part of a `columns` body.
+	 */
+	private function is_index_definition( string $part ): bool {
+		return 1 === preg_match( '/^(?:PRIMARY\s+KEY|UNIQUE|FULLTEXT|SPATIAL|KEY|INDEX|CONSTRAINT)\b/i', $part );
+	}
+
+	/**
+	 * Split a `columns` body on the commas that separate its definitions.
+	 *
+	 * Commas inside a type or a key column list are kept, so decimal(15,2) and
+	 * KEY x (a, b) survive as one part.
+	 *
+	 * @param string $columns_sql The `columns` body of a schema definition.
+	 * @return string[]
+	 */
+	private function split_definition_parts( string $columns_sql ): array {
+		$parts   = [];
+		$current = '';
+		$depth   = 0;
+		$length  = strlen( $columns_sql );
+
+		for ( $i = 0; $i < $length; $i++ ) {
+			$character = $columns_sql[ $i ];
+			if ( '(' === $character ) {
+				++$depth;
+			}
+			if ( ')' === $character ) {
+				--$depth;
+			}
+			if ( ',' === $character && 0 === $depth ) {
+				$parts[] = trim( $current );
+				$current = '';
+				continue;
+			}
+			$current .= $character;
+		}
+		$parts[] = trim( $current );
+
+		return array_values( array_filter( $parts, static fn( string $part ): bool => '' !== $part ) );
+	}
+
+	/**
+	 * A column type in the form both the definition and SHOW COLUMNS reduce to.
+	 *
+	 * @param string $type A type as written in a definition or reported by SHOW COLUMNS.
+	 * @return string The normalized type.
+	 */
+	private function normalize_column_type( string $type ): string {
+		$type = strtolower( trim( (string) preg_replace( '/\s+/', ' ', $type ) ) );
+		// MySQL 8.0.19 dropped the display width of integer types; 5.7 and MariaDB
+		// still report it. Removed before the spacing of the remaining parens is
+		// normalized, so `int(10) unsigned` keeps the space: `int unsigned`.
+		$type = (string) preg_replace( '/^(tinyint|smallint|mediumint|int|integer|bigint)\s*\(\s*\d+\s*\)/', '$1', $type );
+		$type = (string) preg_replace( '/\s*([(),])\s*/', '$1', $type );
+		$type = (string) preg_replace( '/^integer\b/', 'int', $type );
+		$type = (string) preg_replace( '/^bool(ean)?\b/', 'tinyint', $type );
+
+		return $type;
 	}
 
 	/**

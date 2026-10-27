@@ -3,6 +3,8 @@ namespace Burst\Admin\Integrations;
 
 defined( 'ABSPATH' ) || die();
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 
@@ -19,11 +21,6 @@ use function Burst\burst_loader;
 class Integrations_Settings {
 	use Helper;
 	use Admin_Helper;
-
-	/**
-	 * Option key for the cached list of installed integration slugs.
-	 */
-	private const INSTALLED_CACHE_OPTION = 'burst_installed_integrations';
 
 	/**
 	 * Register hooks.
@@ -47,11 +44,12 @@ class Integrations_Settings {
 	 */
 	public function add_menu( array $menu ): array {
 		$integrations_item = [
-			'id'       => 'integrations',
-			'title'    => __( 'Integrations', 'burst-statistics' ),
-			'group_id' => 'integrations',
-			'icon'     => 'plug',
-			'groups'   => [
+			'id'          => 'integrations',
+			'title'       => __( 'Integrations', 'burst-statistics' ),
+			'description' => __( 'Manage integrations with WooCommerce, Easy Digital Downloads, Form plugins, and Google Search Console.', 'burst-statistics' ),
+			'group_id'    => 'integrations',
+			'icon'        => 'plug',
+			'groups'      => [
 				[
 					'id'    => 'integrations',
 					'title' => __( 'Plugin integrations', 'burst-statistics' ),
@@ -136,7 +134,7 @@ class Integrations_Settings {
 			return;
 		}
 
-		update_option( self::INSTALLED_CACHE_OPTION, $slugs, false );
+		Admin_Options::update( Admin_Option_Category::CORE, 'installed_integrations', $slugs );
 	}
 
 	/**
@@ -239,11 +237,11 @@ class Integrations_Settings {
 		$slugs = $this->detect_installed_slugs( $all_integrations );
 
 		if ( ! empty( $slugs ) ) {
-			update_option( self::INSTALLED_CACHE_OPTION, $slugs, false );
+			Admin_Options::update( Admin_Option_Category::CORE, 'installed_integrations', $slugs );
 			return $slugs;
 		}
 
-		$cached = get_option( self::INSTALLED_CACHE_OPTION, [] );
+		$cached = Admin_Options::get( Admin_Option_Category::CORE, 'installed_integrations', [] );
 
 		return is_array( $cached ) ? $cached : [];
 	}

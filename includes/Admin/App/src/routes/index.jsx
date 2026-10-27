@@ -6,6 +6,7 @@ import TipsTricksBlock from '@/components/Dashboard/TipsTricksBlock';
 import OtherPluginsBlock from '@/components/Dashboard/OtherPluginsBlock';
 
 import { shouldLoadRoute } from '@/utils/helper';
+import { useIsFeatureEnabled } from '@/hooks/useIsFeatureEnabled';
 
 export const Route = createFileRoute( '/' )({
 
@@ -19,11 +20,13 @@ export const Route = createFileRoute( '/' )({
 });
 
 function Dashboard() {
+	const isGoalsEnabled = useIsFeatureEnabled( 'goals' );
+
 	return (
 		<>
 			<OverviewBlock />
 			<TodayBlock />
-			<GoalsBlock />
+			{ isGoalsEnabled && <GoalsBlock /> }
 			<TipsTricksBlock />
 			<OtherPluginsBlock />
 		</>

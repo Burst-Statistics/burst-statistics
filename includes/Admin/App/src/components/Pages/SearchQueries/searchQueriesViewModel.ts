@@ -20,14 +20,6 @@ export interface SearchQueriesViewModel {
 }
 
 /**
- * Normalize the localized Pro flag before selecting a gated view.
- */
-export const isBurstPro = (): boolean => {
-	const localizedIsPro = window.burst_settings?.is_pro;
-	return true === localizedIsPro || '1' === localizedIsPro;
-};
-
-/**
  * Select the top-level Search Console gate without mounting data hooks early.
  */
 export const getSearchQueriesAccessState = (

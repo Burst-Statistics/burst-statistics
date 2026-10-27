@@ -7,8 +7,7 @@ import InsightsHeader from './InsightsHeader';
 import { useInsightsStore, groupByFitsRange } from '../../store/useInsightsStore';
 import { useCompareStore } from '../../store/useCompareStore';
 import InsightsGraph from './InsightsGraph';
-import { useQuery } from '@tanstack/react-query';
-import getInsightsData from '@/api/getInsightsData';
+import { useInsightsData } from '@/hooks/useInsightsData';
 import { useBlockConfig } from '@/hooks/useBlockConfig';
 import { METRIC_LABELS, METRIC_COLORS } from './insightsConfig';
 
@@ -112,48 +111,14 @@ const InsightsBlock = ( props ) => {
 		}
 	}, [ groupByFits, setGroupBy ]);
 
-	// Pass compare_mode only when a single metric is active — comparison is not
-	// meaningful when multiple series are already overlaid on the chart.
-	const isSingleMetric = 1 === metrics.length;
-	const args = {
-		filters,
+	const query = useInsightsData({
+		startDate,
+		endDate,
+		range,
 		metrics,
-
-		// Forward the user's grouping choice. 'auto' is the backend default but
-		// we send it explicitly so changes from the popover always invalidate
-		// the cached query above.
-		group_by: effectiveGroupBy,
-		...( isSingleMetric && { compare_mode: compareMode })
-	};
-
-	const query = useQuery({
-		queryKey: [ 'insights', metrics, startDate, endDate, compareMode, effectiveGroupBy, args ],
-		queryFn: () => getInsightsData({ startDate, endDate, range, args }),
-		placeholderData: {
-			timestamps: [ 0, 0, 0, 0, 0, 0, 0 ],
-			interval: 'day',
-			spans_multiple_years: false,
-			datasets: [
-				{
-					data: [ 0, 0, 0, 0, 0, 0, 0 ],
-					backgroundColor: 'var(--color-blue-400)',
-					borderColor: 'var(--color-blue-400)',
-					label: '-',
-					metric_key: 'placeholder_a',
-					is_comparison: false,
-					fill: 'false'
-				},
-				{
-					data: [ 0, 0, 0, 0, 0, 0, 0 ],
-					backgroundColor: 'var(--color-yellow-500)',
-					borderColor: 'var(--color-yellow-500)',
-					label: '-',
-					metric_key: 'placeholder_b',
-					is_comparison: false,
-					fill: 'false'
-				}
-			]
-		}
+		groupBy: effectiveGroupBy,
+		compareMode,
+		filters
 	});
 
 	const loading = query.isLoading || query.isFetching;

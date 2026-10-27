@@ -36,6 +36,13 @@ class Visitor_Bitmaps {
 	use Database_Helper;
 	use Helper;
 
+	/**
+	 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
+
 	private const SCOPE_SITE = 'site';
 	private const SCOPE_PAGE = 'page';
 
@@ -170,15 +177,23 @@ class Visitor_Bitmaps {
 	}
 
 	/**
-	 * Install the bitmap store.
+	 * Schemas of the bitmap store, read by install_bitmaps_table() and the schema check.
+	 *
+	 * The burst_page_urls table is the page_url dictionary (same pattern as burst_uids).
+	 * Three consumers: the bitmap page scope (value_id = ID), the tracker (URLs
+	 * resolving to no post get page_id = -ID instead of 0, see
+	 * resolve_page_url_id()), and page-grain queries (GROUP BY
+	 * statistics.page_id with the display URL joined back from here). page_id
+	 * holds the WP post id the URL belonged to; is_canonical marks the row that
+	 * displays for that post id — maintained on save_post and by the weekly
+	 * permalink sweep.
+	 *
+	 * @return array<string, array{columns: string, indexes?: array<int, string[]>, charset_collate_from?: array{0: string, 1: string}}>
 	 */
-	public function install_bitmaps_table(): void {
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		global $wpdb;
-		$charset_collate = $wpdb->get_charset_collate();
-
-		$table_name = $wpdb->prefix . 'burst_visitor_bitmaps';
-		$sql        = "CREATE TABLE $table_name (
+	protected function get_schema_definition(): array {
+		return [
+			'burst_visitor_bitmaps' => [
+				'columns' => "
             `ID` bigint unsigned NOT NULL AUTO_INCREMENT,
             `scope` varchar(20) NOT NULL DEFAULT 'site',
             `value_id` int unsigned NOT NULL DEFAULT 0,
@@ -188,28 +203,10 @@ class Visitor_Bitmaps {
             `data` longblob,
             PRIMARY KEY  (ID),
             UNIQUE KEY scope_value_day (scope, value_id, day)
-        ) $charset_collate;";
-
-		dbDelta( $sql );
-		if ( ! empty( $wpdb->last_error ) ) {
-			self::error_log( 'Error creating visitor bitmaps table: ' . $wpdb->last_error );
-		}
-
-		// page_url dictionary (same pattern as burst_uids). Three consumers:
-		// the bitmap page scope (value_id = ID), the tracker (URLs resolving to
-		// no post get page_id = -ID instead of 0, see resolve_page_url_id()),
-		// and page-grain queries (GROUP BY statistics.page_id with the display
-		// URL joined back from here). page_id holds the WP post id the URL
-		// belonged to; is_canonical marks the row that displays for that post
-		// id — maintained on save_post and by the weekly permalink sweep.
-		$stats_page_collate        = $this->get_column_charset_collate( 'burst_statistics', 'page_url' );
-		$page_urls_charset_collate = null !== $stats_page_collate
-			? "DEFAULT CHARACTER SET {$stats_page_collate['charset']} COLLATE {$stats_page_collate['collation']}"
-			: $charset_collate;
-
-		$dictionary = $wpdb->prefix . 'burst_page_urls';
-		dbDelta(
-			"CREATE TABLE $dictionary (
+        ",
+			],
+			'burst_page_urls'       => [
+				'columns'              => '
             `ID` int unsigned NOT NULL AUTO_INCREMENT,
             `page_url` varchar(191) NOT NULL,
             `page_id` int NOT NULL DEFAULT 0,
@@ -217,11 +214,20 @@ class Visitor_Bitmaps {
             PRIMARY KEY  (ID),
             UNIQUE KEY page_url (page_url),
             KEY page_id (page_id)
-        ) $page_urls_charset_collate;"
-		);
-		if ( ! empty( $wpdb->last_error ) ) {
-			self::error_log( 'Error creating page url dictionary: ' . $wpdb->last_error );
-		}
+        ',
+				// page_url is joined against statistics.page_url, so the
+				// dictionary has to carry that column's collation: a mismatch
+				// makes MySQL convert on every row and drop the index.
+				'charset_collate_from' => [ 'burst_statistics', 'page_url' ],
+			],
+		];
+	}
+
+	/**
+	 * Install the bitmap store.
+	 */
+	public function install_bitmaps_table(): void {
+		$this->install_schema( [ 'burst_visitor_bitmaps', 'burst_page_urls' ] );
 	}
 
 	/**

@@ -53,6 +53,21 @@
 	width: max-content;
 	max-width: 100%;
 }
+.burst-editor-setting-panel .components-panel__body-toggle {
+	display: flex !important;
+	align-items: center !important;
+}
+.burst-editor-setting-panel .burst-panel-header-title {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	line-height: normal !important;
+}
+.burst-editor-setting-panel .burst-panel-header-icon {
+	color: #16a34a !important;
+	display: inline-block !important;
+	flex-shrink: 0 !important;
+}
 .mainwp-ui #burst-statistics,
 .mainwp-ui #burst-mainwp {
 	margin-left: 0 !important;

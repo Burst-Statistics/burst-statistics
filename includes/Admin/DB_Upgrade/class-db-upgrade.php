@@ -21,6 +21,13 @@ class DB_Upgrade {
 	use Helper;
 	use Sanitize;
 
+	/**
+	 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
+
 	private int $cron_interval = MINUTE_IN_SECONDS;
 
 	/**
@@ -34,11 +41,11 @@ class DB_Upgrade {
 	 */
 	private const DROP_LEGACY_COLUMNS_MAX_ATTEMPTS = 3;
 	/**
-	 * Cleanup tasks the read paths do not depend on: while they are pending,
-	 * db_upgrades_complete() stays true, so a long-running cleanup (a table
-	 * rebuild) does not switch off the fast paths.
+	 * Cleanup and repair tasks the read paths do not depend on: while they are
+	 * pending, db_upgrades_complete() stays true, so a long-running task (a
+	 * table rebuild, a per-url re-key) does not switch off the fast paths.
 	 */
-	private const NON_BLOCKING_UPGRADES = [ 'drop_legacy_columns' ];
+	private const NON_BLOCKING_UPGRADES = [ 'drop_legacy_columns', 'repair_superseded_page_ids' ];
 	/**
 	 * Columns the 3.7.0 migration stopped using, per table (without prefix),
 	 * dropped by upgrade_drop_legacy_columns(). Ordered small to large, so
@@ -54,7 +61,15 @@ class DB_Upgrade {
 	 * upgrade batch, the denominator of the progress notice.
 	 */
 	private const BATCH_TOTAL_OPTION = 'burst_upgrade_batch_total';
-	private int $batch               = 100000;
+	/**
+	 * State of repair_superseded_page_ids: consecutive failed merges (its
+	 * retry budget), the orphan-id count of the first iteration (the
+	 * denominator of its progress) and the ids it has nothing to do for.
+	 */
+	private const REPAIR_SUPERSEDED_ATTEMPTS_OPTION = 'burst_db_upgrade_repair_superseded_page_ids_attempts';
+	private const REPAIR_SUPERSEDED_TOTAL_OPTION    = 'burst_db_upgrade_repair_superseded_page_ids_total';
+	private const UNRESOLVABLE_ORPHANS_TRANSIENT    = 'burst_repair_superseded_unresolvable';
+	private int $batch                              = 100000;
 
 	/**
 	 * Lookup item => id column on burst_sessions (and on burst_statistics for
@@ -90,6 +105,7 @@ class DB_Upgrade {
 		'seed_page_urls',
 		'statistics_page_id',
 		'backfill_page_urls',
+		'repair_superseded_page_ids',
 	];
 
 	/**
@@ -195,6 +211,32 @@ class DB_Upgrade {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * The free task the dispatcher runs next: the first pending blocking task
+	 * in registry order. The NON_BLOCKING_UPGRADES tasks only get a turn once
+	 * the blocking free tasks and the Pro tasks are done: they sort before the
+	 * tasks of later releases in the registry, and a long repair would
+	 * otherwise hold those back.
+	 *
+	 * @return string|false Task slug, false when no free task should run now.
+	 */
+	protected function next_free_upgrade(): string|false {
+		$pending  = array_values(
+			array_filter(
+				$this->get_db_upgrades( 'free', 'all' ),
+				static fn( string $slug ): bool => (bool) get_option( "burst_db_upgrade_{$slug}" )
+			)
+		);
+		$blocking = array_values( array_diff( $pending, self::NON_BLOCKING_UPGRADES ) );
+		if ( ! empty( $blocking ) ) {
+			return $blocking[0];
+		}
+		if ( empty( $pending ) || $this->get_progress( 'pro', 'all' ) < 100 ) {
+			return false;
+		}
+		return $pending[0];
 	}
 
 	/**
@@ -474,18 +516,7 @@ class DB_Upgrade {
 			return false;
 		}
 		set_transient( 'burst_upgrade_running', true, 60 );
-		// check if we need to upgrade.
-		$db_upgrades = $this->get_db_upgrades( 'free', 'all' );
-		// check if all upgrades are done.
-		$do_upgrade = false;
-		foreach ( $db_upgrades as $upgrade ) {
-			// if any upgrade is not done.
-			if ( get_option( "burst_db_upgrade_$upgrade" ) ) {
-				$do_upgrade = $upgrade;
-				// if we need to upgrade break the loop.
-				break;
-			}
-		}
+		$do_upgrade = $this->next_free_upgrade();
 
 		// Align before any dictionary task: a collation mismatch is a typical
 		// reason such a task stalled, and sites that already passed
@@ -497,7 +528,7 @@ class DB_Upgrade {
 		// @phpstan-ignore-next-line.
 		if ( WP_DEBUG ) {
 			// log all upgrades that still need to be done.
-			foreach ( $db_upgrades as $upgrade ) {
+			foreach ( $this->get_db_upgrades( 'free', 'all' ) as $upgrade ) {
 				if ( get_option( "burst_db_upgrade_$upgrade" ) ) {
 					self::error_log( "Upgrade $upgrade still needs to be done." );
 				}
@@ -616,6 +647,10 @@ class DB_Upgrade {
 				$this->upgrade_backfill_page_urls();
 			}
 
+			if ( 'repair_superseded_page_ids' === $do_upgrade ) {
+				$this->upgrade_repair_superseded_page_ids();
+			}
+
 			if ( 'drop_legacy_columns' === $do_upgrade ) {
 				$this->upgrade_drop_legacy_columns();
 			}
@@ -625,30 +660,38 @@ class DB_Upgrade {
 			}
 		}
 
+		// Pro tasks only depend on the blocking free tasks, so they get their
+		// turn as soon as those are done, ahead of the non-blocking ones.
+		$pro_ran = ! $this->has_pending_free_blocking_upgrade() && $this->get_progress( 'pro', 'all' ) < 100;
+
 		// check free progress, because pro upgrades are hooked to burst_upgrade_iteration.
 		if ( $this->get_progress( 'free', 'all' ) < 100 ) {
 			// free upgrades not finished yet. A task that spent its retry
 			// budget is retried once a day instead of every minute, so a
 			// structurally failing step does not burn a worker per minute.
-			$interval = empty( $this->stalled_task() ) ? $this->cron_interval : DAY_IN_SECONDS;
+			// A stalled non-blocking task waits its turn behind the others
+			// (see next_free_upgrade()), so it must not slow those down.
+			$stalled_slug  = (string) ( $this->stalled_task()['slug'] ?? '' );
+			$stalled_waits = in_array( $stalled_slug, self::NON_BLOCKING_UPGRADES, true ) && $stalled_slug !== $this->next_free_upgrade();
+			$interval      = '' === $stalled_slug || $stalled_waits ? $this->cron_interval : DAY_IN_SECONDS;
 			wp_schedule_single_event( time() + $interval, 'burst_upgrade_iteration' );
 		} else {
 			wp_clear_scheduled_hook( 'burst_upgrade_iteration' );
-			// if pro upgrades are not finished yet, do them.
-			if ( $this->get_progress( 'pro', 'all' ) < 100 ) {
-				delete_transient( 'burst_upgrade_running' );
-				do_action( 'burst_upgrade_pro_iteration' );
-			}
-			// Free and pro both done: clear the autoloaded pending flag, so the
-			// read paths stop checking the per-slug task options
-			// (db_upgrades_complete()). Re-armed by the next arm_db_upgrade().
-			if ( $this->get_progress( 'pro', 'all' ) >= 100 ) {
-				update_option( 'burst_has_db_upgrade', false );
-				$this->delete_batch_total();
-			}
 		}
 
-		$pro_ran = $this->get_progress( 'free', 'all' ) >= 100 && $this->get_progress( 'pro', 'all' ) < 100;
+		// if pro upgrades are not finished yet, do them.
+		if ( $pro_ran ) {
+			delete_transient( 'burst_upgrade_running' );
+			do_action( 'burst_upgrade_pro_iteration' );
+		}
+
+		// Free and pro both done: clear the autoloaded pending flag, so the
+		// read paths stop checking the per-slug task options
+		// (db_upgrades_complete()). Re-armed by the next arm_db_upgrade().
+		if ( $this->get_progress( 'free', 'all' ) >= 100 && $this->get_progress( 'pro', 'all' ) >= 100 ) {
+			update_option( 'burst_has_db_upgrade', false );
+			$this->delete_batch_total();
+		}
 
 		delete_transient( 'burst_upgrade_running' );
 		$this->release_upgrade_lock();
@@ -819,6 +862,15 @@ class DB_Upgrade {
 					// rollback safety. Last in line: runs after the whole
 					// uid pipeline. Non-blocking, see NON_BLOCKING_UPGRADES.
 					'drop_legacy_columns',
+				],
+				'3.7.3.1' => [
+					// Re-key the hits of a url whose post id was superseded
+					// (a page deleted and recreated keeps its slug, a content
+					// migration renumbers every post), which
+					// set_canonical_page_url() left stranded under the old
+					// id: they hydrated to an empty page name. Non-blocking,
+					// see NON_BLOCKING_UPGRADES.
+					'repair_superseded_page_ids',
 				],
 			]
 		);
@@ -1773,6 +1825,282 @@ class DB_Upgrade {
 	}
 
 	/**
+	 * Re-key the hits a superseded post id left stranded. A url keeps its
+	 * path while its post id changes (a page deleted and recreated, a
+	 * content migration, a restore from another copy of the site); the new
+	 * post's first save re-points the dictionary row through
+	 * set_canonical_page_url(), and every hit stored under the previous post
+	 * id then resolves to no dictionary row at all — hydrate_page_url_rows()
+	 * renders those rows with an empty page name, and the page's history is
+	 * split off from its current traffic.
+	 *
+	 * Converges those hits onto the id the dictionary carries for their url,
+	 * so one url is one page_id again — the grain every page query, the
+	 * visitor bitmaps and the page weights are keyed on.
+	 */
+	private function upgrade_repair_superseded_page_ids(): void {
+		global $wpdb;
+		if ( ! $this->has_admin_access() ) {
+			return;
+		}
+		if ( ! get_option( 'burst_db_upgrade_repair_superseded_page_ids' ) ) {
+			return;
+		}
+
+		// The dictionary must be complete and canonical before its page_id is
+		// treated as the truth for a url: a pending seed or backfill would
+		// re-key hits onto a row that has not got its post id yet.
+		if ( ! $this->column_exists( 'burst_page_urls', 'is_canonical' )
+			|| (bool) get_option( 'burst_db_upgrade_seed_page_urls' )
+			|| (bool) get_option( 'burst_db_upgrade_statistics_page_id' )
+			|| (bool) get_option( 'burst_db_upgrade_backfill_page_urls' ) ) {
+			return;
+		}
+
+		$ids_budget = max( 1, (int) apply_filters( 'burst_repair_superseded_page_ids_per_iteration', 8 ) );
+
+		// Merges a save_post left unfinished come first: the probe below can
+		// miss them (see queue_superseded_page_id_merge()).
+		$queued = $this->repair_queued_superseded_merges( $ids_budget );
+		if ( null === $queued ) {
+			return;
+		}
+		$worked      = $queued > 0;
+		$ids_budget -= $queued;
+
+		$orphan_ids = $this->orphaned_page_ids();
+		if ( null === $orphan_ids ) {
+			// The probe itself failed or timed out: an empty list would be
+			// read as "nothing left to do" and complete a task that still
+			// has damage to repair. It counts against the retry budget like a
+			// failed merge, so a probe that always times out backs off too.
+			$this->count_repair_superseded_failure( (string) $wpdb->last_error );
+			return;
+		}
+
+		// Ids with no url this task can fix are remembered for the rest of
+		// the run: establishing that costs a walk of all the id's hits, and
+		// without the memo every later iteration pays it again.
+		$unresolvable = (array) get_transient( self::UNRESOLVABLE_ORPHANS_TRANSIENT );
+		$orphan_ids   = array_values( array_diff( $orphan_ids, $unresolvable ) );
+		$this->set_repair_superseded_progress( count( $orphan_ids ) + count( $this->get_superseded_page_id_merge_queue() ) );
+
+		foreach ( $orphan_ids as $orphan_id ) {
+			if ( $ids_budget <= 0 ) {
+				break;
+			}
+			$pair = $this->next_superseded_page_url( $orphan_id );
+			if ( null === $pair ) {
+				// No url of this id resolves to a post id the dictionary
+				// carries, so there is nothing this task can do for it: an
+				// archive row, or a url whose post is gone. Skipping it here
+				// instead of parking the dispatcher on it forever.
+				$unresolvable[] = $orphan_id;
+				set_transient( self::UNRESOLVABLE_ORPHANS_TRANSIENT, $unresolvable, HOUR_IN_SECONDS );
+				continue;
+			}
+
+			// One chunk per id per iteration: many ids advance together while
+			// the iteration stays bounded at $ids_budget * 5000 rows.
+			if ( null === $this->merge_superseded_page_id_hits( $pair['page_url'], $orphan_id, $pair['page_id'], 1 ) ) {
+				// The UPDATE failed (lock wait timeout, a host's query
+				// killer). The pair comes back unchanged on the next run, so
+				// without a budget this id would be retried every minute
+				// forever; after it the task backs off to once a day and the
+				// notice names the error.
+				$this->count_repair_superseded_failure( (string) $wpdb->last_error );
+				return;
+			}
+			$worked = true;
+			--$ids_budget;
+		}
+
+		// An iteration that moved hits clears the failure bookkeeping: the
+		// budget counts consecutive failures, not failures ever seen.
+		if ( $worked && get_option( self::REPAIR_SUPERSEDED_ATTEMPTS_OPTION ) ) {
+			delete_option( self::REPAIR_SUPERSEDED_ATTEMPTS_OPTION );
+			$this->clear_task_stalled( 'repair_superseded_page_ids' );
+		}
+
+		// A full pass found no hit left to move: either the repair converged
+		// or the site never had the problem. Only then is the task done.
+		if ( ! $worked && empty( $this->get_superseded_page_id_merge_queue() ) ) {
+			delete_transient( self::UNRESOLVABLE_ORPHANS_TRANSIENT );
+			delete_option( self::REPAIR_SUPERSEDED_TOTAL_OPTION );
+			$this->complete_watermarked_task( 'repair_superseded_page_ids' );
+		}
+	}
+
+	/**
+	 * Advance the merges set_canonical_page_url() queued, one chunk each, onto
+	 * the post id the url's dictionary row carries now (the row may have been
+	 * re-pointed again since). A merge that finished, or whose url no longer
+	 * names another post id, leaves the queue.
+	 *
+	 * @param int $budget Most merges to advance in this iteration.
+	 * @return int|null Merges advanced, null when an UPDATE failed (counted against the retry budget).
+	 */
+	private function repair_queued_superseded_merges( int $budget ): ?int {
+		global $wpdb;
+		$advanced = 0;
+		foreach ( $this->get_superseded_page_id_merge_queue() as $key => $entry ) {
+			if ( $advanced >= $budget ) {
+				break;
+			}
+			$page_url    = (string) $entry['page_url'];
+			$old_page_id = (int) $entry['old_page_id'];
+			$page_id     = $this->dictionary_page_id_for_url( $page_url );
+			if ( $page_id <= 0 || $page_id === $old_page_id ) {
+				$this->dequeue_superseded_page_id_merge( (string) $key );
+				continue;
+			}
+			$merged = $this->merge_superseded_page_id_hits( $page_url, $old_page_id, $page_id, 1 );
+			if ( null === $merged ) {
+				$this->count_repair_superseded_failure( (string) $wpdb->last_error );
+				return null;
+			}
+			if ( true === $merged ) {
+				$this->dequeue_superseded_page_id_merge( (string) $key );
+			}
+			++$advanced;
+		}
+		return $advanced;
+	}
+
+	/**
+	 * The post id the dictionary row of a url carries.
+	 *
+	 * @param string $page_url Url path.
+	 * @return int Post id, 0 when the url has no row or the row has no post id.
+	 */
+	private function dictionary_page_id_for_url( string $page_url ): int {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT page_id FROM {$wpdb->prefix}burst_page_urls WHERE page_url = %s", $page_url )
+		);
+	}
+
+	/**
+	 * Count a failed merge against the task's retry budget and mark the task
+	 * stalled once it is spent: upgrade() then retries it once a day instead
+	 * of every minute, and the task notice shows the error. The task stays
+	 * armed — the repair is still owed, and a lock wait timeout can clear up
+	 * on its own — exactly like the other stalled tasks (see stalled_task()).
+	 *
+	 * @param string $error Last database error, for the task notice.
+	 */
+	private function count_repair_superseded_failure( string $error ): void {
+		$attempts = (int) get_option( self::REPAIR_SUPERSEDED_ATTEMPTS_OPTION, 0 ) + 1;
+		update_option( self::REPAIR_SUPERSEDED_ATTEMPTS_OPTION, $attempts, false );
+		if ( $attempts > self::TASK_MAX_ATTEMPTS && empty( $this->stalled_task() ) ) {
+			$this->mark_task_stalled(
+				'repair_superseded_page_ids',
+				$attempts,
+				'' === $error ? 'the hit merge kept failing' : 'the hit merge kept failing: ' . $error
+			);
+		}
+	}
+
+	/**
+	 * Progress of the repair for the upgrade notice: the share of the orphan
+	 * ids of the first iteration that no longer need work. Without it the
+	 * notice shows a figure that never moves while the task runs, and a
+	 * running repair looks the same as a hung one.
+	 *
+	 * @param int $remaining Orphan ids still to repair.
+	 */
+	private function set_repair_superseded_progress( int $remaining ): void {
+		$total = (int) get_option( self::REPAIR_SUPERSEDED_TOTAL_OPTION, 0 );
+		if ( $total < $remaining ) {
+			$total = $remaining;
+			update_option( self::REPAIR_SUPERSEDED_TOTAL_OPTION, $total, false );
+		}
+		if ( $total < 1 ) {
+			return;
+		}
+		set_transient(
+			'burst_progress_repair_superseded_page_ids',
+			min( 0.99, ( $total - $remaining ) / $total ),
+			HOUR_IN_SECONDS
+		);
+	}
+
+	/**
+	 * The positive page_ids in burst_statistics that no dictionary row
+	 * carries: the ids hydrate_page_url_rows() cannot name, which is what
+	 * renders a page row with an empty name.
+	 *
+	 * Deliberately not a walk of burst_statistics: the distinct ids are taken
+	 * in a derived table first, so that part is a loose index scan on
+	 * (page_id, page_type) ("Using index for group-by") and the dictionary is
+	 * anti-joined to its small result. The cost then follows the number of
+	 * distinct page_ids on the site, not its row count — a site with no
+	 * damage answers in milliseconds however many hits it holds, and never
+	 * gets an UPDATE. Joining the dictionary to the hits directly instead
+	 * loses the loose scan (MySQL only applies it to a single-table block)
+	 * and reads the whole index: 276ms against 0.6ms on a 450k-hit table.
+	 *
+	 * @return int[]|null Orphaned post ids, empty when the site is clean, null when the probe failed or timed out.
+	 */
+	private function orphaned_page_ids(): ?array {
+		global $wpdb;
+		$sql = "SELECT o.page_id FROM (
+				SELECT page_id FROM {$wpdb->prefix}burst_statistics WHERE page_id > 0 GROUP BY page_id
+			) o
+			LEFT JOIN {$wpdb->prefix}burst_page_urls d ON d.page_id = o.page_id
+			WHERE d.ID IS NULL";
+		// The usual caps: 30 seconds on the dashboard fallback, 15 minutes
+		// under cron. A plan that misses the loose scan on a huge table may
+		// need the cron allowance; a tighter cap would make the probe fail on
+		// every run there, and the repair would never finish.
+		$sql = $this->add_query_timeout_hint( $sql, $this->resolve_query_timeout_ms( 'burst_query_timeout_ms', 'burst_query_timeout_ms_background' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- fixed table names, no request data.
+		$ids = $wpdb->get_col( $sql );
+		if ( '' !== (string) $wpdb->last_error ) {
+			return null;
+		}
+		return array_map( 'intval', $ids );
+	}
+
+	/**
+	 * One url still carrying $orphan_id whose dictionary row names a
+	 * different post id, with that id — the next piece of work for this
+	 * orphan, or null when it has none left.
+	 *
+	 * Resolved in a single statement so an unresolvable url (a dictionary row
+	 * without a post id) is never handed back: it would make the caller loop
+	 * on a url it cannot fix. Driven by (page_id, page_type) on the hits and
+	 * the unique page_url index on the dictionary.
+	 *
+	 * @param int $orphan_id The superseded post id the hits carry.
+	 * @return array{page_url: string, page_id: int}|null
+	 */
+	private function next_superseded_page_url( int $orphan_id ): ?array {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT s.page_url, d.page_id FROM {$wpdb->prefix}burst_statistics s
+				JOIN {$wpdb->prefix}burst_page_urls d ON d.page_url = s.page_url
+				WHERE s.page_id = %d AND s.page_type != '404'
+				AND d.page_id > 0 AND d.page_id != %d
+				LIMIT 1",
+				$orphan_id,
+				$orphan_id
+			),
+			ARRAY_A
+		);
+		if ( ! is_array( $row ) ) {
+			return null;
+		}
+		return [
+			'page_url' => (string) $row['page_url'],
+			'page_id'  => (int) $row['page_id'],
+		];
+	}
+
+	/**
 	 * One watermark batch of the page_id rewrite, shared by the 3.7.0
 	 * backfill and the Pro 3.7.0.1 repair: every row gets the post id the
 	 * dictionary knows for its url, else the negative dictionary id — the
@@ -2624,7 +2952,7 @@ class DB_Upgrade {
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $offset and $batch_size are validated integers.
 		$wpdb->query( $sql );
 		$offset += $batch_size;
-		update_option( 'burst_db_upgrade_column_offset', $offset );
+		update_option( 'burst_db_upgrade_column_offset', $offset, false );
 		$total    = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}burst_statistics" );
 		$progress = $total > 0 ? round( $offset / $total, 2 ) : 1;
 		set_transient( 'burst_progress_drop_path_from_parameters_column', $progress, HOUR_IN_SECONDS );

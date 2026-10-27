@@ -3,7 +3,7 @@
  * Plugin Name: Burst REST API Optimizer
  * Plugin URI: https://burst-statistics.com
  * Description: Must-use plugin installed by Burst Pro to keep the Burst REST API fast by skipping unrelated plugins on Burst REST requests.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Requires at least: 6.6
  * Requires PHP: 8.0
  * Author: Burst Statistics
@@ -135,17 +135,24 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 	}
 
 	/**
-	 * Exclude all other plugins from the active plugins list if this is a Burst rest request
+	 * Resolve the Burst REST route of the current request.
 	 *
-	 * @param array<int, string> $plugins List of plugin paths relative to the plugins directory.
-	 * @return array<int, string> Filtered list of plugin paths.
+	 * Returns the route (burst/v1 or burst/v1/...) only for a genuine REST
+	 * request: the request must run through the front controller (index.php)
+	 * and the path must start with the site's own REST prefix. Any other entry
+	 * point that receives the route as extra PATH_INFO, such as
+	 * /wp-login.php/wp-json/burst/v1/x or /xmlrpc.php/wp-json/burst/v1/x, gets
+	 * an empty string, so the optimizer never strips plugins (including
+	 * security plugins) from login, XML-RPC, cron, comment or admin requests.
+	 * This also covers admin-ajax.php, which keeps the optimizer out of the
+	 * way when a security plugin breaks it.
+	 *
+	 * @return string The Burst REST route, or an empty string when this is not a Burst REST request.
 	 */
-	function burst_exclude_plugins_for_rest_api( array $plugins ): array {
-		// Get sanitized and unslashed REQUEST_URI.
-		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-		// don't optimize for admin-ajax requests, so if a security plugin breaks the optimizer, it has a fallback.
-		if ( strpos( $request_uri, 'admin-ajax.php' ) !== false ) {
-			return $plugins;
+	function burst_rest_api_optimizer_get_burst_route(): string {
+		$script_name = isset( $_SERVER['SCRIPT_NAME'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SCRIPT_NAME'] ) ) : '';
+		if ( 'index.php' !== basename( $script_name ) ) {
+			return '';
 		}
 
 		// Resolve the actual REST route from the URL path only (pretty permalinks).
@@ -154,23 +161,37 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 		// are intentionally not supported here; the optimizer simply no-ops on those sites.
 		// The path is matched as-is (not URL-decoded) so detection stays in sync with WP's
 		// own REST routing, which also matches against the raw URI.
-		$parsed = wp_parse_url( $request_uri );
-		$path   = isset( $parsed['path'] ) ? $parsed['path'] : '';
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		$path        = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
 
 		// Hardcoded WP REST prefix. We can't call rest_get_url_prefix() because rest-api.php
 		// is loaded later than option_active_plugins, and invoking the core rest_url_prefix
 		// filter ourselves wouldn't pick up callbacks registered by regular plugins anyway
 		// (those haven't loaded yet). Sites with a custom REST prefix simply no-op here.
-		$burst_rest_route = '';
-		$needle           = '/wp-json/';
-		$pos              = strpos( $path, $needle );
-		if ( $pos !== false ) {
-			$burst_rest_route = ltrim( substr( $path, $pos + strlen( $needle ) ), '/' );
+		// The prefix is anchored at the home path, which also handles sites in a
+		// subdirectory and subdirectory multisite, so /wp-admin/index.php/wp-json/...
+		// or /some-page/wp-json/... never match.
+		$home_path = rtrim( (string) wp_parse_url( (string) get_option( 'home' ), PHP_URL_PATH ), '/' );
+		foreach ( [ $home_path . '/wp-json/', $home_path . '/index.php/wp-json/' ] as $prefix ) {
+			if ( str_starts_with( $path, $prefix ) ) {
+				$route = ltrim( substr( $path, strlen( $prefix ) ), '/' );
+				// Anchored at the namespace boundary: only burst/v1 and burst/v1/* qualify,
+				// not lookalikes such as burst/v1foo/...
+				return ( 'burst/v1' === $route || str_starts_with( $route, 'burst/v1/' ) ) ? $route : '';
+			}
 		}
+		return '';
+	}
 
-		// Anchored at the namespace boundary: only burst/v1 and burst/v1/* qualify,
-		// not lookalikes such as burst/v1foo/...
-		if ( $burst_rest_route !== 'burst/v1' && ! str_starts_with( $burst_rest_route, 'burst/v1/' ) ) {
+	/**
+	 * Exclude all other plugins from the active plugins list if this is a Burst rest request
+	 *
+	 * @param array<int, string> $plugins List of plugin paths relative to the plugins directory.
+	 * @return array<int, string> Filtered list of plugin paths.
+	 */
+	function burst_exclude_plugins_for_rest_api( array $plugins ): array {
+		$burst_rest_route = burst_rest_api_optimizer_get_burst_route();
+		if ( '' === $burst_rest_route ) {
 			return $plugins;
 		}
 

@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from '@tanstack/react-router';
 import { useFilters } from '@/hooks/useFilters';
 import useGoalsData from '@/hooks/useGoalsData';
+import useFilterByGoal from '@/hooks/useFilterByGoal';
 import { useInsightsStore } from '@/store/useInsightsStore';
 import { useDate } from '@/store/useDateStore';
 import HelpTooltip from '@/components/Common/HelpTooltip';
@@ -40,8 +41,9 @@ const ClickToFilter = ({
 }) => {
 
 	// Filter actions from TanStack Router-based hook.
-	const { setFilters, filtersConf, getActiveFilters } = useFilters();
+	const { setFilters, filtersConf, getActiveFilters, isFilterRoute } = useFilters();
 	const { getGoal } = useGoalsData();
+	const filterByGoal = useFilterByGoal();
 	const setInsightsMetrics = useInsightsStore( ( state ) => state.setMetrics );
 	const insightsMetrics = useInsightsStore( ( state ) => state.getMetrics() );
 	const setStartDate = useDate( ( state ) => state.setStartDate );
@@ -213,6 +215,14 @@ const ClickToFilter = ({
 	// Handle goal-specific filtering
 	const handleGoalFilter = useCallback(
 		( goalId ) => {
+
+			// Blocks outside a filter route (the dashboard goals block) have
+			// nowhere to put the filter: show the goal on insights instead.
+			if ( ! isFilterRoute ) {
+				filterByGoal( goalId );
+				return;
+			}
+
 			const goal = getGoal( goalId );
 
 			if ( goal?.goal_specific_page ) {
@@ -231,7 +241,7 @@ const ClickToFilter = ({
 				setInsightsMetrics([ ...insightsMetrics, 'conversions' ]);
 			}
 		},
-		[ getGoal, setFilters, insightsMetrics, setInsightsMetrics ]
+		[ isFilterRoute, filterByGoal, getGoal, setFilters, insightsMetrics, setInsightsMetrics ]
 	);
 
 	const applyFilter = useCallback( () => {

@@ -157,7 +157,9 @@ class Tracking {
 		$hit_type     = $result['hit_type'];
 		$previous_hit = $result['last_row'];
 
-		Page_Weight_Store::maybe_store_sample( $sanitized_data, $hit_type, $previous_hit ?? [] );
+		if ( $this->is_feature_enabled( 'co2' ) ) {
+			Page_Weight_Store::maybe_store_sample( $sanitized_data, $hit_type, $previous_hit ?? [] );
+		}
 
 		$filtered_previous_hit = $previous_hit ?? [];
 		$sanitized_data        = apply_filters( 'burst_before_track_hit', $sanitized_data, $hit_type, $filtered_previous_hit );
@@ -203,7 +205,7 @@ class Tracking {
 			// only update this once, on the first used domain.
 			if ( empty( $first_domain ) ) {
 				update_option( 'burst_is_multi_domain', false );
-				update_option( 'burst_first_domain', $normalized_host );
+				update_option( 'burst_first_domain', $normalized_host, true );
 			} elseif ( $first_domain !== $normalized_host ) {
 				// if it's different from the first used, it is multi domain.
 				update_option( 'burst_is_multi_domain', true );
@@ -359,8 +361,10 @@ class Tracking {
 		$statistic_id = $statistic['ID'] ?? ( $insert_id ?? 0 );
 
 		if ( $statistic_id > 0 ) {
-			$completed_goals = $this->get_completed_goals( $statistic['completed_goals'], $statistic['page_url'], (int) ( $statistic['page_id'] ?? 0 ) );
-			if ( ! empty( $completed_goals ) ) {
+			// Skips the goal lookup in essentials mode; create_goal_statistic()
+			// enforces the same check for every other writer.
+			if ( $this->is_feature_enabled( 'goals' ) ) {
+				$completed_goals = $this->get_completed_goals( $statistic['completed_goals'], $statistic['page_url'], (int) ( $statistic['page_id'] ?? 0 ) );
 				$this->create_goal_statistic( $statistic_id, $completed_goals );
 			}
 
@@ -613,7 +617,7 @@ class Tracking {
 		// update array.
 		$sanitized_data                    = [];
 		$destructured_url                  = $this->sanitize_url( $data['url'] );
-		$completed_goals                   = is_array( $data['completed_goals'] ?? null ) ? $data['completed_goals'] : [];
+		$completed_goals                   = ( $this->is_feature_enabled( 'goals' ) && is_array( $data['completed_goals'] ?? null ) ) ? $data['completed_goals'] : [];
 		$sanitized_data['completed_goals'] = $this->sanitize_completed_goal_ids( $completed_goals );
 		// required.
 		$sanitized_data['parameters'] = $destructured_url['parameters'];
@@ -623,20 +627,25 @@ class Tracking {
 		$sanitized_data['page_url'] = $destructured_url['path'];
 		$sanitized_data['host']     = $destructured_url['scheme'] . '://' . $destructured_url['host'];
 		// required.
-		$sanitized_data['uid']                   = $this->sanitize_uid( $data['uid'] );
-		$sanitized_data['fingerprint']           = $this->sanitize_fingerprint( $data['fingerprint'] );
-		$sanitized_data['referrer']              = $this->sanitize_referrer( $data['referrer_url'] );
-		$sanitized_data['external_link_url']     = $this->sanitize_external_link_url( $data['external_link_url'] );
-		$sanitized_data['browser_id']            = self::get_lookup_table_id( 'browser', $user_agent_data['browser'] );
-		$sanitized_data['browser_version_id']    = self::get_lookup_table_id( 'browser_version', $user_agent_data['browser_version'] );
-		$sanitized_data['platform_id']           = self::get_lookup_table_id( 'platform', $user_agent_data['platform'] );
-		$sanitized_data['device_id']             = self::get_lookup_table_id( 'device', $user_agent_data['device'] );
-		$sanitized_data['time_on_page']          = $this->sanitize_time_on_page( $data['time_on_page'] );
-		$sanitized_data['bounce']                = 1;
-		$sanitized_data['page_id']               = (int) $data['page_id'];
-		$sanitized_data['page_type']             = $this->sanitize_page_identifier( $data['page_type'] );
-		$sanitized_data['max_scroll']            = isset( $data['max_scroll'] ) ? min( 100, max( 0, (int) $data['max_scroll'] ) ) : 0;
-		$sanitized_data['dwell_zones']           = $this->sanitize_dwell_zones( $data['dwell_zones'] ?? '' );
+		$sanitized_data['uid']                = $this->sanitize_uid( $data['uid'] );
+		$sanitized_data['fingerprint']        = $this->sanitize_fingerprint( $data['fingerprint'] );
+		$sanitized_data['referrer']           = $this->sanitize_referrer( $data['referrer_url'] );
+		$sanitized_data['external_link_url']  = $this->sanitize_external_link_url( $data['external_link_url'] );
+		$sanitized_data['browser_id']         = self::get_lookup_table_id( 'browser', $user_agent_data['browser'] );
+		$sanitized_data['browser_version_id'] = self::get_lookup_table_id( 'browser_version', $user_agent_data['browser_version'] );
+		$sanitized_data['platform_id']        = self::get_lookup_table_id( 'platform', $user_agent_data['platform'] );
+		$sanitized_data['device_id']          = self::get_lookup_table_id( 'device', $user_agent_data['device'] );
+		$sanitized_data['time_on_page']       = $this->sanitize_time_on_page( $data['time_on_page'] );
+		$sanitized_data['bounce']             = 1;
+		$sanitized_data['page_id']            = (int) $data['page_id'];
+		$sanitized_data['page_type']          = $this->sanitize_page_identifier( $data['page_type'] );
+		if ( ! $this->is_feature_enabled( 'scroll_depth' ) ) {
+			$sanitized_data['max_scroll']  = 0;
+			$sanitized_data['dwell_zones'] = '';
+		} else {
+			$sanitized_data['max_scroll']  = isset( $data['max_scroll'] ) ? min( 100, max( 0, (int) $data['max_scroll'] ) ) : 0;
+			$sanitized_data['dwell_zones'] = $this->sanitize_dwell_zones( $data['dwell_zones'] ?? '' );
+		}
 		$sanitized_data['should_load_ecommerce'] = filter_var( $data['should_load_ecommerce'], FILTER_VALIDATE_BOOLEAN );
 		$sanitized_data['search_term']           = isset( $data['search_term'] ) ? sanitize_text_field( wp_unslash( (string) $data['search_term'] ) ) : '';
 		$sanitized_data['page_weight_bytes']     = (int) $data['page_weight_bytes'];
@@ -1015,7 +1024,7 @@ class Tracking {
 					// Pro enables automatic capture only after the site opts in.
 					'track_gtag_events'            => 0,
 					'track_gtag_custom_parameters' => 0,
-					'page_weight_sample_rate'      => Page_Weight_Store::get_sample_rate(),
+					'page_weight_sample_rate'      => $this->is_feature_enabled( 'co2' ) ? Page_Weight_Store::get_sample_rate() : 0,
 					'cookie_retention_days'        => apply_filters( 'burst_cookie_retention_days', 30 ),
 					'page_id'                      => is_singular() ? (int) get_queried_object_id() : 0,
 					'consent_api_active'           => \Burst\Admin\Tasks::is_wp_consent_api_active() ? 1 : 0,
@@ -1024,7 +1033,7 @@ class Tracking {
 				'goals'    => [
 					'completed' => [],
 					'scriptUrl' => apply_filters( 'burst_goals_script_url', BURST_URL . 'assets/js/build/burst-goals.js?v=' . $script_version ),
-					'active'    => $this->get_active_goals( [ 'clicks', 'views' ] ),
+					'active'    => $this->is_feature_enabled( 'goals' ) ? $this->get_active_goals( [ 'clicks', 'views' ] ) : [],
 				],
 				'cache'    => [
 					'uid'          => null,
@@ -1434,9 +1443,20 @@ class Tracking {
 	}
 
 	/**
-	 * Create goal statistic in {prefix}_burst_goal_statistics
+	 * Create goal statistic in {prefix}_burst_goal_statistics.
+	 *
+	 * Every writer of goal conversions ends here (the tracker, the hook goals
+	 * tracker, Pro's custom event goals and the headless hook route), so the
+	 * essentials mode check lives here instead of at each caller.
+	 *
+	 * @param int        $statistic_id The statistic the goals were completed on.
+	 * @param array<int> $goal_ids     The completed goal IDs.
 	 */
 	public function create_goal_statistic( int $statistic_id, array $goal_ids ): void {
+		if ( empty( $goal_ids ) || ! $this->is_feature_enabled( 'goals' ) ) {
+			return;
+		}
+
 		global $wpdb;
 		$values = [];
 		foreach ( $goal_ids as $goal_id ) {

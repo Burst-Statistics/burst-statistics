@@ -88,12 +88,12 @@ export const Route = createFileRoute( '/sales' )({
  */
 function SalesComponent() {
 
-	// Use the hook inside the component, not in the loader
-	const { isLicenseValidFor, isFetching } = useLicenseData();
-
-	if ( isFetching ) {
-		return null;
-	}
+	// Use the hook inside the component, not in the loader.
+	// Only the license decision gates the branch: the query is seeded with
+	// placeholderData from the localized license status, so gating on a
+	// background refetch would unmount the upsell, whose mock-data toggle
+	// invalidates the license query again and loops.
+	const { isLicenseValidFor } = useLicenseData();
 
 	if ( ! isLicenseValidFor( 'sales' ) ) {
 		return (

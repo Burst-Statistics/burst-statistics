@@ -158,16 +158,37 @@ class Query {
 	/**
 	 * Add a period SELECT expression for time-grouped queries.
 	 *
-	 * Convenience wrapper: DATE_FORMAT(FROM_UNIXTIME(time + {tz_offset}), '{sql_format}') AS period
+	 * Each hit is shifted by the site's UTC offset that was in effect at that
+	 * hit, so a range that crosses a DST transition buckets every hit into its
+	 * real local day. The shifted value is added to a fixed DATETIME epoch
+	 * instead of passed to FROM_UNIXTIME(), which would apply the MySQL session
+	 * timezone on top of it.
 	 *
-	 * @param int    $tz_offset  Timezone offset in seconds.
-	 * @param string $sql_format MySQL date format string (e.g. '%Y-%m-%d').
+	 * @param array<int, array{0: int, 1: int}> $tz_offsets List of [ from_timestamp, offset_in_seconds ] pairs, ascending by timestamp; the first entry applies to all earlier hits.
+	 * @param string                            $sql_format MySQL date format string (e.g. '%Y-%m-%d').
 	 * @return self Return the current instance for chaining use.
 	 */
-	public function period_select( int $tz_offset, string $sql_format ): self {
+	public function period_select( array $tz_offsets, string $sql_format ): self {
+		$offset_sql = '%d';
+		$values     = [ (int) ( $tz_offsets[0][1] ?? 0 ) ];
+
+		if ( count( $tz_offsets ) > 1 ) {
+			$offset_sql = 'CASE';
+			$values     = [];
+			foreach ( array_reverse( array_slice( $tz_offsets, 1 ) ) as [ $from, $offset ] ) {
+				$offset_sql .= ' WHEN time >= %d THEN %d';
+				$values[]    = $from;
+				$values[]    = $offset;
+			}
+			$offset_sql .= ' ELSE %d END';
+			$values[]    = (int) $tz_offsets[0][1];
+		}
+
+		$values[] = $sql_format;
+
 		return $this->select_raw(
-			'DATE_FORMAT(FROM_UNIXTIME(time + %d), %s) AS period',
-			[ $tz_offset, $sql_format ]
+			"DATE_FORMAT(CAST('1970-01-01 00:00:00' AS DATETIME) + INTERVAL (time + {$offset_sql}) SECOND, %s) AS period",
+			$values
 		);
 	}
 

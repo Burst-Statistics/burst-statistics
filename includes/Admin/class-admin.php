@@ -16,6 +16,8 @@ use Burst\Admin\Diagnostics\Tracking_Diagnostics;
 use Burst\Admin\Diagnostics\Tracking_Health_Email;
 use Burst\Admin\DB_Upgrade\DB_Upgrade;
 use Burst\Admin\Debug\Debug;
+use Burst\Admin\Editor\Editor;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Admin\Plugins\Plugin_Updates;
 use Burst\Admin\Posts\Posts;
 use Burst\Admin\Reports\Report_Logs;
@@ -99,7 +101,6 @@ class Admin {
 			add_action( 'burst_daily', [ $this, 'schedule_detect_malicious_data_cron' ] );
 			add_action( 'burst_detect_malicious_data', [ $this, 'detect_malicious_data' ] );
 			add_action( 'burst_dismiss_task', [ $this, 'dismiss_malicious_data_notice' ], 10, 1 );
-			add_action( 'burst_dismiss_task', [ $this, 'dismiss_php_error_notice' ], 10, 1 );
 			// After run_table_init_hook (priority 10), so the goals table exists when the file is baked.
 			add_action( 'wp_initialize_site', [ $this, 'create_js_file_for_new_site' ], 20, 1 );
 			add_action( 'admin_init', [ $this, 'activation' ], 3, 1 );
@@ -116,7 +117,6 @@ class Admin {
 			add_action( 'burst_daily', [ $this, 'test_database_tables' ] );
 			add_action( 'burst_attempt_database_fix', [ $this, 'test_database_tables' ] );
 			add_action( 'burst_weekly', [ $this, 'cleanup_bf_dismissed_tasks' ] );
-			add_action( 'burst_daily', [ $this, 'cleanup_php_error_notices' ] );
 			add_action( 'burst_daily', [ $this, 'cleanup_orphaned_block_goals' ] );
 			add_filter( 'burst_menu', [ $this, 'add_ecommerce_menu_item' ] );
 
@@ -173,6 +173,8 @@ class Admin {
 
 			$posts = new Posts();
 			$posts->init();
+			$editor = new Editor();
+			$editor->init();
 
 			$import_manager = new Import_Manager();
 			$import_manager->init();
@@ -206,10 +208,9 @@ class Admin {
 			$milestones = new Milestones();
 			$milestones->init();
 
-			if ( $this->get_option_bool( 'anonymous_usage_data' ) ) {
-				$data_sharing = new Data_Sharing();
-				$data_sharing->init();
-			}
+			// Always initialized: it listens for the opt-in, and gates the sends itself.
+			$data_sharing = new Data_Sharing();
+			$data_sharing->init();
 
 			$this->share = new Share();
 			$this->share->init();
@@ -322,18 +323,18 @@ class Admin {
 		}
 
 		if ( ! empty( $missing_tables ) ) {
-			$first_attempt = ! get_option( 'burst_attempt_database_fix' );
+			$first_attempt = ! Admin_Options::get( Admin_Option_Category::CORE, 'attempt_database_fix', false );
 			if ( $first_attempt ) {
 				// first, try installing them.
 				$this->run_table_init_hook();
-				update_option( 'burst_attempt_database_fix', true, false );
+				Admin_Options::update( Admin_Option_Category::CORE, 'attempt_database_fix', true );
 				wp_schedule_single_event( time() + 10, 'burst_attempt_database_fix' );
 			} else {
-				update_option( 'burst_missing_tables', implode( ',', $missing_tables ), false );
+				Admin_Options::update( Admin_Option_Category::CORE, 'missing_tables', implode( ',', $missing_tables ) );
 			}
 		} else {
-			delete_option( 'burst_missing_tables' );
-			delete_option( 'burst_attempt_database_fix' );
+			Admin_Options::delete( Admin_Option_Category::CORE, 'missing_tables' );
+			Admin_Options::delete( Admin_Option_Category::CORE, 'attempt_database_fix' );
 		}
 	}
 
@@ -588,34 +589,6 @@ class Admin {
 	}
 
 	/**
-	 * Clean up errors after some time, to prevent them hanging around indefinitely.
-	 */
-	public function cleanup_php_error_notices(): void {
-		$last_detected = get_option( 'burst_php_error_time', time() );
-		if ( ! $last_detected ) {
-			return;
-		}
-
-		$x_days_ago = time() - 7 * DAY_IN_SECONDS;
-		if ( $last_detected < $x_days_ago ) {
-			delete_option( 'burst_php_error_time' );
-			delete_option( 'burst_php_error_detected' );
-			delete_option( 'burst_php_error_count' );
-		}
-	}
-
-	/**
-	 * Clean up the notification data when the task has been dismissed instead of fixed.
-	 */
-	public function dismiss_php_error_notice( string $task_id ): void {
-		if ( $task_id === 'php_error_detected' ) {
-			delete_option( 'burst_php_error_time' );
-			delete_option( 'burst_php_error_detected' );
-			delete_option( 'burst_php_error_count' );
-		}
-	}
-
-	/**
 	 * Activation processing
 	 */
 	public function activation(): void {
@@ -637,10 +610,7 @@ class Admin {
 			return;
 		}
 
-		$privacy_level   = $this->get_option( 'privacy_level', 'cookie' );
-		$cookieless      = ( $privacy_level === 'fingerprint' );
-		$cookieless_text = $cookieless ? '-cookieless' : '';
-		$localize_args   = \Burst\burst_loader()->frontend->tracking->get_options();
+		$localize_args = \Burst\burst_loader()->frontend->tracking->get_options();
 
 		// window.burst = window.burst || {} + Object.assign (not `let burst = {...}`): a `let`
 		// declaration here would create a lexical binding scoped to this file, shadowing
@@ -649,7 +619,7 @@ class Admin {
 		$js = $this->get_burst_bootstrap_script( $localize_args );
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-		$js                .= file_get_contents( BURST_PATH . "assets/js/build/burst$cookieless_text.min.js" );
+		$js                .= file_get_contents( BURST_PATH . 'assets/js/build/' . $this->get_tracking_script_basename() );
 		$ghost_mode_enabled = apply_filters( 'burst_obfuscate_filename', $this->get_option_bool( 'ghost_mode' ) );
 		$filename           = $this->get_frontend_js_filename( $ghost_mode_enabled );
 		$upload_dir         = $this->upload_dir( 'js', $ghost_mode_enabled, true );
@@ -691,10 +661,10 @@ class Admin {
 		// can fail with a writable directory (e.g. an unwritable existing file), and
 		// WP_Filesystem() itself can fail (e.g. FS_METHOD ftpext without credentials).
 		if ( $written && ! $script_copy_failed ) {
-			delete_option( 'burst_js_write_error' );
+			Admin_Options::delete( Admin_Option_Category::CORE, 'js_write_error' );
 			$this->delete_js_files( $ghost_mode_enabled );
 		} else {
-			update_option( 'burst_js_write_error', true, false );
+			Admin_Options::update( Admin_Option_Category::CORE, 'js_write_error', true );
 		}
 	}
 
@@ -773,22 +743,33 @@ class Admin {
 
 	/**
 	 * On Multisite site creation, run table init hook as well.
+	 *
+	 * @return bool True when burst_install_tables actually fired, false on each
+	 *              of the exits below: the install already ran in this request,
+	 *              the plugin is being uninstalled, or another request holds the
+	 *              upgrade lock.
 	 */
-	public function run_table_init_hook(): void {
+	public function run_table_init_hook(): bool {
 		// if already running, exit.
 		if ( defined( 'BURST_INSTALL_TABLES_RUNNING' ) ) {
-			return;
+			return false;
 		}
 
 		define( 'BURST_INSTALL_TABLES_RUNNING', true );
+		// What Upgrade::check_upgrade() reads is the result of this run.
+		Upgrade::reset_install_state();
 
 		// don't run on uninstall.
 		if ( defined( 'BURST_UNINSTALLING' ) ) {
-			return;
+			return false;
 		}
 
 		if ( ! $this->acquire_upgrade_lock() ) {
-			return;
+			// Upgrade::check_upgrade() fires this install through
+			// burst_upgrade_before and cannot read the return value of an
+			// action callback, so it learns about the contention here.
+			Upgrade::record_install_lock_contention();
+			return false;
 		}
 
 		do_action( 'burst_install_tables' );
@@ -803,7 +784,9 @@ class Admin {
 				}
 			}
 		}
+		Upgrade::finish_install_run();
 		$this->release_upgrade_lock();
+		return true;
 	}
 
 	/**
@@ -1470,6 +1453,7 @@ class Admin {
 		$ecommerce_menu_item = [
 			'id'             => 'sales',
 			'title'          => __( 'Sales', 'burst-statistics' ),
+			'description'    => __( 'Track ecommerce performance, sales revenue, orders, conversion rates, and product analytics.', 'burst-statistics' ),
 			'default_hidden' => false,
 			'menu_items'     => [],
 			'capabilities'   => 'view_sales_burst_statistics',

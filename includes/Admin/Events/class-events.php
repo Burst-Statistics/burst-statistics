@@ -14,6 +14,13 @@ class Events {
 	use Helper;
 
 	/**
+	 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
+
+	/**
 	 * Register install hooks and datatable filters.
 	 */
 	public function init(): void {
@@ -24,19 +31,25 @@ class Events {
 	}
 
 	/**
-	 * Install the event-name dictionary and event data tables.
+	 * Schemas of the event tables, read by install_events_table() and the schema check.
+	 *
+	 * The burst_event_names table is the event-name dictionary: burst_events
+	 * stores the dictionary id in name_id, so a name is never repeated per hit.
+	 *
+	 * @return array<string, array{columns: string, indexes?: array<int, string[]>}>
 	 */
-	public function install_events_table(): void {
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		global $wpdb;
-		$charset_collate = $wpdb->get_charset_collate();
-		$names_sql       = "CREATE TABLE {$wpdb->prefix}burst_event_names (
+	protected function get_schema_definition(): array {
+		return [
+			'burst_event_names' => [
+				'columns' => '
 			`ID` int unsigned NOT NULL AUTO_INCREMENT,
 			`name` varchar(64) NOT NULL,
 			PRIMARY KEY (ID),
 			UNIQUE KEY name (name)
-		) $charset_collate;";
-		$events_sql      = "CREATE TABLE {$wpdb->prefix}burst_events (
+		',
+			],
+			'burst_events'      => [
+				'columns' => '
             `ID` int NOT NULL AUTO_INCREMENT,
             `statistic_id` int NOT NULL,
             `uid_id` int unsigned NOT NULL DEFAULT 0,
@@ -44,31 +57,30 @@ class Events {
 			`name_id` int unsigned NOT NULL,
             `value` float DEFAULT NULL,
             PRIMARY KEY (ID)
-        ) $charset_collate;";
-
-		$tables_to_install = [
-			'burst_event_names' => $names_sql,
-			'burst_events'      => $events_sql,
+        ',
+				'indexes' => [
+					[ 'statistic_id', 'time' ],
+					[ 'time', 'name_id' ],
+					[ 'name_id', 'time' ],
+					[ 'uid_id', 'time' ],
+				],
+			],
 		];
+	}
 
-		foreach ( $tables_to_install as $table_name => $sql ) {
-			dbDelta( $sql );
-			if ( ! empty( $wpdb->last_error ) ) {
-				self::error_log( "Error creating $table_name table: " . $wpdb->last_error );
-				return;
-			}
+	/**
+	 * Install the event-name dictionary and the event data table.
+	 *
+	 * The dictionary comes first and stops the install when it fails: an event
+	 * row without a name_id to point at is unreadable, and install_schema()
+	 * has already reported the failure, so the whole upgrade is retried.
+	 */
+	public function install_events_table(): void {
+		if ( ! $this->install_schema( [ 'burst_event_names' ] ) ) {
+			return;
 		}
 
-		$events_table_indexes = [
-			[ 'statistic_id', 'time' ],
-			[ 'time', 'name_id' ],
-			[ 'name_id', 'time' ],
-			[ 'uid_id', 'time' ],
-		];
-
-		foreach ( $events_table_indexes as $index ) {
-			$this->add_index( 'burst_events', $index );
-		}
+		$this->install_schema( [ 'burst_events' ] );
 	}
 
 	/**

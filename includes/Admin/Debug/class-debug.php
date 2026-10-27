@@ -1,8 +1,10 @@
 <?php
 namespace Burst\Admin\Debug;
 
+use Burst\Admin\Admin_Options;
 use Burst\Admin\Capability\Capability;
 use Burst\Admin\DB_Upgrade\DB_Upgrade;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Admin\Search_Console\Diagnostic_Logs;
 use Burst\Admin\Search_Console\Sync;
 use Burst\Admin\Statistics\Query_Shapes\Session_Grain_Shape;
@@ -19,6 +21,18 @@ class Debug {
 	use Admin_Helper;
 	use Database_Helper;
 	use Helper;
+
+	/**
+	 * Options that never belong in a pasted Site Health export: the tokens
+	 * grant access to the statistics, so they are dropped whole.
+	 *
+	 * @var string[]
+	 */
+	private const REDACTED_OPTIONS = [
+		'burst_gsc_tokens',
+		'burst_share_tokens',
+	];
+
 
 	/**
 	 * Initialize the debug class.
@@ -63,11 +77,7 @@ class Debug {
 		// WordPress burst options. Get all options that start with 'burst_'.
 		$wp_options = $wpdb->get_results( $wpdb->prepare( "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'burst_' ) . '%' ), ARRAY_A );
 		$wp_options = wp_list_pluck( $wp_options, 'option_value', 'option_name' );
-		unset( $wp_options['burst_gsc_tokens'] );
-		// Share-link tokens are stored in plaintext and grant statistics access
-		// to anyone holding them; a pasted Site Health export must not leak them.
-		unset( $wp_options['burst_share_tokens'] );
-		unset( $wp_options['burst_slack_webhook_url'] );
+		$wp_options = $this->redact_options( $wp_options );
 		$wp_options = $this->format_array_as_string( $wp_options );
 		unset( $wp_options['burst_options_settings'] );
 
@@ -610,6 +620,57 @@ class Debug {
 			}
 			$parts[] = $name . ': ' . ( is_bool( $item ) ? ( $item ? 'true' : 'false' ) : (string) $item );
 		}
+	}
+
+	/**
+	 * Secrets stored inside an option that also holds values worth exporting,
+	 * as option name => keys to drop. The consolidated admin option rows
+	 * (see Admin_Options) are the reason this exists: the row stays in the
+	 * export, the secret key in it does not.
+	 *
+	 * @return array<string, string[]>
+	 */
+	private function redacted_option_keys(): array {
+		return [
+			Admin_Options::option_name( Admin_Option_Category::NOTIFICATIONS ) => [ 'slack_webhook_url' ],
+		];
+	}
+
+	/**
+	 * Drop the secrets from the raw option values before they are formatted.
+	 *
+	 * Share-link and API tokens are stored in plaintext and grant statistics
+	 * access to anyone holding them, and the Slack webhook url posts into a
+	 * channel, so a pasted Site Health export must not leak either.
+	 *
+	 * @param array<string, mixed> $wp_options Raw option values keyed by option name.
+	 * @return array<string, mixed>
+	 */
+	private function redact_options( array $wp_options ): array {
+		foreach ( self::REDACTED_OPTIONS as $option_name ) {
+			unset( $wp_options[ $option_name ] );
+		}
+
+		foreach ( $this->redacted_option_keys() as $option_name => $secret_keys ) {
+			if ( ! isset( $wp_options[ $option_name ] ) ) {
+				continue;
+			}
+
+			$values = maybe_unserialize( $wp_options[ $option_name ] );
+			if ( ! is_array( $values ) ) {
+				// Not the expected shape, so the secret cannot be removed from
+				// it: drop the whole option instead of exporting it blind.
+				unset( $wp_options[ $option_name ] );
+				continue;
+			}
+
+			foreach ( $secret_keys as $secret_key ) {
+				unset( $values[ $secret_key ] );
+			}
+			$wp_options[ $option_name ] = $values;
+		}
+
+		return $wp_options;
 	}
 
 	/**

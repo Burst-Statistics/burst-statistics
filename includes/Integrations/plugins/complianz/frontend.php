@@ -31,6 +31,8 @@ function burst_cmplz_script( array $tags ): array {
 		'urls'               => [
 			'assets/js/build/burst.js',
 			'assets/js/build/burst.min.js',
+			'assets/js/build/burst-essentials.js',
+			'assets/js/build/burst-essentials.min.js',
 		],
 		'enable_placeholder' => '0',
 		'enable_dependency'  => '0',

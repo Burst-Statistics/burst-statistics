@@ -8,6 +8,7 @@ import { FormsBlock } from '@/components/Forms';
 import { ReadingEngagementBlock } from '@/components/ReadingEngagement';
 import { EventsBlock } from '@/components/Events';
 import { PageWeightBlock } from '@/components/PageWeight';
+import { useIsFeatureEnabled } from '@/hooks/useIsFeatureEnabled';
 
 export const Route = createFileRoute( '/engagement' )({
 
@@ -21,6 +22,8 @@ export const Route = createFileRoute( '/engagement' )({
 });
 
 function Engagement() {
+	const isCo2Enabled = useIsFeatureEnabled( 'co2' );
+
 	return (
 		<>
 			<PageHeader />
@@ -32,7 +35,7 @@ function Engagement() {
 
 			<FormsBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
 
-			<PageWeightBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
+			{ isCo2Enabled && <PageWeightBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" /> }
 
 			<SearchTermsBlock className="row-span-1 @lg:col-span-6 @xl:col-span-4" />
 

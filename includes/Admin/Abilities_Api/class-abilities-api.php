@@ -2,6 +2,7 @@
 namespace Burst\Admin\Abilities_Api;
 
 use Burst\Admin\Admin;
+use Burst\Admin\Statistics\Filter_Registry;
 use Burst\Frontend\Endpoint;
 use Burst\Pro\Admin\Licensing\Licensing;
 use Burst\Traits\Admin_Helper;
@@ -15,9 +16,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Abilities_Api {
 	use Admin_Helper;
 
-	private const ENABLE_OPTION     = 'enable_abilities_api';
-	private const CATEGORY_SLUG     = 'burst-statistics';
-	private const CHAT_ABILITY_LIST = [
+	private const ENABLE_OPTION                = 'enable_abilities_api';
+	private const CATEGORY_SLUG                = 'burst-statistics';
+	private const DOCS_UTM_CONTENT             = 'ai-dashboard-question';
+	private const SETTINGS_SKIPPED_TYPES       = [
+		'hidden',
+		'button',
+		'export_settings',
+		'upload',
+		'import_data',
+		'export_data',
+		'restore_archives',
+	];
+	private const SETTINGS_ALLOWED_VALUE_TYPES = [
+		'checkbox',
+		'radio',
+		'select',
+		'number',
+		'checkbox_group',
+	];
+	private const CHAT_ABILITY_LIST            = [
 		'burst/live-visitors',
 		'burst/live-traffic',
 		'burst/today-summary',
@@ -26,6 +44,8 @@ class Abilities_Api {
 		'burst/license-notices',
 		'burst/data',
 		'burst/subscriptions-data',
+		'burst/settings',
+		'burst/pages',
 	];
 
 	/**
@@ -143,6 +163,7 @@ class Abilities_Api {
 
 		$api = new self();
 
+		// The MCP Adapter hides abilities unless meta.mcp.public is true, so each ability opts in to be usable by AI agents.
 		wp_register_ability(
 			'burst/live-visitors',
 			[
@@ -165,6 +186,7 @@ class Abilities_Api {
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
 					'annotations'  => [
 						'readonly'    => true,
 						'destructive' => false,
@@ -224,6 +246,7 @@ class Abilities_Api {
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
 					'annotations'  => [
 						'readonly'    => true,
 						'destructive' => false,
@@ -304,6 +327,7 @@ class Abilities_Api {
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
 					'annotations'  => [
 						'readonly'    => true,
 						'destructive' => false,
@@ -346,6 +370,7 @@ class Abilities_Api {
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
 					'annotations'  => [
 						'readonly'    => true,
 						'destructive' => false,
@@ -378,6 +403,7 @@ class Abilities_Api {
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
 					'annotations'  => [
 						'readonly'    => true,
 						'destructive' => false,
@@ -423,6 +449,7 @@ class Abilities_Api {
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
 					'annotations'  => [
 						'readonly'    => true,
 						'destructive' => false,
@@ -469,13 +496,9 @@ class Abilities_Api {
 						'metrics'      => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
-							'description' => 'Metrics to retrieve (e.g., pageviews, visitors)',
+							'description' => 'Metrics to retrieve (e.g., pageviews, visitors). Rows are sorted by the first metric, highest first, and limit keeps the top rows.',
 						],
-						'filters'      => [
-							'type'        => 'array',
-							'items'       => [ 'type' => 'object' ],
-							'description' => 'Filter objects for data retrieval',
-						],
+						'filters'      => self::get_filters_input_schema(),
 						'group_by'     => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
@@ -497,6 +520,7 @@ class Abilities_Api {
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
 					'annotations'  => [
 						'readonly'    => true,
 						'destructive' => false,
@@ -529,13 +553,9 @@ class Abilities_Api {
 						'metrics'    => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
-							'description' => 'Metrics to retrieve',
+							'description' => 'Metrics to retrieve. Rows are sorted by the first metric, highest first, and limit keeps the top rows.',
 						],
-						'filters'    => [
-							'type'        => 'array',
-							'items'       => [ 'type' => 'object' ],
-							'description' => 'Additional filter objects for sales retrieval',
-						],
+						'filters'    => self::get_filters_input_schema(),
 						'group_by'   => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
@@ -558,6 +578,7 @@ class Abilities_Api {
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
 					'annotations'  => [
 						'readonly'    => true,
 						'destructive' => false,
@@ -590,13 +611,9 @@ class Abilities_Api {
 						'metrics'    => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
-							'description' => 'Metrics to retrieve',
+							'description' => 'Metrics to retrieve. Rows are sorted by the first metric, highest first, and limit keeps the top rows.',
 						],
-						'filters'    => [
-							'type'        => 'array',
-							'items'       => [ 'type' => 'object' ],
-							'description' => 'Additional filter objects for subscription retrieval',
-						],
+						'filters'    => self::get_filters_input_schema(),
 						'group_by'   => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
@@ -616,6 +633,168 @@ class Abilities_Api {
 					'description'          => 'Subscriptions data response',
 				],
 				'execute_callback'    => [ $api, 'ability_subscriptions_data' ],
+				'permission_callback' => [ $api, 'permission_callback' ],
+				'meta'                => [
+					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
+					'annotations'  => [
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					],
+				],
+			]
+		);
+
+		$setting_item_schema = [
+			'type'       => 'object',
+			'required'   => [ 'id', 'label', 'explanation', 'location' ],
+			'properties' => [
+				'id'            => [ 'type' => 'string' ],
+				'label'         => [ 'type' => 'string' ],
+				'explanation'   => [ 'type' => 'string' ],
+				'help'          => [ 'type' => [ 'string', 'null' ] ],
+				'location'      => [
+					'type'       => 'object',
+					'required'   => [ 'menu_id', 'menu_label', 'group_id', 'group_label', 'admin_url' ],
+					'properties' => [
+						'menu_id'     => [ 'type' => 'string' ],
+						'menu_label'  => [ 'type' => 'string' ],
+						'group_id'    => [ 'type' => 'string' ],
+						'group_label' => [ 'type' => 'string' ],
+						'admin_url'   => [ 'type' => 'string' ],
+					],
+				],
+				'docs_url'      => [ 'type' => [ 'string', 'null' ] ],
+				'pro'           => [
+					'type'       => [ 'object', 'null' ],
+					'properties' => [
+						'is_pro'  => [ 'type' => 'boolean' ],
+						'tier'    => [ 'type' => [ 'string', 'null' ] ],
+						'feature' => [ 'type' => [ 'string', 'null' ] ],
+						'url'     => [ 'type' => [ 'string', 'null' ] ],
+					],
+				],
+				'value'         => [],
+				'is_configured' => [ 'type' => 'boolean' ],
+			],
+		];
+
+		wp_register_ability(
+			'burst/settings',
+			[
+				'label'               => __( 'Get settings', 'burst-statistics' ),
+				'description'         => __( 'Returns Burst settings catalog, current configuration, and documentation links.', 'burst-statistics' ),
+				'category'            => self::CATEGORY_SLUG,
+				'input_schema'        => [
+					'type'                 => 'object',
+					'additionalProperties' => false,
+					'properties'           => [
+						'query'   => [
+							'type'        => 'string',
+							'description' => __( 'Optional search query matched case-insensitively against setting ID, label, and explanation.', 'burst-statistics' ),
+						],
+						'menu_id' => [
+							'type'        => 'string',
+							'description' => __( 'Optional settings menu ID to filter settings by tab.', 'burst-statistics' ),
+							'enum'        => [
+								'general',
+								'data',
+								'features',
+								'notifications',
+								'advanced',
+								'integrations',
+								'license',
+								'reports',
+								'customization',
+								'logs',
+							],
+						],
+					],
+				],
+				'output_schema'       => [
+					'type'                 => 'object',
+					'additionalProperties' => false,
+					'required'             => [ 'settings', 'total', 'truncated' ],
+					'properties'           => [
+						'settings'  => [
+							'type'  => 'array',
+							'items' => $setting_item_schema,
+						],
+						'total'     => [ 'type' => 'integer' ],
+						'truncated' => [ 'type' => 'boolean' ],
+					],
+				],
+				'execute_callback'    => [ $api, 'ability_settings' ],
+				'permission_callback' => [ $api, 'permission_callback' ],
+				'meta'                => [
+					'show_in_rest' => true,
+					'annotations'  => [
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					],
+				],
+			]
+		);
+
+		$feature_item_schema = [
+			'type'       => 'object',
+			'required'   => [ 'id', 'title', 'description' ],
+			'properties' => [
+				'id'          => [ 'type' => 'string' ],
+				'title'       => [ 'type' => 'string' ],
+				'description' => [ 'type' => 'string' ],
+			],
+		];
+
+		wp_register_ability(
+			'burst/pages',
+			[
+				'label'               => __( 'Get dashboard pages', 'burst-statistics' ),
+				'description'         => __( 'Returns Burst dashboard page map, navigation deeplinks, and shared features.', 'burst-statistics' ),
+				'category'            => self::CATEGORY_SLUG,
+				'input_schema'        => $api->empty_object_schema(),
+				'output_schema'       => [
+					'type'                 => 'object',
+					'additionalProperties' => false,
+					'required'             => [ 'pages', 'features' ],
+					'properties'           => [
+						'pages'    => [
+							'type'  => 'array',
+							'items' => [
+								'type'       => 'object',
+								'required'   => [ 'id', 'title', 'description', 'admin_url' ],
+								'properties' => [
+									'id'          => [ 'type' => 'string' ],
+									'title'       => [ 'type' => 'string' ],
+									'description' => [ 'type' => 'string' ],
+									'admin_url'   => [ 'type' => 'string' ],
+									'pro'         => [ 'type' => 'boolean' ],
+									'sub_items'   => [
+										'type'  => 'array',
+										'items' => [
+											'type'       => 'object',
+											'required'   => [ 'id', 'title', 'description', 'admin_url' ],
+											'properties' => [
+												'id'    => [ 'type' => 'string' ],
+												'title' => [ 'type' => 'string' ],
+												'description' => [ 'type' => 'string' ],
+												'admin_url' => [ 'type' => 'string' ],
+												'pro'   => [ 'type' => 'boolean' ],
+											],
+										],
+									],
+								],
+							],
+						],
+						'features' => [
+							'type'  => 'array',
+							'items' => $feature_item_schema,
+						],
+					],
+				],
+				'execute_callback'    => [ $api, 'ability_pages' ],
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
@@ -1027,8 +1206,11 @@ class Abilities_Api {
 			$default_metrics = $default_metrics_map[ $datatable_id ];
 		}
 
-		$metrics  = isset( $input['metrics'] ) ? (array) $input['metrics'] : $default_metrics;
-		$filters  = isset( $input['filters'] ) ? (array) $input['filters'] : [];
+		$metrics = isset( $input['metrics'] ) ? (array) $input['metrics'] : $default_metrics;
+		$filters = $this->normalize_agent_filters( $input['filters'] ?? [] );
+		if ( is_wp_error( $filters ) ) {
+			return $filters;
+		}
 		$group_by = isset( $input['group_by'] ) ? (array) $input['group_by'] : $default_group_by;
 		$group_by = $this->normalize_group_by( $group_by );
 		$interval = $this->normalize_insights_interval( $input['interval'] ?? null );
@@ -1065,12 +1247,19 @@ class Abilities_Api {
 					);
 				}
 
-				$metrics = $this->filter_datatable_metrics( $admin, $datatable_id, $metrics, $default_metrics );
+				$allowed_columns = $this->get_datatable_columns( $admin, $datatable_id );
+				if ( is_wp_error( $allowed_columns ) ) {
+					return $allowed_columns;
+				}
+
+				$metrics = $this->filter_datatable_metrics( $allowed_columns, $metrics, $default_metrics, $group_by );
 				if ( is_wp_error( $metrics ) ) {
 					return $metrics;
 				}
 
-				$data = $admin->statistics->get_datatables_data(
+				return $this->fetch_agent_datatable(
+					$admin,
+					$allowed_columns,
 					[
 						'date_start' => $date_start,
 						'date_end'   => $date_end,
@@ -1081,8 +1270,6 @@ class Abilities_Api {
 						'id'         => $datatable_id,
 					]
 				);
-
-				return $this->format_agent_datatable_response( $data, $group_by, $metrics );
 			}
 
 			return new \WP_Error(
@@ -1128,31 +1315,36 @@ class Abilities_Api {
 
 		$input = is_array( $input ) ? $input : [];
 
-		$date_start      = isset( $input['date_start'] ) ? absint( $input['date_start'] ) : 0;
-		$date_end        = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
-		$datatable_id    = 'sales_products';
+		$date_start   = isset( $input['date_start'] ) ? absint( $input['date_start'] ) : 0;
+		$date_end     = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
+		$datatable_id = 'sales_products';
+		// Revenue first: the first metric sets the sort order, so the top products are the highest earners.
 		$default_metrics = [
-			'product',
-			'sales',
 			'revenue',
+			'sales',
 		];
-		$metrics         = isset( $input['metrics'] ) ? (array) $input['metrics'] : $default_metrics;
-		$metrics         = $this->filter_datatable_metrics( $admin, $datatable_id, $metrics, $default_metrics );
+		$group_by        = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'product' ];
+		$group_by        = $this->normalize_group_by( $group_by );
+		$allowed_columns = $this->get_datatable_columns( $admin, $datatable_id );
+		if ( is_wp_error( $allowed_columns ) ) {
+			return $allowed_columns;
+		}
+		$metrics = isset( $input['metrics'] ) ? (array) $input['metrics'] : $default_metrics;
+		$metrics = $this->filter_datatable_metrics( $allowed_columns, $metrics, $default_metrics, $group_by );
 		if ( is_wp_error( $metrics ) ) {
 			return $metrics;
 		}
-		$group_by  = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'product' ];
-		$group_by  = $this->normalize_group_by( $group_by );
-		$limit     = isset( $input['limit'] ) ? absint( $input['limit'] ) : 100;
-		$limit     = max( 1, min( 500, $limit ) );
-		$filters   = $this->normalize_agent_filter_objects( $input['filters'] ?? [] );
-		$filters[] = [
-			'key'   => 'type',
-			'value' => 'purchase',
-		];
+		$limit   = isset( $input['limit'] ) ? absint( $input['limit'] ) : 100;
+		$limit   = max( 1, min( 500, $limit ) );
+		$filters = $this->normalize_agent_filters( $input['filters'] ?? [] );
+		if ( is_wp_error( $filters ) ) {
+			return $filters;
+		}
 
 		try {
-			$data = $admin->statistics->get_datatables_data(
+			return $this->fetch_agent_datatable(
+				$admin,
+				$allowed_columns,
 				[
 					'date_start' => $date_start,
 					'date_end'   => $date_end,
@@ -1163,8 +1355,6 @@ class Abilities_Api {
 					'id'         => $datatable_id,
 				]
 			);
-
-			return $this->format_agent_datatable_response( $data, $group_by, $metrics );
 		} catch ( \Throwable $e ) {
 			return new \WP_Error(
 				'burst_abilities_execution_failed',
@@ -1207,30 +1397,34 @@ class Abilities_Api {
 		$date_end        = isset( $input['date_end'] ) ? absint( $input['date_end'] ) : 0;
 		$datatable_id    = 'subscription_products';
 		$default_metrics = [
-			'plan',
 			'active_subscribers',
 			'canceled_subscribers',
 			'trialling_subscribers',
 			'monthly_recurring_revenue',
 			'product_churn_value',
 		];
-		$metrics         = isset( $input['metrics'] ) ? (array) $input['metrics'] : $default_metrics;
-		$metrics         = $this->filter_datatable_metrics( $admin, $datatable_id, $metrics, $default_metrics );
+		$group_by        = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'plan' ];
+		$group_by        = $this->normalize_group_by( $group_by );
+		$allowed_columns = $this->get_datatable_columns( $admin, $datatable_id );
+		if ( is_wp_error( $allowed_columns ) ) {
+			return $allowed_columns;
+		}
+		$metrics = isset( $input['metrics'] ) ? (array) $input['metrics'] : $default_metrics;
+		$metrics = $this->filter_datatable_metrics( $allowed_columns, $metrics, $default_metrics, $group_by );
 		if ( is_wp_error( $metrics ) ) {
 			return $metrics;
 		}
-		$group_by  = isset( $input['group_by'] ) ? (array) $input['group_by'] : [ 'plan' ];
-		$group_by  = $this->normalize_group_by( $group_by );
-		$limit     = isset( $input['limit'] ) ? absint( $input['limit'] ) : 100;
-		$limit     = max( 1, min( 500, $limit ) );
-		$filters   = $this->normalize_agent_filter_objects( $input['filters'] ?? [] );
-		$filters[] = [
-			'key'   => 'type',
-			'value' => 'subscription',
-		];
+		$limit   = isset( $input['limit'] ) ? absint( $input['limit'] ) : 100;
+		$limit   = max( 1, min( 500, $limit ) );
+		$filters = $this->normalize_agent_filters( $input['filters'] ?? [] );
+		if ( is_wp_error( $filters ) ) {
+			return $filters;
+		}
 
 		try {
-			$data = $admin->statistics->get_datatables_data(
+			return $this->fetch_agent_datatable(
+				$admin,
+				$allowed_columns,
 				[
 					'date_start' => $date_start,
 					'date_end'   => $date_end,
@@ -1241,8 +1435,6 @@ class Abilities_Api {
 					'id'         => $datatable_id,
 				]
 			);
-
-			return $this->format_agent_datatable_response( $data, $group_by, $metrics );
 		} catch ( \Throwable $e ) {
 			return new \WP_Error(
 				'burst_abilities_execution_failed',
@@ -1250,6 +1442,322 @@ class Abilities_Api {
 				[ 'status' => 500 ]
 			);
 		}
+	}
+
+	/**
+	 * Execute: burst/settings.
+	 *
+	 * @param mixed $input Ability input.
+	 * @return array<string, mixed>|\WP_Error
+	 *
+	 * Mixed $input: signature is dictated by the WordPress Abilities API (wp_register_ability execute_callback); the validated input shape varies per ability.
+	 */
+	public function ability_settings( mixed $input ): array|\WP_Error {
+		$rate_limit = $this->enforce_rate_limit( 'settings' );
+		if ( is_wp_error( $rate_limit ) ) {
+			return $rate_limit;
+		}
+
+		$permission = $this->permission_callback( $input );
+		if ( is_wp_error( $permission ) ) {
+			return $permission;
+		}
+
+		$fields_handler = new \Burst\Admin\App\Fields\Fields();
+		$raw_fields     = $fields_handler->get( true );
+
+		$menu_items   = ( new \Burst\Admin\App\Menu\Menu() )->get();
+		$menu_labels  = [];
+		$group_labels = [];
+
+		foreach ( $menu_items as $item ) {
+			if ( isset( $item['id'], $item['title'] ) ) {
+				$menu_labels[ (string) $item['id'] ] = (string) $item['title'];
+			}
+			if ( ! empty( $item['menu_items'] ) && is_array( $item['menu_items'] ) ) {
+				foreach ( $item['menu_items'] as $sub_item ) {
+					if ( isset( $sub_item['id'], $sub_item['title'] ) ) {
+						$menu_labels[ (string) $sub_item['id'] ] = (string) $sub_item['title'];
+					}
+					if ( ! empty( $sub_item['groups'] ) && is_array( $sub_item['groups'] ) ) {
+						foreach ( $sub_item['groups'] as $group ) {
+							if ( isset( $group['id'], $group['title'] ) ) {
+								$group_labels[ (string) $group['id'] ] = (string) $group['title'];
+							}
+						}
+					}
+				}
+			}
+		}
+
+		$query   = is_array( $input ) && ! empty( $input['query'] ) ? strtolower( trim( (string) $input['query'] ) ) : '';
+		$menu_id = is_array( $input ) && ! empty( $input['menu_id'] ) ? trim( (string) $input['menu_id'] ) : '';
+
+		$matched_fields = [];
+		foreach ( $raw_fields as $field ) {
+			if ( ! is_array( $field ) || empty( $field['id'] ) ) {
+				continue;
+			}
+
+			$field_type = (string) ( $field['type'] ?? '' );
+			if ( in_array( $field_type, self::SETTINGS_SKIPPED_TYPES, true ) ) {
+				continue;
+			}
+
+			if ( ! empty( $field['hidden'] ) ) {
+				continue;
+			}
+
+			if ( isset( $field['visible'] ) && false === $field['visible'] ) {
+				continue;
+			}
+
+			$field_menu_id = (string) ( $field['menu_id'] ?? 'general' );
+			if ( '' !== $menu_id && $field_menu_id !== $menu_id ) {
+				continue;
+			}
+
+			$field_id    = (string) $field['id'];
+			$field_label = (string) ( $field['label'] ?? '' );
+
+			$explanation = '';
+			if ( isset( $field['context'] ) ) {
+				if ( is_array( $field['context'] ) ) {
+					$explanation = (string) ( $field['context']['text'] ?? '' );
+				} else {
+					$explanation = (string) $field['context'];
+				}
+			}
+
+			if ( '' !== $query ) {
+				$in_id    = str_contains( strtolower( $field_id ), $query );
+				$in_label = str_contains( strtolower( $field_label ), $query );
+				$in_exp   = str_contains( strtolower( $explanation ), $query );
+				if ( ! $in_id && ! $in_label && ! $in_exp ) {
+					continue;
+				}
+			}
+
+			$field_group_id = (string) ( $field['group_id'] ?? 'general' );
+			$menu_label     = $menu_labels[ $field_menu_id ] ?? ucwords( str_replace( '_', ' ', $field_menu_id ) );
+			$group_label    = $group_labels[ $field_group_id ] ?? ucwords( str_replace( '_', ' ', $field_group_id ) );
+			$parent_route   = in_array( $field_menu_id, [ 'reports', 'customization', 'logs' ], true ) ? 'reporting' : 'settings';
+			$admin_url      = 'admin.php?page=burst#/' . $parent_route . '/' . $field_menu_id;
+
+			$docs_url = null;
+			if ( isset( $field['context'] ) && is_array( $field['context'] ) && ! empty( $field['context']['url'] ) ) {
+				$raw_url  = (string) $field['context']['url'];
+				$path     = (string) ( wp_parse_url( $raw_url, PHP_URL_PATH ) ?: $raw_url );
+				$docs_url = $this->get_website_url( $path, [ 'utm_content' => self::DOCS_UTM_CONTENT ] );
+			}
+
+			$help = null;
+			if ( isset( $field['help'] ) ) {
+				$help_text = is_array( $field['help'] ) ? (string) ( $field['help']['text'] ?? '' ) : (string) $field['help'];
+				if ( '' !== trim( $help_text ) ) {
+					$help = $help_text;
+				}
+			}
+
+			$pro = null;
+			if ( ! $this->is_pro() && ! empty( $field['pro'] ) ) {
+				$pro = [
+					'is_pro'  => true,
+					'tier'    => is_array( $field['pro'] ) ? ( $field['pro']['tier'] ?? 'all' ) : 'all',
+					'feature' => is_array( $field['pro'] ) ? ( $field['pro']['feature'] ?? null ) : null,
+					'url'     => is_array( $field['pro'] ) && isset( $field['pro']['url'] )
+						? $this->get_website_url( (string) ( wp_parse_url( (string) $field['pro']['url'], PHP_URL_PATH ) ?: $field['pro']['url'] ), [ 'utm_content' => self::DOCS_UTM_CONTENT ] )
+						: null,
+				];
+			}
+
+			$item = [
+				'id'          => $field_id,
+				'label'       => $field_label,
+				'explanation' => $explanation,
+				'help'        => $help,
+				'location'    => [
+					'menu_id'     => $field_menu_id,
+					'menu_label'  => $menu_label,
+					'group_id'    => $field_group_id,
+					'group_label' => $group_label,
+					'admin_url'   => $admin_url,
+				],
+				'docs_url'    => $docs_url,
+				'pro'         => $pro,
+			];
+
+			$raw_value = $field['value'] ?? $field['default'] ?? null;
+			if ( in_array( $field_type, self::SETTINGS_ALLOWED_VALUE_TYPES, true ) ) {
+				$item['value'] = $raw_value;
+			} else {
+				$is_configured = false;
+				if ( is_string( $raw_value ) ) {
+					$is_configured = '' !== trim( $raw_value );
+				} elseif ( is_array( $raw_value ) ) {
+					$is_configured = ! empty( $raw_value );
+				} elseif ( null !== $raw_value ) {
+					$is_configured = (bool) $raw_value;
+				}
+				$item['is_configured'] = $is_configured;
+			}
+
+			$matched_fields[] = $item;
+		}
+
+		$total     = count( $matched_fields );
+		$truncated = $total > 20;
+		$settings  = $truncated ? array_slice( $matched_fields, 0, 20 ) : $matched_fields;
+
+		return [
+			'settings'  => $settings,
+			'total'     => $total,
+			'truncated' => $truncated,
+		];
+	}
+
+	/**
+	 * Execute: burst/pages.
+	 *
+	 * @param mixed $input Ability input.
+	 * @return array<string, mixed>|\WP_Error
+	 *
+	 * Mixed $input: signature is dictated by the WordPress Abilities API (wp_register_ability execute_callback); the validated input shape varies per ability.
+	 */
+	public function ability_pages( mixed $input = null ): array|\WP_Error {
+		unset( $input );
+		$rate_limit = $this->enforce_rate_limit( 'pages' );
+		if ( is_wp_error( $rate_limit ) ) {
+			return $rate_limit;
+		}
+
+		$permission = $this->permission_callback();
+		if ( is_wp_error( $permission ) ) {
+			return $permission;
+		}
+
+		$menu_items = ( new \Burst\Admin\App\Menu\Menu() )->get();
+
+		$features_file = BURST_PATH . 'includes/Admin/App/config/dashboard-features.php';
+		$features      = file_exists( $features_file ) ? require $features_file : [];
+		if ( ! is_array( $features ) ) {
+			$features = [];
+		}
+
+		$pages = [];
+		foreach ( $menu_items as $item ) {
+			if ( ! is_array( $item ) || empty( $item['id'] ) ) {
+				continue;
+			}
+
+			// Menu::get() checks capabilities before the burst_menu filter runs, so pages added through it (Sales, Subscriptions) still need this check.
+			if ( isset( $item['capabilities'] ) && ! current_user_can( (string) $item['capabilities'] ) ) {
+				continue;
+			}
+
+			$page_id = (string) $item['id'];
+
+			$sub_items = [];
+			if ( ! empty( $item['menu_items'] ) && is_array( $item['menu_items'] ) ) {
+				foreach ( $item['menu_items'] as $sub ) {
+					if ( ! is_array( $sub ) || empty( $sub['id'] ) || ! empty( $sub['hidden'] ) ) {
+						continue;
+					}
+
+					if ( isset( $sub['capabilities'] ) && ! current_user_can( (string) $sub['capabilities'] ) ) {
+						continue;
+					}
+
+					$sub_id      = (string) $sub['id'];
+					$sub_items[] = [
+						'id'          => $sub_id,
+						'title'       => (string) ( $sub['title'] ?? '' ),
+						'description' => (string) ( $sub['description'] ?? '' ),
+						'admin_url'   => 'admin.php?page=burst#/' . $page_id . '/' . $sub_id,
+						'pro'         => ! empty( $sub['pro'] ),
+					];
+				}
+			}
+
+			$page_data = [
+				'id'          => $page_id,
+				'title'       => (string) ( $item['title'] ?? '' ),
+				'description' => (string) ( $item['description'] ?? '' ),
+				'admin_url'   => 'admin.php?page=burst#/' . $page_id,
+				'pro'         => ! empty( $item['pro'] ),
+			];
+
+			if ( ! empty( $sub_items ) ) {
+				$page_data['sub_items'] = $sub_items;
+			}
+
+			$pages[] = $page_data;
+		}
+
+		return [
+			'pages'    => $pages,
+			'features' => $features,
+		];
+	}
+
+	/**
+	 * Post-process chat reply to append consistent UTM query parameters to all burst-statistics.com links.
+	 *
+	 * @param string $reply Assistant reply text.
+	 * @return string Reply text with normalized docs links.
+	 */
+	public function add_utm_to_docs_links( string $reply ): string {
+		if ( '' === $reply || ! str_contains( $reply, 'burst-statistics.com' ) ) {
+			return $reply;
+		}
+
+		// Sentence punctuation may follow the host only when the URL ends there, so lookalike hosts such as burst-statistics.com.example.org are skipped.
+		$pattern = '~https?://(?:www\.)?burst-statistics\.com(?=[/?#\s)\]"\'<>]|[.,;:!]+(?:[\s)\]"\'<>]|$)|$)(?:[/?#][^\s<>"\'\)\]]*)?~i';
+
+		return (string) preg_replace_callback(
+			$pattern,
+			function ( array $matches ): string {
+				$full_url = $matches[0];
+				$trailing = '';
+
+				if ( preg_match( '/[.,:;!?]+$/', $full_url, $punct_match ) ) {
+					$trailing = $punct_match[0];
+					$full_url = substr( $full_url, 0, -strlen( $trailing ) );
+				}
+
+				$parsed = wp_parse_url( $full_url );
+				if ( ! is_array( $parsed ) ) {
+					return $matches[0];
+				}
+
+				$path = $parsed['path'] ?? '/';
+
+				$non_utm_params = [];
+				if ( ! empty( $parsed['query'] ) ) {
+					wp_parse_str( $parsed['query'], $query_args );
+					foreach ( $query_args as $key => $val ) {
+						if ( ! str_starts_with( (string) $key, 'utm_' ) ) {
+							// add_query_arg() does not encode values; map_deep() also covers nested arrays such as a[b][]=1.
+							$non_utm_params[ (string) $key ] = map_deep( $val, 'rawurlencode' );
+						}
+					}
+				}
+
+				$params  = array_merge( $non_utm_params, [ 'utm_content' => self::DOCS_UTM_CONTENT ] );
+				$new_url = $this->get_website_url( $path, $params );
+				// get_website_url() appends a slash to an empty path, which turns the site root into "//".
+				if ( '' === trim( $path, '/' ) ) {
+					$new_url = str_replace( 'burst-statistics.com//', 'burst-statistics.com/', $new_url );
+				}
+
+				if ( ! empty( $parsed['fragment'] ) ) {
+					$new_url .= '#' . $parsed['fragment'];
+				}
+
+				return $new_url . $trailing;
+			},
+			$reply
+		);
 	}
 
 	/**
@@ -1309,33 +1817,71 @@ class Abilities_Api {
 	}
 
 	/**
-	 * Normalize generic filter objects passed by agent clients.
+	 * Input schema of the filters parameter, shared by the data abilities.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function get_filters_input_schema(): array {
+		return [
+			'type'        => 'array',
+			'items'       => [
+				'type'                 => 'object',
+				'additionalProperties' => false,
+				'required'             => [ 'key', 'value' ],
+				'properties'           => [
+					'key'   => [
+						'type'        => 'string',
+						'description' => 'Filter key, for example referrer, page_url, device, browser, platform, country_code, goal_id or (Pro) source, utm_source, utm_medium, utm_campaign.',
+					],
+					'value' => [
+						'type'        => 'string',
+						'description' => 'Value to match. referrer matches part of the referrer URL, so example.com finds https://www.example.com/page. Prefix with ! to exclude.',
+					],
+				],
+			],
+			'description' => 'Filters that limit the data, all applied together. Example: [{"key":"referrer","value":"example.com"}].',
+		];
+	}
+
+	/**
+	 * Turn the key/value filter objects of an agent client into the key => value
+	 * map that Statistics_Query::filters() reads.
+	 *
+	 * An unknown key is an error rather than skipped: the query ignores it, so
+	 * the agent would get unfiltered data and report it as filtered.
 	 *
 	 * @param mixed $filters Input filters; expected array of objects with key/value.
-	 * @return array<int, array{key: string, value: mixed}>
+	 * @return array<string, string>|\WP_Error
 	 *
 	 * Mixed $filters: unvalidated value from agent client input that may not be an array; the is_array guard returns [] for anything else.
 	 */
-	private function normalize_agent_filter_objects( mixed $filters ): array {
+	private function normalize_agent_filters( mixed $filters ): array|\WP_Error {
 		if ( ! is_array( $filters ) ) {
 			return [];
 		}
 
+		$valid_keys = array_keys( Filter_Registry::all() );
 		$normalized = [];
 		foreach ( $filters as $filter ) {
-			if ( ! is_array( $filter ) ) {
+			if ( ! is_array( $filter ) || ! isset( $filter['key'] ) || ! is_scalar( $filter['value'] ?? null ) ) {
 				continue;
 			}
 
-			$key = isset( $filter['key'] ) ? (string) $filter['key'] : '';
-			if ( '' === $key ) {
+			$key   = sanitize_key( (string) $filter['key'] );
+			$value = (string) $filter['value'];
+			if ( '' === $key || '' === $value ) {
 				continue;
 			}
 
-			$normalized[] = [
-				'key'   => $key,
-				'value' => $filter['value'] ?? '',
-			];
+			if ( ! in_array( $key, $valid_keys, true ) ) {
+				return new \WP_Error(
+					'burst_abilities_invalid_filter',
+					sprintf( 'Unknown filter key "%s". Valid keys: %s.', $key, implode( ', ', $valid_keys ) ),
+					[ 'status' => 400 ]
+				);
+			}
+
+			$normalized[ $key ] = $value;
 		}
 
 		return $normalized;
@@ -1344,19 +1890,15 @@ class Abilities_Api {
 	/**
 	 * Normalize group_by keys coming from API clients.
 	 *
+	 * Keys are passed through as-is: they must match the datatable's own column
+	 * ids (for example utm_source on sources_campaigns), which
+	 * fetch_agent_datatable() checks against the allow-list.
+	 *
 	 * @param array<int, string> $group_by Grouping keys from input.
 	 * @return array<int, string>
 	 */
 	private function normalize_group_by( array $group_by ): array {
-		$map = [
-			'utm_source' => 'source',
-		];
-
-		$normalized = [];
-		foreach ( $group_by as $key ) {
-			$key          = (string) $key;
-			$normalized[] = $map[ $key ] ?? $key;
-		}
+		$normalized = array_map( 'strval', $group_by );
 
 		if ( empty( $normalized ) ) {
 			return [ 'page_url' ];
@@ -1366,15 +1908,17 @@ class Abilities_Api {
 	}
 
 	/**
-	 * Restrict requested metrics to the granular datatable endpoint allow-list.
+	 * Get the columns the current user may request from a datatable.
 	 *
-	 * @param Admin              $admin Admin instance.
-	 * @param string             $datatable_id Datatable endpoint ID.
-	 * @param array<int, mixed>  $metrics Requested metric keys.
-	 * @param array<int, string> $fallback_metrics Metrics to use when none of the requested metrics are valid.
-	 * @return array<int, string>|\WP_Error
+	 * Runs the allow-list through the same burst_datatable_metrics filter as the
+	 * data/datatable REST route, so users without view_sales_burst_statistics do
+	 * not get sales columns through the abilities either (report #10).
+	 *
+	 * @param Admin  $admin        Admin instance.
+	 * @param string $datatable_id Datatable endpoint ID.
+	 * @return array<int, string>|\WP_Error Allowed column ids, or an error for an unknown or forbidden datatable.
 	 */
-	private function filter_datatable_metrics( Admin $admin, string $datatable_id, array $metrics, array $fallback_metrics ): array|\WP_Error {
+	private function get_datatable_columns( Admin $admin, string $datatable_id ): array|\WP_Error {
 		$allow_list = $admin->app->get_datatable_metric_allow_list();
 		if ( ! isset( $allow_list[ $datatable_id ] ) ) {
 			return new \WP_Error(
@@ -1392,6 +1936,24 @@ class Abilities_Api {
 			);
 		}
 
+		return array_values( (array) apply_filters( 'burst_datatable_metrics', $allow_list[ $datatable_id ], null ) );
+	}
+
+	/**
+	 * Restrict requested metrics to the datatable's allowed columns.
+	 *
+	 * Grouping columns are dimensions, not metrics, so they are left out here and
+	 * added to the query by get_datatable_query_columns().
+	 *
+	 * @param array<int, string> $allowed_columns  Columns from get_datatable_columns().
+	 * @param array<int, mixed>  $metrics          Requested metric keys.
+	 * @param array<int, string> $fallback_metrics Metrics to use when none of the requested metrics are valid.
+	 * @param array<int, string> $group_by         Grouping columns.
+	 * @return array<int, string>|\WP_Error
+	 */
+	private function filter_datatable_metrics( array $allowed_columns, array $metrics, array $fallback_metrics, array $group_by ): array|\WP_Error {
+		$metric_columns = array_diff( $allowed_columns, $group_by );
+
 		$metrics = array_values(
 			array_unique(
 				array_map(
@@ -1404,9 +1966,9 @@ class Abilities_Api {
 			)
 		);
 
-		$filtered_metrics = array_values( array_intersect( $metrics, $allow_list[ $datatable_id ] ) );
+		$filtered_metrics = array_values( array_intersect( $metrics, $metric_columns ) );
 		if ( empty( $filtered_metrics ) ) {
-			$filtered_metrics = array_values( array_intersect( $fallback_metrics, $allow_list[ $datatable_id ] ) );
+			$filtered_metrics = array_values( array_intersect( $fallback_metrics, $metric_columns ) );
 		}
 
 		if ( empty( $filtered_metrics ) ) {
@@ -1421,14 +1983,43 @@ class Abilities_Api {
 	}
 
 	/**
+	 * Run a datatable query for an agent and format the response.
+	 *
+	 * @param Admin                $admin           Admin instance.
+	 * @param array<int, string>   $allowed_columns Columns from get_datatable_columns().
+	 * @param array<string, mixed> $args            get_datatables_data() arguments; metrics come from filter_datatable_metrics().
+	 * @return array<string, mixed>|\WP_Error
+	 */
+	private function fetch_agent_datatable( Admin $admin, array $allowed_columns, array $args ): array|\WP_Error {
+		// A grouping column that is not selected breaks the query, so only allowed columns can group.
+		$group_by = array_values( array_intersect( (array) $args['group_by'], $allowed_columns ) );
+		if ( empty( $group_by ) ) {
+			return new \WP_Error(
+				'burst_abilities_invalid_group_by',
+				'group_by must contain a column of this datatable, for example page_url or referrer.',
+				[ 'status' => 400 ]
+			);
+		}
+
+		$metrics          = (array) $args['metrics'];
+		$args['group_by'] = $group_by;
+		$args['metrics']  = $this->get_datatable_query_columns( $group_by, $metrics );
+
+		$data = $admin->statistics->get_datatables_data( $args );
+
+		return $this->format_agent_datatable_response( $data, $group_by, $metrics, (int) $args['limit'] );
+	}
+
+	/**
 	 * Reformat datatable responses so agents can distinguish dimensions from metrics.
 	 *
 	 * @param array<string, mixed> $data Raw datatable response.
 	 * @param array<int, string>   $group_by Grouping columns.
 	 * @param array<int, string>   $metrics Metric columns.
+	 * @param int                  $limit Maximum number of rows, 0 for all.
 	 * @return array<string, mixed>
 	 */
-	private function format_agent_datatable_response( array $data, array $group_by, array $metrics ): array {
+	private function format_agent_datatable_response( array $data, array $group_by, array $metrics, int $limit ): array {
 		$label_map   = [];
 		$raw_columns = $data['columns'] ?? [];
 
@@ -1462,6 +2053,7 @@ class Abilities_Api {
 
 		$raw_rows = is_array( $data['data'] ?? null ) ? $data['data'] : [];
 		$rows     = $this->normalize_agent_datatable_rows( $raw_rows, $group_by, $metrics );
+		$rows     = $this->sort_and_limit_agent_rows( $rows, $metrics[0] ?? '', $limit );
 
 		return [
 			'type'       => 'datatable',
@@ -1470,6 +2062,65 @@ class Abilities_Api {
 			'rows'       => $rows,
 			'row_count'  => count( $rows ),
 		];
+	}
+
+	/**
+	 * Build the column list for a datatable query.
+	 *
+	 * Statistics_Data::get_datatables_data() only selects the columns passed as
+	 * metrics and sorts by the last one. The dashboard passes the dimension as the
+	 * first metric, so agents must too, or rows come back without page_url,
+	 * referrer, etc. The first requested metric goes last so the top-N rows are
+	 * sorted by it rather than by whichever metric happens to be listed last.
+	 *
+	 * @param array<int, string> $group_by Grouping columns, already checked against the allow-list.
+	 * @param array<int, string> $metrics  Non-empty metric columns from filter_datatable_metrics(), in requested order.
+	 * @return array<int, string>
+	 */
+	private function get_datatable_query_columns( array $group_by, array $metrics ): array {
+		$primary_metric = array_shift( $metrics );
+
+		return array_merge( $group_by, $metrics, [ $primary_metric ] );
+	}
+
+	/**
+	 * Sort rows by a metric, highest first, and keep the first $limit rows.
+	 *
+	 * Statistics_Query tables arrive sorted and limited already, but datatables
+	 * served through burst_datatable_pre_data (forms, outgoing-links,
+	 * search-terms, subscription_products) return their own order and ignore the
+	 * limit. Rows are aggregates, so this is a small in-memory pass.
+	 *
+	 * @param array<int, array<string, mixed>> $rows        Normalized rows.
+	 * @param string                           $sort_metric Metric to sort by.
+	 * @param int                              $limit       Maximum number of rows, 0 for all.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function sort_and_limit_agent_rows( array $rows, string $sort_metric, int $limit ): array {
+		usort(
+			$rows,
+			static function ( array $a, array $b ) use ( $sort_metric ): int {
+				return self::get_sortable_value( $b[ $sort_metric ] ?? 0 ) <=> self::get_sortable_value( $a[ $sort_metric ] ?? 0 );
+			}
+		);
+
+		return $limit > 0 ? array_slice( $rows, 0, $limit ) : $rows;
+	}
+
+	/**
+	 * Get the numeric value of a datatable cell for sorting.
+	 *
+	 * @param mixed $value Cell value: a number, a numeric string or a {currency, value} array.
+	 * @return float
+	 *
+	 * Mixed $value: datatable cells are numbers, numeric strings or currency arrays depending on the datatable.
+	 */
+	private static function get_sortable_value( mixed $value ): float {
+		if ( is_array( $value ) ) {
+			$value = $value['value'] ?? 0;
+		}
+
+		return is_numeric( $value ) ? (float) $value : 0.0;
 	}
 
 	/**
@@ -1711,6 +2362,13 @@ class Abilities_Api {
 				sprintf( 'Today is %s (UTC).', $current_date ),
 				sprintf( 'Current Unix timestamps — today: %d–%d | this week (Mon): %d–now | this month: %d–%d.', $today_start, $today_end, $week_start, $month_start, $month_end ),
 				'Always use these timestamps for relative date references such as "today", "this week", or "this month".',
+				'For a question about a setting, call burst/settings first. Never name a setting, menu or default that the ability did not return.',
+				'For a question about doing something in the dashboard (filtering, date ranges, downloading data, sharing, finding a report), call burst/pages first to find where it is, then add the steps from the docs.',
+				'For a question about how a feature works, look it up in the Burst docs. Search only burst-statistics.com: start with https://burst-statistics.com/wp-json/wp/v2/search?search=<terms>, and if that is not possible use a web search limited to site:burst-statistics.com. Open the page and answer from what it says, not from search snippets.',
+				'The plugin wins over the docs. If a docs page says a feature is "coming soon" or not available, but burst/pages or burst/settings shows it exists, say it exists and describe it from the plugin.',
+				'If the docs cannot be read (the provider has no web access, or the site does not respond), say so and link to the docs search instead of answering from memory.',
+				'End such answers with a link to the source: the settings or page deeplink, the docs page, or both.',
+				'When a feature needs Pro or a higher tier, say so. Never quote prices; link to the pricing page instead.',
 				'At the very end of your response, you MUST append a JSON object wrapped in <telemetry>...</telemetry> tags.',
 				'This JSON object must contain the following keys:',
 				'- "anonymized_question": A short (3-8 words), generalized, and completely anonymized version of the user\'s latest question (e.g. "show todays summary"). Remove all specific names, exact metrics, dates, URLs, or personal data.',
@@ -1881,6 +2539,8 @@ class Abilities_Api {
 					}
 				}
 			}
+
+			$assistant_reply = $this->add_utm_to_docs_links( $assistant_reply );
 
 			$model_message = $this->create_model_message( $assistant_reply );
 			if ( ! is_wp_error( $model_message ) ) {
@@ -2993,13 +3653,18 @@ class Abilities_Api {
 	/**
 	 * Schema helper for abilities that do not accept input.
 	 *
+	 * Properties is an empty ArrayObject: it must serialize as {} because OpenAI
+	 * rejects object schemas without properties ("object schema missing properties"),
+	 * and core's rest_validate_value_from_schema() reads it with array access, which
+	 * fatals on a stdClass as soon as the input holds any key.
+	 *
 	 * @return array<string, mixed>
 	 */
 	private function empty_object_schema(): array {
 		return [
 			'type'                 => 'object',
 			'additionalProperties' => false,
-			'properties'           => (object) [],
+			'properties'           => new \ArrayObject(),
 		];
 	}
 

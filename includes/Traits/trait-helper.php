@@ -22,6 +22,101 @@ trait Helper {
 		return defined( 'BURST_PRO' );
 	}
 
+	/**
+	 * Check if essentials mode is enabled.
+	 *
+	 * @return bool True if essentials mode is enabled, false otherwise.
+	 */
+	public function is_essentials_mode(): bool {
+		return $this->get_option_bool( 'essentials_mode', false );
+	}
+
+	/**
+	 * List of non-essential features that are disabled when essentials mode is enabled.
+	 *
+	 * Not filterable on purpose: each slug matches a module that gulpfile.js
+	 * leaves out of the prebuilt essentials scripts (goals.js, scroll.js,
+	 * page-weight.js), and a filter could not change those scripts. Keep the
+	 * two in sync when adding a feature.
+	 *
+	 * @return array<int, string> List of non-essential feature slugs.
+	 */
+	public static function get_non_essential_features(): array {
+		return [
+			'goals',
+			'scroll_depth',
+			'co2',
+		];
+	}
+
+	/**
+	 * Basename of the prebuilt tracking script for the current settings.
+	 *
+	 * Shared by the enqueued script and the combined uploads file, so both pick
+	 * the same essentials or full, cookie or cookieless build.
+	 *
+	 * @return string The file name in assets/js/build.
+	 */
+	public function get_tracking_script_basename(): string {
+		$prefix = $this->is_essentials_mode() ? 'burst-essentials' : 'burst';
+		$suffix = 'fingerprint' === $this->get_option( 'privacy_level', 'cookie' ) ? '-cookieless' : '';
+
+		return $prefix . $suffix . '.min.js';
+	}
+
+	/**
+	 * Check by slug if a feature is in the non-essentials list.
+	 *
+	 * @param string $slug Feature slug to check.
+	 * @return bool True if the feature is non-essential, false otherwise.
+	 */
+	public static function is_non_essential( string $slug ): bool {
+		return in_array( $slug, self::get_non_essential_features(), true );
+	}
+
+	/**
+	 * Check whether a feature is enabled under the current essentials mode configuration.
+	 *
+	 * When essentials mode is active, all features in the non-essentials list are disabled.
+	 * When essentials mode is off, all features are enabled (subject to their own settings).
+	 *
+	 * @param string $slug Feature slug to check.
+	 * @return bool True if enabled, false if disabled by essentials mode.
+	 */
+	public function is_feature_enabled( string $slug ): bool {
+		if ( $this->is_essentials_mode() && self::is_non_essential( $slug ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check whether a dashboard data endpoint may return data under essentials mode.
+	 *
+	 * The endpoint-to-feature map lives here, next to the non-essentials list, so
+	 * essentials mode is managed in one place. Page weight has two entries:
+	 * `page-weight` is the datatable id, `page_weight` the block's own data type.
+	 *
+	 * @param string $type Data type or datatable id, without the `datatable-` prefix.
+	 * @return bool False when the endpoint reports on a feature essentials mode turned off.
+	 */
+	public function is_data_type_enabled( string $type ): bool {
+		$feature_map = [
+			'page-weight'      => 'co2',
+			'page_weight'      => 'co2',
+			'scroll-analytics' => 'scroll_depth',
+			'goals'            => 'goals',
+			'live-goals'       => 'goals',
+		];
+
+		if ( ! isset( $feature_map[ $type ] ) ) {
+			return true;
+		}
+
+		return $this->is_feature_enabled( $feature_map[ $type ] );
+	}
+
 	// phpcs:disable
 	/**
 	 * Get an option from the burst settings

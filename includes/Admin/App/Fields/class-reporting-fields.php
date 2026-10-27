@@ -1,6 +1,8 @@
 <?php
 namespace Burst\Admin\App\Fields;
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 use Burst\Traits\Save;
@@ -25,7 +27,6 @@ class Reporting_Fields {
 	public function init(): void {
 		add_filter( 'burst_fields', [ $this, 'add_reporting_fields' ] );
 		add_filter( 'burst_field_value_slack_webhook_url', [ $this, 'get_masked_slack_webhook_url' ], 10, 1 );
-		add_action( 'burst_before_save_field', [ $this, 'save_slack_webhook_url' ], 10, 2 );
 		add_filter( 'burst_fieldvalue', [ $this, 'filter_saved_field_value' ], 10, 2 );
 		add_filter( 'burst_allowed_field_types', [ $this, 'add_allowed_field_types' ] );
 	}
@@ -111,7 +112,7 @@ class Reporting_Fields {
 	 * @return string Masked webhook URL or empty string.
 	 */
 	public function get_masked_slack_webhook_url( mixed $value = '' ): string {
-		$raw_url = (string) get_option( 'burst_slack_webhook_url', '' );
+		$raw_url = (string) Admin_Options::get( Admin_Option_Category::NOTIFICATIONS, 'slack_webhook_url', '' );
 		if ( empty( $raw_url ) ) {
 			return is_string( $value ) ? $value : '';
 		}
@@ -122,42 +123,6 @@ class Reporting_Fields {
 		}
 
 		return '••••••••••••••••••••••••';
-	}
-
-	/**
-	 * Handle saving the Slack webhook URL separately with autoload false.
-	 *
-	 * @param string $field_id Field identifier.
-	 * @param mixed  $value    New value.
-	 * @throws \InvalidArgumentException When webhook URL does not match valid Slack webhook format.
-	 */
-	public function save_slack_webhook_url( string $field_id, mixed $value ): void {
-		if ( 'slack_webhook_url' !== $field_id ) {
-			return;
-		}
-
-		if ( ! $this->is_pro() ) {
-			return;
-		}
-
-		$url = is_string( $value ) ? trim( $value ) : '';
-
-		// If the value contains mask bullets, the user left the masked value unchanged.
-		if ( str_contains( $url, '•' ) ) {
-			return;
-		}
-
-		if ( empty( $url ) ) {
-			delete_option( 'burst_slack_webhook_url' );
-			return;
-		}
-
-		if ( ! str_starts_with( $url, 'https://hooks.slack.com/services/' ) ) {
-			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-			throw new \InvalidArgumentException( esc_html__( 'Invalid Slack webhook URL. The URL must start with https://hooks.slack.com/services/', 'burst-statistics' ) );
-		}
-
-		update_option( 'burst_slack_webhook_url', esc_url_raw( $url ), false );
 	}
 
 	/**

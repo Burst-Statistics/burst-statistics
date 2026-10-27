@@ -191,6 +191,8 @@ const transformSalesData = ( data ) => {
 
 				const conversionRate = current.conversion_rate ?? 0;
 				transformed[key].value = formatPercentage( conversionRate );
+				transformed[key].communityMetricKey = 'ecommerce_conversion_rate';
+				transformed[key].communityMetricValue = Number( conversionRate );
 
 				const totalVisitors = parseInt( current.visitors ) ?? 0;
 				const totalConverted = parseInt( current.total_converted ) ?? 0;
@@ -276,6 +278,8 @@ const transformSalesData = ( data ) => {
 
 				const abandonedRate = current.abandoned_rate ?? 0;
 				transformed[key].value = formatPercentage( abandonedRate );
+				transformed[key].communityMetricKey = 'abandoned_cart_rate';
+				transformed[key].communityMetricValue = Number( abandonedRate );
 				const totalAbandoned = parseInt( current.total_abandoned, 10 );
 				if ( 0 < totalAbandoned ) {
 					transformed[key].subtitle = sprintf(

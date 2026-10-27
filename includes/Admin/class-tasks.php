@@ -2,6 +2,7 @@
 namespace Burst\Admin;
 
 // don't remove, it is used in the Tasks code.
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 
@@ -35,7 +36,7 @@ class Tasks {
 	 *     tasks: array<int, array{
 	 *         id: string,
 	 *         icon: string,
-	 *         condition: array<string, mixed>|callable[],
+	 *         condition: array<string, mixed>,
 	 *         status: string,
 	 *         label: string
 	 *     }>
@@ -73,7 +74,7 @@ class Tasks {
 	 * Insert a task
 	 */
 	public function add_task( string $task_id ): void {
-		$current_tasks         = get_option( 'burst_tasks', [] );
+		$current_tasks         = Admin_Options::get( Admin_Option_Category::TASKS, 'active', [] );
 		$permanently_dismissed = $this->is_dismissed_permanently( $task_id );
 		if ( $permanently_dismissed ) {
 			return;
@@ -81,7 +82,7 @@ class Tasks {
 
 		if ( ! in_array( $task_id, $current_tasks, true ) ) {
 			$current_tasks[] = sanitize_title( $task_id );
-			update_option( 'burst_tasks', $current_tasks, false );
+			Admin_Options::update( Admin_Option_Category::TASKS, 'active', $current_tasks );
 			delete_transient( 'burst_plusone_count' );
 			$this->maybe_advance_drip_task();
 		}
@@ -93,7 +94,7 @@ class Tasks {
 	private function is_dismissed_permanently( string $task_id ): bool {
 		$task = $this->get_task_by_id( $task_id );
 		if ( isset( $task['dismiss_permanently'] ) && $task['dismiss_permanently'] ) {
-			$permanently_dismissed = get_option( 'burst_tasks_permanently_dismissed', [] );
+			$permanently_dismissed = Admin_Options::get( Admin_Option_Category::TASKS, 'permanently_dismissed', [] );
 			if ( in_array( $task_id, $permanently_dismissed, true ) ) {
 				return true;
 			}
@@ -105,13 +106,13 @@ class Tasks {
 	 * Remove a task from the permanently dismissed list.
 	 */
 	public function undismiss_task( string $task_id ): bool {
-		$permanently_dismissed = get_option( 'burst_tasks_permanently_dismissed', [] );
+		$permanently_dismissed = Admin_Options::get( Admin_Option_Category::TASKS, 'permanently_dismissed', [] );
 		$key                   = array_search( $task_id, $permanently_dismissed, true );
 		$un_dismissed          = false;
 		if ( $key !== false ) {
 			unset( $permanently_dismissed[ $key ] );
 			$permanently_dismissed = array_values( $permanently_dismissed );
-			update_option( 'burst_tasks_permanently_dismissed', $permanently_dismissed, false );
+			Admin_Options::update( Admin_Option_Category::TASKS, 'permanently_dismissed', $permanently_dismissed );
 			$un_dismissed = true;
 		}
 
@@ -125,22 +126,22 @@ class Tasks {
 	 * @param bool   $user_action Whether this dismissal was triggered by a user action.
 	 */
 	public function dismiss_task( string $task_id, bool $user_action = true ): void {
-		$current_tasks = get_option( 'burst_tasks', [] );
+		$current_tasks = Admin_Options::get( Admin_Option_Category::TASKS, 'active', [] );
 		if ( in_array( sanitize_title( $task_id ), $current_tasks, true ) ) {
 			do_action( 'burst_dismiss_task', $task_id );
 			$current_tasks = array_diff( $current_tasks, [ $task_id ] );
-			update_option( 'burst_tasks', $current_tasks, false );
+			Admin_Options::update( Admin_Option_Category::TASKS, 'active', $current_tasks );
 
 			// only dismiss permanently if the task exists in the tasks array.
 			$this->maybe_dismiss_permanently( $task_id );
 		}
 
-		$active_drip_task = (string) get_option( 'burst_active_drip_task', '' );
+		$active_drip_task = (string) Admin_Options::get( Admin_Option_Category::TASKS, 'active_drip', '' );
 		if ( $user_action && $task_id === $active_drip_task ) {
-			update_option( 'burst_drip_last_dismissed_time', time(), false );
-			delete_option( 'burst_active_drip_task' );
+			Admin_Options::update( Admin_Option_Category::TASKS, 'drip_last_dismissed', time() );
+			Admin_Options::delete( Admin_Option_Category::TASKS, 'active_drip' );
 		} elseif ( $task_id === $active_drip_task ) {
-			delete_option( 'burst_active_drip_task' );
+			Admin_Options::delete( Admin_Option_Category::TASKS, 'active_drip' );
 			$this->maybe_advance_drip_task();
 		}
 
@@ -166,11 +167,11 @@ class Tasks {
 	private function maybe_dismiss_permanently( string $task_id ): void {
 		$task = $this->get_task_by_id( $task_id );
 		if ( isset( $task['dismiss_permanently'] ) && $task['dismiss_permanently'] ) {
-			$permanently_dismissed = get_option( 'burst_tasks_permanently_dismissed', [] );
+			$permanently_dismissed = Admin_Options::get( Admin_Option_Category::TASKS, 'permanently_dismissed', [] );
 			if ( ! in_array( $task_id, $permanently_dismissed, true ) ) {
 				$permanently_dismissed[] = $task_id;
 			}
-			update_option( 'burst_tasks_permanently_dismissed', $permanently_dismissed, false );
+			Admin_Options::update( Admin_Option_Category::TASKS, 'permanently_dismissed', $permanently_dismissed );
 		}
 	}
 
@@ -178,7 +179,7 @@ class Tasks {
 	 * Check if a task is active
 	 */
 	public function has_task( string $task_id ): bool {
-		$current_tasks = get_option( 'burst_tasks', [] );
+		$current_tasks = Admin_Options::get( Admin_Option_Category::TASKS, 'active', [] );
 		return in_array( sanitize_title( $task_id ), $current_tasks, true );
 	}
 
@@ -198,15 +199,21 @@ class Tasks {
 						$is_valid = ! $is_valid;
 					}
 				} else {
-					// one function or an array of functions; all must pass.
-					$functions = (array) $task['condition']['function'];
+					// one function or an array of functions; all must pass. A
+					// closure carries its own arguments, so a check that needs
+					// values does not have to be encoded into the string form.
+					$functions = is_array( $task['condition']['function'] ) ? $task['condition']['function'] : [ $task['condition']['function'] ];
 					$is_valid  = true;
 					foreach ( $functions as $function ) {
-						$invert   = str_contains( $function, '!' );
-						$function = $invert ? substr( $function, 1 ) : $function;
-						$valid    = $this->validate_function( $function );
-						if ( $invert ) {
-							$valid = ! $valid;
+						if ( $function instanceof \Closure ) {
+							$valid = (bool) $function();
+						} else {
+							$invert   = str_contains( $function, '!' );
+							$function = $invert ? substr( $function, 1 ) : $function;
+							$valid    = $this->validate_function( $function );
+							if ( $invert ) {
+								$valid = ! $valid;
+							}
 						}
 						if ( ! $valid ) {
 							$is_valid = false;
@@ -302,14 +309,14 @@ class Tasks {
 	 * Each task contains:
 	 * - 'id': string
 	 * - 'icon': string ('open', 'success', 'error', 'warning', etc.)
-	 * - 'condition': callable[]|array<string, mixed>
+	 * - 'condition': array<string, mixed>, without the server side check itself
 	 * - 'status': string ('open' or 'completed')
 	 * - 'label': string
 	 *
 	 * @return array<int, array{
 	 *     id: string,
 	 *     icon: string,
-	 *     condition: array<string, mixed>|callable[],
+	 *     condition: array<string, mixed>,
 	 *     status: string,
 	 *     label: string
 	 * }>
@@ -324,6 +331,11 @@ class Tasks {
 					'icon'      => 'open',
 				]
 			);
+			// The condition is evaluated server side, so the check itself does not
+			// belong in the response: a closure cannot be serialized (it would go
+			// out as an empty object) and the app only reads condition.type, to tell
+			// client side tasks apart.
+			unset( $tasks[ $index ]['condition']['function'], $tasks[ $index ]['condition']['constant'] );
 		}
 		// Filter out tasks that do not apply, or are dismissed.
 		$dismiss_non_error_tasks = $this->get_option_bool( 'dismiss_non_error_notices' );
@@ -414,7 +426,7 @@ class Tasks {
 			return $non_drip_tasks;
 		}
 
-		$active_id = (string) get_option( 'burst_active_drip_task', '' );
+		$active_id = (string) Admin_Options::get( Admin_Option_Category::TASKS, 'active_drip', '' );
 		if ( '' !== $active_id ) {
 			foreach ( $drip_candidates as $index => $candidate ) {
 				if ( ( $candidate['id'] ?? '' ) === $active_id ) {
@@ -431,13 +443,13 @@ class Tasks {
 	 * respecting the cooldown interval after dismissals.
 	 */
 	public function maybe_advance_drip_task(): void {
-		$active_id = (string) get_option( 'burst_active_drip_task', '' );
+		$active_id = (string) Admin_Options::get( Admin_Option_Category::TASKS, 'active_drip', '' );
 
 		// Check if cooldown is active.
-		$last_dismissed = (int) get_option( 'burst_drip_last_dismissed_time', 0 );
+		$last_dismissed = (int) Admin_Options::get( Admin_Option_Category::TASKS, 'drip_last_dismissed', 0 );
 		if ( 0 !== $last_dismissed && ( time() - $last_dismissed ) < $this->get_drip_interval() ) {
 			if ( '' !== $active_id ) {
-				delete_option( 'burst_active_drip_task' );
+				Admin_Options::delete( Admin_Option_Category::TASKS, 'active_drip' );
 			}
 			return;
 		}
@@ -459,7 +471,7 @@ class Tasks {
 		}
 
 		if ( empty( $candidates ) ) {
-			delete_option( 'burst_active_drip_task' );
+			Admin_Options::delete( Admin_Option_Category::TASKS, 'active_drip' );
 			return;
 		}
 
@@ -486,7 +498,7 @@ class Tasks {
 			}
 		}
 
-		update_option( 'burst_active_drip_task', $next_task['id'], false );
+		Admin_Options::update( Admin_Option_Category::TASKS, 'active_drip', $next_task['id'] );
 		delete_transient( 'burst_plusone_count' );
 	}
 
@@ -515,11 +527,11 @@ class Tasks {
 	 * Handle tour completion: immediately advance to next drip task (bypass 3-day wait).
 	 */
 	public function on_tour_completed(): void {
-		delete_option( 'burst_drip_last_dismissed_time' );
+		Admin_Options::delete( Admin_Option_Category::TASKS, 'drip_last_dismissed' );
 		$this->dismiss_task( 'interactive_tour', false );
 		$this->maybe_dismiss_permanently( 'interactive_tour' );
-		if ( get_option( 'burst_active_drip_task' ) === 'interactive_tour' ) {
-			delete_option( 'burst_active_drip_task' );
+		if ( Admin_Options::get( Admin_Option_Category::TASKS, 'active_drip', '' ) === 'interactive_tour' ) {
+			Admin_Options::delete( Admin_Option_Category::TASKS, 'active_drip' );
 		}
 
 		delete_transient( 'burst_plusone_count' );
@@ -613,7 +625,7 @@ class Tasks {
 			}
 
 			$ttl            = DAY_IN_SECONDS;
-			$last_dismissed = (int) get_option( 'burst_drip_last_dismissed_time', 0 );
+			$last_dismissed = (int) Admin_Options::get( Admin_Option_Category::TASKS, 'drip_last_dismissed', 0 );
 			if ( 0 !== $last_dismissed ) {
 				$elapsed  = time() - $last_dismissed;
 				$interval = $this->get_drip_interval();
