@@ -384,7 +384,9 @@ const getRevenueChurnData = ( metric ) => {
 		value: formatPercentage( churnPercentage ),
 		exactValue: churnPercentage,
 		tooltipText: formatPercentage( churnPercentage ),
-		subtitle: getRevenueChurnSubtitle( current, previous, rateChange )
+		subtitle: getRevenueChurnSubtitle( current, previous, rateChange ),
+		communityMetricKey: 'revenue_churn',
+		communityMetricValue: churnPercentage
 	};
 };
 

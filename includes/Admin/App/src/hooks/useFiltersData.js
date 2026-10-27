@@ -10,7 +10,9 @@ const useFiltersData = () => {
 	const fetchFilterData = async( type, search ) => {
 		const response = await getAction( 'get_filter_options', {
 			data_type: type,
-			search
+
+			// URLSearchParams would send a missing search as "undefined".
+			search: search ?? ''
 		});
 		return response.data?.[type] || [];
 	};

@@ -61,7 +61,7 @@ if ( ! function_exists( '\Burst\burst_update_option' ) && ! function_exists( 'bu
 		}
 
 		$options[ $name ] = $value;
-		update_option( 'burst_options_settings', $options );
+		update_option( 'burst_options_settings', $options, true );
 	}
 	//phpcs:enable
 }
@@ -81,7 +81,7 @@ if ( ! function_exists( '\Burst\burst_delete_option' ) && ! function_exists( 'bu
 
 		if ( array_key_exists( $name, $options ) ) {
 			unset( $options[ $name ] );
-			update_option( 'burst_options_settings', $options );
+			update_option( 'burst_options_settings', $options, true );
 		}
 	}
 	//phpcs:enable

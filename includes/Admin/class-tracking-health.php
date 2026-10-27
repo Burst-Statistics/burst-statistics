@@ -13,6 +13,7 @@
 namespace Burst\Admin;
 
 use Burst\Admin\Cron\Cron;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Admin\Statistics\Statistics_Query;
 use Burst\Traits\Database_Helper;
 
@@ -77,16 +78,10 @@ class Tracking_Health {
 	private const ESCALATION_STEP_SUSPECT = 0.10;
 
 	/**
-	 * Option key holding the last detection result and incident state.
-	 *
-	 * @var string
+	 * Key holding the timestamp of the last dispatched health notification,
+	 * within the diagnostics category (see Admin_Options).
 	 */
-	private const OPTION = 'burst_tracking_health';
-
-	/**
-	 * Option key holding the timestamp of the last dispatched health notification.
-	 */
-	public const LAST_NOTIFICATION_OPTION = 'burst_tracking_health_last_notification';
+	public const LAST_NOTIFICATION_OPTION = 'tracking_health_last_notification';
 
 	/**
 	 * Default minimum confidence threshold to dispatch a health notification.
@@ -116,7 +111,7 @@ class Tracking_Health {
 
 		$result = $this->detect();
 
-		$previous    = get_option( self::OPTION, [] );
+		$previous    = Admin_Options::get( Admin_Option_Category::DIAGNOSTICS, 'tracking_health', [] );
 		$prev_status = $previous['status'] ?? 'ok';
 
 		if ( 'ok' === $result['status'] ) {
@@ -139,7 +134,7 @@ class Tracking_Health {
 
 		$result = $this->escalate_confidence( $result );
 
-		update_option( self::OPTION, $result, false );
+		Admin_Options::update( Admin_Option_Category::DIAGNOSTICS, 'tracking_health', $result );
 		do_action( 'burst_tracking_health_checked', $result );
 	}
 
@@ -255,7 +250,7 @@ class Tracking_Health {
 	 * @return array Stored result, or an empty array if no check has run yet.
 	 */
 	public function get_status(): array {
-		return get_option( self::OPTION, [] );
+		return Admin_Options::get( Admin_Option_Category::DIAGNOSTICS, 'tracking_health', [] );
 	}
 
 	/**
@@ -364,12 +359,12 @@ class Tracking_Health {
 			return;
 		}
 
-		$last_sent = (int) get_option( self::LAST_NOTIFICATION_OPTION, 0 );
+		$last_sent = (int) Admin_Options::get( Admin_Option_Category::DIAGNOSTICS, self::LAST_NOTIFICATION_OPTION, 0 );
 		if ( $last_sent > 0 && ( time() - $last_sent ) < WEEK_IN_SECONDS ) {
 			return;
 		}
 
-		update_option( self::LAST_NOTIFICATION_OPTION, time(), false );
+		Admin_Options::update( Admin_Option_Category::DIAGNOSTICS, self::LAST_NOTIFICATION_OPTION, time() );
 
 		$host          = wp_parse_url( home_url(), PHP_URL_HOST );
 		$pretty_domain = is_string( $host ) && '' !== $host ? $host : (string) home_url();

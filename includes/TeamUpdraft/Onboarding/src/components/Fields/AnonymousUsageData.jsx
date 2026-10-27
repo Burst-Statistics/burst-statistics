@@ -4,15 +4,17 @@ import SwitchInput from '@/components/Fields/SwitchInput';
 import Icon from '@/utils/Icon';
 import { get_website_url } from '@/utils/lib.js';
 import useOnboardingStore from '@/store/useOnboardingStore';
+import ComparisonExample from './ComparisonExample';
 
 /**
  * AnonymousUsageData component for the onboarding wizard.
  *
- * Displays a consent UI for sharing anonymous usage data with clear information
- * about what is and isn't collected.
+ * Displays a consent UI for sharing anonymous usage data. The plugin can pass
+ * an `example` of what the user gets in return, a `privacy_note`, a
+ * `toggle_label` and an `enabled_status` text.
  *
  * @param {Object}   props          - Component props.
- * @param {Object}   props.field    - Field configuration.
+ * @param {Object}   props.field    - Field configuration, optionally with `example` and `enabled_status`.
  * @param {Function} props.onChange - Callback when value changes.
  * @param {boolean}  props.value    - Current field value.
  * @return {JSX.Element}
@@ -31,14 +33,21 @@ const AnonymousUsageData = ( { field, onChange, value } ) => {
 	return (
 		<FieldWrapper label="" inputId={ field.id }>
 			<div className="w-full flex flex-col gap-5">
+				{ field.privacy_note && (
+					<p className="text-sm text-text-gray">
+						{ field.privacy_note }
+					</p>
+				) }
+
 				{ /* Toggle control */ }
 				<div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white p-4">
 					<div className="flex flex-col gap-1">
 						<span className="text-md font-medium text-text-gray">
-							{ __(
-								'Share anonymous usage data',
-								'burst-statistics'
-							) }
+							{ field.toggle_label ||
+								__(
+									'Share anonymous usage data',
+									'burst-statistics'
+								) }
 						</span>
 						<span
 							className={ `text-sm ${
@@ -46,11 +55,9 @@ const AnonymousUsageData = ( { field, onChange, value } ) => {
 							}` }
 						>
 							{ value
-								? __(
-										'Enabled — thank you for helping us improve!',
-										'burst-statistics'
-								  )
-								: __( 'Disabled', 'burst-statistics' ) }
+								? field.enabled_status ||
+								  __( 'On', 'burst-statistics' )
+								: __( 'Off', 'burst-statistics' ) }
 						</span>
 					</div>
 					<SwitchInput
@@ -59,6 +66,8 @@ const AnonymousUsageData = ( { field, onChange, value } ) => {
 						onChange={ onChange }
 					/>
 				</div>
+
+				<ComparisonExample example={ field.example } />
 
 				{ /* Learn more link */ }
 				<a

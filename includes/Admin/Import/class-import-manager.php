@@ -29,6 +29,13 @@ class Import_Manager {
 	use Database_Helper;
 
 	/**
+	 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
+
+	/**
 	 * Maximum number of terminal import records to retain in history.
 	 */
 	public const HISTORY_RETENTION_LIMIT = 15;
@@ -137,16 +144,27 @@ class Import_Manager {
 	}
 
 	/**
-	 * Install burst_imports registry table.
+	 * Get the chunked uploader, instantiating it when init() has not run.
+	 *
+	 * The runner and the uploader call into a bare Import_Manager instance
+	 * (no init(), so no hooks), which leaves $uploader uninitialized.
 	 */
-	public function install_tables(): void {
-		global $wpdb;
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+	private function get_uploader(): Chunked_Uploader {
+		if ( ! isset( $this->uploader ) ) {
+			$this->uploader = new Chunked_Uploader();
+		}
+		return $this->uploader;
+	}
 
-		$charset_collate = $wpdb->get_charset_collate();
-		$table_name      = $wpdb->prefix . 'burst_imports';
-
-		$sql = "CREATE TABLE $table_name (
+	/**
+	 * Schema of the burst_imports registry table, read by install_tables() and the schema check.
+	 *
+	 * @return array<string, array{columns: string, indexes?: array<int, string[]>}>
+	 */
+	protected function get_schema_definition(): array {
+		return [
+			'burst_imports' => [
+				'columns' => "
 			`id` int(11) NOT NULL AUTO_INCREMENT,
 			`source` varchar(64) NOT NULL,
 			`source_type` varchar(20) NOT NULL,
@@ -164,9 +182,16 @@ class Import_Manager {
 			PRIMARY KEY (`id`),
 			KEY `source_status` (`source`, `status`),
 			KEY `file_hash` (`file_hash`)
-		) $charset_collate;";
+		",
+			],
+		];
+	}
 
-		dbDelta( $sql );
+	/**
+	 * Install burst_imports registry table.
+	 */
+	public function install_tables(): void {
+		$this->install_schema( [ 'burst_imports' ] );
 	}
 
 	/**
@@ -275,7 +300,7 @@ class Import_Manager {
 					$resolved_path = $upload_id;
 				}
 
-				$base_dir  = realpath( $this->uploader->get_base_upload_dir() );
+				$base_dir  = realpath( $this->get_uploader()->get_base_upload_dir() );
 				$real_path = ! empty( $resolved_path ) ? realpath( $resolved_path ) : false;
 
 				if ( ! $real_path || ! $base_dir || ! str_starts_with( $real_path, $base_dir ) || ! file_exists( $real_path ) ) {
@@ -780,7 +805,7 @@ class Import_Manager {
 			return;
 		}
 
-		$base_dir = realpath( $this->uploader->get_base_upload_dir() );
+		$base_dir = realpath( $this->get_uploader()->get_base_upload_dir() );
 		if ( ! $base_dir ) {
 			return;
 		}

@@ -1,6 +1,8 @@
 <?php
 namespace Burst\Admin\AutoInstaller;
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\TeamUpdraft\Installer\Installer;
 use Burst\TeamUpdraft\RestResponse\RestResponse;
 
@@ -887,7 +889,7 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 				$result   = $upgrader->install( $download_link );
 
 				if ( $result ) {
-					update_option( 'burst_auto_installed', true, false );
+					Admin_Options::update( Admin_Option_Category::CORE, 'auto_installed', true );
 					$response = [
 						'success' => true,
 					];

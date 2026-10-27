@@ -66,6 +66,21 @@ export interface BurstCommunityData {
 	new_visitors_percentage?: { average: number };
 	conversion_rate?: BurstCommunityDistribution;
 	average_time_on_page?: BurstCommunityDistribution;
+
+	/** Average page weight per pageview, in bytes. */
+	average_page_weight?: BurstCommunityDistribution;
+
+	/** Estimated CO2 per pageview, in grams. */
+	co2_per_pageview?: BurstCommunityDistribution;
+
+	/** Order conversion rate of stores, as a percentage. */
+	ecommerce_conversion_rate?: BurstCommunityDistribution;
+
+	/** Share of carts that are abandoned, as a percentage. */
+	abandoned_cart_rate?: BurstCommunityDistribution;
+
+	/** Monthly recurring revenue lost to cancellations, as a percentage. */
+	revenue_churn?: BurstCommunityDistribution;
 	devices?: {
 		desktop: number;
 		tablet: number;
@@ -153,6 +168,12 @@ export interface BurstSettings {
 
 	/** True when the site records custom events; the settings fields are manage-only, so viewers read it here. */
 	custom_events_enabled?: boolean;
+
+	/** True when essentials mode is on; viewers read it here because they get no settings fields. */
+	essentials_mode?: boolean;
+
+	/** Feature slugs essentials mode turns off (`burst_non_essential_features`). */
+	non_essential_features?: string[];
 
 	/** Pro license bootstrap (localized before React Query fetch). */
 	licenseStatus?: string;

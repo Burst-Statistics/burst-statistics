@@ -11,6 +11,13 @@ defined( 'ABSPATH' ) || die();
 class Diagnostic_Logs {
 	use Database_Helper;
 
+	/**
+	 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
+
 	private const RETENTION_DAYS = 90;
 
 	private const MAX_ENTRIES = 1000;
@@ -38,15 +45,14 @@ class Diagnostic_Logs {
 	}
 
 	/**
-	 * Create the per-site event table.
+	 * Schema of the event table, read by install_table() and the schema check.
+	 *
+	 * @return array<string, array{columns: string, indexes?: array<int, string[]>}>
 	 */
-	public function install_table(): void {
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		global $wpdb;
-		$charset_collate = $wpdb->get_charset_collate();
-
-		dbDelta(
-			"CREATE TABLE {$wpdb->prefix}burst_gsc_diagnostic_logs (
+	protected function get_schema_definition(): array {
+		return [
+			'burst_gsc_diagnostic_logs' => [
+				'columns' => '
 				`ID` bigint unsigned NOT NULL AUTO_INCREMENT,
 				`time` int unsigned NOT NULL,
 				`event` varchar(64) NOT NULL,
@@ -55,12 +61,20 @@ class Diagnostic_Logs {
 				`context` longtext NOT NULL,
 				PRIMARY KEY (ID),
 				KEY `time` (`time`)
-			) $charset_collate;"
-		);
+			',
+			],
+		];
+	}
 
-		if ( ! $this->table_exists( 'burst_gsc_diagnostic_logs' ) ) {
+	/**
+	 * Create the per-site event table.
+	 */
+	public function install_table(): void {
+		if ( ! $this->install_schema( [ 'burst_gsc_diagnostic_logs' ] ) || ! $this->table_exists( 'burst_gsc_diagnostic_logs' ) ) {
 			self::$table_ready = false;
-			self::error_log( 'Error creating Search Console diagnostics table: ' . $wpdb->last_error );
+			// install_schema() has logged the database error itself; table_exists()
+			// runs a query of its own, so $wpdb->last_error no longer holds it.
+			self::error_log( 'Search Console diagnostics table is not available.' );
 			return;
 		}
 

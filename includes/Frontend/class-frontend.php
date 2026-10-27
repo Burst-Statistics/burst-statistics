@@ -116,10 +116,12 @@ class Frontend {
 		$goals = new Goals();
 		$goals->init();
 
-		// Only init goals tracker on front-end or ajax requests.
+		// Only init goals tracker and search capture on front-end or ajax requests.
 		if ( ! is_admin() || wp_doing_ajax() ) {
-			$goals_tracker = new Goals_Tracker();
-			$goals_tracker->init();
+			if ( $this->is_feature_enabled( 'goals' ) ) {
+				$goals_tracker = new Goals_Tracker();
+				$goals_tracker->init();
+			}
 
 			$search = new Search();
 			$search->init();
@@ -130,6 +132,11 @@ class Frontend {
 			$shortcodes = new Shortcodes();
 			$shortcodes->init();
 		}
+
+		// Not behind enable_shortcodes: that option guards shortcodes that expose
+		// statistics, and the badge only repeats a public hosting check.
+		$green_hosting_badge = new Green_Hosting_Badge_Block();
+		$green_hosting_badge->init();
 
 		$share = new Share_Expired();
 		$share->init();
@@ -697,14 +704,12 @@ class Frontend {
 		}
 
 		if ( ! $this->exclude_from_tracking() ) {
-			$privacy_level           = $this->get_option( 'privacy_level', 'cookie' );
-			$cookieless              = ( $privacy_level === 'fingerprint' );
-			$cookieless_text         = $cookieless ? '-cookieless' : '';
 			$prefix                  = 'burst';
 			$in_footer               = $this->get_option_bool( 'enable_turbo_mode' );
 			$combine_vars_and_script = $this->get_option_bool( 'combine_vars_and_script', true );
-			$file_url                = BURST_URL . "assets/js/build/burst$cookieless_text.min.js";
-			$file_path               = BURST_PATH . "assets/js/build/burst$cookieless_text.min.js";
+			$file_basename           = $this->get_tracking_script_basename();
+			$file_url                = BURST_URL . 'assets/js/build/' . $file_basename;
+			$file_path               = BURST_PATH . 'assets/js/build/' . $file_basename;
 			$add_localize_script     = true;
 			if ( $combine_vars_and_script ) {
 				$ghost_mode_enabled = $this->uses_obfuscated_combined_file();
@@ -1045,7 +1050,13 @@ class Frontend {
 	 * @return string The modified block content.
 	 */
 	public function render_block_filter( string $block_content, array $block ): string {
+		// The attribute check runs first: it is free, while the essentials mode
+		// check reads an option, and this filter runs for every block on a page.
 		if ( empty( $block['attrs']['burstGoalActive'] ) || empty( $block['attrs']['burstGoalUid'] ) ) {
+			return $block_content;
+		}
+
+		if ( ! $this->is_feature_enabled( 'goals' ) ) {
 			return $block_content;
 		}
 

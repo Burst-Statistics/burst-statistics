@@ -2,6 +2,7 @@
 
 namespace Burst\Admin\Data_Sharing\Data_Collectors\Metrics;
 
+use Burst\Admin\Engagement\Page_Weight;
 use function Burst\burst_loader;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -38,6 +39,8 @@ class Traffic_Metrics {
 	 *     @type float $new_visitors_percentage    Percentage of visitors who are new.
 	 *     @type float $conversion_rate            Optional. Aggregate goal conversions per pageview percentage when active goals exist.
 	 *     @type float $average_time_on_page        Average time on page in milliseconds.
+	 *     @type int   $average_page_weight         Optional. Average measured page weight per pageview in bytes, when enough pageviews are measured.
+	 *     @type float $co2_per_pageview            Optional. Estimated grams CO2e per measured pageview, sent with the page weight.
 	 * }
 	 */
 	public function collect(): array {
@@ -111,6 +114,11 @@ class Traffic_Metrics {
 		if ( $has_active_goals ) {
 			$goals_data                         = burst_loader()->admin->statistics->get_compare_goals_data( $args );
 			$traffic_metrics['conversion_rate'] = max( 0.0, (float) ( $goals_data['current']['conversion_rate'] ?? 0 ) );
+		}
+
+		$page_weight = ( new Page_Weight() )->get_period_averages( $this->capture_data_from, $this->capture_data_to );
+		if ( null !== $page_weight ) {
+			$traffic_metrics = array_merge( $traffic_metrics, $page_weight );
 		}
 
 		$ai_referrals = ( new Ai_Referral_Metrics( $this->capture_data_from, $this->capture_data_to ) )->collect( $sessions );

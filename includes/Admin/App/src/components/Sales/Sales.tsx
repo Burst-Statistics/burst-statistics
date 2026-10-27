@@ -12,6 +12,8 @@ import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import SalesFooter from '@/components/Sales/SalesFooter';
 import ExplanationAndStatsItem from '@/components/Common/ExplanationAndStatsItem';
 import {useBlockConfig} from '@/hooks/useBlockConfig';
+import useMetricComparison from '@/hooks/useMetricComparison';
+import type { CommunityMetricKey } from '@/utils/communityComparison';
 import {BlockComponentProps} from '@/store/reports/types';
 
 /**
@@ -27,6 +29,10 @@ interface SalesData {
 		changeStatus: string | null;
 		icon?: string | null;
 		tooltipText: string | null;
+
+		/** Community benchmark this metric is ranked against, set once data has loaded. */
+		communityMetricKey?: CommunityMetricKey;
+		communityMetricValue?: number;
 	};
 }
 
@@ -89,6 +95,7 @@ const Sales = ( props:BlockComponentProps ): JSX.Element => {
 	});
 
 	const sales = salesQuery.data || null;
+	const getComparison = useMetricComparison( filters );
 
 	const blockHeadingProps = {
 		title: __( 'Sales', 'burst-statistics' ),
@@ -116,6 +123,7 @@ const Sales = ( props:BlockComponentProps ): JSX.Element => {
 								changeStatus={value.changeStatus}
 								tooltipText={value.tooltipText}
 								className={key}
+								communityComparison={getComparison( value.communityMetricKey, value.communityMetricValue )}
 							/>
 						);
 					})}

@@ -1,4 +1,8 @@
 <?php
+
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
+
 defined( 'ABSPATH' ) || die();
 /**
  * Burst Statistics Settings Configuration
@@ -162,6 +166,16 @@ return [
 		],
 	],
 	[
+		'id'       => 'essentials_mode',
+		'menu_id'  => 'general',
+		'group_id' => 'general',
+		'type'     => 'checkbox',
+		'label'    => __( 'Essentials mode', 'burst-statistics' ),
+		'context'  => __( 'Load a minimal tracking script without scroll depth, goals and CO₂ measurement. Smallest possible footprint.', 'burst-statistics' ),
+		'disabled' => false,
+		'default'  => false,
+	],
+	[
 		'id'       => 'privacy_level',
 		'menu_id'  => 'general',
 		'group_id' => 'privacy',
@@ -218,6 +232,7 @@ return [
 		'default'  => false,
 		'pro'      => [
 			'url'      => 'pricing/',
+			'tier'     => 'all',
 			'disabled' => false,
 		],
 	],
@@ -242,6 +257,7 @@ return [
 		'default'          => false,
 		'pro'              => [
 			'url'      => 'pricing/',
+			'tier'     => 'all',
 			'disabled' => false,
 		],
 		'react_conditions' => [
@@ -259,6 +275,7 @@ return [
 		'default'          => false,
 		'pro'              => [
 			'url'      => 'pricing/',
+			'tier'     => 'all',
 			'disabled' => false,
 		],
 		'react_conditions' => [
@@ -379,6 +396,7 @@ return [
 		'default'  => false,
 		'pro'      => [
 			'url'      => 'filtering-by-domain',
+			'tier'     => 'all',
 			'disabled' => false,
 		],
 	],
@@ -399,8 +417,8 @@ return [
 		'type'     => 'checkbox',
 		'label'    => __( 'Merge tracking settings and script', 'burst-statistics' ),
 		'context'  => __( 'Boost site speed by merging the Burst settings into the Burst script.', 'burst-statistics' ) .
-			' ' . ( (bool) get_option( 'burst_js_write_error' ) ? __( 'This option is only available when the WordPress can write to the uploads directory. Please ensure that the WordPress installation has write permissions to "wp-content/uploads/burst/".', 'burst-statistics' ) : '' ),
-		'disabled' => get_option( 'burst_js_write_error' ),
+			' ' . ( (bool) Admin_Options::get( Admin_Option_Category::CORE, 'js_write_error', false ) ? __( 'This option is only available when the WordPress can write to the uploads directory. Please ensure that the WordPress installation has write permissions to "wp-content/uploads/burst/".', 'burst-statistics' ) : '' ),
+		'disabled' => Admin_Options::get( Admin_Option_Category::CORE, 'js_write_error', false ),
 		'default'  => false,
 	],
 	[
@@ -468,6 +486,7 @@ return [
 		'default'  => false,
 		'pro'      => [
 			'url'      => 'pricing/',
+			'tier'     => 'all',
 			'disabled' => false,
 		],
 	],
@@ -483,6 +502,7 @@ return [
 		],
 		'pro'      => [
 			'url'      => 'pricing/',
+			'tier'     => 'all',
 			'disabled' => false,
 		],
 		'notice'   => [
@@ -495,7 +515,7 @@ return [
 		'type'     => 'select',
 		'label'    => __( 'Choose how to manage old statistics', 'burst-statistics' ),
 		// translators: %s is the current size of the database used by Burst, e.g. "10 MB".
-		'context'  => strlen( get_option( 'burst_table_size' ) ) > 1 ? sprintf( _x( 'Burst currently uses %s of your database.', 'e.g. Burst currently uses 10 MB of your database.', 'burst-statistics' ), get_option( 'burst_table_size' ) ) : '',
+		'context'  => strlen( (string) Admin_Options::get( Admin_Option_Category::CORE, 'archive_table_size', '' ) ) > 1 ? sprintf( _x( 'Burst currently uses %s of your database.', 'e.g. Burst currently uses 10 MB of your database.', 'burst-statistics' ), Admin_Options::get( Admin_Option_Category::CORE, 'archive_table_size', '' ) ) : '',
 		'default'  => false,
 	],
 	[
@@ -567,13 +587,14 @@ return [
 		'default'  => false,
 	],
 	[
-		'id'       => 'anonymous_usage_data',
-		'menu_id'  => 'general',
-		'group_id' => 'anonymous_usage_data',
-		'type'     => 'anonymous_usage_data',
-		'label'    => ' ',
-		'disabled' => false,
-		'default'  => false,
+		'id'          => 'anonymous_usage_data',
+		'menu_id'     => 'general',
+		'group_id'    => 'anonymous_usage_data',
+		'type'        => 'anonymous_usage_data',
+		'label'       => ' ',
+		'disabled'    => false,
+		'default'     => false,
+		'sync_status' => ( new \Burst\Admin\Data_Sharing\Data_Sharing() )->get_sync_status(),
 	],
 	[
 		'id'       => 'beta',
@@ -633,6 +654,7 @@ return [
 		'help'          => __( 'Anyone with access to the Slack channel will be able to open story links shared in notifications.', 'burst-statistics' ),
 		'pro'           => [
 			'url'      => 'pricing/',
+			'tier'     => 'all',
 			'disabled' => false,
 		],
 		'disabled'      => false,
@@ -662,6 +684,7 @@ return [
 				'description' => __( 'Send reports to configured email addresses and your Slack channel.', 'burst-statistics' ),
 				'pro'         => [
 					'url'      => 'pricing/',
+					'tier'     => 'all',
 					'feature'  => 'slack',
 					'disabled' => false,
 				],

@@ -398,24 +398,11 @@ class Statistics_Data {
 			];
 		}
 
-		$timezone_offset = self::get_wp_timezone_offset();
-		$date            = $date_start + $timezone_offset;
-
-		$timestamps = [];
-
-		for ( $i = 0; $i < $date_modifiers['nr_of_intervals']; $i++ ) {
-			$formatted_date = date_i18n( $date_modifiers['php_date_format'], $date );
-
-			$timestamps[ $formatted_date ] = $date - $timezone_offset;
-
+		$timestamps = $this->get_period_slots( $date_start, $date_modifiers['interval'], $date_modifiers['php_date_format'], $date_modifiers['nr_of_intervals'], $qd->get_date_end() );
+		foreach ( array_keys( $timestamps ) as $formatted_date ) {
 			foreach ( $metrics as $metric_key => $metric ) {
 				$datasets[ $metric_key ]['data'][ $formatted_date ] = 0;
 			}
-
-			// Advance by a real calendar step so month/week/year slots align with the SQL
-			// DATE_FORMAT keys; using a flat seconds constant would skip months
-			// (e.g. February and December) over a 12-month range.
-			$date = $this->advance_period_timestamp( $date, $date_modifiers['interval'] );
 		}
 
 		// The select can be empty when the bitmap series covered the only
@@ -559,30 +546,14 @@ class Statistics_Data {
 			}
 		}
 
-		$timezone_offset = self::get_wp_timezone_offset();
-		$comp_date       = $comp_date_start + $timezone_offset;
-		$comp_timestamps = [];
-		$comp_data       = [];
-
-		// Initialise dataset slots using the comparison period's own timestamps.
-		foreach ( $comp_metrics as $metric ) {
-			$comp_data[ $metric ] = [];
-		}
-
 		// Generate exactly as many slots as the current period. The frontend aligns
 		// the comparison series 1:1 by index against the main timestamps, so the
 		// slot count must match even when the shifted window straddles a different
 		// number of calendar weeks/months than the current period.
-		$nr_of_intervals = $date_modifiers['nr_of_intervals'];
-		for ( $i = 0; $i < $nr_of_intervals; $i++ ) {
-			$formatted_date                     = date_i18n( $comp_date_modifiers['php_date_format'], $comp_date );
-			$comp_timestamps[ $formatted_date ] = $comp_date - $timezone_offset;
-
-			foreach ( $comp_metrics as $metric ) {
-				$comp_data[ $metric ][ $formatted_date ] = 0;
-			}
-
-			$comp_date = $this->advance_period_timestamp( $comp_date, $comp_date_modifiers['interval'] );
+		$comp_timestamps = $this->get_period_slots( $comp_date_start, $comp_date_modifiers['interval'], $comp_date_modifiers['php_date_format'], $date_modifiers['nr_of_intervals'] );
+		$comp_data       = [];
+		foreach ( $comp_metrics as $metric ) {
+			$comp_data[ $metric ] = array_fill_keys( array_keys( $comp_timestamps ), 0 );
 		}
 
 		$hits = [] === $qd_compare->get_select() ? [] : $qd_compare->fetch( ARRAY_A );
@@ -622,40 +593,46 @@ class Statistics_Data {
 	}
 
 	/**
-	 * Advance a timestamp by one interval step.
+	 * Build the chart slots for a period range, in the site timezone.
 	 *
-	 * For calendar-aware intervals ('year', 'month', 'week') we use DateTimeImmutable so that
-	 * stepping respects real month lengths (28-31 days) instead of a flat 30-day
-	 * constant. Falling back to fixed-length seconds would cause months to be
-	 * skipped or duplicated across a year (e.g. December disappearing because
-	 * 12 * 30 days = 360 days).
+	 * Each slot is keyed by the same local date string the SQL period column
+	 * produces, and starts at the local start of its period. Stepping in the
+	 * site timezone keeps days aligned across a DST transition; a fixed UTC
+	 * offset would shift every day on the other side of the transition.
+	 * Months and years step to the first of the next period, so a range that
+	 * starts on the 31st does not skip February.
 	 *
-	 * The timestamp is treated as UTC here on purpose: callers encode local
-	 * civil time into a UTC timestamp by adding the WP timezone offset, so we
-	 * advance in UTC to avoid double-applying DST shifts.
-	 *
-	 * @param int    $timestamp Unix timestamp to advance.
-	 * @param string $interval  Interval key ('hour'|'day'|'week'|'month'|'year').
-	 * @return int Advanced timestamp.
+	 * @param int    $date_start      Unix timestamp of the first slot.
+	 * @param string $interval        Interval key ('hour'|'day'|'week'|'month'|'year').
+	 * @param string $php_date_format PHP date format that matches the SQL period format.
+	 * @param int    $nr_of_intervals Maximum number of slots to generate.
+	 * @param int    $date_end        Optional range end: no slot starts after it. 0 generates exactly $nr_of_intervals slots, which the comparison series needs to stay index-aligned.
+	 * @return array<string, int> Period key => slot start timestamp.
 	 */
-	private function advance_period_timestamp( int $timestamp, string $interval ): int {
-		$calendar_modifiers = [
-			'year'  => '+1 year',
-			'month' => '+1 month',
+	public function get_period_slots( int $date_start, string $interval, string $php_date_format, int $nr_of_intervals, int $date_end = 0 ): array {
+		$steps = [
+			'day'   => '+1 day',
 			'week'  => '+1 week',
+			'month' => 'first day of next month midnight',
+			'year'  => 'first day of january next year midnight',
 		];
 
-		if ( isset( $calendar_modifiers[ $interval ] ) ) {
-			$date = ( new \DateTimeImmutable( '@' . $timestamp ) )->modify( $calendar_modifiers[ $interval ] );
+		$date  = ( new \DateTimeImmutable( '@' . $date_start ) )->setTimezone( wp_timezone() );
+		$slots = [];
+		for ( $i = 0; $i < $nr_of_intervals; $i++ ) {
+			if ( $date_end > 0 && $date->getTimestamp() > $date_end ) {
+				break;
+			}
+			$slots[ $date->format( $php_date_format ) ] = $date->getTimestamp();
 
-			return $date->getTimestamp();
+			// Hours step on the wall clock, so the repeated hour of a DST fall-back
+			// is one slot, like the single key SQL groups both hours under.
+			$date = isset( $steps[ $interval ] )
+				? $date->modify( $steps[ $interval ] )
+				: $date->setTime( (int) $date->format( 'G' ) + 1, 0 );
 		}
 
-		if ( 'hour' === $interval ) {
-			return $timestamp + HOUR_IN_SECONDS;
-		}
-
-		return $timestamp + DAY_IN_SECONDS;
+		return $slots;
 	}
 
 	/**

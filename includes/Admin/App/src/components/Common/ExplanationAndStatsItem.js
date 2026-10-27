@@ -1,8 +1,8 @@
 import Icon from '../../utils/Icon';
 import HelpTooltip from '@/components/Common/HelpTooltip';
 import MetricInfo from '@/components/Common/MetricInfo';
+import CommunityComparisonIndicator from '@/components/Common/CommunityComparisonIndicator';
 import { formatNumber } from '@/utils/formatting';
-import { Link } from '@tanstack/react-router';
 
 /**
  * ExplanationAndStatsItem component.
@@ -19,7 +19,7 @@ import { Link } from '@tanstack/react-router';
  * @param {string|null}   [props.tooltipText] Optional text for tooltip display. Default is null.
  * @param {string|null}   [props.metricKey]  Optional metric key to show a metric-explainer ⓘ icon.
  * @param {Object|null}   [props.communityComparison] Optional community comparison: `{ state, text }`, see utils/communityComparison.
- *                                          The icon is greyed out until the state is 'active', and links to the settings when 'disabled'.
+ *                                          Rendered next to the value by CommunityComparisonIndicator.
  *
  * @return {JSX.Element} The rendered component.
  */
@@ -57,29 +57,7 @@ const ExplanationAndStatsItem = ({
 		return (
 			<span className="text-xl font-bold text-text-black value flex items-center justify-end gap-1.5">
 				{communityComparison && (
-					<HelpTooltip content={ communityComparison.text } delayDuration={200}>
-						{'disabled' === communityComparison.state ? (
-							<Link
-								to="/settings/$settingsId"
-								params={{ settingsId: 'general' }}
-								className="text-text-gray opacity-40 hover:opacity-100 hover:text-primary transition flex items-center"
-								aria-label={ communityComparison.text }
-								data-tour="community-comparison"
-								data-community-state={ communityComparison.state }
-							>
-								<Icon name="compare-arrows" size={16} />
-							</Link>
-						) : (
-							<span
-								className={ `text-text-gray flex items-center ${'active' === communityComparison.state ? '' : 'opacity-40'}` }
-								aria-label={ communityComparison.text }
-								data-tour="community-comparison"
-								data-community-state={ communityComparison.state }
-							>
-								<Icon name="compare-arrows" size={16} />
-							</span>
-						)}
-					</HelpTooltip>
+					<CommunityComparisonIndicator comparison={ communityComparison } />
 				)}
 				{valueText}
 			</span>

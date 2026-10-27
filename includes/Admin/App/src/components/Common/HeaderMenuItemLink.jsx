@@ -36,6 +36,46 @@ function getMenuItemUrl( menuItem ) {
 }
 
 /**
+ * The nearest ancestor of the link that overflows horizontally, below body.
+ *
+ * @param {HTMLElement} link The tab link.
+ * @return {HTMLElement|null} The tab bar, or null when nothing overflows (wide screens).
+ */
+function findOverflowingTabBar( link ) {
+	for ( let el = link.parentElement; el && document.body !== el; el = el.parentElement ) {
+		if ( el.scrollWidth > el.clientWidth ) {
+			return el;
+		}
+	}
+	return null;
+}
+
+/**
+ * Scroll the horizontal tab bar so the link sits in its centre, without moving the page.
+ *
+ * Element.scrollIntoView() also scrolls the window to the link, which threw a settings page
+ * that had just jumped to a group (e.g. ?group=anonymous_usage_data) back to the top.
+ *
+ * @param {HTMLElement} link The tab link.
+ * @return {void} Side effect: scrolls the nearest horizontally overflowing ancestor of the link.
+ */
+function centerInTabBar( link ) {
+	const bar = findOverflowingTabBar( link );
+
+	// Nothing overflows: the tab is already in view.
+	if ( ! bar ) {
+		return;
+	}
+
+	const barRect = bar.getBoundingClientRect();
+	const linkRect = link.getBoundingClientRect();
+	bar.scrollTo({
+		left: bar.scrollLeft + ( linkRect.left - barRect.left ) - ( ( bar.clientWidth - linkRect.width ) / 2 ),
+		behavior: 'smooth'
+	});
+}
+
+/**
  * Single top-level nav link with optional icon from menu config.
  *
  * @param {Object}   props
@@ -129,7 +169,7 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial, varia
 		if ( isActiveState && linkRef.current ) {
 			const el = linkRef.current;
 			const t = setTimeout( () => {
-				el.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+				centerInTabBar( el );
 			}, 1500 );
 			return () => clearTimeout( t );
 		}
@@ -143,7 +183,7 @@ const MenuItemLink = ({ menuItem, linkClassName, activeClassName, isTrial, varia
 			onClick={( event ) => {
 				if ( 'horizontal' === variant ) {
 					const link = event.currentTarget;
-					link.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+					centerInTabBar( link );
 				}
 				onNavigate?.();
 			}}

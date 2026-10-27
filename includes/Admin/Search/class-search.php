@@ -16,6 +16,13 @@ class Search {
 	use Helper;
 
 	/**
+	 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
+
+	/**
 	 * Register install hooks
 	 */
 	public function init(): void {
@@ -536,33 +543,22 @@ class Search {
 	}
 
 	/**
-	 * Install searches table
+	 * Schemas of the search tables, read by the installers and the schema check.
+	 *
+	 * @return array<string, array{columns: string, indexes?: array<int, string[]>}>
 	 */
-	public function install_searches_table(): void {
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		global $wpdb;
-		$charset_collate = $wpdb->get_charset_collate();
-		$sql             = "CREATE TABLE {$wpdb->prefix}burst_searches (
+	protected function get_schema_definition(): array {
+		return [
+			'burst_searches'            => [
+				'columns' => '
             `ID` int NOT NULL AUTO_INCREMENT,
             `search` varchar(191) NOT NULL,
             PRIMARY KEY (ID),
             UNIQUE KEY search_unique (search)
-        ) $charset_collate;";
-
-		dbDelta( $sql );
-		if ( ! empty( $wpdb->last_error ) ) {
-			self::error_log( 'Error creating searches table: ' . $wpdb->last_error );
-		}
-	}
-
-	/**
-	 * Install statistics ↔ searches table
-	 */
-	public function install_statistics_searches_table(): void {
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		global $wpdb;
-		$charset_collate = $wpdb->get_charset_collate();
-		$sql             = "CREATE TABLE {$wpdb->prefix}burst_statistics_searches (
+        ',
+			],
+			'burst_statistics_searches' => [
+				'columns' => '
             `ID` int NOT NULL AUTO_INCREMENT,
             `statistic_id` int,
             `search_id` int NOT NULL,
@@ -571,23 +567,28 @@ class Search {
             `suggested_post_id` int NULL DEFAULT NULL,
             PRIMARY KEY (ID),
             UNIQUE KEY statistic_search_unique (statistic_id, search_id)
-        ) $charset_collate;";
-
-		dbDelta( $sql );
-		if ( ! empty( $wpdb->last_error ) ) {
-			self::error_log( 'Error creating statistics searches table: ' . $wpdb->last_error );
-			return;
-		}
-
-		$indexes = [
-			[ 'statistic_id' ],
-			[ 'search_id' ],
-			[ 'created' ],
-			[ 'suggested_post_id' ],
+        ',
+				'indexes' => [
+					[ 'statistic_id' ],
+					[ 'search_id' ],
+					[ 'created' ],
+					[ 'suggested_post_id' ],
+				],
+			],
 		];
+	}
 
-		foreach ( $indexes as $index ) {
-			$this->add_index( 'burst_statistics_searches', $index );
-		}
+	/**
+	 * Install searches table
+	 */
+	public function install_searches_table(): void {
+		$this->install_schema( [ 'burst_searches' ] );
+	}
+
+	/**
+	 * Install statistics ↔ searches table
+	 */
+	public function install_statistics_searches_table(): void {
+		$this->install_schema( [ 'burst_statistics_searches' ] );
 	}
 }

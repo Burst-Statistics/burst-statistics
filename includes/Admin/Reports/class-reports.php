@@ -31,6 +31,13 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		use Database_Helper;
 
 		/**
+		 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+		 *
+		 * @var string
+		 */
+		public const BUILD = '3.7.4';
+
+		/**
 		 * Constructor
 		 */
 		public function init(): void {
@@ -730,14 +737,16 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 
 
 		/**
-		 * Install reports table
+		 * Schema of the reports table, read by install_reports_table() and the schema check.
+		 *
+		 * ID is already the PRIMARY KEY, so it is not indexed again.
+		 *
+		 * @return array<string, array{columns: string, indexes?: array<int, string[]>}>
 		 */
-		public function install_reports_table(): void {
-			global $wpdb;
-
-			$charset_collate = $wpdb->get_charset_collate();
-
-			$sql = "CREATE TABLE {$wpdb->prefix}burst_reports (
+		protected function get_schema_definition(): array {
+			return [
+				'burst_reports' => [
+					'columns' => "
 				`ID` int unsigned NOT NULL AUTO_INCREMENT,
 				`name` varchar(255) NOT NULL,
 				`date_range` varchar(32) NOT NULL,
@@ -756,29 +765,21 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 				`ai_summary` longtext DEFAULT NULL,
 				`ai_summary_period` varchar(255) DEFAULT NULL,
 				PRIMARY KEY (`ID`)
-			) {$charset_collate};";
-
-			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-			dbDelta( $sql );
-
-			if ( ! empty( $wpdb->last_error ) ) {
-				self::error_log( 'Error creating burst_reports table: ' . $wpdb->last_error );
-			}
-
-			// Add indexes. ID is already the PRIMARY KEY, so it is not indexed again here.
-			$indexes = [
-				'burst_reports' => [
-					[ 'enabled' ],
-					[ 'frequency' ],
-					[ 'day_of_week' ],
+			",
+					'indexes' => [
+						[ 'enabled' ],
+						[ 'frequency' ],
+						[ 'day_of_week' ],
+					],
 				],
 			];
+		}
 
-			foreach ( $indexes as $table => $table_indexes ) {
-				foreach ( $table_indexes as $index ) {
-					$this->add_index( 'burst_reports', $index );
-				}
-			}
+		/**
+		 * Install reports table
+		 */
+		public function install_reports_table(): void {
+			$this->install_schema( [ 'burst_reports' ] );
 		}
 
 		/**

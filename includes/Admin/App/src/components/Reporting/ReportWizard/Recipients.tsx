@@ -21,6 +21,7 @@ export const Recipients = () => {
 	const {
 		register,
 		setValue,
+		getValues,
 		formState: { errors }
 	} = useFormContext();
 
@@ -51,10 +52,15 @@ export const Recipients = () => {
 			return;
 		}
 
+		const current = getValues( 'recipients' );
+		if ( current === emails ) {
+			return;
+		}
+
 		setValue( 'recipients', emails, {
 			shouldValidate: true
 		});
-	}, [ emails, setValue ]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [ emails, setValue, getValues ]);
 
 	const channelOptions: Record<string, RadioOption> = {
 		email: {
@@ -126,6 +132,9 @@ export const Recipients = () => {
 						maxSelections={MAX_EMAIL_RECIPIENTS}
 						onChange={( nextEmails ) => {
 							setEmails( nextEmails );
+							setValue( 'recipients', nextEmails, {
+								shouldValidate: true
+							});
 						}}
 					/>
 				</div>

@@ -7,6 +7,9 @@
 
 namespace Burst\Admin\Diagnostics;
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -18,13 +21,6 @@ defined( 'ABSPATH' ) || exit;
  * values, so no separate snapshot is needed.
  */
 class Settings_Change_Log {
-
-	/**
-	 * Option mapping setting key => last change timestamp.
-	 *
-	 * @var string
-	 */
-	private const OPTION = 'burst_settings_last_changed';
 
 	/**
 	 * Settings whose change can plausibly reduce recorded hits.
@@ -61,7 +57,7 @@ class Settings_Change_Log {
 		$old = is_array( $old_value ) ? $old_value : [];
 		$new = is_array( $new_value ) ? $new_value : [];
 
-		$log     = get_option( self::OPTION, [] );
+		$log     = Admin_Options::get( Admin_Option_Category::DIAGNOSTICS, 'settings_last_changed', [] );
 		$log     = is_array( $log ) ? $log : [];
 		$now     = time();
 		$changed = false;
@@ -74,7 +70,7 @@ class Settings_Change_Log {
 		}
 
 		if ( $changed ) {
-			update_option( self::OPTION, $log, false );
+			Admin_Options::update( Admin_Option_Category::DIAGNOSTICS, 'settings_last_changed', $log );
 		}
 	}
 }

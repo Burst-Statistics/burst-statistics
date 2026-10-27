@@ -205,9 +205,11 @@ class Statistics_Query {
 	private bool $hydrate_page_urls = false;
 
 	/**
-	 * Cached TZ offset in seconds.
+	 * Cached site UTC offsets for the date range, see get_tz_offsets().
+	 *
+	 * @var array<int, array{0: int, 1: int}>|null
 	 */
-	private ?int $tz_offset_cache = null;
+	private ?array $tz_offsets_cache = null;
 
 	/**
 	 * Cached period SQL format string.
@@ -1050,6 +1052,8 @@ class Statistics_Query {
 		// their subquery SQL at resolve time; cached resolution would otherwise
 		// retain stale dates if date_range() is called after the first with().
 		$this->avail_joins_cache = null;
+		// The period offsets depend on the DST transitions inside the range.
+		$this->tz_offsets_cache = null;
 		return $this;
 	}
 
@@ -1256,16 +1260,19 @@ class Statistics_Query {
 	}
 
 	/**
-	 * Get the computed MySQL timezone offset (cached per instance).
+	 * Get the site's UTC offsets over the date range (cached per instance).
 	 *
-	 * @return int Offset in seconds.
+	 * One entry for a range without a DST transition, one extra entry per
+	 * transition otherwise, so period buckets use the offset that applied to
+	 * each hit instead of today's offset.
+	 *
+	 * @return array<int, array{0: int, 1: int}> List of [ from_timestamp, offset_in_seconds ] pairs, ascending.
 	 */
-	public function get_tz_offset(): int {
-		if ( $this->tz_offset_cache === null ) {
-			$date_modifiers        = $this->get_date_modifiers();
-			$this->tz_offset_cache = empty( $date_modifiers ) ? 0 : self::compute_mysql_timezone_offset();
+	public function get_tz_offsets(): array {
+		if ( $this->tz_offsets_cache === null ) {
+			$this->tz_offsets_cache = self::compute_tz_offsets( $this->get_date_start(), $this->get_date_end() );
 		}
-		return $this->tz_offset_cache;
+		return $this->tz_offsets_cache;
 	}
 
 	/**
@@ -1656,7 +1663,7 @@ class Statistics_Query {
 
 		$period_fmt = $this->get_period_sql_format();
 		if ( $period_fmt !== '' ) {
-			$q->period_select( $this->get_tz_offset(), $period_fmt );
+			$q->period_select( $this->get_tz_offsets(), $period_fmt );
 		}
 
 		foreach ( $this->additional_wheres as $entry ) {
@@ -1707,18 +1714,25 @@ class Statistics_Query {
 	}
 
 	/**
-	 * Compute the WP vs MySQL timezone delta in seconds.
-	 * Rounds to half-hour granularity to handle unusual timezone offsets.
+	 * Compute the site's UTC offsets between two timestamps.
 	 *
-	 * @return int Offset in seconds (WP tz - MySQL tz).
+	 * @param int $start Range start timestamp.
+	 * @param int $end   Range end timestamp.
+	 * @return array<int, array{0: int, 1: int}> List of [ from_timestamp, offset_in_seconds ] pairs, ascending.
 	 */
-	private static function compute_mysql_timezone_offset(): int {
-		global $wpdb;
-		$mysql_timestamp = $wpdb->get_var( 'SELECT FROM_UNIXTIME(UNIX_TIMESTAMP());' );
-		$wp_tz_offset    = self::get_wp_timezone_offset();
-		$mysql_tz_hours  = round( ( strtotime( $mysql_timestamp ) - time() ) / ( HOUR_IN_SECONDS / 2 ), 0 ) * 0.5;
-		$wp_tz_hours     = round( $wp_tz_offset / ( HOUR_IN_SECONDS / 2 ), 0 ) * 0.5;
-		return (int) ( $wp_tz_hours - $mysql_tz_hours ) * HOUR_IN_SECONDS;
+	private static function compute_tz_offsets( int $start, int $end ): array {
+		$timezone = wp_timezone();
+		// A fixed-offset timezone (gmt_offset setting) has no transitions and returns false.
+		$transitions = $end > $start ? $timezone->getTransitions( $start, $end ) : false;
+		if ( empty( $transitions ) ) {
+			return [ [ $start, $timezone->getOffset( new \DateTimeImmutable( '@' . $start ) ) ] ];
+		}
+
+		$offsets = [];
+		foreach ( $transitions as $transition ) {
+			$offsets[] = [ (int) $transition['ts'], (int) $transition['offset'] ];
+		}
+		return $offsets;
 	}
 
 	/**

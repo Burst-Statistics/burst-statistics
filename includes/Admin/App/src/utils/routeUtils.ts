@@ -32,3 +32,16 @@ const FILTER_ENABLED_ROUTES = [ '/statistics', '/engagement', '/sources', '/sale
 export const isFilterEnabledRoute = ( pathname: string ): boolean => {
 	return FILTER_ENABLED_ROUTES.some( ( route ) => pathname.startsWith( route ) );
 };
+
+// Filter pages plus the pages that only have a date range.
+const DATE_RANGE_ENABLED_ROUTES = [ ...FILTER_ENABLED_ROUTES, '/subscriptions' ];
+
+/**
+ * Check whether a route path keeps its date range in the URL.
+ *
+ * @param {string} pathname Location pathname or hash route.
+ * @return {boolean} True if the date range syncs with the URL on the route.
+ */
+export const isDateRangeEnabledRoute = ( pathname: string ): boolean => {
+	return DATE_RANGE_ENABLED_ROUTES.some( ( route ) => pathname.startsWith( route ) );
+};

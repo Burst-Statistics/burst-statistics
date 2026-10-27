@@ -224,7 +224,7 @@ trait Admin_Helper {
 		}
 
 		// Update the option to remove expired tokens.
-		update_option( 'burst_share_tokens', $existing_tokens );
+		update_option( 'burst_share_tokens', $existing_tokens, false );
 		return $valid;
 	}
 
@@ -398,6 +398,10 @@ trait Admin_Helper {
 				// The settings fields are manage-only, so viewers and share links
 				// read the custom events switch from here instead.
 				'custom_events_enabled'                => (bool) \burst_get_option( 'enable_custom_events' ),
+				// Same reason: viewers read essentials mode here to hide the
+				// blocks of the features it turns off.
+				'essentials_mode'                      => $this->is_essentials_mode(),
+				'non_essential_features'               => self::get_non_essential_features(),
 			]
 		);
 	}
@@ -558,7 +562,10 @@ trait Admin_Helper {
 		$path       = $parsed_url['path'] ?? '';
 		$query      = $parsed_url['query'] ?? '';
 
-		$burst_namespaces = [ 'burst/v1', 'wp-abilities/v1' ];
+		// The MCP Adapter serves Burst abilities over HTTP under the mcp namespace; without it the
+		// abilities are never registered on those requests. The trailing slash keeps namespaces
+		// that only start with "mcp" out.
+		$burst_namespaces = [ 'burst/v1', 'wp-abilities/v1', 'mcp/' ];
 
 		// 1. Check if it's a pretty permalink REST request.
 		$rest_prefix = 'wp-json';
@@ -671,15 +678,16 @@ trait Admin_Helper {
 	 * Several workarounds have popped up in JetPack and WooCommerce: https://developer.wordpress.com/2022/01/06/wordpress-plugin-i18n-webpack-and-composer/
 	 * Below is mainly based on the WooCommerce solution, which seems to be the most simple approach. Simplicity is king here.
 	 *
-	 * @param string $dir Directory path relative to BURST_PATH.
+	 * @param string $dir   Directory path relative to BURST_PATH.
+	 * @param string $entry Chunk entry prefix (e.g. 'index' or 'editor').
 	 * @return array{
-	 *     json_translations: mixed,
+	 *     json_translations: array<int, string>,
 	 *     js_file: string,
 	 *     dependencies: list<string>,
 	 *     version: string
 	 * }
 	 */
-	protected function get_chunk_translations( string $dir ): array {
+	protected function get_chunk_translations( string $dir, string $entry = 'index' ): array {
 		$default           = [
 			'json_translations' => [],
 			'js_file'           => '',
@@ -709,8 +717,8 @@ trait Admin_Helper {
 				$json_translations[] = $locale_data;
 			}
 		}
-		$js_files       = glob( BURST_PATH . $dir . '/index*.js' );
-		$asset_files    = glob( BURST_PATH . $dir . '/index*.asset.php' );
+		$js_files       = glob( BURST_PATH . $dir . '/' . $entry . '*.js' );
+		$asset_files    = glob( BURST_PATH . $dir . '/' . $entry . '*.asset.php' );
 		$js_filename    = ! empty( $js_files ) ? basename( $js_files[0] ) : '';
 		$asset_filename = ! empty( $asset_files ) ? basename( $asset_files[0] ) : '';
 		if ( ! file_exists( BURST_PATH . $dir . '/' . $asset_filename ) ) {
@@ -748,5 +756,47 @@ trait Admin_Helper {
 		}
 
 		return burst_loader()->is_mainwp_request = false;
+	}
+
+	/**
+	 * Validate that a site URL satisfies the relay's public site requirements:
+	 * HTTPS scheme, public hostname (not localhost or an IP address), and no userinfo credentials.
+	 *
+	 * @param string $url The site URL to validate.
+	 * @return bool True if the URL meets the relay rules, false otherwise.
+	 */
+	public function is_valid_relay_site_url( string $url ): bool {
+		$parts = wp_parse_url( $url );
+		if ( ! is_array( $parts ) ) {
+			return false;
+		}
+
+		$scheme = $parts['scheme'] ?? '';
+		if ( 'https' !== strtolower( (string) $scheme ) ) {
+			return false;
+		}
+
+		if ( ! empty( $parts['user'] ) || ! empty( $parts['pass'] ) ) {
+			return false;
+		}
+
+		$host = strtolower( (string) ( $parts['host'] ?? '' ) );
+		if ( empty( $host ) ) {
+			return false;
+		}
+
+		if ( 'localhost' === $host || str_ends_with( $host, '.localhost' ) ) {
+			return false;
+		}
+
+		if ( str_contains( $host, ':' ) ) {
+			return false;
+		}
+
+		if ( false !== filter_var( $host, FILTER_VALIDATE_IP ) ) {
+			return false;
+		}
+
+		return true;
 	}
 }

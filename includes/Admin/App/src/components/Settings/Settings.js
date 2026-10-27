@@ -2,6 +2,7 @@ import ErrorBoundary from '@/components/Common/ErrorBoundary';
 import SettingsGroupBlock from './SettingsGroupBlock';
 import SettingsFooter from './SettingsFooter';
 import useSettingsData from '@/hooks/useSettingsData';
+import useScrollToSettingsGroup from '@/hooks/useScrollToSettingsGroup';
 import {
 	useSettingsPageState
 } from '@/components/Settings/settingsHelpers';
@@ -27,6 +28,7 @@ const Settings = ({ currentSettingPage }) => {
 		groups: currentSettingPage.groups,
 		includeRecommendedConditions: true
 	});
+	useScrollToSettingsGroup( filteredGroups.map( ( group ) => group.id ) );
 
 	return (
 		<form>

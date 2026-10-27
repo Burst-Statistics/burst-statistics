@@ -284,7 +284,7 @@ const makeRequest = (
 				const { getFrontendTourMockData } = await import(
 					'../components/Tour/tourMockData'
 				);
-				const instantMock = getFrontendTourMockData( path );
+				const instantMock = getFrontendTourMockData( path, method, data );
 				if ( null !== instantMock ) {
 					return instantMock;
 				}

@@ -13,6 +13,13 @@ class Report_Logs {
 	use Database_Helper;
 
 	/**
+	 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
+
+	/**
 	 * Singleton instance
 	 */
 	private static ?self $instance = null;
@@ -132,14 +139,17 @@ class Report_Logs {
 	}
 
 	/**
-	 * Install the report logs table
+	 * Schema of the report logs table, read by install_table() and the schema check.
+	 *
+	 * A standalone report_id index is omitted: it is the leftmost prefix of the
+	 * (report_id, queue_id) composite, which already serves report_id lookups.
+	 *
+	 * @return array<string, array{columns: string, indexes?: array<int, string[]>}>
 	 */
-	public function install_table(): void {
-		global $wpdb;
-
-		$charset = $wpdb->get_charset_collate();
-
-		$sql = "CREATE TABLE {$wpdb->prefix}burst_report_logs (
+	protected function get_schema_definition(): array {
+		return [
+			'burst_report_logs' => [
+				'columns' => '
 			ID bigint unsigned NOT NULL AUTO_INCREMENT,
 			report_id bigint unsigned NOT NULL,
 			queue_id varchar(32) NOT NULL,
@@ -149,24 +159,23 @@ class Report_Logs {
 			time int unsigned NOT NULL,
 			date date NOT NULL,
 			PRIMARY KEY (ID)
-		) {$charset};";
-
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		dbDelta( $sql );
-
-		// A standalone report_id index is omitted: it is the leftmost prefix of the
-		// (report_id, queue_id) composite below, which already serves report_id lookups.
-		$indexes = [
-			[ 'queue_id' ],
-			[ 'batch_id' ],
-			[ 'date' ],
-			[ 'status' ],
-			[ 'report_id', 'queue_id' ],
+		',
+				'indexes' => [
+					[ 'queue_id' ],
+					[ 'batch_id' ],
+					[ 'date' ],
+					[ 'status' ],
+					[ 'report_id', 'queue_id' ],
+				],
+			],
 		];
+	}
 
-		foreach ( $indexes as $index ) {
-			$this->add_index( 'burst_report_logs', $index );
-		}
+	/**
+	 * Install the report logs table
+	 */
+	public function install_table(): void {
+		$this->install_schema( [ 'burst_report_logs' ] );
 	}
 
 	/**

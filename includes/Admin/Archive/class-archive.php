@@ -1,6 +1,8 @@
 <?php
 namespace Burst\Admin\Archive;
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
@@ -15,6 +17,13 @@ class Archive {
 	use Save;
 	use Database_Helper;
 	use Sanitize;
+
+	/**
+	 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
 
 	protected int $archive_after_months;
 	protected string $archive_option = '';
@@ -89,7 +98,7 @@ class Archive {
 			$size_in_mb = size_format( $total_data_bytes, 0 );
 		}
 
-		update_option( 'burst_table_size', $size_in_mb, false );
+		Admin_Options::update( Admin_Option_Category::CORE, 'archive_table_size', $size_in_mb );
 	}
 
 	/**
@@ -372,14 +381,14 @@ class Archive {
 	}
 
 	/**
-	 * Create or update table
+	 * The schema of the archive bookkeeping table.
+	 *
+	 * @return array<string, array{columns: string, indexes?: array<int, string[]>}>
 	 */
-	public function upgrade_database(): void {
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		global $wpdb;
-		$charset_collate = $wpdb->get_charset_collate();
-		$table_name      = $wpdb->prefix . 'burst_archived_months';
-		$sql             = "CREATE TABLE $table_name (
+	protected function get_schema_definition(): array {
+		return [
+			'burst_archived_months' => [
+				'columns' => '
                             `ID` int(11) NOT NULL AUTO_INCREMENT ,
                             `month` int(11) NOT NULL,
                             `year` int(11) NOT NULL,
@@ -388,7 +397,15 @@ class Archive {
                             `status` varchar(250),
                               PRIMARY KEY (ID),
                               UNIQUE KEY month_year (month, year)
-                            ) $charset_collate;";
-		dbDelta( $sql );
+                            ',
+			],
+		];
+	}
+
+	/**
+	 * Create or update table
+	 */
+	public function upgrade_database(): void {
+		$this->install_schema( [ 'burst_archived_months' ] );
 	}
 }

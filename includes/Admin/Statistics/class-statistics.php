@@ -6,6 +6,13 @@ defined( 'ABSPATH' ) || die();
 class Statistics extends Statistics_Data {
 
 	/**
+	 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
+
+	/**
 	 * Register hooks and bootstrap metric/join registries for the free tier.
 	 */
 	public function init(): void {
@@ -32,6 +39,11 @@ class Statistics extends Statistics_Data {
 	 * previous canonical row for that post id is demoted — page-grain queries
 	 * then display the new url while the old url's history keeps counting
 	 * under the same page_id.
+	 *
+	 * Until another post claims that old url: history follows the url, so its
+	 * hits then move to the claiming post on purpose (see
+	 * Database_Helper::merge_superseded_page_id_hits()) — otherwise they would
+	 * match no dictionary row at all and render without a page name.
 	 *
 	 * @param int      $post_id Post ID.
 	 * @param \WP_Post $post    Post object.
@@ -268,31 +280,27 @@ class Statistics extends Statistics_Data {
 	}
 
 	/**
-	 * Install statistic table
-	 * */
-	public function install_statistics_table(): void {
-		self::error_log( 'Upgrading database tables for Burst Statistics' );
-
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		global $wpdb;
-		$charset_collate = $wpdb->get_charset_collate();
-
-		// The visitor identity lives in the permanent uid_id column (integer
-		// dictionary ids, see burst_uids). Existing installs additionally carry
-		// the legacy varchar uid column until the finalize step of the DB
-		// upgrade pipeline is done with it (left untouched in 3.7.0, dropped in 3.7.3); that column is deliberately NOT part of
-		// this schema — dbDelta never drops columns, so it leaves the legacy
-		// column (and its string data) alone while adding uid_id for the
-		// backfill. Never re-introduce a `uid` column here: reusing the legacy
-		// name for integer data is what allowed an older build's dbDelta to
-		// cast identities to varchar and back (the 3.7.0 rollback corruption).
-		$stats_uid_collate    = $this->get_column_charset_collate( 'burst_statistics', 'uid' );
-		$uids_charset_collate = null !== $stats_uid_collate
-			? "DEFAULT CHARACTER SET {$stats_uid_collate['charset']} COLLATE {$stats_uid_collate['collation']}"
-			: $charset_collate;
-
-		$tables = [
-			'burst_statistics'          => "CREATE TABLE {$wpdb->prefix}burst_statistics (
+	 * Schemas of the core tables, read by install_statistics_table() and the schema check.
+	 *
+	 * The visitor identity lives in the permanent uid_id column (integer
+	 * dictionary ids, see burst_uids). Existing installs additionally carry
+	 * the legacy varchar uid column until the finalize step of the DB
+	 * upgrade pipeline is done with it (left untouched in 3.7.0, dropped in 3.7.3); that column is deliberately NOT part of
+	 * this schema — dbDelta never drops columns, so it leaves the legacy
+	 * column (and its string data) alone while adding uid_id for the
+	 * backfill. Never re-introduce a `uid` column here: reusing the legacy
+	 * name for integer data is what allowed an older build's dbDelta to
+	 * cast identities to varchar and back (the 3.7.0 rollback corruption).
+	 *
+	 * The uid_id indexes are not listed: they depend on the state of the uid
+	 * migration, see install_statistics_table().
+	 *
+	 * @return array<string, array{columns: string, indexes?: array<int, string[]>}>
+	 */
+	protected function get_schema_definition(): array {
+		return [
+			'burst_statistics'          => [
+				'columns' => '
         `ID` int NOT NULL AUTO_INCREMENT,
         `page_url` varchar(191) NOT NULL,
         `page_id` int(11) NOT NULL,
@@ -306,39 +314,64 @@ class Statistics extends Statistics_Data {
         `fragment` varchar(255) NOT NULL,
         `session_id` int,
         PRIMARY KEY  (ID)
-    ) $charset_collate;",
-			'burst_uids'                => "CREATE TABLE {$wpdb->prefix}burst_uids (
+    ',
+				'indexes' => [
+					[ 'page_url' ],
+					[ 'session_id' ],
+					[ 'time', 'session_id' ],
+					[ 'page_id', 'page_type' ],
+					[ 'page_type', 'time' ],
+				],
+			],
+			'burst_uids'                => [
+				'columns'              => '
         `ID` int unsigned NOT NULL AUTO_INCREMENT,
         `uid` varchar(64) NOT NULL,
         PRIMARY KEY  (ID),
         UNIQUE KEY uid (uid)
-    ) $uids_charset_collate;",
-			'burst_browsers'            => "CREATE TABLE {$wpdb->prefix}burst_browsers (
+    ',
+				// uid is joined against the legacy statistics.uid column during
+				// the migration, so the dictionary has to carry that column's
+				// collation: a mismatch makes the join drop the index.
+				'charset_collate_from' => [ 'burst_statistics', 'uid' ],
+			],
+			'burst_browsers'            => [
+				'columns' => '
         `ID` int(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(191) NOT NULL UNIQUE,
         PRIMARY KEY  (ID)
-    ) $charset_collate;",
-			'burst_browser_versions'    => "CREATE TABLE {$wpdb->prefix}burst_browser_versions (
+    ',
+			],
+			'burst_browser_versions'    => [
+				'columns' => '
         `ID` int(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(191) NOT NULL UNIQUE,
         PRIMARY KEY  (ID)
-    ) $charset_collate;",
-			'burst_platforms'           => "CREATE TABLE {$wpdb->prefix}burst_platforms (
+    ',
+			],
+			'burst_platforms'           => [
+				'columns' => '
         `ID` int(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(191) NOT NULL UNIQUE,
         PRIMARY KEY  (ID)
-    ) $charset_collate;",
-			'burst_devices'             => "CREATE TABLE {$wpdb->prefix}burst_devices (
+    ',
+			],
+			'burst_devices'             => [
+				'columns' => '
         `ID` int(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(191) NOT NULL UNIQUE,
         PRIMARY KEY  (ID)
-    ) $charset_collate;",
-			'burst_referrers'           => "CREATE TABLE {$wpdb->prefix}burst_referrers (
+    ',
+			],
+			'burst_referrers'           => [
+				'columns' => '
         `ID` int(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(255) NOT NULL UNIQUE,
         PRIMARY KEY  (ID)
-    ) $charset_collate;",
-			'burst_goals'               => "CREATE TABLE {$wpdb->prefix}burst_goals (
+    ',
+			],
+			'burst_goals'               => [
+				'columns' => "
         `ID` int NOT NULL AUTO_INCREMENT,
         `title` varchar(255) NOT NULL,
         `type` varchar(30) NOT NULL,
@@ -355,8 +388,13 @@ class Statistics extends Statistics_Data {
         `page_id` int(11) NULL,
         `element_page` varchar(255) NOT NULL DEFAULT '',
         PRIMARY KEY  (ID)
-    ) $charset_collate;",
-			'burst_query_stats'         => "CREATE TABLE {$wpdb->prefix}burst_query_stats (
+    ",
+				'indexes' => [
+					[ 'status' ],
+				],
+			],
+			'burst_query_stats'         => [
+				'columns' => '
         `ID` int NOT NULL AUTO_INCREMENT,
         `sql_hash` varchar(16) NOT NULL,
         `sql_query` text NOT NULL,
@@ -368,8 +406,14 @@ class Statistics extends Statistics_Data {
         `date_range_days` int NOT NULL DEFAULT 0,
         PRIMARY KEY  (ID),
         UNIQUE KEY sql_hash (sql_hash)
-    ) $charset_collate;",
-			'burst_page_weights'        => "CREATE TABLE {$wpdb->prefix}burst_page_weights (
+    ',
+				'indexes' => [
+					[ 'avg_execution_time' ],
+					[ 'last_updated' ],
+				],
+			],
+			'burst_page_weights'        => [
+				'columns' => '
         `ID` bigint unsigned NOT NULL AUTO_INCREMENT,
         `page_id` int NOT NULL,
         `page_weight` bigint unsigned NOT NULL,
@@ -377,23 +421,30 @@ class Statistics extends Statistics_Data {
         `measured_at` int unsigned NOT NULL,
         PRIMARY KEY  (ID),
         UNIQUE KEY page_id (page_id)
-    ) $charset_collate;",
-			'burst_page_weight_history' => "CREATE TABLE {$wpdb->prefix}burst_page_weight_history (
+    ',
+			],
+			'burst_page_weight_history' => [
+				'columns' => '
         `ID` bigint unsigned NOT NULL AUTO_INCREMENT,
         `page_id` int NOT NULL,
         `page_weight` bigint unsigned NOT NULL,
         `measured_at` int unsigned NOT NULL,
         PRIMARY KEY  (ID),
         UNIQUE KEY page_id_measured_at (page_id, measured_at)
-    ) $charset_collate;",
+    ',
+			],
 		];
+	}
 
-		foreach ( $tables as $table_name => $sql ) {
-			dbDelta( $sql );
-			if ( ! empty( $wpdb->last_error ) ) {
-				self::error_log( "Error creating table {$table_name}: " . $wpdb->last_error );
-			}
-		}
+	/**
+	 * Install statistic table
+	 * */
+	public function install_statistics_table(): void {
+		self::error_log( 'Upgrading database tables for Burst Statistics' );
+
+		global $wpdb;
+
+		$this->install_schema( array_keys( $this->get_schema_definition() ) );
 
 		// Fresh installs never create the legacy uid column, so uid_id_active()
 		// derives to true for them on its own — no state to record here.
@@ -407,23 +458,6 @@ class Statistics extends Statistics_Data {
 			$wpdb->query( "ALTER TABLE `{$stats_table}` ADD `max_scroll` int(3) NOT NULL DEFAULT 0, ADD `dwell_zones` text" );
 		}
 
-		$indexes = [
-			[ 'avg_execution_time' ],
-			[ 'last_updated' ],
-		];
-
-		foreach ( $indexes as $index ) {
-			$this->add_index( 'burst_query_stats', $index );
-		}
-
-		$indexes = [
-			[ 'page_url' ],
-			[ 'session_id' ],
-			[ 'time', 'session_id' ],
-			[ 'page_id', 'page_type' ],
-			[ 'page_type', 'time' ],
-		];
-
 		// The uid_id indexes exist only once the uid migration is complete:
 		// creating them while the backfill is still writing uid_id would tax
 		// every batch with index maintenance, so the finalize step creates them
@@ -433,11 +467,9 @@ class Statistics extends Statistics_Data {
 		// per-index rationale live in Database_Helper::uid_id_index_columns(),
 		// shared with the finalize step and the readiness probes.
 		if ( $this->uid_id_active() ) {
-			$indexes = array_merge( $indexes, $this->uid_id_index_columns() );
-		}
-
-		foreach ( $indexes as $index ) {
-			$this->add_index( 'burst_statistics', $index );
+			foreach ( $this->uid_id_index_columns() as $index ) {
+				$this->add_index( 'burst_statistics', $index );
+			}
 		}
 
 		// Legacy duplicates and redundant single-column indexes:
@@ -467,14 +499,6 @@ class Statistics extends Statistics_Data {
 		// migration window.
 		if ( $this->uid_id_active() ) {
 			$this->drop_index( 'burst_statistics', 'time_page_url_index' );
-		}
-
-		$indexes = [
-			[ 'status' ],
-		];
-
-		foreach ( $indexes as $index ) {
-			$this->add_index( 'burst_goals', $index );
 		}
 	}
 

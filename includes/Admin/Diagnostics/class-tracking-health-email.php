@@ -7,6 +7,8 @@
 
 namespace Burst\Admin\Diagnostics;
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Admin\Mailer\Mailer;
 use Burst\Admin\Notifications\Alert_Preferences;
 use Burst\Traits\Admin_Helper;
@@ -34,13 +36,6 @@ class Tracking_Health_Email {
 	private const DEFAULT_MIN_CONFIDENCE = 0.5;
 
 	/**
-	 * Option holding the timestamp of the last sent diagnostic email.
-	 *
-	 * @var string
-	 */
-	private const LAST_EMAIL_OPTION = 'burst_tracking_health_last_email';
-
-	/**
 	 * Register hooks.
 	 */
 	public function init(): void {
@@ -65,13 +60,13 @@ class Tracking_Health_Email {
 			return;
 		}
 
-		$last_sent = (int) get_option( self::LAST_EMAIL_OPTION, 0 );
+		$last_sent = (int) Admin_Options::get( Admin_Option_Category::DIAGNOSTICS, 'tracking_health_last_email', 0 );
 		if ( $last_sent > 0 && ( time() - $last_sent ) < WEEK_IN_SECONDS ) {
 			return;
 		}
 
 		if ( $this->send( $diagnostics, $health_result ) ) {
-			update_option( self::LAST_EMAIL_OPTION, time(), false );
+			Admin_Options::update( Admin_Option_Category::DIAGNOSTICS, 'tracking_health_last_email', time() );
 		}
 	}
 

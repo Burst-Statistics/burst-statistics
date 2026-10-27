@@ -73,7 +73,7 @@ const ReportWizard: React.FC = () => {
 						{/* scrollable div */}
 						<div className="flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden burst-scroll">
 							<WizardStepTransition step={currentStep}>
-								<ReportWizardStep />
+								<ReportWizardStep step={currentStep} />
 							</WizardStepTransition>
 						</div>
 					</div>

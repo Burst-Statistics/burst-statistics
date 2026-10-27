@@ -28,6 +28,7 @@ const MeasuredView = ({ data, isLoading }: MeasuredViewProps ) => {
 		<>
 			<PageWeightSummary
 				avgBytes={data.avg_bytes}
+				co2PerPageview={data.co2_per_pageview_grams}
 				trend={data.weight_trend}
 			/>
 

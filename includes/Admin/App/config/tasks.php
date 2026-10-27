@@ -1,12 +1,18 @@
 <?php
+
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
+
 defined( 'ABSPATH' ) || die();
 /**
  * Tasks to show in the admin area.
  * Condition: [
  *          type: serverside, clientside, activation (if task should be added on activation)
  *          function: a function returning a boolean, or an array of them (all must pass).
- *          Prefix with '!' to invert. 'burst_option_{name}' checks a burst option,
- *          'wp_option_{name}' checks if a wp option exists.
+ *          Prefix with '!' to invert. 'burst_option_{name}' checks a Burst setting,
+ *          'wp_option_{name}' checks if a WordPress option exists. A closure is
+ *          also accepted, for a check that needs arguments; invert it by
+ *          negating inside the closure.
  * ]
  * status: open, completed, premium
  * mainwp: required. true when the task is relevant inside the MainWP dashboard
@@ -123,27 +129,26 @@ return [
 		'fix'         => 'burst_clean_data',
 	],
 	[
-		'id'          => 'php_error_detected',
-		'mainwp'      => true,
-		'condition'   => [
-			'type'     => 'serverside',
-			'function' => 'wp_option_burst_php_error_detected',
-		],
-		// translators: %d: error count, %s time of error.
-		'msg'         => sprintf( __( 'Burst has detected %1$d PHP errors, the last one on %2$s. Detected errors:', 'burst-statistics' ) . ' ' . substr( esc_html( get_option( 'burst_php_error_detected', '' ) ), 0, 500 ), (int) get_option( 'burst_php_error_count', 0 ), date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), get_option( 'burst_php_error_time' ) ) ),
-		'icon'        => 'warning',
-		'dismissible' => true,
-		'url'         => 'how-to-enable-debugging-in-wordpress',
-	],
-	[
 		'id'          => 'missing_tables',
 		'mainwp'      => true,
 		'condition'   => [
 			'type'     => 'serverside',
-			'function' => 'wp_option_burst_missing_tables',
+			'function' => static fn(): bool => Admin_Options::has( Admin_Option_Category::CORE, 'missing_tables' ),
 		],
 		// translators: %d: error count, %s time of error.
-		'msg'         => sprintf( __( 'Burst has detecting missing database tables: %s.', 'burst-statistics' ), get_option( 'burst_missing_tables' ) ) . ' ' . __( 'Please deactivate Burst (keep the data), then activate again, to trigger a database upgrade.', 'burst-statistics' ),
+		'msg'         => sprintf( __( 'Burst has detecting missing database tables: %s.', 'burst-statistics' ), Admin_Options::get( Admin_Option_Category::CORE, 'missing_tables' ) ) . ' ' . __( 'Please deactivate Burst (keep the data), then activate again, to trigger a database upgrade.', 'burst-statistics' ),
+		'icon'        => 'warning',
+		'dismissible' => true,
+	],
+	[
+		'id'          => 'upgrade_incomplete',
+		'mainwp'      => true,
+		'condition'   => [
+			'type'     => 'serverside',
+			'function' => 'Burst\Admin\Upgrade::is_upgrade_incomplete()',
+		],
+		// translators: %s: comma separated list of table names.
+		'msg'         => sprintf( __( 'Burst could not complete the database upgrade of these tables: %s.', 'burst-statistics' ), esc_html( \Burst\Admin\Upgrade::incomplete_upgrade_tables() ) ) . ' ' . __( 'Please deactivate Burst (keep the data), then activate again, to trigger a database upgrade.', 'burst-statistics' ),
 		'icon'        => 'warning',
 		'dismissible' => true,
 	],
@@ -157,7 +162,7 @@ return [
 		'msg'         => sprintf(
 			// translators: %s is the milestone number (compact, e.g. 1k, 10k, 1M).
 			__( 'You’ve hit %s pageviews this month!', 'burst-statistics' ),
-			( new \Burst\Admin\Milestones() )->format_milestone( get_option( 'burst_current_pageviews_milestone', 0 ) )
+			( new \Burst\Admin\Milestones() )->format_milestone( Admin_Options::get( Admin_Option_Category::CORE, 'current_pageviews_milestone', 0 ) )
 		),
 		'icon'        => 'milestone',
 		'dismissible' => true,
@@ -226,7 +231,7 @@ return [
 		'id'          => 'opt-in-sharing',
 		'mainwp'      => false,
 		'drip_order'  => 80,
-		'msg'         => __( 'Help us build better features, prioritize integrations and improve recommendations by sharing anonymous usage data. We never collect personal information, your site URL or IP addresses. Everything stays completely anonymous.', 'burst-statistics' ),
+		'msg'         => __( 'See how your site compares to similar websites by sharing anonymous usage data with Burst. No URLs, IP addresses or personal data.', 'burst-statistics' ),
 		'icon'        => 'new',
 		'fix'         => 'burst_option_anonymous_usage_data',
 		'dismissible' => true,

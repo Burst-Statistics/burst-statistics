@@ -17,6 +17,7 @@ import {
 import { ThemeProvider } from './hooks/useTheme';
 import { shouldLoadRoute } from './utils/helper';
 import { startScrollLockWatchdog } from './utils/scrollLockWatchdog';
+import { captureSlackHandoff } from './utils/slackHandoff';
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
@@ -35,6 +36,9 @@ declare global {
 		burstLoaded?: boolean;
 	}
 }
+
+// Check for Slack OAuth redirect handoff in URL fragment before hash router initializes.
+captureSlackHandoff();
 
 // This bundle is mounted in wp-admin and on shared dashboard URLs. wp-admin
 // still needs hash routing, while /burst-dashboard/<tab>/ should behave like a

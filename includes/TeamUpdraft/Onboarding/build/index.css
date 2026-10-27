@@ -11,6 +11,7 @@
   --text-lg: 1rem;
   --text-lg--line-height: 1.625rem;
   --text-xl: 1.125rem;
+  --text-xl--line-height: 1.625rem;
   --text-2xl: 1.25rem;
   --text-2xl--line-height: 1.75rem;
   --brand-hue: 144.76;
@@ -34,6 +35,7 @@
   --color-green-100: var(--color-primary-100);
   --color-green-500: var(--color-primary-500);
   --color-green-600: var(--color-primary-600);
+  --color-green-700: var(--color-primary-700);
   --color-green: var(--color-green-500);
   --color-yellow-100: oklch(0.97 0.04 var(--yellow-hue) / 0.90);
   --color-yellow-500: oklch(0.8541 0.1706 var(--yellow-hue));
@@ -76,6 +78,7 @@
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+  --tracking-wide: 0.025em;
   --leading-relaxed: 1.625;
   --radius-xs: 0.125rem;
   --radius-sm: 0.25rem;
@@ -416,6 +419,9 @@
   .left-1\/2 {
     left: calc(1 / 2 * 100%);
   }
+  .left-3 {
+    left: calc(var(--spacing) * 3);
+  }
   .z-\[10001\] {
     z-index: 10001;
   }
@@ -484,9 +490,6 @@
   }
   .mr-2 {
     margin-right: calc(var(--spacing) * 2);
-  }
-  .mr-\[10px\] {
-    margin-right: 10px;
   }
   .mb-2 {
     margin-bottom: calc(var(--spacing) * 2);
@@ -654,6 +657,9 @@
   }
   .cursor-pointer {
     cursor: pointer;
+  }
+  .cursor-wait {
+    cursor: wait;
   }
   .resize {
     resize: both;
@@ -870,6 +876,9 @@
   .p-4 {
     padding: calc(var(--spacing) * 4);
   }
+  .px-1\.5 {
+    padding-inline: calc(var(--spacing) * 1.5);
+  }
   .px-3 {
     padding-inline: calc(var(--spacing) * 3);
   }
@@ -923,6 +932,10 @@
     font-size: var(--text-sm);
     line-height: var(--tw-leading, var(--text-sm--line-height));
   }
+  .text-xl {
+    font-size: var(--text-xl);
+    line-height: var(--tw-leading, var(--text-xl--line-height));
+  }
   .text-xs {
     font-size: var(--text-xs);
     line-height: var(--tw-leading, var(--text-xs--line-height));
@@ -955,6 +968,10 @@
     --tw-font-weight: var(--font-weight-semibold);
     font-weight: var(--font-weight-semibold);
   }
+  .tracking-wide {
+    --tw-tracking: var(--tracking-wide);
+    letter-spacing: var(--tracking-wide);
+  }
   .whitespace-nowrap {
     white-space: nowrap;
   }
@@ -969,6 +986,9 @@
   }
   .text-green-600 {
     color: var(--color-green-600);
+  }
+  .text-green-700 {
+    color: var(--color-green-700);
   }
   .text-primary {
     color: var(--color-primary);
@@ -993,6 +1013,9 @@
   }
   .text-white {
     color: var(--color-white);
+  }
+  .uppercase {
+    text-transform: uppercase;
   }
   .underline {
     text-decoration-line: underline;
@@ -1324,6 +1347,10 @@
   syntax: "*";
   inherits: false;
 }
+@property --tw-tracking {
+  syntax: "*";
+  inherits: false;
+}
 @property --tw-shadow {
   syntax: "*";
   inherits: false;
@@ -1482,6 +1509,7 @@
     --tw-gradient-to-position: 100%;
     --tw-leading: initial;
     --tw-font-weight: initial;
+    --tw-tracking: initial;
     --tw-shadow: 0 0 #0000;
     --tw-shadow-color: initial;
     --tw-shadow-alpha: 100%;

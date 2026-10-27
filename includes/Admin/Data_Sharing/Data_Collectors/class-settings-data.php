@@ -6,6 +6,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Traits\Helper;
 use function Burst\burst_loader;
 
@@ -42,13 +44,6 @@ class Settings_Data extends Data_Collector {
 		}
 
 		return $default_value;
-	}
-
-	/**
-	 * Read a WordPress option and normalize to a strict boolean.
-	 */
-	private function get_wordpress_option_bool( string $option, bool $default_value = false ): bool {
-		return $this->normalize_option_boolean( get_option( $option, $default_value ), $default_value );
 	}
 
 	/**
@@ -229,7 +224,7 @@ class Settings_Data extends Data_Collector {
 			'site_category'                       => $this->get_option( 'site_category', 'uncategorized' ),
 			'plugin_installed_by'                 => get_site_option( 'teamupdraft_installation_source_burst-statistics', '' ),
 			'udp_plugin_install_sources'          => $this->get_udp_plugin_install_sources(),
-			'burst_auto_installed'                => $this->get_wordpress_option_bool( 'burst_auto_installed', false ),
+			'burst_auto_installed'                => $this->normalize_option_boolean( Admin_Options::get( Admin_Option_Category::CORE, 'auto_installed', false ) ),
 			'burst_activation_time_pro'           => $burst_activation_time_pro,
 			'burst_completed_onboarding'          => $burst_completed_onboarding,
 			'burst_skipped_onboarding'            => $burst_skipped_onboarding,
@@ -250,8 +245,8 @@ class Settings_Data extends Data_Collector {
 			'enable_search_console'               => $this->get_burst_setting_bool( 'enable_search_console' ),
 			'plugin_update_suggestions'           => $this->get_burst_setting_bool( 'plugin_update_suggestions', true ),
 			'plugin_update_scheduling'            => $this->get_burst_setting_bool( 'plugin_update_scheduling', false ),
-			'burst_tour_completed'                => $this->get_wordpress_option_bool( 'burst_tour_completed', false ),
-			'burst_tour_last_section'             => (string) get_option( 'burst_tour_last_section', '' ),
+			'burst_tour_completed'                => $this->normalize_option_boolean( Admin_Options::get( Admin_Option_Category::CORE, 'tour_completed', false ) ),
+			'burst_tour_last_section'             => (string) Admin_Options::get( Admin_Option_Category::CORE, 'tour_last_section', '' ),
 		];
 	}
 

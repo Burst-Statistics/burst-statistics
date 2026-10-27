@@ -428,6 +428,37 @@ export const normalizeFilterValue = ( value: unknown ): string => {
 };
 
 /**
+ * Resolves the filters to show when the filter pages are opened.
+ *
+ * The URL's filters are used, or the last used filters when the URL has none.
+ * Pinned filters win on conflict, except for the keys the navigation asked for
+ * explicitly, such as the goal clicked in "filter by goal".
+ *
+ * @param urlFilters     - Filters in the URL being opened.
+ * @param savedFilters   - Filters last used on a filter page.
+ * @param pinnedFilters  - Filters the user pinned.
+ * @param overridePinned - Keys whose URL value beats the pinned value.
+ *
+ * @return The filters to put in the URL.
+ */
+export const resolveEntryFilters = (
+	urlFilters: Record<string, string>,
+	savedFilters: Record<string, string>,
+	pinnedFilters: Record<string, string>,
+	overridePinned: string[] = []
+): Record<string, string> => {
+	const baseFilters = 0 < Object.keys( urlFilters ).length ? urlFilters : savedFilters;
+	const pinned = { ...pinnedFilters };
+	overridePinned.forEach( ( key ) => {
+		if ( urlFilters[key]) {
+			delete pinned[key];
+		}
+	});
+
+	return { ...baseFilters, ...pinned };
+};
+
+/**
  * The four explicit operators a filter chip can render.
  */
 export type FilterOperator = 'is' | 'is-not' | 'is-any-of' | 'is-not-any-of';

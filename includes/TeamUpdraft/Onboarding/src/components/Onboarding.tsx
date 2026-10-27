@@ -223,6 +223,10 @@ const Onboarding: FC = () => {
 	}
 	// Keep the spinner visible for the whole submission, not only during the store's own requests.
 	const isBusy = isUpdating || isInstalling || isSubmitting;
+	// The spinner sits in the button's padding and only fades in, so the label does not shift.
+	const busyIconClassName =
+		'absolute left-3 transition-opacity duration-300 ' +
+		( isBusy ? 'opacity-100' : 'opacity-0' );
 	const upgradeUrl = get_website_url( onboardingData.upgrade, {
 		utm_source: onboardingData.prefix + '_onboarding',
 		utm_content: 'upgrade',
@@ -311,30 +315,29 @@ const Onboarding: FC = () => {
 
 									<ButtonInput
 										className={
-											'flex-1 burst-continue flex justify-center items-center whitespace-nowrap text-center ' +
+											'relative flex-1 burst-continue flex justify-center items-center whitespace-nowrap text-center ' +
 											( isBusy ? 'burst-updating' : '' )
 										}
 										btnVariant="tertiary"
 										size="md"
 										disabled={ isContinueDisabled() }
+										isBusy={ isSubmitting }
 										onClick={ ( e ) => validateAndContinue( e ) }
 										key={ currentStep.id + 'continue' }
 									>
-										{ isBusy && (
-											<Icon
-												name="loading-circle"
-												size={ 18 }
-												color="black"
-												className="mr-[10px]"
-											/>
-										) }
+										<Icon
+											name="loading-circle"
+											size={ 18 }
+											color="black"
+											className={ busyIconClassName }
+										/>
 										{ currentStep.button.label }
 									</ButtonInput>
 								</div>
 							) : (
 								<ButtonInput
 									className={
-										'w-full burst-continue flex justify-center items-center ' +
+										'relative w-full burst-continue flex justify-center items-center ' +
 										( isBusy ? 'burst-updating' : '' )
 									}
 									btnVariant={
@@ -342,19 +345,18 @@ const Onboarding: FC = () => {
 									}
 									size={ isLastStep() ? 'md' : 'lg' }
 									disabled={ isContinueDisabled() }
+									isBusy={ isSubmitting }
 									onClick={ ( e ) => validateAndContinue( e ) }
 									key={ currentStep.id + 'continue' }
 								>
-									{ isBusy && (
-										<Icon
-											name="loading-circle"
-											size={ 18 }
-											color={
-												isLastStep() ? 'black' : 'white'
-											}
-											className="mr-[10px]"
-										/>
-									) }
+									<Icon
+										name="loading-circle"
+										size={ 18 }
+										color={
+											isLastStep() ? 'black' : 'white'
+										}
+										className={ busyIconClassName }
+									/>
 									{ currentStep.button.label }
 								</ButtonInput>
 							) }

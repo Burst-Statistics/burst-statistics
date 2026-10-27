@@ -1,8 +1,7 @@
 // hooks/useFilters.ts - Blijft de main entry point
 import { useLocation, useNavigate, useSearch } from '@tanstack/react-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFiltersStore } from '@/store/useFiltersStore';
-import { useTourStore } from '@/store/useTourStore';
 import { doAction } from '@/utils/api';
 
 import {
@@ -29,7 +28,7 @@ const getBurstSettings = (): BurstGlobalSettings | undefined => {
 	return ( window as unknown as { burst_settings?: BurstGlobalSettings }).burst_settings;
 };
 
-const getPinnedFilters = (): Record<string, string> => {
+export const getPinnedFilters = (): Record<string, string> => {
 	const raw = getBurstSettings()?.pinned_filters;
 	if ( ! raw || 'object' !== typeof raw ) {
 		return {};
@@ -68,13 +67,6 @@ const buildSearchParams = (
 	return result;
 };
 
-const hasUrlFilters = ( searchParams: FilterSearchParams ): boolean => {
-	return FILTER_KEYS.some( ( key ) => {
-		const value = searchParams[key];
-		return value && '' !== value;
-	});
-};
-
 /**
  * Hook to manage filters.
  * - Without reportBlockIndex: uses URL params (for /statistics, /sources, /sales)
@@ -87,7 +79,6 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 
 	const navigate = useNavigate();
 	const location = useLocation();
-	const hasInitialized = useRef( false );
 
 	const isFilterRoute = isFilterEnabledRoute( location.pathname );
 	const isBlockMode = 'number' === typeof reportBlockIndex;
@@ -101,7 +92,6 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 
 	// URL-specific store access
 	const setSavedFilters = useFiltersStore( ( state ) => state.setSavedFilters );
-	const getSavedFilters = useFiltersStore( ( state ) => state.getSavedFilters );
 	const clearSavedFilters = useFiltersStore( ( state ) => state.clearSavedFilters );
 	const wizardContent = useWizardStore( ( state ) => state.wizard.content );
 
@@ -137,42 +127,6 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 	}, [ searchParams, isFilterRoute, isBlockMode, reportBlockIndex, getReportFilters, wizardContent, location.pathname ] );
 
 	const [ pinnedFilters, setPinnedFiltersState ] = useState<Record<string, string>>( getPinnedFilters );
-
-	const tourActive = useTourStore( ( state ) => state.tourActive );
-
-	// Initialize URL filters (only in URL mode)
-	// fallow-ignore-next-line complexity
-	useEffect( () => {
-		if ( isBlockMode || ! isFilterRoute || hasInitialized.current ) {
-			return;
-		}
-
-		// In tour mode, keep filters clean and default (empty)
-		if ( tourActive ) {
-			return;
-		}
-
-		hasInitialized.current = true;
-
-		if ( hasUrlFilters( searchParams ) ) {
-			setSavedFilters( searchParams );
-			return;
-		}
-
-		const pinned = getPinnedFilters();
-		const hasPinned = 0 < Object.keys( pinned ).length;
-		const defaultFiltersToApply = hasPinned ? pinned : getSavedFilters();
-		const hasDefaultFilters = 0 < Object.keys( defaultFiltersToApply ).length;
-
-		if ( hasDefaultFilters ) {
-			const newSearch = buildSearchParams( defaultFiltersToApply );
-			navigate({
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				search: newSearch as any,
-				replace: true
-			});
-		}
-	}, [ isFilterRoute, isBlockMode, tourActive ]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const isPinned = useMemo( () => {
 		const pinnedKeys = Object.keys( pinnedFilters );
@@ -224,7 +178,7 @@ export const useFilters = ( reportBlockIndex?: number ) => {
 
 	// Only sync URL filters to localStorage
 	useEffect( () => {
-		if ( isBlockMode || ! hasInitialized.current || ! isFilterRoute ) {
+		if ( isBlockMode || ! isFilterRoute ) {
 			return;
 		}
 

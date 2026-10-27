@@ -121,7 +121,8 @@ export const METRIC_DEFINITIONS = {
 	events: {
 		label: __( 'Events', 'burst-statistics' ),
 		definition: __( 'Custom interactions recorded through the Burst event API, grouped by event name.', 'burst-statistics' ),
-		whyItMatters: __( 'Event counts show how often visitors complete interactions that matter to your site.', 'burst-statistics' )
+		whyItMatters: __( 'Event counts show how often visitors complete interactions that matter to your site.', 'burst-statistics' ),
+		url: 'https://burst-statistics.com/guides/how-to-track-custom-events/'
 	},
 	search_terms: {
 		label: __( 'Website searches', 'burst-statistics' ),
