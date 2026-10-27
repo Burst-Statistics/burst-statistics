@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Burst\Admin\Capability\Capability;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
 use Burst\Traits\Save;
@@ -19,6 +20,101 @@ class Upgrade {
 	use Save;
 
 	/**
+	 * The plugin version this file belongs to. See check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
+
+	/**
+	 * How often one version may postpone the upgrade for a table that does not
+	 * match its definition, before the upgrade completes on the schema as it is.
+	 *
+	 * @var int
+	 */
+	private const MAX_UPGRADE_ATTEMPTS = 3;
+
+	/**
+	 * Tables that did not match their definition after the install ran in this
+	 * request, reported by Database_Helper::install_schema(), per blog id: on
+	 * multisite one install run covers every site of the network, and a
+	 * subsite's table must not hold back the upgrade of another site.
+	 *
+	 * @var array<int, string[]>
+	 */
+	private static array $schema_install_failures = [];
+
+	/**
+	 * Whether the table install bailed out in this request because another
+	 * request held the upgrade lock, reported by Admin::run_table_init_hook().
+	 */
+	private static bool $install_lock_unavailable = false;
+
+	/**
+	 * Standalone backend options folded into the category rows, as category =>
+	 * [ option name in the row => standalone option name without the burst_
+	 * prefix ]. Free and Pro keys live together: a standalone option that does
+	 * not exist is skipped, so free has nothing to migrate for the Pro
+	 * categories.
+	 */
+	private const LEGACY_ADMIN_OPTIONS = [
+		Admin_Option_Category::CORE           => [
+			'auto_installed'                  => 'auto_installed',
+			'current_pageviews_milestone'     => 'current_pageviews_milestone',
+			'js_write_error'                  => 'js_write_error',
+			'last_pageviews_milestone'        => 'last_pageviews_milestone',
+			'last_telemetry_send'             => 'last_telemetry_send',
+			'telemetry_offset'                => 'telemetry_offset',
+			'ajax_fallback_active'            => 'ajax_fallback_active',
+			'ajax_fallback_active_timestamp'  => 'ajax_fallback_active_timestamp',
+			'missing_tables'                  => 'missing_tables',
+			'rest_api_optimizer_not_writable' => 'rest_api_optimizer_not_writable',
+			'review_notice_shown'             => 'review_notice_shown',
+			'attempt_database_fix'            => 'attempt_database_fix',
+			'tour_completed'                  => 'tour_completed',
+			'tour_last_section'               => 'tour_last_section',
+			// The onboarding state (burst_start_onboarding, _skipped_, _completed_,
+			// the telemetry copies and burst_onboarding_free_completed) stays in
+			// standalone options: the shared TeamUpdraft onboarding reads and
+			// writes them by prefix.
+			'archive_table_size'              => 'table_size',
+			'installed_integrations'          => 'installed_integrations',
+			'last_auto_update_run'            => 'low_traffic_last_auto_update_run',
+			'search_terms_version'            => 'search_terms_version',
+		],
+		Admin_Option_Category::DIAGNOSTICS    => [
+			'tracking_health'                   => 'tracking_health',
+			'tracking_health_last_email'        => 'tracking_health_last_email',
+			'tracking_health_last_notification' => 'tracking_health_last_notification',
+			'settings_last_changed'             => 'settings_last_changed',
+			'plugins_last_updated'              => 'plugins_last_updated',
+		],
+		Admin_Option_Category::DIAGNOSTIC_RUN => [ 'results' => 'tracking_diagnostics' ],
+		Admin_Option_Category::NOTIFICATIONS  => [ 'slack_webhook_url' => 'slack_webhook_url' ],
+		Admin_Option_Category::TASKS          => [
+			'active'                => 'tasks',
+			'permanently_dismissed' => 'tasks_permanently_dismissed',
+			'active_drip'           => 'active_drip_task',
+			'drip_last_dismissed'   => 'drip_last_dismissed_time',
+		],
+		Admin_Option_Category::LANGUAGES      => [
+			'clean_languages'       => 'clean_languages',
+			'install_user_language' => 'install_user_language',
+		],
+		Admin_Option_Category::QUICK_WINS     => [
+			'processed'  => 'quick_wins',
+			'date_range' => 'quick_wins_date_range',
+			'dismissed'  => 'quick_win_dismissed_wins',
+			'snoozed'    => 'quick_win_snoozed_wins',
+		],
+		Admin_Option_Category::ANOMALY        => [
+			'spikes'    => 'anomaly_spikes',
+			'dips'      => 'anomaly_dips',
+			'good_days' => 'anomaly_good_days',
+		],
+	];
+
+	/**
 	 * Constructor
 	 */
 	public function init(): void {
@@ -26,7 +122,146 @@ class Upgrade {
 	}
 
 	/**
-	 * Run an upgrade procedure if the version has changed
+	 * Record that a table does not match its definition after its install ran.
+	 *
+	 * Static, because the installers are spread over every feature class and
+	 * the install can be fired by any of the burst_install_tables callers, not
+	 * only by check_upgrade().
+	 *
+	 * @param string $table_name The table without prefix.
+	 */
+	public static function record_schema_install_failure( string $table_name ): void {
+		$blog_id = get_current_blog_id();
+		if ( ! in_array( $table_name, self::$schema_install_failures[ $blog_id ] ?? [], true ) ) {
+			self::$schema_install_failures[ $blog_id ][] = $table_name;
+		}
+	}
+
+	/**
+	 * The tables of the current blog that did not match their definition in
+	 * the last install run of this request.
+	 *
+	 * @return string[]
+	 */
+	private static function failed_tables_of_current_blog(): array {
+		return self::$schema_install_failures[ get_current_blog_id() ] ?? [];
+	}
+
+	/**
+	 * Record that the table install could not run because the upgrade lock was
+	 * held by another request.
+	 *
+	 * Static for the same reason as record_schema_install_failure(): the
+	 * install runs through an action, so its result cannot be returned to
+	 * check_upgrade().
+	 */
+	public static function record_install_lock_contention(): void {
+		self::$install_lock_unavailable = true;
+	}
+
+	/**
+	 * Forget what an earlier install run reported.
+	 *
+	 * Called when an install run starts (Admin::run_table_init_hook()) and when
+	 * check_upgrade() starts its own, so each reads the result of its own run.
+	 */
+	public static function reset_install_state(): void {
+		self::$schema_install_failures  = [];
+		self::$install_lock_unavailable = false;
+	}
+
+	/**
+	 * Close an install run that left every table of the current blog matching.
+	 *
+	 * Clears the attempt counter of this version and the incomplete-upgrade
+	 * notice. This is what lets the advice of the upgrade_incomplete task work:
+	 * reactivating Burst runs the install, and once the tables are fixed, the
+	 * notice goes and a postponed upgrade runs again on the next request.
+	 * Called by Admin::run_table_init_hook() after every install run, after it
+	 * has restored the blog it started on.
+	 */
+	public static function finish_install_run(): void {
+		if ( [] !== self::failed_tables_of_current_blog() ) {
+			return;
+		}
+
+		self::clear_failed_upgrade_attempts();
+		self::clear_upgrade_incomplete();
+	}
+
+	/**
+	 * The failed upgrade attempts of this version.
+	 *
+	 * Stored with the version they belong to, so a new release always starts
+	 * with a full set of attempts.
+	 */
+	private static function failed_upgrade_attempts(): int {
+		$attempts = Admin_Options::get( Admin_Option_Category::CORE, 'upgrade_attempts', [] );
+		if ( ! is_array( $attempts ) || BURST_VERSION !== ( $attempts['version'] ?? '' ) ) {
+			return 0;
+		}
+
+		return (int) ( $attempts['count'] ?? 0 );
+	}
+
+	/**
+	 * Forget the failed upgrade attempts.
+	 *
+	 * Checked against the request cache first: the key is absent on the normal
+	 * path, and Admin_Options::delete() reads the stored row on every call.
+	 */
+	private static function clear_failed_upgrade_attempts(): void {
+		if ( Admin_Options::has( Admin_Option_Category::CORE, 'upgrade_attempts' ) ) {
+			Admin_Options::delete( Admin_Option_Category::CORE, 'upgrade_attempts' );
+		}
+	}
+
+	/**
+	 * Remove the incomplete-upgrade notice, see clear_failed_upgrade_attempts().
+	 */
+	private static function clear_upgrade_incomplete(): void {
+		if ( Admin_Options::has( Admin_Option_Category::CORE, 'upgrade_incomplete' ) ) {
+			Admin_Options::delete( Admin_Option_Category::CORE, 'upgrade_incomplete' );
+		}
+	}
+
+	/**
+	 * Whether the last upgrade completed with tables that do not match their
+	 * definition. Condition of the upgrade_incomplete task.
+	 */
+	public static function is_upgrade_incomplete(): bool {
+		return '' !== self::incomplete_upgrade_tables();
+	}
+
+	/**
+	 * The tables the last upgrade could not bring in line with their definition.
+	 *
+	 * @return string Comma separated table names, empty when the upgrade completed.
+	 */
+	public static function incomplete_upgrade_tables(): string {
+		return (string) Admin_Options::get( Admin_Option_Category::CORE, 'upgrade_incomplete', '' );
+	}
+
+	/**
+	 * Run an upgrade procedure if the version has changed.
+	 *
+	 * The upgrade only runs when all the code it uses belongs to this version,
+	 * and its routines only run once every table of this site has the columns
+	 * of its definition. Otherwise burst-current-version keeps the previous
+	 * version and the next admin request tries again; a retry repeats the
+	 * install, never the routines, which are not safe to run twice. A table
+	 * that still does not match after MAX_UPGRADE_ATTEMPTS completes the
+	 * upgrade on the schema as it is, with the upgrade_incomplete task, so a
+	 * table that needs a look cannot hold back the whole release.
+	 *
+	 * The reason is a request that runs files from two plugin versions at once:
+	 * on hosts with OPcache (WP Engine) the cache is invalidated per file, so
+	 * right after an update one request can load, say, the new Upgrade with the
+	 * old installer. The upgrade then fails while the version option says it
+	 * succeeded, leaving the site on a schema the new code does not expect.
+	 * Every class of the upgrade path therefore carries a BUILD constant with
+	 * the version of its own file (bump-version.sh updates them), and a stale
+	 * file postpones the upgrade instead of half-running it.
 	 */
 	public function check_upgrade(): void {
 		if ( ! $this->has_admin_access() ) {
@@ -38,6 +273,45 @@ class Upgrade {
 
 		if ( $prev_version === $new_version ) {
 			return;
+		}
+
+		// The upgrade installs the tables, and add_index() does nothing for a
+		// user who cannot manage Burst: their request would leave the schema
+		// half-installed. Cron and WP-CLI can manage, so the upgrade does not
+		// wait for an administrator to open wp-admin.
+		if ( ! $this->user_can_manage() ) {
+			return;
+		}
+
+		$stale_classes = $this->stale_build_classes();
+		if ( [] !== $stale_classes ) {
+			self::error_log( 'Upgrade postponed, code of another version is loaded: ' . implode( ', ', $stale_classes ) );
+			return;
+		}
+
+		// Only the install of this upgrade decides whether its routines run.
+		self::reset_install_state();
+
+		// install the tables, so we can access new columns below if necessary.
+		do_action( 'burst_upgrade_before', $prev_version );
+
+		// The install bailed out on the lock of another request, so no table was
+		// verified and the upgrade routines below would read columns the install
+		// was supposed to add. Postpone the whole upgrade to the next admin
+		// request. Not a failed attempt: no install ran, so there is nothing to
+		// give up on.
+		if ( self::$install_lock_unavailable ) {
+			self::error_log( 'Upgrade postponed, another request holds the install lock' );
+			return;
+		}
+
+		$failed_tables = self::failed_tables_of_current_blog();
+		if ( [] !== $failed_tables ) {
+			$attempts = $this->count_failed_upgrade_attempt( $failed_tables );
+			if ( $attempts < self::MAX_UPGRADE_ATTEMPTS ) {
+				return;
+			}
+			$this->flag_upgrade_incomplete( $failed_tables );
 		}
 
 		// Once per version change: drop burst_db_upgrade_* options whose task
@@ -55,9 +329,6 @@ class Upgrade {
 		if ( null !== $prev_version ) {
 			update_option( 'burst_has_db_upgrade', true );
 		}
-
-		// install the tables, so we can access new columns below if necessary.
-		do_action( 'burst_upgrade_before', $prev_version );
 
 		// no upgrade.
 		// add burst capabilities.
@@ -500,6 +771,34 @@ class Upgrade {
 			( new \Burst\Admin\Notifications\Alert_Preferences() )->migrate_legacy_settings();
 		}
 
+		if ( null !== $prev_version && version_compare( $prev_version, '3.7.3.1', '<' ) ) {
+			// Hits stranded under a post id the page dictionary no longer
+			// carries — a migration that renumbered the posts while the paths
+			// stayed the same — render with an empty page name and split the
+			// page's history off its current traffic. The task finds the
+			// affected ids with one indexed probe and only touches their
+			// rows, so a site without the problem does no work.
+			$this->arm_db_upgrade( 'repair_superseded_page_ids' );
+		}
+
+		if ( null !== $prev_version && version_compare( $prev_version, '3.7.4', '<' ) ) {
+			// Fold the standalone backend options into the category rows the
+			// Admin_Options API reads from.
+			$this->migrate_admin_options();
+
+			// The load-failure catch in the main plugin file that wrote these
+			// is gone, and so is the task that reported them.
+			delete_option( 'burst_php_error_time' );
+			delete_option( 'burst_php_error_count' );
+			delete_option( 'burst_php_error_detected' );
+
+			// Reinstall the REST API optimizer (1.2.0): it now only acts on
+			// requests through index.php with the REST prefix at the start of
+			// the path, so /wp-login.php/wp-json/burst/v1/... and similar
+			// PATH_INFO URLs can no longer switch off other plugins.
+			burst_reinstall_rest_api_optimizer();
+		}
+
 		// bump-version.sh inserts new release versions above this line — do not remove.
 		$admin = new Admin();
 		$admin->run_table_init_hook();
@@ -510,7 +809,139 @@ class Upgrade {
 		\Burst\burst_loader()->admin->tasks->schedule_task_validation();
 		wp_schedule_single_event( time() + 60, 'burst_upgrade_iteration' );
 		do_action( 'burst_upgrade_after', $prev_version );
-		update_option( 'burst-current-version', $new_version );
+
+		self::clear_failed_upgrade_attempts();
+		if ( [] === $failed_tables ) {
+			self::clear_upgrade_incomplete();
+		}
+		update_option( 'burst-current-version', $new_version, true );
+	}
+
+	/**
+	 * Fold the standalone backend options into the category-specific
+	 * burst_admin_options_* rows (see Admin_Options).
+	 *
+	 * Runs inside the version change itself, so there is no window in which a
+	 * reader has to fall back to the standalone option. Safe to run twice and
+	 * from two requests at once: the values are merged into the row under the
+	 * category lock, and the standalone options are only deleted after that
+	 * write succeeded. The standalone value wins over the key already in the
+	 * row, because that row can only hold what a request wrote while the
+	 * standalone option was still the stored state — so a key an earlier
+	 * upgrade block of this same run stored (the 3.7.1 task dismissal) is
+	 * replaced by the pre-upgrade list it was appended to.
+	 */
+	private function migrate_admin_options(): void {
+		$legacy_names = [];
+		foreach ( self::LEGACY_ADMIN_OPTIONS as $names ) {
+			foreach ( $names as $legacy_name ) {
+				$legacy_names[] = 'burst_' . $legacy_name;
+			}
+		}
+		wp_prime_option_caches( $legacy_names );
+
+		$missing = new \stdClass();
+		foreach ( self::LEGACY_ADMIN_OPTIONS as $category => $names ) {
+			$values = [];
+			foreach ( $names as $name => $legacy_name ) {
+				$value = get_option( 'burst_' . $legacy_name, $missing );
+				if ( $missing !== $value ) {
+					$values[ $name ] = $value;
+				}
+			}
+
+			if ( [] === $values || ! Admin_Options::merge( $category, $values ) ) {
+				continue;
+			}
+
+			foreach ( array_keys( $values ) as $name ) {
+				delete_option( 'burst_' . $names[ $name ] );
+			}
+		}
+	}
+
+	/**
+	 * The classes of the upgrade path whose BUILD stamp is not BURST_VERSION.
+	 *
+	 * Checked are this class, DB_Upgrade and every class hooked to
+	 * burst_install_tables, plus the Database_Helper trait through its own
+	 * build method. Callbacks from outside Burst carry no stamp and are
+	 * skipped: a third-party installer must not be able to block the upgrade.
+	 *
+	 * Code that takes part in the upgrade without installing a table adds
+	 * itself through the burst_stale_builds filter when its own stamp is not
+	 * BURST_VERSION. Pro does so for its upgrade routine, which runs on
+	 * burst_upgrade_after inside this upgrade.
+	 *
+	 * @return string[] The stale classes, empty when all of the code is of this version.
+	 */
+	private function stale_build_classes(): array {
+		global $wp_filter;
+
+		$classes = [ self::class, \Burst\Admin\DB_Upgrade\DB_Upgrade::class ];
+		if ( isset( $wp_filter['burst_install_tables'] ) ) {
+			foreach ( $wp_filter['burst_install_tables']->callbacks as $callbacks ) {
+				foreach ( $callbacks as $callback ) {
+					if ( is_array( $callback['function'] ) && is_object( $callback['function'][0] ) ) {
+						$classes[] = get_class( $callback['function'][0] );
+					}
+				}
+			}
+		}
+
+		$stale = [];
+		foreach ( array_unique( $classes ) as $class ) {
+			if ( ! str_starts_with( $class, 'Burst\\' ) ) {
+				continue;
+			}
+			if ( ! defined( $class . '::BUILD' ) || constant( $class . '::BUILD' ) !== BURST_VERSION ) {
+				$stale[] = $class;
+			}
+		}
+
+		if ( $this->database_helper_build() !== BURST_VERSION ) {
+			$stale[] = Database_Helper::class;
+		}
+
+		return (array) apply_filters( 'burst_stale_builds', $stale );
+	}
+
+	/**
+	 * Count an upgrade run that left a table not matching its definition.
+	 *
+	 * The counter is per version, so a new release always gets its full set of
+	 * attempts.
+	 *
+	 * @param string[] $failed_tables The tables that do not match.
+	 * @return int The number of failed attempts of this version, this one included.
+	 */
+	private function count_failed_upgrade_attempt( array $failed_tables ): int {
+		$attempts = self::failed_upgrade_attempts() + 1;
+		Admin_Options::update(
+			Admin_Option_Category::CORE,
+			'upgrade_attempts',
+			[
+				'version' => BURST_VERSION,
+				'count'   => $attempts,
+			]
+		);
+		self::error_log( 'Upgrade incomplete, tables not matching their definition: ' . implode( ', ', $failed_tables ) . " (attempt {$attempts})" );
+
+		return $attempts;
+	}
+
+	/**
+	 * Tell the user the upgrade completed with tables that do not match.
+	 *
+	 * The upgrade_incomplete task stays until an install run leaves every table
+	 * matching, see finish_install_run().
+	 *
+	 * @param string[] $failed_tables The tables that do not match.
+	 */
+	private function flag_upgrade_incomplete( array $failed_tables ): void {
+		self::error_log( 'Upgrade completed with tables not matching their definition: ' . implode( ', ', $failed_tables ) );
+		Admin_Options::update( Admin_Option_Category::CORE, 'upgrade_incomplete', implode( ', ', $failed_tables ) );
+		\Burst\burst_loader()->admin->tasks->add_task( 'upgrade_incomplete' );
 	}
 
 	/**

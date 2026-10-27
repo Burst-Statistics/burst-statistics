@@ -1,6 +1,8 @@
 <?php
 namespace Burst\Admin\Plugins;
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
 
@@ -53,13 +55,6 @@ class Plugin_Updates {
 	 * Days of statistics used to determine the low-traffic window.
 	 */
 	private const LOOKBACK_DAYS = 28;
-
-	/**
-	 * Timestamp of the last Burst-triggered update run, in the option below.
-	 * Guards the hourly check so the updater runs once per day, and detects a
-	 * missed window (no cron tick during the quietest hours) for the catch-up.
-	 */
-	private const LAST_RUN_OPTION = 'burst_low_traffic_last_auto_update_run';
 
 	/**
 	 * Whether the current request is a Burst-triggered low-traffic update run
@@ -300,14 +295,14 @@ class Plugin_Updates {
 			return;
 		}
 
-		$last_run  = (int) get_option( self::LAST_RUN_OPTION, 0 );
+		$last_run  = (int) Admin_Options::get( Admin_Option_Category::CORE, 'last_auto_update_run', 0 );
 		$in_window = $this->is_in_low_traffic_window();
 
 		if ( ! $in_window ) {
 			if ( 0 === $last_run ) {
 				// First check ever: set the baseline so the first run happens
 				// in the next window instead of right now at a random hour.
-				update_option( self::LAST_RUN_OPTION, time(), false );
+				Admin_Options::update( Admin_Option_Category::CORE, 'last_auto_update_run', time() );
 				return;
 			}
 			if ( time() - $last_run <= ( 24 + self::WINDOW_HOURS ) * HOUR_IN_SECONDS ) {
@@ -320,7 +315,7 @@ class Plugin_Updates {
 			return;
 		}
 
-		update_option( self::LAST_RUN_OPTION, time(), false );
+		Admin_Options::update( Admin_Option_Category::CORE, 'last_auto_update_run', time() );
 		$this->run_auto_updates();
 	}
 

@@ -7,6 +7,7 @@ interface ButtonInputProps
 	link?: string;
 	btnVariant?: 'primary' | 'secondary' | 'tertiary' | 'danger';
 	disabled?: boolean;
+	isBusy?: boolean;
 	size?: 'sm' | 'md' | 'lg';
 	className?: string;
 }
@@ -25,6 +26,9 @@ interface ButtonInputProps
  * - "md" for default spacing.
  * - "lg" for increased padding and larger, bolder text.
  *
+ * Set `isBusy` while the button's action is running: the button ignores clicks but keeps
+ * its look, so a quick save does not flash the faded disabled style.
+ *
  * @param {ButtonInputProps} props - Props for configuring the button.
  * @return {JSX.Element} The rendered button or link component.
  */
@@ -34,6 +38,7 @@ const ButtonInput: React.FC< ButtonInputProps > = ( {
 	link,
 	btnVariant = 'secondary',
 	disabled = false,
+	isBusy = false,
 	size = 'md',
 	className = '',
 	...props
@@ -58,9 +63,10 @@ const ButtonInput: React.FC< ButtonInputProps > = ( {
 			'py-1.5 px-4 text-base font-medium': size === 'md', // Medium (default): Standard padding and text size
 			'py-3 px-8 text-lg font-semibold': size === 'lg', // Large: Increased padding and larger, bolder text
 		},
-		// Disabled styles
+		// Disabled styles, skipped while busy so the button does not fade out and back in.
 		{
-			'opacity-50 cursor-not-allowed': disabled,
+			'opacity-50 cursor-not-allowed': disabled && ! isBusy,
+			'cursor-wait': isBusy,
 		},
 		className
 	);
@@ -83,7 +89,8 @@ const ButtonInput: React.FC< ButtonInputProps > = ( {
 			type={ props.type || 'button' }
 			onClick={ onClick }
 			className={ classes }
-			disabled={ disabled }
+			disabled={ disabled || isBusy }
+			aria-busy={ isBusy }
 			{ ...props }
 		>
 			{ children }

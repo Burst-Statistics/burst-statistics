@@ -37,6 +37,9 @@ export const isSlackWebhookSet = ( value: unknown, prefix?: string ): boolean =>
  * Scroll to the Slack webhook field and focus it.
  */
 export const goToSlackWebhook = (): void => {
+	if ( 'undefined' !== typeof window ) {
+		window.dispatchEvent( new CustomEvent( 'burst_open_slack_webhook' ) );
+	}
 	document.getElementById( 'burst-settings-group-slack' )?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 	document.getElementById( 'slack_webhook_url' )?.focus({ preventScroll: true });
 };

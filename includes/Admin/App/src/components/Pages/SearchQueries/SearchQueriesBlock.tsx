@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { __, sprintf } from '@wordpress/i18n';
 import useGSCData from '@/hooks/useGSCData';
 import useSettingsData from '@/hooks/useSettingsData';
+import useLicenseData from '@/hooks/useLicenseData';
 import { useSearchQueriesData } from '@/hooks/useSearchQueriesData';
 import { Block } from '@/components/Blocks/Block';
 import { BlockContent } from '@/components/Blocks/BlockContent';
@@ -14,8 +15,7 @@ import { SearchQueriesContent } from './SearchQueriesContent';
 import { SearchQueriesOverlay, SearchQueriesPropertyState } from './SearchQueriesAccessStates';
 import {
 	getSearchQueriesAccessState,
-	getSearchQueriesViewModel,
-	isBurstPro
+	getSearchQueriesViewModel
 } from './searchQueriesViewModel';
 import type { SearchQueriesAccessState, SearchQueriesStatus } from './searchQueriesViewModel';
 
@@ -148,9 +148,10 @@ export const SearchQueriesBlock = ({
 }: SearchQueriesBlockProps ) => {
 	const { status, propertyStatus } = useGSCData();
 	const { getValue } = useSettingsData();
+	const { isPro } = useLicenseData();
 	const isEnabled = !! getValue( 'enable_search_console' );
 	const accessState = getSearchQueriesAccessState(
-		isBurstPro(),
+		isPro,
 		status,
 		propertyStatus
 	);

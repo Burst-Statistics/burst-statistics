@@ -55,15 +55,19 @@ export const EmailSelectInput = forwardRef<HTMLInputElement, EmailSelectInputPro
 			setInputValue( '' );
 		};
 
+		// fallow-ignore-next-line complexity
 		const handleKeyDown = ( event: KeyboardEvent<HTMLInputElement> ): void => {
+			const currentVal = event.currentTarget.value || inputValue;
+
 			if ( 'Enter' === event.key ) {
 				event.preventDefault();
-				handleAddEmail( inputValue );
+				handleAddEmail( currentVal );
+				return;
 			}
 
 			if (
 				'Backspace' === event.key &&
-				0 === inputValue.length &&
+				0 === currentVal.length &&
 				0 < value.length
 			) {
 				event.preventDefault();

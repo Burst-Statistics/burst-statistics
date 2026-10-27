@@ -28,6 +28,15 @@ class Page_Weight {
 	private const TOP_PAGES = 5;
 
 	/**
+	 * Share of pageviews on measured pages below which the averages are not
+	 * reported. Mirrors MIN_MEASURED_RATIO in the block's usePageWeightData.ts:
+	 * an average built on a handful of sampled pageviews moves wildly.
+	 *
+	 * @var float
+	 */
+	public const MIN_MEASURED_RATIO = 0.25;
+
+	/**
 	 * Initialize the page weight class.
 	 */
 	public function init(): void {
@@ -163,7 +172,7 @@ class Page_Weight {
 		// drag the carbon rating down with it. The block states the coverage
 		// alongside, so neither number is read as covering the whole site.
 		$measured_pageviews = (int) $current['measured_pageviews'];
-		$co2_per_pageview   = $measured_pageviews > 0 ? (float) $current['co2'] / $measured_pageviews : 0.0;
+		$co2_per_pageview   = $this->get_co2_per_measured_pageview( $current );
 
 		return [
 			'avg_bytes'              => (int) $current['page_weight'],
@@ -188,6 +197,43 @@ class Page_Weight {
 			'rows'                   => $this->query_top_pages( $start, $end, $filters, $current_weights_known_at ),
 			'green_hosting'          => $this->get_green_hosting_state(),
 		];
+	}
+
+	/**
+	 * The average page weight and CO2 per pageview of a period, for the
+	 * community benchmark sent with the anonymous usage data.
+	 *
+	 * Uses live weights, the same figures the block shows for a range that
+	 * reaches now, and reports nothing while the block would still show its
+	 * measuring state.
+	 *
+	 * @param int $start Period start as a unix timestamp.
+	 * @param int $end   Period end as a unix timestamp.
+	 * @return array{average_page_weight: int, co2_per_pageview: float}|null Null when too few pageviews are measured.
+	 */
+	public function get_period_averages( int $start, int $end ): ?array {
+		$summary   = $this->query_summary( $start, $end, [] );
+		$pageviews = (int) $summary['pageviews'];
+		if ( $pageviews <= 0 || $summary['measured_pageviews'] / $pageviews < self::MIN_MEASURED_RATIO ) {
+			return null;
+		}
+
+		return [
+			'average_page_weight' => (int) $summary['page_weight'],
+			'co2_per_pageview'    => round( $this->get_co2_per_measured_pageview( $summary ), 4 ),
+		];
+	}
+
+	/**
+	 * Emissions per measured pageview, in grams.
+	 *
+	 * @param array{measured_pageviews: int, co2: float} $summary A row from query_summary().
+	 * @return float Grams CO2e per measured pageview, 0 when nothing is measured.
+	 */
+	private function get_co2_per_measured_pageview( array $summary ): float {
+		$measured_pageviews = (int) $summary['measured_pageviews'];
+
+		return $measured_pageviews > 0 ? (float) $summary['co2'] / $measured_pageviews : 0.0;
 	}
 
 	/**

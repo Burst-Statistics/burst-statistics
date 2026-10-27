@@ -12,6 +12,8 @@ import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import SalesFooter from '@/components/Sales/SalesFooter';
 import ExplanationAndStatsItem from '@/components/Common/ExplanationAndStatsItem';
 import getSubscriptionsBlockData from '@/api/getSubscriptionsBlockData';
+import useMetricComparison from '@/hooks/useMetricComparison';
+import type { CommunityMetricKey } from '@/utils/communityComparison';
 
 /**
  * Individual subscription metric data.
@@ -25,6 +27,10 @@ interface SubscriptionMetric {
 	changeStatus: 'positive' | 'negative' | null;
 	icon?: string;
 	tooltipText: string | null;
+
+	/** Community benchmark this metric is ranked against, set when the period has a value for it. */
+	communityMetricKey?: CommunityMetricKey;
+	communityMetricValue?: number;
 }
 
 /**
@@ -114,6 +120,7 @@ const QUERY_CONFIG = {
 const SubscriptionsBlock = (): JSX.Element => {
 	const { startDate, endDate, range } = useDate( ( state ) => state );
 	const { filters } = useFilters();
+	const getComparison = useMetricComparison( filters );
 
 	const subscriptionsQuery = useQuery<SubscriptionData | null>({
 		queryKey: [ 'subscriptions', startDate, endDate, range, filters ],
@@ -157,6 +164,7 @@ const SubscriptionsBlock = (): JSX.Element => {
 								changeStatus={ metric.changeStatus }
 								tooltipText={ metric.tooltipText }
 								className={ key }
+								communityComparison={ getComparison( metric.communityMetricKey, metric.communityMetricValue ) }
 							/>
 						);
 					}) }

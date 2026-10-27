@@ -1,4 +1,22 @@
 import { __ } from '@wordpress/i18n';
+import {
+	PAGES,
+	SOURCES,
+	DEVICES,
+	COUNTRIES,
+	CAMPAIGNS,
+	PRODUCTS,
+	SUBSCRIPTION_PLANS,
+	READING_ENGAGEMENT,
+	TOTAL_VISITORS,
+	parseMockFilters,
+	combinedShare,
+	applyMockFilters,
+	scaleRow,
+	buildDatatable,
+	locationRows,
+	datasetFilterOptions
+} from './tourMockDataset';
 
 const isTourActive = () => {
 	if ( 'undefined' === typeof window ) {
@@ -39,8 +57,73 @@ const defaultMockGoals = [
 
 const dynamicMockGoals = [ ...defaultMockGoals ];
 
+// Integrations goals, titled the way Goals::get_predefined_goals() returns them.
+const mockPredefinedGoals = [
+	{ id: 'woocommerce_add_to_cart', title: 'WooCommerce - Add to cart', type: 'hook', hook: 'woocommerce_add_to_cart', server_side: true },
+	{ id: 'woocommerce_payment_complete', title: 'WooCommerce - Payment complete', type: 'hook', hook: 'woocommerce_payment_complete', server_side: true },
+	{ id: 'edd_complete_purchase', title: 'Easy Digital Downloads - Complete purchase', type: 'hook', hook: 'edd_complete_purchase', server_side: true },
+	{ id: 'wpcf7_submit', title: 'Contact Form 7 - Submit form', type: 'hook', hook: 'wpcf7_submit', server_side: true },
+	{ id: 'wpforms_process_complete', title: 'WPForms - Submit form', type: 'hook', hook: 'wpforms_process_complete', server_side: true }
+];
+
+/**
+ * Live visitors: page, entry referrer, country and seconds since last activity.
+ * 18 rows, matching the live-visitors count on the Today block.
+ */
+const LIVE_VISITORS = [
+	[ '/', 'https://www.google.com/', 'US', 4 ],
+	[ '/pricing', '', 'NL', 9 ],
+	[ '/features', 'https://t.co/', 'GB', 14 ],
+	[ '/', '', 'DE', 21 ],
+	[ '/blog/how-to-grow-traffic', 'https://www.google.com/', 'US', 27 ],
+	[ '/checkout', '', 'US', 33 ],
+	[ '/', 'https://chatgpt.com/', 'CA', 41 ],
+	[ '/documentation', 'https://github.com/', 'DE', 48 ],
+	[ '/pricing', 'https://www.bing.com/', 'FR', 56 ],
+	[ '/', '', 'NL', 64 ],
+	[ '/features', 'https://www.linkedin.com/', 'GB', 75 ],
+	[ '/contact', '', 'AU', 88 ],
+	[ '/', 'https://www.google.com/', 'IN', 102 ],
+	[ '/blog/how-to-grow-traffic', 'https://mail.google.com/', 'US', 118 ],
+	[ '/pricing', '', 'US', 134 ],
+	[ '/about-us', '', 'GB', 151 ],
+	[ '/', 'https://www.google.nl/', 'NL', 172 ],
+	[ '/documentation', '', 'US', 196 ]
+];
+
+// Live rows keep their timestamps between refetches (so the list does not
+// re-animate every 5 seconds) and are re-anchored every 5 minutes.
+let liveAnchor = 0;
+const getLiveTrafficRows = ( now ) => {
+	if ( 300 < now - liveAnchor ) {
+		liveAnchor = now;
+	}
+	return LIVE_VISITORS.map( ([ pageUrl, referrer, countryCode, age ], index ) => ({
+		uid: String( 4100 + index * 37 ),
+		page_url: pageUrl,
+		page_id: index + 1,
+		utm_source: referrer,
+		country_code: countryCode,
+		time: liveAnchor - age - 20,
+		time_on_page: 20000,
+		active_time: liveAnchor - age,
+		entry: 0 === index % 3,
+		exit: 11 === index,
+		checkout: '/checkout' === pageUrl,
+		live: true
+	}) );
+};
+
+// Scale a plain value by a share, never below 0.
+const scaled = ( value, share ) => Math.max( 0, Math.round( value * share ) );
+
+// Previous-period series: ~88% of current, with a slightly different shape.
+const previousSeries = ( data ) => data.map( ( value, i ) =>
+	null === value ? null : Math.max( 0, Math.round( value * ( 0.88 + 0.06 * Math.sin( i * 1.7 + 1 ) ) ) )
+);
+
 // fallow-ignore-next-line complexity
-export const getFrontendTourMockData = ( path ) => {
+export const getFrontendTourMockData = ( path, method = 'GET', body = {}) => {
 	if ( ! path || 'string' !== typeof path ) {
 		return null;
 	}
@@ -62,8 +145,58 @@ export const getFrontendTourMockData = ( path ) => {
 	// getData() prefixes every path with data/, the ecommerce mocks below are keyed without it.
 	const dataPath = cleanPath.replace( /^data\//, '' );
 	const range = query.get( 'date_range' ) || query.get( 'range' ) || 'last-7-days';
-	const filter = query.get( 'filter' ) || '';
 	const now = Math.floor( Date.now() / 1000 );
+	const filters = parseMockFilters( query );
+	const share = combinedShare( filters );
+	const metricsRequested = query.getAll( 'metrics[]' );
+	const groupBy = query.getAll( 'group_by[]' );
+	const compareMode = query.get( 'compare_mode' ) || '';
+
+	// Goal mutations: keep the mocked goals list in sync, so the refetch after
+	// adding a (predefined) goal still shows it.
+	if ( 'POST' === method && 'goals/add_predefined' === cleanPath ) {
+		const predefined = mockPredefinedGoals.find( ( goal ) => goal.id === body?.id ) || mockPredefinedGoals[ 0 ];
+		const goal = {
+			id: 9000 + dynamicMockGoals.length,
+			title: predefined.title,
+			status: 'active',
+			type: predefined.type,
+			hook: predefined.hook,
+			page_or_website: 'website',
+			selector: '',
+			conversion_metric: 'visitors',
+			date_start: 0,
+			date_end: 0,
+			value: '0'
+		};
+		dynamicMockGoals.push( goal );
+		return { request_success: true, goal };
+	}
+
+	if ( 'POST' === method && 'goals/add' === cleanPath ) {
+		const goal = {
+			id: 9000 + dynamicMockGoals.length,
+			title: __( 'New goal', 'burst-statistics' ),
+			status: 'active',
+			type: 'clicks',
+			page_or_website: 'website',
+			selector: '',
+			conversion_metric: 'visitors',
+			date_start: 0,
+			date_end: 0,
+			value: '0'
+		};
+		dynamicMockGoals.push( goal );
+		return { request_success: true, goal };
+	}
+
+	if ( 'POST' === method && 'goals/delete' === cleanPath ) {
+		const index = dynamicMockGoals.findIndex( ( goal ) => String( goal.id ) === String( body?.id ) );
+		if ( -1 !== index ) {
+			dynamicMockGoals.splice( index, 1 );
+		}
+		return { request_success: true, deleted: true };
+	}
 
 	// Handle Reports Data List during tour
 	if ( 'data/reports' === cleanPath || 'reports' === cleanPath ) {
@@ -133,7 +266,10 @@ export const getFrontendTourMockData = ( path ) => {
 	// Filter options for datatables and dashboard filtering during tour
 	if ( 'get_action/get_filter_options' === cleanPath || 'get_filter_options' === cleanPath ) {
 		const dataType = query.get( 'data_type' ) || 'pages';
-		const search = ( query.get( 'search' ) || '' ).toLowerCase().trim();
+		const rawSearch = ( query.get( 'search' ) || '' ).toLowerCase().trim();
+
+		// getAction() serializes a missing search as the string "undefined".
+		const search = [ 'undefined', 'null' ].includes( rawSearch ) ? '' : rawSearch;
 
 		const mockFilterOptions = {
 			pages: [
@@ -206,6 +342,23 @@ export const getFrontendTourMockData = ( path ) => {
 				{ ID: 'AS', name: 'Asia' },
 				{ ID: 'OC', name: 'Oceania' }
 			],
+			hosts: [
+				{ ID: 'example.com', name: 'example.com' },
+				{ ID: 'shop.example.com', name: 'shop.example.com' }
+			],
+			mediums: [
+				{ ID: 'email', name: 'email' },
+				{ ID: 'social', name: 'social' },
+				{ ID: 'cpc', name: 'cpc' }
+			],
+			terms: [
+				{ ID: 'wordpress analytics', name: 'wordpress analytics' },
+				{ ID: 'privacy friendly analytics', name: 'privacy friendly analytics' }
+			],
+			contents: [
+				{ ID: 'hero-button', name: 'hero-button' },
+				{ ID: 'footer-link', name: 'footer-link' }
+			],
 			sources: [
 				{ ID: 'google', name: 'google' },
 				{ ID: 'direct', name: 'direct' },
@@ -229,7 +382,7 @@ export const getFrontendTourMockData = ( path ) => {
 			]
 		};
 
-		let items = mockFilterOptions[ dataType ] || [];
+		let items = datasetFilterOptions()[ dataType ] || mockFilterOptions[ dataType ] || [];
 		if ( search ) {
 			items = items.filter( ( item ) =>
 				item.name.toLowerCase().includes( search ) ||
@@ -285,12 +438,7 @@ export const getFrontendTourMockData = ( path ) => {
 			metricsParam = query.get( 'metrics' ).split( ',' );
 		}
 
-		// Detect active filters (e.g. device=desktop, or page URL)
-		const hasDesktop = query.get( 'filters[device]' )?.includes( 'desktop' ) ||
-			query.get( 'filter' )?.includes( 'desktop' ) ||
-			( 'undefined' !== typeof window && window.location.hash.includes( 'desktop' ) );
-		const hasPage = query.get( 'filters[page_url]' ) || ( filter && 'all' !== filter );
-		const scale = hasPage ? 0.32 : ( hasDesktop ? 0.65 : 1.0 );
+		const scale = share;
 
 		const metricConfig = {
 			pageviews: { label: __( 'Pageviews', 'burst-statistics' ), color: '#2A5B8C', base: 160, var1: 30, var2: 5 },
@@ -322,6 +470,18 @@ export const getFrontendTourMockData = ( path ) => {
 				fill: 'false'
 			};
 		});
+
+		// InsightsBlock sends compare_mode only when a single metric is selected.
+		if ( compareMode && 1 === datasets.length ) {
+			const period = 'year_over_year' === compareMode ? 365 * 86400 : timestamps.length * 86400;
+			datasets.push({
+				...datasets[ 0 ],
+				data: previousSeries( datasets[ 0 ].data ),
+				is_comparison: true,
+				comparison_timestamps: timestamps.map( ( ts ) => ts - period ),
+				compare_mode: compareMode
+			});
+		}
 
 		return {
 			request_success: true,
@@ -374,12 +534,20 @@ export const getFrontendTourMockData = ( path ) => {
 		};
 	}
 
+	// 3b. Live traffic list (Overview → Live visitors)
+	if ( 'data/live-traffic' === cleanPath || 'live-traffic' === cleanPath ) {
+		return {
+			request_success: true,
+			data: getLiveTrafficRows( now )
+		};
+	}
+
 	// 4. Goals Definitions (/burst/v1/goals/get)
 	if ( 'goals/get' === cleanPath ) {
 		return {
 			request_success: true,
 			goals: dynamicMockGoals,
-			predefinedGoals: [],
+			predefinedGoals: mockPredefinedGoals,
 			goal_limit: -1,
 			active_goals_count: dynamicMockGoals.length
 		};
@@ -412,16 +580,17 @@ export const getFrontendTourMockData = ( path ) => {
 
 	// 7. Devices
 	if ([ 'data/devices', 'devices', 'data/devicesTitleAndValue', 'data/devicesSubtitle' ].includes( cleanPath ) ) {
-		return {
-			request_success: true,
-			data: {
-				desktop: { count: 650, device_id: 'desktop', os: 'macOS', browser: 'Chrome', top_count: 420 },
-				mobile: { count: 310, device_id: 'mobile', os: 'iOS', browser: 'Safari', top_count: 210 },
-				tablet: { count: 40, device_id: 'tablet', os: 'iPadOS', browser: 'Safari', top_count: 30 },
-				other: { count: 0, device_id: 'other', os: '', browser: '', top_count: 0 },
-				all: { count: 1000 }
-			}
-		};
+		const deviceRows = applyMockFilters(
+			DEVICES.map( ( device ) => ({ device_id: device.id, count: Math.round( 1000 * device.share ), top_count: Math.round( 650 * device.share ), os: device.os, browser: device.browser }) ),
+			filters,
+			{ device_id: 'device_id' }
+		);
+		const data = { other: { count: 0, device_id: 'other', os: '', browser: '', top_count: 0 } };
+		DEVICES.forEach( ( device ) => {
+			data[ device.id ] = deviceRows.find( ( row ) => row.device_id === device.id ) || { count: 0, device_id: device.id, os: '', browser: '', top_count: 0 };
+		});
+		data.all = { count: deviceRows.reduce( ( sum, row ) => sum + row.count, 0 ) };
+		return { request_success: true, data };
 	}
 
 	// 8. Sources Over Time
@@ -434,13 +603,13 @@ export const getFrontendTourMockData = ( path ) => {
 			request_success: true,
 			data: {
 				timestamps,
-				search: [ 120, 145, 160, 130, 175, 190, 185 ],
-				direct: [ 80, 95, 88, 102, 110, 115, 120 ],
-				social: [ 45, 60, 52, 70, 65, 80, 75 ],
-				referral: [ 30, 40, 35, 48, 42, 50, 45 ],
-				aiReferral: [ 12, 18, 15, 22, 25, 28, 30 ],
-				paid: [ 5, 10, 8, 12, 15, 10, 8 ],
-				email: [ 15, 20, 18, 25, 22, 28, 24 ]
+				search: [ 120, 145, 160, 130, 175, 190, 185 ].map( ( v ) => scaled( v, share ) ),
+				direct: [ 80, 95, 88, 102, 110, 115, 120 ].map( ( v ) => scaled( v, share ) ),
+				social: [ 45, 60, 52, 70, 65, 80, 75 ].map( ( v ) => scaled( v, share ) ),
+				referral: [ 30, 40, 35, 48, 42, 50, 45 ].map( ( v ) => scaled( v, share ) ),
+				aiReferral: [ 12, 18, 15, 22, 25, 28, 30 ].map( ( v ) => scaled( v, share ) ),
+				paid: [ 5, 10, 8, 12, 15, 10, 8 ].map( ( v ) => scaled( v, share ) ),
+				email: [ 15, 20, 18, 25, 22, 28, 24 ].map( ( v ) => scaled( v, share ) )
 			}
 		};
 	}
@@ -449,34 +618,30 @@ export const getFrontendTourMockData = ( path ) => {
 	if ( 'data/sources-list' === cleanPath || 'sources-list' === cleanPath ) {
 		return {
 			request_success: true,
-			data: [
-				{ category: 'search', source: 'Google', visitors: 1840 },
-				{ category: 'search', source: 'Bing', visitors: 340 },
-				{ category: 'direct', source: 'direct', visitors: 1210 },
-				{ category: 'social', source: 'Twitter / X', visitors: 420 },
-				{ category: 'social', source: 'LinkedIn', visitors: 220 },
-				{ category: 'referral', source: 'GitHub', visitors: 310 },
-				{ category: 'aiReferral', source: 'ChatGPT', visitors: 185 }
-			]
+			data: applyMockFilters(
+				SOURCES.map( ({ source_category, source, visitors }) => ({ category: source_category, source, visitors }) ),
+				filters,
+				{ source: 'source', source_category: 'category' }
+			)
 		};
 	}
 
-	// 10. Reading Engagement
+	// 10. Reading Engagement: top 5 by score, or the lowest 5 when least_engagement is on.
 	if (
 		'data/reading' === cleanPath ||
 		'reading' === cleanPath ||
 		'data/reading_engagement' === cleanPath ||
 		'reading_engagement' === cleanPath
 	) {
-		return {
-			request_success: true,
-			data: [
-				{ page_url: '/', title: 'Home', bounce_rate: 28.5, avg_time_on_page: 165, word_count: 450, reading_engagement_score: 88, score: 88 },
-				{ page_url: '/pricing', title: 'Pricing Plans', bounce_rate: 32.1, avg_time_on_page: 192, word_count: 600, reading_engagement_score: 84, score: 84 },
-				{ page_url: '/features', title: 'Product Features', bounce_rate: 35.8, avg_time_on_page: 118, word_count: 520, reading_engagement_score: 79, score: 79 },
-				{ page_url: '/blog/getting-started', title: 'Getting Started with Burst', bounce_rate: 41.0, avg_time_on_page: 270, word_count: 1200, reading_engagement_score: 92, score: 92 }
-			]
-		};
+		const least = [ 'true', '1' ].includes( query.get( 'least_engagement' ) || '' );
+		const rows = applyMockFilters( READING_ENGAGEMENT, filters, { page_url: 'page_url' })
+			.map( ( row ) => ({ ...row, score: row.reading_engagement_score }) )
+			.sort( ( a, b ) => least ?
+				a.reading_engagement_score - b.reading_engagement_score :
+				b.reading_engagement_score - a.reading_engagement_score
+			)
+			.slice( 0, 5 );
+		return { request_success: true, data: rows };
 	}
 
 	// 11. Search Terms
@@ -502,6 +667,48 @@ export const getFrontendTourMockData = ( path ) => {
 				{ page_url: '/docs/v1/setup', hits: 21 },
 				{ page_url: '/features/beta', hits: 12 }
 			]
+		};
+	}
+
+	// 12b. 404 referrers (404 Pages → Show referrers). Hits add up to the row's hits.
+	if ( 'data/not_found_page_referrers' === cleanPath || 'not_found_page_referrers' === cleanPath ) {
+		const pageUrl = query.get( 'page_url' ) || '';
+		const referrersByPage = {
+			'/old-pricing-2024': [
+				{ referrer: 'https://www.google.com/', hits: 14, is_internal: false },
+				{ referrer: '/blog/how-to-grow-traffic', hits: 9, is_internal: true },
+				{ referrer: 'https://www.reddit.com/r/wordpress/', hits: 5, is_internal: false }
+			],
+			'/docs/v1/setup': [
+				{ referrer: '/documentation', hits: 11, is_internal: true },
+				{ referrer: 'https://github.com/', hits: 6, is_internal: false }
+			],
+			'/features/beta': [
+				{ referrer: 'https://t.co/', hits: 5, is_internal: false },
+				{ referrer: '/features', hits: 4, is_internal: true }
+			]
+		};
+		const totals = { '/old-pricing-2024': 34, '/docs/v1/setup': 21, '/features/beta': 12 };
+		const referrers = ( referrersByPage[ pageUrl ] || referrersByPage[ '/old-pricing-2024' ]).map( ( row ) => ({
+			...row,
+			url: row.referrer,
+			display_url: row.referrer.replace( /^https?:\/\/(www\.)?/, '' ).replace( /\/$/, '' ) || row.referrer,
+			...( row.is_internal ? { edit_url: '' } : {})
+		}) );
+		const referred = referrers.reduce( ( sum, row ) => sum + row.hits, 0 );
+		const totalHits = totals[ pageUrl ] ?? referred + 6;
+		return {
+			request_success: true,
+			data: {
+				total_hits: totalHits,
+				no_referrer_hits: totalHits - referred,
+				counts: {
+					all: referrers.length,
+					internal: referrers.filter( ( row ) => row.is_internal ).length,
+					external: referrers.filter( ( row ) => ! row.is_internal ).length
+				},
+				referrers
+			}
 		};
 	}
 
@@ -674,297 +881,75 @@ export const getFrontendTourMockData = ( path ) => {
 		};
 	}
 
-	// 17. Data Table
+	// 17. Data Tables (DataTableBlock). Like get_datatables_data(), the columns
+	// follow the requested metrics[], so every config and column toggle works.
 	if (
 		cleanPath.startsWith( 'data/datatable' ) ||
 		cleanPath.startsWith( 'data-table' ) ||
-		cleanPath.startsWith( 'data/ecommerce/datatable' ) ||
-		'data-table' === cleanPath ||
-		'data/datatable' === cleanPath
+		cleanPath.startsWith( 'data/ecommerce/datatable' )
 	) {
-		const isFiltered = Boolean( filter && 'all' !== filter );
+		const tableId = cleanPath.split( '/' ).pop();
+		const has = ( needle ) => tableId.includes( needle ) || needle === query.get( 'type' ) || needle === query.get( 'config' );
 
-		// Campaigns with A/B testing variations
-		if ( cleanPath.includes( 'campaigns' ) || 'campaigns' === query.get( 'type' ) || 'campaigns' === query.get( 'config' ) ) {
-			return {
-				request_success: true,
-				data: {
-					columns: [
-						{ id: 'campaign', name: __( 'Campaign', 'burst-statistics' ), format: 'text', sortable: true, align: 'left' },
-						{ id: 'pageviews', name: __( 'Pageviews', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-						{ id: 'visitors', name: __( 'Visitors', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-						{ id: 'conversions', name: __( 'Conversions', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-						{ id: 'conversion_rate', name: __( 'Conversion rate', 'burst-statistics' ), format: 'percentage', sortable: true, align: 'right' }
-					],
-					data: [
-						{
-							campaign: 'Summer Sale - variation-a',
-							pageviews: 2450,
-							visitors: 1680,
-							conversions: 81,
-							conversion_rate: 4.8,
-							is_ab_test: true,
-							winner: false,
-							significant: 'significant'
-						},
-						{
-							campaign: 'Summer Sale - variation-b (15% Off)',
-							pageviews: 2510,
-							visitors: 1720,
-							conversions: 162,
-							conversion_rate: 9.4,
-							is_ab_test: true,
-							winner: true,
-							significant: 'significant'
-						},
-						{
-							campaign: 'Product Launch Email',
-							pageviews: 1890,
-							visitors: 1240,
-							conversions: 64,
-							conversion_rate: 5.2,
-							is_ab_test: false
-						},
-						{
-							campaign: 'Influencer Referral Sprint',
-							pageviews: 920,
-							visitors: 640,
-							conversions: 26,
-							conversion_rate: 4.1,
-							is_ab_test: false
-						}
-					],
-					total_rows: 4
-				}
-			};
+		if ( has( 'search_console' ) ) {
+			return buildDatatable([
+				{ query: 'privacy friendly wordpress analytics', clicks: 420, impressions: 4800, click_through_rate: 8.75, ctr: 8.75, position: 2.1 },
+				{ query: 'burst statistics setup guide', clicks: 310, impressions: 2900, click_through_rate: 10.69, ctr: 10.69, position: 1.4 },
+				{ query: 'cookieless web tracking', clicks: 185, impressions: 3200, click_through_rate: 5.78, ctr: 5.78, position: 3.8 },
+				{ query: 'woocommerce conversion tracking plugin', clicks: 142, impressions: 2100, click_through_rate: 6.76, ctr: 6.76, position: 4.2 }
+			], metricsRequested );
 		}
 
-		// Google Search Console queries
-		if ( cleanPath.includes( 'search_console' ) || 'search_console' === query.get( 'type' ) || 'search_console' === query.get( 'config' ) ) {
-			return {
-				request_success: true,
-				data: {
-					columns: [
-						{ id: 'query', name: __( 'Query', 'burst-statistics' ), format: 'text', sortable: true, align: 'left' },
-						{ id: 'clicks', name: __( 'Clicks', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-						{ id: 'impressions', name: __( 'Impressions', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-						{ id: 'ctr', name: __( 'CTR', 'burst-statistics' ), format: 'percentage', sortable: true, align: 'right' },
-						{ id: 'position', name: __( 'Position', 'burst-statistics' ), format: 'number', sortable: true, align: 'right' }
-					],
-					data: [
-						{ query: 'privacy friendly wordpress analytics', clicks: 420, impressions: 4800, ctr: 8.75, position: 2.1 },
-						{ query: 'burst statistics setup guide', clicks: 310, impressions: 2900, ctr: 10.69, position: 1.4 },
-						{ query: 'cookieless web tracking', clicks: 185, impressions: 3200, ctr: 5.78, position: 3.8 },
-						{ query: 'woocommerce conversion tracking plugin', clicks: 142, impressions: 2100, ctr: 6.76, position: 4.2 }
-					],
-					total_rows: 4
-				}
-			};
+		if ( has( 'subscription_products' ) ) {
+			return buildDatatable( SUBSCRIPTION_PLANS, metricsRequested );
 		}
 
-		// Countries datatable
-		if ( cleanPath.includes( 'countries' ) || 'countries' === query.get( 'type' ) || 'countries' === query.get( 'config' ) ) {
-			return {
-				request_success: true,
-				data: {
-					columns: [
-						{ id: 'country_code', name: __( 'Country', 'burst-statistics' ), format: 'country', sortable: true, align: 'left' },
-						{ id: 'country', name: __( 'Country', 'burst-statistics' ), format: 'text', sortable: true, align: 'left' },
-						{ id: 'visitors', name: __( 'Visitors', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-						{ id: 'bounce_rate', name: __( 'Bounce rate', 'burst-statistics' ), format: 'percentage', sortable: true, align: 'right' }
-					],
-					data: [
-						{ country_code: 'US', country: 'United States', visitors: 1840, bounce_rate: 29.5 },
-						{ country_code: 'GB', country: 'United Kingdom', visitors: 620, bounce_rate: 31.2 },
-						{ country_code: 'DE', country: 'Germany', visitors: 480, bounce_rate: 28.4 },
-						{ country_code: 'NL', country: 'Netherlands', visitors: 390, bounce_rate: 25.1 }
-					],
-					total_rows: 4
-				}
-			};
+		// Products (Sales): add up to the Sales block totals.
+		if ( has( 'products' ) ) {
+			return buildDatatable( PRODUCTS, metricsRequested );
 		}
 
-		// Referrers datatable
-		if ( cleanPath.includes( 'referrers' ) || 'referrers' === query.get( 'type' ) || 'referrers' === query.get( 'config' ) ) {
-			return {
-				request_success: true,
-				data: {
-					columns: [
-						{ id: 'referrer', name: __( 'Referrer', 'burst-statistics' ), format: 'text', sortable: true, align: 'left' },
-						{ id: 'visitors', name: __( 'Visitors', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-						{ id: 'bounce_rate', name: __( 'Bounce rate', 'burst-statistics' ), format: 'percentage', sortable: true, align: 'right' }
-					],
-					data: [
-						{ referrer: 'google.com', visitors: 1420, bounce_rate: 31.5 },
-						{ referrer: 'github.com', visitors: 680, bounce_rate: 24.2 },
-						{ referrer: 'twitter.com / x.com', visitors: 450, bounce_rate: 38.0 },
-						{ referrer: 'linkedin.com', visitors: 310, bounce_rate: 22.8 }
-					],
-					total_rows: 4
-				}
-			};
+		if ( has( 'campaigns' ) ) {
+			return buildDatatable(
+				applyMockFilters( CAMPAIGNS, filters, { utm_campaign: 'campaign' }),
+				metricsRequested
+			);
 		}
 
-		// Outgoing links datatable
-		if ( cleanPath.includes( 'outgoing' ) || 'outgoing_links' === query.get( 'type' ) || 'outgoing_links' === query.get( 'config' ) || 'outgoing-links' === query.get( 'type' ) || 'outgoing-links' === query.get( 'config' ) ) {
-			return {
-				request_success: true,
-				data: {
-					columns: [
-						{ id: 'url', name: __( 'URL', 'burst-statistics' ), format: 'url', sortable: true, align: 'left' },
-						{ id: 'clicks', name: __( 'Clicks', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-						{ id: 'previous_clicks', name: __( 'Previous', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' }
-					],
-					data: [
-						{ url: 'https://wordpress.org/plugins/burst-statistics', clicks: 145, previous_clicks: 120, previous_clicks_yoy: 95 },
-						{ url: 'https://github.com/burst-statistics', clicks: 89, previous_clicks: 72, previous_clicks_yoy: 50 },
-						{ url: 'https://twitter.com/burststats', clicks: 64, previous_clicks: 55, previous_clicks_yoy: 40 },
-						{ url: 'https://docs.burst-statistics.com', clicks: 42, previous_clicks: 35, previous_clicks_yoy: 28 }
-					],
-					total_rows: 4,
-					scraping_progress: 100
-				}
-			};
+		if ( has( 'countries' ) || groupBy.some( ( key ) => [ 'country_code', 'state', 'city', 'continent' ].includes( key ) ) ) {
+			return buildDatatable(
+				applyMockFilters( locationRows( groupBy ), filters, { country_code: 'country_code', state: 'state', city: 'city', continent_code: 'continent' }),
+				metricsRequested
+			);
 		}
 
-		// Forms datatable
-		if ( cleanPath.includes( 'forms' ) || 'forms' === query.get( 'type' ) || 'forms' === query.get( 'config' ) ) {
-			return {
-				request_success: true,
-				data: {
-					columns: [
-						{ id: 'form_title', name: __( 'Form', 'burst-statistics' ), format: 'text', sortable: true, align: 'left' },
-						{ id: 'submissions', name: __( 'Submissions', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-						{ id: 'pageviews', name: __( 'Pageviews', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-						{ id: 'conversion_rate', name: __( 'Conversion rate', 'burst-statistics' ), format: 'percentage', sortable: true, align: 'right' }
-					],
-					data: [
-						{
-							form_id: '1',
-							form_title: 'Contact Form',
-							form_provider: 'wpforms',
-							form_provider_label: 'WPForms',
-							submissions: 42,
-							pageviews: 850,
-							conversion_rate: 4.9,
-							previous_submissions: 35,
-							previous_pageviews: 780,
-							previous_conversion_rate: 4.5,
-							submissions_url: ''
-						},
-						{
-							form_id: '2',
-							form_title: 'Newsletter Subscription',
-							form_provider: 'cf7',
-							form_provider_label: 'Contact Form 7',
-							submissions: 78,
-							pageviews: 1200,
-							conversion_rate: 6.5,
-							previous_submissions: 62,
-							previous_pageviews: 1050,
-							previous_conversion_rate: 5.9,
-							submissions_url: ''
-						},
-						{
-							form_id: '3',
-							form_title: 'Support Request',
-							form_provider: 'gravityforms',
-							form_provider_label: 'Gravity Forms',
-							submissions: 29,
-							pageviews: 410,
-							conversion_rate: 7.1,
-							previous_submissions: 21,
-							previous_pageviews: 340,
-							previous_conversion_rate: 6.2,
-							submissions_url: ''
-						}
-					],
-					total_rows: 3
-				}
-			};
+		// Referrers: Pro groups by source (expandable rows), free by referrer domain.
+		if ( has( 'referrers' ) ) {
+			const bySource = groupBy.includes( 'source' ) || groupBy.includes( 'source_category' );
+			const rows = SOURCES
+				.filter( ( source ) => bySource || source.referrer )
+				.map( ( source ) => ({ ...source, children: undefined, referrer: source.referrer || __( 'Direct', 'burst-statistics' ), sessions: Math.round( source.visitors * 1.08 ) }) );
+			return buildDatatable(
+				applyMockFilters( rows, filters, { source: 'source', source_category: 'source_category', referrer: 'referrer' }),
+				metricsRequested
+			);
 		}
 
-		const hasDesktop = query.get( 'filters[device]' )?.includes( 'desktop' ) ||
-			query.get( 'filter' )?.includes( 'desktop' ) ||
-			( 'undefined' !== typeof window && window.location.hash.includes( 'desktop' ) );
-		const scale = isFiltered ? 0.35 : ( hasDesktop ? 0.65 : 1.0 );
-
-		return {
-			request_success: true,
-			data: {
-				columns: [
-					{ id: 'page_url', name: __( 'Page', 'burst-statistics' ), format: 'url', sortable: true, align: 'left' },
-					{ id: 'pageviews', name: __( 'Pageviews', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-					{ id: 'visitors', name: __( 'Visitors', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-					{ id: 'sessions', name: __( 'Sessions', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-					{ id: 'bounce_rate', name: __( 'Bounce rate', 'burst-statistics' ), format: 'percentage', sortable: true, align: 'right' },
-					{ id: 'avg_time', name: __( 'Avg. time on page', 'burst-statistics' ), format: 'time', sortable: true, align: 'right' },
-					{ id: 'avg_time_on_page', name: __( 'Avg. time on page', 'burst-statistics' ), format: 'time', sortable: true, align: 'right' },
-					{ id: 'conversions', name: __( 'Conversions', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' },
-					{ id: 'conversion_rate', name: __( 'Goal conv. rate', 'burst-statistics' ), format: 'percentage', sortable: true, align: 'right' },
-					{ id: 'first_time_visitors', name: __( 'First time visitors', 'burst-statistics' ), format: 'integer', sortable: true, align: 'right' }
-				],
-				data: [
-					{
-						page_url: isFiltered ? filter : '/',
-						pageviews: Math.round( 5420 * scale ),
-						visitors: Math.round( 3890 * scale ),
-						sessions: Math.round( 4120 * scale ),
-						bounce_rate: 32.4,
-						avg_time: '02:14',
-						avg_time_on_page: '02:14',
-						conversions: Math.round( 182 * scale ),
-						conversion_rate: 4.68,
-						first_time_visitors: Math.round( 2450 * scale ),
-						entrances: Math.round( 3400 * scale ),
-						exits: Math.round( 1850 * scale )
-					},
-					{
-						page_url: '/pricing',
-						pageviews: Math.round( 2140 * scale ),
-						visitors: Math.round( 1780 * scale ),
-						sessions: Math.round( 1950 * scale ),
-						bounce_rate: 28.1,
-						avg_time: '03:02',
-						avg_time_on_page: '03:02',
-						conversions: Math.round( 96 * scale ),
-						conversion_rate: 5.39,
-						first_time_visitors: Math.round( 1120 * scale ),
-						entrances: Math.round( 1200 * scale ),
-						exits: Math.round( 650 * scale )
-					},
-					{
-						page_url: '/features',
-						pageviews: Math.round( 1890 * scale ),
-						visitors: Math.round( 1450 * scale ),
-						sessions: Math.round( 1620 * scale ),
-						bounce_rate: 35.8,
-						avg_time: '01:48',
-						avg_time_on_page: '01:48',
-						conversions: Math.round( 64 * scale ),
-						conversion_rate: 4.41,
-						first_time_visitors: Math.round( 890 * scale ),
-						entrances: Math.round( 920 * scale ),
-						exits: Math.round( 580 * scale )
-					},
-					{
-						page_url: '/blog/getting-started-with-analytics',
-						pageviews: Math.round( 1240 * scale ),
-						visitors: Math.round( 980 * scale ),
-						sessions: Math.round( 1100 * scale ),
-						bounce_rate: 41.2,
-						avg_time: '04:12',
-						avg_time_on_page: '04:12',
-						conversions: Math.round( 42 * scale ),
-						conversion_rate: 4.29,
-						first_time_visitors: Math.round( 710 * scale ),
-						entrances: Math.round( 740 * scale ),
-						exits: Math.round( 410 * scale )
-					}
-				],
-				total_rows: 4
-			}
-		};
+		// Pages (default).
+		const pageRows = PAGES.map( ( page ) => ({
+			...page,
+			avg_time: page.avg_time_on_page,
+			conversion_rate: Math.round( page.conversions / page.visitors * 1000 ) / 10,
+			sales: Math.round( page.conversions * 0.95 ),
+			revenue: Math.round( page.conversions * 74 ),
+			page_value: Math.round( page.conversions * 74 / page.visitors * 100 ) / 100,
+			sales_conversion_rate: Math.round( page.conversions * 0.95 / page.visitors * 1000 ) / 10,
+			exits: Math.round( page.visitors * page.exit_rate / 100 )
+		}) );
+		return buildDatatable(
+			applyMockFilters( pageRows, filters, { page_url: 'page_url' }),
+			metricsRequested
+		);
 	}
 
 	// 18. Compare Block
@@ -972,16 +957,16 @@ export const getFrontendTourMockData = ( path ) => {
 		return {
 			request_success: true,
 			data: {
-				current: {
+				current: scaleRow({
 					pageviews: 5420,
 					sessions: 4120,
-					visitors: 3890,
+					visitors: TOTAL_VISITORS,
 					bounce_rate: 32.4,
 					avg_time_on_page: 154000,
 					bounced_sessions: 1335,
 					first_time_visitors: 2450
-				},
-				previous: {
+				}, share ),
+				previous: scaleRow({
 					pageviews: 4680,
 					sessions: 3580,
 					visitors: 3340,
@@ -989,25 +974,47 @@ export const getFrontendTourMockData = ( path ) => {
 					avg_time_on_page: 142000,
 					bounced_sessions: 1318,
 					first_time_visitors: 2100
-				},
+				}, share ),
 				view: 'default'
 			}
 		};
 	}
 
-	// 19. Geo / World Map Data
+	// 19. Geo / World Map Data: countries, or states after clicking a country.
 	if ( 'data/geo' === cleanPath || 'geo' === cleanPath ) {
+		let view = { level: 'world', id: null };
+		try {
+			view = { ...view, ...JSON.parse( query.get( 'currentView' ) || '{}' ) };
+		} catch {
+
+			// Keep the world view.
+		}
+
+		if ( 'country' === view.level ) {
+			const country = COUNTRIES.find( ( item ) => item.country_code === view.id );
+			const states = country?.states || [];
+			return {
+				request_success: true,
+				data: applyMockFilters(
+					states.map( ( state ) => ({
+						country_code: country.country_code,
+						state_code: state.state_code,
+						visitors: state.visitors,
+						pageviews: Math.round( state.visitors * country.pageviews / country.visitors ),
+						bounce_rate: country.bounce_rate
+					}) ),
+					filters.filter( ( item ) => 'country_code' !== item.key )
+				)
+			};
+		}
+
 		return {
 			request_success: true,
-			data: [
-				{ country_code: 'US', country: 'United States', visitors: 1840, pageviews: 2950, bounce_rate: 29.5 },
-				{ country_code: 'GB', country: 'United Kingdom', visitors: 620, pageviews: 940, bounce_rate: 31.2 },
-				{ country_code: 'DE', country: 'Germany', visitors: 480, pageviews: 710, bounce_rate: 28.4 },
-				{ country_code: 'NL', country: 'Netherlands', visitors: 390, pageviews: 580, bounce_rate: 25.1 },
-				{ country_code: 'CA', country: 'Canada', visitors: 310, pageviews: 450, bounce_rate: 33.0 },
-				{ country_code: 'FR', country: 'France', visitors: 260, pageviews: 380, bounce_rate: 34.2 },
-				{ country_code: 'AU', country: 'Australia', visitors: 190, pageviews: 290, bounce_rate: 30.8 }
-			]
+			data: applyMockFilters(
+				COUNTRIES.map( ({ country_code, country, visitors, pageviews, bounce_rate }) => ({ country_code, country, visitors, pageviews, bounce_rate }) ),
+				filters,
+				{ country_code: 'country_code' }
+			)
 		};
 	}
 
@@ -1044,22 +1051,37 @@ export const getFrontendTourMockData = ( path ) => {
 			salesData.push( 18 + Math.round( Math.sin( i ) * 6 ) + ( i % 4 ) );
 			revenueData.push( 1450 + Math.round( Math.sin( i ) * 400 ) + ( ( i * 50 ) % 200 ) );
 		}
+		const isSalesMode = 'sales' === query.get( 'chart_mode' );
+		const current = isSalesMode ? salesData : revenueData;
+		const datasets = [
+			{
+				data: current,
+				label: isSalesMode ? __( 'Sales', 'burst-statistics' ) : __( 'Revenue', 'burst-statistics' ),
+				metric_key: 'sales_total',
+				is_comparison: false
+			}
+		];
+		if ( compareMode ) {
+			const period = 'year_over_year' === compareMode ? 365 * 86400 : timestamps.length * 86400;
+			datasets.push({
+				data: previousSeries( current ),
+				label: 'year_over_year' === compareMode ? __( 'Previous year', 'burst-statistics' ) : __( 'Previous period', 'burst-statistics' ),
+				metric_key: 'sales_total',
+				is_comparison: true,
+				comparison_timestamps: timestamps.map( ( ts ) => ts - period ),
+				compare_mode: compareMode
+			});
+		}
+
 		return {
 			request_success: true,
 			data: {
 				timestamps,
 				interval: 'day',
 				spans_multiple_years: false,
-				mode: 'revenue',
+				mode: isSalesMode ? 'sales' : 'revenue',
 				currency: 'USD',
-				datasets: [
-					{
-						data: revenueData,
-						label: __( 'Revenue', 'burst-statistics' ),
-						metric_key: 'revenue',
-						is_comparison: false
-					}
-				],
+				datasets,
 				rows: timestamps.map( ( ts, idx ) => ({
 					timestamp: ts,
 					new_subscriptions: 4 + ( idx % 3 ),
@@ -1326,19 +1348,19 @@ export const getFrontendTourMockData = ( path ) => {
 		};
 	}
 
-	// 28. Source Referrers
+	// 28. Source Referrers (expanded row in the Pro referrers table)
 	if ( 'data/source-referrers' === cleanPath || 'source-referrers' === cleanPath ) {
+		const sourceName = query.get( 'source' ) || '';
+		const source = SOURCES.find( ( item ) => item.source === sourceName || item.referrer === sourceName );
 		return {
 			request_success: true,
 			data: {
 				columns: [
-					{ id: 'referrer', name: __( 'Referrer URL', 'burst-statistics' ), align: 'left' },
-					{ id: 'visitors', name: __( 'Visitors', 'burst-statistics' ), align: 'right' }
+					{ id: 'referrer', name: __( 'Referrer', 'burst-statistics' ), sortable: 'true', right: 'false' },
+					{ id: 'pageviews', name: __( 'Pageviews', 'burst-statistics' ), sortable: 'true', right: 'true' },
+					{ id: 'visitors', name: __( 'Visitors', 'burst-statistics' ), sortable: 'true', right: 'true' }
 				],
-				data: [
-					{ referrer: 'https://www.google.com/', visitors: 1420 },
-					{ referrer: 'https://news.google.com/', visitors: 420 }
-				]
+				data: ( source?.children || []).map( ( row ) => ({ ...scaleRow( row, share ), source_mapped: source.source }) )
 			}
 		};
 	}

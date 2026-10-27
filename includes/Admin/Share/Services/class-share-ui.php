@@ -14,6 +14,11 @@ class Share_UI {
 	use Save;
 	use Sanitize;
 
+	/**
+	 * Query arg added to the reload after the viewer user was logged in.
+	 */
+	private const VIEWER_LOGIN_MARKER = 'burst_share_login';
+
 	public Share $share;
 
 	/**
@@ -129,6 +134,10 @@ class Share_UI {
 			unset( $loader->is_shareable_link_viewer );
 			unset( $loader->user_can_view );
 			unset( $loader->user_can_view_sales );
+
+			$this->redirect_after_viewer_login();
+		} else {
+			$this->strip_viewer_login_marker();
 		}
 
 		if ( ! self::is_shareable_link_viewer() && ! $this->user_can_view() ) {
@@ -136,6 +145,52 @@ class Share_UI {
 		}
 
 		$this->load_statistics_template();
+		exit;
+	}
+
+	/**
+	 * Reload the shared dashboard once after the viewer user was logged in.
+	 *
+	 * The auth cookie set by wp_set_auth_cookie() only reaches $_COOKIE on the next
+	 * request, so nonces created in this request are tied to an empty session token
+	 * and every REST call from the page fails with rest_cookie_invalid_nonce. Page
+	 * optimizers that merge inline scripts (WP-Optimize) bake that nonce into a
+	 * cached bundle, which keeps the app in an endless nonce refresh loop. The
+	 * reload renders the page for the logged-in viewer instead. The marker query
+	 * arg prevents a redirect loop when the browser does not store the cookie.
+	 *
+	 * Side effect: sends a redirect and exits when the request has no marker yet.
+	 */
+	private function redirect_after_viewer_login(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only checks for the marker, the value is not used.
+		if ( isset( $_GET[ self::VIEWER_LOGIN_MARKER ] ) || ! isset( $_SERVER['REQUEST_URI'] ) ) {
+			return;
+		}
+
+		// The redirect carries the viewer's auth cookie, so a page cache must never store it.
+		nocache_headers();
+		$request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) );
+		wp_safe_redirect( add_query_arg( self::VIEWER_LOGIN_MARKER, '1', $request_uri ) );
+		exit;
+	}
+
+	/**
+	 * Remove the login marker from the URL once the viewer is logged in.
+	 *
+	 * A copied or bookmarked URL that still holds the marker would skip the reload on
+	 * the next anonymous visit, and bring back the invalid nonces it prevents.
+	 *
+	 * Side effect: sends a redirect and exits when the request holds the marker.
+	 */
+	private function strip_viewer_login_marker(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only checks for the marker, the value is not used.
+		if ( ! isset( $_GET[ self::VIEWER_LOGIN_MARKER ] ) || ! isset( $_SERVER['REQUEST_URI'] ) ) {
+			return;
+		}
+
+		nocache_headers();
+		$request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) );
+		wp_safe_redirect( remove_query_arg( self::VIEWER_LOGIN_MARKER, $request_uri ) );
 		exit;
 	}
 

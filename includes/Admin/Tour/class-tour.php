@@ -1,6 +1,8 @@
 <?php
 namespace Burst\Admin\Tour;
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Admin\Mailer\Mailer;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
@@ -304,7 +306,7 @@ class Tour {
 		if ( 0 === $user_id ) {
 			$user_id = get_current_user_id();
 		}
-		return (string) ( ( 0 !== $user_id ? get_user_meta( $user_id, self::LAST_SECTION_META_KEY, true ) : '' ) ?: get_option( 'burst_tour_last_section', '' ) );
+		return (string) ( ( 0 !== $user_id ? get_user_meta( $user_id, self::LAST_SECTION_META_KEY, true ) : '' ) ?: Admin_Options::get( Admin_Option_Category::CORE, 'tour_last_section', '' ) );
 	}
 
 	/**
@@ -316,7 +318,7 @@ class Tour {
 		if ( 0 === $user_id ) {
 			$user_id = get_current_user_id();
 		}
-		return (bool) ( ( 0 !== $user_id ? get_user_meta( $user_id, self::TOUR_COMPLETED_META_KEY, true ) : false ) ?: get_option( 'burst_tour_completed', false ) );
+		return (bool) ( ( 0 !== $user_id ? get_user_meta( $user_id, self::TOUR_COMPLETED_META_KEY, true ) : false ) ?: Admin_Options::get( Admin_Option_Category::CORE, 'tour_completed', false ) );
 	}
 
 	/**
@@ -1296,7 +1298,7 @@ class Tour {
 					if ( 0 !== $user_id ) {
 						update_user_meta( $user_id, self::LAST_SECTION_META_KEY, $section_id );
 					}
-					update_option( 'burst_tour_last_section', $section_id, false );
+					Admin_Options::update( Admin_Option_Category::CORE, 'tour_last_section', $section_id );
 				}
 
 				if ( $completed ) {
@@ -1304,7 +1306,7 @@ class Tour {
 						update_user_meta( $user_id, self::TOUR_COMPLETED_META_KEY, true );
 						delete_user_meta( $user_id, self::TOUR_ACTIVE_META_KEY );
 					}
-					update_option( 'burst_tour_completed', true, false );
+					Admin_Options::update( Admin_Option_Category::CORE, 'tour_completed', true );
 					do_action( 'burst_tour_completed' );
 				}
 
@@ -1345,8 +1347,8 @@ class Tour {
 					delete_user_meta( $user_id, self::TOUR_COMPLETED_META_KEY );
 					delete_user_meta( $user_id, self::TOUR_ACTIVE_META_KEY );
 				}
-				delete_option( 'burst_tour_last_section' );
-				delete_option( 'burst_tour_completed' );
+				Admin_Options::delete( Admin_Option_Category::CORE, 'tour_last_section' );
+				Admin_Options::delete( Admin_Option_Category::CORE, 'tour_completed' );
 				return [ 'success' => true ];
 
 			case 'tour_resume':
@@ -1370,10 +1372,10 @@ class Tour {
 						delete_user_meta( $user_id, self::LAST_SECTION_META_KEY );
 					}
 				}
-				$was_completed_option = (bool) get_option( 'burst_tour_completed', false );
-				delete_option( 'burst_tour_completed' );
+				$was_completed_option = (bool) Admin_Options::get( Admin_Option_Category::CORE, 'tour_completed', false );
+				Admin_Options::delete( Admin_Option_Category::CORE, 'tour_completed' );
 				if ( $was_completed_option ) {
-					delete_option( 'burst_tour_last_section' );
+					Admin_Options::delete( Admin_Option_Category::CORE, 'tour_last_section' );
 				}
 
 				return [
@@ -1548,7 +1550,7 @@ class Tour {
 			return false;
 		}
 
-		if ( get_option( 'burst_tour_completed', false ) ) {
+		if ( Admin_Options::get( Admin_Option_Category::CORE, 'tour_completed', false ) ) {
 			return false;
 		}
 

@@ -28,6 +28,10 @@ class Ecommerce_Metrics {
 	/**
 	 * Collect ecommerce metrics
 	 *
+	 * The revenue_churn key is only present when the site has subscriptions
+	 * that were active at the start of the period, so "no subscriptions"
+	 * stays distinct from "no churn".
+	 *
 	 * @return array|null
 	 */
 	public function collect(): ?array {
@@ -76,7 +80,13 @@ class Ecommerce_Metrics {
 			$metrics['average_order_value'] = 0.0;
 		}
 
+		$revenue_churn = $this->get_revenue_churn();
+		if ( null !== $revenue_churn ) {
+			$metrics['revenue_churn'] = $revenue_churn;
+		}
+
 		$has_data =
+			null !== $revenue_churn ||
 			! empty( $metrics['platforms'] ) ||
 			0 !== $metrics['total_orders'] ||
 			0.0 !== $metrics['total_revenue'] ||
@@ -91,6 +101,32 @@ class Ecommerce_Metrics {
 		return $metrics;
 	}
 
+
+	/**
+	 * Get the revenue churn of the period from the subscription providers.
+	 *
+	 * Reads the same summary as the Subscriptions block, so the reported
+	 * figure matches what the site owner sees for the same month.
+	 *
+	 * @return float|null Percentage of MRR lost, or null when no subscriptions were active at the start of the period.
+	 */
+	private function get_revenue_churn(): ?float {
+		$subscriptions = apply_filters(
+			'burst_ecommerce_subscriptions_data',
+			[],
+			[
+				'date_start' => $this->capture_data_from,
+				'date_end'   => $this->capture_data_to,
+			]
+		);
+
+		$churn = is_array( $subscriptions ) ? ( $subscriptions['revenue_churn']['current'] ?? null ) : null;
+		if ( ! is_array( $churn ) || (int) ( $churn['previously_active_count'] ?? 0 ) <= 0 ) {
+			return null;
+		}
+
+		return min( 100.0, max( 0.0, round( (float) ( $churn['churned_percentage'] ?? 0 ), 2 ) ) );
+	}
 
 	/**
 	 * Get eCommerce platforms used

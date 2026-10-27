@@ -4,6 +4,8 @@ import {burst_get_website_url} from '@/utils/lib';
 import useLicenseData from '@/hooks/useLicenseData';
 import Icon from '@/utils/Icon';
 
+const UPGRADE_IDS = [ 'share-link-advanced', 'sources', 'sales', 'reporting', 'subscriptions' ];
+
 interface ProBadgeProps {
     id?: string;
     className?: string;
@@ -36,9 +38,13 @@ const ProBadge: React.FC<ProBadgeProps> = ({
                                                type = 'badge',
                                                hasLink = true
                                            }) => {
-    const {isTrial, isLicenseValidFor} = useLicenseData();
+    const {isTrial, isLicenseValid, isLicenseValidFor} = useLicenseData();
 
-    if ( ! isTrial && isLicenseValidFor( id ) ) {
+    const isFeatureUnlocked = id && UPGRADE_IDS.includes( id ) ?
+        isLicenseValidFor( id ) :
+        isLicenseValid;
+
+    if ( ! isTrial && isFeatureUnlocked ) {
         return null;
     }
     let finalUrl = url;

@@ -28,6 +28,10 @@ class FailOnCompilationErrorsPlugin {
 module.exports = {
   ...defaultConfig,
   target: 'web',
+  entry: {
+    index: path.resolve( __dirname, 'src/index.tsx' ),
+    editor: path.resolve( __dirname, 'src/editor.tsx' )
+  },
   externals: {
     ...( defaultConfig.externals || {}),
     react: 'React',

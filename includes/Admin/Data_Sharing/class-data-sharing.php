@@ -2,6 +2,8 @@
 
 namespace Burst\Admin\Data_Sharing;
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Traits\Helper;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,14 +19,20 @@ class Data_Sharing {
 	use Helper;
 
 	/**
-	 * The option name for storing the random offset
-	 */
-	const OFFSET_OPTION = 'burst_telemetry_offset';
-
-	/**
 	 * The cron hook name for the actual data send
 	 */
 	const CRON_HOOK = 'burst_telemetry_send';
+
+	/**
+	 * The core admin option that holds the time of the last send scheduled by an opt-in.
+	 */
+	const OPT_IN_SEND_KEY = 'telemetry_opt_in_send';
+
+	/**
+	 * Delay between opting in and the first send on a site that already has a
+	 * month of data, so it never runs in the save request.
+	 */
+	const OPT_IN_SEND_DELAY = 5 * MINUTE_IN_SECONDS;
 
 	/**
 	 * The kill switch URL
@@ -56,12 +64,164 @@ class Data_Sharing {
 	}
 
 	/**
-	 * Init Data Sharing
+	 * Init Data Sharing.
+	 *
+	 * The opt-in listeners always register, because the setting is still off in
+	 * the request that turns it on. The sends only register when sharing is on.
 	 */
 	public function init(): void {
+		add_action( 'add_option_burst_options_settings', [ $this, 'on_settings_added' ], 10, 2 );
+		add_action( 'update_option_burst_options_settings', [ $this, 'on_settings_updated' ], 10, 2 );
+
+		if ( ! $this->get_option_bool( 'anonymous_usage_data' ) ) {
+			return;
+		}
+
 		add_action( 'burst_monthly', [ $this, 'schedule_telemetry' ] );
 
 		add_action( self::CRON_HOOK, [ $this, 'send_monthly_telemetry' ] );
+	}
+
+	/**
+	 * Schedule the first send when the settings option is created with sharing on.
+	 *
+	 * Mixed $value: WordPress passes the raw option value, which is only an array once Burst saved it.
+	 *
+	 * @param string $option The option name.
+	 * @param mixed  $value  The new settings option value.
+	 */
+	public function on_settings_added( string $option, mixed $value ): void {
+		$this->on_settings_updated( [], $value );
+	}
+
+	/**
+	 * Schedule the first send when anonymous usage data switches from off to on.
+	 *
+	 * Mixed fallback is allowed because if the option does not exist yet
+	 * or fails to load, WordPress may pass a boolean false instead of an array.
+	 *
+	 * @param mixed $old_value Old settings option value.
+	 * @param mixed $value     New settings option value.
+	 */
+	public function on_settings_updated( mixed $old_value, mixed $value ): void {
+		if ( $this->is_sharing_enabled_in( $old_value ) || ! $this->is_sharing_enabled_in( $value ) ) {
+			return;
+		}
+
+		$this->schedule_opt_in_send( time() );
+	}
+
+	/**
+	 * Whether a settings option value has anonymous usage data switched on.
+	 *
+	 * Mixed $settings: the raw option value, see on_settings_updated().
+	 *
+	 * @param mixed $settings The settings option value.
+	 * @return bool True when sharing is on.
+	 */
+	private function is_sharing_enabled_in( mixed $settings ): bool {
+		if ( ! is_array( $settings ) || ! isset( $settings['anonymous_usage_data'] ) ) {
+			return false;
+		}
+
+		return rest_sanitize_boolean( $settings['anonymous_usage_data'] );
+	}
+
+	/**
+	 * Schedule the first send after opting in, so the community comparison does
+	 * not wait for the next burst_monthly run plus its random offset.
+	 *
+	 * Limited to once per day, so toggling the setting cannot trigger repeated
+	 * sends, and skipped when the last send is less than a month ago: the
+	 * endpoint expects one send per site per month.
+	 *
+	 * @param int $now Current timestamp.
+	 * @return bool True when the send was scheduled. Side effect: replaces a later
+	 *              scheduled send and stores the time in OPT_IN_SEND_KEY.
+	 */
+	public function schedule_opt_in_send( int $now ): bool {
+		$last_opt_in_send = (int) Admin_Options::get( Admin_Option_Category::CORE, self::OPT_IN_SEND_KEY, 0 );
+		if ( $last_opt_in_send > $now - DAY_IN_SECONDS ) {
+			return false;
+		}
+
+		if ( ! $this->is_send_due( (int) Admin_Options::get( Admin_Option_Category::CORE, 'last_telemetry_send', 0 ), $now ) ) {
+			return false;
+		}
+
+		$send_at   = $this->get_opt_in_send_time( $now );
+		$scheduled = wp_next_scheduled( self::CRON_HOOK );
+		if ( false !== $scheduled && $scheduled <= $send_at ) {
+			return false;
+		}
+
+		if ( false !== $scheduled ) {
+			wp_unschedule_event( $scheduled, self::CRON_HOOK );
+		}
+
+		wp_schedule_single_event( $send_at, self::CRON_HOOK );
+		Admin_Options::update( Admin_Option_Category::CORE, self::OPT_IN_SEND_KEY, $now );
+
+		return true;
+	}
+
+	/**
+	 * Get the moment of the first send after opting in.
+	 *
+	 * The endpoint places a site in a peer group by its monthly visitors, so a
+	 * site that has tracked for less than a month would be compared with sites
+	 * that are too small. The first send therefore waits until a month after
+	 * activation, or follows shortly when that month has already passed.
+	 *
+	 * @param int $now Current timestamp.
+	 * @return int Timestamp of the first send.
+	 */
+	private function get_opt_in_send_time( int $now ): int {
+		$month_after_activation = (int) get_option( 'burst_activation_time', 0 ) + MONTH_IN_SECONDS;
+
+		return max( $month_after_activation, $now + self::OPT_IN_SEND_DELAY );
+	}
+
+	/**
+	 * Get the time of the last send and the expected next send, for the settings field.
+	 *
+	 * @return array{last_send: int, next_send: int, is_staging: bool} Timestamps, 0 when unknown.
+	 */
+	public function get_sync_status(): array {
+		$last_send = (int) Admin_Options::get( Admin_Option_Category::CORE, 'last_telemetry_send', 0 );
+
+		return [
+			'last_send'  => $last_send,
+			'next_send'  => $this->get_next_send( $last_send ),
+			'is_staging' => $this->is_staging(),
+		];
+	}
+
+	/**
+	 * Get the first scheduled moment a send will actually go out.
+	 *
+	 * A send that runs before the last one is a month old is skipped (see
+	 * is_send_due()), so the next one is then the following burst_monthly run.
+	 *
+	 * @param int $last_send Timestamp of the last send, 0 if never sent.
+	 * @return int Timestamp of the next send, 0 when nothing is scheduled.
+	 */
+	private function get_next_send( int $last_send ): int {
+		$monthly    = (int) wp_next_scheduled( 'burst_monthly' );
+		$candidates = [ (int) wp_next_scheduled( self::CRON_HOOK ), $monthly ];
+		if ( $monthly > 0 ) {
+			$candidates[] = $monthly + MONTH_IN_SECONDS;
+		}
+		sort( $candidates );
+
+		$due_from = $last_send > 0 ? $last_send + MONTH_IN_SECONDS - DAY_IN_SECONDS : 0;
+		foreach ( $candidates as $candidate ) {
+			if ( $candidate > 0 && $candidate >= $due_from ) {
+				return $candidate;
+			}
+		}
+
+		return 0;
 	}
 
 	/**
@@ -77,12 +237,12 @@ class Data_Sharing {
 			return;
 		}
 
-		$offset_hours = get_option( self::OFFSET_OPTION, false );
+		$offset_hours = Admin_Options::get( Admin_Option_Category::CORE, 'telemetry_offset', false );
 
 		if ( false === $offset_hours ) {
 			// First scheduling only: random offset to spread the initial load across the month.
 			$offset_hours = wp_rand( 24, 720 );
-			update_option( self::OFFSET_OPTION, $offset_hours, false );
+			Admin_Options::update( Admin_Option_Category::CORE, 'telemetry_offset', $offset_hours );
 			$delay = $offset_hours * HOUR_IN_SECONDS;
 		} else {
 			// Subsequent schedulings: small fixed delay so crons on burst_monthly don't all start at once.
@@ -106,11 +266,11 @@ class Data_Sharing {
 
 		if ( ! $this->check_kill_switch() ) {
 			// Kill switch is activated, do not send data but update the last send time to avoid repeated checks.
-			update_option( 'burst_last_telemetry_send', $this->current_send_time, false );
+			Admin_Options::update( Admin_Option_Category::CORE, 'last_telemetry_send', $this->current_send_time );
 			return;
 		}
 
-		$this->last_send = (int) get_option( 'burst_last_telemetry_send', 0 );
+		$this->last_send = (int) Admin_Options::get( Admin_Option_Category::CORE, 'last_telemetry_send', 0 );
 
 		if ( ! $this->is_send_due( $this->last_send, $this->current_send_time ) ) {
 			return;
@@ -133,7 +293,7 @@ class Data_Sharing {
 				}
 			}
 
-			update_option( 'burst_last_telemetry_send', $this->current_send_time, false );
+			Admin_Options::update( Admin_Option_Category::CORE, 'last_telemetry_send', $this->current_send_time );
 			delete_option( 'burst_ai_chat_questions' );
 		} catch ( \Exception $e ) {
 			self::error_log(
@@ -191,7 +351,7 @@ class Data_Sharing {
 	 */
 	public function send_test_telemetry( ?string $custom_endpoint = null ): array {
 		$this->current_send_time = time();
-		$this->last_send         = (int) get_option( 'burst_last_telemetry_send', 0 );
+		$this->last_send         = (int) Admin_Options::get( Admin_Option_Category::CORE, 'last_telemetry_send', 0 );
 		$this->capture_data_from = $this->get_capture_start( $this->last_send, $this->current_send_time );
 
 		$aggregation = new Data_Aggregation( $this->capture_data_from, $this->current_send_time, true );

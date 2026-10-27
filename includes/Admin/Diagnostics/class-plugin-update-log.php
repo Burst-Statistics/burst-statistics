@@ -7,6 +7,9 @@
 
 namespace Burst\Admin\Diagnostics;
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -18,13 +21,6 @@ defined( 'ABSPATH' ) || exit;
  * plugin updates and activations with a tracking drop.
  */
 class Plugin_Update_Log {
-
-	/**
-	 * Option key mapping plugin basename => last update timestamp.
-	 *
-	 * @var string
-	 */
-	private const OPTION = 'burst_plugins_last_updated';
 
 	/**
 	 * Register hooks.
@@ -79,13 +75,13 @@ class Plugin_Update_Log {
 			return;
 		}
 
-		$log = get_option( self::OPTION, [] );
+		$log = Admin_Options::get( Admin_Option_Category::DIAGNOSTICS, 'plugins_last_updated', [] );
 		$log = is_array( $log ) ? $log : [];
 		$now = time();
 		foreach ( $slugs as $slug ) {
 			$log[ sanitize_text_field( (string) $slug ) ] = $now;
 		}
 
-		update_option( self::OPTION, $log, false );
+		Admin_Options::update( Admin_Option_Category::DIAGNOSTICS, 'plugins_last_updated', $log );
 	}
 }

@@ -8,13 +8,13 @@ import useLicenseData from '@/hooks/useLicenseData';
  * Renders the icon, label, and optional returning/description text for a
  * single RadioField option.
  *
- * @param {Object}      props
- * @param {string}      props.label       - Option label.
- * @param {?string}     props.icon        - Optional icon name shown before the label.
- * @param {?string}     props.returning   - Optional "returning" descriptor text.
- * @param {?string}     props.description - Optional description text.
- * @param {?Object|boolean} props.pro     - Optional pro config. `pro.feature` is the license
- *                                         feature the badge checks (see isLicenseValidFor()).
+ * @param {Object}          props
+ * @param {string}          props.label       - Option label.
+ * @param {?string}         props.icon        - Optional icon name shown before the label.
+ * @param {?string}         props.returning   - Optional "returning" descriptor text.
+ * @param {?string}         props.description - Optional description text.
+ * @param {?Object|boolean} props.pro         - Optional pro config. `pro.feature` is the license
+ *                                             feature the badge checks (see isLicenseValidFor()).
  * @return {JSX.Element}
  */
 // fallow-ignore-next-line complexity

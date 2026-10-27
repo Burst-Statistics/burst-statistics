@@ -3,9 +3,11 @@ import { clsx } from 'clsx';
 import DataTable from '@/components/DataTable/DataTable';
 import Icon from '@/utils/Icon';
 import { OverflowTooltip } from '@/components/Common/OverflowTooltip';
+import HelpTooltip from '@/components/Common/HelpTooltip';
 import DeleteGoalModal from '@/components/Goals/DeleteGoalModal';
 import GoalStatusCell from '@/components/Goals/GoalStatusCell';
 import { useGoalWizardStore } from '@/store/goals/useGoalWizardStore';
+import useFilterByGoal from '@/hooks/useFilterByGoal';
 import { getGoalResumeStep, isGoalCounting } from '@/components/Goals/goalHelpers';
 import { getCountsOnText, getTracksText } from '@/components/Goals/goalText';
 import { getGoalTypeLabel } from '@/components/Goals/goalOptions';
@@ -35,26 +37,45 @@ const getCellTone = ( goal: Goal ): string => ( isGoalCounting( goal ) ? 'min-w-
  */
 const GoalsTable = ({ goals, isLimitReached, toggleGoalStatus, deleteGoal }: GoalsTableProps ): JSX.Element => {
 	const openWizard = useGoalWizardStore( ( state ) => state.openWizard );
+	const filterByGoal = useFilterByGoal();
+	const filterLabel = __( 'Click to filter the insights by this goal', 'burst-statistics' );
 
 	const columns = [
 		{
 			name: __( 'Goal', 'burst-statistics' ),
 			selector: ( row: Goal ) => row.title,
 			cell: ( row: Goal ) => (
-				<button
-					type="button"
-					className="flex min-w-0 items-center gap-2"
-					onClick={() => openWizard( row.id, getGoalResumeStep( row ) )}
-				>
-					{/* Green dot for goals counting conversions; the empty dot keeps names aligned. */}
-					<span aria-hidden="true" className={clsx( 'h-2 w-2 shrink-0 rounded-full', isGoalCounting( row ) ? 'bg-green' : 'bg-transparent' )} />
-					{isGoalCounting( row ) && <span className="sr-only">{__( 'Counting conversions:', 'burst-statistics' )}</span>}
-					<span className={getCellTone( row )}>
-						<OverflowTooltip className="text-left text-blue hover:text-blue-700 hover:underline font-semibold transition-colors cursor-pointer">
-							{row.title}
-						</OverflowTooltip>
-					</span>
-				</button>
+				<div className="group flex min-w-0 items-center gap-1">
+					<button
+						type="button"
+						className="flex min-w-0 items-center gap-2"
+						onClick={() => openWizard( row.id, getGoalResumeStep( row ) )}
+					>
+						{/* Green dot for goals counting conversions; the empty dot keeps names aligned. */}
+						<span aria-hidden="true" className={clsx( 'h-2 w-2 shrink-0 rounded-full', isGoalCounting( row ) ? 'bg-green' : 'bg-transparent' )} />
+						{isGoalCounting( row ) && <span className="sr-only">{__( 'Counting conversions:', 'burst-statistics' )}</span>}
+						<span className={getCellTone( row )}>
+							<OverflowTooltip className="text-left text-blue hover:text-blue-700 hover:underline font-semibold transition-colors cursor-pointer">
+								{row.title}
+							</OverflowTooltip>
+						</span>
+					</button>
+					{/* Only goals that count conversions have data to filter on, and
+						shown on row hover so the goal names stay the only thing
+						competing for attention. */}
+					{isGoalCounting( row ) && (
+						<HelpTooltip content={filterLabel} asChild>
+							<button
+								type="button"
+								aria-label={filterLabel}
+								className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-100 opacity-0 shadow-sm transition-all duration-150 hover:bg-white hover:shadow-md focus-visible:opacity-100 group-hover:opacity-100"
+								onClick={() => filterByGoal( row.id )}
+							>
+								<Icon name="filter" size={14} color="black" />
+							</button>
+						</HelpTooltip>
+					)}
+				</div>
 			),
 			sortable: true,
 			minWidth: '150px',

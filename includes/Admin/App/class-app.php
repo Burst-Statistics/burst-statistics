@@ -3,6 +3,8 @@ namespace Burst\Admin\App;
 
 use Burst\Admin\App\Fields\Fields;
 use Burst\Admin\App\Fields\Reporting_Fields;
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Admin\App\Menu\Menu;
 use Burst\Admin\Burst_Onboarding\Burst_Onboarding;
 use Burst\Admin\Reports\Reports;
@@ -148,9 +150,9 @@ class App {
 	 * Remove the fallback notice if REST API is working again
 	 */
 	public function remove_fallback_notice(): void {
-		if ( get_option( 'burst_ajax_fallback_active' ) !== false ) {
-			delete_option( 'burst_ajax_fallback_active' );
-			delete_option( 'burst_ajax_fallback_active_timestamp' );
+		if ( Admin_Options::get( Admin_Option_Category::CORE, 'ajax_fallback_active', false ) !== false ) {
+			Admin_Options::delete( Admin_Option_Category::CORE, 'ajax_fallback_active' );
+			Admin_Options::delete( Admin_Option_Category::CORE, 'ajax_fallback_active_timestamp' );
 			burst_loader()->admin->tasks->schedule_task_validation();
 		}
 	}
@@ -178,7 +180,8 @@ class App {
 
 					const getBaseHash = (url) => {
 						const [base, hash = ''] = url.split('#');
-						const section = hash.split('/')[1] || '';
+						// Ignore filter params in the hash, e.g. #/statistics?range=last-90-days&_=123.
+						const section = hash.split(/[/?]/)[1] || '';
 						return `${base}#/${section}`;
 					};
 
@@ -631,12 +634,12 @@ class App {
 		}
 
 		// Fallback notice.
-		$fallback_already_active = (int) get_option( 'burst_ajax_fallback_active_timestamp', 0 );
+		$fallback_already_active = (int) Admin_Options::get( Admin_Option_Category::CORE, 'ajax_fallback_active_timestamp', 0 );
 		if ( $fallback_already_active === 0 ) {
-			update_option( 'burst_ajax_fallback_active_timestamp', time(), false );
+			Admin_Options::update( Admin_Option_Category::CORE, 'ajax_fallback_active_timestamp', time() );
 		}
 		if ( $fallback_already_active > 0 && ( time() - $fallback_already_active ) > 48 * HOUR_IN_SECONDS ) {
-			update_option( 'burst_ajax_fallback_active', true, false );
+			Admin_Options::update( Admin_Option_Category::CORE, 'ajax_fallback_active', true );
 		}
 
 		// Normalize/merge params from GET and POST data.
@@ -2157,7 +2160,18 @@ class App {
 
 		// Handle per-datatable endpoints and enforce metric allow-lists for all users.
 		if ( str_starts_with( $type, 'datatable-' ) ) {
-			$type       = str_replace( 'datatable-', '', $type );
+			$type = str_replace( 'datatable-', '', $type );
+
+			if ( ! $this->is_data_type_enabled( $type ) ) {
+				return $this->create_rest_response(
+					[
+						'columns' => [],
+						'data'    => [],
+						'metrics' => [],
+					]
+				);
+			}
+
 			$allow_list = $this->get_datatable_metric_allow_list();
 
 			if ( isset( $allow_list[ $type ] ) ) {
@@ -2198,6 +2212,10 @@ class App {
 					404
 				);
 			}
+		}
+
+		if ( ! $this->is_data_type_enabled( $type ) ) {
+			return $this->create_rest_response( [] );
 		}
 
 		switch ( $type ) {
@@ -2389,7 +2407,7 @@ class App {
 
 			// Only save if we have updates.
 			if ( ! empty( $updated_fields ) ) {
-				$updated = update_option( 'burst_options_settings', $options );
+				$updated = update_option( 'burst_options_settings', $options, true );
 
 				// Process after-save actions only for updated fields.
 				foreach ( $updated_fields as $field_id => $value ) {
@@ -2996,20 +3014,22 @@ class App {
 	 */
 	private function get_articles(): array {
 		$json_path = __DIR__ . '/posts.json';
-		// if the file is over one month old, delete it, so we can download a new one.
-		if ( file_exists( $json_path ) && ( time() - filemtime( $json_path ) > MONTH_IN_SECONDS ) ) {
-			wp_delete_file( $json_path );
+		// Refresh the file once it is over a month old. The existing file is kept until the
+		// download has been written, so a failed refresh still leaves the shipped copy in place.
+		if ( ! file_exists( $json_path ) || ( time() - filemtime( $json_path ) > MONTH_IN_SECONDS ) ) {
+			$this->download_articles_json_file( $json_path );
 		}
 
-		if ( ! file_exists( $json_path ) ) {
-			$this->download_articles_json_file();
-		}
-		if ( ! file_exists( $json_path ) ) {
-			$json_path = __DIR__ . '/posts-fallback.json';
+		if ( ! is_readable( $json_path ) ) {
+			return [];
 		}
 
 		// phpcs:disable WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		$json = file_get_contents( $json_path );
+		// phpcs:enable WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		if ( false === $json ) {
+			return [];
+		}
 		// decode the json file.
 		$decoded = json_decode( $json, true );
 		if ( ! is_array( $decoded ) ) {
@@ -3023,25 +3043,38 @@ class App {
 
 	/**
 	 * Get the posts.json file from the remote server.
+	 *
+	 * Fails silently: on hosts where the plugin directory is read-only the shipped
+	 * posts.json stays in use until the next plugin update replaces it.
+	 *
+	 * @param string $json_path Absolute path of the local posts.json file.
+	 * @return void Writes the downloaded file to $json_path when possible.
 	 */
-	private function download_articles_json_file(): void {
+	private function download_articles_json_file( string $json_path ): void {
+		// Check writability before the remote request, so read-only hosts don't download on every load.
+		if ( ! wp_is_writable( file_exists( $json_path ) ? $json_path : dirname( $json_path ) ) ) {
+			return;
+		}
+
 		$remote_json = 'https://burst.ams3.cdn.digitaloceanspaces.com/posts/posts.json';
 		$response    = wp_remote_get( $remote_json );
 		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
 			return;
 		}
-		$json = wp_remote_retrieve_body( $response );
-		if ( ! empty( $json ) ) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-			global $wp_filesystem;
-			if ( ! WP_Filesystem() ) {
-				return;
-			}
 
-			if ( $wp_filesystem->is_writable( __DIR__ ) ) {
-				$wp_filesystem->put_contents( __DIR__ . '/posts.json', $json, FS_CHMOD_FILE );
-			}
+		$json = wp_remote_retrieve_body( $response );
+		// Never replace a working file with an empty or invalid download.
+		if ( empty( $json ) || ! is_array( json_decode( $json, true ) ) ) {
+			return;
 		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		global $wp_filesystem;
+		if ( ! WP_Filesystem() ) {
+			return;
+		}
+
+		$wp_filesystem->put_contents( $json_path, $json, FS_CHMOD_FILE );
 	}
 
 	/**

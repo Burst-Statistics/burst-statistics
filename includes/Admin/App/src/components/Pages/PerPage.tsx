@@ -3,6 +3,7 @@ import { useParams, useSearch } from '@tanstack/react-router';
 import { useVisitorFlowData } from '@/hooks/useVisitorFlowData';
 import { usePageRevisionsData } from '@/hooks/usePageRevisionsData';
 import { useScrollAnalyticsData } from '@/hooks/useScrollAnalyticsData';
+import { useIsFeatureEnabled } from '@/hooks/useIsFeatureEnabled';
 import { VisitorFlowDiagramBlock } from '@/components/Pages/VisitorFlowDiagram/VisitorFlowDiagramBlock';
 import { PageRevisionsBlock } from '@/components/Pages/PageRevisions/PageRevisionsBlock';
 import { PageSummaryBlock } from '@/components/Pages/PageSummary';
@@ -37,9 +38,11 @@ export const PerPage: React.FC = () => {
 		pageUrl: pageUrl || ''
 	});
 
+	const isScrollDepthEnabled = useIsFeatureEnabled( 'scroll_depth' );
 	const { data: scrollData, isLoading: isScrollLoading } = useScrollAnalyticsData({
 		id: id || '',
-		pageUrl: pageUrl || ''
+		pageUrl: pageUrl || '',
+		enabled: isScrollDepthEnabled
 	});
 
 	return (
@@ -51,10 +54,12 @@ export const PerPage: React.FC = () => {
 
 			<PageCompareBlock pageUrl={pageUrl || ''} />
 
-			<ScrollDepthBlock
-				data={scrollData?.scroll_depth}
-				isLoadingData={isScrollLoading}
-			/>
+			{ isScrollDepthEnabled && (
+				<ScrollDepthBlock
+					data={scrollData?.scroll_depth}
+					isLoadingData={isScrollLoading}
+				/>
+			) }
 
 			<SearchQueriesBlock
 				id={id || ''}

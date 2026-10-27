@@ -203,6 +203,14 @@ export const useFilterDisplay = ( reportBlockIndex ) => {
 			// Clear the filter
 			setFilters( filterKey, '' );
 
+			// Removing a pinned filter unpins it, otherwise it would come back the
+			// next time the filter pages are opened.
+			if ( undefined === reportBlockIndex && pinnedFilters[filterKey] && pinnedFilters[filterKey] === filters[filterKey]) {
+				const remainingPinned = { ...pinnedFilters };
+				delete remainingPinned[filterKey];
+				savePinnedFilters( remainingPinned );
+			}
+
 			// Handle side effects based on filter type
 			if ( 'goal_id' === filterKey ) {
 
@@ -214,7 +222,7 @@ export const useFilterDisplay = ( reportBlockIndex ) => {
 				setMetrics( updatedMetrics );
 			}
 		},
-		[ setFilters, setMetrics, getMetrics ]
+		[ setFilters, setMetrics, getMetrics, reportBlockIndex, pinnedFilters, filters, savePinnedFilters ]
 	);
 
 	/**

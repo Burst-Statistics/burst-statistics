@@ -16,6 +16,13 @@ defined( 'ABSPATH' ) || die();
 class Green_Hosting {
 	use Helper;
 
+	/**
+	 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
+
 	public const OPTION     = 'burst_green_hosting';
 	public const CHECK_HOOK = 'burst_green_hosting_check';
 	public const TTL        = 30 * DAY_IN_SECONDS;
@@ -37,6 +44,7 @@ class Green_Hosting {
 		add_action( 'burst_install_tables', [ $this, 'install_option' ] );
 		add_action( 'burst_weekly', [ $this, 'maybe_refresh' ] );
 		add_action( self::CHECK_HOOK, [ $this, 'run_scheduled_check' ] );
+		( new Green_Hosting_Badge() )->init();
 	}
 
 	/**
@@ -187,6 +195,11 @@ class Green_Hosting {
 			false
 		);
 		wp_clear_scheduled_hook( self::CHECK_HOOK );
+
+		// The badge follows every fresh result: re-downloaded from cron when the
+		// host is still green (the provider may have changed), removed when it
+		// is not.
+		( new Green_Hosting_Badge() )->sync( $body['green'], $host );
 
 		return true;
 	}

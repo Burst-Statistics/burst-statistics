@@ -7,6 +7,9 @@
 
 namespace Burst\Admin\Diagnostics;
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -17,20 +20,6 @@ defined( 'ABSPATH' ) || exit;
  * that changed around the drop date taken from the Tracking_Health result.
  */
 class Recent_Changes_Collector extends Diagnostic_Collector {
-
-	/**
-	 * Option holding plugin basename => last update timestamp.
-	 *
-	 * @var string
-	 */
-	private const OPTION = 'burst_plugins_last_updated';
-
-	/**
-	 * Option holding setting key => last change timestamp.
-	 *
-	 * @var string
-	 */
-	private const SETTINGS_OPTION = 'burst_settings_last_changed';
 
 	/**
 	 * How many days before the drop date count as "around" it.
@@ -51,8 +40,8 @@ class Recent_Changes_Collector extends Diagnostic_Collector {
 	 */
 	public function collect(): array {
 		$label       = __( 'Recent plugin & setting changes', 'burst-statistics' );
-		$plugin_log  = $this->read_log( self::OPTION );
-		$setting_log = $this->read_log( self::SETTINGS_OPTION );
+		$plugin_log  = $this->read_log( 'plugins_last_updated' );
+		$setting_log = $this->read_log( 'settings_last_changed' );
 
 		if ( empty( $plugin_log ) && empty( $setting_log ) ) {
 			return $this->result(
@@ -100,11 +89,11 @@ class Recent_Changes_Collector extends Diagnostic_Collector {
 	/**
 	 * Read a timestamp log option as an array.
 	 *
-	 * @param string $option Option name.
+	 * @param string $name Option name within the diagnostics category.
 	 * @return array<string, int>
 	 */
-	private function read_log( string $option ): array {
-		$log = get_option( $option, [] );
+	private function read_log( string $name ): array {
+		$log = Admin_Options::get( Admin_Option_Category::DIAGNOSTICS, $name, [] );
 		return is_array( $log ) ? $log : [];
 	}
 
@@ -133,7 +122,7 @@ class Recent_Changes_Collector extends Diagnostic_Collector {
 	 * @return string Y-m-d, or '' when unknown.
 	 */
 	private function get_drop_date(): string {
-		$health = get_option( 'burst_tracking_health', [] );
+		$health = Admin_Options::get( Admin_Option_Category::DIAGNOSTICS, 'tracking_health', [] );
 		if ( ! is_array( $health ) ) {
 			return '';
 		}

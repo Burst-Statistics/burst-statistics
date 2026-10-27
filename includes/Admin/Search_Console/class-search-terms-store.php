@@ -1,8 +1,10 @@
 <?php
 namespace Burst\Admin\Search_Console;
 
+use Burst\Admin\Admin_Options;
 use Burst\Admin\Database\Query;
 use Burst\Admin\Database\Query_Executor;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
 use Burst\Traits\Helper;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Database_Helper;
@@ -18,6 +20,13 @@ class Search_Terms_Store {
 	use Database_Helper;
 
 	/**
+	 * The plugin version this file belongs to. See Upgrade::check_upgrade().
+	 *
+	 * @var string
+	 */
+	public const BUILD = '3.7.4';
+
+	/**
 	 * Table name without the WordPress prefix.
 	 */
 	private const TABLE = 'burst_search_terms';
@@ -28,15 +37,14 @@ class Search_Terms_Store {
 	private const INSERT_BATCH_SIZE = 250;
 
 	/**
-	 * Create the burst_search_terms table. Hooked to burst_install_tables.
+	 * Schema of the search terms table, read by install_table() and the schema check.
+	 *
+	 * @return array<string, array{columns: string, indexes?: array<int, string[]>}>
 	 */
-	public function install_table(): void {
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		global $wpdb;
-		$charset_collate = $wpdb->get_charset_collate();
-
-		dbDelta(
-			"CREATE TABLE {$wpdb->prefix}burst_search_terms (
+	protected function get_schema_definition(): array {
+		return [
+			self::TABLE => [
+				'columns' => "
 				`ID` int NOT NULL AUTO_INCREMENT,
 				`date` date NOT NULL,
 				`query` varchar(191) NOT NULL,
@@ -47,20 +55,30 @@ class Search_Terms_Store {
 				`ctr` float NOT NULL DEFAULT 0,
 				`position` float NOT NULL DEFAULT 0,
 				PRIMARY KEY (ID)
-			) $charset_collate;"
-		);
+			",
+				'indexes' => [
+					[ 'date' ],
+					[ 'property', 'date' ],
+				],
+			],
+		];
+	}
 
-		if ( ! empty( $wpdb->last_error ) ) {
-			self::error_log( 'Error creating table burst_search_terms: ' . $wpdb->last_error );
-		}
+	/**
+	 * Create the burst_search_terms table. Hooked to burst_install_tables.
+	 */
+	public function install_table(): void {
+		$this->install_schema( [ self::TABLE ] );
 
-		$this->add_index( self::TABLE, [ 'date' ] );
-		$this->add_index( self::TABLE, [ 'property', 'date' ] );
 		// query_top() and the Pro page-terms reads filter property + page (site
 		// rows have page = '') before the date range, then aggregate
 		// query/clicks/impressions/position. Including those columns makes the
 		// index covering, so multi-year ranges are served from an index range
-		// scan instead of a clustered-PK lookup per matching row.
+		// scan instead of a clustered-PK lookup per matching row. Kept out of
+		// the schema definition on purpose: this key can exceed the key-length
+		// limit of an older install, and install_schema() counts a missing
+		// index of the definition as a failed install — which would hold
+		// burst-current-version on the previous version on such a site.
 		$this->add_index( self::TABLE, [ 'property', 'page', 'date', 'query', 'clicks', 'impressions', 'position' ] );
 		// The old filter index is a prefix of the covering index and only
 		// redundant once that exists — creating it can fail on installs with a
@@ -91,7 +109,7 @@ class Search_Terms_Store {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is interpolated from $wpdb->prefix; no user data in the query.
 		$wpdb->query( "TRUNCATE TABLE `{$wpdb->prefix}burst_search_terms`" );
-		update_option( 'burst_search_terms_version', (string) time(), false );
+		Admin_Options::update( Admin_Option_Category::CORE, 'search_terms_version', (string) time() );
 	}
 
 	/**
@@ -191,7 +209,7 @@ class Search_Terms_Store {
 		// Bump the cache salt query_top() mixes into its cache key, so the
 		// hour-long (empty results included) cache never pins a pre-sync
 		// answer after new data lands — worst during the initial backfill.
-		update_option( 'burst_search_terms_version', (string) time(), false );
+		Admin_Options::update( Admin_Option_Category::CORE, 'search_terms_version', (string) time() );
 
 		return true;
 	}
@@ -243,7 +261,7 @@ class Search_Terms_Store {
 			// the sync is still backfilling.
 			->cache_ttl( HOUR_IN_SECONDS )
 			->cache_empty_results( true )
-			->cache_salt( (string) get_option( 'burst_search_terms_version' ) )
+			->cache_salt( (string) Admin_Options::get( Admin_Option_Category::CORE, 'search_terms_version', '' ) )
 			->run( $query->prepare_sql(), 'get', ARRAY_A );
 
 		if ( ! is_array( $rows ) ) {

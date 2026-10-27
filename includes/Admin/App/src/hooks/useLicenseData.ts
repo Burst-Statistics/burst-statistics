@@ -257,9 +257,10 @@ const useLicenseData = (): UseLicenseDataReturn => {
             'sources',
             'slack',
             'sales',
-            'reporting'
+            'reporting',
+            'subscriptions'
         ];
-        if ( ! possibleIds.includes( id ) ) {
+        if ( id && ! possibleIds.includes( id ) ) {
             console.error( `Invalid upgrade ID: ${id}` );
         }
 

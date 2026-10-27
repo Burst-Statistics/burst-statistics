@@ -144,7 +144,8 @@ const DevicesBlock = ( props ) => {
 						!! anonymousUsageDataEnabled,
 						communityData,
 						key,
-						data[key].title
+						data[key].title,
+						filters
 					);
 
 					return (

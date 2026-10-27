@@ -7,6 +7,9 @@
 
 namespace Burst\Admin\Diagnostics;
 
+use Burst\Admin\Admin_Options;
+use Burst\Admin\DomainTypes\Admin_Option_Category;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -17,13 +20,6 @@ defined( 'ABSPATH' ) || exit;
  * for the summary email and exposed via get_results().
  */
 class Tracking_Diagnostics {
-
-	/**
-	 * Option key holding the last diagnostics run.
-	 *
-	 * @var string
-	 */
-	private const OPTION = 'burst_tracking_diagnostics';
 
 	/**
 	 * Register hooks.
@@ -68,7 +64,7 @@ class Tracking_Diagnostics {
 	 */
 	private function collect_and_store(): array {
 		$results = $this->run();
-		update_option( self::OPTION, $results, false );
+		Admin_Options::update( Admin_Option_Category::DIAGNOSTIC_RUN, 'results', $results );
 
 		return $results;
 	}
@@ -98,7 +94,7 @@ class Tracking_Diagnostics {
 	 * @return array<string, array>
 	 */
 	public function get_results(): array {
-		return get_option( self::OPTION, [] );
+		return Admin_Options::get( Admin_Option_Category::DIAGNOSTIC_RUN, 'results', [] );
 	}
 
 	/**
