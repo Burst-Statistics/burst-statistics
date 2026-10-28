@@ -167,11 +167,7 @@ class Share_UI {
 			return;
 		}
 
-		// The redirect carries the viewer's auth cookie, so a page cache must never store it.
-		nocache_headers();
-		$request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) );
-		wp_safe_redirect( add_query_arg( self::VIEWER_LOGIN_MARKER, '1', $request_uri ) );
-		exit;
+		$this->redirect_with_viewer_login_marker( true );
 	}
 
 	/**
@@ -188,9 +184,27 @@ class Share_UI {
 			return;
 		}
 
+		$this->redirect_with_viewer_login_marker( false );
+	}
+
+	/**
+	 * Redirect to the current request URI with the login marker added or removed.
+	 *
+	 * The redirect after the login carries the viewer's auth cookie, so a page
+	 * cache must never store it.
+	 *
+	 * Side effect: sends a redirect and exits.
+	 *
+	 * @param bool $add_marker True to add the marker, false to remove it.
+	 */
+	private function redirect_with_viewer_login_marker( bool $add_marker ): void {
 		nocache_headers();
-		$request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) );
-		wp_safe_redirect( remove_query_arg( self::VIEWER_LOGIN_MARKER, $request_uri ) );
+		$request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) );
+		wp_safe_redirect(
+			$add_marker
+				? add_query_arg( self::VIEWER_LOGIN_MARKER, '1', $request_uri )
+				: remove_query_arg( self::VIEWER_LOGIN_MARKER, $request_uri )
+		);
 		exit;
 	}
 

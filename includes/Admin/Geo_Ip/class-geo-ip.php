@@ -575,8 +575,7 @@ class Geo_Ip {
 		}
 
 		$current_file = (string) get_option( 'burst_geo_ip_file', '' );
-		$uploads      = wp_upload_dir();
-		$old_dir      = trailingslashit( apply_filters( 'burst_upload_dir', $uploads['basedir'] ) ) . 'burst/maxmind/';
+		$old_dir      = $this->upload_path( 'maxmind' );
 
 		$has_old_dir  = is_dir( $old_dir );
 		$has_old_file = '' !== $current_file && str_contains( str_replace( '\\', '/', $current_file ), '/burst/maxmind/' );

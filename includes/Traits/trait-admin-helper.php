@@ -564,7 +564,11 @@ trait Admin_Helper {
 
 		// The MCP Adapter serves Burst abilities over HTTP under the mcp namespace; without it the
 		// abilities are never registered on those requests. The trailing slash keeps namespaces
-		// that only start with "mcp" out.
+		// that only start with "mcp" out. This matches every MCP server on purpose, not only
+		// mcp/mcp-adapter-default-server: the default server's route is filterable
+		// (mcp_adapter_default_server_config), it can be switched off, and custom servers can
+		// expose the Burst abilities too. Other plugins' MCP requests also load the Burst admin
+		// code for users with view_burst_statistics; that is the accepted cost.
 		$burst_namespaces = [ 'burst/v1', 'wp-abilities/v1', 'mcp/' ];
 
 		// 1. Check if it's a pretty permalink REST request.
