@@ -192,6 +192,22 @@ trait Helper {
 	}
 
 	/**
+	 * Get the path of an upload dir, without creating it.
+	 *
+	 * For reads and deletes that should not leave an empty directory behind.
+	 * upload_dir() builds on it, so both always point at the same place.
+	 *
+	 * @param string $path Sub path below the uploads dir.
+	 * @param bool   $root Use the uploads root instead of uploads/burst/.
+	 * @return string The directory path, with a trailing slash.
+	 */
+	protected function upload_path( string $path = '', bool $root = false ): string {
+		$basedir = apply_filters( 'burst_upload_dir', wp_upload_dir()['basedir'] );
+
+		return trailingslashit( trailingslashit( $basedir ) . ( $root ? '' : 'burst/' ) . $path );
+	}
+
+	/**
 	 * Get the upload dir, creating it when it does not exist yet.
 	 *
 	 * Newly created directories are hardened against direct HTTP access with
@@ -204,9 +220,7 @@ trait Helper {
 	 * @param bool   $is_public Skip the hardening files for a directory that is served to visitors.
 	 */
 	protected function upload_dir( string $path = '', bool $root = false, bool $is_public = false ): string {
-		$uploads    = wp_upload_dir();
-		$dir        = $root ? '' : 'burst/';
-		$upload_dir = trailingslashit( apply_filters( 'burst_upload_dir', $uploads['basedir'] ) ) . $dir . $path;
+		$upload_dir = $this->upload_path( $path, $root );
 		if ( ! is_dir( $upload_dir ) ) {
 			wp_mkdir_p( $upload_dir );
 		}
@@ -215,26 +229,26 @@ trait Helper {
 		// directory would only add PHP warnings, so callers check is_dir() instead.
 		if ( ! $is_public && is_dir( $upload_dir ) ) {
 			// Harden the directory against direct HTTP access.
-			if ( ! file_exists( $upload_dir . '/index.php' ) ) {
+			if ( ! file_exists( $upload_dir . 'index.php' ) ) {
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-				file_put_contents( $upload_dir . '/index.php', "<?php\n// Silence is golden.\n" );
+				file_put_contents( $upload_dir . 'index.php', "<?php\n// Silence is golden.\n" );
 			}
-			if ( ! file_exists( $upload_dir . '/.htaccess' ) ) {
+			if ( ! file_exists( $upload_dir . '.htaccess' ) ) {
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-				file_put_contents( $upload_dir . '/.htaccess', "Deny from all\n" );
+				file_put_contents( $upload_dir . '.htaccess', "Deny from all\n" );
 			}
 		}
 
 		// Ensure parent uploads/burst/ has an index.php to prevent directory listing.
 		if ( ! $root ) {
-			$burst_root = trailingslashit( apply_filters( 'burst_upload_dir', $uploads['basedir'] ) ) . 'burst/';
+			$burst_root = $this->upload_path();
 			if ( is_dir( $burst_root ) && ! file_exists( $burst_root . 'index.php' ) ) {
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents, WordPress.PHP.NoSilencedErrors.Discouraged
 				@file_put_contents( $burst_root . 'index.php', "<?php\n// Silence is golden.\n" );
 			}
 		}
 
-		return trailingslashit( $upload_dir );
+		return $upload_dir;
 	}
 
 	/**

@@ -290,10 +290,8 @@ class App {
 				continue;
 			}
 
-			$capability = $menu_item['capabilities'] ?? 'view_burst_statistics';
-			if ( ! current_user_can( $capability ) ) {
-				continue;
-			}
+			// Menu::get() already left out the pages the user cannot open; add_submenu_page() still needs the capability.
+			$capability = $this->menu->get_item_capability( $menu_item );
 
 			$page_title = $menu_item['title'] ?? '';
 			$menu_title = $menu_item['title'] ?? '';
@@ -3047,14 +3045,27 @@ class App {
 	 * Fails silently: on hosts where the plugin directory is read-only the shipped
 	 * posts.json stays in use until the next plugin update replaces it.
 	 *
+	 * At most one attempt per month: a failed download leaves the file's age
+	 * unchanged, so without this every dashboard load would wait for the remote
+	 * request again until the server is reachable.
+	 *
 	 * @param string $json_path Absolute path of the local posts.json file.
-	 * @return void Writes the downloaded file to $json_path when possible.
+	 * @return void Writes the downloaded file to $json_path when possible, and
+	 *              stores the attempt time in the core admin options.
 	 */
 	private function download_articles_json_file( string $json_path ): void {
 		// Check writability before the remote request, so read-only hosts don't download on every load.
 		if ( ! wp_is_writable( file_exists( $json_path ) ? $json_path : dirname( $json_path ) ) ) {
 			return;
 		}
+
+		$last_attempt = (int) Admin_Options::get( Admin_Option_Category::CORE, 'articles_download_attempt', 0 );
+		if ( $last_attempt > time() - MONTH_IN_SECONDS ) {
+			return;
+		}
+
+		// Stored before the request, so dashboard loads that run at the same time don't all download.
+		Admin_Options::update( Admin_Option_Category::CORE, 'articles_download_attempt', time() );
 
 		$remote_json = 'https://burst.ams3.cdn.digitaloceanspaces.com/posts/posts.json';
 		$response    = wp_remote_get( $remote_json );

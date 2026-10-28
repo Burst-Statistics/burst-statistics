@@ -1447,6 +1447,9 @@ class Abilities_Api {
 	/**
 	 * Execute: burst/settings.
 	 *
+	 * The permission check runs in WP_Ability::execute() through the registered
+	 * permission_callback, before this callback is called.
+	 *
 	 * @param mixed $input Ability input.
 	 * @return array<string, mixed>|\WP_Error
 	 *
@@ -1458,151 +1461,23 @@ class Abilities_Api {
 			return $rate_limit;
 		}
 
-		$permission = $this->permission_callback( $input );
-		if ( is_wp_error( $permission ) ) {
-			return $permission;
-		}
-
-		$fields_handler = new \Burst\Admin\App\Fields\Fields();
-		$raw_fields     = $fields_handler->get( true );
-
-		$menu_items   = ( new \Burst\Admin\App\Menu\Menu() )->get();
-		$menu_labels  = [];
-		$group_labels = [];
-
-		foreach ( $menu_items as $item ) {
-			if ( isset( $item['id'], $item['title'] ) ) {
-				$menu_labels[ (string) $item['id'] ] = (string) $item['title'];
-			}
-			if ( ! empty( $item['menu_items'] ) && is_array( $item['menu_items'] ) ) {
-				foreach ( $item['menu_items'] as $sub_item ) {
-					if ( isset( $sub_item['id'], $sub_item['title'] ) ) {
-						$menu_labels[ (string) $sub_item['id'] ] = (string) $sub_item['title'];
-					}
-					if ( ! empty( $sub_item['groups'] ) && is_array( $sub_item['groups'] ) ) {
-						foreach ( $sub_item['groups'] as $group ) {
-							if ( isset( $group['id'], $group['title'] ) ) {
-								$group_labels[ (string) $group['id'] ] = (string) $group['title'];
-							}
-						}
-					}
-				}
-			}
-		}
-
 		$query   = is_array( $input ) && ! empty( $input['query'] ) ? strtolower( trim( (string) $input['query'] ) ) : '';
 		$menu_id = is_array( $input ) && ! empty( $input['menu_id'] ) ? trim( (string) $input['menu_id'] ) : '';
 
+		$raw_fields = ( new \Burst\Admin\App\Fields\Fields() )->get( true );
+		$labels     = $this->build_menu_label_maps( ( new \Burst\Admin\App\Menu\Menu() )->get() );
+
 		$matched_fields = [];
 		foreach ( $raw_fields as $field ) {
-			if ( ! is_array( $field ) || empty( $field['id'] ) ) {
+			if ( ! is_array( $field ) || ! $this->is_field_searchable( $field, $menu_id ) ) {
 				continue;
 			}
 
-			$field_type = (string) ( $field['type'] ?? '' );
-			if ( in_array( $field_type, self::SETTINGS_SKIPPED_TYPES, true ) ) {
+			if ( ! $this->field_matches_query( $field, $query ) ) {
 				continue;
 			}
 
-			if ( ! empty( $field['hidden'] ) ) {
-				continue;
-			}
-
-			if ( isset( $field['visible'] ) && false === $field['visible'] ) {
-				continue;
-			}
-
-			$field_menu_id = (string) ( $field['menu_id'] ?? 'general' );
-			if ( '' !== $menu_id && $field_menu_id !== $menu_id ) {
-				continue;
-			}
-
-			$field_id    = (string) $field['id'];
-			$field_label = (string) ( $field['label'] ?? '' );
-
-			$explanation = '';
-			if ( isset( $field['context'] ) ) {
-				if ( is_array( $field['context'] ) ) {
-					$explanation = (string) ( $field['context']['text'] ?? '' );
-				} else {
-					$explanation = (string) $field['context'];
-				}
-			}
-
-			if ( '' !== $query ) {
-				$in_id    = str_contains( strtolower( $field_id ), $query );
-				$in_label = str_contains( strtolower( $field_label ), $query );
-				$in_exp   = str_contains( strtolower( $explanation ), $query );
-				if ( ! $in_id && ! $in_label && ! $in_exp ) {
-					continue;
-				}
-			}
-
-			$field_group_id = (string) ( $field['group_id'] ?? 'general' );
-			$menu_label     = $menu_labels[ $field_menu_id ] ?? ucwords( str_replace( '_', ' ', $field_menu_id ) );
-			$group_label    = $group_labels[ $field_group_id ] ?? ucwords( str_replace( '_', ' ', $field_group_id ) );
-			$parent_route   = in_array( $field_menu_id, [ 'reports', 'customization', 'logs' ], true ) ? 'reporting' : 'settings';
-			$admin_url      = 'admin.php?page=burst#/' . $parent_route . '/' . $field_menu_id;
-
-			$docs_url = null;
-			if ( isset( $field['context'] ) && is_array( $field['context'] ) && ! empty( $field['context']['url'] ) ) {
-				$raw_url  = (string) $field['context']['url'];
-				$path     = (string) ( wp_parse_url( $raw_url, PHP_URL_PATH ) ?: $raw_url );
-				$docs_url = $this->get_website_url( $path, [ 'utm_content' => self::DOCS_UTM_CONTENT ] );
-			}
-
-			$help = null;
-			if ( isset( $field['help'] ) ) {
-				$help_text = is_array( $field['help'] ) ? (string) ( $field['help']['text'] ?? '' ) : (string) $field['help'];
-				if ( '' !== trim( $help_text ) ) {
-					$help = $help_text;
-				}
-			}
-
-			$pro = null;
-			if ( ! $this->is_pro() && ! empty( $field['pro'] ) ) {
-				$pro = [
-					'is_pro'  => true,
-					'tier'    => is_array( $field['pro'] ) ? ( $field['pro']['tier'] ?? 'all' ) : 'all',
-					'feature' => is_array( $field['pro'] ) ? ( $field['pro']['feature'] ?? null ) : null,
-					'url'     => is_array( $field['pro'] ) && isset( $field['pro']['url'] )
-						? $this->get_website_url( (string) ( wp_parse_url( (string) $field['pro']['url'], PHP_URL_PATH ) ?: $field['pro']['url'] ), [ 'utm_content' => self::DOCS_UTM_CONTENT ] )
-						: null,
-				];
-			}
-
-			$item = [
-				'id'          => $field_id,
-				'label'       => $field_label,
-				'explanation' => $explanation,
-				'help'        => $help,
-				'location'    => [
-					'menu_id'     => $field_menu_id,
-					'menu_label'  => $menu_label,
-					'group_id'    => $field_group_id,
-					'group_label' => $group_label,
-					'admin_url'   => $admin_url,
-				],
-				'docs_url'    => $docs_url,
-				'pro'         => $pro,
-			];
-
-			$raw_value = $field['value'] ?? $field['default'] ?? null;
-			if ( in_array( $field_type, self::SETTINGS_ALLOWED_VALUE_TYPES, true ) ) {
-				$item['value'] = $raw_value;
-			} else {
-				$is_configured = false;
-				if ( is_string( $raw_value ) ) {
-					$is_configured = '' !== trim( $raw_value );
-				} elseif ( is_array( $raw_value ) ) {
-					$is_configured = ! empty( $raw_value );
-				} elseif ( null !== $raw_value ) {
-					$is_configured = (bool) $raw_value;
-				}
-				$item['is_configured'] = $is_configured;
-			}
-
-			$matched_fields[] = $item;
+			$matched_fields[] = $this->format_setting_item( $field, $labels['menu'], $labels['group'] );
 		}
 
 		$total     = count( $matched_fields );
@@ -1617,7 +1492,229 @@ class Abilities_Api {
 	}
 
 	/**
+	 * Map menu, sub menu and group ids to their titles.
+	 *
+	 * @param array<int, array<string, mixed>> $menu_items Items from Menu::get().
+	 * @return array{menu: array<string, string>, group: array<string, string>} Titles by menu id and by group id.
+	 */
+	private function build_menu_label_maps( array $menu_items ): array {
+		$labels = [
+			'menu'  => [],
+			'group' => [],
+		];
+
+		foreach ( $menu_items as $item ) {
+			if ( isset( $item['id'], $item['title'] ) ) {
+				$labels['menu'][ (string) $item['id'] ] = (string) $item['title'];
+			}
+			if ( empty( $item['menu_items'] ) || ! is_array( $item['menu_items'] ) ) {
+				continue;
+			}
+
+			foreach ( $item['menu_items'] as $sub_item ) {
+				if ( isset( $sub_item['id'], $sub_item['title'] ) ) {
+					$labels['menu'][ (string) $sub_item['id'] ] = (string) $sub_item['title'];
+				}
+				if ( empty( $sub_item['groups'] ) || ! is_array( $sub_item['groups'] ) ) {
+					continue;
+				}
+
+				foreach ( $sub_item['groups'] as $group ) {
+					if ( isset( $group['id'], $group['title'] ) ) {
+						$labels['group'][ (string) $group['id'] ] = (string) $group['title'];
+					}
+				}
+			}
+		}
+
+		return $labels;
+	}
+
+	/**
+	 * Whether a settings field is shown to agents at all, and lives on the requested menu page.
+	 *
+	 * @param array<string, mixed> $field   A field from Fields::get().
+	 * @param string               $menu_id Requested menu id, or an empty string for all pages.
+	 * @return bool True when the field can be returned.
+	 */
+	private function is_field_searchable( array $field, string $menu_id ): bool {
+		if ( empty( $field['id'] ) ) {
+			return false;
+		}
+
+		if ( in_array( (string) ( $field['type'] ?? '' ), self::SETTINGS_SKIPPED_TYPES, true ) ) {
+			return false;
+		}
+
+		if ( ! empty( $field['hidden'] ) || ( isset( $field['visible'] ) && false === $field['visible'] ) ) {
+			return false;
+		}
+
+		return '' === $menu_id || (string) ( $field['menu_id'] ?? 'general' ) === $menu_id;
+	}
+
+	/**
+	 * Whether a field's id, label or explanation contains the search query.
+	 *
+	 * @param array<string, mixed> $field A field from Fields::get().
+	 * @param string               $query Lowercase search query, or an empty string to match every field.
+	 * @return bool True when the field matches.
+	 */
+	private function field_matches_query( array $field, string $query ): bool {
+		if ( '' === $query ) {
+			return true;
+		}
+
+		$haystacks = [ (string) $field['id'], (string) ( $field['label'] ?? '' ), $this->get_field_explanation( $field ) ];
+		foreach ( $haystacks as $haystack ) {
+			if ( str_contains( strtolower( $haystack ), $query ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get the explanation text of a field from its context.
+	 *
+	 * @param array<string, mixed> $field A field from Fields::get().
+	 * @return string The explanation, or an empty string.
+	 */
+	private function get_field_explanation( array $field ): string {
+		if ( ! isset( $field['context'] ) ) {
+			return '';
+		}
+
+		return is_array( $field['context'] ) ? (string) ( $field['context']['text'] ?? '' ) : (string) $field['context'];
+	}
+
+	/**
+	 * Build the agent-facing description of one settings field.
+	 *
+	 * @param array<string, mixed>  $field        A field from Fields::get().
+	 * @param array<string, string> $menu_labels  Titles by menu id, from build_menu_label_maps().
+	 * @param array<string, string> $group_labels Titles by group id, from build_menu_label_maps().
+	 * @return array<string, mixed> The field id, labels, location, links and value or configured state.
+	 */
+	private function format_setting_item( array $field, array $menu_labels, array $group_labels ): array {
+		$field_menu_id  = (string) ( $field['menu_id'] ?? 'general' );
+		$field_group_id = (string) ( $field['group_id'] ?? 'general' );
+		$parent_route   = in_array( $field_menu_id, [ 'reports', 'customization', 'logs' ], true ) ? 'reporting' : 'settings';
+
+		$item = [
+			'id'          => (string) $field['id'],
+			'label'       => (string) ( $field['label'] ?? '' ),
+			'explanation' => $this->get_field_explanation( $field ),
+			'help'        => $this->get_field_help( $field ),
+			'location'    => [
+				'menu_id'     => $field_menu_id,
+				'menu_label'  => $menu_labels[ $field_menu_id ] ?? ucwords( str_replace( '_', ' ', $field_menu_id ) ),
+				'group_id'    => $field_group_id,
+				'group_label' => $group_labels[ $field_group_id ] ?? ucwords( str_replace( '_', ' ', $field_group_id ) ),
+				'admin_url'   => 'admin.php?page=burst#/' . $parent_route . '/' . $field_menu_id,
+			],
+			'docs_url'    => $this->get_field_docs_url( $field ),
+			'pro'         => $this->get_field_pro_info( $field ),
+		];
+
+		return array_merge( $item, $this->format_field_value( $field ) );
+	}
+
+	/**
+	 * Get the help text of a field.
+	 *
+	 * @param array<string, mixed> $field A field from Fields::get().
+	 * @return string|null The help text, or null when the field has none.
+	 */
+	private function get_field_help( array $field ): ?string {
+		if ( ! isset( $field['help'] ) ) {
+			return null;
+		}
+
+		$help_text = is_array( $field['help'] ) ? (string) ( $field['help']['text'] ?? '' ) : (string) $field['help'];
+
+		return '' !== trim( $help_text ) ? $help_text : null;
+	}
+
+	/**
+	 * Get the documentation link of a field, with the docs UTM parameters.
+	 *
+	 * @param array<string, mixed> $field A field from Fields::get().
+	 * @return string|null The documentation URL, or null when the field has none.
+	 */
+	private function get_field_docs_url( array $field ): ?string {
+		if ( ! isset( $field['context'] ) || ! is_array( $field['context'] ) || empty( $field['context']['url'] ) ) {
+			return null;
+		}
+
+		return $this->get_docs_website_url( (string) $field['context']['url'] );
+	}
+
+	/**
+	 * Get the upgrade details of a Pro field, on free only.
+	 *
+	 * @param array<string, mixed> $field A field from Fields::get().
+	 * @return array{is_pro: true, tier: mixed, feature: mixed, url: string|null}|null The upgrade details, or null when the field is available.
+	 */
+	private function get_field_pro_info( array $field ): ?array {
+		if ( $this->is_pro() || empty( $field['pro'] ) ) {
+			return null;
+		}
+
+		$pro = is_array( $field['pro'] ) ? $field['pro'] : [];
+
+		return [
+			'is_pro'  => true,
+			'tier'    => $pro['tier'] ?? 'all',
+			'feature' => $pro['feature'] ?? null,
+			'url'     => isset( $pro['url'] ) ? $this->get_docs_website_url( (string) $pro['url'] ) : null,
+		];
+	}
+
+	/**
+	 * Point a burst-statistics.com link at the current website URL, with the docs UTM parameters.
+	 *
+	 * @param string $url A full URL or a path on burst-statistics.com.
+	 * @return string The website URL.
+	 */
+	private function get_docs_website_url( string $url ): string {
+		$path = (string) ( wp_parse_url( $url, PHP_URL_PATH ) ?: $url );
+
+		return $this->get_website_url( $path, [ 'utm_content' => self::DOCS_UTM_CONTENT ] );
+	}
+
+	/**
+	 * Expose the value of a choice field, or only whether a free-form field is filled in.
+	 *
+	 * Free-form fields (text, textarea, …) can hold secrets such as webhook URLs or
+	 * e-mail addresses, so agents only learn whether they are configured.
+	 *
+	 * @param array<string, mixed> $field A field from Fields::get().
+	 * @return array{value: mixed}|array{is_configured: bool} The value or the configured state.
+	 */
+	private function format_field_value( array $field ): array {
+		$raw_value = $field['value'] ?? $field['default'] ?? null;
+		if ( in_array( (string) ( $field['type'] ?? '' ), self::SETTINGS_ALLOWED_VALUE_TYPES, true ) ) {
+			return [ 'value' => $raw_value ];
+		}
+
+		if ( is_string( $raw_value ) ) {
+			return [ 'is_configured' => '' !== trim( $raw_value ) ];
+		}
+
+		if ( is_array( $raw_value ) ) {
+			return [ 'is_configured' => ! empty( $raw_value ) ];
+		}
+
+		return [ 'is_configured' => null !== $raw_value && (bool) $raw_value ];
+	}
+
+	/**
 	 * Execute: burst/pages.
+	 *
+	 * The permission check runs in WP_Ability::execute(), and Menu::get() already
+	 * leaves out the pages the current user lacks the capability for.
 	 *
 	 * @param mixed $input Ability input.
 	 * @return array<string, mixed>|\WP_Error
@@ -1629,11 +1726,6 @@ class Abilities_Api {
 		$rate_limit = $this->enforce_rate_limit( 'pages' );
 		if ( is_wp_error( $rate_limit ) ) {
 			return $rate_limit;
-		}
-
-		$permission = $this->permission_callback();
-		if ( is_wp_error( $permission ) ) {
-			return $permission;
 		}
 
 		$menu_items = ( new \Burst\Admin\App\Menu\Menu() )->get();
@@ -1650,21 +1742,12 @@ class Abilities_Api {
 				continue;
 			}
 
-			// Menu::get() checks capabilities before the burst_menu filter runs, so pages added through it (Sales, Subscriptions) still need this check.
-			if ( isset( $item['capabilities'] ) && ! current_user_can( (string) $item['capabilities'] ) ) {
-				continue;
-			}
-
 			$page_id = (string) $item['id'];
 
 			$sub_items = [];
 			if ( ! empty( $item['menu_items'] ) && is_array( $item['menu_items'] ) ) {
 				foreach ( $item['menu_items'] as $sub ) {
 					if ( ! is_array( $sub ) || empty( $sub['id'] ) || ! empty( $sub['hidden'] ) ) {
-						continue;
-					}
-
-					if ( isset( $sub['capabilities'] ) && ! current_user_can( (string) $sub['capabilities'] ) ) {
 						continue;
 					}
 

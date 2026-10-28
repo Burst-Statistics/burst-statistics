@@ -222,16 +222,13 @@ class Green_Hosting_Badge {
 	/**
 	 * Badge directory, without creating it.
 	 *
-	 * Mirrors the path of upload_dir(), which also creates the directory: only
-	 * write() needs it to exist, so reads and deletes do not leave an empty
-	 * directory behind on sites that are not green.
+	 * Only write() needs it to exist, through upload_dir(), so reads and deletes
+	 * do not leave an empty directory behind on sites that are not green.
 	 *
 	 * @return string The directory path, with a trailing slash.
 	 */
 	private function get_directory(): string {
-		$basedir = apply_filters( 'burst_upload_dir', wp_upload_dir()['basedir'] );
-
-		return trailingslashit( $basedir ) . 'burst/' . self::DIRECTORY . '/';
+		return $this->upload_path( self::DIRECTORY );
 	}
 
 	/**
