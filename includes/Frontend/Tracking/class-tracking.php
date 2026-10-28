@@ -173,7 +173,7 @@ class Tracking {
 			'platform_id'        => $sanitized_data['platform_id'] ?? 0,
 			'device_id'          => $sanitized_data['device_id'] ?? 0,
 		];
-		$session = apply_filters( 'burst_session_data', $session, $sanitized_data, $filtered_previous_hit );
+		$session = apply_filters( 'burst_session_data', $session, $sanitized_data, $filtered_previous_hit, $hit_type );
 
 		$search_term = $sanitized_data['search_term'] ?? '';
 		$events      = $sanitized_data['events'] ?? [];

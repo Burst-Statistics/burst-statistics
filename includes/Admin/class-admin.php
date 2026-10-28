@@ -906,12 +906,6 @@ class Admin {
 				continue;
 			}
 
-			// Check user capabilities.
-			$capability = $menu_item['capabilities'] ?? 'view_burst_statistics';
-			if ( ! current_user_can( $capability ) ) {
-				continue;
-			}
-
 			$title     = $menu_item['title'] ?? '';
 			$menu_slug = $menu_item['menu_slug'] ?? 'burst';
 			$css_class = 'burst-' . ( $menu_item['id'] ?? 'menu' ) . '-link';

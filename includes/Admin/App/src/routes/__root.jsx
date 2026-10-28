@@ -6,6 +6,7 @@ import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { validateFilterSearch } from '@/config/filterConfig';
 import { isDateRangeEnabledRoute, isFilterEnabledRoute } from '@/utils/routeUtils';
 import NotFoundModal from '@/components/Common/NotFoundModal';
+import { RootPendingSkeleton } from '@/components/Common/RootPendingSkeleton';
 import { BurstToastContainer } from '@/components/Common/Toast/ToastContainer';
 import useShareableLinkStore from '@/store/useShareableLinkStore';
 import { useTourStore } from '@/store/useTourStore';
@@ -114,6 +115,13 @@ export const Route = createRootRoute({
 		});
 	},
 	notFoundComponent: NotFoundModal,
+
+	// The root layout is not rendered while beforeLoad runs, so the default
+	// pending skeleton would lose its grid and stretch across the page. The
+	// router only gives the root route its own Suspense boundary, and with it
+	// this pending component, when wrapInSuspense is set.
+	wrapInSuspense: true,
+	pendingComponent: RootPendingSkeleton,
 	component: RootComponent,
 	errorComponent: ({ error }) => {
 		console.log( 'Root Route Error:', error );
