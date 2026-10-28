@@ -1450,7 +1450,9 @@ class Admin {
 			'description'    => __( 'Track ecommerce performance, sales revenue, orders, conversion rates, and product analytics.', 'burst-statistics' ),
 			'default_hidden' => false,
 			'menu_items'     => [],
-			'capabilities'   => 'view_sales_burst_statistics',
+			// Free never grants view_sales_burst_statistics; there the page is only
+			// the Pro upsell, without sales data, so every Burst viewer may see it.
+			'capabilities'   => $this->is_pro() ? 'view_sales_burst_statistics' : 'view_burst_statistics',
 			'menu_slug'      => 'burst#/sales',
 			'show_in_admin'  => true,
 			'pro'            => true,
