@@ -204,13 +204,16 @@ Prefer installing manually or via Composer? See [installing Burst Statistics wit
 
 = External services =
 
-Burst works entirely on your own server and does not send your data anywhere. The two optional features below are the only ones that contact an external service, and neither is required to use Burst. Please see our [privacy statement](https://burst-statistics.com/legal/privacy-statement/) for our privacy policy; each feature below links to its own, more specific policy.
+Burst works entirely on your own server and does not send your data anywhere. The optional features below are the only ones that contact an external service, and none of them is required to use Burst. Please see our [privacy statement](https://burst-statistics.com/legal/privacy-statement/) for our privacy policy; each feature below links to its own, more specific policy.
 
 **Google Search Console integration (optional)**
 When you connect your Google account on the Integrations settings page, Burst retrieves your search performance data (queries, clicks, impressions and positions) from the Google Search Console API (googleapis.com) and shows it in your dashboard. This is a one-way flow: your site fetches data from Google, and no visitor or statistics data is sent to Google or to us. Only the OAuth handshake and token refresh run through our relay at search-console.burst-statistics.com; the retrieved search data goes directly from Google to your own site. Nothing happens until you connect an account, and you can disconnect at any time, which revokes the token at Google. Read our [Search Console integration privacy policy](https://burst-statistics.com/legal/search-console-integration-privacy-policy/), and see [Google's privacy policy](https://policies.google.com/privacy) and [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy).
 
 **Anonymous data sharing (optional)**
 This is the only case in which Burst sends data to us, and it is strictly opt-in. When you choose to enable it, Burst periodically sends anonymized, aggregated usage and performance statistics (no visitor data, no personal data) to api.burst-statistics.com. In return you get community performance benchmarks in your dashboard, comparing your site against anonymized community averages, and it helps us improve the plugin. Read [how we handle anonymous usage data](https://burst-statistics.com/how-we-handle-anonymous-usage-data/).
+
+**AI crawler detection (optional)**
+When you turn on AI crawler detection, Burst downloads the public IP ranges that AI crawler operators publish (OpenAI, Anthropic, Google, Perplexity, Apple and Common Crawl) so it can verify that a visit claiming to be their crawler really comes from them. These are plain downloads: no visitor, site or statistics data is sent. If you also connect Cloudflare as the data source, Burst uses the API token you provide to fetch request counts per crawler from the Cloudflare GraphQL API (api.cloudflare.com). Data only flows from Cloudflare to your site, and you can disconnect at any time. See the [Cloudflare privacy policy](https://www.cloudflare.com/privacypolicy/).
 
 = Credits =
 
