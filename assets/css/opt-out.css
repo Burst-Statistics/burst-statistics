@@ -1,0 +1,38 @@
+/**
+ * Burst Statistics opt-out button
+ * Styles for the frontend opt-out block and shortcode
+ *
+ * Layout only. The button itself is left to the theme, which styles it through
+ * the wp-element-button class; a visual rule here would be loaded last and
+ * override it.
+ */
+
+.burst-opt-out,
+.wp-block-burst-opt-out {
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+/* Inline, because the suggested privacy text puts the shortcode in a sentence
+	and a block-level wrapper would be hoisted out of that paragraph. */
+.burst-opt-out {
+	display: inline-flex;
+}
+
+/* Block-level as a block, which is what lets a constrained theme layout give
+	the wrapper the content width and the auto margins that line it up with the
+	text around it. Inline those margins resolve to zero, and the button ends up
+	against the padding edge of a full-width container.
+	The generated class, not one of ours, because in the editor this rule has to
+	reach the wrapper useBlockProps() builds, which carries only that one. */
+.wp-block-burst-opt-out {
+	display: flex;
+}
+
+/* Spaced only once it says something. The element itself always stays in the
+	rendered tree: a live region that appears together with its text is not
+	announced, which is the whole point of having it. */
+.burst-opt-out__status:not(:empty) {
+	margin-inline-start: 0.5rem;
+	font-size: 0.875em;
+}

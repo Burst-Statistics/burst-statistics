@@ -1,5 +1,6 @@
 import { __ } from '@wordpress/i18n';
 import { useGoalWizardStore } from '@/store/goals/useGoalWizardStore';
+import type { GoalKind } from '@/components/Goals/goalHelpers';
 import GoalStepHeading from '../GoalStepHeading';
 import GoalTypeCards from './GoalTypeCards';
 
@@ -9,8 +10,8 @@ import GoalTypeCards from './GoalTypeCards';
  * @return {JSX.Element} The type choice.
  */
 const CustomGoalType = (): JSX.Element => {
-	const pendingType = useGoalWizardStore( ( state ) => state.pendingType );
-	const setPendingType = useGoalWizardStore( ( state ) => state.setPendingType );
+	const pendingKind = useGoalWizardStore( ( state ) => state.pendingKind );
+	const setPendingKind = useGoalWizardStore( ( state ) => state.setPendingKind );
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -18,7 +19,7 @@ const CustomGoalType = (): JSX.Element => {
 				title={__( 'What do you want to count?', 'burst-statistics' )}
 				description={__( 'Pick what a conversion looks like. You can change this later.', 'burst-statistics' )}
 			/>
-			<GoalTypeCards value={pendingType} onChange={setPendingType} />
+			<GoalTypeCards value={pendingKind} onChange={( kind ) => setPendingKind( kind as GoalKind )} />
 		</div>
 	);
 };

@@ -3,7 +3,7 @@
  * Plugin Name: Burst REST API Optimizer
  * Plugin URI: https://burst-statistics.com
  * Description: Must-use plugin installed by Burst Pro to keep the Burst REST API fast by skipping unrelated plugins on Burst REST requests.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Requires at least: 6.6
  * Requires PHP: 8.0
  * Author: Burst Statistics
@@ -155,13 +155,28 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 			return '';
 		}
 
+		// WordPress dispatches a rest_route parameter (query string or form field) over
+		// the route in the path, so /wp-json/burst/v1/x?rest_route=/wp/v2/users runs a
+		// core route. The path says nothing about such a request: keep every plugin, so
+		// plugins that restrict REST access stay loaded.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.NonceVerification.Missing -- Only the presence of the parameter is checked.
+		if ( isset( $_GET['rest_route'] ) || isset( $_POST['rest_route'] ) ) {
+			return '';
+		}
+
+		// Plain permalinks have no REST rewrite, so a /wp-json/ path is a normal front-end
+		// request there.
+		if ( '' === (string) get_option( 'permalink_structure' ) ) {
+			return '';
+		}
+
 		// Resolve the actual REST route from the URL path only (pretty permalinks).
-		// Anything in the query string is ignored, so ?x=burst/v1 or ?rest_route=/burst/v1
-		// on an unrelated URL cannot trigger the optimizer. Plain (non-pretty) permalinks
-		// are intentionally not supported here; the optimizer simply no-ops on those sites.
-		// The path is matched as-is (not URL-decoded) so detection stays in sync with WP's
-		// own REST routing, which also matches against the raw URI.
-		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		// Anything else in the query string is ignored, so ?x=burst/v1 on an unrelated
+		// URL cannot trigger the optimizer.
+		// Deliberately the raw URI: sanitizing removes %XX triplets, which WordPress
+		// decodes when it routes on PATH_INFO. The route pattern below validates it.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
 		$path        = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
 
 		// Hardcoded WP REST prefix. We can't call rest_get_url_prefix() because rest-api.php
@@ -176,8 +191,12 @@ if ( ! function_exists( '\Burst\burst_exclude_plugins_for_rest_api' ) && ! funct
 			if ( str_starts_with( $path, $prefix ) ) {
 				$route = ltrim( substr( $path, strlen( $prefix ) ), '/' );
 				// Anchored at the namespace boundary: only burst/v1 and burst/v1/* qualify,
-				// not lookalikes such as burst/v1foo/...
-				return ( 'burst/v1' === $route || str_starts_with( $route, 'burst/v1/' ) ) ? $route : '';
+				// not lookalikes such as burst/v1foo/... Plain segments only, because
+				// WordPress routes on the server's PATH_INFO when there is one: dots and
+				// %XX can resolve to another route. A wp-admin/ segment makes WordPress
+				// drop the rewrite, which turns the request into a front-end page.
+				$is_plain_burst_route = 1 === preg_match( '#^burst/v1(/[a-zA-Z0-9_-]+)*/?$#D', $route );
+				return $is_plain_burst_route && ! str_contains( $route, 'wp-admin/' ) ? $route : '';
 			}
 		}
 		return '';

@@ -68,6 +68,74 @@ abstract class Csv_File_Adapter implements Import_Adapter {
 	abstract protected function map_row( array $row, array $header_map ): ?array;
 
 	/**
+	 * Normalize a raw header row to the column names this adapter works with.
+	 *
+	 * @param array<int, string> $row Raw header row.
+	 * @return array<int, string> Lowercased column names, in file order.
+	 */
+	protected function normalize_headers( array $row ): array {
+		return array_map( 'strtolower', array_map( 'trim', $row ) );
+	}
+
+	/**
+	 * Get the message shown when a file does not have the expected columns.
+	 *
+	 * @param array<int, string> $headers Normalized header columns.
+	 */
+	protected function get_invalid_headers_message( array $headers ): string {
+		unset( $headers );
+		return __( 'This file does not have the columns we expect from this source.', 'burst-statistics' );
+	}
+
+	/**
+	 * Read the header row: the first row that is not blank or a comment.
+	 *
+	 * Moves the file pointer to the row after the header.
+	 *
+	 * @param resource $handle Open file handle, positioned before the header.
+	 * @return array<int, string> Raw header row, empty when the file has none.
+	 */
+	protected function read_header_row( $handle ): array {
+		while ( ! feof( $handle ) ) {
+			$row = fgetcsv( $handle, 4096, ',', '"', '\\' );
+			if ( false === $row ) {
+				break;
+			}
+			$first_val = trim( $row[0] ?? '' );
+			if ( '' !== $first_val && ! str_starts_with( $first_val, '#' ) ) {
+				return array_map( 'trim', $row );
+			}
+		}
+
+		return [];
+	}
+
+	/**
+	 * Check whether a row holds data, as opposed to a comment, a blank line or a
+	 * total row with an empty or labelled date cell.
+	 *
+	 * The date column decides, because not every export has it first.
+	 *
+	 * @param array<int, string|null> $row CSV row.
+	 * @param array<string, int>      $header_map Column name to index map.
+	 */
+	protected function is_data_row( array $row, array $header_map ): bool {
+		return 1 === preg_match( '/^\d/', $this->extract_row_date( $row, $header_map ) );
+	}
+
+	/**
+	 * Look at a row during the preview scan, including rows that hold no data.
+	 *
+	 * Lets an adapter collect file statistics without reading the file again.
+	 *
+	 * @param array<int, string|null> $row CSV row.
+	 * @param array<string, int>      $header_map Column name to index map.
+	 */
+	protected function inspect_preview_row( array $row, array $header_map ): void {
+		unset( $row, $header_map );
+	}
+
+	/**
 	 * Resolve actual CSV file path (e.g. unzipping archives if necessary).
 	 *
 	 * @param string $file_path Uploaded file path.
@@ -210,10 +278,14 @@ abstract class Csv_File_Adapter implements Import_Adapter {
 			];
 		}
 
-		$header_row = [];
+		$header_row = $this->read_header_row( $handle );
+		$headers    = $this->normalize_headers( $header_row );
+		$header_map = array_flip( $headers );
 		$row_count  = 0;
 		$first_date = '';
 		$last_date  = '';
+		$first_key  = '';
+		$last_key   = '';
 		$cutoff     = Import_Manager::get_burst_tracking_start();
 
 		while ( ! feof( $handle ) ) {
@@ -221,35 +293,40 @@ abstract class Csv_File_Adapter implements Import_Adapter {
 			if ( false === $row ) {
 				break;
 			}
-			$first_val = trim( $row[0] ?? '' );
-			if ( '' === $first_val || str_starts_with( $first_val, '#' ) ) {
+			$this->inspect_preview_row( $row, $header_map );
+
+			if ( ! $this->is_data_row( $row, $header_map ) ) {
 				continue;
 			}
 
-			if ( empty( $header_row ) ) {
-				$header_row = array_map( 'trim', $row );
-				continue;
-			}
-
-			if ( $this->is_row_past_cutoff( $first_val, $cutoff ) ) {
+			$date_val = $this->extract_row_date( $row, $header_map );
+			if ( $this->is_row_past_cutoff( $date_val, $cutoff ) ) {
 				continue;
 			}
 
 			++$row_count;
-			if ( '' === $first_date ) {
-				$first_date = $first_val;
+
+			// Exports are not always sorted by date (GA4 explorations sort on
+			// views), so the range comes from the values, not the row positions.
+			$date_key = preg_replace( '/[^0-9]/', '', $date_val ) ?? '';
+			if ( '' === $date_key ) {
+				continue;
 			}
-			$last_date = $first_val;
+			if ( '' === $first_key || $date_key < $first_key ) {
+				$first_key  = $date_key;
+				$first_date = $date_val;
+			}
+			if ( '' === $last_key || $date_key > $last_key ) {
+				$last_key  = $date_key;
+				$last_date = $date_val;
+			}
 		}
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		fclose( $handle );
 
-		$lowered  = array_map( 'strtolower', $header_row );
-		$is_valid = $this->validate_headers( $lowered );
-
-		return [
-			'valid'            => $is_valid,
+		$preview = [
+			'valid'            => $this->validate_headers( $headers ),
 			'headers_detected' => $header_row,
 			'date_range'       => [
 				'start' => $first_date,
@@ -257,6 +334,12 @@ abstract class Csv_File_Adapter implements Import_Adapter {
 			],
 			'estimated_rows'   => $row_count,
 		];
+
+		if ( ! $preview['valid'] ) {
+			$preview['error_message'] = $this->get_invalid_headers_message( $headers );
+		}
+
+		return $preview;
 	}
 
 	/**
@@ -310,23 +393,8 @@ abstract class Csv_File_Adapter implements Import_Adapter {
 
 		// Always parse header row from beginning of file first.
 		rewind( $handle );
-		$header_row = [];
-		$header_map = [];
-
-		while ( ! feof( $handle ) ) {
-			$row = fgetcsv( $handle, 4096, ',', '"', '\\' );
-			if ( false === $row ) {
-				break;
-			}
-			$first_val = trim( $row[0] ?? '' );
-			if ( '' === $first_val || str_starts_with( $first_val, '#' ) ) {
-				continue;
-			}
-
-			$header_row = array_map( 'strtolower', array_map( 'trim', $row ) );
-			$header_map = array_flip( $header_row );
-			break;
-		}
+		$header_row = $this->normalize_headers( $this->read_header_row( $handle ) );
+		$header_map = array_flip( $header_row );
 
 		if ( empty( $header_map ) || ! $this->validate_headers( $header_row ) ) {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
@@ -363,8 +431,7 @@ abstract class Csv_File_Adapter implements Import_Adapter {
 			if ( false === $row ) {
 				break;
 			}
-			$first_val = trim( $row[0] ?? '' );
-			if ( '' === $first_val || str_starts_with( $first_val, '#' ) ) {
+			if ( ! $this->is_data_row( $row, $header_map ) ) {
 				$new_offset = (int) ftell( $handle );
 				continue;
 			}

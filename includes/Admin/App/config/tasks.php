@@ -21,6 +21,10 @@ defined( 'ABSPATH' ) || die();
  *         feature announcements, pages the MainWP dashboard leaves out). Tasks
  *         with false are not served to MainWP requests.
  */
+
+// The goal the not counting task is about, stored by its cron check.
+$burst_goal_not_counting = Admin_Options::get( Admin_Option_Category::CORE, 'goal_not_counting', [] );
+
 return [
 	[
 		'id'                  => 'bf_notice',
@@ -266,6 +270,20 @@ return [
 		'dismiss_permanently' => true,
 	],
 	[
+		'id'                  => 'high_traffic_mode_recommended',
+		'mainwp'              => false,
+		'condition'           => [
+			'type'     => 'serverside',
+			'function' => 'Burst\Admin\Traffic_Peak::should_recommend_buffer_mode()',
+		],
+		'msg'                 => __( 'Your site gets a lot of traffic at peak times. Enable high-traffic buffer mode to reduce the load tracking puts on your server.', 'burst-statistics' ),
+		'icon'                => 'warning',
+		'dismissible'         => true,
+		'plusone'             => false,
+		'fix'                 => 'burst_option_high_traffic_mode',
+		'dismiss_permanently' => true,
+	],
+	[
 		'id'                  => 'persistent_object_cache_recommended',
 		'mainwp'              => true,
 		'condition'           => [
@@ -291,6 +309,25 @@ return [
 		'dismissible'         => true,
 		'plusone'             => true,
 		'dismiss_permanently' => true,
+	],
+	[
+		'id'          => 'goal_not_counting',
+		'mainwp'      => false,
+		// Evaluated on the task validation cron only: the goal in the message
+		// is the stored result of that check, so no health query runs here.
+		'condition'   => [
+			'type'     => 'serverside',
+			'function' => 'Burst\Admin\Statistics\Goal_Statistics::has_not_counting_goal()',
+		],
+		'msg'         => sprintf(
+			// translators: 1: goal title, 2: date of the goal's last conversion.
+			__( '%1$s stopped counting on %2$s', 'burst-statistics' ),
+			esc_html( (string) ( $burst_goal_not_counting['title'] ?? '' ) ),
+			date_i18n( get_option( 'date_format' ), (int) ( $burst_goal_not_counting['last_conversion'] ?? 0 ) )
+		),
+		'icon'        => 'warning',
+		'url'         => '#/goals/' . (int) ( $burst_goal_not_counting['id'] ?? 0 ),
+		'dismissible' => true,
 	],
 	[
 		'id'                  => 'import_statistics_data',

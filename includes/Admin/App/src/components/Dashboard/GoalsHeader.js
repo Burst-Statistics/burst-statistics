@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
 import AsyncSelectInput from '@/components/Inputs/AsyncSelectInput';
-import Icon from '../../utils/Icon';
 
 /**
  * GoalsHeader component to display and select goals.
@@ -40,9 +39,9 @@ const GoalsHeader = ({ goals, goalId, setGoalId }) => {
 		callback( filtered );
 	};
 
-	// if goals is an empty array, return a loading indicator.
+	// No goals yet: the block heading shows the loading spinner, the block the empty notice.
 	if ( 0 === goals.length ) {
-		return <Icon name="loading" />;
+		return null;
 	}
 
 	return (

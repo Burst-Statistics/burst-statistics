@@ -16,7 +16,7 @@ class Diagnostic_Logs {
 	 *
 	 * @var string
 	 */
-	public const BUILD = '3.7.4';
+	public const BUILD = '3.7.5';
 
 	private const RETENTION_DAYS = 90;
 

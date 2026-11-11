@@ -2,7 +2,7 @@ import Icon from '../../utils/Icon';
 import HelpTooltip from '@/components/Common/HelpTooltip';
 import MetricInfo from '@/components/Common/MetricInfo';
 import CommunityComparisonIndicator from '@/components/Common/CommunityComparisonIndicator';
-import { formatNumber } from '@/utils/formatting';
+import { formatNumber, getChangeTextClass } from '@/utils/formatting';
 
 /**
  * ExplanationAndStatsItem component.
@@ -13,7 +13,7 @@ import { formatNumber } from '@/utils/formatting';
  * @param {string|number} props.value        Display value of the item.
  * @param {number|null}   props.exactValue   Exact numeric value for tooltip (if > 1000).
  * @param {string|null}   props.change       Change value to display.
- * @param {string|null}   props.changeStatus Status of the change ('positive' or 'negative').
+ * @param {string|null}   props.changeStatus Status of the change ('positive', 'negative' or 'neutral').
  * @param {string|null}   [props.iconKey]    Optional key for icon display. Default is null.
  * @param {string}        [props.className]  Optional additional class names. Default is ''.
  * @param {string|null}   [props.tooltipText] Optional text for tooltip display. Default is null.
@@ -84,7 +84,7 @@ const ExplanationAndStatsItem = ({
 				{renderValue()}
 
 				<p
-					className={`text-sm ${'positive' === changeStatus ? 'text-green' : 'text-red'}`}
+					className={`text-sm ${ getChangeTextClass( changeStatus ) }`}
 				>
 					{change}
 				</p>

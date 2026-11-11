@@ -482,6 +482,15 @@ class Onboarding {
 			$api_params['last_name']  = $last_name;
 		}
 
+		/**
+		 * Filter the parameters sent to the mailing list on signup, so the plugin can add its own segmentation data.
+		 *
+		 * @param array<string, mixed> $api_params The signup parameters.
+		 */
+		// Using prefixed hook.
+		// phpcs:ignore
+		$api_params = (array) apply_filters( "{$this->prefix}_mailinglist_signup_params", $api_params );
+
 		wp_remote_post(
 			$this->mailing_list_endpoint,
 			[

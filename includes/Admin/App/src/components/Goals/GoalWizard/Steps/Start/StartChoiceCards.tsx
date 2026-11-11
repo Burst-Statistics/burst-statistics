@@ -53,7 +53,7 @@ const StartChoiceCards = ({ presetCount }: { presetCount: number }): JSX.Element
 			<StartChoiceCard
 				icon="pencil"
 				title={__( 'Build your own', 'burst-statistics' )}
-				description={__( 'Track a click, an element coming into view, a page visit or a WordPress hook.', 'burst-statistics' )}
+				description={__( 'Track a click, an element coming into view, a page visit, a file download, a custom event or a WordPress hook.', 'burst-statistics' )}
 				isSelected={'custom' === startMode}
 				onSelect={() => setStartMode( 'custom' )}
 				dataTour="goal-wizard-start-custom"

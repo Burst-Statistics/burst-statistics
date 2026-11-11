@@ -22,6 +22,44 @@ class Integrations {
 		// We can load integrations here directly, because our main plugin file instantiating this on plugins_loaded hook with priority 9.
 		$this->load_integrations();
 		$this->register_for_consent_api();
+
+		if ( ! $this->has_admin_access() ) {
+			// Before Pro's listener (priority 10), which reads the subscription flag these scripts set.
+			add_action( 'burst_admin_lazy_booted', [ $this, 'load_admin_integrations_on_demand' ], 5 );
+		}
+	}
+
+	/**
+	 * Load the integrations' admin scripts when an ability call boots Admin on demand.
+	 *
+	 * The admin gate was closed when the integrations loaded, so their admin scripts
+	 * (which, among other things, enable the subscription integrations) were skipped.
+	 * Runs on burst_admin_lazy_booted, which only fires after the ability's
+	 * permission_callback passed and while the gate is open for that call;
+	 * require_once skips the scripts that already loaded.
+	 */
+	public function load_admin_integrations_on_demand(): void {
+		// Resolved while the admin scripts that enable it were not loaded yet.
+		$this->should_load_subscriptions = null;
+		$this->load_integrations();
+	}
+
+	/**
+	 * Check whether an active integration requires ecommerce features.
+	 *
+	 * Pure check without MainWP or request-context overrides, suitable
+	 * for deciding whether shop-specific data (sales/funnel) exists.
+	 *
+	 * @return bool True if an active shop integration is present.
+	 */
+	public function has_active_ecommerce_integration(): bool {
+		foreach ( $this->integrations as $plugin => $details ) {
+			if ( ! empty( $details['load_ecommerce_integration'] ) && $this->plugin_is_active( $plugin ) ) {
+				return true;
+			}
+		}
+
+		return (bool) apply_filters( 'burst_has_active_ecommerce_integration', false );
 	}
 
 	/**
@@ -39,13 +77,7 @@ class Integrations {
 			return $this->should_load_ecommerce;
 		}
 
-		$this->should_load_ecommerce = false;
-		foreach ( $this->integrations as $plugin => $details ) {
-			if ( isset( $details['load_ecommerce_integration'] ) && $details['load_ecommerce_integration'] && $this->plugin_is_active( $plugin ) ) {
-				$this->should_load_ecommerce = true;
-				break;
-			}
-		}
+		$this->should_load_ecommerce = $this->has_active_ecommerce_integration();
 
 		$this->should_load_ecommerce = (bool) apply_filters( 'burst_load_ecommerce_integration', $this->should_load_ecommerce );
 		return $this->should_load_ecommerce;

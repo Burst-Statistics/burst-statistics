@@ -1,4 +1,5 @@
 import HelpTooltip from '@/components/Common/HelpTooltip';
+import { getChangeTextClass } from '@/utils/formatting';
 
 interface TopPerformersProps {
 	title: string;
@@ -20,7 +21,7 @@ interface TopPerformersProps {
  * @param {string|number} props.value        Display value of the item.
  * @param {number|null}   props.exactValue   Exact numeric value for tooltip (if > 1000).
  * @param {string|null}   props.change       Change value to display.
- * @param {string|null}   props.changeStatus Status of the change ('positive' or 'negative').
+ * @param {string|null}   props.changeStatus Status of the change ('positive', 'negative' or 'neutral').
  * @param {string}        props.tooltipText  Tooltip text for additional info.
  * @param {string}        [props.className]  Optional additional class names.
  *
@@ -65,11 +66,7 @@ const TopPerformerStats = ({
 				}
 
 				<p
-					className={`text-sm ${
-						'positive' === changeStatus ? 'text-green' :
-						'negative' === changeStatus ? 'text-red' :
-						'text-text-gray'
-					}`}
+					className={`text-sm ${ getChangeTextClass( changeStatus ) }`}
 				>
 					{change ?? '-'}
 				</p>

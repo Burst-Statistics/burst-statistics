@@ -130,27 +130,25 @@ export const goalsPlaceholderData = {
 import { getData } from '@/utils/api';
 
 /**
- * Get live goals
+ * Get the statistics of a goal, or of all goals.
+ *
  * @param {Object} args
  * @param {string} args.startDate
  * @param {string} args.endDate
  * @param {string} args.range
- * @param {Object} args.filters
- * @return {Promise<*>}
+ * @param {string} args.goal_id   Goal id, or 'all'.
+ * @return {Promise<Object>} The statistics. Rejects when the request fails.
  */
 const getGoalsData = async( args ) => {
 	const { startDate, endDate, range, goal_id } = args;
 	if ( ! goal_id ) {
 		return goalsPlaceholderData;
 	}
-	try {
-		const { data } = await getData( 'goals', startDate, endDate, range, {
-			goal_id
-		});
-		return transformTotalGoalsData( data );
-	} catch ( error ) {
-		console.error( 'Error fetching goals data:', error );
-		return goalsPlaceholderData;
-	}
+
+	// Let errors reach React Query, so the block shows its error state instead of placeholder values as data.
+	const { data } = await getData( 'goals', startDate, endDate, range, {
+		goal_id
+	});
+	return transformTotalGoalsData( data );
 };
 export default getGoalsData;

@@ -1,6 +1,7 @@
 import { __ } from '@wordpress/i18n';
 import useGoalsData from '@/hooks/useGoalsData';
-import type { Goal } from '@/components/Goals/goalHelpers';
+import { getGoalKind } from '@/components/Goals/goalHelpers';
+import type { Goal, GoalKind } from '@/components/Goals/goalHelpers';
 import GoalStepHeading from '../GoalStepHeading';
 import GoalTypeCards from './GoalTypeCards';
 
@@ -13,19 +14,41 @@ import GoalTypeCards from './GoalTypeCards';
  */
 const ChangeGoalType = ({ goal }: { goal: Goal }): JSX.Element => {
 	const { setGoalValue } = useGoalsData();
+	const currentKind = getGoalKind( goal );
 
-	const changeType = ( type: string ) => {
+	// fallow-ignore-next-line complexity
+	const changeKind = ( newKindStr: string ) => {
+		const newKind = newKindStr as GoalKind;
+		if ( newKind === currentKind ) {
+			return;
+		}
 
 		// A visit counts on one page: use page scope once that page is known, so no page never saves as the home page.
-		if ( 'visits' === type ) {
+		if ( 'visits' === newKind ) {
 			setGoalValue( goal.id, 'page_or_website', goal.specific_page ? 'page' : 'website' );
 		}
 
-		// A hook counts wherever it runs; the wizard has no page for it.
-		if ( 'hook' === type ) {
+		// Hook and event goals count wherever they run; the wizard has no page for them.
+		if ( 'hook' === newKind || 'download' === newKind || 'event' === newKind ) {
 			setGoalValue( goal.id, 'page_or_website', 'website' );
 		}
-		setGoalValue( goal.id, 'type', type );
+
+		if ( 'download' === newKind ) {
+			setGoalValue( goal.id, 'type', 'event' );
+			setGoalValue( goal.id, 'hook', 'file_download' );
+			setGoalValue( goal.id, 'event_filter', null );
+		} else if ( 'event' === newKind ) {
+			setGoalValue( goal.id, 'type', 'event' );
+			setGoalValue( goal.id, 'hook', '' );
+			setGoalValue( goal.id, 'event_filter', null );
+		} else {
+
+			// Switching away from an event kind clears event_filter.
+			if ( 'download' === currentKind || 'event' === currentKind ) {
+				setGoalValue( goal.id, 'event_filter', null );
+			}
+			setGoalValue( goal.id, 'type', newKind );
+		}
 	};
 
 	return (
@@ -34,7 +57,7 @@ const ChangeGoalType = ({ goal }: { goal: Goal }): JSX.Element => {
 				title={__( 'What do you want to count?', 'burst-statistics' )}
 				description={__( 'Pick what a conversion looks like. You can change this later.', 'burst-statistics' )}
 			/>
-			<GoalTypeCards value={goal.type} onChange={changeType} />
+			<GoalTypeCards value={currentKind} onChange={changeKind} />
 		</div>
 	);
 };

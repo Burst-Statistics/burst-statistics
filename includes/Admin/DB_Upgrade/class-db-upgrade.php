@@ -26,7 +26,7 @@ class DB_Upgrade {
 	 *
 	 * @var string
 	 */
-	public const BUILD = '3.7.4';
+	public const BUILD = '3.7.5';
 
 	private int $cron_interval = MINUTE_IN_SECONDS;
 
@@ -571,10 +571,6 @@ class DB_Upgrade {
 				$this->upgrade_lookup_tables_drop_columns();
 			}
 
-			if ( 'drop_page_id_column' === $do_upgrade ) {
-				$this->upgrade_drop_page_id_column();
-			}
-
 			if ( 'rename_entire_page_url_column' === $do_upgrade ) {
 				$this->change_column_name_entire_page_url();
 			}
@@ -799,7 +795,10 @@ class DB_Upgrade {
 					// end progress only upgrade items.
 
 					'upgrade_lookup_tables_drop_columns',
-					'drop_page_id_column',
+					// drop_page_id_column is gone on purpose: 2.2.6 brought
+					// page_id back as a live column, so on a site still
+					// working through these tasks it dropped current data
+					// and every tracking insert failed on the missing column.
 				],
 				'1.7.1'   => [
 					'rename_entire_page_url_column',
@@ -2886,33 +2885,6 @@ class DB_Upgrade {
 		}
 	}
 
-
-	/**
-	 * Drop the page_id column from the statistics table.
-	 */
-	private function upgrade_drop_page_id_column(): void {
-		if ( ! $this->has_admin_access() ) {
-			return;
-		}
-		if ( ! get_option( 'burst_db_upgrade_drop_page_id_column' ) ) {
-			return;
-		}
-
-		global $wpdb;
-		// check if columns exist first.
-		$columns = $wpdb->get_col( "DESC {$wpdb->prefix}burst_statistics", 0 );
-		if ( ! in_array( 'page_id', $columns, true ) ) {
-			delete_option( 'burst_db_upgrade_drop_page_id_column' );
-			return;
-		}
-
-		// run an sql query to remove the columns `event` and `action`.
-		$remove = $wpdb->query( "ALTER TABLE {$wpdb->prefix}burst_statistics DROP COLUMN `page_id`" );
-
-		if ( $remove !== false ) {
-			delete_option( 'burst_db_upgrade_drop_page_id_column' );
-		}
-	}
 
 	/**
 	 * Update the entire_page_url column to the new name, paramaters, and change to TEXT

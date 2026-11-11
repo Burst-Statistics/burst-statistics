@@ -35,6 +35,7 @@ class Settings_Change_Log {
 		'track_url_change',
 		'enable_do_not_track',
 		'ghost_mode',
+		'high_traffic_mode',
 	];
 
 	/**

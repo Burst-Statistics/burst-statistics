@@ -24,7 +24,7 @@ class Search_Terms_Store {
 	 *
 	 * @var string
 	 */
-	public const BUILD = '3.7.4';
+	public const BUILD = '3.7.5';
 
 	/**
 	 * Table name without the WordPress prefix.

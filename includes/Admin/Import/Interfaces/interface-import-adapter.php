@@ -55,7 +55,8 @@ interface Import_Adapter {
 	 *     headers_detected: string[],
 	 *     date_range: array{start: string, end: string},
 	 *     estimated_rows: int,
-	 *     error_message?: string
+	 *     error_message?: string,
+	 *     warning?: string
 	 * }
 	 */
 	public function parse_preview( string $file_path ): array;

@@ -36,7 +36,8 @@ class Ip {
 			$ip_blocklist      = apply_filters( 'burst_ip_blocklist', $blocked_ips_array );
 			foreach ( $ip_blocklist as $ip_range ) {
 				if ( self::ip_in_range( $ip, $ip_range ) ) {
-					self::error_log( 'IP ' . $ip . ' is blocked for tracking.' );
+					// The IP itself stays out of the log: debug logs are not a place for visitor data.
+					self::error_log( 'Hit not tracked: the visitor IP is on the IP block list.' );
 					return true;
 				}
 			}

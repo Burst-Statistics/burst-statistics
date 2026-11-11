@@ -29,6 +29,7 @@ export interface GoalWizardSave {
  */
 const useGoalWizardSave = ( goal: Goal | null ): GoalWizardSave => {
 	const pendingType = useGoalWizardStore( ( state ) => state.pendingType );
+	const pendingKind = useGoalWizardStore( ( state ) => state.pendingKind );
 	const { nextStep, closeWizard, setNewGoal } = useGoalWizardStore.getState();
 	const { addGoal, setGoalValue, saveGoal: saveGoalById, invalidateGoals } = useGoalsData();
 	const [ isSaving, setIsSaving ] = useState( false );
@@ -46,14 +47,14 @@ const useGoalWizardSave = ( goal: Goal | null ): GoalWizardSave => {
 	};
 
 	/**
-	 * Save the goal from the cache. Hook goals count on every page: the wizard no
+	 * Save the goal from the cache. Hook and event goals count on every page: the wizard no
 	 * longer offers a page for them, so an older page scope is reset here.
 	 *
 	 * @param {Goal} current The goal to save.
 	 * @return {Promise<unknown>} The save request.
 	 */
 	const saveFromCache = ( current: Goal ) => {
-		if ( 'hook' === current.type && 'website' !== current.page_or_website ) {
+		if ( ( 'hook' === current.type || 'event' === current.type ) && 'website' !== current.page_or_website ) {
 			setGoalValue( current.id, 'page_or_website', 'website' );
 		}
 		return saveGoalById( current.id );
@@ -63,16 +64,22 @@ const useGoalWizardSave = ( goal: Goal | null ): GoalWizardSave => {
 		const response = await addGoal();
 		const id = response.goal.id;
 
+		const initialGoal: Partial<Goal> & { id: number; type: string } = {
+			id,
+			type: pendingType,
+			title: __( 'New goal', 'burst-statistics' ),
+
+			// Visits count on one page, but until it is chosen 'page' would make the server save the home page.
+			page_or_website: 'website'
+		};
+
+		if ( 'download' === pendingKind ) {
+			initialGoal.hook = 'file_download';
+		}
+
 		// Explicit payload instead of the cache: the add mutation refetches goals in the background.
 		await setGoals({
-			goals: [ {
-				id,
-				type: pendingType,
-				title: __( 'New goal', 'burst-statistics' ),
-
-				// Visits count on one page, but until it is chosen 'page' would make the server save the home page.
-				page_or_website: 'website'
-			} ]
+			goals: [ initialGoal ]
 		});
 		await invalidateGoals();
 		setNewGoal( id );

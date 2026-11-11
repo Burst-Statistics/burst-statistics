@@ -1,7 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
-import { canActivateGoal, describeSelector, getGoalPage, getGoalResumeStep, getGoalSteps, getShortSelector, isElementType, isGoalComplete, isGoalCounting } from './goalHelpers';
+import {
+	canActivateGoal,
+	describeSelector,
+	getGoalKind,
+	getGoalPage,
+	getGoalResumeStep,
+	getGoalSteps,
+	getGoalTrackingBlocker,
+	getShortSelector,
+	isElementType,
+	isGoalComplete,
+	isGoalCounting
+} from './goalHelpers';
 
 // isGoalComplete checks selectors with the DOM's own parser, which node does not have.
 globalThis.document = new JSDOM().window.document as unknown as Document;
@@ -117,4 +129,101 @@ test( 'isGoalCounting: only an active, finished goal counts', () => {
 	assert.strictEqual( isGoalCounting({ type: 'clicks', selector: '.buy', status: 'active' }), true );
 	assert.strictEqual( isGoalCounting({ type: 'clicks', selector: '.buy', status: 'inactive' }), false );
 	assert.strictEqual( isGoalCounting({ type: 'views', selector: '.buy[', status: 'active' }), false );
+});
+
+test( 'getGoalKind: identifies goal kind by type and hook', () => {
+	assert.strictEqual( getGoalKind({ type: 'clicks' }), 'clicks' );
+	assert.strictEqual( getGoalKind({ type: 'views' }), 'views' );
+	assert.strictEqual( getGoalKind({ type: 'visits' }), 'visits' );
+	assert.strictEqual( getGoalKind({ type: 'hook' }), 'hook' );
+	assert.strictEqual( getGoalKind({ type: 'event', hook: 'file_download' }), 'download' );
+	assert.strictEqual( getGoalKind({ type: 'event', hook: 'generate_lead' }), 'event' );
+});
+
+test( 'isGoalComplete: validates event and download goals', () => {
+	assert.strictEqual( isGoalComplete({ type: 'event', hook: '' }), false );
+	assert.strictEqual( isGoalComplete({ type: 'event', hook: 'generate_lead' }), true );
+	assert.strictEqual( isGoalComplete({ type: 'event', hook: 'file_download' }), true );
+	assert.strictEqual( isGoalComplete({
+		type: 'event',
+		hook: 'file_download',
+		event_filter: JSON.stringify({ key: 'file_name', op: 'equals', value: 'doc.pdf' })
+	}), true );
+	assert.strictEqual( isGoalComplete({
+		type: 'event',
+		hook: 'file_download',
+		event_filter: JSON.stringify({ key: 'file_name', op: 'equals', value: '   ' })
+	}), false );
+	assert.strictEqual( isGoalComplete({
+		type: 'event',
+		hook: 'file_download',
+		event_filter: JSON.stringify({ key: 'file_extension', op: 'in', value: [ 'pdf' ] })
+	}), true );
+	assert.strictEqual( isGoalComplete({
+		type: 'event',
+		hook: 'file_download',
+		event_filter: JSON.stringify({ key: 'file_extension', op: 'in', value: [] })
+	}), false );
+});
+
+test( 'getGoalTrackingBlocker: detects when tracking settings are off', () => {
+	const downloadGoal = { type: 'event', hook: 'file_download' };
+	const eventGoal = { type: 'event', hook: 'lead_form' };
+
+	( globalThis as any ).window = { // eslint-disable-line @typescript-eslint/no-explicit-any
+		burst_settings: {
+			fields: [
+				{ id: 'enable_custom_events', value: false },
+				{ id: 'track_downloads', value: false }
+			]
+		}
+	};
+	assert.strictEqual( getGoalTrackingBlocker( downloadGoal )?.type, 'custom_events_off' );
+	assert.strictEqual( getGoalTrackingBlocker( eventGoal )?.type, 'custom_events_off' );
+
+	( globalThis as any ).window = { // eslint-disable-line @typescript-eslint/no-explicit-any
+		burst_settings: {
+			fields: [
+				{ id: 'enable_custom_events', value: true },
+				{ id: 'track_downloads', value: false }
+			]
+		}
+	};
+	assert.strictEqual( getGoalTrackingBlocker( downloadGoal )?.type, 'downloads_off' );
+	assert.strictEqual( getGoalTrackingBlocker( eventGoal ), null );
+
+	( globalThis as any ).window = { // eslint-disable-line @typescript-eslint/no-explicit-any
+		burst_settings: {
+			fields: [
+				{ id: 'enable_custom_events', value: true },
+				{ id: 'track_downloads', value: true }
+			]
+		}
+	};
+	assert.strictEqual( getGoalTrackingBlocker( downloadGoal ), null );
+	assert.strictEqual( getGoalTrackingBlocker( eventGoal ), null );
+});
+
+test( 'isGoalCounting and getGoalResumeStep respect tracking blockers', () => {
+	const goal = { type: 'event', hook: 'lead_form', status: 'active' };
+
+	( globalThis as any ).window = { // eslint-disable-line @typescript-eslint/no-explicit-any
+		burst_settings: {
+			fields: [
+				{ id: 'enable_custom_events', value: false }
+			]
+		}
+	};
+	assert.strictEqual( isGoalCounting( goal ), false );
+	assert.strictEqual( getGoalResumeStep( goal ), 2 );
+
+	( globalThis as any ).window = { // eslint-disable-line @typescript-eslint/no-explicit-any
+		burst_settings: {
+			fields: [
+				{ id: 'enable_custom_events', value: true }
+			]
+		}
+	};
+	assert.strictEqual( isGoalCounting( goal ), true );
+	assert.strictEqual( getGoalResumeStep( goal ), 4 );
 });

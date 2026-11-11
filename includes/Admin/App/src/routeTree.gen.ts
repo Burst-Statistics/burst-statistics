@@ -21,10 +21,12 @@ import { Route as ReportingImport } from './routes/reporting'
 import { Route as GoalsImport } from './routes/goals'
 import { Route as EngagementImport } from './routes/engagement'
 import { Route as IndexImport } from './routes/index'
+import { Route as GoalsIndexImport } from './routes/goals.index'
 import { Route as TableVariantImport } from './routes/table.$variant'
 import { Route as SettingsSettingsIdImport } from './routes/settings.$settingsId'
 import { Route as ReportingReportingIdImport } from './routes/reporting.$reportingId'
 import { Route as PageIdImport } from './routes/page.$id'
+import { Route as GoalsGoalIdImport } from './routes/goals.$goalId'
 
 // Create/Update Routes
 
@@ -78,6 +80,11 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const GoalsIndexRoute = GoalsIndexImport.update({
+  path: '/',
+  getParentRoute: () => GoalsRoute,
+} as any)
+
 const TableVariantRoute = TableVariantImport.update({
   path: '/table/$variant',
   getParentRoute: () => rootRoute,
@@ -96,6 +103,11 @@ const ReportingReportingIdRoute = ReportingReportingIdImport.update({
 const PageIdRoute = PageIdImport.update({
   path: '/page/$id',
   getParentRoute: () => rootRoute,
+} as any)
+
+const GoalsGoalIdRoute = GoalsGoalIdImport.update({
+  path: '/$goalId',
+  getParentRoute: () => GoalsRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -172,6 +184,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SubscriptionsImport
       parentRoute: typeof rootRoute
     }
+    '/goals/$goalId': {
+      id: '/goals/$goalId'
+      path: '/$goalId'
+      fullPath: '/goals/$goalId'
+      preLoaderRoute: typeof GoalsGoalIdImport
+      parentRoute: typeof GoalsImport
+    }
     '/page/$id': {
       id: '/page/$id'
       path: '/page/$id'
@@ -200,10 +219,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TableVariantImport
       parentRoute: typeof rootRoute
     }
+    '/goals/': {
+      id: '/goals/'
+      path: '/'
+      fullPath: '/goals/'
+      preLoaderRoute: typeof GoalsIndexImport
+      parentRoute: typeof GoalsImport
+    }
   }
 }
 
 // Create and export the route tree
+
+interface GoalsRouteChildren {
+  GoalsGoalIdRoute: typeof GoalsGoalIdRoute
+  GoalsIndexRoute: typeof GoalsIndexRoute
+}
+
+const GoalsRouteChildren: GoalsRouteChildren = {
+  GoalsGoalIdRoute: GoalsGoalIdRoute,
+  GoalsIndexRoute: GoalsIndexRoute,
+}
+
+const GoalsRouteWithChildren = GoalsRoute._addFileChildren(GoalsRouteChildren)
 
 interface ReportingRouteChildren {
   ReportingReportingIdRoute: typeof ReportingReportingIdRoute
@@ -232,7 +270,7 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/engagement': typeof EngagementRoute
-  '/goals': typeof GoalsRoute
+  '/goals': typeof GoalsRouteWithChildren
   '/reporting': typeof ReportingRouteWithChildren
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRouteWithChildren
@@ -240,16 +278,17 @@ export interface FileRoutesByFullPath {
   '/statistics': typeof StatisticsRoute
   '/story': typeof StoryRoute
   '/subscriptions': typeof SubscriptionsRoute
+  '/goals/$goalId': typeof GoalsGoalIdRoute
   '/page/$id': typeof PageIdRoute
   '/reporting/$reportingId': typeof ReportingReportingIdRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
   '/table/$variant': typeof TableVariantRoute
+  '/goals/': typeof GoalsIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/engagement': typeof EngagementRoute
-  '/goals': typeof GoalsRoute
   '/reporting': typeof ReportingRouteWithChildren
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRouteWithChildren
@@ -257,17 +296,19 @@ export interface FileRoutesByTo {
   '/statistics': typeof StatisticsRoute
   '/story': typeof StoryRoute
   '/subscriptions': typeof SubscriptionsRoute
+  '/goals/$goalId': typeof GoalsGoalIdRoute
   '/page/$id': typeof PageIdRoute
   '/reporting/$reportingId': typeof ReportingReportingIdRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
   '/table/$variant': typeof TableVariantRoute
+  '/goals': typeof GoalsIndexRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/engagement': typeof EngagementRoute
-  '/goals': typeof GoalsRoute
+  '/goals': typeof GoalsRouteWithChildren
   '/reporting': typeof ReportingRouteWithChildren
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRouteWithChildren
@@ -275,10 +316,12 @@ export interface FileRoutesById {
   '/statistics': typeof StatisticsRoute
   '/story': typeof StoryRoute
   '/subscriptions': typeof SubscriptionsRoute
+  '/goals/$goalId': typeof GoalsGoalIdRoute
   '/page/$id': typeof PageIdRoute
   '/reporting/$reportingId': typeof ReportingReportingIdRoute
   '/settings/$settingsId': typeof SettingsSettingsIdRoute
   '/table/$variant': typeof TableVariantRoute
+  '/goals/': typeof GoalsIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -294,15 +337,16 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/story'
     | '/subscriptions'
+    | '/goals/$goalId'
     | '/page/$id'
     | '/reporting/$reportingId'
     | '/settings/$settingsId'
     | '/table/$variant'
+    | '/goals/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/engagement'
-    | '/goals'
     | '/reporting'
     | '/sales'
     | '/settings'
@@ -310,10 +354,12 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/story'
     | '/subscriptions'
+    | '/goals/$goalId'
     | '/page/$id'
     | '/reporting/$reportingId'
     | '/settings/$settingsId'
     | '/table/$variant'
+    | '/goals'
   id:
     | '__root__'
     | '/'
@@ -326,17 +372,19 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/story'
     | '/subscriptions'
+    | '/goals/$goalId'
     | '/page/$id'
     | '/reporting/$reportingId'
     | '/settings/$settingsId'
     | '/table/$variant'
+    | '/goals/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EngagementRoute: typeof EngagementRoute
-  GoalsRoute: typeof GoalsRoute
+  GoalsRoute: typeof GoalsRouteWithChildren
   ReportingRoute: typeof ReportingRouteWithChildren
   SalesRoute: typeof SalesRoute
   SettingsRoute: typeof SettingsRouteWithChildren
@@ -351,7 +399,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EngagementRoute: EngagementRoute,
-  GoalsRoute: GoalsRoute,
+  GoalsRoute: GoalsRouteWithChildren,
   ReportingRoute: ReportingRouteWithChildren,
   SalesRoute: SalesRoute,
   SettingsRoute: SettingsRouteWithChildren,
@@ -396,7 +444,11 @@ export const routeTree = rootRoute
       "filePath": "engagement.jsx"
     },
     "/goals": {
-      "filePath": "goals.jsx"
+      "filePath": "goals.jsx",
+      "children": [
+        "/goals/$goalId",
+        "/goals/"
+      ]
     },
     "/reporting": {
       "filePath": "reporting.jsx",
@@ -425,6 +477,10 @@ export const routeTree = rootRoute
     "/subscriptions": {
       "filePath": "subscriptions.jsx"
     },
+    "/goals/$goalId": {
+      "filePath": "goals.$goalId.jsx",
+      "parent": "/goals"
+    },
     "/page/$id": {
       "filePath": "page.$id.jsx"
     },
@@ -438,6 +494,10 @@ export const routeTree = rootRoute
     },
     "/table/$variant": {
       "filePath": "table.$variant.jsx"
+    },
+    "/goals/": {
+      "filePath": "goals.index.jsx",
+      "parent": "/goals"
     }
   }
 }

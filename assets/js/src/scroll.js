@@ -85,3 +85,19 @@ burst.getScrollData = function () {
     dwell_zones: JSON.stringify(burstDwellTimePerZone),
   };
 };
+
+/**
+ * Forget everything measured so far.
+ *
+ * Called when tracking starts on a page the visitor had opted out on: the
+ * depth they reached and the time they dwelled while opted out may not end up
+ * in the hit that follows. Moving the timestamp up is what drops the chunk
+ * measured since the last update, which is counted from it.
+ */
+burst.resetScrollData = function () {
+  burstMaxScroll = 0;
+  burstLastScrollTimestamp = Date.now();
+  for (const zone in burstDwellTimePerZone) {
+    burstDwellTimePerZone[zone] = 0;
+  }
+};

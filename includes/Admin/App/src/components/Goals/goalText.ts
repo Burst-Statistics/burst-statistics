@@ -1,5 +1,5 @@
 import { __, sprintf } from '@wordpress/i18n';
-import { GOAL_STEP, describeSelector, getGoalPage, isGoalComplete } from './goalHelpers';
+import { GOAL_STEP, describeSelector, formatExtensionsList, getGoalKind, getGoalPage, isGoalComplete, parseEventFilter } from './goalHelpers';
 import type { Goal, GoalLike } from './goalHelpers';
 
 /**
@@ -101,9 +101,46 @@ const getVisitTracksText = ( goal: Goal ): string => {
 	return page ? sprintf( __( 'Visits to %s', 'burst-statistics' ), page ) : '';
 };
 
+/**
+ * What a download goal tracks.
+ *
+ * @param {Goal} goal The goal.
+ * @return {string} The description.
+ */
+// fallow-ignore-next-line complexity
+const getDownloadTracksText = ( goal: Goal ): string => {
+	const filter = parseEventFilter( goal.event_filter );
+	if ( filter && 'file_name' === filter.key && 'equals' === filter.op && 'string' === typeof filter.value && filter.value ) {
+
+		/* translators: %s: file name, e.g. brochure-2026.pdf. */
+		return sprintf( __( 'Downloads of %s', 'burst-statistics' ), filter.value );
+	}
+	if ( filter && 'file_extension' === filter.key && 'in' === filter.op && Array.isArray( filter.value ) && 0 < filter.value.length ) {
+		const extensions = formatExtensionsList( filter.value );
+
+		/* translators: %s: file extensions list, e.g. PDF, ZIP. */
+		return sprintf( __( 'Downloads of %s files', 'burst-statistics' ), extensions );
+	}
+	return __( 'Any file download', 'burst-statistics' );
+};
+
+/**
+ * What a custom event goal tracks.
+ *
+ * @param {Goal} goal The goal.
+ * @return {string} The description, empty when no event name is entered.
+ */
+const getEventTracksText = ( goal: Goal ): string => {
+
+	/* translators: %s: custom event name, e.g. generate_lead. */
+	return goal.hook ? sprintf( __( 'When %s is sent', 'burst-statistics' ), goal.hook ) : '';
+};
+
 const TRACKS_TEXT: Record<string, ( goal: Goal ) => string> = {
 	hook: getHookTracksText,
-	visits: getVisitTracksText
+	visits: getVisitTracksText,
+	download: getDownloadTracksText,
+	event: getEventTracksText
 };
 
 /**
@@ -112,8 +149,10 @@ const TRACKS_TEXT: Record<string, ( goal: Goal ) => string> = {
  * @param {Goal} goal The goal.
  * @return {string} The description, empty when the goal is not set up yet.
  */
-export const getTracksText = ( goal: Goal ): string =>
-	( TRACKS_TEXT[ goal.type ] ?? getElementTracksText )( goal );
+export const getTracksText = ( goal: Goal ): string => {
+	const kind = getGoalKind( goal );
+	return ( TRACKS_TEXT[ kind ] ?? getElementTracksText )( goal );
+};
 
 /**
  * Where a goal counts: its page, or the whole site.
@@ -157,7 +196,22 @@ export const getFinishLabel = ( goal: Goal ): string =>
  * @param {Goal} goal The unfinished goal.
  * @return {string} The missing piece.
  */
+// fallow-ignore-next-line complexity
 const getMissingTargetHint = ( goal: Goal ): string => {
+	const kind = getGoalKind( goal );
+	if ( 'download' === kind ) {
+		const filter = parseEventFilter( goal.event_filter );
+		if ( filter && 'file_name' === filter.key && ! filter.value ) {
+			return __( 'Enter or choose a file name to continue.', 'burst-statistics' );
+		}
+		if ( filter && 'file_extension' === filter.key && ( ! Array.isArray( filter.value ) || 0 === filter.value.length ) ) {
+			return __( 'Choose at least one file type to continue.', 'burst-statistics' );
+		}
+		return __( 'Choose which files to track to continue.', 'burst-statistics' );
+	}
+	if ( 'event' === kind ) {
+		return __( 'Enter the event name to continue.', 'burst-statistics' );
+	}
 	if ( 'hook' === goal.type ) {
 		return goal.hook.trim() ?
 			__( 'Choose a page to continue.', 'burst-statistics' ) :

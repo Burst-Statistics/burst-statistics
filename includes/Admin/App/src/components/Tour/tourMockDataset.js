@@ -8,6 +8,7 @@
  *
  * Everything here is deterministic: the same request gives the same response.
  */
+import { __ } from '@wordpress/i18n';
 
 /** Visitors in the default period (matches the compare block). */
 export const TOTAL_VISITORS = 3890;
@@ -366,7 +367,7 @@ export const buildDatatable = ( rows, metrics, extra = {}) => {
 		data: {
 			columns: ids.map( ( id ) => ({
 				id,
-				name: id.replace( /_/g, ' ' ).replace( /^./, ( c ) => c.toUpperCase() ),
+				name: 'conversions' === id ? __( 'Goal completions', 'burst-statistics' ) : id.replace( /_/g, ' ' ).replace( /^./, ( c ) => c.toUpperCase() ),
 				sortable: 'true',
 				right: 'true'
 			}) ),

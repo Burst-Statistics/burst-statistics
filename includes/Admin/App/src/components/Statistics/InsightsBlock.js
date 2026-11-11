@@ -21,7 +21,7 @@ import { METRIC_LABELS, METRIC_COLORS } from './insightsConfig';
  * @param {boolean} props.loading  - Whether the chart is in a loading state.
  * @return {JSX.Element|null} The legend element, or null when no datasets are present.
  */
-function InsightsLegend({ datasets, loading }) {
+export function InsightsLegend({ datasets, loading }) {
 	if ( ! datasets?.length ) {
 		return null;
 	}

@@ -3,7 +3,7 @@ import { clsx } from 'clsx';
 import type { Point, SliceData } from '@nivo/line';
 import { ChartTooltip } from '@/components/Common/ChartTooltip';
 import { COMPARE_MODES } from '@/store/useCompareStore';
-import { formatCurrency, formatNumber, formatTooltipLabel, getChangePercentage } from '@/utils/formatting';
+import { formatCurrency, formatNumber, formatTooltipLabel, getChangePercentage, getChangeTooltipTextClass } from '@/utils/formatting';
 import { SALES_CHART_COLORS } from './salesChartData';
 import type { SalesChartSeries } from './salesChartData';
 
@@ -145,7 +145,7 @@ export function SalesChartTooltip({
 								<span
 									className={ clsx(
 										'text-xs font-medium tabular-nums text-right whitespace-nowrap',
-										'positive' === change?.status ? 'text-green-600' : 'text-red-600'
+										getChangeTooltipTextClass( change?.status )
 									) }
 								>
 									{ percentChangeLabel }

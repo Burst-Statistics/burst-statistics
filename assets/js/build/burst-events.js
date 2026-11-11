@@ -64,6 +64,10 @@ window.burst.events = {
 		if ( window.burst.options.track_gtag_events ) {
 			this.captureGtagEvents();
 		}
+
+		if ( window.burst.options.track_downloads ) {
+			this.captureDownloadEvents();
+		}
 	},
 
 	/**
@@ -268,6 +272,185 @@ window.burst.events = {
 		}
 
 		return !! window.burst.options.track_gtag_custom_parameters;
+	},
+
+	/**
+	 * Check if an anchor element points to a downloadable file.
+	 *
+	 * @param {HTMLAnchorElement} anchorElement - The link to test.
+	 * @returns {boolean} - True if the link is a download.
+	 */
+	isDownload: function ( anchorElement ) {
+		return !! this.getDownloadDetails( anchorElement );
+	},
+
+	/**
+	 * Extract download properties from an anchor element if it points to a downloadable file.
+	 *
+	 * @param {HTMLAnchorElement} anchorElement - The clicked link.
+	 * @returns {Object|false} - Download details or false if not a download.
+	 */
+	getDownloadDetails: function ( anchorElement ) {
+		const href = anchorElement?.getAttribute?.( 'href' );
+		if ( ! href || href.startsWith( '#' ) || href.startsWith( 'javascript:' ) || href.startsWith( 'mailto:' ) || href.startsWith( 'tel:' ) ) {
+			return false;
+		}
+
+		let targetUrl;
+		try {
+			targetUrl = new URL( anchorElement.href, window.location.href );
+		} catch ( error ) {
+			return false;
+		}
+
+		if ( ! [ 'http:', 'https:' ].includes( targetUrl.protocol ) ) {
+			return false;
+		}
+
+		const hasDownloadAttr = anchorElement.hasAttribute( 'download' );
+		const pathname = targetUrl.pathname || '';
+		const lastSlash = pathname.lastIndexOf( '/' );
+		const pathSegment = lastSlash !== -1 ? pathname.slice( lastSlash + 1 ) : pathname;
+
+		const extMatch = pathSegment.match( /\.([a-zA-Z0-9]+)$/ );
+		const pathExtension = extMatch ? extMatch[ 1 ].toLowerCase() : '';
+
+		// Sent by the server together with track_downloads.
+		const allowedExtensions = window.burst?.options?.download_extensions || [];
+
+		const isDownloadExtension = !! pathExtension && allowedExtensions.includes( pathExtension );
+
+		if ( ! hasDownloadAttr && ! isDownloadExtension ) {
+			return false;
+		}
+
+		let fileName = '';
+		if ( hasDownloadAttr ) {
+			const downloadAttrVal = anchorElement.getAttribute( 'download' );
+			if ( downloadAttrVal && downloadAttrVal.trim() ) {
+				fileName = downloadAttrVal.trim();
+			}
+		}
+		if ( ! fileName && pathSegment ) {
+			try {
+				fileName = decodeURIComponent( pathSegment );
+			} catch ( e ) {
+				fileName = pathSegment;
+			}
+		}
+
+		let fileExtension = pathExtension;
+		if ( fileName ) {
+			const fnExtMatch = fileName.match( /\.([a-zA-Z0-9]+)$/ );
+			if ( fnExtMatch ) {
+				fileExtension = fnExtMatch[ 1 ].toLowerCase();
+			}
+		}
+
+		const linkUrl = targetUrl.origin + targetUrl.pathname;
+
+		return {
+			file_name: fileName,
+			file_extension: fileExtension,
+			link_url: linkUrl,
+		};
+	},
+
+	/**
+	 * Get the download link a click landed on.
+	 *
+	 * @param {MouseEvent} e - The click.
+	 * @returns {HTMLAnchorElement|null} - The link, or null if the click is not on a download.
+	 */
+	getDownloadLink: function ( e ) {
+		const target = e.target?.closest?.( 'a[href]' );
+		return target && this.isDownload( target ) ? target : null;
+	},
+
+	/**
+	 * Check if burst.js sends the hit for this link, as an external link click.
+	 *
+	 * @param {HTMLAnchorElement} anchorElement - The clicked link.
+	 * @returns {boolean} - True if burst.js handles the link.
+	 */
+	isTrackedExternalLink: function ( anchorElement ) {
+		if ( ! window.burst?.options?.track_external_links ) {
+			return false;
+		}
+
+		return [ 'http:', 'https:' ].includes( anchorElement.protocol ) && anchorElement.origin !== window.location.origin;
+	},
+
+	/**
+	 * Check if the browser leaves the page for this click, so a REST request could get cut off.
+	 *
+	 * @param {MouseEvent}        e             - The click, after the page's own listeners ran.
+	 * @param {HTMLAnchorElement} anchorElement - The clicked link.
+	 * @returns {boolean} - True if the click navigates away in this tab.
+	 */
+	leavesPage: function ( e, anchorElement ) {
+		return ! e.defaultPrevented &&
+			e.button === 0 &&
+			! e.metaKey && ! e.ctrlKey && ! e.shiftKey && ! e.altKey &&
+			! anchorElement.hasAttribute( 'download' ) &&
+			( ! anchorElement.target || anchorElement.target.toLowerCase() === '_self' );
+	},
+
+	/**
+	 * Listen for clicks on file download links, in two phases.
+	 *
+	 * The capture phase on window queues the event, before the document-level capture
+	 * listener in burst.js sends the external link hit. The bubble phase comes after the
+	 * page's own listeners, so a link the page handles itself, like a lightbox, stays on
+	 * the page.
+	 */
+	captureDownloadEvents: function () {
+		window.addEventListener( 'click', ( e ) => this.queueDownload( e ), true );
+		window.addEventListener( 'click', ( e ) => this.sendDownload( e ) );
+	},
+
+	/**
+	 * Queue the file_download event of a click.
+	 *
+	 * @param {MouseEvent} e - The click.
+	 */
+	queueDownload: function ( e ) {
+		const target = this.getDownloadLink( e );
+		if ( target ) {
+			this.event( 'file_download', this.getDownloadDetails( target ) );
+		}
+	},
+
+	/**
+	 * Send the queued file_download event. Over REST the request can get cut off when the
+	 * page unloads, so navigation waits for it, up to a short timeout.
+	 *
+	 * @param {MouseEvent} e - The click, after the page's own listeners ran.
+	 */
+	sendDownload: function ( e ) {
+		const target = this.getDownloadLink( e );
+		if ( ! target || this.isTrackedExternalLink( target ) || typeof window.burst_update_hit !== 'function' ) {
+			return;
+		}
+
+		if ( window.burst?.options?.beacon_enabled || ! this.leavesPage( e, target ) ) {
+			window.burst_update_hit( false, true );
+			return;
+		}
+
+		e.preventDefault();
+		const fallbackTimeoutMs = 250;
+		let didNavigate = false;
+		const navigate = () => {
+			if ( didNavigate ) {
+				return;
+			}
+			didNavigate = true;
+			window.location.assign( target.href );
+		};
+
+		setTimeout( navigate, fallbackTimeoutMs );
+		window.burst_update_hit( false, true ).finally( navigate );
 	}
 };
 

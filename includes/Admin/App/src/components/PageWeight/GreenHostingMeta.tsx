@@ -1,6 +1,7 @@
 import { __, sprintf } from '@wordpress/i18n';
 import type { ReactNode } from 'react';
 import type { GreenHostingState } from './usePageWeightData';
+import ButtonInput from '../Inputs/ButtonInput';
 
 /** The Green Web Foundation's own privacy statement for the lookup. */
 export const PRIVACY_STATEMENT_URL = 'https://www.thegreenwebfoundation.org/privacy-statement/';
@@ -76,9 +77,10 @@ export const GreenHostingCheck = ({
 	isChecking: boolean;
 	onCheck: () => void;
 }): ReactNode => (
-	<button
+	<ButtonInput
 		type="button"
-		className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-text-white shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+		btnVariant="tertiary"
+		size="sm"
 		onClick={onCheck}
 		disabled={isChecking}
 	>
@@ -87,5 +89,5 @@ export const GreenHostingCheck = ({
 			( hasResult ?
 				__( 'Check again', 'burst-statistics' ) :
 				__( 'Check', 'burst-statistics' ) ) }
-	</button>
+	</ButtonInput>
 );

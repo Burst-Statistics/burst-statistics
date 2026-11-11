@@ -85,6 +85,7 @@ class Tracking {
 		// combined tracking script from get_active_goals(), which would otherwise
 		// hand it the goal list as it was before this request changed it.
 		add_action( 'burst_after_updated_goals', [ $this, 'clear_goals_cache' ], 1 );
+		High_Traffic_Buffer::init();
 	}
 
 	/**
@@ -111,51 +112,84 @@ class Tracking {
 	}
 
 	/**
-	 * Burst Statistics endpoint for collecting hits
+	 * Burst Statistics endpoint for collecting hits.
+	 *
+	 * @param array<string, mixed> $data     Hit data payload. Mixed values represent diverse hit fields (integers, strings, booleans, arrays).
+	 * @param int                  $hit_time Server timestamp at which the hit was received, set by the high-traffic buffer for
+	 *                                       hits ingested later. 0 means now. Never taken from the payload, so a client cannot
+	 *                                       date its own hits.
+	 * @return string Result status.
 	 */
-	public function track_hit( array $data ): string {
+	public function track_hit( array $data, int $hit_time = 0 ): string {
+		$sanitized = $this->sanitize_hit( $data, $hit_time );
+		if ( is_string( $sanitized ) ) {
+			return $sanitized;
+		}
+
+		$resolved = $this->resolve_hit( $sanitized );
+		if ( is_string( $resolved ) ) {
+			return $resolved;
+		}
+
+		return $this->persist_hit( $resolved );
+	}
+
+	/**
+	 * Validate and sanitize raw hit payload and environment.
+	 *
+	 * @param array<string, mixed> $data               Hit data payload.
+	 * @param int                  $hit_time           Server timestamp for the hit, 0 for current time.
+	 * @param bool                 $resolve_lookup_ids Whether to resolve lookup table IDs immediately.
+	 * @return array<string, mixed>|string Sanitized tracking data on success, or rejection reason string.
+	 */
+	public function sanitize_hit( array $data, int $hit_time = 0, bool $resolve_lookup_ids = true ): array|string {
+		$hit_time    = $hit_time > 0 ? $hit_time : time();
 		$is_test_hit = $this->is_test_hit( $data['url'] ?? '' );
 		if ( Ip::is_ip_blocked() && ! $is_test_hit ) {
 			return 'ip blocked';
 		}
 
-		// Validate & sanitize all data.
-		$sanitized_data = $this->prepare_tracking_data( $data );
+		$sanitized_data = $this->prepare_tracking_data( $data, $resolve_lookup_ids );
 
 		if ( $this->blocked_by_custom_block_rules( $sanitized_data ) ) {
 			self::error_log( 'Custom block rule prevented tracking.' );
 			return 'blocked by custom rule';
 		}
 
-		if ( $sanitized_data['referrer'] === 'spammer' ) {
+		if ( 'spammer' === $sanitized_data['referrer'] ) {
 			self::error_log( 'Referrer spam prevented.' );
 			return 'referrer is spam';
 		}
 
-		// A hit needs an identity: a uid (cookie / private mode) or a
-		// fingerprint (cookieless). The shipped tracker always sends one, so a
-		// hit without either is a bot, a replay or a crafted request; storing
-		// it would create a session per hit under dictionary id 0.
 		if ( '' === $sanitized_data['uid'] && '' === $sanitized_data['fingerprint'] ) {
 			self::error_log( 'Hit without uid or fingerprint rejected.' );
 			return 'missing identity';
 		}
 
-		$should_load_ecommerce = $sanitized_data['should_load_ecommerce'];
-		unset( $sanitized_data['should_load_ecommerce'] );
+		$sanitized_data['hit_time'] = $hit_time;
 
-		// Preserve the external link URL before it is unset below; it is passed to
-		// the burst_track_external_link action, which Pro handles.
-		$external_link_url = $sanitized_data['external_link_url'] ?? '';
+		return $sanitized_data;
+	}
 
-		// If new hit, get the last row.
-		$result = $this->get_hit_type( $sanitized_data );
-		if ( empty( $result ) ) {
-			return 'failed to determine hit type';
+	/**
+	 * Resolve hit context: classify hit type, match sessions, resolve dictionaries and schema columns.
+	 *
+	 * @param array<string, mixed>      $sanitized_data Sanitized hit data array from sanitize_hit().
+	 * @param array<string, mixed>|null $previous_hit   Previous hit data, if already looked up.
+	 * @param string|null               $hit_type       Hit type ('create' or 'update'), or null to auto-detect.
+	 * @return array<string, mixed>|string Resolved hit context array on success, or failure string.
+	 */
+	public function resolve_hit( array $sanitized_data, ?array $previous_hit = null, ?string $hit_type = null ): array|string {
+		$hit_time = (int) ( $sanitized_data['hit_time'] ?? time() );
+
+		if ( null === $hit_type ) {
+			$result = $this->get_hit_type( $sanitized_data, $hit_time );
+			if ( empty( $result ) ) {
+				return 'failed to determine hit type';
+			}
+			$hit_type     = $result['hit_type'];
+			$previous_hit = $result['last_row'];
 		}
-
-		$hit_type     = $result['hit_type'];
-		$previous_hit = $result['last_row'];
 
 		if ( $this->is_feature_enabled( 'co2' ) ) {
 			Page_Weight_Store::maybe_store_sample( $sanitized_data, $hit_type, $previous_hit ?? [] );
@@ -175,26 +209,34 @@ class Tracking {
 		];
 		$session = apply_filters( 'burst_session_data', $session, $sanitized_data, $filtered_previous_hit, $hit_type );
 
-		$search_term = $sanitized_data['search_term'] ?? '';
-		$events      = $sanitized_data['events'] ?? [];
+		$search_term           = $sanitized_data['search_term'] ?? '';
+		$events                = $sanitized_data['events'] ?? [];
+		$external_link_url     = $sanitized_data['external_link_url'] ?? '';
+		$external_link_urls    = $sanitized_data['external_link_urls'] ?? ( '' !== $external_link_url ? [ $external_link_url ] : [] );
+		$should_load_ecommerce = ! empty( $sanitized_data['should_load_ecommerce'] );
 
-		// $statistic contains only fields that belong on burst_statistics.
 		unset(
 			$sanitized_data['city_code'],
 			$sanitized_data['referrer'],
 			$sanitized_data['bounce'],
 			$sanitized_data['external_link_url'],
+			$sanitized_data['external_link_urls'],
 			$sanitized_data['browser_id'],
 			$sanitized_data['browser_version_id'],
 			$sanitized_data['platform_id'],
 			$sanitized_data['device_id'],
+			$sanitized_data['browser'],
+			$sanitized_data['browser_version'],
+			$sanitized_data['platform'],
+			$sanitized_data['device'],
 			$sanitized_data['search_term'],
 			$sanitized_data['events'],
-			$sanitized_data['page_weight_bytes']
+			$sanitized_data['should_load_ecommerce'],
+			$sanitized_data['hit_time'],
+			$sanitized_data['is_create']
 		);
 		$statistic = $sanitized_data;
 
-		// Keep track of the hosts, to check if this is a multi domain setup.
 		$destructured    = $this->sanitize_url( $statistic['host'] );
 		$host            = $destructured['host'] ?? '';
 		$normalized_host = preg_replace( '/^www\./i', '', $host );
@@ -202,12 +244,10 @@ class Tracking {
 
 		if ( ! $is_multi_domain ) {
 			$first_domain = get_option( 'burst_first_domain' );
-			// only update this once, on the first used domain.
 			if ( empty( $first_domain ) ) {
 				update_option( 'burst_is_multi_domain', false );
 				update_option( 'burst_first_domain', $normalized_host, true );
 			} elseif ( $first_domain !== $normalized_host ) {
-				// if it's different from the first used, it is multi domain.
 				update_option( 'burst_is_multi_domain', true );
 			}
 		}
@@ -216,86 +256,39 @@ class Tracking {
 			$session['host'] = $host;
 		}
 
-		// sessions.has_pageview: the session-grain form of the hit-grain
-		// "404 hits never count" rule (see Session_Grain_Shape). Set on the
-		// first non-404 hit of a session and never cleared; a session that only
-		// ever requests missing pages (a bot scan) keeps 0 and is invisible to
-		// every grain alike. Gated on the 3.7.1 table init like every added
-		// column: before it the column does not exist and naming it would fail
-		// the session write.
-		$flag_pageview = ( $statistic['page_type'] ?? '' ) !== '404' && $this->tracking_schema_at_least( '3.7.1' );
+		$flag_pageview  = ( $statistic['page_type'] ?? '' ) !== '404' && $this->tracking_schema_at_least( '3.7.1' );
+		$session_action = 'none';
 
-		// Handle session: reuse existing or create new.
-		if ( isset( $previous_hit ) && $previous_hit['session_id'] > 0 ) {
-			$statistic['session_id'] = $previous_hit['session_id'];
-			// Only the 0 → 1 transition is written (a session that started on a
-			// 404 and now reaches a real page); the flag is already set for
-			// every other session, so this costs nothing on the common path.
+		if ( isset( $previous_hit ) && ! empty( $previous_hit['session_id'] ) ) {
+			$statistic['session_id'] = (int) $previous_hit['session_id'];
 			if ( $flag_pageview && 0 === (int) ( $previous_hit['has_pageview'] ?? 1 ) ) {
 				$session['has_pageview'] = 1;
 			}
 			if ( $this->session_needs_update( $previous_hit, $session ) ) {
-				// bounce is owned by the recalculate_bounces cron once the session
-				// exists; the tracker's constant 1 would mark an engaged session
-				// as bounced again.
 				unset( $session['bounce'] );
-				$this->update_session( (int) $statistic['session_id'], $session );
+				$session_action = 'update';
 			}
-		} elseif ( $previous_hit === null ) {
+		} elseif ( null === $previous_hit ) {
+			$session_action = 'create';
 			if ( $flag_pageview ) {
 				$session['has_pageview'] = 1;
 			}
-			// New session — include all session-level fields.
-			// start_time records the session start and uid_id the visitor's
-			// dictionary id, so session-grain queries (sessions, visitors, bounce
-			// rate per dimension) can filter on a date range without joining the
-			// statistics table. The fingerprint-as-uid substitution below runs
-			// after this branch, so apply it here as well to resolve the same
-			// identity the hits will get.
-			//
-			// Gated on the 3.7.0 table init having run (an autoloaded option
-			// read, no schema probe): in the window between the plugin files
-			// landing and the admin/cron request that runs the init, the
-			// columns do not exist yet and naming them would fail the whole
-			// session insert.
 			if ( $this->tracking_schema_current() ) {
-				$session['start_time'] = time();
+				$session['start_time'] = $hit_time;
 				$identity              = (string) ( $statistic['fingerprint'] ?: $statistic['uid'] );
 				$session['uid_id']     = $this->resolve_uid_id( $identity );
-				// The dictionary insert above IS the "first time ever seen"
-				// event: a visitor whose row was created in this request starts
-				// their first session. Set synchronously — no known-uids
-				// bookkeeping or recalculation cron needed. While the seed task
-				// is still inserting historic uids, "created" does not mean
-				// "new" yet; the finalize step backstops that window with one
-				// bounded sweep.
 				if ( $this->uid_dictionary_seeded() ) {
 					$session['first_time_visit'] = $this->uid_created_this_request( $identity ) ? 1 : 0;
 				}
 			}
-			$statistic['session_id'] = $this->create_session( $session );
 		}
 
-		// If there is a fingerprint, use that instead of uid.
-		if ( $statistic['fingerprint'] && ! $statistic['uid'] ) {
-			$this->store_fingerprint_in_session( $statistic['fingerprint'], $should_load_ecommerce );
+		if ( ! empty( $statistic['fingerprint'] ) && empty( $statistic['uid'] ) ) {
+			$this->store_fingerprint_in_session( (string) $statistic['fingerprint'], $should_load_ecommerce );
 			$statistic['uid'] = $statistic['fingerprint'];
 		}
 		unset( $statistic['fingerprint'] );
 
-		// uid dictionary: once the 3.7.0 table init has run, the identity goes
-		// into the permanent uid_id column and nothing else — the legacy uid
-		// string is not written (a fresh 3.7.0 install has no uid column at
-		// all; on an upgraded site the still-NOT NULL column takes MySQL's
-		// implicit '' under WordPress' non-strict sql_mode until the finalize
-		// step retires it). The backfill only touches historic rows with
-		// uid_id 0, so rows written from here on are already converged. A
-		// rollback to a pre-3.7.0 build therefore sees the hits of the 3.7.0
-		// period without a visitor identity — accepted. Before the init (the
-		// window between the plugin files landing and the first admin/cron
-		// request) the tracker writes the pre-3.7.0 column set only, so no
-		// insert names a column that does not exist yet. The gate is an
-		// autoloaded option read, not a schema probe.
 		if ( $this->tracking_schema_current() ) {
 			$statistic['uid_id'] = $this->resolve_uid_id( (string) $statistic['uid'] );
 			unset( $statistic['uid'] );
@@ -303,86 +296,1065 @@ class Tracking {
 			unset( $statistic['max_scroll'], $statistic['dwell_zones'] );
 		}
 
-		// Determine if URL changed (for update hit).
 		$previous_page_url = $previous_hit['page_url'] ?? '';
 		$new_page_url      = $statistic['page_url'];
 
 		if ( $this->get_option_bool( 'track_url_change' ) ) {
-			// Query and fragment both count as a URL change; a hash-only
-			// navigation is a separate pageview for single-page sites.
 			$previous_page_url .= ( $previous_hit['parameters'] ?? '' ) . '#' . ( $previous_hit['fragment'] ?? '' );
 			$new_page_url      .= $statistic['parameters'] . '#' . $statistic['fragment'];
 		}
 		$is_same_url = $previous_page_url === $new_page_url;
 
-		if ( $hit_type === 'update' && ( $is_same_url || $previous_hit['session_id'] === '' ) ) {
-			// Accumulate time_on_page on the existing statistic row.
-			$statistic['time_on_page'] += $previous_hit['time_on_page'];
-			$statistic['ID']            = $previous_hit['ID'];
-			$this->update_statistic( $statistic );
-		} elseif ( $hit_type === 'create' ) {
-			// URLs that resolve to no post (homepage-as-archive, blog page,
-			// category/search pages) arrive with page_id 0; give them the post
-			// id the dictionary already knows for this url, or else a stable
-			// negative dictionary id, so page queries can group on the integer
-			// page_id column without a 0-bucket and one url never splits over
-			// two ids. The key space is hard split: positive = WP post id,
-			// negative = burst_page_urls.ID. 404s are skipped — they are
-			// excluded from every page query anyway.
-			// Create hits ONLY: an update payload can legitimately carry
-			// page_id 0 (sent while the tracked document is gone), and the row's
-			// page identity was already established at create — substituting
-			// there would overwrite a real post id with a negative dictionary
-			// id. A 0 on update is stripped by remove_empty_values(), leaving
-			// the stored page_id untouched.
-			// Hits carrying a post id keep it and register their url in the
-			// dictionary: page queries display the url from the dictionary
-			// only, so a post first seen after the seed ran (a new product)
-			// must have a row there — the read path cannot derive it from the
-			// permalink, as the REST optimizer leaves plugin post types
-			// unregistered. Both cases are one lookup in resolve_page_id().
+		if ( 'create' === $hit_type ) {
 			$page_id = (int) ( $statistic['page_id'] ?? 0 );
 			if ( $page_id >= 0
 				&& ( $statistic['page_type'] ?? '' ) !== '404'
 				&& '' !== (string) ( $statistic['page_url'] ?? '' ) ) {
 				$statistic['page_id'] = $this->resolve_page_id( (string) $statistic['page_url'], $page_id );
 			}
-			do_action( 'burst_before_create_statistic', $statistic );
-			$statistic['time'] = time();
-			$insert_id         = $this->create_statistic( $statistic );
-			if ( ! empty( $search_term ) ) {
-				$frontend_search = new Search();
-				$frontend_search->init();
-				$statistic['search_term'] = $search_term;
-			}
-			do_action( 'burst_after_create_statistic', $insert_id, $statistic );
+			$statistic['time'] = $hit_time;
 		}
 
-		$statistic_id = $statistic['ID'] ?? ( $insert_id ?? 0 );
+		return [
+			'hit_type'           => $hit_type,
+			'statistic'          => $statistic,
+			'session'            => $session,
+			'session_action'     => $session_action,
+			'previous_hit'       => $previous_hit,
+			'is_same_url'        => $is_same_url,
+			'search_term'        => $search_term,
+			'events'             => $events,
+			'external_link_urls' => $external_link_urls,
+			'hit_time'           => $hit_time,
+		];
+	}
 
-		if ( $statistic_id > 0 ) {
-			// Skips the goal lookup in essentials mode; create_goal_statistic()
-			// enforces the same check for every other writer.
-			if ( $this->is_feature_enabled( 'goals' ) ) {
-				$completed_goals = $this->get_completed_goals( $statistic['completed_goals'], $statistic['page_url'], (int) ( $statistic['page_id'] ?? 0 ) );
-				$this->create_goal_statistic( $statistic_id, $completed_goals );
-			}
+	/**
+	 * Persist resolved hit to the database (sessions, statistics, goals, external links, events).
+	 *
+	 * @param array<string, mixed> $resolved Resolved hit data array from resolve_hit().
+	 * @return string Result status ('success').
+	 */
+	public function persist_hit( array $resolved ): string {
+		$statistic      = (array) ( $resolved['statistic'] ?? [] );
+		$session        = (array) ( $resolved['session'] ?? [] );
+		$session_action = (string) ( $resolved['session_action'] ?? '' );
+		$hit_type       = (string) ( $resolved['hit_type'] ?? '' );
+		$previous_hit   = isset( $resolved['previous_hit'] ) && is_array( $resolved['previous_hit'] ) ? $resolved['previous_hit'] : null;
+		$is_same_url    = ! empty( $resolved['is_same_url'] );
+		$search_term    = (string) ( $resolved['search_term'] ?? '' );
+		$events         = (array) ( $resolved['events'] ?? [] );
+		$ext_urls       = (array) ( $resolved['external_link_urls'] ?? [] );
+		$statistic_id   = 0;
 
-			// External link tracking is a Pro-only feature. Pro hooks
-			// burst_track_external_link from Pro/Frontend/Tracking/tracking.php
-			// (where the track_external_links option and empty-URL checks live), so
-			// the free build carries no reference to the Pro class.
-			do_action( 'burst_track_external_link', (int) $statistic_id, $external_link_url );
+		if ( 'create' === $session_action ) {
+			$statistic['session_id'] = $this->create_session( $session );
+		} elseif ( 'update' === $session_action && ! empty( $statistic['session_id'] ) ) {
+			$this->update_session( (int) $statistic['session_id'], $session );
+		}
 
-			if ( ! empty( $events ) ) {
-				// uid_id (not uid): the legacy uid column is unset above once the
-				// dictionary is active, but uid_id is always set — see the uid
-				// dictionary block earlier in this method.
-				$this->events()->record_events( (int) $statistic_id, $events, (int) $statistic['uid_id'] );
+		if ( 'update' === $hit_type ) {
+			$this->handle_statistic_updated(
+				$statistic,
+				$previous_hit,
+				$ext_urls,
+				$events,
+				$is_same_url
+			);
+		} elseif ( 'create' === $hit_type ) {
+			do_action( 'burst_before_create_statistic', $statistic );
+			$insert_id = $this->create_statistic( $statistic );
+			if ( $insert_id > 0 ) {
+				$this->handle_statistic_created(
+					$insert_id,
+					$statistic,
+					$search_term,
+					$ext_urls,
+					$events
+				);
 			}
 		}
 
 		return 'success';
+	}
+
+	/**
+	 * Update an existing statistic row and execute side effects.
+	 *
+	 * Combines cumulative time_on_page with previous hit, updates the row,
+	 * and executes goals, external links, and custom events.
+	 *
+	 * @param array<string, mixed> $statistic          Statistic row data (raw).
+	 * @param array<string, mixed> $previous_hit       Previous hit data.
+	 * @param array<string>        $external_link_urls List of external link URLs to record.
+	 * @param array<mixed>         $events             Custom events array.
+	 * @param bool                 $is_same_url        Whether the hit is for the same URL as previous hit.
+	 * @return bool True if statistic was updated, false otherwise.
+	 */
+	public function handle_statistic_updated( array $statistic, array $previous_hit, array $external_link_urls = [], array $events = [], bool $is_same_url = true ): bool {
+		if ( ! $is_same_url && ! empty( $previous_hit['session_id'] ) ) {
+			return false;
+		}
+
+		if ( empty( $previous_hit['ID'] ) ) {
+			return false;
+		}
+
+		$stat_id                   = (int) $previous_hit['ID'];
+		$statistic['time_on_page'] = (int) ( $statistic['time_on_page'] ?? 0 ) + (int) ( $previous_hit['time_on_page'] ?? 0 );
+		$statistic['ID']           = $stat_id;
+
+		$updated = $this->update_statistic( $statistic );
+
+		if ( $stat_id > 0 ) {
+			$this->handle_hit_side_effects( $stat_id, $statistic, $external_link_urls, $events );
+		}
+
+		return $updated;
+	}
+
+	/**
+	 * Handle goals, external links, and custom events for a stored statistic row.
+	 *
+	 * @param int                  $statistic_id       Statistic row ID.
+	 * @param array<string, mixed> $statistic          Statistic row data.
+	 * @param array<string>        $external_link_urls List of external link URLs to record.
+	 * @param array<mixed>         $events             Custom events array.
+	 */
+	public function handle_hit_side_effects( int $statistic_id, array $statistic, array $external_link_urls = [], array $events = [] ): void {
+		if ( $statistic_id <= 0 ) {
+			return;
+		}
+
+		if ( $this->is_feature_enabled( 'goals' ) ) {
+			$raw_goals       = (array) ( $statistic['completed_goals'] ?? [] );
+			$completed_goals = $this->get_completed_goals(
+				$raw_goals,
+				(string) ( $statistic['page_url'] ?? '' ),
+				(int) ( $statistic['page_id'] ?? 0 )
+			);
+			if ( ! empty( $completed_goals ) ) {
+				$this->create_goal_statistic( $statistic_id, $completed_goals );
+			}
+		}
+
+		foreach ( $external_link_urls as $url ) {
+			if ( '' !== (string) $url ) {
+				do_action( 'burst_track_external_link', $statistic_id, (string) $url );
+			}
+		}
+
+		if ( ! empty( $events ) ) {
+			$this->events()->record_events( $statistic_id, $events, (int) ( $statistic['uid_id'] ?? 0 ) );
+		}
+	}
+
+	/**
+	 * Run post-insert actions and side effects for a created statistic.
+	 *
+	 * Sets the generated ID, records search terms, fires burst_after_create_statistic,
+	 * stores page weight sample if present, and registers goals, external links, and custom events.
+	 *
+	 * @param int                  $statistic_id       Created statistic ID.
+	 * @param array<string, mixed> $statistic          Statistic row data.
+	 * @param string               $search_term        Search term, if any.
+	 * @param array<string>        $external_link_urls External link URLs to record.
+	 * @param array<mixed>         $events             Custom events array.
+	 */
+	public function handle_statistic_created( int $statistic_id, array $statistic, string $search_term = '', array $external_link_urls = [], array $events = [] ): void {
+		$statistic['ID'] = $statistic_id;
+		if ( '' !== $search_term ) {
+			$frontend_search = new Search();
+			$frontend_search->init();
+			$statistic['search_term'] = $search_term;
+		}
+
+		if ( ! empty( $statistic['page_weight_bytes'] ) && $this->is_feature_enabled( 'co2' ) && class_exists( 'Burst\Admin\Statistics\Page_Weight_Store' ) ) {
+			Page_Weight_Store::maybe_store_sample(
+				$statistic,
+				'update',
+				$statistic
+			);
+		}
+
+		do_action( 'burst_after_create_statistic', $statistic_id, $statistic );
+		$this->handle_hit_side_effects( $statistic_id, $statistic, $external_link_urls, $events );
+	}
+
+	/**
+	 * Process a batch of buffered hit entries.
+	 *
+	 * Reads up to N lines, sanitizes with prepare_tracking_data, drops blocked IPs/bots,
+	 * merges in-batch updates into create hits, resolves dictionaries in bulk (1 query per dictionary),
+	 * looks up previous hits and session matching for all UIDs at once, and persists in one transaction.
+	 *
+	 * @param array<int, array<string, mixed>> $entries Raw buffered hit records.
+	 * @return int Number of buffered hits ingested.
+	 * @throws \Throwable Re-throws any exception after rolling back transaction.
+	 */
+	public function process_hit_batch( array $entries ): int {
+		if ( empty( $entries ) ) {
+			return 0;
+		}
+
+		$valid_hits    = [];
+		$backup_server = $_SERVER;
+
+		// 1. Sanitize all entries with sanitize_hit(), dropping invalid or blocked hits.
+		foreach ( $entries as $entry ) {
+			$payload = $entry['payload'] ?? null;
+			if ( ! is_array( $payload ) ) {
+				continue;
+			}
+
+			try {
+				if ( ! empty( $entry['remote_addr'] ) ) {
+					$_SERVER['REMOTE_ADDR'] = (string) $entry['remote_addr'];
+				}
+				if ( ! empty( $entry['headers'] ) && is_array( $entry['headers'] ) ) {
+					foreach ( $entry['headers'] as $header_name => $header_value ) {
+						$_SERVER[ (string) $header_name ] = (string) $header_value;
+					}
+				}
+
+				$hit_time  = (int) ( $entry['time'] ?? 0 );
+				$sanitized = $this->sanitize_hit( $payload, $hit_time, false );
+				if ( is_array( $sanitized ) ) {
+					$valid_hits[] = $sanitized;
+				}
+			} catch ( \Throwable $e ) {
+				// Malformed hit entry in buffer; drop it and continue with remaining entries.
+				continue;
+			} finally {
+				$_SERVER = $backup_server;
+			}
+		}
+
+		if ( empty( $valid_hits ) ) {
+			return 0;
+		}
+
+		// 2. In-batch update hit merging: merge update hits into their create hit within the batch.
+		$merged_hits    = [];
+		$active_creates = [];
+		$active_updates = [];
+
+		foreach ( $valid_hits as $hit ) {
+			$is_update_hit = 0 === (int) ( $hit['browser_id'] ?? 0 )
+				&& 0 === (int) ( $hit['browser_version_id'] ?? 0 )
+				&& 0 === (int) ( $hit['platform_id'] ?? 0 )
+				&& 0 === (int) ( $hit['device_id'] ?? 0 )
+				&& '' === (string) ( $hit['browser'] ?? '' )
+				&& '' === (string) ( $hit['browser_version'] ?? '' )
+				&& '' === (string) ( $hit['platform'] ?? '' )
+				&& '' === (string) ( $hit['device'] ?? '' );
+
+			$identity = (string) ( $hit['fingerprint'] ?: $hit['uid'] );
+			$url_key  = (string) ( $hit['page_url'] ?? '' ) . '?' . (string) ( $hit['parameters'] ?? '' ) . '#' . (string) ( $hit['fragment'] ?? '' );
+			$pair_key = $identity . '|' . $url_key;
+
+			if ( ! $is_update_hit ) {
+				// New create hit: registers as the active create hit for this visitor + page.
+				$idx                         = count( $merged_hits );
+				$hit['is_create']            = true;
+				$hit['external_link_urls']   = ! empty( $hit['external_link_url'] ) ? [ $hit['external_link_url'] ] : [];
+				$merged_hits[ $idx ]         = $hit;
+				$active_creates[ $pair_key ] = $idx;
+				unset( $active_updates[ $pair_key ] );
+			} elseif ( isset( $active_creates[ $pair_key ] ) ) {
+				// Merge update into the active create hit in this batch.
+				$target_idx                                  = $active_creates[ $pair_key ];
+				$merged_hits[ $target_idx ]['time_on_page'] += (int) ( $hit['time_on_page'] ?? 0 );
+				$merged_hits[ $target_idx ]['max_scroll']    = max( (int) ( $merged_hits[ $target_idx ]['max_scroll'] ?? 0 ), (int) ( $hit['max_scroll'] ?? 0 ) );
+				if ( ! empty( $hit['dwell_zones'] ) ) {
+					$merged_hits[ $target_idx ]['dwell_zones'] = $hit['dwell_zones'];
+				}
+				if ( ! empty( $hit['page_weight_bytes'] ) ) {
+					$merged_hits[ $target_idx ]['page_weight_bytes'] = (int) $hit['page_weight_bytes'];
+				}
+				if ( ! empty( $hit['completed_goals'] ) ) {
+					$merged_hits[ $target_idx ]['completed_goals'] = array_values(
+						array_unique( array_merge( $merged_hits[ $target_idx ]['completed_goals'] ?? [], $hit['completed_goals'] ) )
+					);
+				}
+				if ( ! empty( $hit['external_link_url'] ) ) {
+					$merged_hits[ $target_idx ]['external_link_urls'][] = $hit['external_link_url'];
+				}
+				if ( ! empty( $hit['events'] ) ) {
+					$merged_hits[ $target_idx ]['events'] = array_merge( $merged_hits[ $target_idx ]['events'] ?? [], $hit['events'] );
+				}
+			} elseif ( isset( $active_updates[ $pair_key ] ) ) {
+				// Merge update into prior standalone update hit in this batch.
+				$target_idx                                  = $active_updates[ $pair_key ];
+				$merged_hits[ $target_idx ]['time_on_page'] += (int) ( $hit['time_on_page'] ?? 0 );
+				$merged_hits[ $target_idx ]['max_scroll']    = max( (int) ( $merged_hits[ $target_idx ]['max_scroll'] ?? 0 ), (int) ( $hit['max_scroll'] ?? 0 ) );
+				if ( ! empty( $hit['dwell_zones'] ) ) {
+					$merged_hits[ $target_idx ]['dwell_zones'] = $hit['dwell_zones'];
+				}
+				if ( ! empty( $hit['page_weight_bytes'] ) ) {
+					$merged_hits[ $target_idx ]['page_weight_bytes'] = (int) $hit['page_weight_bytes'];
+				}
+				if ( ! empty( $hit['completed_goals'] ) ) {
+					$merged_hits[ $target_idx ]['completed_goals'] = array_values(
+						array_unique( array_merge( $merged_hits[ $target_idx ]['completed_goals'] ?? [], $hit['completed_goals'] ) )
+					);
+				}
+				if ( ! empty( $hit['external_link_url'] ) ) {
+					$merged_hits[ $target_idx ]['external_link_urls'][] = $hit['external_link_url'];
+				}
+				if ( ! empty( $hit['events'] ) ) {
+					$merged_hits[ $target_idx ]['events'] = array_merge( $merged_hits[ $target_idx ]['events'] ?? [], $hit['events'] );
+				}
+			} else {
+				// Standalone update hit without prior create in this batch.
+				$idx                         = count( $merged_hits );
+				$hit['is_create']            = false;
+				$hit['external_link_urls']   = ! empty( $hit['external_link_url'] ) ? [ $hit['external_link_url'] ] : [];
+				$merged_hits[ $idx ]         = $hit;
+				$active_updates[ $pair_key ] = $idx;
+			}
+		}
+
+		// 3. Resolve all dictionary IDs with one query per dictionary per batch.
+		$uids             = [];
+		$page_urls        = [];
+		$browsers         = [];
+		$browser_versions = [];
+		$platforms        = [];
+		$devices          = [];
+		$referrers        = [];
+
+		foreach ( $merged_hits as $m_hit ) {
+			$identity = (string) ( $m_hit['fingerprint'] ?: $m_hit['uid'] );
+			if ( '' !== $identity ) {
+				$uids[] = $identity;
+			}
+			if ( ! empty( $m_hit['page_url'] ) ) {
+				$page_urls[] = (string) $m_hit['page_url'];
+			}
+			if ( ! empty( $m_hit['browser'] ) ) {
+				$browsers[] = (string) $m_hit['browser'];
+			}
+			if ( ! empty( $m_hit['browser_version'] ) ) {
+				$browser_versions[] = (string) $m_hit['browser_version'];
+			}
+			if ( ! empty( $m_hit['platform'] ) ) {
+				$platforms[] = (string) $m_hit['platform'];
+			}
+			if ( ! empty( $m_hit['device'] ) ) {
+				$devices[] = (string) $m_hit['device'];
+			}
+			if ( ! empty( $m_hit['referrer'] ) && 'spammer' !== $m_hit['referrer'] ) {
+				$referrers[] = (string) $m_hit['referrer'];
+			}
+		}
+
+		$this->bulk_resolve_lookup_table( 'browser', $browsers );
+		$this->bulk_resolve_lookup_table( 'browser_version', $browser_versions );
+		$this->bulk_resolve_lookup_table( 'platform', $platforms );
+		$this->bulk_resolve_lookup_table( 'device', $devices );
+		$this->bulk_resolve_lookup_table( 'referrer', $referrers );
+		$this->bulk_resolve_uids( $uids );
+		$this->bulk_resolve_page_urls( $page_urls );
+
+		foreach ( $merged_hits as &$m_hit ) {
+			if ( ! empty( $m_hit['browser'] ) ) {
+				$m_hit['browser_id'] = $this->lookup_table_cache['browser'][ $m_hit['browser'] ] ?? 0;
+			}
+			if ( ! empty( $m_hit['browser_version'] ) ) {
+				$m_hit['browser_version_id'] = $this->lookup_table_cache['browser_version'][ $m_hit['browser_version'] ] ?? 0;
+			}
+			if ( ! empty( $m_hit['platform'] ) ) {
+				$m_hit['platform_id'] = $this->lookup_table_cache['platform'][ $m_hit['platform'] ] ?? 0;
+			}
+			if ( ! empty( $m_hit['device'] ) ) {
+				$m_hit['device_id'] = $this->lookup_table_cache['device'][ $m_hit['device'] ] ?? 0;
+			}
+		}
+		unset( $m_hit );
+
+		// 4. Look up previous hits and session matching for all UIDs at once.
+		$resolved_uid_ids = [];
+		$min_time         = time();
+		foreach ( $merged_hits as $m_hit ) {
+			$identity = (string) ( $m_hit['fingerprint'] ?: $m_hit['uid'] );
+			$uid_id   = $this->resolve_uid_id( $identity );
+			if ( $uid_id > 0 ) {
+				$resolved_uid_ids[ $uid_id ] = true;
+			}
+			$t = (int) ( $m_hit['hit_time'] ?? time() );
+			if ( $t < $min_time ) {
+				$min_time = $t;
+			}
+		}
+
+		$recent_by_uid = [];
+		if ( ! empty( $resolved_uid_ids ) ) {
+			$recent_by_uid = $this->bulk_get_recent_statistics( array_keys( $resolved_uid_ids ), $min_time - ( 30 * MINUTE_IN_SECONDS ) );
+		}
+
+		$resolved_actions        = [];
+		$pending_new_sessions    = [];
+		$pending_session_updates = [];
+
+		foreach ( $merged_hits as $m_hit ) {
+			$identity  = (string) ( $m_hit['fingerprint'] ?: $m_hit['uid'] );
+			$uid_id    = $this->resolve_uid_id( $identity );
+			$hit_time  = (int) ( $m_hit['hit_time'] ?? time() );
+			$is_create = ! empty( $m_hit['is_create'] );
+
+			$user_history = $recent_by_uid[ $uid_id ] ?? [];
+			$previous_hit = null;
+			$hit_type     = $is_create ? 'create' : 'update';
+
+			if ( ! $is_create ) {
+				// For update hits: find matching previous hit with same parameters and fragment within 30 min.
+				$destructured = $this->sanitize_url( $m_hit['host'] . $this->create_path( $m_hit ) );
+				$params       = $destructured['parameters'];
+				$fragment     = (string) ( $m_hit['fragment'] ?? '' );
+
+				foreach ( $user_history as $hist_row ) {
+					if ( (int) $hist_row['time'] > ( $hit_time - 30 * MINUTE_IN_SECONDS )
+						&& (string) $hist_row['parameters'] === $params
+						&& ( '' === $fragment || (string) $hist_row['fragment'] === $fragment )
+					) {
+						$previous_hit = $hist_row;
+						break;
+					}
+				}
+
+				if ( null === $previous_hit ) {
+					// No matching previous row found for update hit; skip to prevent orphaned update.
+					continue;
+				}
+			} else {
+				// For create hits: find most recent hit within 30 min to reuse its session_id.
+				foreach ( $user_history as $hist_row ) {
+					if ( (int) $hist_row['time'] > ( $hit_time - 30 * MINUTE_IN_SECONDS ) && ( ! empty( $hist_row['session_id'] ) || isset( $hist_row['temp_session_idx'] ) ) ) {
+						$previous_hit = $hist_row;
+						break;
+					}
+				}
+			}
+
+			// Resolve hit context using shared resolve_hit().
+			$resolved = $this->resolve_hit( $m_hit, $previous_hit, $hit_type );
+			if ( is_string( $resolved ) ) {
+				continue;
+			}
+
+			// Handle session allocation for batch persistence.
+			if ( 'create' === $resolved['session_action'] ) {
+				$temp_sess_idx                = count( $pending_new_sessions );
+				$pending_new_sessions[]       = $resolved['session'];
+				$resolved['temp_session_idx'] = $temp_sess_idx;
+			} elseif ( isset( $previous_hit['temp_session_idx'] ) ) {
+				$resolved['temp_session_idx'] = $previous_hit['temp_session_idx'];
+			} elseif ( 'update' === $resolved['session_action'] && ! empty( $resolved['statistic']['session_id'] ) ) {
+				$pending_session_updates[ (int) $resolved['statistic']['session_id'] ] = $resolved['session'];
+			}
+
+			$resolved_actions[] = $resolved;
+
+			// Update in-memory user history so subsequent hits from this visitor in the same batch see it.
+			$current_simulated_row = [
+				'ID'                 => 0,
+				'session_id'         => $resolved['statistic']['session_id'] ?? 0,
+				'temp_session_idx'   => $resolved['temp_session_idx'] ?? null,
+				'parameters'         => $resolved['statistic']['parameters'] ?? '',
+				'fragment'           => $resolved['statistic']['fragment'] ?? '',
+				'time'               => $hit_time,
+				'time_on_page'       => $resolved['statistic']['time_on_page'] ?? 0,
+				'page_url'           => $resolved['statistic']['page_url'] ?? '',
+				'page_id'            => $resolved['statistic']['page_id'] ?? 0,
+				'uid_id'             => $uid_id,
+				'has_pageview'       => $resolved['session']['has_pageview'] ?? 1,
+				'bounce'             => 1,
+				'host'               => $resolved['session']['host'] ?? '',
+				'start_time'         => $resolved['session']['start_time'] ?? $hit_time,
+				'referrer'           => $resolved['session']['referrer'] ?? '',
+				'city_code'          => $resolved['session']['city_code'] ?? 0,
+				'browser_id'         => $resolved['session']['browser_id'] ?? 0,
+				'browser_version_id' => $resolved['session']['browser_version_id'] ?? 0,
+				'platform_id'        => $resolved['session']['platform_id'] ?? 0,
+				'device_id'          => $resolved['session']['device_id'] ?? 0,
+			];
+			if ( ! isset( $recent_by_uid[ $uid_id ] ) ) {
+				$recent_by_uid[ $uid_id ] = [];
+			}
+			array_unshift( $recent_by_uid[ $uid_id ], $current_simulated_row );
+		}
+
+		// 5. Write in one transaction: one multi-row INSERT for new sessions, one INSERT for new statistics, then remaining updates.
+		global $wpdb;
+		$wpdb->query( 'START TRANSACTION' );
+
+		try {
+			// A. Insert new sessions.
+			$first_session_id = 0;
+			if ( ! empty( $pending_new_sessions ) ) {
+				$first_session_id = $this->batch_insert_sessions( $pending_new_sessions );
+			}
+
+			// Assign generated session IDs to resolved create actions.
+			$create_stats = [];
+			$update_stats = [];
+			$increment    = $this->get_auto_increment_increment();
+
+			foreach ( $resolved_actions as &$action ) {
+				if ( isset( $action['temp_session_idx'] ) ) {
+					$action['statistic']['session_id'] = $first_session_id + ( $action['temp_session_idx'] * $increment );
+					unset( $action['temp_session_idx'] );
+				}
+
+				if ( 'create' === $action['hit_type'] ) {
+					$create_stats[] = $action;
+				} else {
+					$update_stats[] = $action;
+				}
+			}
+			unset( $action );
+
+			// B. Update existing sessions if needed.
+			foreach ( $pending_session_updates as $sess_id => $sess_data ) {
+				$this->update_session( $sess_id, $sess_data );
+			}
+
+			// C. Multi-row INSERT for new statistics.
+			$first_stat_id      = 0;
+			$valid_create_stats = [];
+			$stats_to_insert    = [];
+			if ( ! empty( $create_stats ) ) {
+				foreach ( $create_stats as $c_action ) {
+					$norm_stat = $this->normalize_statistic_data( $c_action['statistic'] );
+					if ( null !== $norm_stat ) {
+						$valid_create_stats[] = $c_action;
+						$stats_to_insert[]    = $norm_stat;
+					}
+				}
+				$create_stats = $valid_create_stats;
+
+				foreach ( $create_stats as $c_action ) {
+					do_action( 'burst_before_create_statistic', $c_action['statistic'] );
+				}
+
+				if ( ! empty( $stats_to_insert ) ) {
+					$first_stat_id = $this->batch_insert_statistics( $stats_to_insert );
+				}
+			}
+
+			// D. Execute remaining updates on existing statistics.
+			$updated_count = 0;
+			foreach ( $update_stats as $u_action ) {
+				if ( $this->handle_statistic_updated(
+					$u_action['statistic'],
+					$u_action['previous_hit'],
+					$u_action['external_link_urls'],
+					$u_action['events'],
+					! empty( $u_action['is_same_url'] )
+				) ) {
+					++$updated_count;
+				}
+			}
+
+			// E. Trigger actions and side effects for create hits.
+			foreach ( $create_stats as $c_idx => $c_action ) {
+				$stat_id = $first_stat_id + ( $c_idx * $increment );
+				$this->handle_statistic_created(
+					$stat_id,
+					$c_action['statistic'],
+					(string) ( $c_action['search_term'] ?? '' ),
+					(array) ( $c_action['external_link_urls'] ?? [] ),
+					(array) ( $c_action['events'] ?? [] )
+				);
+			}
+
+			$wpdb->query( 'COMMIT' );
+		} catch ( \Throwable $e ) {
+			$wpdb->query( 'ROLLBACK' );
+			throw $e;
+		}
+
+		return count( $create_stats ) + $updated_count;
+	}
+
+	/**
+	 * Bulk resolve names to IDs for a lookup table (burst_browsers, burst_devices, etc.).
+	 *
+	 * Populates $this->lookup_table_cache and inserts any missing values with INSERT IGNORE.
+	 *
+	 * @param string        $item   Lookup table item name (browser, browser_version, platform, device, referrer).
+	 * @param array<string> $values List of string values to resolve.
+	 */
+	public function bulk_resolve_lookup_table( string $item, array $values ): void {
+		$possible_items = [ 'browser', 'browser_version', 'platform', 'device', 'referrer' ];
+		if ( ! in_array( $item, $possible_items, true ) ) {
+			return;
+		}
+
+		$values = array_values( array_unique( array_filter( array_map( 'strval', $values ), static fn( string $v ): bool => '' !== $v ) ) );
+		if ( empty( $values ) ) {
+			return;
+		}
+
+		$missing = [];
+		foreach ( $values as $val ) {
+			if ( ! isset( $this->lookup_table_cache[ $item ][ $val ] ) ) {
+				$cache_key = self::lookup_cache_key( $item, $val );
+				$cached_id = wp_cache_get( $cache_key, 'burst' );
+				if ( false !== $cached_id && (int) $cached_id > 0 ) {
+					$this->lookup_table_cache[ $item ][ $val ] = (int) $cached_id;
+				} else {
+					$missing[] = $val;
+				}
+			}
+		}
+
+		if ( empty( $missing ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$table        = $wpdb->prefix . "burst_{$item}s";
+		$placeholders = implode( ', ', array_fill( 0, count( $missing ), '%s' ) );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$existing = $wpdb->get_results(
+			$wpdb->prepare( "SELECT ID, name FROM {$table} WHERE name IN ( {$placeholders} )", $missing ),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$found_names = [];
+		foreach ( (array) $existing as $row ) {
+			$id   = (int) $row['ID'];
+			$name = (string) $row['name'];
+			$this->lookup_table_cache[ $item ][ $name ] = $id;
+			$found_names[ $name ]                       = true;
+			wp_cache_set( self::lookup_cache_key( $item, $name ), $id, 'burst', 300 );
+		}
+
+		$to_insert = array_values( array_diff( $missing, array_keys( $found_names ) ) );
+		if ( empty( $to_insert ) ) {
+			return;
+		}
+
+		$insert_placeholders = [];
+		$insert_args         = [];
+		foreach ( $to_insert as $insert_val ) {
+			$insert_placeholders[] = '(%s)';
+			$insert_args[]         = $insert_val;
+		}
+
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT IGNORE INTO {$table} (name) VALUES " . implode( ', ', $insert_placeholders ),
+				$insert_args
+			)
+		);
+
+		$re_placeholders = implode( ', ', array_fill( 0, count( $to_insert ), '%s' ) );
+		$inserted        = $wpdb->get_results(
+			$wpdb->prepare( "SELECT ID, name FROM {$table} WHERE name IN ( {$re_placeholders} )", $to_insert ),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		foreach ( (array) $inserted as $row ) {
+			$id   = (int) $row['ID'];
+			$name = (string) $row['name'];
+			$this->lookup_table_cache[ $item ][ $name ] = $id;
+			wp_cache_set( self::lookup_cache_key( $item, $name ), $id, 'burst', 300 );
+		}
+	}
+
+	/**
+	 * Bulk resolve visitor UID strings to IDs in burst_uids.
+	 *
+	 * Populates self::$uid_dictionary_cache and records new UIDs in self::$uids_created_this_request.
+	 *
+	 * @param array<string> $uids List of visitor UIDs.
+	 */
+	public function bulk_resolve_uids( array $uids ): void {
+		$uids = array_values( array_unique( array_filter( array_map( 'strval', $uids ), static fn( string $u ): bool => '' !== $u ) ) );
+		if ( empty( $uids ) ) {
+			return;
+		}
+
+		$blog_id = get_current_blog_id();
+		$missing = [];
+
+		foreach ( $uids as $uid ) {
+			if ( ! isset( self::$uid_dictionary_cache[ $blog_id ][ $uid ] ) ) {
+				$cache_key = self::uid_id_cache_key( $uid );
+				$found     = false;
+				$cached    = wp_cache_get( $cache_key, 'burst', false, $found );
+				if ( $found && false !== $cached && (int) $cached > 0 ) {
+					self::$uid_dictionary_cache[ $blog_id ][ $uid ] = (int) $cached;
+				} else {
+					$missing[] = $uid;
+				}
+			}
+		}
+
+		if ( empty( $missing ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$table        = $wpdb->prefix . 'burst_uids';
+		$placeholders = implode( ', ', array_fill( 0, count( $missing ), '%s' ) );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$existing = $wpdb->get_results(
+			$wpdb->prepare( "SELECT ID, uid FROM {$table} WHERE uid IN ( {$placeholders} )", $missing ),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$found_uids = [];
+		foreach ( (array) $existing as $row ) {
+			$id  = (int) $row['ID'];
+			$uid = (string) $row['uid'];
+			self::$uid_dictionary_cache[ $blog_id ][ $uid ] = $id;
+			$found_uids[ $uid ]                             = true;
+			wp_cache_set( self::uid_id_cache_key( $uid ), $id, 'burst', 300 );
+		}
+
+		$to_insert = array_values( array_diff( $missing, array_keys( $found_uids ) ) );
+		if ( empty( $to_insert ) ) {
+			return;
+		}
+
+		$insert_placeholders = [];
+		$insert_args         = [];
+		foreach ( $to_insert as $insert_uid ) {
+			$insert_placeholders[] = '(%s)';
+			$insert_args[]         = $insert_uid;
+		}
+
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT IGNORE INTO {$table} (uid) VALUES " . implode( ', ', $insert_placeholders ),
+				$insert_args
+			)
+		);
+
+		$re_placeholders = implode( ', ', array_fill( 0, count( $to_insert ), '%s' ) );
+		$inserted        = $wpdb->get_results(
+			$wpdb->prepare( "SELECT ID, uid FROM {$table} WHERE uid IN ( {$re_placeholders} )", $to_insert ),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		foreach ( (array) $inserted as $row ) {
+			$id  = (int) $row['ID'];
+			$uid = (string) $row['uid'];
+			self::$uid_dictionary_cache[ $blog_id ][ $uid ]      = $id;
+			self::$uids_created_this_request[ $blog_id ][ $uid ] = true;
+			wp_cache_set( self::uid_id_cache_key( $uid ), $id, 'burst', 300 );
+		}
+	}
+
+	/**
+	 * Bulk resolve page URL paths to dictionary IDs in burst_page_urls.
+	 *
+	 * Populates self::$page_dictionary_cache so resolve_page_id() resolves with 0 queries.
+	 *
+	 * @param array<string> $page_urls List of page URL paths.
+	 */
+	public function bulk_resolve_page_urls( array $page_urls ): void {
+		$page_urls = array_values( array_unique( array_filter( array_map( 'strval', $page_urls ), static fn( string $p ): bool => '' !== $p ) ) );
+		if ( empty( $page_urls ) ) {
+			return;
+		}
+
+		$blog_id = get_current_blog_id();
+		$missing = [];
+
+		foreach ( $page_urls as $url ) {
+			if ( ! isset( self::$page_dictionary_cache[ $blog_id ][ $url ] ) ) {
+				$cached = wp_cache_get( $this->page_id_cache_key( $url ), 'burst' );
+				if ( false !== $cached ) {
+					self::$page_dictionary_cache[ $blog_id ][ $url ] = (int) $cached;
+				} else {
+					$missing[] = $url;
+				}
+			}
+		}
+
+		if ( empty( $missing ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$table        = $wpdb->prefix . 'burst_page_urls';
+		$placeholders = implode( ', ', array_fill( 0, count( $missing ), '%s' ) );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$existing = $wpdb->get_results(
+			$wpdb->prepare( "SELECT ID, page_url, page_id FROM {$table} WHERE page_url IN ( {$placeholders} )", $missing ),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$found_urls = [];
+		foreach ( (array) $existing as $row ) {
+			$id      = (int) $row['ID'];
+			$url     = (string) $row['page_url'];
+			$page_id = (int) $row['page_id'];
+			$known   = $page_id > 0 ? $page_id : -$id;
+			self::$page_dictionary_cache[ $blog_id ][ $url ] = $known;
+			$found_urls[ $url ]                              = true;
+			wp_cache_set( $this->page_id_cache_key( $url ), $known, 'burst', 300 );
+		}
+
+		$to_insert = array_values( array_diff( $missing, array_keys( $found_urls ) ) );
+		if ( empty( $to_insert ) ) {
+			return;
+		}
+
+		$insert_placeholders = [];
+		$insert_args         = [];
+		foreach ( $to_insert as $insert_url ) {
+			$insert_placeholders[] = '(%s, 0)';
+			$insert_args[]         = $insert_url;
+		}
+
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT IGNORE INTO {$table} (page_url, page_id) VALUES " . implode( ', ', $insert_placeholders ),
+				$insert_args
+			)
+		);
+
+		$re_placeholders = implode( ', ', array_fill( 0, count( $to_insert ), '%s' ) );
+		$inserted        = $wpdb->get_results(
+			$wpdb->prepare( "SELECT ID, page_url, page_id FROM {$table} WHERE page_url IN ( {$re_placeholders} )", $to_insert ),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		foreach ( (array) $inserted as $row ) {
+			$id      = (int) $row['ID'];
+			$url     = (string) $row['page_url'];
+			$page_id = (int) $row['page_id'];
+			$known   = $page_id > 0 ? $page_id : -$id;
+			self::$page_dictionary_cache[ $blog_id ][ $url ] = $known;
+			wp_cache_set( $this->page_id_cache_key( $url ), $known, 'burst', 300 );
+		}
+	}
+
+	/**
+	 * Bulk look up recent statistics and session rows for a list of UID IDs.
+	 *
+	 * @param array<int> $uid_ids           List of resolved uid_ids.
+	 * @param int        $time_window_start Minimum timestamp threshold.
+	 * @return array<int, array<int, array<string, mixed>>> History rows grouped by uid_id.
+	 */
+	public function bulk_get_recent_statistics( array $uid_ids, int $time_window_start ): array {
+		if ( empty( $uid_ids ) ) {
+			return [];
+		}
+
+		global $wpdb;
+		$placeholders    = implode( ', ', array_fill( 0, count( $uid_ids ), '%d' ) );
+		$host_select     = $this->get_option_bool( 'filtering_by_domain' ) ? ', sess.host' : '';
+		$pageview_select = $this->tracking_schema_at_least( '3.7.1' ) ? ', sess.has_pageview' : '';
+		$session_select  = $this->tracking_schema_current()
+			? ', sess.' . implode( ', sess.', self::SESSION_BACKFILL_COLUMNS ) . ', sess.source, sess.source_category'
+			: '';
+
+		$params = array_merge( $uid_ids, [ $time_window_start ] );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT
+					s.ID,
+					s.session_id,
+					s.parameters,
+					s.fragment,
+					s.time_on_page,
+					s.time,
+					sess.bounce,
+					s.page_url,
+					s.page_id,
+					s.uid_id
+					{$host_select}
+					{$pageview_select}
+					{$session_select}
+				FROM {$wpdb->prefix}burst_statistics s
+				LEFT JOIN {$wpdb->prefix}burst_sessions sess ON s.session_id = sess.ID
+				WHERE s.uid_id IN ( {$placeholders} )
+				  AND s.time > %d
+				ORDER BY s.ID DESC",
+				$params
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$grouped = [];
+		foreach ( (array) $rows as $row ) {
+			$grouped[ (int) $row['uid_id'] ][] = $row;
+		}
+
+		return $grouped;
+	}
+
+	/**
+	 * Insert multiple session rows in a single multi-row query.
+	 *
+	 * @param array<int, array<string, mixed>> $sessions List of session data arrays to insert.
+	 * @return int ID of the first inserted session row.
+	 * @throws \RuntimeException If the batch insert fails or returns no insert ID.
+	 */
+	public function batch_insert_sessions( array $sessions ): int {
+		global $wpdb;
+		if ( empty( $sessions ) ) {
+			return 0;
+		}
+
+		$columns = [
+			'start_time',
+			'uid_id',
+			'first_time_visit',
+			'bounce',
+			'has_pageview',
+			'browser_id',
+			'browser_version_id',
+			'platform_id',
+			'device_id',
+			'referrer',
+			'host',
+			'city_code',
+			'source',
+			'source_category',
+			'source_mapped',
+		];
+
+		$row_placeholders = [];
+		$values           = [];
+		foreach ( $sessions as $session ) {
+			$session             = $this->normalize_session_data( $session );
+			$has_referrer        = ! empty( $session['referrer'] );
+			$ref_placeholder     = $has_referrer ? '%s' : 'NULL';
+			$has_source          = ! empty( $session['source'] );
+			$src_placeholder     = $has_source ? '%s' : 'NULL';
+			$has_source_cat      = ! empty( $session['source_category'] );
+			$src_cat_placeholder = $has_source_cat ? '%s' : 'NULL';
+
+			$row_placeholders[] = "(%d, %d, %d, %d, %d, %d, %d, %d, %d, {$ref_placeholder}, %s, %d, {$src_placeholder}, {$src_cat_placeholder}, %d)";
+
+			$values[] = (int) ( $session['start_time'] ?? time() );
+			$values[] = (int) ( $session['uid_id'] ?? 0 );
+			$values[] = (int) ( $session['first_time_visit'] ?? 0 );
+			$values[] = (int) ( $session['bounce'] ?? 1 );
+			$values[] = (int) ( $session['has_pageview'] ?? 0 );
+			$values[] = (int) ( $session['browser_id'] ?? 0 );
+			$values[] = (int) ( $session['browser_version_id'] ?? 0 );
+			$values[] = (int) ( $session['platform_id'] ?? 0 );
+			$values[] = (int) ( $session['device_id'] ?? 0 );
+			if ( $has_referrer ) {
+				$values[] = (string) $session['referrer'];
+			}
+			$values[] = (string) ( $session['host'] ?? '' );
+			$values[] = (int) ( $session['city_code'] ?? 0 );
+			if ( $has_source ) {
+				$values[] = (string) $session['source'];
+			}
+			if ( $has_source_cat ) {
+				$values[] = (string) $session['source_category'];
+			}
+			$values[] = (int) ( $session['source_mapped'] ?? 0 );
+		}
+
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+		$sql    = "INSERT INTO {$wpdb->prefix}burst_sessions (`" . implode( '`, `', $columns ) . '`) VALUES ' . implode( ', ', $row_placeholders );
+		$result = $wpdb->query( $wpdb->prepare( $sql, $values ) );
+		// phpcs:enable
+
+		if ( false === $result || ! empty( $wpdb->last_error ) || $wpdb->insert_id <= 0 ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
+			throw new \RuntimeException( 'Failed batch insert into ' . $wpdb->prefix . 'burst_sessions: ' . ( $wpdb->last_error ?: 'no insert id' ) );
+		}
+
+		return (int) $wpdb->insert_id;
+	}
+
+	/**
+	 * Insert multiple statistic rows in a single multi-row query.
+	 *
+	 * @param array<int, array<string, mixed>> $statistics List of statistic data arrays to insert.
+	 * @return int ID of the first inserted statistic row.
+	 * @throws \RuntimeException If the batch insert fails or returns no insert ID.
+	 */
+	public function batch_insert_statistics( array $statistics ): int {
+		global $wpdb;
+		if ( empty( $statistics ) ) {
+			return 0;
+		}
+
+		$columns = [
+			'page_url',
+			'page_id',
+			'page_type',
+			'time',
+			'uid_id',
+			'time_on_page',
+			'max_scroll',
+			'dwell_zones',
+			'parameters',
+			'fragment',
+			'session_id',
+		];
+
+		$row_placeholders = [];
+		$values           = [];
+		$max_time         = 0;
+
+		foreach ( $statistics as $stat ) {
+			$t                  = (int) ( $stat['time'] ?? time() );
+			$max_time           = max( $max_time, $t );
+			$has_dwell          = ! empty( $stat['dwell_zones'] );
+			$dwell_placeholder  = $has_dwell ? '%s' : 'NULL';
+			$row_placeholders[] = "(%s, %d, %s, %d, %d, %d, %d, {$dwell_placeholder}, %s, %s, %d)";
+
+			$values[] = (string) ( $stat['page_url'] ?? '' );
+			$values[] = (int) ( $stat['page_id'] ?? 0 );
+			$values[] = (string) ( $stat['page_type'] ?? '' );
+			$values[] = $t;
+			$values[] = (int) ( $stat['uid_id'] ?? 0 );
+			$values[] = (int) ( $stat['time_on_page'] ?? 0 );
+			$values[] = (int) ( $stat['max_scroll'] ?? 0 );
+			if ( $has_dwell ) {
+				$values[] = (string) $stat['dwell_zones'];
+			}
+			$values[] = (string) ( $stat['parameters'] ?? '' );
+			$values[] = (string) ( $stat['fragment'] ?? '' );
+			$values[] = (int) ( $stat['session_id'] ?? 0 );
+		}
+
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+		$sql    = "INSERT INTO {$wpdb->prefix}burst_statistics (`" . implode( '`, `', $columns ) . '`) VALUES ' . implode( ', ', $row_placeholders );
+		$result = $wpdb->query( $wpdb->prepare( $sql, $values ) );
+		// phpcs:enable
+
+		if ( false === $result || ! empty( $wpdb->last_error ) || $wpdb->insert_id <= 0 ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
+			throw new \RuntimeException( 'Failed batch insert into ' . $wpdb->prefix . 'burst_statistics: ' . ( $wpdb->last_error ?: 'no insert id' ) );
+		}
+
+		$first_id = (int) $wpdb->insert_id;
+		if ( $max_time > 0 ) {
+			$this->stamp_last_hit_time( $max_time );
+		}
+
+		return $first_id;
 	}
 
 	/**
@@ -559,6 +1531,7 @@ class Tracking {
 	 * Prepare and sanitize raw tracking data from the client for storage.
 	 *
 	 * @param array<string, mixed> $data Raw tracking data input.
+	 * @param bool                 $resolve_lookup_ids Whether to eagerly resolve lookup table IDs.
 	 * @return array{
 	 *     completed_goals: array<int>,
 	 *     parameters: string,
@@ -581,7 +1554,7 @@ class Tracking {
 	 *     should_load_ecommerce?: bool
 	 * }
 	 */
-	public function prepare_tracking_data( array $data ): array {
+	public function prepare_tracking_data( array $data, bool $resolve_lookup_ids = true ): array {
 		$parser          = new UserAgentParser();
 		$user_agent_data = isset( $data['user_agent'] ) ? $parser->get_user_agent_data( $data['user_agent'] ) : [
 			'browser'         => '',
@@ -631,10 +1604,14 @@ class Tracking {
 		$sanitized_data['fingerprint']        = $this->sanitize_fingerprint( $data['fingerprint'] );
 		$sanitized_data['referrer']           = $this->sanitize_referrer( $data['referrer_url'] );
 		$sanitized_data['external_link_url']  = $this->sanitize_external_link_url( $data['external_link_url'] );
-		$sanitized_data['browser_id']         = self::get_lookup_table_id( 'browser', $user_agent_data['browser'] );
-		$sanitized_data['browser_version_id'] = self::get_lookup_table_id( 'browser_version', $user_agent_data['browser_version'] );
-		$sanitized_data['platform_id']        = self::get_lookup_table_id( 'platform', $user_agent_data['platform'] );
-		$sanitized_data['device_id']          = self::get_lookup_table_id( 'device', $user_agent_data['device'] );
+		$sanitized_data['browser']            = $user_agent_data['browser'];
+		$sanitized_data['browser_version']    = $user_agent_data['browser_version'];
+		$sanitized_data['platform']           = $user_agent_data['platform'];
+		$sanitized_data['device']             = $user_agent_data['device'];
+		$sanitized_data['browser_id']         = $resolve_lookup_ids ? self::get_lookup_table_id( 'browser', $user_agent_data['browser'] ) : 0;
+		$sanitized_data['browser_version_id'] = $resolve_lookup_ids ? self::get_lookup_table_id( 'browser_version', $user_agent_data['browser_version'] ) : 0;
+		$sanitized_data['platform_id']        = $resolve_lookup_ids ? self::get_lookup_table_id( 'platform', $user_agent_data['platform'] ) : 0;
+		$sanitized_data['device_id']          = $resolve_lookup_ids ? self::get_lookup_table_id( 'device', $user_agent_data['device'] ) : 0;
 		$sanitized_data['time_on_page']       = $this->sanitize_time_on_page( $data['time_on_page'] );
 		$sanitized_data['bounce']             = 1;
 		$sanitized_data['page_id']            = (int) $data['page_id'];
@@ -762,13 +1739,14 @@ class Tracking {
 	/**
 	 * Determines if the current hit is an update or create operation and retrieves the last matching row if applicable.
 	 *
-	 * @param array<string, mixed> $data Data for the current hit.
+	 * @param array<string, mixed> $data     Data for the current hit.
+	 * @param int                  $hit_time Server timestamp of the hit; the 30-minute session window is measured from it.
 	 * @return array{
 	 *     hit_type?: 'create'|'update',
 	 *     last_row?: array<string, mixed>|null
 	 * } Associative array containing hit type and last row (if any), or an empty array if not applicable.
 	 */
-	public function get_hit_type( array $data ): array {
+	public function get_hit_type( array $data, int $hit_time = 0 ): array {
 		// Determine if it is an update hit based on the absence of certain data points.
 		$is_update_hit = $data['browser_id'] === 0 && $data['browser_version_id'] === 0 && $data['platform_id'] === 0 && $data['device_id'] === 0;
 
@@ -776,7 +1754,7 @@ class Tracking {
 		$page_url = $is_update_hit ? $data['host'] . $this->create_path( $data ) : '';
 		$fragment = $is_update_hit ? (string) ( $data['fragment'] ?? '' ) : '';
 		$uid      = $data['fingerprint'] ?: $data['uid'];
-		$last_row = $this->get_last_user_statistic( $uid, $page_url, $fragment );
+		$last_row = $this->get_last_user_statistic( $uid, $page_url, $fragment, $hit_time );
 
 		// Determine the appropriate action based on the result.
 		if ( ! empty( $last_row ) ) {
@@ -1024,6 +2002,7 @@ class Tracking {
 					// Pro enables automatic capture only after the site opts in.
 					'track_gtag_events'            => 0,
 					'track_gtag_custom_parameters' => 0,
+					'track_downloads'              => 0,
 					'page_weight_sample_rate'      => $this->is_feature_enabled( 'co2' ) ? Page_Weight_Store::get_sample_rate() : 0,
 					'cookie_retention_days'        => apply_filters( 'burst_cookie_retention_days', 30 ),
 					'page_id'                      => is_singular() ? (int) get_queried_object_id() : 0,
@@ -1228,6 +2207,7 @@ class Tracking {
 	 * @param string $uid         The user identifier or fingerprint.
 	 * @param string $page_url    Optional. Specific page URL to narrow down the result.
 	 * @param string $fragment    Optional. URL fragment of the hit; when given the row must carry the same fragment.
+	 * @param int    $reference_time Optional. Server timestamp of the hit the 30-minute window is measured from; 0 means now.
 	 * @return array{
 	 *     ID?: int,
 	 *     session_id?: int,
@@ -1249,7 +2229,7 @@ class Tracking {
 	 *     source_category?: string|null
 	 * } Associative array of the last user statistic, or empty array if none found.
 	 */
-	public function get_last_user_statistic( string $uid, string $page_url = '', string $fragment = '' ): array {
+	public function get_last_user_statistic( string $uid, string $page_url = '', string $fragment = '', int $reference_time = 0 ): array {
 		if ( strlen( $uid ) === 0 ) {
 			return [];
 		}
@@ -1266,7 +2246,8 @@ class Tracking {
 			}
 		}
 
-		$where .= $wpdb->prepare( ' AND s.time > %d', strtotime( '-30 minutes' ) );
+		$ref_time = $reference_time > 0 ? $reference_time : time();
+		$where   .= $wpdb->prepare( ' AND s.time > %d', $ref_time - ( 30 * MINUTE_IN_SECONDS ) );
 
 		// Once the 3.7.0 table init has run, rows are matched on the permanent
 		// uid_id column — translate the browser-supplied uid string first.
@@ -1329,11 +2310,56 @@ class Tracking {
 	}
 
 	/**
+	 * Get the MySQL auto_increment_increment value for multi-row ID calculations.
+	 *
+	 * In Galera or multi-primary replication setups, auto_increment_increment is > 1.
+	 * Multi-row INSERT generates IDs stepping by this increment rather than consecutive integers.
+	 */
+	public function get_auto_increment_increment(): int {
+		global $wpdb;
+		$increment = (int) $wpdb->get_var( 'SELECT @@auto_increment_increment' );
+		return $increment > 0 ? $increment : 1;
+	}
+
+	/**
+	 * Normalize session data row before insertion.
+	 *
+	 * Removes empty values from the session array.
+	 *
+	 * @param array<string, mixed> $data Session data row.
+	 * @return array<string, mixed> Normalized session row.
+	 */
+	public function normalize_session_data( array $data ): array {
+		return $this->remove_empty_values( $data );
+	}
+
+	/**
+	 * Normalize statistic data row before insertion.
+	 *
+	 * Strips host, cleans empty values, and validates required fields.
+	 *
+	 * @param array<string, mixed> $data Statistic data row.
+	 * @return array<string, mixed>|null Normalized row, or null if required values are missing.
+	 */
+	public function normalize_statistic_data( array $data ): ?array {
+		unset( $data['host'] );
+		$data = $this->remove_empty_values( $data );
+
+		if ( ! $this->required_values_set( $data ) ) {
+			// phpcs:ignore
+			self::error_log( 'Missing required values for statistic creation. Data: ' . print_r( $data, true ) );
+			return null;
+		}
+
+		return $data;
+	}
+
+	/**
 	 * Create session in {prefix}_burst_sessions
 	 */
 	public function create_session( array $data ): int {
 		global $wpdb;
-		$data = $this->remove_empty_values( $data );
+		$data = $this->normalize_session_data( $data );
 		$wpdb->insert(
 			$wpdb->prefix . 'burst_sessions',
 			$data
@@ -1373,20 +2399,16 @@ class Tracking {
 	 * Create a statistic in {prefix}_burst_statistics
 	 *
 	 * @param array $data Data to insert.
-	 * @return int The newly created statistic ID on success, or false on failure.
+	 * @return int The newly created statistic ID on success, or 0 on failure.
 	 */
 	public function create_statistic( array $data ): int {
 		global $wpdb;
-		unset( $data['host'] );
-		$data = $this->remove_empty_values( $data );
-
-		if ( ! $this->required_values_set( $data ) ) {
-            // phpcs:ignore
-            self::error_log( 'Missing required values for statistic creation. Data: ' . print_r( $data, true ) );
+		$normalized = $this->normalize_statistic_data( $data );
+		if ( null === $normalized ) {
 			return 0;
 		}
 
-		$inserted = $wpdb->insert( $wpdb->prefix . 'burst_statistics', $data );
+		$inserted = $wpdb->insert( $wpdb->prefix . 'burst_statistics', $normalized );
 		if ( $inserted === false ) {
 			self::error_log( 'Failed to create statistic. Error: ' . $wpdb->last_error );
 			return 0;
@@ -1395,7 +2417,7 @@ class Tracking {
 		// Read the id before stamping: the first stamp adds its option with an
 		// INSERT, which overwrites $wpdb->insert_id with the option id.
 		$statistic_id = (int) $wpdb->insert_id;
-		$this->stamp_last_hit_time( (int) ( $data['time'] ?? time() ) );
+		$this->stamp_last_hit_time( (int) ( $normalized['time'] ?? time() ) );
 
 		return $statistic_id;
 	}
@@ -1469,7 +2491,7 @@ class Tracking {
 	/**
 	 * Remove null, empty, and specific values from an array.
 	 *
-	 * Skips removal for the 'parameters' key. Also unsets 'completed_goals'.
+	 * Skips removal for the 'parameters' key. Also unsets 'completed_goals' and 'page_weight_bytes'.
 	 *
 	 * @param array<string, mixed> $data Input associative array of values.
 	 * @return array<string, mixed> Filtered associative array.
@@ -1493,7 +2515,7 @@ class Tracking {
 			}
 		}
 
-		unset( $data['completed_goals'] );
+		unset( $data['completed_goals'], $data['page_weight_bytes'] );
 		return $data;
 	}
 

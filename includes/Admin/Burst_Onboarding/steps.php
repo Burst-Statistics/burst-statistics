@@ -149,7 +149,7 @@ return [
 			[
 				'id'                => 'tips_tricks_mailinglist',
 				'type'              => 'checkbox',
-				'label'             => __( 'Join our mailinglist and get 4 tips to improve conversions.', 'burst-statistics' ),
+				'label'             => __( 'Get 10 short tips to get more out of Burst, spread over six months.', 'burst-statistics' ),
 				'default'           => false,
 				'show_privacy_link' => true,
 			],

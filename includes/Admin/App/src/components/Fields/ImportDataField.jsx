@@ -3,12 +3,12 @@ import { __, sprintf } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
 import ButtonInput from '@/components/Inputs/ButtonInput';
 import { InsightCallout } from '@/components/Common/InsightCallout';
-import useSettingsData from '@/hooks/useSettingsData';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAction, doAction } from '@/utils/api';
 import { uploadFileInChunks } from '@/utils/chunkedUpload';
 import { formatFileSize } from '@/utils/formatting';
 import { clsx } from 'clsx';
+import { toast } from '@/utils/toast';
 
 const AVAILABLE_SOURCES = [
 	{ id: 'burst', name: 'Burst Statistics Backup (.sql.gz / .zip)', type: 'upload' },
@@ -40,7 +40,6 @@ const ImportDataField = () => {
 	const cancelRef = useRef( false );
 	const isLoopRunningRef = useRef( false );
 
-	const { addNotice } = useSettingsData();
 	const queryClient = useQueryClient();
 
 	// Fetch available sources status & detection
@@ -146,7 +145,7 @@ const ImportDataField = () => {
 
 					if ( 'completed' === progress.status ) {
 						done = true;
-						addNotice( __( 'Import completed successfully!', 'burst-statistics' ), 'success' );
+						toast.success( __( 'Import completed successfully!', 'burst-statistics' ) );
 						queryClient.invalidateQueries({ queryKey: [ 'import_progress' ] });
 						queryClient.invalidateQueries({ queryKey: [ 'import_history' ] });
 						break;
@@ -154,7 +153,7 @@ const ImportDataField = () => {
 
 					if ( 'failed' === progress.status ) {
 						done = true;
-						addNotice( __( 'Import failed or encountered an error.', 'burst-statistics' ), 'error' );
+						toast.error( __( 'Import failed or encountered an error.', 'burst-statistics' ) );
 						queryClient.invalidateQueries({ queryKey: [ 'import_progress' ] });
 						queryClient.invalidateQueries({ queryKey: [ 'import_history' ] });
 						break;
@@ -193,14 +192,21 @@ const ImportDataField = () => {
 		mutationFn: async( payload ) => {
 			return await doAction( 'start_import', payload );
 		},
+
+		// fallow-ignore-next-line complexity
 		onSuccess: ( res ) => {
 			if ( res?.error ) {
-				addNotice( res.error, 'error' );
+				toast.error( res.error, { autoClose: false });
 				setUploadedFilePath( '' );
 				setUploadedFileName( '' );
 				setUploadedFileSize( 0 );
 			} else {
-				addNotice( __( 'Import started in the background.', 'burst-statistics' ), 'success' );
+				toast.success( __( 'Import started in the background.', 'burst-statistics' ) );
+				if ( res?.warning ) {
+
+					// Stays until dismissed: the user has to act on it before the import ends.
+					toast.warning( res.warning, { autoClose: false });
+				}
 				cancelRef.current = false;
 				queryClient.invalidateQueries({ queryKey: [ 'import_progress' ] });
 				queryClient.invalidateQueries({ queryKey: [ 'import_history' ] });
@@ -210,7 +216,7 @@ const ImportDataField = () => {
 			}
 		},
 		onError: ( err ) => {
-			addNotice( err?.message || __( 'Failed to start import.', 'burst-statistics' ), 'error' );
+			toast.error( err?.message || __( 'Failed to start import.', 'burst-statistics' ) );
 		}
 	});
 
@@ -229,13 +235,13 @@ const ImportDataField = () => {
 		},
 		onSuccess: () => {
 			cancelRef.current = true;
-			addNotice( __( 'Import cancelled.', 'burst-statistics' ), 'warning' );
+			toast.warning( __( 'Import cancelled.', 'burst-statistics' ) );
 			queryClient.setQueryData([ 'import_progress' ], { percentage: 0, status: 'idle', import_id: null });
 			queryClient.invalidateQueries({ queryKey: [ 'import_progress' ] });
 			queryClient.invalidateQueries({ queryKey: [ 'import_history' ] });
 		},
 		onError: ( err ) => {
-			addNotice( err?.message || __( 'Failed to cancel import.', 'burst-statistics' ), 'error' );
+			toast.error( err?.message || __( 'Failed to cancel import.', 'burst-statistics' ) );
 		}
 	});
 
@@ -245,7 +251,7 @@ const ImportDataField = () => {
 			return await doAction( 'rollback_import', { import_id: importId });
 		},
 		onSuccess: () => {
-			addNotice( __( 'Import rolled back successfully.', 'burst-statistics' ), 'success' );
+			toast.success( __( 'Import rolled back successfully.', 'burst-statistics' ) );
 			queryClient.invalidateQueries({ queryKey: [ 'import_history' ] });
 			queryClient.invalidateQueries({ queryKey: [ 'import_progress' ] });
 		}
@@ -257,11 +263,11 @@ const ImportDataField = () => {
 			return await doAction( 'clear_import_history', {});
 		},
 		onSuccess: ( data ) => {
-			addNotice( data?.message || __( 'Import history cleared.', 'burst-statistics' ), 'success' );
+			toast.success( data?.message || __( 'Import history cleared.', 'burst-statistics' ) );
 			queryClient.invalidateQueries({ queryKey: [ 'import_history' ] });
 		},
 		onError: ( err ) => {
-			addNotice( err?.message || __( 'Failed to clear import history.', 'burst-statistics' ), 'error' );
+			toast.error( err?.message || __( 'Failed to clear import history.', 'burst-statistics' ) );
 		}
 	});
 
@@ -295,13 +301,13 @@ const ImportDataField = () => {
 
 			setUploadedFilePath( result.filePath );
 			setIsUploading( false );
-			addNotice( __( 'File uploaded and validated in chunks successfully.', 'burst-statistics' ), 'success' );
+			toast.success( __( 'File uploaded and validated in chunks successfully.', 'burst-statistics' ) );
 		} catch ( err ) {
 			setIsUploading( false );
 			setUploadedFileName( '' );
 			setUploadedFilePath( '' );
 			setUploadedFileSize( 0 );
-			addNotice( err?.message || __( 'Chunked file upload failed.', 'burst-statistics' ), 'error' );
+			toast.error( err?.message || __( 'Chunked file upload failed.', 'burst-statistics' ) );
 		}
 	};
 

@@ -48,10 +48,13 @@ const getLocale = (): string | undefined => {
 /** Units supported by `getRelativeTime`, in descending order of size. */
 type RelativeUnit = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second';
 
+/** Direction of a change; neutral means the value did not change. */
+export type ChangeStatus = 'positive' | 'negative' | 'neutral';
+
 /** Result returned by the change-percentage helpers. */
 export interface ChangePercentage {
 	val: string;
-	status: 'positive' | 'negative';
+	status: ChangeStatus;
 }
 
 /** A start/end date pair used by the preset ranges. */
@@ -170,9 +173,10 @@ function getPercentage(
 
 /**
  * Formats a signed ratio as an arrow-prefixed percentage label (e.g. "↑ 11.6%").
+ * No change has no direction, so it gets no arrow.
  *
  * @param percentage - Signed ratio (0.116 = 11.6% increase).
- * @return Arrow-prefixed percentage string.
+ * @return Percentage string, arrow-prefixed unless the ratio is 0.
  */
 function formatChangeLabelWithArrow( percentage: number ): string {
 	const formatted = new Intl.NumberFormat( undefined, {
@@ -181,7 +185,7 @@ function formatChangeLabelWithArrow( percentage: number ): string {
 	}).format( Math.abs( percentage ) );
 
 	if ( 0 === percentage ) {
-		return `↑ ${ formatted }`;
+		return formatted;
 	}
 
 	const direction = 0 < percentage ? '↑' : '↓';
@@ -190,11 +194,63 @@ function formatChangeLabelWithArrow( percentage: number ): string {
 }
 
 /**
+ * The status of a signed ratio.
+ *
+ * @param percentage - Signed ratio.
+ * @return The status.
+ */
+function getChangeStatus( percentage: number ): ChangeStatus {
+	if ( 0 === percentage ) {
+		return 'neutral';
+	}
+	return 0 < percentage ? 'positive' : 'negative';
+}
+
+/**
+ * The status of a metric where a rise is bad, such as the bounce rate.
+ *
+ * @param status - The status of the change in the value.
+ * @return The opposite status; neutral stays neutral.
+ */
+function invertChangeStatus( status: ChangeStatus ): ChangeStatus {
+	if ( 'neutral' === status ) {
+		return status;
+	}
+	return 'positive' === status ? 'negative' : 'positive';
+}
+
+/**
+ * The text colour of a change.
+ *
+ * @param status - The change status; anything else, such as a placeholder, is neutral.
+ * @return Tailwind text colour class.
+ */
+function getChangeTextClass( status?: string | null ): string {
+	if ( 'positive' === status ) {
+		return 'text-green';
+	}
+	return 'negative' === status ? 'text-red' : 'text-text-gray';
+}
+
+/**
+ * The text colour of a change in a chart tooltip.
+ *
+ * @param status - The change status; anything else is neutral.
+ * @return Tailwind text colour class.
+ */
+function getChangeTooltipTextClass( status?: string | null ): string {
+	if ( 'positive' === status ) {
+		return 'text-green-600';
+	}
+	return 'negative' === status ? 'text-red-600' : 'text-text-gray';
+}
+
+/**
  * Calculates the percentage change between two values.
  *
  * @param currValue - The current value.
  * @param prevValue - The previous value.
- * @return Formatted percentage with a positive/negative status.
+ * @return Formatted percentage with a positive, negative or neutral status.
  */
 function getChangePercentage(
 	currValue: number | string,
@@ -210,7 +266,7 @@ function getChangePercentage(
 
 	const change: ChangePercentage = {
 		val: formatChangeLabelWithArrow( percentage ),
-		status: 0 < percentage ? 'positive' : 'negative'
+		status: getChangeStatus( percentage )
 	};
 
 	if ( percentage === Infinity ) {
@@ -227,7 +283,7 @@ function getChangePercentage(
  *
  * @param currValue - The current value.
  * @param prevValue - The previous value.
- * @return Formatted percentage with a positive/negative status.
+ * @return Formatted percentage with a positive, negative or neutral status.
  */
 function getAbsoluteChangePercentage(
 	currValue: number | string,
@@ -243,7 +299,7 @@ function getAbsoluteChangePercentage(
 
 	const change: ChangePercentage = {
 		val: formatChangeLabelWithArrow( percentage ),
-		status: 0 < percentage ? 'positive' : 'negative'
+		status: getChangeStatus( percentage )
 	};
 
 	if ( percentage === Infinity ) {
@@ -1432,6 +1488,9 @@ export {
 	getPercentage,
 	getChangePercentage,
 	getAbsoluteChangePercentage,
+	invertChangeStatus,
+	getChangeTextClass,
+	getChangeTooltipTextClass,
 	getBouncePercentage,
 	formatUnixToDate,
 	isValidDate,

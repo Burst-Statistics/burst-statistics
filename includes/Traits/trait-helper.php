@@ -108,6 +108,7 @@ trait Helper {
 			'scroll-analytics' => 'scroll_depth',
 			'goals'            => 'goals',
 			'live-goals'       => 'goals',
+			'goals_overview'   => 'goals',
 		];
 
 		if ( ! isset( $feature_map[ $type ] ) ) {
@@ -157,7 +158,6 @@ trait Helper {
 	 */
 	protected function get_ghost_mode_scripts(): array {
 		return [
-			'assets/js/timeme/timeme.min.js'      => 'timeme.min.js',
 			'assets/js/build/burst-events.min.js' => 'events.min.js',
 			'assets/js/build/burst-events-early-bootstrap.min.js' => 'events-early-bootstrap.min.js',
 		];
@@ -366,9 +366,11 @@ trait Helper {
 	 * Get beacon path
 	 */
 	protected static function get_beacon_url(): string {
+		$endpoint_file = ( ! is_multisite() && \Burst\Frontend\Tracking\High_Traffic_Buffer::is_buffer_enabled() ) ? 'buffer-endpoint.php' : 'endpoint.php';
+
 		if ( is_multisite() && (bool) get_site_option( 'burst_track_network_wide' ) && self::is_networkwide_active() ) {
 			if ( is_main_site() ) {
-				return BURST_URL . 'endpoint.php';
+				return BURST_URL . $endpoint_file;
 			} else {
 				// replace the subsite url with the main site url in BURST_URL.
 				// get main site_url.
@@ -377,10 +379,10 @@ trait Helper {
 				// Normalize site_url() to the same scheme as BURST_URL before replacing, so the replace always matches.
 				$burst_scheme     = wp_parse_url( BURST_URL, PHP_URL_SCHEME );
 				$current_site_url = set_url_scheme( site_url(), $burst_scheme );
-				return str_replace( $current_site_url, $main_site_url, BURST_URL ) . 'endpoint.php';
+				return str_replace( $current_site_url, $main_site_url, BURST_URL ) . $endpoint_file;
 			}
 		}
-		return BURST_URL . 'endpoint.php';
+		return BURST_URL . $endpoint_file;
 	}
 
 	/**
@@ -601,6 +603,15 @@ trait Helper {
 	 * @return string The burst uid.
 	 */
 	public function get_burst_uid(): string {
+		$consent_api_decides = function_exists( 'wp_get_consent_type' ) && (bool) wp_get_consent_type();
+		if ( $consent_api_decides && function_exists( 'wp_has_consent' ) && ! wp_has_consent( 'statistics' ) ) {
+			return '';
+		}
+
+		if ( ! $consent_api_decides && isset( $_COOKIE['burst_consent'] ) && 'no' === sanitize_text_field( wp_unslash( $_COOKIE['burst_consent'] ) ) ) {
+			return '';
+		}
+
 		$burst_uid = isset( $_COOKIE['burst_uid'] ) ? \Burst\burst_loader()->frontend->tracking->sanitize_uid( $_COOKIE['burst_uid'] ) : false;
 		if ( ! $burst_uid ) {
 			// try fingerprint from session.

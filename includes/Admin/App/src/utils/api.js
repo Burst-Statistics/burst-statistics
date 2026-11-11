@@ -3,6 +3,7 @@ import { __ } from '@wordpress/i18n';
 
 //we have to use a relative path here, as api.js is also used by Dashboard_Widget.
 import { toast } from './toast';
+import { siteUrl } from './siteUrl';
 
 if ( burst_settings.is_mainwp && burst_settings.root ) {
 	apiFetch.use.bind( apiFetch );
@@ -461,28 +462,6 @@ const stripControls = ( key, value ) => {
 		return JSON.parse( JSON.stringify( value, stripControls ) );
 	}
 	return value;
-};
-
-/**
- * if the site is loaded over https, but the site url is not https, force to
- * use https anyway, because otherwise we get mixed content issues.
- * @param  type
- * @return {*}
- */
-const siteUrl = ( type ) => {
-	let url;
-	if ( 'undefined' === typeof type ) {
-		url = burst_settings.rest_url;
-	} else {
-		url = burst_settings.admin_ajax_url;
-	}
-	if (
-		'https:' === window.location.protocol &&
-		-1 === url.indexOf( 'https://' )
-	) {
-		return url.replace( 'http://', 'https://' );
-	}
-	return url;
 };
 
 export const getFields = () =>

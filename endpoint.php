@@ -9,9 +9,12 @@ use Burst\Pro\Frontend\Tracking\Tracking_Pro;
 
 // disable loading of most WP core files.
 define( 'SHORTINIT', true );
+
+require_once __DIR__ . '/includes/base-path.php';
+
 // Find the base path.
 // phpcs:ignore
-define( 'BASE_PATH', burst_find_wordpress_base_path() . '/' );
+define( 'BASE_PATH', rtrim( burst_find_wordpress_base_path(), '/' ) . '/' );
 // Load WordPress Core.
 if ( ! file_exists( BASE_PATH . 'wp-load.php' ) ) {
 	die( 'WordPress not installed here' );
@@ -87,67 +90,3 @@ if ( file_exists( __DIR__ . '/includes/Pro/Frontend/Tracking/class-tracking-pro.
 // Constructing Tracking registers the GeoIP enrichment on burst_before_track_hit,
 // even on this SHORTINIT path where init() is never called.
 ( new Tracking() )->beacon_track_hit();
-/**
- * Find the base path of WordPress
- */
-function burst_find_wordpress_base_path(): string {
-	// Try expected relative path first (common case).
-	$path = dirname( __DIR__, 3 );
-	if ( file_exists( $path . '/wp-load.php' ) ) {
-		return rtrim( $path, '/' ) . '/';
-	}
-
-	// check subdirectories for wp-load.php.
-	$subdirs = glob( $path . '/*', GLOB_ONLYDIR );
-	foreach ( $subdirs as $subdir ) {
-		if ( file_exists( $subdir . '/wp-load.php' ) ) {
-			return rtrim( $subdir, '/' ) . '/';
-		}
-	}
-
-	// check for symlinked directory.
-	$path = realpath( __DIR__ . '/../../..' );
-	if ( $path && file_exists( $path . '/wp-load.php' ) ) {
-		return rtrim( $path, '/' ) . '/';
-	}
-
-	// Check Bitnami-specific structure.
-	$bitnami_path = '/opt/bitnami/wordpress/wp-load.php';
-	if (
-		! burst_has_open_basedir_restriction( $bitnami_path ) &&
-		file_exists( $bitnami_path ) &&
-		file_exists( '/bitnami/wordpress/wp-config.php' )
-	) {
-		return '/opt/bitnami/wordpress/';
-	}
-
-	return '/';
-}
-
-/**
- * Check if the path is restricted by open_basedir
- *
- * @param string $path The path to check.
- * @return bool True if the path is restricted, false otherwise.
- */
-function burst_has_open_basedir_restriction( string $path ): bool {
-	// Default error handler is required.
-	//phpcs:ignore
-	set_error_handler( null );
-	// Clean last error info.
-	error_clear_last();
-	// Testing...
-	// @phpstan-ignore-next-line.
-	@file_exists( $path ); //phpcs:ignore
-	// Restore previous error handler.
-	// phpcs:ignore
-	restore_error_handler();
-	// Return `true` if error has occurred.
-	$error = error_get_last();
-
-	if ( is_array( $error ) ) {
-		return str_contains( $error['message'], 'open_basedir restriction in effect' );
-	}
-
-	return false;
-}

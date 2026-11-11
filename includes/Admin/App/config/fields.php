@@ -217,7 +217,7 @@ return [
 		'group_id' => 'privacy',
 		'type'     => 'checkbox',
 		'label'    => __( "Honor 'Do Not Track' requests", 'burst-statistics' ),
-		'context'  => __( "Stop tracking visitors who have 'Do Not Track' enabled in their browser.", 'burst-statistics' ),
+		'context'  => __( "Stop tracking visitors who have 'Do Not Track' or Global Privacy Control enabled in their browser.", 'burst-statistics' ),
 		'disabled' => false,
 		'default'  => false,
 	],
@@ -281,6 +281,24 @@ return [
 		'react_conditions' => [
 			'enable_custom_events' => true,
 			'track_gtag_events'    => true,
+		],
+	],
+	[
+		'id'               => 'track_downloads',
+		'menu_id'          => 'features',
+		'group_id'         => 'features',
+		'type'             => 'checkbox',
+		'label'            => __( 'Track file downloads', 'burst-statistics' ),
+		'context'          => __( 'Automatically capture clicks on files as file_download custom events.', 'burst-statistics' ),
+		'disabled'         => false,
+		'default'          => false,
+		'pro'              => [
+			'url'      => 'pricing/',
+			'tier'     => 'all',
+			'disabled' => false,
+		],
+		'react_conditions' => [
+			'enable_custom_events' => true,
 		],
 	],
 	[
@@ -408,6 +426,16 @@ return [
 		'label'    => __( 'Track URL changes as separate pageviews', 'burst-statistics' ),
 		'context'  => __( 'URL changes such as parameters or fragments will be tracked as separate pageviews. Useful for single-page applications or dynamic websites.', 'burst-statistics' ),
 		'disabled' => false,
+		'default'  => false,
+	],
+	[
+		'id'       => 'high_traffic_mode',
+		'menu_id'  => 'advanced',
+		'group_id' => 'scripts',
+		'type'     => 'checkbox',
+		'label'    => __( 'High-traffic buffer mode', 'burst-statistics' ),
+		'context'  => \Burst\Frontend\Tracking\High_Traffic_Buffer::get_settings_context(),
+		'disabled' => \Burst\Frontend\Tracking\High_Traffic_Buffer::is_settings_disabled(),
 		'default'  => false,
 	],
 	[

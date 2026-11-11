@@ -8,7 +8,9 @@ return [
 		'options' => [
 			'clicks' => [],
 			'views'  => [],
-			'visits' => [],
+			'visits' => [
+				'server_side' => true,
+			],
 			'hook'   => [
 				'server_side' => true,
 			],

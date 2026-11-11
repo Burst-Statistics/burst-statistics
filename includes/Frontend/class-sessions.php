@@ -15,7 +15,7 @@ class Sessions {
 	 *
 	 * @var string
 	 */
-	public const BUILD = '3.7.4';
+	public const BUILD = '3.7.5';
 
 	/**
 	 * Constructor

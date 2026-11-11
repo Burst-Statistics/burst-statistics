@@ -24,7 +24,7 @@ class Upgrade {
 	 *
 	 * @var string
 	 */
-	public const BUILD = '3.7.4';
+	public const BUILD = '3.7.5';
 
 	/**
 	 * How often one version may postpone the upgrade for a table that does not
@@ -399,9 +399,6 @@ class Upgrade {
 			$this->arm_db_upgrade( 'upgrade_lookup_tables_browser_version' );
 			$this->arm_db_upgrade( 'upgrade_lookup_tables_platform' );
 			$this->arm_db_upgrade( 'upgrade_lookup_tables_device' );
-
-			// drop post_meta feature.
-			$this->arm_db_upgrade( 'drop_page_id_column' );
 
 			wp_schedule_single_event( time() + 300, 'burst_upgrade_iteration' );
 
@@ -796,6 +793,13 @@ class Upgrade {
 			// requests through index.php with the REST prefix at the start of
 			// the path, so /wp-login.php/wp-json/burst/v1/... and similar
 			// PATH_INFO URLs can no longer switch off other plugins.
+			burst_reinstall_rest_api_optimizer();
+		}
+
+		if ( null !== $prev_version && version_compare( $prev_version, '3.7.5', '<' ) ) {
+			// Reinstall the REST API optimizer (1.3.0): a request carrying a
+			// rest_route parameter dispatches that route instead of the one in
+			// the path, so it no longer switches off other plugins.
 			burst_reinstall_rest_api_optimizer();
 		}
 

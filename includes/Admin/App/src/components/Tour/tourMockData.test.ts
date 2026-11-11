@@ -105,6 +105,19 @@ test( 'tour management endpoints are never intercepted by getFrontendTourMockDat
 	assert.strictEqual( getFrontendTourMockData( 'burst/v1/get_action/tour_steps' ), null );
 });
 
+test( 'the values of the top page parameter add up to no more than that parameter', () => {
+	mockWindow.__burst_is_tour_active = () => true;
+
+	const keysMock = getFrontendTourMockData( 'burst/v1/data/page-parameter-keys' ) as { data: { data: Array<{ pageviews: number; visitors: number }> } };
+	const valuesMock = getFrontendTourMockData( 'burst/v1/data/page-parameters' ) as { data: { data: Array<{ pageviews: number; visitors: number }> } };
+	const topKey = keysMock.data.data[0];
+
+	for ( const metric of [ 'pageviews', 'visitors' ] as const ) {
+		const total = valuesMock.data.data.reduce( ( sum, row ) => sum + row[ metric ], 0 );
+		assert.ok( total <= topKey[ metric ], `Values have ${ total } ${ metric }, their parameter ${ topKey[ metric ] }` );
+	}
+});
+
 test( 'getFrontendTourMockData matches paths from plain permalinks, where the query is glued on with &', () => {
 	mockWindow.__burst_is_tour_active = () => true;
 
@@ -120,6 +133,13 @@ test( 'getFrontendTourMockData serves ecommerce mocks for the data/ paths that g
 		const mock = getFrontendTourMockData( `burst/v1/data/ecommerce/${ endpoint }?date_start=2026-06-23` ) as { request_success: boolean } | null;
 		assert.ok( null !== mock, `${ endpoint } mock should match its data/ path` );
 	}
+
+	const funnelMock = getFrontendTourMockData( 'burst/v1/data/ecommerce/sales-funnel' ) as { data: Array<{ id: string }> };
+	assert.deepEqual(
+		funnelMock.data.map( ( stage ) => stage.id ),
+		[ 'visits', 'product_page_views', 'add_to_cart', 'checkout_visits', 'conversions' ],
+		'Funnel mock has the stages of Funnel::get_data()'
+	);
 
 	const salesMock = getFrontendTourMockData( 'burst/v1/data/ecommerce/sales' ) as { data: Record<string, { label?: string }> };
 	assert.ok( salesMock.data.revenue?.label, 'Sales mock uses the keyed metric shape of Sales::get_data()' );
