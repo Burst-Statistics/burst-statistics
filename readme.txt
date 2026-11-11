@@ -304,16 +304,13 @@ We value your feedback. You can [submit a support request on the WordPress forum
 * New: an Opt out of tracking block and the [burst_opt_out] shortcode give visitors a button to opt out of Burst tracking, and to opt back in.
 * New: high-traffic buffer mode writes incoming hits to disk first and adds them to the database in batches in the background, to lower the database load on busy sites. Turn it on under Settings > Advanced. Burst recommends it once your busiest hour reaches 3,000 pageviews.
 * New: MainWP reports can include Burst statistics through reporting tokens.
-* Security: when you install Burst Pro from the plugin, Burst checks the package signature before it installs it.
 * Security: a shared report link now only shows statistics from the period of the report, props Raphael P. Cigana.
 * Security: Burst only skips other plugins on requests that run a Burst REST route, so plugins that restrict REST access stay active on every other route, props Filip Kowalski.
 * Security: the most visited and top pages shortcodes no longer show the titles of draft or private posts, props Karthik Ramakrishnan.
 * Improvement: time on page is measured by Burst's own timer instead of the TimeMe library, so visitors load one script less.
 * Improvement: the tracking script no longer reads the visitor's screen resolution, which Burst did not store.
-* Improvement: visitor IP addresses no longer end up in the debug log.
 * Improvement: an unchanged value shows as a grey 0% instead of a red rise.
 * Improvement: the articles on the dashboard come with each plugin update, so the dashboard no longer downloads them once a month.
-* Fix: a site that was still running database upgrades from Burst 1.7 removed a column that tracking needs, after which no hits were stored. The column is restored when you update.
 * Fix: visitors who send Global Privacy Control were tracked while "Respect Do Not Track" was on.
 * Fix: AI assistants connected through an MCP plugin with its own endpoint could not use the Burst abilities.
 
