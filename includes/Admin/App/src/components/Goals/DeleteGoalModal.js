@@ -4,7 +4,6 @@ import { __ } from '@wordpress/i18n';
 import { Close } from '@radix-ui/react-dialog';
 import { useState } from 'react';
 import ButtonInput from '../Inputs/ButtonInput';
-import IconButton from '../Inputs/IconButton';
 
 const Content = ({ goal }) => (
 	<>
@@ -38,48 +37,43 @@ const Footer = ({ deleteGoal, onClose, isDisabled }) => {
 	);
 };
 
-const DeleteGoalModal = ({ goal, deleteGoal }) => {
-	const [ isOpen, setOpen ] = useState( false );
+/**
+ * Confirmation before a goal is deleted. Opened from the goal's actions menu.
+ *
+ * @param {Object}   props            Component props.
+ * @param {Object}   props.goal       Name, status label and creation date of the goal.
+ * @param {Function} props.deleteGoal Deletes the goal.
+ * @param {boolean}  props.isOpen     Whether the modal is open.
+ * @param {Function} props.onClose    Closes the modal.
+ * @return {JSX.Element} The modal.
+ */
+const DeleteGoalModal = ({ goal, deleteGoal, isOpen, onClose }) => {
 	const [ isDisabled, setDisabled ] = useState( false );
-	const handleClose = () => {
-		setOpen( false );
-	};
-	const handleOpen = ( e ) => {
-		e.preventDefault();
-		setOpen( true );
-	};
 
 	const handleDelete = async() => {
 		setDisabled( true );
-		await deleteGoal();
-		setDisabled( false );
-		setOpen( false );
+		try {
+			await deleteGoal();
+		} finally {
+			setDisabled( false );
+			onClose();
+		}
 	};
 
 	return (
-		<>
-			<Modal
-				isOpen={isOpen}
-				onClose={handleClose}
-				title={__( 'Delete goal', 'burst-statistics' )}
-				content={<Content goal={goal} />}
-				footer={
-					<Footer
-						deleteGoal={handleDelete}
-						onClose={handleClose}
-						isDisabled={isDisabled}
-					/>
-				}
-			></Modal>
-			<IconButton
-				icon={'trash'}
-				size={'md'}
-				onClick={( e ) => handleOpen( e )}
-				ariaLabel={__( 'Delete goal', 'burst-statistics' )}
-				variant={'solid'}
-				disabled={isDisabled}
-			/>
-		</>
+		<Modal
+			isOpen={isOpen}
+			onClose={onClose}
+			title={__( 'Delete goal', 'burst-statistics' )}
+			content={<Content goal={goal} />}
+			footer={
+				<Footer
+					deleteGoal={handleDelete}
+					onClose={onClose}
+					isDisabled={isDisabled}
+				/>
+			}
+		/>
 	);
 };
 

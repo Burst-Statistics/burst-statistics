@@ -2,7 +2,9 @@
 
 namespace Burst\Admin\Share\Services;
 
+use Burst\Admin\Reports\DomainTypes\Report_Date_Range;
 use Burst\Admin\Reports\Report;
+use Burst\Admin\Statistics\Statistics_Data;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Save;
 use Burst\Traits\Sanitize;
@@ -14,6 +16,14 @@ class Share_Routing {
 	use Sanitize;
 
 	public Share $share;
+
+	/**
+	 * The story window the REST request was limited to. Queries built inside the
+	 * endpoint belong to the same block, also when their dates fit another one.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	private ?array $request_story_window = null;
 
 	/**
 	 * Constructor.
@@ -193,6 +203,14 @@ class Share_Routing {
 			if ( is_string( $route ) && preg_match( '#burst/v1/(.+?)$#i', $route, $matches ) ) {
 				return trim( $matches[1], '/' );
 			}
+		}
+
+		// Without a request object, the route WordPress resolved still beats the URL:
+		// a rest_route parameter overrides the path, and REQUEST_URI would name another
+		// endpoint than the one that runs. Empty until WordPress has parsed the request.
+		$dispatched_route = $GLOBALS['wp']->query_vars['rest_route'] ?? '';
+		if ( is_string( $dispatched_route ) && '' !== $dispatched_route ) {
+			return preg_match( '#burst/v1/(.+?)$#i', $dispatched_route, $matches ) ? trim( $matches[1], '/' ) : '';
 		}
 
 		// Standard REST API: resolve from REQUEST_URI (pretty-permalink REST path).
@@ -465,31 +483,59 @@ class Share_Routing {
 				return $args;
 			}
 
+			// A shared story never sees the schedule (Report::to_array() reports it as
+			// off), so it runs on the stored end date. This instance is never saved.
+			$report->scheduled = false;
+
 			$datatable_id = $this->get_datatable_id_from_path( $endpoint_path );
 
+			$windows = [];
 			foreach ( $report->content as $block ) {
 				if ( $this->is_block_match( $block, $endpoint_path, $datatable_id ) ) {
-					// Force the block's filters into the arguments.
-					if ( isset( $block['filters'] ) ) {
-						$args['filters'] = $block['filters'];
-					}
-					return $args;
+					$windows[] = $this->get_story_window( $block, $report );
 				}
 			}
 
-			return $args;
+			if ( empty( $windows ) ) {
+				return $args;
+			}
+
+			// Datatables have no comparison. Without a request this is a query built
+			// inside the endpoint, which may be the comparison query of that endpoint.
+			$is_comparison_query = null === $request && '' === $datatable_id;
+
+			if ( null === $request && null !== $this->request_story_window ) {
+				$windows = [ $this->request_story_window ];
+			}
+
+			$window = $this->find_story_window(
+				$windows,
+				(int) ( $args['date_start'] ?? 0 ),
+				(int) ( $args['date_end'] ?? 0 ),
+				$is_comparison_query
+			);
+
+			if ( null === $window ) {
+				$window             = $windows[0];
+				$args['date_start'] = (string) $window['start'];
+				$args['date_end']   = (string) $window['end'];
+				unset( $args['compare_date_start'], $args['compare_date_end'] );
+			}
+
+			if ( null !== $request ) {
+				$this->request_story_window = $window;
+			}
+
+			return $this->apply_story_window( $args, $window );
 		}
 
 		$initial_state = $share_link['initial_state'] ?? [];
 
 		// If can_change_date is false, enforce the stored date_range from initial_state.
 		if ( ! ( $permissions['can_change_date'] ?? false ) ) {
-			if ( ! empty( $initial_state['date_range']['start'] ) ) {
-				// Use the normalize_date method from Sanitize trait.
-				$args['date_start'] = $this->normalize_date( $initial_state['date_range']['start'] . ' 00:00:00' );
-			}
-			if ( ! empty( $initial_state['date_range']['end'] ) ) {
-				$args['date_end'] = $this->normalize_date( $initial_state['date_range']['end'] . ' 23:59:59' );
+			$date_range = $initial_state['date_range'] ?? [];
+			if ( ! $this->is_previous_period_query( $args, $date_range, $request ) ) {
+				$args = $this->apply_stored_date_range( $args, $date_range );
 			}
 		}
 
@@ -501,6 +547,193 @@ class Share_Routing {
 		}
 
 		return $args;
+	}
+
+	/**
+	 * Force the period of a share link and limit the comparison to the period before it.
+	 *
+	 * @param array                 $args       The request arguments.
+	 * @param array<string, string> $date_range The stored start and end date (Y-m-d).
+	 * @return array The arguments with the stored period and no comparison dates of their own.
+	 */
+	private function apply_stored_date_range( array $args, array $date_range ): array {
+		// Not normalize_date(): that returns '' for a midnight skipped by daylight
+		// saving, and a date of 0 removes the time clause from the query.
+		if ( ! empty( $date_range['start'] ) ) {
+			$args['date_start'] = (string) self::convert_date_to_unix( $date_range['start'] . ' 00:00:00' );
+		}
+		if ( ! empty( $date_range['end'] ) ) {
+			$args['date_end'] = (string) self::convert_date_to_unix( $date_range['end'] . ' 23:59:59' );
+		}
+
+		unset( $args['compare_date_start'], $args['compare_date_end'] );
+
+		return $this->limit_compare_mode( array_merge( $args, $this->get_previous_period( $date_range ) ) );
+	}
+
+	/**
+	 * Whether this is the query an endpoint builds for the period before a share
+	 * link's period. The arguments of a request are always forced to the stored
+	 * period, so only the endpoint itself can ask for it.
+	 *
+	 * @param array                 $args       The query arguments.
+	 * @param array<string, string> $date_range The stored start and end date (Y-m-d).
+	 * @param \WP_REST_Request|null $request    The dispatched REST request, when available.
+	 * @return bool True when the query only covers the previous period.
+	 */
+	private function is_previous_period_query( array $args, array $date_range, ?\WP_REST_Request $request ): bool {
+		// Datatables stay on the stored period: only the compare endpoints read the previous one.
+		if ( null !== $request || '' !== $this->get_datatable_id_from_path( $this->get_current_rest_endpoint_path() ) ) {
+			return false;
+		}
+
+		$previous = $this->get_previous_period( $date_range );
+		if ( empty( $previous ) ) {
+			return false;
+		}
+
+		// One day of slack: the period lengths differ per caller by up to a day.
+		return $this->is_period_inside(
+			(int) ( $args['date_start'] ?? 0 ),
+			(int) ( $args['date_end'] ?? 0 ),
+			(int) $previous['compare_date_start'] - DAY_IN_SECONDS,
+			(int) $previous['compare_date_end'] + 1
+		);
+	}
+
+	/**
+	 * Get the whole days before a share link's period, of the same length.
+	 *
+	 * @param array<string, string> $date_range The stored start and end date (Y-m-d).
+	 * @return array<string, string> The compare dates, empty when the stored period is incomplete.
+	 */
+	private function get_previous_period( array $date_range ): array {
+		// Calendar days: in the site's timezone a midnight skipped by daylight saving shortens the count.
+		$timezone = new \DateTimeZone( 'UTC' );
+		$start    = \DateTimeImmutable::createFromFormat( '!Y-m-d', $date_range['start'] ?? '', $timezone );
+		$end      = \DateTimeImmutable::createFromFormat( '!Y-m-d', $date_range['end'] ?? '', $timezone );
+		if ( ! $start || ! $end ) {
+			return [];
+		}
+
+		$days = $start->diff( $end )->days + 1;
+
+		return [
+			'compare_date_start' => (string) self::convert_date_to_unix( $start->modify( "-{$days} days" )->format( 'Y-m-d' ) . ' 00:00:00' ),
+			'compare_date_end'   => (string) self::convert_date_to_unix( $start->modify( '-1 day' )->format( 'Y-m-d' ) . ' 23:59:59' ),
+		];
+	}
+
+	/**
+	 * A share link with fixed dates only compares with the period before them.
+	 *
+	 * @param array $args The request arguments.
+	 * @return array The arguments with any comparison set to the previous period.
+	 */
+	private function limit_compare_mode( array $args ): array {
+		if ( ! empty( $args['compare_mode'] ) ) {
+			$args['compare_mode'] = 'previous_period';
+		}
+
+		return $args;
+	}
+
+	/**
+	 * Force the filters of a story window and limit the comparison to it.
+	 *
+	 * @param array                $args   The request arguments, with dates inside the window.
+	 * @param array<string, mixed> $window The window of the block serving this request.
+	 * @return array The arguments with filters and comparison limited to the window.
+	 */
+	private function apply_story_window( array $args, array $window ): array {
+		if ( null !== $window['filters'] ) {
+			$args['filters'] = $window['filters'];
+		}
+
+		$args = $this->limit_compare_mode( $args );
+
+		$is_compare_period_allowed = $this->is_period_inside(
+			(int) ( $args['compare_date_start'] ?? 0 ),
+			(int) ( $args['compare_date_end'] ?? 0 ),
+			$window['compare_start'],
+			(int) $args['date_start']
+		);
+		if ( ! $is_compare_period_allowed ) {
+			// Without them the comparison falls back to the period before date_start.
+			unset( $args['compare_date_start'], $args['compare_date_end'] );
+		}
+
+		return $args;
+	}
+
+	/**
+	 * Find the window a period belongs to: the block with exactly that period, or
+	 * else the block with the shortest period it fits.
+	 *
+	 * @param array<int, array<string, mixed>> $windows             The windows to search.
+	 * @param int                              $start               Start of the period.
+	 * @param int                              $end                 End of the period.
+	 * @param bool                             $is_comparison_query Whether the previous period counts as inside a window.
+	 * @return array<string, mixed>|null The window, or null when the period fits none.
+	 */
+	private function find_story_window( array $windows, int $start, int $end, bool $is_comparison_query ): ?array {
+		foreach ( $windows as $window ) {
+			if ( $start === $window['start'] && $end === $window['end'] ) {
+				return $window;
+			}
+		}
+
+		usort(
+			$windows,
+			static fn( array $a, array $b ): int => ( $a['end'] - $a['start'] ) <=> ( $b['end'] - $b['start'] )
+		);
+
+		foreach ( $windows as $window ) {
+			$earliest = $is_comparison_query ? $window['compare_start'] : $window['earliest'];
+			if ( $this->is_period_inside( $start, $end, $earliest, $window['end'] ) ) {
+				return $window;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Whether a period is valid and lies between two moments.
+	 *
+	 * @param int $start    Start of the period.
+	 * @param int $end      End of the period.
+	 * @param int $earliest Earliest allowed start.
+	 * @param int $latest   Latest allowed end.
+	 * @return bool True when the period lies inside the bounds.
+	 */
+	private function is_period_inside( int $start, int $end, int $earliest, int $latest ): bool {
+		return $start >= $earliest && $end >= $start && $end <= $latest;
+	}
+
+	/**
+	 * Get the window a report block allows, as unix timestamps in the site's timezone.
+	 *
+	 * @param array<string, mixed> $block  The report block.
+	 * @param Report               $report The report behind the share link.
+	 * @return array{start: int, end: int, earliest: int, compare_start: int, filters: array<string, mixed>|null} The block's own start and end, the earliest start the story view can ask for, the earliest start of its previous period, and the block's filters.
+	 */
+	private function get_story_window( array $block, Report $report ): array {
+		// Not normalize_date(): that returns '' for a midnight skipped by daylight
+		// saving, and a date of 0 removes the time clause from the query.
+		$start    = self::convert_date_to_unix( Report_Date_Range::get_start_date( $block, $report ) . ' 00:00:00' );
+		$end      = self::convert_date_to_unix( Report_Date_Range::get_end_date( $block, $report ) . ' 23:59:59' );
+		$earliest = self::convert_date_to_unix( Report_Date_Range::get_earliest_start_date( $block, $report ) . ' 00:00:00' );
+		$previous = Statistics_Data::calculate_comparison_dates( $earliest, $end, [] );
+
+		return [
+			'start'         => $start,
+			'end'           => $end,
+			'earliest'      => $earliest,
+			// One day of slack: the period lengths differ per caller by up to a day.
+			'compare_start' => $previous['start'] - DAY_IN_SECONDS,
+			'filters'       => $block['filters'] ?? null,
+		];
 	}
 
 	/**
@@ -518,7 +751,8 @@ class Share_Routing {
 
 		// Get the report to check its content.
 		$report = new Report( $report_id );
-		if ( empty( $report->id ) ) {
+		// Report::to_array() hides a disabled report from its link; its data follows.
+		if ( empty( $report->id ) || ! $report->enabled ) {
 			return false;
 		}
 

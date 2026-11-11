@@ -1,5 +1,5 @@
 import { __ } from '@wordpress/i18n';
-import { GOAL_STEP, isGoalComplete } from '@/components/Goals/goalHelpers';
+import { GOAL_STEP, getGoalTrackingBlocker, isGoalComplete } from '@/components/Goals/goalHelpers';
 import type { Goal } from '@/components/Goals/goalHelpers';
 
 export interface GoalsBlockNoticeContent {
@@ -18,8 +18,21 @@ export interface GoalsBlockNoticeContent {
  * @return {GoalsBlockNoticeContent | null} The notice, or null when a goal is active.
  */
 const getAllGoalsNotice = ( goals: Goal[]): GoalsBlockNoticeContent | null => {
-	if ( goals.some( ( goal ) => 'active' === goal.status ) ) {
+	if ( goals.some( ( goal ) => 'active' === goal.status && ! getGoalTrackingBlocker( goal ) ) ) {
 		return null;
+	}
+
+	const blockedActiveGoal = goals.find( ( goal ) => 'active' === goal.status && getGoalTrackingBlocker( goal ) );
+	if ( blockedActiveGoal ) {
+		const blocker = getGoalTrackingBlocker( blockedActiveGoal );
+		if ( blocker ) {
+			return {
+				text: blocker.noticeText,
+				action: __( 'Turn on tracking', 'burst-statistics' ),
+				goalId: blockedActiveGoal.id,
+				step: GOAL_STEP.TARGET
+			};
+		}
 	}
 
 	return {
@@ -39,6 +52,16 @@ const getGoalNotice = ( goal: Goal ): GoalsBlockNoticeContent | null => {
 		return {
 			text: __( 'This goal is not finished, so it cannot count conversions yet.', 'burst-statistics' ),
 			action: __( 'Finish setup', 'burst-statistics' ),
+			goalId: goal.id,
+			step: GOAL_STEP.TARGET
+		};
+	}
+
+	const blocker = getGoalTrackingBlocker( goal );
+	if ( blocker ) {
+		return {
+			text: blocker.noticeText,
+			action: __( 'Turn on tracking', 'burst-statistics' ),
 			goalId: goal.id,
 			step: GOAL_STEP.TARGET
 		};

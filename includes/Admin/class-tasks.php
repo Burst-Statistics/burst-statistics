@@ -399,6 +399,9 @@ class Tasks {
 	 * @param array<string, mixed> $task Task definition.
 	 */
 	public function is_critical_task( array $task ): bool {
+		if ( ! empty( $task['critical'] ) ) {
+			return true;
+		}
 		return in_array( $task['icon'] ?? 'open', self::CRITICAL_ICONS, true );
 	}
 

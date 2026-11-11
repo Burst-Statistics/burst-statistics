@@ -2,6 +2,7 @@
 namespace Burst\Frontend;
 
 use Burst\Admin\Statistics\Statistics_Query;
+use Burst\Traits\Database_Helper;
 use Burst\Traits\Helper;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -18,7 +19,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 2.1.0
  */
 class Shortcodes {
+	use Database_Helper;
 	use Helper;
+
+	/**
+	 * Extra top_pages rows to fetch, so removed non-public pages leave the list full.
+	 */
+	private const TOP_PAGES_SPARE_ROWS = 20;
 
 	/**
 	 * Instance of Frontend_Statistics class
@@ -313,6 +320,9 @@ class Shortcodes {
 			$atts
 		);
 
+		$row_limit = (int) $query_args['limit'];
+		$has_spare = $atts['type'] === 'top_pages' && $row_limit > 0;
+
 		try {
 			$qd = Statistics_Query::create( 'shortcode_' . sanitize_key( $atts['type'] ) )
 				->date_range( $start, $end )
@@ -320,7 +330,7 @@ class Shortcodes {
 				->filters( $query_args['filters'] )
 				->group_by( $query_args['group_by'] )
 				->order_by( $query_args['order_by'] )
-				->limit( $query_args['limit'] );
+				->limit( $has_spare ? $row_limit + self::TOP_PAGES_SPARE_ROWS : $query_args['limit'] );
 			// Use our frontend statistics query builder.
 			$sql = $this->statistics->generate_statistics_query( $qd );
 
@@ -329,7 +339,13 @@ class Shortcodes {
 				// The query is prepared within the query_data method.
                 // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				$results = $wpdb->get_results( $sql, ARRAY_A );
-				$output  = $this->render_list_type_results( $results, $atts );
+				if ( $atts['type'] === 'top_pages' ) {
+					$results = $this->remove_non_public_pages( $results );
+				}
+				if ( $has_spare ) {
+					$results = array_slice( $results, 0, $row_limit );
+				}
+				$output = $this->render_list_type_results( $results, $atts );
 			} else {
 				// Single value data.
 				// The query is prepared within the query_data method.
@@ -354,6 +370,69 @@ class Shortcodes {
 		}
 
 		return $output;
+	}
+
+	/**
+	 * Remove the pages of posts that are not public. A logged-in visit tracks the
+	 * path of a private post, and for an anonymous visitor url_to_postid() does
+	 * not recognise that path, so the post id tracked for the url decides.
+	 *
+	 * @param array<int, array<string, mixed>> $results The top pages rows.
+	 * @return array<int, array<string, mixed>> The rows of the public pages.
+	 */
+	private function remove_non_public_pages( array $results ): array {
+		// The dictionary matches urls ignoring case and returns them in its own case.
+		$page_ids = array_change_key_case( $this->get_page_ids_for_urls( array_column( $results, 'page_url' ) ) );
+
+		return array_values(
+			array_filter(
+				$results,
+				fn( array $row ): bool => $this->is_public_page( (string) $row['page_url'], $page_ids[ strtolower( (string) $row['page_url'] ) ] ?? 0 )
+			)
+		);
+	}
+
+	/**
+	 * Whether a tracked url may be listed on a public page.
+	 *
+	 * @param string $url     The url path.
+	 * @param int    $page_id The post id tracked for the url, 0 when there is none.
+	 * @return bool True when the url does not belong to a non-public post.
+	 */
+	private function is_public_page( string $url, int $page_id ): bool {
+		if ( 0 === $page_id || is_post_publicly_viewable( $page_id ) ) {
+			return true;
+		}
+
+		// The tracked id comes from the client and can be outdated: it must not
+		// hide a url of something else, or a url that shows a public post.
+		$post = get_post( $page_id );
+		if ( null === $post || ! $this->is_url_of_post( $url, $post ) ) {
+			return true;
+		}
+
+		$post_id = url_to_postid( home_url( $url ) );
+		return $post_id > 0 && is_post_publicly_viewable( $post_id );
+	}
+
+	/**
+	 * Whether a url path carries the slug or id of a post.
+	 *
+	 * @param string   $url  The url path.
+	 * @param \WP_Post $post The post.
+	 * @return bool True when one of the path segments identifies the post.
+	 */
+	private function is_url_of_post( string $url, \WP_Post $post ): bool {
+		$segments = array_filter(
+			// Regex: `/\.[a-z0-9]+$/i` strips the extension of a permalink like `/my-post.html`.
+			array_map( static fn( string $segment ): string => sanitize_title( rawurldecode( (string) preg_replace( '/\.[a-z0-9]+$/i', '', $segment ) ) ), explode( '/', $url ) ),
+			static fn( string $segment ): bool => '' !== $segment
+		);
+
+		// Trashing a post adds this suffix to its slug; the tracked url predates it.
+		$slug = str_replace( '__trashed', '', $post->post_name );
+
+		return in_array( $slug, $segments, true ) || in_array( (string) $post->ID, $segments, true );
 	}
 
 	/**
@@ -389,9 +468,10 @@ class Shortcodes {
 				$url   = $item['page_url'];
 				$title = $url;
 
-				// Try to get post title if it's a WordPress post/page.
+				// Try to get post title if it's a WordPress post/page. The url comes from
+				// the client and url_to_postid() does not check the post status.
 				$post_id = url_to_postid( home_url( $url ) );
-				if ( $post_id > 0 ) {
+				if ( $post_id > 0 && is_post_publicly_viewable( $post_id ) ) {
 					$title = get_the_title( $post_id );
 				} elseif ( $url === '/' ) {
 					$title = __( 'Homepage', 'burst-statistics' );

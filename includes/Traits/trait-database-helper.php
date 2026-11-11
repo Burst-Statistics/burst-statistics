@@ -29,7 +29,7 @@ trait Database_Helper {
 	 * bump-version.sh updates the literal.
 	 */
 	public function database_helper_build(): string {
-		return '3.7.4';
+		return '3.7.5';
 	}
 
 	/**

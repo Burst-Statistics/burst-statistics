@@ -462,31 +462,46 @@ class Frontend_Statistics {
 			$end_time = time();
 		}
 
+		// Attachments inherit their status, which the check on the post below resolves.
+		$statuses            = array_merge( array_values( array_filter( get_post_stati(), 'is_post_status_viewable' ) ), [ 'inherit' ] );
+		$status_placeholders = implode( ', ', array_fill( 0, count( $statuses ), '%s' ) );
+
 		global $wpdb;
-		// Get posts sorted by pageviews.
-		$posts  = $wpdb->get_results(
+		// Get posts sorted by pageviews. The page_id of a hit is sent by the client, so
+		// the post itself decides what is listed. Joined after grouping: one lookup per
+		// page instead of one per hit, and unpublished ids do not take up a place in the list.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- The placeholders are generated from the status list.
+		$posts = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT page_id, COUNT(*) as pageview_count
-             FROM {$wpdb->prefix}burst_statistics
-             WHERE page_id > 0
-               AND time >= %d
-               AND time <= %d
-               AND page_type = %s
-             GROUP BY page_id
-             ORDER BY pageview_count DESC
+				"SELECT ranked.page_id, ranked.pageview_count
+             FROM (
+                SELECT page_id, COUNT(*) as pageview_count
+                FROM {$wpdb->prefix}burst_statistics
+                WHERE page_id > 0
+                  AND time >= %d
+                  AND time <= %d
+                  AND page_type = %s
+                GROUP BY page_id
+             ) AS ranked
+             INNER JOIN {$wpdb->posts} AS posts ON posts.ID = ranked.page_id
+             WHERE posts.post_type = %s
+               AND posts.post_status IN ( {$status_placeholders} )
+             ORDER BY ranked.pageview_count DESC
              LIMIT %d",
-				$start_time,
-				$end_time,
-				$post_type,
-				$count
+				array_merge( [ $start_time, $end_time, $post_type, $post_type ], $statuses, [ $count ] )
 			),
 			ARRAY_A
 		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 		$result = [];
 
 		foreach ( $posts as $post ) {
 			$post_object = get_post( $post['page_id'] );
-			$result[]    = [
+			// An attachment takes its status from its parent, which SQL cannot see.
+			if ( ! $post_object instanceof \WP_Post || ! is_post_publicly_viewable( $post_object ) ) {
+				continue;
+			}
+			$result[] = [
 				'post'  => $post_object,
 				'views' => $post['pageview_count'],
 			];

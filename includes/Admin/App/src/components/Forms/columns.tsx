@@ -1,6 +1,6 @@
 import { __ } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
-import { formatNumber, getChangePercentage, truncateMiddle } from '@/utils/formatting';
+import { formatNumber, getChangePercentage, getChangeTextClass, truncateMiddle } from '@/utils/formatting';
 import type { BarColumn } from '@/components/DataTable/BarDataTable';
 import type { FormRow } from './useFormsData';
 
@@ -87,7 +87,7 @@ export function getFormsColumns(): BarColumn<FormRow>[] {
 				const { status } = getChangePercentage( row.conversionRate, row.previousConversionRate );
 
 				return (
-					<span className={ 'positive' === status ? 'text-green font-medium' : 'text-red font-medium' }>
+					<span className={ `${ getChangeTextClass( status ) } font-medium` }>
 						{ rate }
 					</span>
 				);

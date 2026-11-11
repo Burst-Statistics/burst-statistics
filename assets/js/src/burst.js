@@ -1,5 +1,3 @@
-// TimeMe.js should be loaded and running to track time as soon as it is loaded.
-
 /**
  * @typedef {Object} BurstOptions
  * @property {string} privacy_level
@@ -259,13 +257,11 @@ const burst_fingerprint = () => {
   });
 };
 
-const burst_get_time_on_page = () => {
-  if (typeof TimeMe === 'undefined') return Promise.resolve(0);
-  const time = TimeMe.getTimeOnCurrentPageInMilliseconds();
-  TimeMe.resetAllRecordedPageTimes();
-  TimeMe.initialize({ idleTimeoutInSeconds: 30 });
-  return Promise.resolve(time);
-};
+/**
+ * Get the active time on page since the previous call, and start counting again.
+ * @returns {Promise<number>} Milliseconds.
+ */
+const burst_get_time_on_page = () => Promise.resolve(burstActiveTimer.take());
 /**
  * Check if this is a user agent
  * @returns {boolean}
@@ -285,13 +281,14 @@ const burst_is_do_not_track = () => {
     burst.cache.isDoNotTrack = false;
     return false;
   }
-    // check for doNotTrack and globalPrivacyControl headers
+  // Do Not Track is a string ("1", or "yes" in old Firefox); Global Privacy
+  // Control is a boolean, so a browser that sends GPC reports true, not 1.
   const result =
 		"1" === navigator.doNotTrack ||
 		"yes" === navigator.doNotTrack ||
 		"1" === navigator.msDoNotTrack ||
 		"1" === window.doNotTrack ||
-		1 === navigator.globalPrivacyControl;
+		true === navigator.globalPrivacyControl;
   burst.cache.isDoNotTrack = result;
   return result;
 };
@@ -542,7 +539,6 @@ async function burst_track_hit(extraData = {}) {
     url: location.href,
     referrer_url: document.referrer,
     user_agent: navigator.userAgent || 'unknown',
-    device_resolution: `${window.screen.width * window.devicePixelRatio}x${window.screen.height * window.devicePixelRatio}`,
     time_on_page: time,
     ...burst.getScrollData?.(),
     ...burst.getGoalsData?.(),
@@ -800,8 +796,28 @@ function burst_init_events() {
   window.addEventListener('popstate', handleUrlChange);
 }
 
+let burst_previous_consent = burst_consent_state();
+
 const burst_maybe_init = () => {
-  if (burst_consent_state() !== 'yes') return;
+  const consent = burst_consent_state();
+  const wasDenied = burst_previous_consent === 'no';
+  burst_previous_consent = consent;
+  if (consent !== 'yes') return;
+  // A first grant through the Consent API keeps pending activity: its "no" is
+  // usually a banner not answered yet, and the API can't tell that from a refusal.
+  // Without a deciding API, "no" can only be the opt-out cookie, so a page opened
+  // opted out drops its time like a later opt-out.
+  if (wasDenied && (burst.tracking.initialized || !burst_consent_api_decides())) {
+    // Drop activity from before consent resumed, whichever UI changed it.
+    // The visitor may have a new identifier, so the next hit must create a visit.
+    burst_get_time_on_page();
+    burst.resetScrollData?.();
+    if (burst.goals?.completed) {
+      burst.goals.completed.length = 0;
+    }
+    burst.events?.clearQueue();
+    burst.tracking.isInitialHit = true;
+  }
   if (burst.tracking.initialized) {
     burst_track_hit();
     return;
@@ -812,14 +828,12 @@ const burst_maybe_init = () => {
 };
 
 document.addEventListener('wp_consent_type_defined', burst_maybe_init);
-document.addEventListener('wp_listen_for_consent_change', e => {
-  const detail = e.detail;
-  const isAllowed = (detail && (detail.statistics === 'allow' || detail['statistics'] === 'allow'))
-    || (typeof wp_has_consent === 'function' && wp_has_consent('statistics'));
-  if (isAllowed) {
-    burst.cache.useCookies = null;
-    burst_maybe_init();
-  }
+// Fired by the opt-out button once it has recorded the visitor's own choice.
+// An event, not a window export, because ghost mode strips those again.
+document.addEventListener('burst_consent_changed', burst_maybe_init);
+document.addEventListener('wp_listen_for_consent_change', () => {
+  burst.cache.useCookies = null;
+  burst_maybe_init();
 });
 
 // events.js loads async next to this script and needs burst.options and the

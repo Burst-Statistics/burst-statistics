@@ -37,7 +37,7 @@ class Data_Sharing {
 	/**
 	 * The kill switch URL
 	 */
-	const KILL_SWITCH_URL = 'https://burst.ams3.cdn.digitaloceanspaces.com/feedback/switch.txt';
+	const KILL_SWITCH_URL = 'https://downloads.burst-statistics.com/feedback/switch.txt';
 
 	private int $current_send_time;
 

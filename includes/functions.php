@@ -1,5 +1,7 @@
 <?php
 defined( 'ABSPATH' ) || die( 'you do not have access to this page!' );
+
+require_once __DIR__ . '/base-path.php';
 /**
  * Second function_exists is for <2.0 version of Burst Free
  */

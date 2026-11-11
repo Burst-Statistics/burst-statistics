@@ -1,0 +1,23 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "burst/opt-out",
+	"title": "Opt out of tracking",
+	"category": "widgets",
+	"description": "Shows a button a visitor can use to opt out of Burst tracking, and to opt back in.",
+	"keywords": [ "privacy", "consent", "statistics", "tracking" ],
+	"textdomain": "burst-statistics",
+	"icon": "privacy",
+	"attributes": {
+		"opt_out_label": {
+			"type": "string",
+			"default": ""
+		},
+		"opt_in_label": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"editorScript": "burst-opt-out-block-editor",
+	"editorStyle": "burst-opt-out"
+}

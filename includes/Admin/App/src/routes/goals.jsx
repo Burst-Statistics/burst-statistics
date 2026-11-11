@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import { shouldLoadRoute } from '@/utils/helper';
 import NotFoundModal from '@/components/Common/NotFoundModal';
-import GoalsPage from '@/components/Goals/GoalsPage';
+import GoalsLayout from '@/components/Goals/Dashboard/GoalsLayout';
 
 export const Route = createFileRoute( '/goals' )({
 
@@ -12,5 +12,5 @@ export const Route = createFileRoute( '/goals' )({
 		}
 	},
 	notFoundComponent: NotFoundModal,
-	component: GoalsPage
+	component: GoalsLayout
 });

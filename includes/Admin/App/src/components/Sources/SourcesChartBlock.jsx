@@ -15,6 +15,7 @@ import { useBlockConfig } from '@/hooks/useBlockConfig';
 import useSourcesOverTime from '@/hooks/useSourcesOverTime';
 import { formatAxisLabel, formatNumber, getChartXAxisTickValues, getPercentage } from '@/utils/formatting';
 import { getSourceCategoryMeta } from '@/api/getDataTableData';
+import useSourcesStore from '@/store/useSourcesStore';
 
 const SOURCE_KEYS = [ 'search', 'social', 'referral', 'aiReferral', 'paid', 'email', 'direct' ];
 
@@ -149,8 +150,6 @@ function SourcesBarTooltip({ data, interval }) {
 		</ChartTooltip>
 	);
 }
-
-import useSourcesStore from '@/store/useSourcesStore';
 
 const INTERVAL_OPTIONS = [
 	{ value: 'auto', label: __( 'Auto', 'burst-statistics' ) },

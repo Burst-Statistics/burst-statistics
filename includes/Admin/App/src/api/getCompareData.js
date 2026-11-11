@@ -4,6 +4,7 @@ import {
 	formatTime,
 	getAbsoluteChangePercentage,
 	getChangePercentage,
+	invertChangeStatus,
 	getPercentage
 } from '@/utils/formatting';
 import { __ } from '@wordpress/i18n';
@@ -193,8 +194,7 @@ const transformCompareData = ( response, includePageMetrics = false ) => {
 		if ( 'bounce_rate' === key ) {
 			change = getAbsoluteChangePercentage( curr[key], prev[key]);
 
-			change.status =
-				'positive' === change.status ? 'negative' : 'positive';
+			change.status = invertChangeStatus( change.status );
 		} else {
 			change = getChangePercentage( curr[key], prev[key]);
 		}

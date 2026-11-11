@@ -224,7 +224,7 @@ class Events {
 
 		foreach ( $recorded_events as $recorded_event ) {
 			do_action( 'burst_event_recorded', $statistic_id, $recorded_event['name'], $recorded_event['value'] );
-			do_action( 'burst_event_name_recorded', $statistic_id, $recorded_event['canonical_name'], $recorded_event['value'] );
+			do_action( 'burst_event_name_recorded', $statistic_id, $recorded_event['canonical_name'], $recorded_event['value'], $recorded_event['properties'] );
 		}
 	}
 

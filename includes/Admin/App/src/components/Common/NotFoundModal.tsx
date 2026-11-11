@@ -6,6 +6,7 @@ interface NotFoundModalProps {
 	header?: string;
 	message?: string;
 	actionLabel?: string;
+	actionTo?: string;
 }
 
 const NotFoundModal: React.FC<NotFoundModalProps> = ({
@@ -14,13 +15,15 @@ const NotFoundModal: React.FC<NotFoundModalProps> = ({
 		'The page you are trying to access does not exist or is not available.',
 			'burst-statistics'
 	),
-	actionLabel = __( 'Go Back', 'burst-statistics' )
+	actionLabel = __( 'Go Back', 'burst-statistics' ),
+	actionTo
 }) => {
 	return (
 		<AccessStateModal
 			header={header}
 			message={message}
 			actionLabel={actionLabel}
+			actionTo={actionTo}
 			iconName="search"
 			iconColor="gray"
 			iconBgClassName="bg-gray-200"

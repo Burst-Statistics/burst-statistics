@@ -446,6 +446,7 @@ export const getFrontendTourMockData = ( path, method = 'GET', body = {}) => {
 			sessions: { label: __( 'Sessions', 'burst-statistics' ), color: '#10B981', base: 130, var1: 25, var2: 3 },
 			bounces: { label: __( 'Bounces', 'burst-statistics' ), color: '#EF4444', base: 45, var1: 12, var2: 2 },
 			conversions: { label: __( 'Conversions', 'burst-statistics' ), color: '#8B5CF6', base: 22, var1: 8, var2: 1 },
+			goal_conversions: { label: __( 'Conversions', 'burst-statistics' ), color: '#8B5CF6', base: 22, var1: 8, var2: 1 },
 			bounce_rate: { label: __( 'Bounce rate', 'burst-statistics' ), color: '#EC4899', base: 34, var1: 5, var2: 1 },
 			avg_time_on_page: { label: __( 'Avg. time on page', 'burst-statistics' ), color: '#6366F1', base: 85, var1: 15, var2: 2 }
 		};
@@ -566,6 +567,32 @@ export const getFrontendTourMockData = ( path, method = 'GET', body = {}) => {
 				bestDevice: { title: __( 'Desktop', 'burst-statistics' ), value: 5.6, icon: 'desktop' },
 				status: 'active',
 				goalId: 1
+			}
+		};
+	}
+
+	// 5b. Goals dashboard overview (/burst/v1/data/goals_overview)
+	if ( 'data/goals_overview' === cleanPath || 'goals_overview' === cleanPath ) {
+		const ok = { status: 'ok', last_conversion: now - 3600 };
+		return {
+			request_success: true,
+			data: {
+				totals: {
+					conversions: 28,
+					conversions_previous: 22,
+					converting_visitors: 26,
+					converting_visitors_previous: 21,
+					conversion_rate: 4.5,
+					conversion_rate_previous: 3.8
+				},
+				goals: dynamicMockGoals.map( ( goal, index ) => ({
+					id: goal.id,
+					conversions: 0 === index ? 18 : 10,
+					conversions_previous: 0 === index ? 13 : 9,
+					converting_visitors: 0 === index ? 17 : 9,
+					conversion_rate: 0 === index ? 2.9 : 1.6,
+					health: ok
+				}) )
 			}
 		};
 	}
@@ -1203,10 +1230,11 @@ export const getFrontendTourMockData = ( path, method = 'GET', body = {}) => {
 		return {
 			request_success: true,
 			data: [
-				{ id: 'view_product', stage: __( 'Product Views', 'burst-statistics' ), label: __( 'Product Views', 'burst-statistics' ), value: 3200, count: 3200, percentage: 100 },
-				{ id: 'add_to_cart', stage: __( 'Add to Cart', 'burst-statistics' ), label: __( 'Add to Cart', 'burst-statistics' ), value: 680, count: 680, percentage: 21.25 },
-				{ id: 'checkout', stage: __( 'Checkout Initiated', 'burst-statistics' ), label: __( 'Checkout Initiated', 'burst-statistics' ), value: 310, count: 310, percentage: 9.68 },
-				{ id: 'purchase', stage: __( 'Completed Purchase', 'burst-statistics' ), label: __( 'Completed Purchase', 'burst-statistics' ), value: 182, count: 182, percentage: 5.68 }
+				{ id: 'visits', stage: __( 'Visitors started session', 'burst-statistics' ), value: 5096 },
+				{ id: 'product_page_views', stage: __( 'Viewed a product', 'burst-statistics' ), value: 3200 },
+				{ id: 'add_to_cart', stage: __( 'Added to cart', 'burst-statistics' ), value: 680 },
+				{ id: 'checkout_visits', stage: __( 'Started checkout', 'burst-statistics' ), value: 310 },
+				{ id: 'conversions', stage: __( 'Purchased', 'burst-statistics' ), value: 182 }
 			]
 		};
 	}
@@ -1248,7 +1276,7 @@ export const getFrontendTourMockData = ( path, method = 'GET', body = {}) => {
 		return {
 			request_success: true,
 			data: {
-				'/': 3,
+				'/': 4,
 				'/pricing': 2,
 				'/features': 1
 			}
@@ -1268,31 +1296,38 @@ export const getFrontendTourMockData = ( path, method = 'GET', body = {}) => {
 				data: [
 					{
 						parameter: 'utm_source',
-						pageviews: 7841,
-						visitors: 5302,
+						pageviews: 780,
+						visitors: 520,
 						value_count: 9,
 						high_cardinality: false
 					},
 					{
 						parameter: 'utm_campaign',
-						pageviews: 6204,
-						visitors: 4118,
+						pageviews: 610,
+						visitors: 410,
 						value_count: 18,
 						high_cardinality: false
 					},
 					{
-						parameter: 'utm_medium',
-						pageviews: 2930,
-						visitors: 1904,
-						value_count: 5,
+						parameter: 'ref',
+						pageviews: 420,
+						visitors: 290,
+						value_count: 4,
+						high_cardinality: false
+					},
+					{
+						parameter: 'coupon',
+						pageviews: 240,
+						visitors: 180,
+						value_count: 3,
 						high_cardinality: false
 					}
 				],
-				total_pageviews: 20573,
-				total_visitors: 13704,
-				tagged_pageviews: 12480,
-				untagged_pageviews: 8093,
-				untagged_visitors: 5611
+				total_pageviews: 5420,
+				total_visitors: 2140,
+				tagged_pageviews: 1420,
+				untagged_pageviews: 4000,
+				untagged_visitors: 1540
 			}
 		};
 	}
@@ -1302,22 +1337,22 @@ export const getFrontendTourMockData = ( path, method = 'GET', body = {}) => {
 		const allData = [
 			{
 				value: 'burst-free-3.*',
-				pageviews: 4209,
-				visitors: 2812,
+				pageviews: 421,
+				visitors: 281,
 				group: true,
 				member_count: 11,
 				min_version: '3.1.4',
 				max_version: '3.6.3',
 				newest_value: '3.6.3',
-				newest_views: 571,
+				newest_views: 57,
 				members: [
-					{ value: 'burst-free-3.6.3', pageviews: 571, visitors: 390 },
-					{ value: 'burst-free-3.6.2', pageviews: 480, visitors: 320 }
+					{ value: 'burst-free-3.6.3', pageviews: 57, visitors: 39 },
+					{ value: 'burst-free-3.6.2', pageviews: 48, visitors: 32 }
 				]
 			},
-			{ value: 'burstpricing', pageviews: 812, visitors: 601, group: false },
-			{ value: 'burst-readme', pageviews: 604, visitors: 448, group: false },
-			{ value: 'paac', pageviews: 379, visitors: 291, group: false }
+			{ value: 'burstpricing', pageviews: 81, visitors: 60, group: false },
+			{ value: 'burst-readme', pageviews: 60, visitors: 45, group: false },
+			{ value: 'paac', pageviews: 38, visitors: 29, group: false }
 		];
 
 		const filteredData = searchParam ?

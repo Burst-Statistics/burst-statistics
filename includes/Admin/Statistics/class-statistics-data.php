@@ -1195,23 +1195,27 @@ class Statistics_Data {
 	 */
 	private function get_metric_color( string $metric = 'visitors', string $type = 'default' ): string {
 		$colors = [
-			'visitors'    => [
+			'visitors'         => [
 				'background' => 'var(--color-blue-400)',
 				'border'     => 'var(--color-blue-400)',
 			],
-			'pageviews'   => [
+			'pageviews'        => [
 				'background' => 'var(--color-yellow-500)',
 				'border'     => 'var(--color-yellow-500)',
 			],
-			'bounces'     => [
+			'bounces'          => [
 				'background' => 'var(--color-red-500)',
 				'border'     => 'var(--color-red-500)',
 			],
-			'sessions'    => [
+			'sessions'         => [
 				'background' => 'var(--color-orange-500)',
 				'border'     => 'var(--color-orange-500)',
 			],
-			'conversions' => [
+			'conversions'      => [
+				'background' => 'var(--color-primary-700)',
+				'border'     => 'var(--color-primary-700)',
+			],
+			'goal_conversions' => [
 				'background' => 'var(--color-primary-700)',
 				'border'     => 'var(--color-primary-700)',
 			],

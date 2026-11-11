@@ -11,6 +11,7 @@ export type BurstCoreDataType =
 	| 'compare'
 	| 'today'
 	| 'goals'
+	| 'goals_overview'
 	| 'live-visitors'
 	| 'live-traffic'
 	| 'live-goals'
@@ -45,6 +46,49 @@ export type BurstEcommerceDataType =
 	| 'ecommerce/sales-funnel'
 	| 'ecommerce/subscriptions'
 	| 'ecommerce/subscriptions-forecast';
+
+/**
+ * Health of one goal. Maps to PHP: `Goal_Statistics::get_goals_health()`.
+ */
+export interface GoalHealth {
+	status: 'ok' | 'not_counting';
+
+	// Unix timestamp of the latest conversion, null when the goal never converted.
+	last_conversion: number | null;
+}
+
+/**
+ * One goal's results in the selected period.
+ */
+export interface GoalsOverviewGoal {
+	id: number;
+	conversions: number;
+	conversions_previous: number;
+	converting_visitors: number;
+
+	// converting_visitors / visitors in the period, in %.
+	conversion_rate: number;
+	health: GoalHealth;
+}
+
+/**
+ * Maps to PHP: `Goal_Statistics::get_goals_overview()` (`goals_overview`).
+ */
+export interface GoalsOverview {
+	totals: {
+
+		// Sum over active goals.
+		conversions: number;
+		conversions_previous: number;
+
+		// Unique visitors with at least one conversion on any active goal.
+		converting_visitors: number;
+		converting_visitors_previous: number;
+		conversion_rate: number;
+		conversion_rate_previous: number;
+	};
+	goals: GoalsOverviewGoal[];
+}
 
 export type ForecastSource = 'sales' | 'subscriptions';
 

@@ -208,6 +208,9 @@ class Admin {
 			$milestones = new Milestones();
 			$milestones->init();
 
+			$traffic_peak = new Traffic_Peak();
+			$traffic_peak->init();
+
 			// Always initialized: it listens for the opt-in, and gates the sends itself.
 			$data_sharing = new Data_Sharing();
 			$data_sharing->init();
@@ -802,6 +805,12 @@ class Admin {
 			'<a href="https://burst-statistics.com/legal/privacy-statement/" target="_blank">',
 			'</a>'
 		);
+		// The shortcode renders a button the visitor can use to refuse tracking.
+		// It sits inside the sentence, which its markup allows: the wrapper is a
+		// span, so wpautop's paragraph is not broken by it. Site owners who keep
+		// an older privacy page are unaffected, because this text only reaches
+		// the ones who copy the suggestion again.
+		$content .= "\n\n" . __( 'You can opt out of this analysis at any time:', 'burst-statistics' ) . ' [burst_opt_out]';
 		wp_add_privacy_policy_content(
 			'Burst Statistics',
 			wp_kses_post( wpautop( $content, false ) )

@@ -12,6 +12,9 @@ interface AccessStateModalProps {
 	iconBgClassName: string;
 	headingClassName: string;
 	messageClassName: string;
+
+	// Where the action goes; without it, the action goes back one page.
+	actionTo?: string;
 }
 
 const AccessStateModal: React.FC<AccessStateModalProps> = ({
@@ -22,7 +25,8 @@ const AccessStateModal: React.FC<AccessStateModalProps> = ({
 	iconColor,
 	iconBgClassName,
 	headingClassName,
-	messageClassName
+	messageClassName,
+	actionTo
 }) => {
 	const router = useRouter();
 
@@ -55,6 +59,10 @@ const AccessStateModal: React.FC<AccessStateModalProps> = ({
 								btnVariant="primary"
 								size="lg"
 								onClick={() => {
+									if ( actionTo ) {
+										router.navigate({ to: actionTo });
+										return;
+									}
 									router.history.go( -1 );
 								}}
 							>

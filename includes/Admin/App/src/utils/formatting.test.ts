@@ -8,7 +8,12 @@ import {
 	getForecastRange,
 	getRelativeTime,
 	parseAndValidateDate,
-	formatFileSize
+	formatFileSize,
+	getAbsoluteChangePercentage,
+	getChangePercentage,
+	getChangeTextClass,
+	getChangeTooltipTextClass,
+	invertChangeStatus
 } from './formatting';
 
 test( 'getBurstSetting returns fallback when burst_settings is undefined', () => {
@@ -162,4 +167,33 @@ test( 'formatFileSize formats byte amounts correctly', () => {
 	assert.strictEqual( formatFileSize( 1024 ), '1 KB' );
 	assert.strictEqual( formatFileSize( 4194304 ), '4 MB' );
 	assert.strictEqual( formatFileSize( 10485760 ), '10 MB' );
+});
+
+test( 'an unchanged value is neutral, without an arrow', () => {
+	assert.deepStrictEqual( getChangePercentage( 10, 10 ), { val: '0%', status: 'neutral' });
+	assert.deepStrictEqual( getChangePercentage( 0, 0 ), { val: '0%', status: 'neutral' });
+	assert.deepStrictEqual( getAbsoluteChangePercentage( 40, 40 ), { val: '0%', status: 'neutral' });
+});
+
+test( 'a rise and a drop keep their status and arrow', () => {
+	assert.deepStrictEqual( getChangePercentage( 12, 10 ), { val: '↑ 20%', status: 'positive' });
+	assert.deepStrictEqual( getChangePercentage( 8, 10 ), { val: '↓ 20%', status: 'negative' });
+	assert.deepStrictEqual( getAbsoluteChangePercentage( 50, 40 ), { val: '↑ 10%', status: 'positive' });
+	assert.deepStrictEqual( getAbsoluteChangePercentage( 30, 40 ), { val: '↓ 10%', status: 'negative' });
+});
+
+test( 'inverting a status keeps neutral neutral', () => {
+	assert.strictEqual( invertChangeStatus( 'positive' ), 'negative' );
+	assert.strictEqual( invertChangeStatus( 'negative' ), 'positive' );
+	assert.strictEqual( invertChangeStatus( 'neutral' ), 'neutral' );
+});
+
+test( 'a change is green or red only when it has a direction', () => {
+	assert.strictEqual( getChangeTextClass( 'positive' ), 'text-green' );
+	assert.strictEqual( getChangeTextClass( 'negative' ), 'text-red' );
+	assert.strictEqual( getChangeTextClass( 'neutral' ), 'text-text-gray' );
+	assert.strictEqual( getChangeTextClass( '-' ), 'text-text-gray' );
+	assert.strictEqual( getChangeTooltipTextClass( 'positive' ), 'text-green-600' );
+	assert.strictEqual( getChangeTooltipTextClass( 'negative' ), 'text-red-600' );
+	assert.strictEqual( getChangeTooltipTextClass( 'neutral' ), 'text-text-gray' );
 });

@@ -53,6 +53,7 @@ import {
 	Globe,
 	Goal,
 	Grid3x3,
+	LayoutGrid,
 	Hash,
 	HelpCircle,
 	Infinity,
@@ -277,6 +278,7 @@ const iconComponents = {
 	// Additional icons
 	empty: CircleOff,
 	grid: Grid3x3,
+	'layout-grid': LayoutGrid,
 	'user-check': UserRoundCheck,
 	'user-plus': UserRoundPlus,
 	'user-x': UserRoundX,

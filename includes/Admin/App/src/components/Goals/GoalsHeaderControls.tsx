@@ -7,25 +7,25 @@ interface GoalsHeaderControlsProps {
 
 	// Maximum number of active goals; 0 or less means no limit.
 	goalLimit: number;
-	hasGoals: boolean;
 	isLimitReached: boolean;
+
+	// Secondary on the all goals overview, tertiary when a single goal is open.
+	isGoalSelected: boolean;
 	onCreate: () => void;
 }
 
 /**
- * Goals page header controls: active goals against the free limit, and the button to add a goal.
- *
- * The add button only shows once there are goals; the empty state has its own.
+ * Goals list header controls: active goals against the free limit, and the button to add a goal.
  *
  * @param {GoalsHeaderControlsProps} props                  Component props.
  * @param {number}                   props.activeGoalsCount Number of active goals.
  * @param {number}                   props.goalLimit        Maximum number of active goals.
- * @param {boolean}                  props.hasGoals         Whether any goal exists.
  * @param {boolean}                  props.isLimitReached   Whether no more goals can be activated.
+ * @param {boolean}                  props.isGoalSelected   Whether a single goal is open.
  * @param {Function}                 props.onCreate         Opens the wizard for a new goal.
  * @return {JSX.Element} The controls.
  */
-const GoalsHeaderControls = ({ activeGoalsCount, goalLimit, hasGoals, isLimitReached, onCreate }: GoalsHeaderControlsProps ): JSX.Element => {
+const GoalsHeaderControls = ({ activeGoalsCount, goalLimit, isLimitReached, isGoalSelected, onCreate }: GoalsHeaderControlsProps ): JSX.Element => {
 	const { isLicenseValid } = useLicenseData();
 
 	return (
@@ -41,11 +41,9 @@ const GoalsHeaderControls = ({ activeGoalsCount, goalLimit, hasGoals, isLimitRea
 					)}
 				</span>
 			)}
-			{hasGoals && (
-				<ButtonInput btnVariant="primary" type="button" onClick={onCreate} disabled={isLimitReached} data-tour="new-goal-button">
-					{__( 'New goal', 'burst-statistics' )}
-				</ButtonInput>
-			)}
+			<ButtonInput btnVariant={isGoalSelected ? 'tertiary' : 'secondary'} type="button" onClick={onCreate} disabled={isLimitReached} data-tour="new-goal-button">
+				{__( 'New goal', 'burst-statistics' )}
+			</ButtonInput>
 		</div>
 	);
 };

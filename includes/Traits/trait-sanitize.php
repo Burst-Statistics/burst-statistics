@@ -834,7 +834,7 @@ trait Sanitize {
 			'burst_filter_validation_config',
 			[
 				'goal_id'     => [
-					'sanitize' => 'absint',
+					'sanitize' => [ $this, 'sanitize_goal_id_filter' ],
 					'type'     => 'int',
 				],
 				'bounces'     => [
@@ -879,6 +879,17 @@ trait Sanitize {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Sanitize the goal filter: a goal id, or 'all' for every active goal (the
+	 * goals dashboard's All goals view).
+	 *
+	 * @param string $value Value to sanitize.
+	 * @return int|string The goal id, or 'all'.
+	 */
+	public function sanitize_goal_id_filter( string $value ): int|string {
+		return 'all' === $value ? 'all' : absint( $value );
 	}
 
 	/**

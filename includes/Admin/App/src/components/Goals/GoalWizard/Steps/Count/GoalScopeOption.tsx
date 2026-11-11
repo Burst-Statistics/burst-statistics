@@ -9,6 +9,7 @@ interface GoalScopeOptionProps {
 	description: string;
 	isSelected: boolean;
 	onSelect: ( value: string ) => void;
+	children?: React.ReactNode;
 }
 
 /**
@@ -21,11 +22,18 @@ interface GoalScopeOptionProps {
  * @param {string}               props.description When to choose it.
  * @param {boolean}              props.isSelected  Whether it is chosen.
  * @param {Function}             props.onSelect    Called with the value when chosen.
+ * @param {React.ReactNode}      [props.children]  Optional content rendered inside the card.
  * @return {JSX.Element} The option.
  */
-const GoalScopeOption = ({ name, value, title, description, isSelected, onSelect }: GoalScopeOptionProps ): JSX.Element => (
+// fallow-ignore-next-line complexity
+const GoalScopeOption = ({ name, value, title, description, isSelected, onSelect, children }: GoalScopeOptionProps ): JSX.Element => (
 	<label
 		data-tour={`wizard-format-${value}`}
+		onClick={() => {
+			if ( ! isSelected ) {
+				onSelect( value );
+			}
+		}}
 		className={clsx(
 			'flex cursor-pointer items-start gap-4 rounded-xl border p-5 transition-colors',
 			isSelected ? 'border-green bg-green-50' : 'border-gray-200 bg-white hover:border-gray-400'
@@ -50,9 +58,14 @@ const GoalScopeOption = ({ name, value, title, description, isSelected, onSelect
 		>
 			{isSelected && <span className="h-2 w-2 rounded-full bg-white" />}
 		</span>
-		<span className="flex flex-col gap-1">
+		<span className="flex flex-1 flex-col gap-1">
 			<span className="text-base font-semibold text-text-black">{title}</span>
 			<span className="text-sm text-text-gray">{description}</span>
+			{isSelected && children && (
+				<div className="mt-3 cursor-default" onClick={( e ) => e.stopPropagation()}>
+					{children}
+				</div>
+			)}
 		</span>
 	</label>
 );

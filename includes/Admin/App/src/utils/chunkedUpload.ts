@@ -1,5 +1,7 @@
+import { __, sprintf } from '@wordpress/i18n';
+import { siteUrl } from '@/utils/siteUrl';
+
 declare const burst_settings: {
-	root: string;
 	nonce: string;
 };
 
@@ -33,43 +35,72 @@ interface ApiErrorResponse {
 }
 
 /**
+ * Post to an upload route and return its JSON response.
+ *
+ * The route is appended to the site's REST url, which holds the subfolder and,
+ * on plain permalinks, the rest_route query argument.
+ *
+ * @param route Route below burst/v1/import/upload/.
+ * @param body Request body.
+ * @param fallbackError Message when the response names no error of its own.
+ * @param headers Extra request headers.
+ * @return Promise resolving to the parsed response.
+ * @throws Error when the request fails or the response is not JSON, such as an HTML page from a wrong url.
+ */
+// fallow-ignore-next-line complexity
+const postToUploadRoute = async <T>(
+	route: string,
+	body: BodyInit,
+	fallbackError: string,
+	headers: Record<string, string> = {}
+): Promise<T> => {
+
+	// A browser request to the site's own REST url, and route is a literal from this file, so this is not SSRF.
+	// nosemgrep
+	const response = await fetch( `${ siteUrl() }burst/v1/import/upload/${ route }`, {
+		method: 'POST',
+		headers: {
+			'X-WP-Nonce': burst_settings?.nonce || '',
+			...headers
+		},
+		body
+	});
+	const data: ( T & ApiErrorResponse ) | null = await response.json().catch( () => null );
+
+	if ( ! response.ok || null === data ) {
+		throw new Error( data?.message || data?.error || fallbackError );
+	}
+
+	return data;
+};
+
+/**
  * Uploads large analytics export files in 2MB slices to bypass server upload limits.
  *
  * @param file File object selected from file input or dropzone.
  * @param onProgress Callback invoked as each chunk completes.
  * @return Promise resolving to finalized file path on server.
  */
-// fallow-ignore-next-line complexity
 export const uploadFileInChunks = async(
 	file: File,
 	onProgress?: ( progress: ChunkedUploadProgress ) => void
 ): Promise<ChunkedUploadResult> => {
 	const CHUNK_SIZE = 2 * 1024 * 1024; // 2 MB per slice
 	const totalChunks = Math.max( 1, Math.ceil( file.size / CHUNK_SIZE ) );
-	const rootUrl = burst_settings?.root || '/wp-json/';
-	const nonce = burst_settings?.nonce || '';
 	const cleanFilename = file.name.replace( /[^a-zA-Z0-9._-]/g, '_' );
+	const jsonHeaders = { 'Content-Type': 'application/json' };
 
 	// 1. Initialize upload session
-	const initResponse = await fetch( `${ rootUrl }burst/v1/import/upload/init`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'X-WP-Nonce': nonce
-		},
-		body: JSON.stringify({
+	const initData = await postToUploadRoute<UploadInitResponse>(
+		'init',
+		JSON.stringify({
 			filename: cleanFilename,
 			filesize: file.size,
 			total_chunks: totalChunks
-		})
-	});
-
-	if ( ! initResponse.ok ) {
-		const err: ApiErrorResponse = await initResponse.json().catch( () => ({}) );
-		throw new Error( err?.message || err?.error || 'Failed to initialize upload session.' );
-	}
-
-	const initData: UploadInitResponse = await initResponse.json();
+		}),
+		__( 'Failed to initialize upload session.', 'burst-statistics' ),
+		jsonHeaders
+	);
 	const uploadId = initData.upload_id;
 
 	// 2. Stream chunks sequentially
@@ -83,18 +114,16 @@ export const uploadFileInChunks = async(
 		formData.append( 'chunk_index', i.toString() );
 		formData.append( 'file', chunkBlob, `chunk_${ i }.part` );
 
-		const chunkResponse = await fetch( `${ rootUrl }burst/v1/import/upload/chunk`, {
-			method: 'POST',
-			headers: {
-				'X-WP-Nonce': nonce
-			},
-			body: formData
-		});
+		await postToUploadRoute(
+			'chunk',
+			formData,
+			sprintf(
 
-		if ( ! chunkResponse.ok ) {
-			const err: ApiErrorResponse = await chunkResponse.json().catch( () => ({}) );
-			throw new Error( err?.message || err?.error || `Failed to upload chunk #${ i + 1 }.` );
-		}
+				/* translators: %d: number of the file slice that failed to upload. */
+				__( 'Failed to upload chunk #%d.', 'burst-statistics' ),
+				i + 1
+			)
+		);
 
 		if ( onProgress ) {
 			const uploaded = Math.min( end, file.size );
@@ -109,23 +138,14 @@ export const uploadFileInChunks = async(
 	}
 
 	// 3. Finalize upload session
-	const finalizeResponse = await fetch( `${ rootUrl }burst/v1/import/upload/finalize`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'X-WP-Nonce': nonce
-		},
-		body: JSON.stringify({
+	const finalizeData = await postToUploadRoute<UploadFinalizeResponse>(
+		'finalize',
+		JSON.stringify({
 			upload_id: uploadId
-		})
-	});
-
-	if ( ! finalizeResponse.ok ) {
-		const err: ApiErrorResponse = await finalizeResponse.json().catch( () => ({}) );
-		throw new Error( err?.message || err?.error || 'Failed to finalize uploaded file.' );
-	}
-
-	const finalizeData: UploadFinalizeResponse = await finalizeResponse.json();
+		}),
+		__( 'Failed to finalize uploaded file.', 'burst-statistics' ),
+		jsonHeaders
+	);
 
 	const resolvedId = finalizeData.upload_id || finalizeData.file_path;
 

@@ -210,6 +210,7 @@ class Settings_Data extends Data_Collector {
 			'track_url_change'                    => $this->get_burst_setting_bool( 'track_url_change' ),
 			'combine_vars_and_script'             => $this->get_burst_setting_bool( 'combine_vars_and_script' ),
 			'enable_ghost_mode'                   => $this->get_burst_setting_bool( 'ghost_mode' ),
+			'high_traffic_mode'                   => $this->get_burst_setting_bool( 'high_traffic_mode' ),
 			'uses_custom_logo'                    => $this->has_custom_logo(),
 			'tips_tricks_signup'                  => $this->get_burst_setting_bool( 'tips_tricks_mailinglist' ),
 			'burst_pro_active'                    => defined( 'BURST_PRO' ),

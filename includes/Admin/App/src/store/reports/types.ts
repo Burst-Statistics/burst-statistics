@@ -120,6 +120,9 @@ export interface BlockComponentProps {
 	endDate?:string;
 	range?:string;
 	allowBlockFilters?: boolean;
+
+	// Show conversion columns sorted by conversions, with their own column choices.
+	focusConversions?: boolean;
 }
 
 export interface ReportFormat {

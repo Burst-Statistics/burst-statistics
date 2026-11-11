@@ -10,7 +10,7 @@ class Statistics extends Statistics_Data {
 	 *
 	 * @var string
 	 */
-	public const BUILD = '3.7.4';
+	public const BUILD = '3.7.5';
 
 	/**
 	 * Register hooks and bootstrap metric/join registries for the free tier.
@@ -387,6 +387,7 @@ class Statistics extends Statistics_Data {
         `block_goal` tinyint NOT NULL DEFAULT 0,
         `page_id` int(11) NULL,
         `element_page` varchar(255) NOT NULL DEFAULT '',
+        `event_filter` varchar(255) DEFAULT NULL,
         PRIMARY KEY  (ID)
     ",
 				'indexes' => [

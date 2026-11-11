@@ -20,7 +20,7 @@ class Geo_Ip {
 	use Helper;
 	use Admin_Helper;
 
-	protected string $download_url = 'https://burst.ams3.cdn.digitaloceanspaces.com/maxmind/';
+	protected string $download_url = 'https://downloads.burst-statistics.com/maxmind/';
 	protected string $db_name      = 'GeoLite2-Country.tar.gz';
 	protected string $db_url;
 

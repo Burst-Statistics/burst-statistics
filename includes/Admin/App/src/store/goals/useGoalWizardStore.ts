@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { GOAL_STEP, getGoalSteps } from '@/components/Goals/goalHelpers';
+import type { GoalKind } from '@/components/Goals/goalHelpers';
 
 type GoalStartMode = 'preset' | 'custom';
 
@@ -11,7 +12,8 @@ interface GoalWizardStore {
 	currentStep: number;
 	startMode: GoalStartMode | null;
 
-	// Type chosen before the goal row exists.
+	// Kind and type chosen before the goal row exists.
+	pendingKind: GoalKind;
 	pendingType: string;
 
 	openWizard: ( goalId?: number, step?: number ) => void;
@@ -23,6 +25,7 @@ interface GoalWizardStore {
 	nextStep: ( type: string ) => void;
 	prevStep: ( type: string ) => void;
 	setStartMode: ( mode: GoalStartMode ) => void;
+	setPendingKind: ( kind: GoalKind ) => void;
 	setPendingType: ( type: string ) => void;
 }
 
@@ -31,6 +34,7 @@ const INITIAL_STATE = {
 	goalId: null,
 	currentStep: GOAL_STEP.START,
 	startMode: null,
+	pendingKind: 'clicks' as GoalKind,
 	pendingType: 'clicks'
 };
 
@@ -83,5 +87,12 @@ export const useGoalWizardStore = create<GoalWizardStore>( ( set ) => ({
 	nextStep: ( type ) => set( ( state ) => ({ currentStep: getNextStep( type, state.currentStep ) }) ),
 	prevStep: ( type ) => set( ( state ) => ({ currentStep: getPrevStep( type, state.currentStep ) }) ),
 	setStartMode: ( startMode ) => set({ startMode }),
-	setPendingType: ( pendingType ) => set({ pendingType })
+	setPendingKind: ( pendingKind ) => set({
+		pendingKind,
+		pendingType: ( 'download' === pendingKind || 'event' === pendingKind ) ? 'event' : pendingKind
+	}),
+	setPendingType: ( pendingType ) => set({
+		pendingType,
+		pendingKind: ( 'event' === pendingType ? 'event' : pendingType ) as GoalKind
+	})
 }) );

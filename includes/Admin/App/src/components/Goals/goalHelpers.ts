@@ -1,3 +1,5 @@
+import { __ } from '@wordpress/i18n';
+
 /**
  * Step numbers of the goal wizard.
  */
@@ -8,12 +10,21 @@ export const GOAL_STEP = {
 	REVIEW: 4
 } as const;
 
+export type GoalKind = 'clicks' | 'views' | 'visits' | 'hook' | 'download' | 'event';
+
+export interface GoalEventFilter {
+	key: string;
+	op: 'equals' | 'in';
+	value: string | string[];
+}
+
 export interface GoalLike {
 	type: string;
 	selector?: string;
 	hook?: string;
 	specific_page?: string;
 	page_or_website?: string;
+	event_filter?: string | GoalEventFilter | null;
 }
 
 /**
@@ -29,10 +40,24 @@ export interface Goal extends GoalLike {
 	specific_page: string;
 	page_or_website: string;
 	date_created: number;
+	event_filter?: string | GoalEventFilter | null;
 
 	// The goal's page is a draft, so its url is not final yet.
 	is_draft?: boolean;
 }
+
+/**
+ * What kind of conversion the goal is: clicks, views, visits, hook, download, or custom event.
+ *
+ * @param {GoalLike} goal The goal.
+ * @return {GoalKind} The kind of goal.
+ */
+export const getGoalKind = ( goal: GoalLike ): GoalKind => {
+	if ( 'event' === goal.type ) {
+		return 'file_download' === goal.hook ? 'download' : 'event';
+	}
+	return ( goal.type as GoalKind ) || 'clicks';
+};
 
 /**
  * Whether a goal type tracks an element on the page: clicks and views do, visits and hooks do not.
@@ -86,6 +111,65 @@ const isValidSelector = ( selector: string ): boolean => {
 };
 
 /**
+ * Parse an event filter into its object representation.
+ *
+ * @param {string | GoalEventFilter | null | undefined} filter Filter value.
+ * @return {GoalEventFilter | null} The parsed filter or null.
+ */
+// fallow-ignore-next-line complexity
+export const parseEventFilter = ( filter: string | GoalEventFilter | null | undefined ): GoalEventFilter | null => {
+	if ( ! filter ) {
+		return null;
+	}
+	if ( 'object' === typeof filter ) {
+		return filter;
+	}
+	try {
+		const parsed = JSON.parse( filter );
+		return 'object' === typeof parsed && null !== parsed ? parsed : null;
+	} catch {
+		return null;
+	}
+};
+
+/**
+ * Format a list of file extensions uppercase separated by comma.
+ *
+ * @param {string[]} extensions Extension list.
+ * @return {string} Formatted uppercase string.
+ */
+export const formatExtensionsList = ( extensions: string[]): string => {
+	return extensions.map( ( ext: string ) => ext.toUpperCase() ).join( ', ' );
+};
+
+/**
+ * Whether an event goal has a valid event name and, if an event filter is set, a valid filter.
+ *
+ * @param {GoalLike} goal The event goal.
+ * @return {boolean} True when the event goal is complete.
+ */
+// fallow-ignore-next-line complexity
+const hasEventTarget = ( goal: GoalLike ): boolean => {
+	if ( ! goal.hook?.trim() ) {
+		return false;
+	}
+	if ( goal.event_filter ) {
+		const filter = parseEventFilter( goal.event_filter );
+		if ( ! filter || ! filter.key?.trim() ) {
+			return false;
+		}
+		if ( 'equals' === filter.op ) {
+			return 'string' === typeof filter.value && !! filter.value.trim();
+		}
+		if ( 'in' === filter.op ) {
+			return Array.isArray( filter.value ) && 0 < filter.value.length;
+		}
+		return false;
+	}
+	return true;
+};
+
+/**
  * Whether a hook goal names its hook, and its page when it counts on one page.
  *
  * @param {GoalLike} goal The hook goal.
@@ -113,6 +197,10 @@ const hasValidSelector = ( goal: GoalLike ): boolean =>
  * @return {boolean} True when the goal can be activated.
  */
 export const isGoalComplete = ( goal: GoalLike ): boolean => {
+	if ( 'event' === goal.type ) {
+		return hasEventTarget( goal );
+	}
+
 	if ( 'hook' === goal.type ) {
 		return hasHookTarget( goal );
 	}
@@ -124,23 +212,76 @@ export const isGoalComplete = ( goal: GoalLike ): boolean => {
 	return hasValidSelector( goal );
 };
 
+export interface GoalTrackingBlocker {
+	type: 'custom_events_off' | 'downloads_off';
+	label: string;
+	noticeText: string;
+	wizardHeaderStatus: string;
+}
+
 /**
- * Whether a goal is counting conversions right now: switched on and finished.
+ * Check if tracking is turned off for this complete goal.
+ *
+ * @param {GoalLike} goal The goal to check.
+ * @return {GoalTrackingBlocker | null} The blocker if tracking is off, or null.
+ */
+// fallow-ignore-next-line complexity
+export const getGoalTrackingBlocker = ( goal: GoalLike ): GoalTrackingBlocker | null => {
+	if ( ! isGoalComplete( goal ) ) {
+		return null;
+	}
+
+	if ( 'event' !== goal.type ) {
+		return null;
+	}
+
+	const fields = window.burst_settings?.fields;
+	const customEventsField = Array.isArray( fields ) ? fields.find( ( f: { id: string }) => 'enable_custom_events' === f.id ) : null;
+	const customEventsEnabled = customEventsField ? !! customEventsField.value : !! window.burst_settings?.custom_events_enabled;
+
+	if ( ! customEventsEnabled ) {
+		return {
+			type: 'custom_events_off',
+			label: __( 'Custom events are off', 'burst-statistics' ),
+			noticeText: __( 'Custom event tracking is off, so this goal cannot count conversions yet.', 'burst-statistics' ),
+			wizardHeaderStatus: __( 'Not tracking, custom events are off', 'burst-statistics' )
+		};
+	}
+
+	const kind = getGoalKind( goal );
+	if ( 'download' === kind ) {
+		const downloadsField = Array.isArray( fields ) ? fields.find( ( f: { id: string }) => 'track_downloads' === f.id ) : null;
+		const downloadsEnabled = downloadsField ? !! downloadsField.value : !! window.burst_settings?.track_downloads;
+		if ( ! downloadsEnabled ) {
+			return {
+				type: 'downloads_off',
+				label: __( 'Download tracking is off', 'burst-statistics' ),
+				noticeText: __( 'Download tracking is off, so this goal cannot count conversions yet.', 'burst-statistics' ),
+				wizardHeaderStatus: __( 'Not tracking, download tracking is off', 'burst-statistics' )
+			};
+		}
+	}
+
+	return null;
+};
+
+/**
+ * Whether a goal is counting conversions right now: switched on, finished, and tracking is not blocked.
  *
  * @param {GoalLike & {status: string}} goal The goal.
  * @return {boolean} True when the goal counts conversions.
  */
 export const isGoalCounting = ( goal: GoalLike & { status: string }): boolean =>
-	'active' === goal.status && isGoalComplete( goal );
+	'active' === goal.status && isGoalComplete( goal ) && ! getGoalTrackingBlocker( goal );
 
 /**
- * The wizard step to open an existing goal on: setup if unfinished, otherwise review.
+ * The wizard step to open an existing goal on: setup if unfinished or tracking blocked, otherwise review.
  *
  * @param {GoalLike} goal The goal to open.
  * @return {number} The wizard step.
  */
 export const getGoalResumeStep = ( goal: GoalLike ): number =>
-	isGoalComplete( goal ) ? GOAL_STEP.REVIEW : GOAL_STEP.TARGET;
+	isGoalComplete( goal ) && ! getGoalTrackingBlocker( goal ) ? GOAL_STEP.REVIEW : GOAL_STEP.TARGET;
 
 // Classes WordPress and themes generate for layout or state; they say nothing about what the element is.
 const GENERATED_CLASS = /^(wp-|has-|is-)/;

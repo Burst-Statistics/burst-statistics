@@ -362,21 +362,28 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 		}
 
 		/**
-		 * Calls the API and, if successful, returns the download_link
+		 * Calls the API and, if successful, returns the package data (download_link and version)
 		 *
 		 * @uses get_bloginfo()
 		 * @uses wp_remote_post()
 		 * @uses is_wp_error()
+		 *
+		 * @return array{download_link: string, version: string}
 		 */
-		private function get_download_link( string $license, int $item_id ): string {
+		private function get_package_data( string $license, int $item_id ): array {
+			$result = [
+				'download_link' => '',
+				'version'       => '',
+			];
+
 			if ( ! $this->has_permission() ) {
-				return '';
+				return $result;
 			}
 			global $edd_plugin_url_available;
 
 			// Do a quick status check on this domain if we haven't already checked it.
 			// cache key token, not for security.
-            // phpcs:ignore
+			// phpcs:ignore
 			// nosemgrep
 			$store_hash = md5( $this->api_url );
 			if ( ! is_array( $edd_plugin_url_available ) || ! isset( $edd_plugin_url_available[ $store_hash ] ) ) {
@@ -391,16 +398,16 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 						'sslverify' => true,
 					]
 				);
-                //phpcs:ignore
-                $edd_plugin_url_available[ $store_hash ] = is_wp_error( $response ) ? false : true;
+				//phpcs:ignore
+				$edd_plugin_url_available[ $store_hash ] = is_wp_error( $response ) ? false : true;
 			}
 
 			if ( false === $edd_plugin_url_available[ $store_hash ] ) {
-				return '';
+				return $result;
 			}
 
 			if ( $this->api_url === trailingslashit( home_url() ) ) {
-				return '';
+				return $result;
 			}
 
 			$api_params = [
@@ -421,14 +428,23 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 			if ( ! is_wp_error( $request ) ) {
 				$request = json_decode( wp_remote_retrieve_body( $request ) );
 			} else {
-				return '';
+				return $result;
 			}
 
-			if ( $request && isset( $request->download_link ) ) {
-				return $request->download_link;
+			if ( $request && is_object( $request ) ) {
+				if ( isset( $request->download_link ) && is_string( $request->download_link ) ) {
+					$result['download_link'] = $request->download_link;
+				}
+				if ( isset( $request->new_version ) && is_string( $request->new_version ) ) {
+					$result['version'] = $request->new_version;
+				} elseif ( isset( $request->version ) && is_string( $request->version ) ) {
+					$result['version'] = $request->version;
+				} elseif ( isset( $request->stable_version ) && is_string( $request->stable_version ) ) {
+					$result['version'] = $request->stable_version;
+				}
 			}
 
-			return '';
+			return $result;
 		}
 
 		/**
@@ -720,7 +736,7 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 				$this->api_url,
 				[
 					'timeout'   => 15,
-					'sslverify' => false,
+					'sslverify' => true,
 					'body'      => $api_params,
 				]
 			);
@@ -814,18 +830,24 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 			}
 
 			$download_link = '';
+			$version       = '';
 
-            // phpcs:ignore
-            if ( ! $error && $this->verify_nonce( $nonce ) ) {
-				$download_link = $this->get_download_link( $license, $item_id );
+			// phpcs:ignore
+			if ( ! $error && $this->verify_nonce( $nonce ) ) {
+				$package_data  = $this->get_package_data( $license, $item_id );
+				$download_link = $package_data['download_link'];
+				$version       = $package_data['version'];
 				if ( empty( $download_link ) ) {
 					$error = true;
+				} elseif ( ! empty( $version ) ) {
+					set_transient( $this->get_version_transient_key( $license, $item_id ), $version, 15 * MINUTE_IN_SECONDS );
 				}
 			}
 
 			$response = [
 				'success'       => ! $error,
 				'download_link' => $download_link,
+				'version'       => $version,
 			];
 			return $this->response( ! $error, $response, '', 200 );
 		}
@@ -876,6 +898,9 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 					];
 					return $this->response( false, $response, '', 200 );
 				}
+
+				$version = $this->get_expected_version( $this->sanitize_license_key( $license ), (int) $item_id );
+
 				require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 				require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
 				require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -884,21 +909,31 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 				}
 
 				WP_Filesystem();
+
+				$verify_callback = function ( $reply, string $package ) use ( $version ) {
+					return $this->verify_package( $reply, $package, $version );
+				};
+
+				add_filter( 'upgrader_pre_download', $verify_callback, 10, 2 );
+
 				$skin     = new \WP_Ajax_Upgrader_Skin();
 				$upgrader = new \Plugin_Upgrader( $skin );
 				$result   = $upgrader->install( $download_link );
 
-				if ( $result ) {
+				remove_filter( 'upgrader_pre_download', $verify_callback, 10 );
+
+				if ( $result && ! is_wp_error( $result ) ) {
 					Admin_Options::update( Admin_Option_Category::CORE, 'auto_installed', true );
+					delete_transient( $this->get_version_transient_key( $this->sanitize_license_key( $license ), (int) $item_id ) );
 					$response = [
 						'success' => true,
 					];
 				} else {
 					$message = __( 'An error occurred while installing the plugin.', 'burst-statistics' );
-					// Can be wp_error, although PHPStan does not recognize this.
-					// @phpstan-ignore-next-line.
 					if ( is_wp_error( $result ) ) {
 						$message = $result->get_error_message();
+					} elseif ( $skin->get_errors()->has_errors() ) {
+						$message = $skin->get_errors()->get_error_message();
 					}
 					$response = [
 						'success' => false,
@@ -952,6 +987,80 @@ if ( ! class_exists( 'Auto_Installer' ) ) {
 				'success' => ! $error,
 			];
 			return $this->response( ! $error, $response, '', 200 );
+		}
+
+		/**
+		 * Verify the package to install against its signed manifest, before the upgrader unpacks it.
+		 *
+		 * Side effect: downloads the package to a temporary file, which is deleted when verification fails.
+		 *
+		 * @param mixed  $reply   Explained: WP hook upgrader_pre_download passes mixed (string file path, WP_Error, or false).
+		 * @param string $package The package URL.
+		 * @param string $version Version offered by the license server.
+		 * @return mixed Explained: mirrors the hook: the verified file path, a WP_Error, or the earlier reply.
+		 */
+		private function verify_package( mixed $reply, string $package, string $version ): mixed {
+			if ( false !== $reply ) {
+				return $reply;
+			}
+
+			if ( '' === $version ) {
+				return new \WP_Error(
+					'burst_autoinstall_missing_version',
+					__( 'Could not determine expected version for update verification.', 'burst-statistics' )
+				);
+			}
+
+			// The version comes from the license server, so an older version must not be a way around the signature.
+			if ( version_compare( $version, \Burst\Admin\Update_Verification\Package_Verifier::FIRST_SIGNED_VERSION, '<' ) ) {
+				return new \WP_Error(
+					'burst_autoinstall_unsigned_version',
+					__( 'This version of Burst Pro cannot be verified, so it was not installed. Please try again later or contact support.', 'burst-statistics' )
+				);
+			}
+
+			if ( ! function_exists( 'download_url' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+
+			$temp_file = download_url( $package );
+			if ( is_wp_error( $temp_file ) ) {
+				return $temp_file;
+			}
+
+			$result = \Burst\Admin\Update_Verification\Package_Verifier::create()->verify_downloaded_package( $temp_file, $version );
+			return is_wp_error( $result ) ? $result : $temp_file;
+		}
+
+		/**
+		 * Resolve the version of the package to install from the license server, never from the request.
+		 *
+		 * The signed manifest is looked up by this version and has to match it, so a client-supplied value
+		 * could point verification at another release. The package_information step caches the version for
+		 * 15 minutes; after that, or on a repeated install, it is fetched again.
+		 *
+		 * @param string $license Sanitized license key.
+		 * @param int    $item_id EDD item ID.
+		 * @return string Package version, or an empty string when the license server did not return one.
+		 */
+		private function get_expected_version( string $license, int $item_id ): string {
+			$version = (string) get_transient( $this->get_version_transient_key( $license, $item_id ) );
+			if ( '' !== $version ) {
+				return $version;
+			}
+
+			return (string) $this->get_package_data( $license, $item_id )['version'];
+		}
+
+		/**
+		 * Generate transient key for storing the package version between download_link and install_plugin steps.
+		 *
+		 * @param string     $license License key.
+		 * @param string|int $item_id EDD item ID.
+		 * @return string Transient key.
+		 */
+		private function get_version_transient_key( string $license, string|int $item_id ): string {
+			return 'burst_ai_ver_' . substr( hash( 'sha256', $license . '|' . $item_id ), 0, 32 );
 		}
 	}
 }

@@ -1,9 +1,6 @@
-import { useState } from 'react';
-import { __ } from '@wordpress/i18n';
-import SwitchInput from '@/components/Inputs/SwitchInput';
-import Tooltip from '@/components/Common/Tooltip';
-import { useGoalWizardStore } from '@/store/goals/useGoalWizardStore';
-import { GOAL_STEP, isGoalComplete } from '@/components/Goals/goalHelpers';
+import GoalNeedsSetupButton from '@/components/Goals/GoalNeedsSetupButton';
+import GoalStatusSwitch from '@/components/Goals/GoalStatusSwitch';
+import { getGoalTrackingBlocker, isGoalComplete } from '@/components/Goals/goalHelpers';
 import type { Goal } from '@/components/Goals/goalHelpers';
 
 interface GoalStatusCellProps {
@@ -22,46 +19,16 @@ interface GoalStatusCellProps {
  * @return {JSX.Element} The status cell.
  */
 const GoalStatusCell = ({ goal, isLimitReached, toggleGoalStatus }: GoalStatusCellProps ): JSX.Element => {
-	const [ isToggling, setIsToggling ] = useState( false );
-	const openWizard = useGoalWizardStore( ( state ) => state.openWizard );
-	const isActive = 'active' === goal.status;
-
 	if ( ! isGoalComplete( goal ) ) {
-		return (
-			<button
-				type="button"
-				className="px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-yellow-50 text-text-black cursor-pointer hover:underline"
-				onClick={() => openWizard( goal.id, GOAL_STEP.TARGET )}
-			>
-				{__( 'Needs setup', 'burst-statistics' )}
-			</button>
-		);
+		return <GoalNeedsSetupButton goalId={goal.id} />;
 	}
 
-	const handleToggle = async( value: boolean ) => {
-		setIsToggling( true );
-		try {
-			await toggleGoalStatus( goal.id, value ? 'active' : 'inactive' );
-		} finally {
-			setIsToggling( false );
-		}
-	};
+	const blocker = getGoalTrackingBlocker( goal );
+	if ( blocker ) {
+		return <GoalNeedsSetupButton goalId={goal.id} label={blocker.label} />;
+	}
 
-	return (
-		<Tooltip content={isActive ?
-			__( 'This goal is counting conversions. Toggle to pause.', 'burst-statistics' ) :
-			__( 'This goal is paused. Toggle to start counting conversions.', 'burst-statistics' )
-		}>
-			<div>
-				<SwitchInput
-					size="small"
-					value={isActive}
-					disabled={isToggling || ( isLimitReached && ! isActive )}
-					onChange={handleToggle}
-				/>
-			</div>
-		</Tooltip>
-	);
+	return <GoalStatusSwitch goal={goal} isLimitReached={isLimitReached} toggleGoalStatus={toggleGoalStatus} />;
 };
 
 export default GoalStatusCell;

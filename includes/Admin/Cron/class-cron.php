@@ -1,6 +1,8 @@
 <?php
 namespace Burst\Admin\Cron;
 
+use Burst\Frontend\Tracking\High_Traffic_Buffer;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -13,6 +15,7 @@ class Cron {
 		add_action( 'admin_init', [ $this, 'maybe_handle_cron_task' ], 10, 2 );
 		add_filter( 'cron_schedules', [ $this, 'filter_cron_schedules' ], 10, 2 );
 		add_action( 'burst_every_hour', [ $this, 'test_hourly_cron' ] );
+		High_Traffic_Buffer::init();
 	}
 
 	/**
@@ -48,6 +51,12 @@ class Cron {
 		}
 		if ( ! wp_next_scheduled( 'burst_monthly' ) ) {
 			wp_schedule_event( $first_run, 'burst_monthly', 'burst_monthly' );
+		}
+
+		// With the mode off the processor is left alone: it ingests what is still
+		// buffered and then stops itself.
+		if ( High_Traffic_Buffer::is_buffer_enabled() && ! wp_next_scheduled( 'burst_process_buffer' ) ) {
+			wp_schedule_event( $first_run, 'burst_every_minute', 'burst_process_buffer' );
 		}
 	}
 
@@ -98,6 +107,10 @@ class Cron {
 		$schedules['burst_weekly']            = [
 			'interval' => WEEK_IN_SECONDS,
 			'display'  => 'Once every week',
+		];
+		$schedules['burst_every_minute']      = [
+			'interval' => MINUTE_IN_SECONDS,
+			'display'  => 'Once every minute',
 		];
 		$schedules['burst_monthly']           = [
 			'interval' => MONTH_IN_SECONDS,
