@@ -26,7 +26,7 @@ class Geo_Statistics {
 	 *
 	 * @var string
 	 */
-	public const BUILD = '3.7.4';
+	public const BUILD = '3.7.5';
 
 	/**
 	 * Register the geo hooks.

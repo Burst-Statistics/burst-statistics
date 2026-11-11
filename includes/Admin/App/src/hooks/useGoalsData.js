@@ -6,11 +6,28 @@ import {
 	deleteGoal,
 	addPredefinedGoal
 } from '@/utils/api';
+import { assertGoalsResponse } from './assertGoalsResponse';
 import { toast } from '@/utils/toast';
 import { __ } from '@wordpress/i18n';
 import { produce } from 'immer';
 import useLicenseData from '@/hooks/useLicenseData';
 import useShareableLinkStore from '@/store/useShareableLinkStore';
+
+/**
+ * Fetch the goals list in the shape the goals_data query caches.
+ *
+ * @return {Promise<Object>} Goals, predefined goals, active goals count and goal limit. Rejects when the request fails.
+ */
+// fallow-ignore-next-line complexity
+const fetchGoalsData = async() => {
+	const response = assertGoalsResponse( await getGoals() );
+	return {
+		goals: response.goals || [],
+		predefinedGoals: response.predefinedGoals || [],
+		activeGoalsCount: response.active_goals_count || 0,
+		goalLimit: response.goal_limit ?? window.burst_settings?.goal_limit ?? 3
+	};
+};
 
 /**
  * Custom hook for managing goals data using TanStack Query.
@@ -30,16 +47,7 @@ const useGoalsData = () => {
 	const goalsQuery = useQuery({
 		queryKey: [ 'goals_data' ],
 
-		// fallow-ignore-next-line complexity
-		queryFn: async() => {
-			const response = await getGoals();
-			return {
-				goals: response.goals || [],
-				predefinedGoals: response.predefinedGoals || [],
-				activeGoalsCount: response.active_goals_count || 0,
-				goalLimit: response.goal_limit ?? window.burst_settings?.goal_limit ?? 3
-			};
-		},
+		queryFn: fetchGoalsData,
 		enabled: shouldFetchGoals,
 		retry: 1
 	});
@@ -54,6 +62,7 @@ const useGoalsData = () => {
 	const invalidateGoals = () => Promise.all([
 		queryClient.invalidateQueries({ queryKey: [ 'goals_data' ] }),
 		queryClient.invalidateQueries({ queryKey: [ 'goals' ] }),
+		queryClient.invalidateQueries({ queryKey: [ 'goals_overview' ] }),
 		queryClient.invalidateQueries({ queryKey: [ 'live-goals' ] })
 	]);
 
@@ -78,10 +87,17 @@ const useGoalsData = () => {
 	 * @return {Promise<*|null>}
 	 */
 	const getGoalAsync = async( id ) => {
-		const data = await queryClient.ensureQueryData({
-			queryKey: [ 'goals_data' ],
-			queryFn: getGoals
-		});
+		let data;
+		try {
+			data = await queryClient.ensureQueryData({
+				queryKey: [ 'goals_data' ],
+				queryFn: fetchGoalsData
+			});
+		} catch {
+
+			// Callers fall back to the goal id; the failed request already showed a toast.
+			return null;
+		}
 
 		const goal = data?.goals?.find( ( g ) => String( g.id ) === String( id ) );
 		return goal || null;

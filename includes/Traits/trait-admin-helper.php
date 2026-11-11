@@ -398,6 +398,7 @@ trait Admin_Helper {
 				// The settings fields are manage-only, so viewers and share links
 				// read the custom events switch from here instead.
 				'custom_events_enabled'                => (bool) \burst_get_option( 'enable_custom_events' ),
+				'track_downloads'                      => (bool) \burst_get_option( 'track_downloads' ),
 				// Same reason: viewers read essentials mode here to hide the
 				// blocks of the features it turns off.
 				'essentials_mode'                      => $this->is_essentials_mode(),

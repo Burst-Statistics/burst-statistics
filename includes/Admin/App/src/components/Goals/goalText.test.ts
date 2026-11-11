@@ -44,6 +44,18 @@ test( 'tracks text for hook and visit goals, empty until set up', () => {
 	assert.strictEqual( getTracksText( makeGoal({ type: 'visits', specific_page: '/thank-you/' }) ), 'Visits to /thank-you/' );
 	assert.strictEqual( getTracksText( makeGoal({ type: 'visits', specific_page: '' }) ), '' );
 	assert.strictEqual( getTracksText( makeGoal({ type: 'clicks', selector: '' }) ), '' );
+	assert.strictEqual( getTracksText( makeGoal({ type: 'event', hook: 'file_download', event_filter: null }) ), 'Any file download' );
+	assert.strictEqual( getTracksText( makeGoal({
+		type: 'event',
+		hook: 'file_download',
+		event_filter: JSON.stringify({ key: 'file_name', op: 'equals', value: 'brochure-2026.pdf' })
+	}) ), 'Downloads of brochure-2026.pdf' );
+	assert.strictEqual( getTracksText( makeGoal({
+		type: 'event',
+		hook: 'file_download',
+		event_filter: JSON.stringify({ key: 'file_extension', op: 'in', value: [ 'pdf', 'zip' ] })
+	}) ), 'Downloads of PDF, ZIP files' );
+	assert.strictEqual( getTracksText( makeGoal({ type: 'event', hook: 'generate_lead' }) ), 'When generate_lead is sent' );
 });
 
 test( 'counts on: page for page scope and visits, whole site otherwise', () => {

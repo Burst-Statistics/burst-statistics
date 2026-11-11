@@ -290,7 +290,9 @@ class Tracking_GeoIp {
 	 * @return array<string, mixed>
 	 */
 	protected static function handle_lookup_exception( \Exception $e, array $defaults, string $ip ): array {
-		$error_msg = $e->getMessage();
+		// MaxMind messages quote the IP ("The address … is not in the database."),
+		// and debug logs are not a place for visitor data.
+		$error_msg = '' !== $ip ? str_replace( $ip, '[ip]', $e->getMessage() ) : $e->getMessage();
 		if ( strpos( $error_msg, ' is not in the databas' ) !== false ) {
 			$localhost = static::get_localhost_location_data( $ip );
 			if ( null !== $localhost ) {

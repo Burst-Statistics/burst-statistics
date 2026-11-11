@@ -427,7 +427,14 @@ class App {
 		$pinned_filters         = get_user_meta( get_current_user_id(), 'burst_pinned_filters', true );
 		$data['pinned_filters'] = is_array( $pinned_filters ) ? $pinned_filters : (object) [];
 
-		$data['hide_hook_goals'] = $this->fields->are_hook_goals_hidden();
+		$goal_types = [];
+		foreach ( $this->fields->get_goal_fields() as $field ) {
+			if ( is_array( $field ) && ( $field['id'] ?? null ) === 'type' && isset( $field['options'] ) && is_array( $field['options'] ) ) {
+				$goal_types = array_keys( $field['options'] );
+				break;
+			}
+		}
+		$data['goal_types'] = $goal_types;
 		return $data;
 	}
 
@@ -2236,6 +2243,9 @@ class App {
 				$goal_statistics = new Goal_Statistics();
 				$data            = $goal_statistics->get_goals_data( $args );
 				break;
+			case 'goals_overview':
+				$data = ( new Goal_Statistics() )->get_goals_overview( $args );
+				break;
 			case 'live-goals':
 				$goal_statistics = new Goal_Statistics();
 				$goals_count     = $goal_statistics->get_live_goals_count( $args );
@@ -2585,8 +2595,17 @@ class App {
 					$goal->{$name} = $value;
 				}
 			}
-			$goal->save();
-
+			$saved = $goal->save();
+			if ( false === $saved ) {
+				$response = new \WP_REST_Response(
+					[
+						'request_success' => false,
+						'message'         => __( 'Failed to save goal.', 'burst-statistics' ),
+					]
+				);
+				$response->set_status( 400 );
+				return $response;
+			}
 		}
 		// ensure bundled script update.
 		do_action( 'burst_after_updated_goals' );
@@ -3011,13 +3030,8 @@ class App {
 	 *         Returns a list of plugin arrays.
 	 */
 	private function get_articles(): array {
+		// posts.json ships with every release, so each plugin update refreshes the articles.
 		$json_path = __DIR__ . '/posts.json';
-		// Refresh the file once it is over a month old. The existing file is kept until the
-		// download has been written, so a failed refresh still leaves the shipped copy in place.
-		if ( ! file_exists( $json_path ) || ( time() - filemtime( $json_path ) > MONTH_IN_SECONDS ) ) {
-			$this->download_articles_json_file( $json_path );
-		}
-
 		if ( ! is_readable( $json_path ) ) {
 			return [];
 		}
@@ -3037,55 +3051,6 @@ class App {
 		// Shuffle array and take 6 random entries.
 		shuffle( $decoded );
 		return array_slice( $decoded, 0, 6 );
-	}
-
-	/**
-	 * Get the posts.json file from the remote server.
-	 *
-	 * Fails silently: on hosts where the plugin directory is read-only the shipped
-	 * posts.json stays in use until the next plugin update replaces it.
-	 *
-	 * At most one attempt per month: a failed download leaves the file's age
-	 * unchanged, so without this every dashboard load would wait for the remote
-	 * request again until the server is reachable.
-	 *
-	 * @param string $json_path Absolute path of the local posts.json file.
-	 * @return void Writes the downloaded file to $json_path when possible, and
-	 *              stores the attempt time in the core admin options.
-	 */
-	private function download_articles_json_file( string $json_path ): void {
-		// Check writability before the remote request, so read-only hosts don't download on every load.
-		if ( ! wp_is_writable( file_exists( $json_path ) ? $json_path : dirname( $json_path ) ) ) {
-			return;
-		}
-
-		$last_attempt = (int) Admin_Options::get( Admin_Option_Category::CORE, 'articles_download_attempt', 0 );
-		if ( $last_attempt > time() - MONTH_IN_SECONDS ) {
-			return;
-		}
-
-		// Stored before the request, so dashboard loads that run at the same time don't all download.
-		Admin_Options::update( Admin_Option_Category::CORE, 'articles_download_attempt', time() );
-
-		$remote_json = 'https://burst.ams3.cdn.digitaloceanspaces.com/posts/posts.json';
-		$response    = wp_remote_get( $remote_json );
-		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
-			return;
-		}
-
-		$json = wp_remote_retrieve_body( $response );
-		// Never replace a working file with an empty or invalid download.
-		if ( empty( $json ) || ! is_array( json_decode( $json, true ) ) ) {
-			return;
-		}
-
-		require_once ABSPATH . 'wp-admin/includes/file.php';
-		global $wp_filesystem;
-		if ( ! WP_Filesystem() ) {
-			return;
-		}
-
-		$wp_filesystem->put_contents( $json_path, $json, FS_CHMOD_FILE );
 	}
 
 	/**

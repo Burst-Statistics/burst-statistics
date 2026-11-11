@@ -16,9 +16,6 @@ interface WizardStepItemProps {
 	currentStep: number;
 	isClickable: boolean;
 	onSelect: ( stepNumber: number ) => void;
-
-	// 1-based place in the bar, shown in the circle; without it the step shows a "Step N" caption instead.
-	position?: number;
 }
 
 /**
@@ -29,12 +26,9 @@ interface WizardStepItemProps {
  * @param {number}              props.currentStep The step the user is on.
  * @param {boolean}             props.isClickable Whether the user may jump to this step.
  * @param {Function}            props.onSelect    Called with the step number when clicked.
- * @param {number}              props.position    Optional place in the bar, shown in the circle.
  * @return {JSX.Element} The step.
  */
-const WizardStepItem = ({ step, currentStep, isClickable, onSelect, position }: WizardStepItemProps ): JSX.Element => {
-	const isNumbered = undefined !== position;
-
+const WizardStepItem = ({ step, currentStep, isClickable, onSelect }: WizardStepItemProps ): JSX.Element => {
 	return (
 		<div
 			className={clsx(
@@ -43,17 +37,15 @@ const WizardStepItem = ({ step, currentStep, isClickable, onSelect, position }: 
 			)}
 			onClick={() => isClickable && onSelect( step.number )}
 		>
-			<WizardStepIndicator stepNumber={step.number} currentStep={currentStep} position={position} />
+			<WizardStepIndicator stepNumber={step.number} currentStep={currentStep} />
 
 			<div className="flex flex-col max-sm:hidden">
-				{! isNumbered && (
-					<p className="text-xs text-text-gray-light uppercase tracking-[0.05em] whitespace-nowrap">
-						{/* translators: %d: step number. */}
-						{sprintf( __( 'Step %d', 'burst-statistics' ), step.number )}
-					</p>
-				)}
+				<p className="text-xs text-text-gray-light uppercase tracking-[0.05em] whitespace-nowrap">
+					{/* translators: %d: step number. */}
+					{sprintf( __( 'Step %d', 'burst-statistics' ), step.number )}
+				</p>
 
-				<WizardStepLabel label={step.label} isCode={step.isCode} state={getStepState( step.number, currentStep )} isNumbered={isNumbered} />
+				<WizardStepLabel label={step.label} isCode={step.isCode} state={getStepState( step.number, currentStep )} />
 			</div>
 		</div>
 	);

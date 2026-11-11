@@ -8,6 +8,39 @@
  */
 
 /**
+ * Whether the visitor opted out with the Burst opt-out button.
+ *
+ * Not burst_get_cookie() from burst.js: that one returns a promise and is
+ * declared in a build this file is prepended to, while the consent check has
+ * to answer synchronously. A plain substring test rather than a regex plus
+ * decodeURIComponent, because this runs for every hit and a malformed value
+ * would make decodeURIComponent throw where nothing catches it. The delimiters
+ * pin the match to the whole cookie, name and value.
+ *
+ * @returns {boolean} True when the opt-out cookie is set.
+ */
+function burst_has_opted_out() {
+  return ( '; ' + document.cookie + ';' ).indexOf( '; burst_consent=no;' ) !== -1;
+}
+
+/**
+ * Whether the WP Consent API actually decides consent on this page.
+ *
+ * The plugin on its own does not: without a consent management plugin to
+ * define a consent type, wp_has_consent() returns true for every category
+ * whatever the consent cookies say ("there's no consent management, we should
+ * return true to activate all cookies"). Asking it would then overrule the
+ * visitor's own choice with a yes they never gave, so that choice decides
+ * instead.
+ *
+ * @returns {boolean} True when a denial through the API would be honoured.
+ */
+function burst_consent_api_decides() {
+  return typeof wp_has_consent === 'function'
+    && !! ( window.wp_consent_type || window.wp_fallback_consent_type );
+}
+
+/**
  * Get tracking consent state via WP Consent API or consent managers.
  * @returns {'yes' | 'no' | 'undecided'}
  */
@@ -16,11 +49,21 @@ function burst_consent_state() {
     // Optional: the early bootstrap runs in <head> before burst.js sets
     // burst.options. It only drops events on a definitive 'no', so 'undecided'
     // and 'yes' are equivalent there and a missing flag must not throw.
-    return window.burst.options?.consent_api_active ? 'undecided' : 'yes';
+    if ( window.burst?.options?.consent_api_active ) {
+      return 'undecided';
+    }
+    // No Consent API: the visitor's own choice from the Burst opt-out button
+    // decides. With the API active it owns consent and this cookie is ignored.
+    return burst_has_opted_out() ? 'no' : 'yes';
   }
 
+  // Before the check below, because a consent type that is still on its way
+  // is not the same as one that will never come.
   if ( window.waitfor_consent_hook && typeof window.wp_consent_type === 'undefined' ) {
     return 'undecided';
+  }
+  if ( ! burst_consent_api_decides() ) {
+    return burst_has_opted_out() ? 'no' : 'yes';
   }
   return wp_has_consent( 'statistics' ) ? 'yes' : 'no';
 }
@@ -33,7 +76,118 @@ function burst_has_tracking_consent() {
   return burst_consent_state() === 'yes';
 }
 
-// TimeMe.js should be loaded and running to track time as soon as it is loaded.
+/**
+ * Active time on page for the tracker. Its one method, take(), returns the
+ * time counted since the previous call. Gulp prepends this file to both
+ * tracker builds, so it ships inside burst.min.js and adds no request.
+ *
+ * The rules are those of the TimeMe library it replaced
+ * (tests/e2e/specs/timeOnPageParity.spec.js compares the two):
+ * - hiding the tab or blurring the window stops the count; showing or
+ *   focusing it again restarts it and resets the idle countdown;
+ * - 30 seconds without mousemove, keyup, touchstart or scroll stops the
+ *   count; activity after that restarts it, activity before only resets the
+ *   countdown.
+ * The idle cutoff is applied when the time is read, so no interval runs, and
+ * the listeners are registered once.
+ */
+const burstActiveTimer = (() => {
+  const idleTimeoutMs = 30000;
+  let total = 0;
+  let isRunning = false;
+  // Start of the stretch not yet added to the total.
+  let start = 0;
+  let lastActivity = Date.now();
+
+  const isIdle = now => now - lastActivity >= idleTimeoutMs;
+
+  /**
+   * Add the running stretch up to now to the total, capped at the idle cutoff.
+   * @param {number} now
+   */
+  const flush = now => {
+    if (!isRunning) return;
+    total += Math.max(0, Math.min(now, lastActivity + idleTimeoutMs) - start);
+    start = now;
+  };
+
+  const leave = () => {
+    flush(Date.now());
+    isRunning = false;
+  };
+
+  // A running but idle timer has stopped counting, so it restarts as well.
+  const resume = () => {
+    const now = Date.now();
+    flush(now);
+    if (isRunning && !isIdle(now)) return;
+    isRunning = true;
+    start = now;
+    lastActivity = now;
+  };
+
+  // Unlike TimeMe, activity never restarts the count in a hidden tab: input
+  // cannot reach one, but a script scrolling it can.
+  const activity = () => {
+    const now = Date.now();
+    if (isIdle(now) && document.visibilityState === 'visible') {
+      resume();
+      return;
+    }
+    flush(now);
+    lastActivity = now;
+  };
+
+  // Count from when the HTML arrived, as TimeMe did from the <head>: in turbo
+  // mode, or when an optimizer delays scripts, this one runs well after that.
+  // Where the browser records visibility changes (Chromium), hidden stretches
+  // before this script ran are left out too. Unlike TimeMe, a page opened in
+  // the background or prerendered starts once it is shown.
+  const responseStart = performance.getEntriesByType?.('navigation')[0]?.responseStart;
+  let visibleSince = responseStart || null;
+  if (responseStart) {
+    for (const entry of performance.getEntriesByType('visibility-state')) {
+      if (entry.name === 'visible') {
+        // Plain assignment: logical assignment (??=) is ES2021, above the
+        // tracker's ES2020 baseline, and older browsers would reject the file.
+        if (visibleSince === null) visibleSince = Math.max(entry.startTime, responseStart);
+      } else if (visibleSince !== null) {
+        // Activity in this stretch cannot be seen either, so it counts at most
+        // up to the idle cutoff, as below for the stretch that is still running.
+        total += Math.min(idleTimeoutMs, Math.max(0, Math.round(entry.startTime - visibleSince)));
+        visibleSince = null;
+      }
+    }
+  }
+  if (document.visibilityState === 'visible') {
+    isRunning = true;
+    // Never later than now: the wall clock and the performance clock can drift apart.
+    start = visibleSince === null ? lastActivity : Math.min(lastActivity, Math.round(performance.timeOrigin + visibleSince));
+    // The idle countdown starts there too, as TimeMe's did. Activity before this
+    // script ran cannot be seen, so a late script counts at most 30 seconds of
+    // that stretch until the visitor is active again.
+    lastActivity = start;
+  }
+
+  ['mousemove', 'keyup', 'touchstart'].forEach(type => document.addEventListener(type, activity, { passive: true }));
+  window.addEventListener('scroll', activity, { passive: true });
+  window.addEventListener('focus', resume);
+  window.addEventListener('blur', leave);
+  document.addEventListener('visibilitychange', () => (document.visibilityState === 'visible' ? resume() : leave()));
+
+  return {
+    /**
+     * Return the active time counted since the previous call, and reset it.
+     * @returns {number} Milliseconds.
+     */
+    take() {
+      flush(Date.now());
+      const time = total;
+      total = 0;
+      return time;
+    },
+  };
+})();
 
 /**
  * @typedef {Object} BurstOptions
@@ -294,13 +448,11 @@ const burst_fingerprint = () => {
   });
 };
 
-const burst_get_time_on_page = () => {
-  if (typeof TimeMe === 'undefined') return Promise.resolve(0);
-  const time = TimeMe.getTimeOnCurrentPageInMilliseconds();
-  TimeMe.resetAllRecordedPageTimes();
-  TimeMe.initialize({ idleTimeoutInSeconds: 30 });
-  return Promise.resolve(time);
-};
+/**
+ * Get the active time on page since the previous call, and start counting again.
+ * @returns {Promise<number>} Milliseconds.
+ */
+const burst_get_time_on_page = () => Promise.resolve(burstActiveTimer.take());
 /**
  * Check if this is a user agent
  * @returns {boolean}
@@ -320,13 +472,14 @@ const burst_is_do_not_track = () => {
     burst.cache.isDoNotTrack = false;
     return false;
   }
-    // check for doNotTrack and globalPrivacyControl headers
+  // Do Not Track is a string ("1", or "yes" in old Firefox); Global Privacy
+  // Control is a boolean, so a browser that sends GPC reports true, not 1.
   const result =
 		"1" === navigator.doNotTrack ||
 		"yes" === navigator.doNotTrack ||
 		"1" === navigator.msDoNotTrack ||
 		"1" === window.doNotTrack ||
-		1 === navigator.globalPrivacyControl;
+		true === navigator.globalPrivacyControl;
   burst.cache.isDoNotTrack = result;
   return result;
 };
@@ -577,7 +730,6 @@ async function burst_track_hit(extraData = {}) {
     url: location.href,
     referrer_url: document.referrer,
     user_agent: navigator.userAgent || 'unknown',
-    device_resolution: `${window.screen.width * window.devicePixelRatio}x${window.screen.height * window.devicePixelRatio}`,
     time_on_page: time,
     ...burst.getScrollData?.(),
     ...burst.getGoalsData?.(),
@@ -835,8 +987,28 @@ function burst_init_events() {
   window.addEventListener('popstate', handleUrlChange);
 }
 
+let burst_previous_consent = burst_consent_state();
+
 const burst_maybe_init = () => {
-  if (burst_consent_state() !== 'yes') return;
+  const consent = burst_consent_state();
+  const wasDenied = burst_previous_consent === 'no';
+  burst_previous_consent = consent;
+  if (consent !== 'yes') return;
+  // A first grant through the Consent API keeps pending activity: its "no" is
+  // usually a banner not answered yet, and the API can't tell that from a refusal.
+  // Without a deciding API, "no" can only be the opt-out cookie, so a page opened
+  // opted out drops its time like a later opt-out.
+  if (wasDenied && (burst.tracking.initialized || !burst_consent_api_decides())) {
+    // Drop activity from before consent resumed, whichever UI changed it.
+    // The visitor may have a new identifier, so the next hit must create a visit.
+    burst_get_time_on_page();
+    burst.resetScrollData?.();
+    if (burst.goals?.completed) {
+      burst.goals.completed.length = 0;
+    }
+    burst.events?.clearQueue();
+    burst.tracking.isInitialHit = true;
+  }
   if (burst.tracking.initialized) {
     burst_track_hit();
     return;
@@ -847,14 +1019,12 @@ const burst_maybe_init = () => {
 };
 
 document.addEventListener('wp_consent_type_defined', burst_maybe_init);
-document.addEventListener('wp_listen_for_consent_change', e => {
-  const detail = e.detail;
-  const isAllowed = (detail && (detail.statistics === 'allow' || detail['statistics'] === 'allow'))
-    || (typeof wp_has_consent === 'function' && wp_has_consent('statistics'));
-  if (isAllowed) {
-    burst.cache.useCookies = null;
-    burst_maybe_init();
-  }
+// Fired by the opt-out button once it has recorded the visitor's own choice.
+// An event, not a window export, because ghost mode strips those again.
+document.addEventListener('burst_consent_changed', burst_maybe_init);
+document.addEventListener('wp_listen_for_consent_change', () => {
+  burst.cache.useCookies = null;
+  burst_maybe_init();
 });
 
 // events.js loads async next to this script and needs burst.options and the

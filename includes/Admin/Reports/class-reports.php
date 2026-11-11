@@ -35,7 +35,7 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 		 *
 		 * @var string
 		 */
-		public const BUILD = '3.7.4';
+		public const BUILD = '3.7.5';
 
 		/**
 		 * Constructor
@@ -958,6 +958,17 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 			$qd->date_range( $start_date, $end_date );
 			$raw_results = $qd->fetch( ARRAY_A );
 
+			if ( in_array( 'device_id', $qd->get_select(), true ) ) {
+				$stats_data = new \Burst\Admin\Statistics\Statistics_Data();
+				foreach ( $raw_results as &$row ) {
+					if ( isset( $row['device_id'] ) ) {
+						$device_name      = $stats_data->get_lookup_table_name_by_id( 'device', (int) $row['device_id'] );
+						$row['device_id'] = ! empty( $device_name ) ? ucfirst( $device_name ) : __( 'Other', 'burst-statistics' );
+					}
+				}
+				unset( $row );
+			}
+
 			$raw_results = apply_filters( 'burst_mail_report_results', $raw_results, $qd, $start_date, $end_date );
 
 			// filter out rows where one of the columns === 'Direct.
@@ -1341,8 +1352,8 @@ if ( ! class_exists( 'Burst\Admin\Reports\Reports' ) ) {
 					$block_def = [
 						'title'      => __( 'Devices', 'burst-statistics' ),
 						'query_args' => [
-							'select'   => [ 'device', 'pageviews' ],
-							'group_by' => 'device',
+							'select'   => [ 'device_id', 'pageviews' ],
+							'group_by' => 'device_id',
 							'order_by' => 'pageviews DESC',
 						],
 						'url'        => '#/sources',

@@ -13,6 +13,7 @@ import { BlockContent } from '@/components/Blocks/BlockContent';
 import { BlockFooter } from '@/components/Blocks/BlockFooter';
 import GoalsHeader from './GoalsHeader';
 import GoalsBlockNotice from './GoalsBlockNotice';
+import { getGoalsBlockView, getGoalsStatsState } from './getGoalsBlockView';
 import { useNavigate } from '@tanstack/react-router';
 import { useGoalWizardStore } from '@/store/goals/useGoalWizardStore';
 import { getGoalResumeStep } from '@/components/Goals/goalHelpers';
@@ -21,6 +22,9 @@ import getLiveGoals from '@//api/getLiveGoals';
 import getGoalsData, { goalsPlaceholderData } from '@//api/getGoalsData';
 import { safeDecodeURI } from '@//utils/lib';
 import ButtonInput from '../Inputs/ButtonInput';
+
+// Keep polling after a failure, so the block recovers when the server does.
+const REFRESH_INTERVAL = 15000;
 
 // Utility function to select the goal icon based on value
 const selectGoalIcon = ( value ) => {
@@ -82,11 +86,10 @@ TotalFilterItem.displayName = 'TotalFilterItem';
 
 // fallow-ignore-next-line complexity
 const GoalsBlock = () => {
-	const [ interval, setInterval ] = useState( 15000 );
 	const [ goalId, setGoalId ] = useState( 'all' );
 
 	// Replace useGoalsStore with useGoalsData
-	const { goals, isLoading: isGoalsLoading } = useGoalsData();
+	const { goals, isLoading: isGoalsLoading, isError: isGoalsError } = useGoalsData();
 	const navigate = useNavigate();
 	const { startDate, endDate, today } = useDashboardDateRange();
 
@@ -135,12 +138,8 @@ const GoalsBlock = () => {
 					}
 					return getLiveGoals( args );
 				},
-				refetchInterval: interval,
+				refetchInterval: REFRESH_INTERVAL,
 				placeholderData: '-',
-				onError: ( error ) => {
-					console.error( 'Error fetching live goals:', error );
-					setInterval( 0 );
-				},
 				enabled: !! goalId && 0 < goals.length
 			},
 			{
@@ -153,25 +152,28 @@ const GoalsBlock = () => {
 					}
 					return getGoalsData( args );
 				},
-				refetchInterval: interval,
+				refetchInterval: REFRESH_INTERVAL,
 				placeholderData,
-				onError: ( error ) => {
-					console.error( 'Error fetching goals data:', error );
-					setInterval( 0 );
-				},
 				enabled: !! goalId && 0 < goals.length
 			}
 		]
 	});
 
-	// Safely extract data from queries
-	const isLoading =
-		queries.some( ( query ) => query.isLoading ) || isGoalsLoading;
-	const isError = queries.some( ( query ) => query.isError );
+	const [ liveQuery, statsQuery ] = queries;
 
-	// Handle loading and error states properly
-	const live = queries[0].data || '-';
-	const data = isError ? placeholderData : queries[1].data || placeholderData;
+	const { hasStats, isStatsError } = getGoalsStatsState( statsQuery );
+	const view = getGoalsBlockView({
+		isGoalsListPending: isGoalsLoading,
+		isGoalsListError: isGoalsError,
+		goalsCount: goals.length,
+		hasStats,
+		isStatsError
+	});
+	const isLoading = 'loading' === view || queries.some( ( query ) => query.isFetching );
+
+	// While loading, the block keeps its layout with placeholder values, like the Today block.
+	const live = liveQuery.data || '-';
+	const data = hasStats ? statsQuery.data : placeholderData;
 
 	// Safe icon selection
 	const todayIcon = selectGoalIcon( live );
@@ -228,7 +230,7 @@ const GoalsBlock = () => {
 			isLoading={isLoading}
 		/>
 			<BlockContent className="px-0 py-0 relative">
-				{isError ? (
+				{'error' === view ? (
 					<div className="text-red p-4">
 						{__(
 							'Error loading goals data. Please try again later.',
@@ -238,7 +240,7 @@ const GoalsBlock = () => {
 				) : (
 					<>
 						{! isGoalsLoading && <GoalsBlockNotice goals={goals} goalId={goalId} />}
-						{0 !== goals.length && <>
+						{'empty' !== view && <>
 						<div className="px-2.5 py-5 md:px-6 grid w-full grid-cols-2 gap-4 bg-yellow-50">
 							<TodayFilterItem {...todayFilterProps} />
 							<TotalFilterItem {...totalFilterProps} />
@@ -314,23 +316,25 @@ const GoalsBlock = () => {
 				)}
 			</BlockContent>
 
-			{0 !== goals.length && (
+			{( 0 !== goals.length || 'loading' === view ) && (
 				<BlockFooter>
 					{burst_settings.manage_burst_statistics && <ButtonInput
 						btnVariant={'tertiary'}
 						onClick={() => {
 							const selectedGoal = goals.find( ( g ) => String( g.id ) === String( goalId ) );
-							if ( selectedGoal ) {
-								useGoalWizardStore.getState().openWizard( selectedGoal.id, getGoalResumeStep( selectedGoal ) );
+							if ( ! selectedGoal ) {
+								navigate({ to: '/goals' });
+								return;
 							}
-							navigate({ to: '/goals' });
+							useGoalWizardStore.getState().openWizard( selectedGoal.id, getGoalResumeStep( selectedGoal ) );
+							navigate({ to: '/goals/$goalId', params: { goalId: String( selectedGoal.id ) } });
 						}}
 					>
 						{__( 'View setup', 'burst-statistics' )}
 					</ButtonInput>
 					}
 					<div className="ml-auto">
-						{! isLoading && ! isError && <GoalStatus data={data} />}
+						{'stats' === view && <GoalStatus data={data} />}
 					</div>
 				</BlockFooter>
 			)}

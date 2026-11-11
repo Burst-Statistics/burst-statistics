@@ -70,15 +70,14 @@ class Abilities_Api {
 	}
 
 	/**
-	 * Initialize Abilities API integration.
+	 * Initialize the admin-side chat integration.
+	 *
+	 * Ability registration is hooked from Frontend::register_abilities_hooks(), outside the admin bootstrap.
 	 */
 	public function init(): void {
 		if ( self::is_enabled() ) {
 			add_action( 'rest_api_init', [ $this, 'register_chat_rest_routes' ], 9 );
 			add_filter( 'burst_do_action', [ $this, 'handle_ajax_chat_actions' ], 10, 3 );
-			add_action( 'wp_abilities_api_categories_init', [ self::class, 'register_category' ] );
-			add_action( 'wp_abilities_api_init', [ self::class, 'register' ] );
-			add_action( 'abilities_api_init', [ self::class, 'register' ] );
 		}
 	}
 
@@ -182,7 +181,7 @@ class Abilities_Api {
 						],
 					],
 				],
-				'execute_callback'    => [ $api, 'ability_live_visitors' ],
+				'execute_callback'    => $api->with_admin_access( [ $api, 'ability_live_visitors' ] ),
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
@@ -242,7 +241,7 @@ class Abilities_Api {
 						],
 					],
 				],
-				'execute_callback'    => [ $api, 'ability_live_traffic' ],
+				'execute_callback'    => $api->with_admin_access( [ $api, 'ability_live_traffic' ] ),
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
@@ -323,7 +322,7 @@ class Abilities_Api {
 						],
 					],
 				],
-				'execute_callback'    => [ $api, 'ability_today_summary' ],
+				'execute_callback'    => $api->with_admin_access( [ $api, 'ability_today_summary' ] ),
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
@@ -366,7 +365,7 @@ class Abilities_Api {
 						],
 					],
 				],
-				'execute_callback'    => [ $api, 'ability_tasks' ],
+				'execute_callback'    => $api->with_admin_access( [ $api, 'ability_tasks' ] ),
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
@@ -399,7 +398,7 @@ class Abilities_Api {
 						],
 					],
 				],
-				'execute_callback'    => [ $api, 'ability_tracking_status' ],
+				'execute_callback'    => $api->with_admin_access( [ $api, 'ability_tracking_status' ] ),
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
@@ -445,7 +444,7 @@ class Abilities_Api {
 						],
 					],
 				],
-				'execute_callback'    => [ $api, 'ability_license_notices' ],
+				'execute_callback'    => $api->with_admin_access( [ $api, 'ability_license_notices' ] ),
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
@@ -516,7 +515,7 @@ class Abilities_Api {
 					'additionalProperties' => true,
 					'description'          => 'Analytics data response containing either insights timeseries or datatable records',
 				],
-				'execute_callback'    => [ $api, 'ability_data' ],
+				'execute_callback'    => $api->with_admin_access( [ $api, 'ability_data' ] ),
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
@@ -574,7 +573,7 @@ class Abilities_Api {
 					'additionalProperties' => true,
 					'description'          => 'Sales data response',
 				],
-				'execute_callback'    => [ $api, 'ability_sales_data' ],
+				'execute_callback'    => $api->with_admin_access( [ $api, 'ability_sales_data' ] ),
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
@@ -632,7 +631,7 @@ class Abilities_Api {
 					'additionalProperties' => true,
 					'description'          => 'Subscriptions data response',
 				],
-				'execute_callback'    => [ $api, 'ability_subscriptions_data' ],
+				'execute_callback'    => $api->with_admin_access( [ $api, 'ability_subscriptions_data' ] ),
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
@@ -725,7 +724,7 @@ class Abilities_Api {
 						'truncated' => [ 'type' => 'boolean' ],
 					],
 				],
-				'execute_callback'    => [ $api, 'ability_settings' ],
+				'execute_callback'    => $api->with_admin_access( [ $api, 'ability_settings' ] ),
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
@@ -794,7 +793,7 @@ class Abilities_Api {
 						],
 					],
 				],
-				'execute_callback'    => [ $api, 'ability_pages' ],
+				'execute_callback'    => $api->with_admin_access( [ $api, 'ability_pages' ] ),
 				'permission_callback' => [ $api, 'permission_callback' ],
 				'meta'                => [
 					'show_in_rest' => true,
@@ -3702,6 +3701,36 @@ class Abilities_Api {
 	}
 
 	/**
+	 * Wrap an ability execute callback so it runs with the admin gate open.
+	 *
+	 * MCP connectors call abilities on requests has_admin_access() doesn't recognise, so
+	 * the gate is closed there and Statistics_Query would treat the call as a shortcode
+	 * query (strict mode), replacing Pro metrics such as revenue with pageviews. Core
+	 * only runs an execute callback after the ability's permission_callback passed
+	 * (manage_burst_statistics), which is stricter than the gate's own check. The
+	 * previous gate value is restored afterwards, so nothing later in the request (for
+	 * example a shortcode rendered in the same MCP batch) runs as an admin request.
+	 *
+	 * @param callable $callback The ability's execute method.
+	 * @return \Closure Execute callback for wp_register_ability().
+	 *
+	 * Mixed $input and return: the closure's signature is dictated by the WordPress Abilities API (wp_register_ability execute_callback); the input and result shape vary per ability.
+	 */
+	private function with_admin_access( callable $callback ): \Closure {
+		return static function ( mixed $input = null ) use ( $callback ): mixed {
+			$loader                   = burst_loader();
+			$previous                 = $loader->has_admin_access ?? null;
+			$loader->has_admin_access = true;
+
+			try {
+				return $callback( $input );
+			} finally {
+				$loader->has_admin_access = $previous;
+			}
+		};
+	}
+
+	/**
 	 * Get Burst admin instance in REST contexts where admin may not be bootstrapped.
 	 */
 	private function get_admin_instance(): Admin|\WP_Error {
@@ -3721,6 +3750,13 @@ class Abilities_Api {
 
 		$loader->admin = new Admin();
 		$loader->admin->init();
+
+		/**
+		 * Fires after Admin is booted on demand for an ability call, so extensions whose
+		 * admin hooks sit behind has_admin_access() (Pro's datatable config and statistics
+		 * layer) can register them. Only reached after the ability's permission_callback passed.
+		 */
+		do_action( 'burst_admin_lazy_booted' );
 
 		if ( ! isset( $loader->admin ) ) {
 			return new \WP_Error(

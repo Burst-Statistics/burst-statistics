@@ -33,7 +33,7 @@ class Import_Manager {
 	 *
 	 * @var string
 	 */
-	public const BUILD = '3.7.4';
+	public const BUILD = '3.7.5';
 
 	/**
 	 * Maximum number of terminal import records to retain in history.
@@ -278,8 +278,9 @@ class Import_Manager {
 				return $output;
 			}
 
-			$file_path = '';
-			$file_hash = null;
+			$file_path      = '';
+			$file_hash      = null;
+			$import_warning = '';
 			if ( in_array( $adapter->get_type(), [ 'upload', 'file' ], true ) ) {
 				$upload_id     = sanitize_text_field( (string) ( $data['upload_id'] ?? $data['file_path'] ?? '' ) );
 				$resolved_path = '';
@@ -323,6 +324,7 @@ class Import_Manager {
 					$output['error'] = ! empty( $preview['error_message'] ) ? $preview['error_message'] : __( 'The backup archive does not contain valid Burst Statistics tables.', 'burst-statistics' );
 					return $output;
 				}
+				$import_warning = (string) ( $preview['warning'] ?? '' );
 
 				$file_path = $real_path;
 				$hash      = hash_file( 'sha256', $file_path );
@@ -390,8 +392,8 @@ class Import_Manager {
 			];
 
 			$cutoff     = self::get_burst_tracking_start();
-			$date_start = $estimate['date_start'] ?: gmdate( 'Y-m-d' );
-			$date_end   = $estimate['date_end'] ?: gmdate( 'Y-m-d' );
+			$date_start = self::normalize_period_date( $estimate['date_start'] ?: gmdate( 'Y-m-d' ) );
+			$date_end   = self::normalize_period_date( $estimate['date_end'] ?: gmdate( 'Y-m-d' ) );
 			if ( ! empty( $date_end ) && $date_end > $cutoff['date'] ) {
 				$date_end = $cutoff['date'];
 			}
@@ -439,6 +441,9 @@ class Import_Manager {
 
 			$output['success']   = true;
 			$output['import_id'] = $import_id;
+			if ( ! empty( $import_warning ) ) {
+				$output['warning'] = $import_warning;
+			}
 		} elseif ( 'import_chunk' === $action ) {
 			$import_id = isset( $data['import_id'] ) ? (int) $data['import_id'] : null;
 			if ( null !== $import_id && $import_id > 0 ) {
@@ -598,6 +603,16 @@ class Import_Manager {
 		set_transient( self::SOURCES_STATUS_TRANSIENT, $status_map, self::SOURCES_STATUS_TTL );
 
 		return $status_map;
+	}
+
+	/**
+	 * Write a source's period date as Y-m-d, the format of the cutoff date and
+	 * the period columns. GA4 exports use YYYYMMDD.
+	 *
+	 * @param string $date Date as reported by the adapter.
+	 */
+	private static function normalize_period_date( string $date ): string {
+		return preg_replace( '/^(\d{4})(\d{2})(\d{2})$/', '$1-$2-$3', $date ) ?? $date;
 	}
 
 	/**

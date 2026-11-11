@@ -7,7 +7,8 @@ import HelpTooltip from '@/components/Common/HelpTooltip';
  * Add a new entry here when releasing a version with new features.
  */
 const VERSION_RELEASE_DATES: Record<string, string> = {
-	'3.2.3': '2026-03-16'
+	'3.2.3': '2026-03-16',
+	'3.7.5': '2026-10-29'
 };
 
 interface NewBadgeProps {

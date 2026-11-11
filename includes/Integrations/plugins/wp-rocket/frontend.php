@@ -25,7 +25,6 @@ add_filter( 'rocket_excluded_inline_js_content', 'burst_exclude_inline_js' );
  * @return array<int, string> Updated array of excluded JS filepaths.
  */
 function burst_exclude_js( array $excluded_js ): array {
-	$excluded_js[] = '(.*)timeme(.*)';
 	$excluded_js[] = '(.*)burst(.*)';
 	return $excluded_js;
 }

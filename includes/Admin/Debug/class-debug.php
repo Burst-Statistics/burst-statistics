@@ -29,6 +29,7 @@ class Debug {
 	 * @var string[]
 	 */
 	private const REDACTED_OPTIONS = [
+		'burst_buffer_dir_token',
 		'burst_gsc_tokens',
 		'burst_share_tokens',
 	];
@@ -633,6 +634,7 @@ class Debug {
 	private function redacted_option_keys(): array {
 		return [
 			Admin_Options::option_name( Admin_Option_Category::NOTIFICATIONS ) => [ 'slack_webhook_url' ],
+			Admin_Options::option_name( Admin_Option_Category::CORE ) => [ 'viewport_offset' ],
 		];
 	}
 

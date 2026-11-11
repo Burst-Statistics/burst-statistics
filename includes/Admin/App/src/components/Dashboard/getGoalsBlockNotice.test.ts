@@ -55,3 +55,18 @@ test( 'selected active goal or unknown id: no notice', () => {
 	assert.strictEqual( getGoalsBlockNotice([ makeGoal({ id: 7 }) ], 7 ), null );
 	assert.strictEqual( getGoalsBlockNotice([ makeGoal({ id: 7 }) ], 99 ), null );
 });
+
+test( 'selected goal blocked by disabled tracking opens target step to turn on', () => {
+	( globalThis as any ).window = { // eslint-disable-line @typescript-eslint/no-explicit-any
+		burst_settings: {
+			fields: [
+				{ id: 'enable_custom_events', value: false }
+			]
+		}
+	};
+	const eventGoal = makeGoal({ id: 5, type: 'event', hook: 'lead_form', status: 'active' });
+	const notice = getGoalsBlockNotice([ eventGoal ], 5 );
+	assert.strictEqual( notice?.action, 'Turn on tracking' );
+	assert.strictEqual( notice?.goalId, 5 );
+	assert.strictEqual( notice?.step, 2 );
+});

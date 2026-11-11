@@ -23,6 +23,18 @@ const GOAL_TYPES: Record<string, RadioOption> = {
 		type: 'visits',
 		icon: 'external-link'
 	},
+	download: {
+		label: __( 'File download', 'burst-statistics' ),
+		description: __( 'Any download, or one file. Example: the product brochure PDF.', 'burst-statistics' ),
+		type: 'download',
+		icon: 'download'
+	},
+	event: {
+		label: __( 'Custom event', 'burst-statistics' ),
+		description: __( 'An event your site already sends. Example: generate_lead from a form plugin.', 'burst-statistics' ),
+		type: 'event',
+		icon: 'zap'
+	},
 	hook: {
 		label: __( 'Hook', 'burst-statistics' ),
 		description: __( 'Server side, for developers. Example: woocommerce_thankyou.', 'burst-statistics' ),
@@ -32,15 +44,23 @@ const GOAL_TYPES: Record<string, RadioOption> = {
 };
 
 /**
- * The goal types a new goal can use. The server rejects hook goals when it hides them, so they are not offered.
+ * The goal types a new goal can use. Types not supported by the server (e.g. hook goals on headless sites) are not offered.
  *
  * @return {Record<string, RadioOption>} The selectable goal types, keyed by type.
  */
 export const getSelectableGoalTypes = (): Record<string, RadioOption> => {
-	if ( ! window.burst_settings?.hide_hook_goals ) {
-		return GOAL_TYPES;
+	const serverTypes = window.burst_settings?.goal_types;
+	if ( Array.isArray( serverTypes ) ) {
+		return Object.fromEntries(
+			Object.entries( GOAL_TYPES ).filter( ([ type ]) => {
+				if ( 'download' === type || 'event' === type ) {
+					return true;
+				}
+				return serverTypes.includes( type );
+			})
+		);
 	}
-	return Object.fromEntries( Object.entries( GOAL_TYPES ).filter( ([ type ]) => 'hook' !== type ) );
+	return GOAL_TYPES;
 };
 
 /**
@@ -63,6 +83,13 @@ export const GOAL_METRICS: Record<string, RadioOption> = {
 		icon: 'pageviews'
 	}
 };
+
+/**
+ * All goal types, in the order they are offered.
+ *
+ * @return {string[]} The goal type keys.
+ */
+export const getGoalTypeKeys = (): string[] => Object.keys( GOAL_TYPES );
 
 /**
  * Label of a goal type, e.g. "Clicks".

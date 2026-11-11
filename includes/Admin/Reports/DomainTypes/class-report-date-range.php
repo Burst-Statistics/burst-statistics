@@ -86,6 +86,12 @@ final class Report_Date_Range {
 	];
 
 	/**
+	 * Days a request from the story view can start before the computed start:
+	 * it parses the end date as UTC and counts milliseconds across daylight saving.
+	 */
+	private const STORY_START_SLACK_DAYS = 2;
+
+	/**
 	 * Creates a Report_Report_Date_Range from a string.
 	 *
 	 * @param string|null $range The date range as a string.
@@ -248,7 +254,8 @@ final class Report_Date_Range {
 			if ( ! empty( $block['fixed_end_date'] ) ) {
 				return (string) $block['fixed_end_date'];
 			}
-			if ( ! empty( $block['date_range'] ) ) {
+			// A preset without its own end date ends with the report, as in the wizard.
+			if ( ! empty( $block['date_range'] ) && str_starts_with( (string) $block['date_range'], self::CUSTOM . ':' ) ) {
 				return self::parse_date_range_end( (string) $block['date_range'], $reference_timestamp );
 			}
 		}
@@ -463,6 +470,56 @@ final class Report_Date_Range {
 				return gmdate( 'Y-m-d', (int) strtotime( '-1 month', $end_ts ) );
 			default:
 				return gmdate( 'Y-m-d', (int) strtotime( '-6 days', $end_ts ) );
+		}
+	}
+
+	/**
+	 * Get the earliest date a block or report can legitimately start on.
+	 *
+	 * The React story view derives its start date from the live length of the
+	 * range ("month to date" grows during the month), so it can start before
+	 * get_start_date(). A custom range is exact.
+	 *
+	 * @param array<string, mixed>|string|null $block               The block array or block id string.
+	 * @param Report                           $report              The report instance.
+	 * @param int|null                         $reference_timestamp Optional reference timestamp.
+	 * @return string The earliest start date string (Y-m-d).
+	 */
+	public static function get_earliest_start_date( array|string|null $block, Report $report, ?int $reference_timestamp = null ): string {
+		$start_date = self::get_start_date( $block, $report, $reference_timestamp );
+		$date_range = self::get_date_range( $block, $report );
+		if ( str_starts_with( $date_range, self::CUSTOM . ':' ) ) {
+			return $start_date;
+		}
+
+		$end_ts     = (int) strtotime( self::get_end_date( $block, $report, $reference_timestamp ) );
+		$live_start = gmdate( 'Y-m-d', (int) strtotime( '-' . self::get_live_range_days( $date_range, $reference_timestamp ?? time() ) . ' days', $end_ts ) );
+
+		return gmdate( 'Y-m-d', (int) strtotime( '-' . self::STORY_START_SLACK_DAYS . ' days', (int) strtotime( min( $start_date, $live_start ) ) ) );
+	}
+
+	/**
+	 * Get how many days before its end the story view starts a range that has a
+	 * length depending on today, measured the way the story view does.
+	 *
+	 * @param string $date_range          The date range key.
+	 * @param int    $reference_timestamp Reference timestamp for "today".
+	 * @return int Number of days, 0 for a range with a fixed length.
+	 */
+	private static function get_live_range_days( string $date_range, int $reference_timestamp ): int {
+		$today = ( new \DateTimeImmutable( '@' . $reference_timestamp ) )->setTimezone( wp_timezone() );
+
+		switch ( $date_range ) {
+			case self::MONTH_TO_DATE:
+				return (int) $today->format( 'j' ) - 1;
+			case self::YEAR_TO_DATE:
+				return (int) $today->format( 'z' );
+			case self::LAST_MONTH:
+				return (int) $today->modify( 'first day of last month' )->format( 't' ) - 1;
+			case self::LAST_YEAR:
+				return (int) $today->modify( 'first day of january last year' )->format( 'L' ) + 364;
+			default:
+				return 0;
 		}
 	}
 

@@ -34,7 +34,7 @@ export const isFilterEnabledRoute = ( pathname: string ): boolean => {
 };
 
 // Filter pages plus the pages that only have a date range.
-const DATE_RANGE_ENABLED_ROUTES = [ ...FILTER_ENABLED_ROUTES, '/subscriptions' ];
+const DATE_RANGE_ENABLED_ROUTES = [ ...FILTER_ENABLED_ROUTES, '/subscriptions', '/goals' ];
 
 /**
  * Check whether a route path keeps its date range in the URL.

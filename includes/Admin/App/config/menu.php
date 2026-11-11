@@ -50,7 +50,7 @@ return [
 	[
 		'id'                      => 'goals',
 		'title'                   => __( 'Goals', 'burst-statistics' ),
-		'description'             => __( 'Track custom conversion goals, set up goal triggers, and view goal conversion metrics.', 'burst-statistics' ),
+		'description'             => __( 'Goals dashboard: a list of all goals with their conversions and change against the previous period, and per goal its conversions, converting visitors, conversion rate and trend. All goals compares the goals side by side; a single goal adds its sources and entry pages (Pro). Flags goals that stopped counting while their page still gets visitors. Create, edit, pause and delete goals from here.', 'burst-statistics' ),
 		'default_hidden'          => false,
 		'menu_items'              => [],
 		'capabilities'            => 'manage_burst_statistics',

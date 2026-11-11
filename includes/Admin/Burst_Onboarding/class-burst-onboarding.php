@@ -31,6 +31,23 @@ class Burst_Onboarding {
 		add_filter( 'burst_license_activation', [ $this, 'activate_license' ], 10, 2 );
 		add_action( 'burst_onboarding_update_options', [ $this, 'update_step_settings' ], 10, 2 );
 		add_filter( 'burst_onboarding_steps', [ $this, 'load_steps' ] );
+		add_filter( 'burst_mailinglist_signup_params', [ $this, 'add_has_shop_param' ] );
+	}
+
+	/**
+	 * Tell the mailing list whether this site runs a shop.
+	 *
+	 * The Tips & Tricks series sends shops a different version of its last email.
+	 * Sent as a boolean, like has_premium.
+	 *
+	 * @param array<string, mixed> $api_params The mailing list signup parameters.
+	 * @return array<string, mixed> The parameters, with has_shop true when WooCommerce or Easy Digital Downloads is active.
+	 */
+	public function add_has_shop_param( array $api_params ): array {
+		$integrations           = \Burst\burst_loader()->integrations;
+		$api_params['has_shop'] = $integrations->plugin_is_active( 'woocommerce' ) || $integrations->plugin_is_active( 'easy-digital-downloads' );
+
+		return $api_params;
 	}
 
 	/**

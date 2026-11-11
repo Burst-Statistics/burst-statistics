@@ -21,7 +21,7 @@ class Green_Hosting {
 	 *
 	 * @var string
 	 */
-	public const BUILD = '3.7.4';
+	public const BUILD = '3.7.5';
 
 	public const OPTION     = 'burst_green_hosting';
 	public const CHECK_HOOK = 'burst_green_hosting_check';

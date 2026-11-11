@@ -18,7 +18,7 @@ class Events {
 	 *
 	 * @var string
 	 */
-	public const BUILD = '3.7.4';
+	public const BUILD = '3.7.5';
 
 	/**
 	 * Register install hooks and datatable filters.

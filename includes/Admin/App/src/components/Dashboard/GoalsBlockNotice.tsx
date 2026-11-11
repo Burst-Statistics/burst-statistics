@@ -31,10 +31,13 @@ const GoalsBlockNotice = ({ goals, goalId }: GoalsBlockNoticeProps ): JSX.Elemen
 		const { openWizard } = useGoalWizardStore.getState();
 
 		// Only a new goal or a specific goal needs the wizard; "Manage goals" just shows the list.
+		if ( undefined !== notice.goalId ) {
+			openWizard( notice.goalId, notice.step );
+			navigate({ to: '/goals/$goalId', params: { goalId: String( notice.goalId ) } });
+			return;
+		}
 		if ( 0 === goals.length ) {
 			openWizard();
-		} else if ( undefined !== notice.goalId ) {
-			openWizard( notice.goalId, notice.step );
 		}
 		navigate({ to: '/goals' });
 	};

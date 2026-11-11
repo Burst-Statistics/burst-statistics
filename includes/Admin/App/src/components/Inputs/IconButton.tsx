@@ -90,11 +90,13 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>( (
 		'focus:outline-hidden focus:ring-2 focus:ring-offset-2',
 		{ 'justify-center': ! hasLabel },
 
-		// Border radius. "dashed" uses the larger radius shared with the DateRange
-		// and filter chip triggers so it sits visually consistent in the filter row.
+		// Border radius. Icon-only buttons are round. "dashed" uses the larger radius
+		// shared with the DateRange and filter chip triggers so it sits visually
+		// consistent in the filter row.
 		{
-			'rounded-md': 'dashed' === normalizedVariant,
-			rounded: 'dashed' !== normalizedVariant
+			'rounded-full': ! hasLabel,
+			'rounded-md': hasLabel && 'dashed' === normalizedVariant,
+			rounded: hasLabel && 'dashed' !== normalizedVariant
 		},
 
 		// Variant-specific styles.
@@ -153,9 +155,9 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>( (
 			{...ariaAttributes}
 			{...props}
 		>
-			{icon && ! shouldRenderIconOnRight && <Icon name={icon} size={iconSize} className='text-text-gray-light'/>}
+			{icon && ! shouldRenderIconOnRight && <Icon name={icon} size={iconSize} className={'primary' === variant || 'secondary' === variant ? 'text-text-white' : 'text-text-gray-light'} />}
 			{label && <span>{label}</span>}
-			{icon && shouldRenderIconOnRight && <Icon name={icon} size={iconSize} className='text-text-gray-light'/>}
+			{icon && shouldRenderIconOnRight && <Icon name={icon} size={iconSize} className={'primary' === variant || 'secondary' === variant ? 'text-text-white' : 'text-text-gray-light'} />}
 		</button>
 	);
 });
@@ -163,4 +165,3 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>( (
 IconButton.displayName = 'IconButton';
 
 export default IconButton;
-

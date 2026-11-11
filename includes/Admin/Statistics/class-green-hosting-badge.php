@@ -31,7 +31,7 @@ class Green_Hosting_Badge {
 	 *
 	 * @var string
 	 */
-	public const BUILD = '3.7.4';
+	public const BUILD = '3.7.5';
 
 	public const DOWNLOAD_HOOK = 'burst_green_hosting_badge_download';
 

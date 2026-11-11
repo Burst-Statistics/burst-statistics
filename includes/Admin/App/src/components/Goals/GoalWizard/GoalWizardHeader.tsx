@@ -1,9 +1,10 @@
 import { __ } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
 import WizardCloseButton from '@/components/Common/Wizard/WizardCloseButton';
+import WizardHeader from '@/components/Common/Wizard/WizardHeader';
 import { useGoalWizardStore } from '@/store/goals/useGoalWizardStore';
 import { getGoalTypeIcon } from '@/components/Goals/goalOptions';
-import { isGoalCounting } from '@/components/Goals/goalHelpers';
+import { getGoalKind, getGoalTrackingBlocker, isGoalCounting } from '@/components/Goals/goalHelpers';
 import type { Goal } from '@/components/Goals/goalHelpers';
 import useWizardGoal from './useWizardGoal';
 import GoalWizardSteps from './GoalWizardSteps';
@@ -15,10 +16,17 @@ import GoalWizardSteps from './GoalWizardSteps';
  * @return {string} The status.
  */
 const getTrackingStatus = ( goal: Goal | null ): string => {
-	if ( goal && isGoalCounting( goal ) ) {
+	if ( ! goal ) {
+		return __( 'Draft, not tracking yet', 'burst-statistics' );
+	}
+	const blocker = getGoalTrackingBlocker( goal );
+	if ( blocker ) {
+		return blocker.wizardHeaderStatus;
+	}
+	if ( isGoalCounting( goal ) ) {
 		return __( 'Tracking', 'burst-statistics' );
 	}
-	if ( 'active' === goal?.status ) {
+	if ( 'active' === goal.status ) {
 		return __( 'Not tracking, needs setup', 'burst-statistics' );
 	}
 	return __( 'Draft, not tracking yet', 'burst-statistics' );
@@ -33,31 +41,29 @@ const getTrackingStatus = ( goal: Goal | null ): string => {
  */
 const GoalWizardHeader = ({ onClose }: { onClose: () => void }): JSX.Element => {
 	const goal = useWizardGoal();
-	const pendingType = useGoalWizardStore( ( state ) => state.pendingType );
-	const type = goal ? goal.type : pendingType;
+	const pendingKind = useGoalWizardStore( ( state ) => state.pendingKind );
+	const kind = goal ? getGoalKind( goal ) : pendingKind;
 
 	return (
-		<div className="shrink-0 border-b border-gray-200">
-			<div className="flex items-center justify-between gap-4 px-4 sm:px-10 py-3 sm:py-4 border-b border-gray-200">
-				<div className="flex items-center gap-3 min-w-0">
-					<Icon name={getGoalTypeIcon( type )} size={20} color="gray" />
+		<WizardHeader
+			name={
+				<div className="flex items-center gap-3 min-w-0 p-2">
+					<Icon name={getGoalTypeIcon( kind )} size={20} color="gray" />
 					<h2 className="truncate text-lg font-semibold text-text-black">
 						{goal?.title.trim() || __( 'New goal', 'burst-statistics' )}
 					</h2>
 				</div>
-
-				<div className="flex items-center gap-4 shrink-0">
-					<span className="text-sm text-text-gray max-sm:hidden">
+			}
+			steps={<GoalWizardSteps />}
+			actions={
+				<>
+					<span className="text-sm text-text-gray whitespace-nowrap max-xl:hidden">
 						{getTrackingStatus( goal )}
 					</span>
 					<WizardCloseButton onClose={onClose} dataTour="goal-wizard-close" />
-				</div>
-			</div>
-
-			<div className="px-2 sm:px-8 py-2">
-				<GoalWizardSteps />
-			</div>
-		</div>
+				</>
+			}
+		/>
 	);
 };
 

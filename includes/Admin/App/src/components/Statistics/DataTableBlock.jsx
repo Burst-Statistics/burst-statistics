@@ -33,6 +33,7 @@ import {
 } from '@/utils/formatting';
 import { format, subDays } from 'date-fns';
 import { safeDecodeURI } from '@/utils/lib';
+import { getLicensedColumns } from '@/utils/getLicensedColumns';
 import {useBlockConfig} from '@/hooks/useBlockConfig';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import Icon from '@/utils/Icon';
@@ -250,6 +251,22 @@ const getActiveSortFieldId = ( columns, sortField ) => {
 };
 
 
+// Goal breakdowns rank rows by what they contributed to the goal.
+const CONVERSIONS_SORT = { fieldId: 'conversions', direction: 'desc' };
+
+/**
+ * Default columns of a table focused on conversions: the columns the rows are
+ * grouped by, then conversions and, where the table has it, conversion rate.
+ *
+ * @param {Object} configDetails The table's config.
+ * @return {string[]} Column keys.
+ */
+const getConversionColumns = ( configDetails ) => {
+	const options = configDetails?.columnsOptions || {};
+	const groupColumns = ( configDetails?.defaultColumns || []).filter( ( column ) => options[ column ]?.group_by );
+	return [ ...groupColumns, ...[ 'conversions', 'conversion_rate' ].filter( ( column ) => options[ column ]) ];
+};
+
 const COLUMN_TEMPLATES = {
 	visitors: {
 		label: __( 'Visitors', 'burst-statistics' ),
@@ -333,12 +350,14 @@ const getGoalAndEcommerceTemplates = ( shouldLoadEcommerce ) => ({
  * @param  {Object}  props.customFilters  Custom filters to apply to the datatable.
  * @param  {number}  props.index          Index of the block in the page.
  * @param  {boolean} props.isInOverlay    When true, hides the expand button and adjusts layout for overlay mode.
+ * @param  {boolean} props.focusConversions When true, shows the conversion columns sorted by conversions, with column and sort choices kept apart from the same table elsewhere.
  * @return {JSX.Element} The DataTableBlock component.
  */
 // fallow-ignore-next-line complexity
 const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 	// isInOverlay is overlay-specific and not part of useBlockConfig.
 	const isInOverlay = props.isInOverlay ?? false;
+	const focusConversions = props.focusConversions ?? false;
 
 	const {
 		allowedConfigs = [],
@@ -362,6 +381,8 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 
 	// The AI match column only exists while the SmartMatch Search plugin is active.
 	const isSmartMatchActive = getIsSmartMatchActive();
+
+	const { isPro, isLicenseValid } = useLicenseData();
 
 	const config = {
 		pages: {
@@ -419,7 +440,9 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		referrers: {
 			label: __( 'Referrers', 'burst-statistics' ),
 			searchable: true,
-			defaultColumns: isPro ?
+
+			// The source columns are locked without a valid license (see activeColumns), which would leave no label column.
+			defaultColumns: isLicenseValid ?
 				[ 'source', 'source_category', 'visitors', 'bounce_rate', ...( shouldLoadEcommerce ? [ 'sales', 'revenue' ] : [ 'conversions' ]) ] :
 				[ 'referrer', 'visitors', 'bounce_rate', ...( shouldLoadEcommerce ? [ 'sales', 'revenue' ] : [ 'conversions' ]) ],
 			columnsOptions: {
@@ -940,8 +963,6 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 		setRowsPerPage: setRowsPerPageStore
 	} = useDataTableStore();
 
-	const { isPro, isLicenseValid } = useLicenseData();
-
 	const [ selectedConfig, setSelectedConfigState ] = useState( () => getSelectedConfig( id, defaultConfig ) );
 
 	// Per-block toggle that controls whether parameter variations are shown
@@ -966,27 +987,33 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 
 	const columnsOptions = useMemo( () => configDetails?.columnsOptions || {}, [ configDetails ]);
 
-	const defaultColumns = useMemo( () => configDetails?.defaultColumns || [], [ configDetails ]);
+	const defaultColumns = useMemo(
+		() => ( focusConversions ? getConversionColumns( configDetails ) : configDetails?.defaultColumns || []),
+		[ configDetails, focusConversions ]
+	);
+
+	// A table focused on conversions (the goal breakdowns) keeps its own column
+	// and sort choices, so it does not change the same table on other pages.
+	const preferenceKey = focusConversions ? `goal_${ selectedConfig }` : selectedConfig;
+	const defaultSort = focusConversions ? CONVERSIONS_SORT : undefined;
 
 	const [ columns, setColumnsState ] = useState( () => {
-		return getColumnsStore( selectedConfig, defaultColumns, columnsOptions );
+		return getColumnsStore( preferenceKey, defaultColumns, columnsOptions );
 	});
 
 	// Filter out pro columns if the license is not valid to prevent empty pro columns from showing on deactivation.
 	const activeColumns = useMemo( () => {
-		return columns.filter( ( column ) =>
-			! columnsOptions[column]?.pro || isLicenseValid
-		);
+		return getLicensedColumns( columns, columnsOptions, isLicenseValid );
 	}, [ columns, columnsOptions, isLicenseValid ]);
 
 	// Sort state: initialize from localStorage
 	const [ sortField, setSortFieldState ] = useState( () => {
-		const saved = getSortConfig( selectedConfig );
+		const saved = getSortConfig( preferenceKey, defaultSort );
 		return saved?.fieldId ?? 2;
 	});
 
 	const [ sortDirection, setSortDirectionState ] = useState( () => {
-		const saved = getSortConfig( selectedConfig );
+		const saved = getSortConfig( preferenceKey, defaultSort );
 		return saved?.direction ?? 'desc';
 	});
 
@@ -998,10 +1025,10 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 
 			if ( JSON.stringify( orderedColumns ) !== JSON.stringify( columns ) ) {
 				setColumnsState( orderedColumns );
-				setColumnsStore( selectedConfig, orderedColumns, Object.keys( columnsOptions ) );
+				setColumnsStore( preferenceKey, orderedColumns, Object.keys( columnsOptions ) );
 			}
 		},
-		[ selectedConfig, columns, columnsOptions, setColumnsStore ]
+		[ preferenceKey, columns, columnsOptions, setColumnsStore ]
 	);
 
 	const setSelectedConfig = useCallback(
@@ -1013,10 +1040,10 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 	);
 
 	useEffect( () => {
-		const newColumns = getColumnsStore( selectedConfig, defaultColumns, columnsOptions );
+		const newColumns = getColumnsStore( preferenceKey, defaultColumns, columnsOptions );
 		setColumns( newColumns );
 
-		const savedSort = getSortConfig( selectedConfig );
+		const savedSort = getSortConfig( preferenceKey, defaultSort );
 		if ( savedSort ) {
 			setSortFieldState( savedSort.fieldId );
 			setSortDirectionState( savedSort.direction );
@@ -1024,7 +1051,7 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 			setSortFieldState( 2 );
 			setSortDirectionState( 'desc' );
 		}
-	}, [ selectedConfig, setColumns, getColumnsStore, getSortConfig ]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [ preferenceKey, setColumns, getColumnsStore, getSortConfig ]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
 	const handleSort = useCallback(
@@ -1034,12 +1061,12 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 
 			setSortFieldState( fieldId );
 			setSortDirectionState( direction );
-			setSortConfig( selectedConfig, {
+			setSortConfig( preferenceKey, {
 				fieldId,
 				direction
 			});
 		},
-		[ selectedConfig, setSortConfig ]
+		[ preferenceKey, setSortConfig ]
 	);
 
 	const [ filterText, setFilterText ] = useState( '' );
@@ -1575,7 +1602,8 @@ const DataTableBlock = ( /** @type {BlockComponentProps} */ props ) => {
 				controls={
 					allowBlockFilters ? (
 						<>
-							{ ! isInOverlay && ! isReport && (
+							{/* The expanded table reads its filters from the URL, which has no goal on the goals dashboard. */}
+							{ ! isInOverlay && ! isReport && ! focusConversions && (
 								<button
 									type="button"
 									className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"

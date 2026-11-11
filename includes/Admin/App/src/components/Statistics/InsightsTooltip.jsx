@@ -1,7 +1,7 @@
 import { __ } from '@wordpress/i18n';
 import { clsx } from 'clsx';
 import { ChartTooltip } from '@/components/Common/ChartTooltip';
-import { formatNumber, formatTooltipLabel, getChangePercentage } from '@/utils/formatting';
+import { formatNumber, formatTooltipLabel, getChangePercentage, getChangeTooltipTextClass } from '@/utils/formatting';
 import { METRIC_COLORS, METRIC_LABELS } from './insightsConfig';
 
 /**
@@ -110,7 +110,7 @@ export function InsightsTooltip({ slice, interval }) {
 								<span
 									className={ clsx(
 										'text-xs font-medium tabular-nums text-right whitespace-nowrap',
-										'positive' === change?.status ? 'text-green-600' : 'text-red-600'
+										getChangeTooltipTextClass( change?.status )
 									) }
 								>
 									{ percentChangeLabel }

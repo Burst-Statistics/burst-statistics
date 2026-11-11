@@ -40,7 +40,8 @@ class Goal {
 	 * A whole site goal stores url '*', so this is where its specific_page is
 	 * kept and rebuilt from on load. Tracking never reads it.
 	 */
-	public string $element_page = '';
+	public string $element_page  = '';
+	public ?string $event_filter = null;
 	/**
 	 * Set to 1 when the goal was created from the Gutenberg block editor.
 	 */
@@ -90,7 +91,7 @@ class Goal {
 			$this->title             = $goal->title !== '' ? $goal->title : __( 'New goal', 'burst-statistics' );
 			$this->type              = $goal->type;
 			$this->status            = $goal->status;
-			$this->server_side       = $this->type === 'hook' || $this->type === 'visits';
+			$this->server_side       = in_array( $this->type, [ 'hook', 'visits', 'event' ], true );
 			$this->url               = $goal->url;
 			$this->conversion_metric = $goal->conversion_metric;
 			if ( isset( $goal->attribute ) ) {
@@ -115,6 +116,7 @@ class Goal {
 			$this->page_or_website = $this->url !== '*' ? 'page' : 'website';
 			$this->element_page    = $goal->element_page ?? '';
 			$this->specific_page   = $this->page_or_website === 'page' ? $this->url : $this->element_page;
+			$this->event_filter    = ! empty( $goal->event_filter ) ? $goal->event_filter : null;
 		}
 		return $this;
 	}
@@ -173,6 +175,9 @@ class Goal {
 		if ( ! isset( $available_goal_types[ $this->type ] ) ) {
 			return false;
 		}
+		if ( 'event' === $this->type && ! $this->is_pro() ) {
+			return false;
+		}
 		$server_side             = $available_goal_types[ $this->type ]['server_side'] ?? false;
 		$this->server_side       = (bool) $server_side;
 		$this->conversion_metric = $this->sanitize_goal_conversion_metric( $this->conversion_metric );
@@ -207,12 +212,14 @@ class Goal {
 		static $block_goal_col_exists   = null;
 		static $page_id_col_exists      = null;
 		static $element_page_col_exists = null;
+		static $event_filter_col_exists = null;
 		if ( $block_goal_col_exists === null ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$columns                 = $wpdb->get_col( "DESC {$table_name}", 0 );
 			$block_goal_col_exists   = in_array( 'block_goal', $columns, true );
 			$page_id_col_exists      = in_array( 'page_id', $columns, true );
 			$element_page_col_exists = in_array( 'element_page', $columns, true );
+			$event_filter_col_exists = in_array( 'event_filter', $columns, true );
 		}
 		if ( $block_goal_col_exists ) {
 			$args['block_goal'] = $this->block_goal;
@@ -224,6 +231,9 @@ class Goal {
 			// Keep the picked page for every scope, so a whole site goal can still show its element.
 			$this->element_page   = '' !== $this->specific_page ? $this->sanitize_relative_url( $this->specific_page ) : '';
 			$args['element_page'] = $this->element_page;
+		}
+		if ( $event_filter_col_exists ) {
+			$args['event_filter'] = $this->sanitize_event_filter( $this->event_filter );
 		}
 
 		$success = false;
@@ -339,6 +349,10 @@ class Goal {
 	 * @return array<string, array{server_side?: bool}>
 	 */
 	private function get_available_goal_fields(): array {
+		if ( ! isset( \Burst\burst_loader()->admin ) || ! isset( \Burst\burst_loader()->admin->app ) ) {
+			return [];
+		}
+
 		$fields = \Burst\burst_loader()->admin->app->fields->get_goal_fields();
 
 		foreach ( $fields as $goal ) {
@@ -348,6 +362,76 @@ class Goal {
 		}
 
 		return [];
+	}
+
+	/**
+	 * Sanitize event filter JSON.
+	 *
+	 * Accepts an array or JSON string. Must match structure:
+	 * {"key": string, "op": "equals"|"in", "value": string|string[]}
+	 *
+	 * @param string|array<string, string|array<int, string>>|null $filter Filter to sanitize: JSON string or decoded array.
+	 * @return string|null JSON string or null.
+	 */
+	public function sanitize_event_filter( string|array|null $filter ): ?string {
+		if ( empty( $filter ) ) {
+			return null;
+		}
+
+		if ( is_string( $filter ) ) {
+			$decoded = json_decode( $filter, true );
+		} else {
+			$decoded = $filter;
+		}
+
+		if ( ! is_array( $decoded ) || empty( $decoded['key'] ) || empty( $decoded['op'] ) || ! isset( $decoded['value'] ) ) {
+			return null;
+		}
+
+		$key = sanitize_key( (string) $decoded['key'] );
+		$op  = sanitize_key( (string) $decoded['op'] );
+
+		if ( ! in_array( $op, [ 'equals', 'in' ], true ) ) {
+			return null;
+		}
+
+		if ( 'equals' === $op ) {
+			if ( ! is_scalar( $decoded['value'] ) ) {
+				return null;
+			}
+			$value = sanitize_text_field( (string) $decoded['value'] );
+			if ( '' === $value ) {
+				return null;
+			}
+			return wp_json_encode(
+				[
+					'key'   => $key,
+					'op'    => 'equals',
+					'value' => $value,
+				]
+			) ?: null;
+		}
+
+		// $op is 'in'.
+		if ( ! is_array( $decoded['value'] ) ) {
+			return null;
+		}
+		$values = array_values(
+			array_filter(
+				array_map( 'sanitize_text_field', $decoded['value'] ),
+				static fn( string $val ): bool => '' !== $val
+			)
+		);
+		if ( empty( $values ) ) {
+			return null;
+		}
+		return wp_json_encode(
+			[
+				'key'   => $key,
+				'op'    => 'in',
+				'value' => $values,
+			]
+		) ?: null;
 	}
 
 	/**

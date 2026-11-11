@@ -1,6 +1,6 @@
 import { __ } from '@wordpress/i18n';
 import Icon from '@/utils/Icon';
-import { formatNumber, getChangePercentage, truncateMiddle } from '@/utils/formatting';
+import { formatNumber, getChangePercentage, getChangeTextClass, truncateMiddle } from '@/utils/formatting';
 import type { BarColumn } from '@/components/DataTable/BarDataTable';
 import type { OutgoingLinkRow } from './useOutgoingLinksData';
 
@@ -66,7 +66,7 @@ export function getOutgoingLinksColumns(): BarColumn<OutgoingLinkRow>[] {
 				const { val, status } = getChangePercentage( row.clicks, row.previousClicks );
 
 				return (
-					<span className={ 'positive' === status ? 'text-green font-medium min-w-fit whitespace-nowrap' : 'text-red font-medium min-w-fit whitespace-nowrap' }>
+					<span className={ `${ getChangeTextClass( status ) } font-medium min-w-fit whitespace-nowrap` }>
 						{ val }
 					</span>
 				);

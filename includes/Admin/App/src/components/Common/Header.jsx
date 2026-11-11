@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import clsx from 'clsx';
 import { __ } from '@wordpress/i18n';
@@ -13,10 +14,12 @@ import SubscriptionHeader from '../Common/Pro/SubscriptionHeader';
 import BurstLogo from './BurstLogo';
 import MenuItemLink from './HeaderMenuItemLink';
 import HeaderThemeMenu from './HeaderThemeMenu';
-import TransparencyModal from './TransparencyModal';
 import ChatAssistantButton from './ChatAssistantButton';
 import { useTourStore } from '@/store/useTourStore';
 import MobileMenuDrawer from './MobileMenuDrawer';
+
+// Lazy-loaded so it stays out of the main chunk: only share-link viewers see it.
+const TransparencyModal = lazy( () => import( './TransparencyModal' ) );
 
 const SHARE_LINK_BRANDING_URL = burst_get_website_url( '', {
 	utm_source: 'share-link',
@@ -127,7 +130,9 @@ const Header = () => {
 
 				{isShareableLinkViewer && ! isWhiteLabel && (
 					<div className="flex items-center gap-4">
-						<TransparencyModal />
+						<Suspense fallback={null}>
+							<TransparencyModal />
+						</Suspense>
 
 						<a
 							href={SHARE_LINK_BRANDING_URL}

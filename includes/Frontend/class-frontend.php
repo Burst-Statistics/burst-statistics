@@ -1,6 +1,7 @@
 <?php
 namespace Burst\Frontend;
 
+use Burst\Admin\Abilities_Api\Abilities_Api;
 use Burst\Frontend\Events\Events;
 use Burst\Frontend\Goals\Goals;
 use Burst\Frontend\Goals\Goals_Tracker;
@@ -93,7 +94,6 @@ class Frontend {
 		add_filter( 'register_block_type_args', [ $this, 'register_burst_goal_block_attributes' ], 10, 2 );
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_burst_block_editor_assets' ] );
 		add_filter( 'render_block', [ $this, 'render_block_filter' ], 10, 2 );
-		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_time_tracking_script' ], 0 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_tracking_script' ], 0 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_burst_events_scripts' ], 0 );
 		add_filter( 'script_loader_tag', [ $this, 'defer_burst_tracking_script' ], 10, 3 );
@@ -138,6 +138,11 @@ class Frontend {
 		$green_hosting_badge = new Green_Hosting_Badge_Block();
 		$green_hosting_badge->init();
 
+		// Not behind enable_shortcodes either: that option guards shortcodes that
+		// expose statistics, and this one only lets a visitor refuse tracking.
+		$opt_out_block = new Opt_Out_Block();
+		$opt_out_block->init();
+
 		$share = new Share_Expired();
 		$share->init();
 
@@ -149,6 +154,28 @@ class Frontend {
 			$mainwp_proxy = new MainWP_Proxy();
 			$mainwp_proxy->init();
 		}
+
+		$this->register_abilities_hooks();
+	}
+
+	/**
+	 * Hook Burst ability registration on every request when the Abilities API setting is on.
+	 *
+	 * MCP connectors call abilities through their own endpoints and auth schemes, which
+	 * has_admin_access() can't recognise, so this can't live behind the admin bootstrap.
+	 * The callbacks are class-name strings, so the Abilities_Api class only loads when the
+	 * abilities registry actually initializes. Each ability's permission_callback still
+	 * requires manage_burst_statistics. Track-only mode never boots the admin services the
+	 * abilities execute against, so no abilities are registered there.
+	 */
+	private function register_abilities_hooks(): void {
+		if ( BURST_TRACK_ONLY || ! $this->get_option_bool( 'enable_abilities_api' ) ) {
+			return;
+		}
+
+		add_action( 'wp_abilities_api_categories_init', [ Abilities_Api::class, 'register_category' ] );
+		add_action( 'wp_abilities_api_init', [ Abilities_Api::class, 'register' ] );
+		add_action( 'abilities_api_init', [ Abilities_Api::class, 'register' ] );
 	}
 
 	/**
@@ -381,14 +408,13 @@ class Frontend {
 		}
 
 		$data = [
-			'uid'               => isset( $data['uid'] ) && is_string( $data['uid'] ) ? sanitize_text_field( $data['uid'] ) : false,
-			'fingerprint'       => isset( $data['fingerprint'] ) && is_string( $data['fingerprint'] ) ? sanitize_text_field( $data['fingerprint'] ) : false,
-			'url'               => isset( $data['url'] ) ? esc_url_raw( $data['url'] ) : '',
-			'referrer_url'      => isset( $data['referrer_url'] ) ? esc_url_raw( $data['referrer_url'] ) : '',
-			'user_agent'        => isset( $data['user_agent'] ) ? sanitize_text_field( $data['user_agent'] ) : '',
-			'device_resolution' => isset( $data['device_resolution'] ) ? preg_replace( '/[^0-9x]/', '', $data['device_resolution'] ) : '',
-			'time_on_page'      => isset( $data['time_on_page'] ) ? (int) $data['time_on_page'] : 0,
-			'completed_goals'   => isset( $data['completed_goals'] ) && is_array( $data['completed_goals'] )
+			'uid'             => isset( $data['uid'] ) && is_string( $data['uid'] ) ? sanitize_text_field( $data['uid'] ) : false,
+			'fingerprint'     => isset( $data['fingerprint'] ) && is_string( $data['fingerprint'] ) ? sanitize_text_field( $data['fingerprint'] ) : false,
+			'url'             => isset( $data['url'] ) ? esc_url_raw( $data['url'] ) : '',
+			'referrer_url'    => isset( $data['referrer_url'] ) ? esc_url_raw( $data['referrer_url'] ) : '',
+			'user_agent'      => isset( $data['user_agent'] ) ? sanitize_text_field( $data['user_agent'] ) : '',
+			'time_on_page'    => isset( $data['time_on_page'] ) ? (int) $data['time_on_page'] : 0,
+			'completed_goals' => isset( $data['completed_goals'] ) && is_array( $data['completed_goals'] )
 				? array_map( 'intval', $data['completed_goals'] )
 				: [],
 		];
@@ -552,10 +578,10 @@ class Frontend {
 	/**
 	 * Check if the tracking script is served as the combined file under an obfuscated (ghost mode) name.
 	 *
-	 * Memoized, so the timeme and tracking script enqueues share one decision and their
+	 * Memoized, so the events and tracking script enqueues share one decision and their
 	 * handle prefixes can never diverge within a request: the tracking script declares
-	 * its timeme dependency as "{prefix}-timeme", so a diverging prefix would point to an
-	 * unregistered handle and WordPress would silently drop the tracking script.
+	 * its events bootstrap dependency as "{prefix}-events-bootstrap", so a diverging prefix
+	 * would point to an unregistered handle and WordPress would silently drop the tracking script.
 	 */
 	private function uses_obfuscated_combined_file(): bool {
 		if ( $this->uses_obfuscated_combined_file !== null ) {
@@ -569,26 +595,26 @@ class Frontend {
 		}
 
 		$file                                = $this->upload_dir( 'js', true, true ) . $this->get_frontend_js_filename( true );
-		$this->uses_obfuscated_combined_file = file_exists( $file );
+		$this->uses_obfuscated_combined_file = $this->is_combined_file_current( $file );
 		return $this->uses_obfuscated_combined_file;
 	}
 
 	/**
-	 * Enqueue some assets
+	 * Whether a combined tracking file written to uploads can be served: it exists
+	 * and is not older than the bundled build it was made from.
+	 *
+	 * Only admin, cron and WP-CLI requests rewrite the combined file, so after a
+	 * plugin update visitors would otherwise get the previous tracker until one of
+	 * those runs, without the scripts it relied on. The bundled build is served
+	 * until then.
+	 *
+	 * @param string $file Path of the combined file.
 	 */
-	public function enqueue_burst_time_tracking_script( string $hook ): void {
-		// fix phpcs warning.
-		unset( $hook );
-		$script = $this->get_tracking_script_file( 'assets/js/timeme/timeme.min.js' );
-		if ( ! $this->exclude_from_tracking() ) {
-			wp_enqueue_script(
-				$script['prefix'] . '-timeme',
-				$script['src'],
-				[],
-				filemtime( $script['path'] ),
-				false
-			);
+	private function is_combined_file_current( string $file ): bool {
+		if ( ! file_exists( $file ) ) {
+			return false;
 		}
+		return filemtime( $file ) >= filemtime( BURST_PATH . 'assets/js/build/' . $this->get_tracking_script_basename() );
 	}
 
 	/**
@@ -717,17 +743,17 @@ class Frontend {
 				$upload_url         = $this->upload_url( 'js', $ghost_mode_enabled );
 				$upload_path        = $this->upload_dir( 'js', $ghost_mode_enabled, true );
 
-				// Only use the written file if it exists. For ghost mode the existence check
+				// Only use the written file if it is current. For ghost mode that check
 				// is part of uses_obfuscated_combined_file(), so the prefix always matches
-				// the timeme handle registered in enqueue_burst_time_tracking_script().
-				if ( $ghost_mode_enabled || file_exists( $upload_path . $filename ) ) {
+				// the events handles registered in enqueue_burst_events_scripts().
+				if ( $ghost_mode_enabled || $this->is_combined_file_current( $upload_path . $filename ) ) {
 					$prefix              = $ghost_mode_enabled ? 'b' : 'burst';
 					$file_url            = $upload_url . $filename;
 					$file_path           = $upload_path . $filename;
 					$add_localize_script = false;
 				}
 			}
-			$deps = $this->tracking->beacon_enabled() ? [ $prefix . '-timeme' ] : [ $prefix . '-timeme', 'wp-api-fetch' ];
+			$deps = $this->tracking->beacon_enabled() ? [] : [ 'wp-api-fetch' ];
 			if ( wp_script_is( 'wp-consent-api', 'registered' ) || function_exists( 'wp_has_consent' ) ) {
 				$deps[] = 'wp-consent-api';
 			}
@@ -772,15 +798,9 @@ class Frontend {
 		// Ghost mode registers the scripts under the obfuscated 'b' prefix instead of 'burst',
 		// so we have to match both handle variants here. Otherwise the tracking script loses
 		// its defer/async attribute in ghost mode, which changes when it executes.
-		$is_timeme = ( 'burst-timeme' === $handle || 'b-timeme' === $handle );
 		// The events API loads like the tracking script; its early bootstrap stays
 		// synchronous so burst.event() exists before other scripts run.
 		$is_tracking = in_array( $handle, [ 'burst', 'b', 'burst-events', 'b-events' ], true );
-
-		// time me load asap but async to avoid blocking the page load.
-		if ( $is_timeme ) {
-			return str_replace( ' src', ' async src', $tag );
-		}
 
 		if ( ! $is_tracking ) {
 			return $tag;

@@ -163,8 +163,14 @@ export interface BurstSettings {
 	/** True once the first external-links scraping cycle has completed. */
 	external_links_first_cycle_completed?: boolean;
 
-	/** True when the server rejects hook goals (headless site without cookies). PHP localizes it as `"1"` / `""`. */
-	hide_hook_goals?: boolean | string;
+	/** The goal types the server accepts, from get_goal_fields(). */
+	goal_types?: string[];
+
+	/** True when file download tracking is enabled. */
+	track_downloads?: boolean;
+
+	/** File extensions recognized as downloads. */
+	download_extensions?: string[];
 
 	/** True when the site records custom events; the settings fields are manage-only, so viewers read it here. */
 	custom_events_enabled?: boolean;
@@ -187,6 +193,22 @@ export interface BurstSettings {
 declare global {
 	interface Window {
 		burst_settings: BurstSettings;
+		wp?: {
+			media?: ( options?: Record<string, unknown> ) => {
+				on: ( event: string, callback: () => void ) => void;
+				open: () => void;
+				state: () => {
+					get: ( stateName: string ) => {
+						first: () => {
+							toJSON: () => {
+								filename?: string;
+								url?: string;
+							};
+						};
+					};
+				};
+			};
+		};
 	}
 }
 

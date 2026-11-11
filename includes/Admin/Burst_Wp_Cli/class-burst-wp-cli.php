@@ -3,6 +3,7 @@ namespace Burst\Admin\Burst_Wp_Cli;
 
 use Burst\Admin\Admin;
 use Burst\Frontend\Goals\Goal;
+use Burst\Frontend\Tracking\High_Traffic_Buffer;
 use Burst\Pro\Admin\Licensing\Licensing;
 use Burst\Traits\Admin_Helper;
 use Burst\Traits\Helper;
@@ -324,5 +325,23 @@ class Burst_Wp_Cli {
 		} else {
 			\WP_CLI::error( 'Failed to send test telemetry: ' . ( $response['message'] ?? 'Unknown error' ) );
 		}
+	}
+
+	/**
+	 * Process the high-traffic hit buffer.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp burst process_buffer
+	 *
+	 * @when after_wp_load
+	 */
+	public function process_buffer(): void {
+		if ( ! $this->wp_cli_active() ) {
+			return;
+		}
+
+		$count = High_Traffic_Buffer::process_buffer();
+		\WP_CLI::success( sprintf( 'Processed %d buffered hit(s).', $count ) );
 	}
 }
